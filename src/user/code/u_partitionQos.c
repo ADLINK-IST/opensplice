@@ -1,97 +1,56 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "u_partitionQos.h"
 
-/**************************************************************
- * Private functions
- **************************************************************/
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
-v_partitionQos
+u_partitionQos
 u_partitionQosNew(
-    v_partitionQos tmpl)
+    const u_partitionQos _template)
 {
-    v_partitionQos q;
-    u_result result;
+    u_partitionQos _this;
 
-    q = os_malloc(sizeof(C_STRUCT(v_partitionQos)));
-    if (q != NULL) {
-        if (tmpl != NULL) {
-            *q = *tmpl;
-            q->userData.size = tmpl->userData.size;
-            if (q->userData.size > 0) {
-                q->userData.value = os_malloc(tmpl->userData.size);
-                memcpy(q->userData.value, tmpl->userData.value, tmpl->userData.size);
-            } else {
-                q->userData.value = NULL;
-            }
-        } else {
-            result = u_partitionQosInit(q);
-            if (result != U_RESULT_OK) {
-                u_partitionQosFree(q);
-                q = NULL;
-            }
+    assert(!_template || ((v_qos)_template)->kind == V_PARTITION_QOS);
+
+    _this = os_malloc(sizeof(C_STRUCT(v_partitionQos)));
+    if (_template != NULL) {
+        *_this = *_template;
+        _this->userData.v.value = NULL;
+        if (_template->userData.v.size > 0) {
+            assert(((v_qos)_template)->kind == V_PARTITION_QOS);
+            _this->userData.v.value = os_malloc((c_ulong) _template->userData.v.size);
+            _this->userData.v.size = _template->userData.v.size;
+            memcpy(_this->userData.v.value, _template->userData.v.value, (c_ulong) _template->userData.v.size);
         }
-    }
-
-    return q;
-}
-
-u_result
-u_partitionQosInit(
-    v_partitionQos q)
-{
-    u_result result;
-
-    if (q != NULL) {
-        ((v_qos)q)->kind = V_PARTITION_QOS;
-        q->userData.size  = 0;
-        q->userData.value = NULL;
-
-        result = U_RESULT_OK;
     } else {
-        result = U_RESULT_ILL_PARAM;
+        ((v_qos)_this)->kind  = V_PARTITION_QOS;
+        _this->userData.v.size  = 0;
+        _this->userData.v.value = NULL;
     }
-
-    return result;
-}
-
-void 
-u_partitionQosDeinit(
-    v_partitionQos q)
-{
-    if (q != NULL) {
-        os_free(q->userData.value);
-        q->userData.value = NULL;
-    }
+    return _this;
 }
 
 void
 u_partitionQosFree(
-    v_partitionQos q)
+    const u_partitionQos _this)
 {
-    if (q != NULL) {
-        u_partitionQosDeinit(q);
-        os_free(q);
-    }
+    assert(_this && ((v_qos)_this)->kind == V_PARTITION_QOS);
+    os_free(_this->userData.v.value);
+    os_free(_this);
 }
-
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/

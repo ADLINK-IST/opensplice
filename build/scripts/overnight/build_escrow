@@ -1,0 +1,204 @@
+#!/bin/bash
+#This script is used by the Jenkins job http://jenkins.prismtech.com:8080/view/OSPL%20Support/job/ESCROW/ 
+#It obtains the 3rd party products zip file from the last release
+#Builds the 3rd party products
+#Builds opensplice using the built products from the previous step
+#If all builds are successful a final zip containing zip files from all products 
+#is generated for delivery under the escrow agreement.
+
+#Note this job is intended to run on rhel64-64a (rhel64-64f when it's available) via jenkins.  If running elsewhere the
+#environment variables could be different.
+
+cd $WORKSPACE
+mkdir temp
+
+OSPLI=$1
+OSPLO=$2
+TP_PRODS=$3
+CAFE=$4
+CLOUD=$5
+GATEWAY=$6
+WEB=$7
+INSIGHT=$8
+MODELER=$9
+BUILD_FINAL_ZIP=${10}
+ZIP_FILE=${11}
+
+wget $OSPLI
+wget $OSPLO
+wget $TP_PRODS
+
+unzip ospl-3rd-party-software.zip
+
+#Extract and build zlib
+cd $WORKSPACE/ospl-3rd-party-software/zlib
+tar -xf zlib-1.2.4.tar.gz
+cd $WORKSPACE/ospl-3rd-party-software/zlib/zlib-1.2.4
+bash ./configure --prefix=$WORKSPACE/temp/zlib; make test
+if [ $? != 0 ]
+then
+   echo "Error building zlib "
+   exit
+fi
+
+bash ./configure --prefix=$WORKSPACE/temp/zlib; make install
+if [ $? != 0 ]
+then
+   echo "Error building zlib install "
+   exit
+fi
+
+#Extract and build gsoap
+cd $WORKSPACE/ospl-3rd-party-software/gsoap/gsoap-2.7
+
+sed -i 's/CFLAGS=\"/CFLAGS=\"-fpermissive /g' configure
+sed -i 's/CXXFLAGS=\"/CXXFLAGS=\"-fpermissive /g' configure
+
+bash ./configure --prefix=$WORKSPACE/temp/gsoap; make
+if [ $? != 0 ]
+then
+   echo "Error building gsoap "
+   exit
+fi
+
+bash ./configure --prefix=$WORKSPACE/temp/gsoap; make install
+if [ $? != 0 ]
+then
+   echo "Error building gsoap install "
+   exit
+fi
+cp $WORKSPACE/ospl-3rd-party-software/gsoap/gsoap-2.7/soapcpp2/stdsoap2.c $WORKSPACE/temp/gsoap/include/
+if [ $? != 0 ]
+then
+   echo "Error copying stdsoap2.c "
+   exit
+fi
+
+#Extract and build mico
+cd $WORKSPACE/ospl-3rd-party-software/mico/mico
+
+
+bash ./configure --prefix=$WORKSPACE/temp/mico --sysconfdir=$WORKSPACE/temp/mico/etc; gmake
+if [ $? != 0 ]
+then
+   echo "Error building mico "
+   exit
+fi
+
+#LDCONFIG is run at the end of the install stage, but it needs to run as ROOT and we don't want to 
+#run it as this is just a test build
+sed -i 's/LDCONFIG=ldconfig/LDCONFIG=\"echo Not running ldconfig \"/g' configure
+bash ./configure --prefix=$WORKSPACE/temp/mico --sysconfdir=$WORKSPACE/temp/mico/etc; gmake install
+if [ $? != 0 ]
+then
+   echo "Error building mico - install"
+   exit
+fi
+
+#Extract and build unixODBC
+cd $WORKSPACE/ospl-3rd-party-software/unixODBC
+tar -xf unixODBC-2.2.14.tar.gz
+cd $WORKSPACE/ospl-3rd-party-software/unixODBC/unixODBC-2.2.14
+
+bash ./configure --prefix=$WORKSPACE/temp/odbc --disable-gui; make
+if [ $? != 0 ]
+then
+   echo "Error building odbc "
+   exit
+fi
+
+bash ./configure --prefix=$WORKSPACE/temp/odbc --disable-gui; make install
+if [ $? != 0 ]
+then
+   echo "Error building odbc install"
+   exit
+fi
+
+#Extract and build openssl
+cd $WORKSPACE/ospl-3rd-party-software/openssl
+tar -xf openssl-1.0.1g.tar.gz
+cd $WORKSPACE/ospl-3rd-party-software/openssl/openssl-1.0.1g
+
+bash ./config --prefix=$WORKSPACE/temp/openssl --openssldir=$WORKSPACE/temp/openssl shared; make
+if [ $? != 0 ]
+then
+   echo "Error building openssl "
+   exit
+fi
+
+bash ./config --prefix=$WORKSPACE/temp/openssl --openssldir=$WORKSPACE/temp/openssl shared; make install
+if [ $? != 0 ]
+then
+   echo "Error building openssl install"
+   exit
+fi
+
+#Extract and build protobuf
+cd $WORKSPACE/ospl-3rd-party-software/protobuf
+tar -xf protobuf-2.6.0.tar.gz
+cd $WORKSPACE/ospl-3rd-party-software/protobuf/protobuf-2.6.0
+
+bash ./configure --prefix=$WORKSPACE/ospl-3rd-party-software/protobuf/protobuf-2.6.0; make; make install
+if [ $? != 0 ]
+then
+   echo "Error building protobuf "
+   exit
+fi
+
+export MICO_ROOT=$WORKSPACE/temp/mico
+export MICO_LIBS="mico2.3.13 ssl dl" 
+export ODBCHOME=$WORKSPACE/temp/odbc
+export GSOAPHOME=$WORKSPACE/temp/gsoap
+export M2_HOME=$WORKSPACE/ospl-3rd-party-software/maven/apache-maven-2.2.1
+export MAVEN_UTILS=$WORKSPACE/ospl-3rd-party-software/maven/maven-utils
+export ZLIB_HOME=$WORKSPACE/temp/zlib
+export OPENSSL_TARGET_HOME=$WORKSPACE/temp/openssl
+export SQLITE_HOME=$WORKSPACE/ospl-3rd-party-software/sqlite-amalgamation/sqlite-amalgamation-3071602
+export LEVELDB_HOME=$WORKSPACE/ospl-3rd-party-software/leveldb/leveldb-1.9.0
+export QTDIR=/usr/local/Trolltech/Qt-4.8.5
+export PROTOBUF_HOME=$WORKSPACE/ospl-3rd-party-software/protobuf/protobuf-2.6.0
+export JAVA7_HOME=/usr/local/jdk1.7.0
+export JAVA_HOME=/usr/local/jdk1.6.0
+export PATH=$JAVA_HOME/bin:$PATH
+
+cd $WORKSPACE
+unzip VortexOpenSplice_src_ospli.zip -d $WORKSPACE/temp
+unzip VortexOpenSplice_src_osplo.zip -d $WORKSPACE/temp
+
+export OSPL_HOME=$WORKSPACE/temp/ospli
+export OSPL_OUTER_HOME=$WORKSPACE/temp/osplo
+
+cd $WORKSPACE/temp/osplo
+export SPLICE_PLATFORM=x86_64.linux-release
+export LD_LIBRARY_PATH=$PROTOBUF_HOME/lib:$LD_LIBRARY_PATH
+
+. ./configure
+if [ $? != 0 ]
+then
+   echo "Error configuring opensplice "
+   exit
+fi
+
+make 
+if [ $? != 0 ]
+then
+   echo "Error building opensplice "
+   exit
+fi
+
+if [ "$BUILD_FINAL_ZIP" == "true" ]
+then
+   #get all products zip files, zip them up together 
+   #and copy to the releases area
+   wget $4
+   wget $5
+   wget $6
+   wget $7
+   wget $8
+   wget $9
+
+   zip -rq $ZIP_DATE.zip Vortex*.zip ospl-3rd-party-software.zip 
+   scp -i ~/.ssh/id_rsa_releases $ZIP_DATE.zip releases@repository2.prismtech.com:~/Vortex/$ZIP_DATE/
+else
+   echo "Not building final zip "
+fi

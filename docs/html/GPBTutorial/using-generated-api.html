@@ -1,0 +1,752 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Using the generated API in applications &mdash; OpenSplice GPB Tutorial</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice GPB Tutorial" href="index.html" />
+    <link rel="next" title="6. Evolving data models" href="evolving-data-models.html" />
+    <link rel="prev" title="4. Compiling the datamodel with the GPB compiler" href="compiling-datamodel.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="evolving-data-models.html" title="6. Evolving data models"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="compiling-datamodel.html" title="4. Compiling the datamodel with the GPB compiler"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="using-the-generated-api-in-applications">
+<span id="id1"></span><h1>5. Using the generated API in applications<a class="headerlink" href="#using-the-generated-api-in-applications" title="Permalink to this headline">¶</a></h1>
+<p>The DDS API implementation will allow the use of GPB types for DDS
+transparently, and the generated underlying DDS type will be invisible
+to the application.</p>
+<div class="section" id="protobuf-data-model">
+<h2>5.1. Protobuf data model<a class="headerlink" href="#protobuf-data-model" title="Permalink to this headline">¶</a></h2>
+<p>For the comming example the following proto file is used:</p>
+<div class="highlight-protobuf"><div class="highlight"><pre><span class="k">import</span> <span class="s">&quot;omg/dds/descriptor.proto&quot;</span><span class="p">;</span>
+
+<span class="kn">package</span> <span class="nn">address</span><span class="p">;</span>
+
+<span class="kd">message</span> <span class="nc">Organisation</span> <span class="p">{</span>
+    <span class="k">required</span> <span class="kt">string</span> <span class="na">name</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">[(</span><span class="o">.</span><span class="n">omg.dds.member</span><span class="p">)</span><span class="o">.</span><span class="na">key</span> <span class="o">=</span> <span class="kc">true</span><span class="p">];</span>
+    <span class="k">required</span> <span class="kt">string</span> <span class="na">address</span> <span class="o">=</span> <span class="mi">2</span> <span class="p">[(</span><span class="o">.</span><span class="n">omg.dds.member</span><span class="p">)</span><span class="o">.</span><span class="na">filterable</span> <span class="o">=</span> <span class="kc">true</span><span class="p">];</span>
+    <span class="k">optional</span> <span class="n">Person.PhoneNumber</span> <span class="na">phone</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">message</span> <span class="nc">Person</span> <span class="p">{</span>
+  <span class="k">option</span> <span class="p">(</span><span class="o">.</span><span class="n">omg.dds.type</span><span class="p">)</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="o">:</span> <span class="s">&quot;dds.Person&quot;</span><span class="p">};</span>
+  <span class="k">required</span> <span class="kt">string</span> <span class="na">name</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">[(</span><span class="o">.</span><span class="n">omg.dds.member</span><span class="p">)</span><span class="o">.</span><span class="na">key</span> <span class="o">=</span> <span class="kc">true</span><span class="p">];</span> 
+  <span class="k">required</span> <span class="kt">int32</span> <span class="na">age</span> <span class="o">=</span> <span class="mi">2</span> <span class="p">[(</span><span class="o">.</span><span class="n">omg.dds.member</span><span class="p">)</span> <span class="o">=</span> <span class="p">{</span><span class="n">filterable</span><span class="o">:</span> <span class="kc">true</span><span class="p">}];</span>
+  <span class="k">optional</span> <span class="kt">string</span> <span class="na">email</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+  <span class="kd">enum</span> <span class="n">PhoneType</span> <span class="p">{</span>
+    <span class="na">MOBILE</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="na">HOME</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="na">WORK</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="kd">message</span> <span class="nc">PhoneNumber</span> <span class="p">{</span>
+    <span class="k">required</span> <span class="kt">string</span> <span class="na">number</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="k">optional</span> <span class="n">PhoneType</span> <span class="na">type</span> <span class="o">=</span> <span class="mi">2</span> <span class="p">[</span><span class="k">default</span> <span class="o">=</span> <span class="n">HOME</span><span class="p">];</span>
+  <span class="p">}</span>
+  <span class="k">repeated</span> <span class="n">PhoneNumber</span> <span class="na">phone</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+  <span class="k">required</span> <span class="n">Organisation</span> <span class="na">worksFor</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="java">
+<h2>5.2. Java<a class="headerlink" href="#java" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p>In this example we will publish a person <em>Jane Doe</em> with one friend,
+<em>John Doe</em>.</p>
+<p>The Subscriber example will read this data and print it to the <tt class="docutils literal"><span class="pre">stdout</span></tt>.
+This example is delivered with OpenSplice, and is located in
+<tt class="docutils literal"><span class="pre">examples/protobuf/java5</span></tt>.</p>
+<div class="section" id="publisher">
+<h3>5.2.1. Publisher<a class="headerlink" href="#publisher" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p>Example Publisher for the generated Person data:</p>
+<div class="highlight-java"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">java.util.concurrent.TimeoutException</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.omg.dds.core.InstanceHandle</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.core.ServiceEnvironment</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.core.policy.PolicyFactory</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.core.status.PublicationMatchedStatus</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.domain.DomainParticipant</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.domain.DomainParticipantFactory</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.pub.DataWriter</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.pub.Publisher</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.topic.Topic</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">address.Address.Organisation</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">address.Address.Person</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">address.Address.Person.PhoneNumber</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">address.Address.Person.PhoneType</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ProtobufPublisher</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">ServiceEnvironment</span> <span class="n">env</span><span class="o">;</span>
+        <span class="n">DomainParticipantFactory</span> <span class="n">domainParticipantFactory</span><span class="o">;</span>
+        <span class="n">DomainParticipant</span> <span class="n">participant</span><span class="o">;</span>
+        <span class="n">Topic</span><span class="o">&lt;</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">topic</span><span class="o">;</span>
+        <span class="n">Publisher</span> <span class="n">publisher</span><span class="o">;</span>
+        <span class="n">DataWriter</span><span class="o">&lt;</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">writer</span><span class="o">;</span>
+        <span class="n">Person</span><span class="o">.</span><span class="na">Builder</span> <span class="n">janeDoeBuilder</span><span class="o">;</span>
+        <span class="n">PhoneNumber</span> <span class="n">phone</span><span class="o">;</span>
+        <span class="n">Person</span> <span class="n">janeDoe</span><span class="o">;</span>
+        <span class="n">PolicyFactory</span> <span class="n">policyFactory</span><span class="o">;</span>
+
+        <span class="n">System</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span>
+                <span class="n">ServiceEnvironment</span><span class="o">.</span><span class="na">IMPLEMENTATION_CLASS_NAME_PROPERTY</span><span class="o">,</span>
+                <span class="s">&quot;org.opensplice.dds.core.OsplServiceEnvironment&quot;</span><span class="o">);</span>
+
+        <span class="n">env</span> <span class="o">=</span> <span class="n">ServiceEnvironment</span><span class="o">.</span><span class="na">createInstance</span><span class="o">(</span><span class="n">ProtobufPublisher</span><span class="o">.</span><span class="na">class</span>
+                <span class="o">.</span><span class="na">getClassLoader</span><span class="o">());</span>
+
+        <span class="n">policyFactory</span> <span class="o">=</span> <span class="n">PolicyFactory</span><span class="o">.</span><span class="na">getPolicyFactory</span><span class="o">(</span><span class="n">env</span><span class="o">);</span>
+        <span class="n">participant</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="n">domainParticipantFactory</span> <span class="o">=</span> <span class="n">DomainParticipantFactory</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="n">env</span><span class="o">);</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">participant</span> <span class="o">=</span> <span class="n">domainParticipantFactory</span><span class="o">.</span><span class="na">createParticipant</span><span class="o">();</span>
+            <span class="c1">// Creating a Topic for a Protobuf class</span>
+            <span class="n">topic</span> <span class="o">=</span> <span class="n">participant</span><span class="o">.</span><span class="na">createTopic</span><span class="o">(</span><span class="s">&quot;Person&quot;</span><span class="o">,</span> <span class="n">Person</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+            <span class="c1">// Creating a Publisher and DataWriter for the Protobuf Topic</span>
+            <span class="n">publisher</span> <span class="o">=</span> <span class="n">participant</span><span class="o">.</span><span class="na">createPublisher</span><span class="o">();</span>
+            <span class="n">writer</span> <span class="o">=</span> <span class="n">publisher</span><span class="o">.</span><span class="na">createDataWriter</span><span class="o">(</span>
+                    <span class="n">topic</span><span class="o">,</span>
+                    <span class="n">publisher</span><span class="o">.</span><span class="na">getDefaultDataWriterQos</span><span class="o">().</span><span class="na">withPolicy</span><span class="o">(</span>
+                            <span class="n">policyFactory</span><span class="o">.</span><span class="na">Reliability</span><span class="o">().</span><span class="na">withReliable</span><span class="o">()));</span>
+
+            <span class="n">waitForSubscriber</span><span class="o">(</span><span class="n">writer</span><span class="o">);</span>
+            <span class="c1">// Creating a builder the Protobuf data structure</span>
+            <span class="n">janeDoeBuilder</span> <span class="o">=</span> <span class="n">Person</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">();</span>
+
+            <span class="c1">// Creating Jane Doe</span>
+            <span class="n">janeDoeBuilder</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;Jane Doe&quot;</span><span class="o">)</span>
+                    <span class="o">.</span><span class="na">setEmail</span><span class="o">(</span><span class="s">&quot;jane.doe@somedomain.com&quot;</span><span class="o">).</span><span class="na">setAge</span><span class="o">(</span><span class="mi">23</span><span class="o">);</span>
+            <span class="n">phone</span> <span class="o">=</span> <span class="n">PhoneNumber</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">().</span><span class="na">setNumber</span><span class="o">(</span><span class="s">&quot;0123456789&quot;</span><span class="o">).</span><span class="na">build</span><span class="o">();</span>
+            <span class="n">janeDoeBuilder</span><span class="o">.</span><span class="na">addPhone</span><span class="o">(</span><span class="n">phone</span><span class="o">);</span>
+            <span class="n">Organisation</span><span class="o">.</span><span class="na">Builder</span> <span class="n">orgBuilder</span> <span class="o">=</span> <span class="n">Organisation</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">();</span>
+            <span class="n">orgBuilder</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;Acme Corporation&quot;</span><span class="o">);</span>
+            <span class="n">orgBuilder</span><span class="o">.</span><span class="na">setAddress</span><span class="o">(</span><span class="s">&quot;Wayne Manor, Gotham City&quot;</span><span class="o">);</span>
+            <span class="n">orgBuilder</span><span class="o">.</span><span class="na">setPhone</span><span class="o">(</span><span class="n">PhoneNumber</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+                    <span class="o">.</span><span class="na">setNumber</span><span class="o">(</span><span class="s">&quot;9876543210&quot;</span><span class="o">).</span><span class="na">setType</span><span class="o">(</span><span class="n">PhoneType</span><span class="o">.</span><span class="na">WORK</span><span class="o">));</span>
+            <span class="n">janeDoeBuilder</span><span class="o">.</span><span class="na">setWorksFor</span><span class="o">(</span><span class="n">orgBuilder</span><span class="o">);</span>
+
+            <span class="n">janeDoe</span> <span class="o">=</span> <span class="n">janeDoeBuilder</span><span class="o">.</span><span class="na">build</span><span class="o">();</span>
+
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Publisher: publishing Person: &quot;</span>
+                    <span class="o">+</span> <span class="n">janeDoe</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+            <span class="n">writer</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">janeDoe</span><span class="o">);</span>
+
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Publisher: sleeping for 5 seconds...&quot;</span><span class="o">);</span>
+
+            <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
+
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Publisher: disposing Jane Doe...&quot;</span><span class="o">);</span>
+
+            <span class="c1">// Disposing the DDS instance associated with the name field of the</span>
+            <span class="c1">// Protobuf data structure which is the key in DDS</span>
+            <span class="n">writer</span><span class="o">.</span><span class="na">dispose</span><span class="o">(</span><span class="n">InstanceHandle</span><span class="o">.</span><span class="na">nilHandle</span><span class="o">(</span><span class="n">env</span><span class="o">),</span> <span class="n">Person</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">()</span>
+                    <span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;Jane Doe&quot;</span><span class="o">).</span><span class="na">setWorksFor</span><span class="o">(</span>
+                            <span class="n">Organisation</span><span class="o">.</span><span class="na">newBuilder</span><span class="o">().</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;Acme Corporation.&quot;</span><span class="o">).</span><span class="na">buildPartial</span><span class="o">()).</span><span class="na">buildPartial</span><span class="o">());</span>
+
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">TimeoutException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">err</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">err</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Publisher: terminating...&quot;</span><span class="o">);</span>
+
+            <span class="k">if</span> <span class="o">(</span><span class="n">participant</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">participant</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">waitForSubscriber</span><span class="o">(</span><span class="n">DataWriter</span><span class="o">&lt;</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">writer</span><span class="o">)</span>
+            <span class="kd">throws</span> <span class="n">InterruptedException</span> <span class="o">{</span>
+        <span class="n">PublicationMatchedStatus</span> <span class="n">matched</span><span class="o">;</span>
+        <span class="kt">long</span> <span class="n">millis</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+        <span class="kt">long</span> <span class="n">timeout</span> <span class="o">=</span> <span class="n">millis</span> <span class="o">+</span> <span class="o">(</span><span class="mi">30</span> <span class="o">*</span> <span class="mi">1000</span><span class="o">);</span>
+        <span class="kt">boolean</span> <span class="n">stop</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Publisher: waiting for subscriber... &quot;</span><span class="o">);</span>
+
+        <span class="k">do</span> <span class="o">{</span>
+            <span class="n">matched</span> <span class="o">=</span> <span class="n">writer</span><span class="o">.</span><span class="na">getPublicationMatchedStatus</span><span class="o">();</span>
+
+            <span class="k">if</span> <span class="o">(</span><span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">()</span> <span class="o">&gt;</span> <span class="n">timeout</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">stop</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="k">if</span> <span class="o">((</span><span class="n">matched</span><span class="o">.</span><span class="na">getCurrentCount</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">(!</span><span class="n">stop</span><span class="o">))</span> <span class="o">{</span>
+                <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">500</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">while</span> <span class="o">((</span><span class="n">matched</span><span class="o">.</span><span class="na">getCurrentCount</span><span class="o">()</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="o">(!</span><span class="n">stop</span><span class="o">));</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">matched</span><span class="o">.</span><span class="na">getCurrentCount</span><span class="o">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Publisher: Subscriber found&quot;</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Publisher: Subscriber NOT found&quot;</span><span class="o">);</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="n">InterruptedException</span><span class="o">(</span>
+                    <span class="s">&quot;Publisher: subscriber not detected within 30 seconds.&quot;</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="subscriber">
+<h3>5.2.2. Subscriber<a class="headerlink" href="#subscriber" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p>Example Subscriber for the generated Person data:</p>
+<div class="highlight-java"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">java.util.concurrent.TimeUnit</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.concurrent.TimeoutException</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.omg.dds.core.ServiceEnvironment</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.core.WaitSet</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.core.policy.PolicyFactory</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.domain.DomainParticipant</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.domain.DomainParticipantFactory</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.sub.DataReader</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.sub.Sample</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.sub.Sample.Iterator</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.sub.Subscriber</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.omg.dds.topic.Topic</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">address.Address.Person</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">address.Address.Person.PhoneNumber</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ProtobufSubscriber</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">ServiceEnvironment</span> <span class="n">env</span><span class="o">;</span>
+        <span class="n">DomainParticipantFactory</span> <span class="n">domainParticipantFactory</span><span class="o">;</span>
+        <span class="n">DomainParticipant</span> <span class="n">participant</span><span class="o">;</span>
+        <span class="n">Topic</span><span class="o">&lt;</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">topic</span><span class="o">;</span>
+        <span class="n">DataReader</span><span class="o">&lt;</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">reader</span><span class="o">;</span>
+        <span class="n">Subscriber</span> <span class="n">subscriber</span><span class="o">;</span>
+        <span class="n">WaitSet</span> <span class="n">ws</span><span class="o">;</span>
+        <span class="n">PolicyFactory</span> <span class="n">policyFactory</span><span class="o">;</span>
+        <span class="kt">int</span> <span class="n">expectedUpdates</span> <span class="o">=</span> <span class="mi">2</span><span class="o">;</span>
+
+        <span class="n">System</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span>
+                <span class="n">ServiceEnvironment</span><span class="o">.</span><span class="na">IMPLEMENTATION_CLASS_NAME_PROPERTY</span><span class="o">,</span>
+                <span class="s">&quot;org.opensplice.dds.core.OsplServiceEnvironment&quot;</span><span class="o">);</span>
+
+        <span class="n">env</span> <span class="o">=</span> <span class="n">ServiceEnvironment</span><span class="o">.</span><span class="na">createInstance</span><span class="o">(</span><span class="n">ProtobufSubscriber</span><span class="o">.</span><span class="na">class</span>
+                <span class="o">.</span><span class="na">getClassLoader</span><span class="o">());</span>
+
+        <span class="n">policyFactory</span> <span class="o">=</span> <span class="n">PolicyFactory</span><span class="o">.</span><span class="na">getPolicyFactory</span><span class="o">(</span><span class="n">env</span><span class="o">);</span>
+        <span class="n">participant</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="n">domainParticipantFactory</span> <span class="o">=</span> <span class="n">DomainParticipantFactory</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="n">env</span><span class="o">);</span>
+
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">participant</span> <span class="o">=</span> <span class="n">domainParticipantFactory</span><span class="o">.</span><span class="na">createParticipant</span><span class="o">();</span>
+            <span class="c1">// Creating a Topic for a Protobuf class</span>
+            <span class="n">topic</span> <span class="o">=</span> <span class="n">participant</span><span class="o">.</span><span class="na">createTopic</span><span class="o">(</span><span class="s">&quot;Person&quot;</span><span class="o">,</span> <span class="n">Person</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+
+            <span class="c1">// Creating a Subscriber and DataReader for the Protobuf Topic</span>
+            <span class="n">subscriber</span> <span class="o">=</span> <span class="n">participant</span><span class="o">.</span><span class="na">createSubscriber</span><span class="o">();</span>
+            <span class="n">reader</span> <span class="o">=</span> <span class="n">subscriber</span><span class="o">.</span><span class="na">createDataReader</span><span class="o">(</span>
+                    <span class="n">topic</span><span class="o">,</span>
+                    <span class="n">subscriber</span><span class="o">.</span><span class="na">getDefaultDataReaderQos</span><span class="o">().</span><span class="na">withPolicy</span><span class="o">(</span>
+                            <span class="n">policyFactory</span><span class="o">.</span><span class="na">Reliability</span><span class="o">().</span><span class="na">withReliable</span><span class="o">()));</span>
+
+            <span class="c1">// Creating a WaitSet to block for incoming samples</span>
+
+            <span class="n">ws</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="na">getSPI</span><span class="o">().</span><span class="na">newWaitSet</span><span class="o">();</span>
+            <span class="n">ws</span><span class="o">.</span><span class="na">attachCondition</span><span class="o">(</span><span class="n">reader</span><span class="o">.</span><span class="na">createReadCondition</span><span class="o">(</span><span class="n">subscriber</span>
+                    <span class="o">.</span><span class="na">createDataState</span><span class="o">().</span><span class="na">withAnyViewState</span><span class="o">()</span>
+                    <span class="o">.</span><span class="na">withAnyInstanceState</span><span class="o">().</span><span class="na">withAnySampleState</span><span class="o">()));</span>
+
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Subscriber: waiting for incoming samples...&quot;</span><span class="o">);</span>
+
+            <span class="k">do</span> <span class="o">{</span>
+                <span class="c1">// Waiting for data to become available</span>
+                <span class="n">ws</span><span class="o">.</span><span class="na">waitForConditions</span><span class="o">(</span><span class="mi">30</span><span class="o">,</span> <span class="n">TimeUnit</span><span class="o">.</span><span class="na">SECONDS</span><span class="o">);</span>
+
+                <span class="c1">// Take all data and print it to the screen</span>
+                <span class="n">expectedUpdates</span> <span class="o">-=</span> <span class="n">printAllData</span><span class="o">(</span><span class="n">reader</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">while</span> <span class="o">(</span><span class="n">expectedUpdates</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">);</span>
+
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">RuntimeException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">err</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">TimeoutException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span>
+                    <span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Subscriber: time-out while waiting for updates.&quot;</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Subscriber: terminating...&quot;</span><span class="o">);</span>
+
+            <span class="k">if</span> <span class="o">(</span><span class="n">participant</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">participant</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">printAllData</span><span class="o">(</span><span class="n">DataReader</span><span class="o">&lt;</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">reader</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">iter</span><span class="o">;</span>
+        <span class="n">Sample</span><span class="o">&lt;</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">sample</span><span class="o">;</span>
+        <span class="n">Person</span> <span class="n">data</span><span class="o">;</span>
+        <span class="n">String</span> <span class="n">states</span><span class="o">;</span>
+        <span class="kt">int</span> <span class="n">sampleCount</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+
+        <span class="n">iter</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="na">take</span><span class="o">();</span>
+
+        <span class="k">while</span> <span class="o">(</span><span class="n">iter</span><span class="o">.</span><span class="na">hasNext</span><span class="o">())</span> <span class="o">{</span>
+            <span class="n">sample</span> <span class="o">=</span> <span class="n">iter</span><span class="o">.</span><span class="na">next</span><span class="o">();</span>
+            <span class="n">sampleCount</span><span class="o">++;</span>
+
+            <span class="n">states</span> <span class="o">=</span> <span class="s">&quot;(&quot;</span> <span class="o">+</span> <span class="n">sample</span><span class="o">.</span><span class="na">getSampleState</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;, &quot;</span>
+                    <span class="o">+</span> <span class="n">sample</span><span class="o">.</span><span class="na">getViewState</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;, &quot;</span> <span class="o">+</span> <span class="n">sample</span><span class="o">.</span><span class="na">getInstanceState</span><span class="o">()</span>
+                    <span class="o">+</span> <span class="s">&quot;)&quot;</span><span class="o">;</span>
+
+            <span class="k">if</span> <span class="o">(</span><span class="n">sample</span><span class="o">.</span><span class="na">getData</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span>
+                        <span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Subscriber: reading sample &quot;</span> <span class="o">+</span> <span class="n">states</span> <span class="o">+</span> <span class="s">&quot;:&quot;</span><span class="o">);</span>
+                <span class="n">printPerson</span><span class="o">(</span><span class="n">sample</span><span class="o">.</span><span class="na">getData</span><span class="o">(),</span> <span class="s">&quot;&quot;</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="o">((</span><span class="n">org</span><span class="o">.</span><span class="na">opensplice</span><span class="o">.</span><span class="na">dds</span><span class="o">.</span><span class="na">sub</span><span class="o">.</span><span class="na">Sample</span><span class="o">&lt;</span><span class="n">Person</span><span class="o">&gt;)</span> <span class="n">sample</span><span class="o">)</span>
+                        <span class="o">.</span><span class="na">getKeyValue</span><span class="o">();</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Subscriber: reading invalid sample &quot;</span>
+                        <span class="o">+</span> <span class="n">states</span> <span class="o">+</span> <span class="s">&quot;:&quot;</span><span class="o">);</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;- Name  = &quot;</span> <span class="o">+</span> <span class="n">data</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;   - Company    =&quot;</span><span class="o">);</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;      - Name    = &quot;</span>
+                        <span class="o">+</span> <span class="n">data</span><span class="o">.</span><span class="na">getWorksFor</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+        <span class="k">return</span> <span class="n">sampleCount</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">printPerson</span><span class="o">(</span><span class="n">Person</span> <span class="n">person</span><span class="o">,</span> <span class="n">String</span> <span class="n">tabs</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">tabs</span> <span class="o">+</span> <span class="s">&quot;- Name       = &quot;</span> <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">tabs</span> <span class="o">+</span> <span class="s">&quot;- Age        = &quot;</span> <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="na">getAge</span><span class="o">());</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">tabs</span> <span class="o">+</span> <span class="s">&quot;- Email      = &quot;</span> <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="na">getEmail</span><span class="o">());</span>
+
+        <span class="k">for</span> <span class="o">(</span><span class="n">PhoneNumber</span> <span class="n">phone</span> <span class="o">:</span> <span class="n">person</span><span class="o">.</span><span class="na">getPhoneList</span><span class="o">())</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">tabs</span> <span class="o">+</span> <span class="s">&quot;- Phone      = &quot;</span> <span class="o">+</span> <span class="n">phone</span><span class="o">.</span><span class="na">getNumber</span><span class="o">()</span>
+                    <span class="o">+</span> <span class="s">&quot; (&quot;</span>
+                    <span class="o">+</span> <span class="n">phone</span><span class="o">.</span><span class="na">getType</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span><span class="o">);</span>
+
+        <span class="o">}</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">tabs</span> <span class="o">+</span> <span class="s">&quot;- Company    =&quot;</span><span class="o">);</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">tabs</span> <span class="o">+</span> <span class="s">&quot;   - Name    = &quot;</span>
+                <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="na">getWorksFor</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">tabs</span> <span class="o">+</span> <span class="s">&quot;   - Address = &quot;</span>
+                <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="na">getWorksFor</span><span class="o">().</span><span class="na">getAddress</span><span class="o">());</span>
+
+        <span class="k">if</span> <span class="o">(</span><span class="n">person</span><span class="o">.</span><span class="na">getWorksFor</span><span class="o">().</span><span class="na">hasPhone</span><span class="o">())</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">tabs</span> <span class="o">+</span> <span class="s">&quot;   - Phone   = &quot;</span>
+                    <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="na">getWorksFor</span><span class="o">().</span><span class="na">getPhone</span><span class="o">().</span><span class="na">getNumber</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot; (&quot;</span>
+                    <span class="o">+</span> <span class="n">person</span><span class="o">.</span><span class="na">getWorksFor</span><span class="o">().</span><span class="na">getPhone</span><span class="o">().</span><span class="na">getType</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span><span class="o">);</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">tabs</span> <span class="o">+</span> <span class="s">&quot;   - Phone   = &quot;</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="iso-c">
+<h2>5.3. ISO-C++<a class="headerlink" href="#iso-c" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p>In this example the publisher and subscriber are embedded into one file.</p>
+<p>The publisher part will publish a person <em>Jane Doe</em> with one friend,
+<em>John Doe</em>.</p>
+<p>The Subscriber part in this example will read this data and print it to the <tt class="docutils literal"><span class="pre">stdout</span></tt>.</p>
+<p>This example is delivered with Vortex OpenSplice, and is located in
+<tt class="docutils literal"><span class="pre">examples/protobuf/isocpp2</span></tt>.</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="cm">/*</span>
+<span class="cm"> *                         OpenSplice DDS</span>
+<span class="cm"> *</span>
+<span class="cm"> *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech</span>
+<span class="cm"> *   Limited, its affiliated companies and licensors. All rights reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> *   Licensed under the Apache License, Version 2.0 (the "License");</span>
+<span class="cm"> *   you may not use this file except in compliance with the License.</span>
+<span class="cm"> *   You may obtain a copy of the License at</span>
+<span class="cm"> *</span>
+<span class="cm"> *       http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="cm"> *</span>
+<span class="cm"> *   Unless required by applicable law or agreed to in writing, software</span>
+<span class="cm"> *   distributed under the License is distributed on an "AS IS" BASIS,</span>
+<span class="cm"> *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="cm"> *   See the License for the specific language governing permissions and</span>
+<span class="cm"> *   limitations under the License.</span>
+<span class="cm"> *</span>
+<span class="cm"> */</span>
+
+<span class="cp">#include &quot;implementation.hpp&quot;</span>
+<span class="cp">#include &quot;common/example_utilities.h&quot;</span>
+
+<span class="cp">#include &lt;iostream&gt;</span>
+
+<span class="cp">#include &quot;address.pbdds.hpp&quot;</span>
+
+<span class="k">namespace</span> <span class="n">examples</span> <span class="p">{</span> <span class="k">namespace</span> <span class="n">protobuf</span> <span class="p">{</span> <span class="k">namespace</span> <span class="n">isocpp</span>  <span class="p">{</span>
+
+<span class="kt">int</span> <span class="n">publisher</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="n">argc</span><span class="p">;</span>
+    <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="n">argv</span><span class="p">;</span>
+    <span class="n">try</span>
+    <span class="p">{</span>
+        <span class="cm">/** A dds::domain::DomainParticipant is created for the default domain. */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">DomainParticipant</span> <span class="n">dp</span><span class="p">(</span><span class="n">org</span><span class="o">::</span><span class="n">opensplice</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">default_id</span><span class="p">());</span>
+
+        <span class="cm">/** A dds::topic::Topic is created for our protobuf type on the domain participant. */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">topic</span><span class="o">::</span><span class="n">Topic</span><span class="o">&lt;</span><span class="n">address</span><span class="o">::</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&quot;Person&quot;</span><span class="p">);</span>
+
+        <span class="cm">/** A dds::pub::Publisher is created on the domain participant. */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">Publisher</span> <span class="n">pub</span><span class="p">(</span><span class="n">dp</span><span class="p">);</span>
+
+        <span class="cm">/** The dds::pub::qos::DataWriterQos is derived from the topic qos */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">qos</span><span class="o">::</span><span class="n">DataWriterQos</span> <span class="n">dwqos</span><span class="p">;</span>
+
+        <span class="n">dwqos</span> <span class="o">&lt;&lt;</span> <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">Reliability</span><span class="o">::</span><span class="n">Reliable</span><span class="p">();</span>
+        <span class="cm">/** A dds::pub::DataWriter is created on the Publisher &amp; Topic with the modififed Qos. */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">DataWriter</span><span class="o">&lt;</span><span class="n">address</span><span class="o">::</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">dw</span><span class="p">(</span><span class="n">pub</span><span class="p">,</span> <span class="n">topic</span><span class="p">);</span>
+
+        <span class="cm">/** Synchronize on subscriber availability. */</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Publisher: waiting for subscriber... &quot;</span> <span class="o">&lt;&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+        <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">current</span> <span class="o">=</span> <span class="n">exampleTimevalToMicroseconds</span><span class="p">(</span><span class="n">exampleGetTime</span><span class="p">());</span>
+        <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">timeout</span> <span class="o">=</span> <span class="n">current</span> <span class="o">+</span> <span class="p">(</span><span class="mi">30</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">);</span>
+        <span class="kt">bool</span> <span class="n">stop</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="o">::</span><span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">PublicationMatchedStatus</span> <span class="n">matched</span><span class="p">;</span>
+
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="n">matched</span> <span class="o">=</span> <span class="n">dw</span><span class="p">.</span><span class="n">publication_matched_status</span><span class="p">();</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">exampleTimevalToMicroseconds</span><span class="p">(</span><span class="n">exampleGetTime</span><span class="p">())</span> <span class="o">&gt;</span> <span class="n">timeout</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">stop</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="p">((</span><span class="n">matched</span><span class="p">.</span><span class="n">current_count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="o">!</span><span class="n">stop</span><span class="p">))</span> <span class="p">{</span>
+                <span class="n">exampleSleepMilliseconds</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span> <span class="k">while</span> <span class="p">((</span><span class="n">matched</span><span class="p">.</span><span class="n">current_count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="o">!</span><span class="n">stop</span><span class="p">));</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">matched</span><span class="p">.</span><span class="n">current_count</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Publisher: Subscriber found&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+            <span class="cm">/** A sample is created and then written. */</span>
+            <span class="n">address</span><span class="o">::</span><span class="n">Person</span> <span class="n">msgInstance</span><span class="p">;</span>
+            <span class="n">msgInstance</span><span class="p">.</span><span class="n">set_name</span><span class="p">(</span><span class="s">&quot;Jane Doe&quot;</span><span class="p">);</span>
+            <span class="n">msgInstance</span><span class="p">.</span><span class="n">set_email</span><span class="p">(</span><span class="s">&quot;jane.doe@somedomain.com&quot;</span><span class="p">);</span>
+            <span class="n">msgInstance</span><span class="p">.</span><span class="n">set_age</span><span class="p">(</span><span class="mi">23</span><span class="p">);</span>
+
+            <span class="n">address</span><span class="o">::</span><span class="n">Person</span><span class="o">::</span><span class="n">PhoneNumber</span><span class="o">*</span> <span class="n">phone</span> <span class="o">=</span> <span class="n">msgInstance</span><span class="p">.</span><span class="n">add_phone</span><span class="p">();</span>
+            <span class="n">phone</span><span class="o">-&gt;</span><span class="n">set_number</span><span class="p">(</span><span class="s">&quot;0123456789&quot;</span><span class="p">);</span>
+            <span class="n">address</span><span class="o">::</span><span class="n">Organisation</span><span class="o">*</span> <span class="n">worksFor</span> <span class="o">=</span> <span class="n">msgInstance</span><span class="p">.</span><span class="n">mutable_worksfor</span><span class="p">();</span>
+            <span class="n">worksFor</span><span class="o">-&gt;</span><span class="n">set_name</span><span class="p">(</span><span class="s">&quot;Acme Corporation&quot;</span><span class="p">);</span>
+            <span class="n">worksFor</span><span class="o">-&gt;</span><span class="n">set_address</span><span class="p">(</span><span class="s">&quot;Wayne Manor, Gotham City&quot;</span><span class="p">);</span>
+            <span class="n">worksFor</span><span class="o">-&gt;</span><span class="n">mutable_phone</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">set_number</span><span class="p">(</span><span class="s">&quot;9876543210&quot;</span><span class="p">);</span>
+            <span class="n">worksFor</span><span class="o">-&gt;</span><span class="n">mutable_phone</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">set_type</span><span class="p">(</span> <span class="o">::</span><span class="n">address</span><span class="o">::</span><span class="n">Person_PhoneType_WORK</span><span class="p">);</span>
+            <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Publisher: publishing Person: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">msgInstance</span><span class="p">.</span><span class="n">name</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+            <span class="o">::</span><span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">InstanceHandle</span> <span class="n">handle</span> <span class="o">=</span> <span class="n">dw</span><span class="p">.</span><span class="n">register_instance</span><span class="p">(</span><span class="n">msgInstance</span><span class="p">);</span>
+
+            <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="n">msgInstance</span><span class="p">;</span>
+
+            <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Publisher: sleeping for 5 seconds...&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+            <span class="n">exampleSleepMilliseconds</span><span class="p">(</span><span class="mi">5000</span><span class="p">);</span>
+
+            <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Publisher: disposing Jane Doe...&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+            <span class="cm">/** Disposing the DDS instance associated with the name field of the</span>
+<span class="cm">              * Protobuf data structure which is the key in DDS*/</span>
+
+            <span class="n">dw</span><span class="p">.</span><span class="n">dispose_instance</span><span class="p">(</span><span class="n">handle</span><span class="p">);</span>
+            <span class="n">exampleSleepMilliseconds</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="o">::</span><span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">PreconditionNotMetError</span><span class="p">(</span><span class="s">&quot;Subscriber NOT found, terminating...&quot;</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">catch</span> <span class="p">(</span><span class="k">const</span> <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">Exception</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Publisher: ERROR: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Publisher: terminating...&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">ReadCondHandler</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="cm">/**</span>
+<span class="cm">     * @param dataState The dataState on which to filter the samples</span>
+<span class="cm">     */</span>
+    <span class="n">ReadCondHandler</span><span class="p">()</span><span class="o">:</span> <span class="n">updateCount</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{}</span>
+
+    <span class="kt">void</span> <span class="k">operator</span><span class="p">()</span> <span class="p">(</span><span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">cond</span><span class="o">::</span><span class="n">ReadCondition</span> <span class="n">c</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">states</span><span class="p">,</span> <span class="n">sampleState</span><span class="p">,</span> <span class="n">viewState</span><span class="p">,</span> <span class="n">instanceState</span><span class="p">;</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">DataReader</span><span class="o">&lt;</span><span class="n">address</span><span class="o">::</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">dr</span> <span class="o">=</span> <span class="n">c</span><span class="p">.</span><span class="n">data_reader</span><span class="p">();</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">LoanedSamples</span><span class="o">&lt;</span><span class="n">address</span><span class="o">::</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">samples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">select</span><span class="p">().</span><span class="n">state</span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="n">state_filter</span><span class="p">()).</span><span class="n">take</span><span class="p">();</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">LoanedSamples</span><span class="o">&lt;</span><span class="n">address</span><span class="o">::</span><span class="n">Person</span><span class="o">&gt;::</span><span class="n">const_iterator</span> <span class="n">sample</span> <span class="o">=</span> <span class="n">samples</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
+            <span class="n">sample</span> <span class="o">&lt;</span> <span class="n">samples</span><span class="p">.</span><span class="n">end</span><span class="p">();</span> <span class="o">++</span><span class="n">sample</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="n">updateCount</span><span class="o">++</span><span class="p">;</span>
+
+            <span class="k">if</span><span class="p">(</span><span class="n">sample</span><span class="o">-&gt;</span><span class="n">info</span><span class="p">().</span><span class="n">state</span><span class="p">().</span><span class="n">sample_state</span><span class="p">()</span> <span class="o">==</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">SampleState</span><span class="o">::</span><span class="n">read</span><span class="p">()){</span>
+                <span class="n">sampleState</span> <span class="o">=</span> <span class="s">&quot;READ&quot;</span><span class="p">;</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="n">sampleState</span> <span class="o">=</span> <span class="s">&quot;NOT_READ&quot;</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">sample</span><span class="o">-&gt;</span><span class="n">info</span><span class="p">().</span><span class="n">state</span><span class="p">().</span><span class="n">view_state</span><span class="p">()</span> <span class="o">==</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">ViewState</span><span class="o">::</span><span class="n">new_view</span><span class="p">()){</span>
+                <span class="n">viewState</span> <span class="o">=</span> <span class="s">&quot;NEW&quot;</span><span class="p">;</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="n">viewState</span> <span class="o">=</span> <span class="s">&quot;NOT_NEW&quot;</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">sample</span><span class="o">-&gt;</span><span class="n">info</span><span class="p">().</span><span class="n">state</span><span class="p">().</span><span class="n">instance_state</span><span class="p">()</span> <span class="o">==</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">InstanceState</span><span class="o">::</span><span class="n">alive</span><span class="p">()){</span>
+                <span class="n">instanceState</span> <span class="o">=</span> <span class="s">&quot;ALIVE&quot;</span><span class="p">;</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="n">sample</span><span class="o">-&gt;</span><span class="n">info</span><span class="p">().</span><span class="n">state</span><span class="p">().</span><span class="n">instance_state</span><span class="p">()</span> <span class="o">==</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">InstanceState</span><span class="o">::</span><span class="n">not_alive_disposed</span><span class="p">()){</span>
+                <span class="n">instanceState</span> <span class="o">=</span> <span class="s">&quot;NOT_ALIVE_DISPOSED&quot;</span><span class="p">;</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="n">instanceState</span> <span class="o">=</span> <span class="s">&quot;NOT_ALIVE_NO_WRITERS&quot;</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="n">states</span> <span class="o">=</span> <span class="s">&quot;(&quot;</span> <span class="o">+</span> <span class="n">sampleState</span> <span class="o">+</span> <span class="s">&quot;, &quot;</span> <span class="o">+</span> <span class="n">viewState</span> <span class="o">+</span> <span class="s">&quot;, &quot;</span> <span class="o">+</span> <span class="n">instanceState</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span><span class="p">;</span>
+
+            <span class="k">if</span><span class="p">(</span><span class="n">sample</span><span class="o">-&gt;</span><span class="n">info</span><span class="p">().</span><span class="n">valid</span><span class="p">())</span>
+            <span class="p">{</span>
+                <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Subscriber: reading sample &quot;</span> <span class="o">&lt;&lt;</span>  <span class="n">states</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+                <span class="n">printPerson</span><span class="p">(</span><span class="n">sample</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">(),</span> <span class="s">&quot;&quot;</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Subscriber: reading invalid sample &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">states</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+                <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;- Name     = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">sample</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">().</span><span class="n">name</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+                <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;- Company  = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+                <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;   - Name  = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">sample</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">().</span><span class="n">worksfor</span><span class="p">().</span><span class="n">name</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kt">int</span> <span class="n">getUpdateCount</span><span class="p">(){</span>
+        <span class="k">return</span> <span class="n">updateCount</span><span class="p">;</span>
+    <span class="p">}</span>
+
+<span class="k">private</span><span class="o">:</span>
+    <span class="kt">int</span> <span class="n">updateCount</span><span class="p">;</span>
+
+    <span class="kt">void</span> <span class="nf">printPhone</span><span class="p">(</span><span class="k">const</span> <span class="o">::</span><span class="n">address</span><span class="o">::</span><span class="n">Person_PhoneNumber</span> <span class="n">phone</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">tabs</span><span class="p">){</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">type</span><span class="p">;</span>
+
+        <span class="k">switch</span><span class="p">(</span><span class="n">phone</span><span class="p">.</span><span class="n">type</span><span class="p">()){</span>
+        <span class="k">case</span> <span class="o">::</span><span class="n">address</span><span class="o">::</span><span class="nl">Person_PhoneType_MOBILE</span><span class="p">:</span>
+            <span class="n">type</span> <span class="o">=</span> <span class="s">&quot;MOBILE&quot;</span><span class="p">;</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="k">case</span> <span class="o">::</span><span class="n">address</span><span class="o">::</span><span class="nl">Person_PhoneType_HOME</span><span class="p">:</span>
+            <span class="n">type</span> <span class="o">=</span> <span class="s">&quot;HOME&quot;</span><span class="p">;</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="k">case</span> <span class="o">::</span><span class="n">address</span><span class="o">::</span><span class="nl">Person_PhoneType_WORK</span><span class="p">:</span>
+            <span class="n">type</span> <span class="o">=</span> <span class="s">&quot;WORK&quot;</span><span class="p">;</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="k">default</span><span class="o">:</span>
+            <span class="n">type</span> <span class="o">=</span> <span class="s">&quot;UNKNOWN&quot;</span><span class="p">;</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">tabs</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;- Phone      = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">phone</span><span class="p">.</span><span class="n">number</span><span class="p">()</span> <span class="o">&lt;&lt;</span>
+                <span class="s">&quot; (&quot;</span> <span class="o">+</span> <span class="n">type</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;)&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+    <span class="p">}</span>
+
+    <span class="kt">void</span> <span class="nf">printPerson</span><span class="p">(</span><span class="n">address</span><span class="o">::</span><span class="n">Person</span> <span class="n">person</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">tabs</span><span class="p">){</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">tabs</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;- Name       = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">person</span><span class="p">.</span><span class="n">name</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">tabs</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;- Age        = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">person</span><span class="p">.</span><span class="n">age</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">tabs</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;- Email      = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">person</span><span class="p">.</span><span class="n">email</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span> <span class="n">person</span><span class="p">.</span><span class="n">phone_size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">printPhone</span><span class="p">(</span><span class="n">person</span><span class="p">.</span><span class="n">phone</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">tabs</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">tabs</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;- Company    = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">tabs</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;   - Name       = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">person</span><span class="p">.</span><span class="n">worksfor</span><span class="p">().</span><span class="n">name</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">tabs</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;   - Address    = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">person</span><span class="p">.</span><span class="n">worksfor</span><span class="p">().</span><span class="n">address</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+        <span class="k">if</span><span class="p">(</span><span class="n">person</span><span class="p">.</span><span class="n">worksfor</span><span class="p">().</span><span class="n">has_phone</span><span class="p">()){</span>
+            <span class="n">printPhone</span><span class="p">(</span><span class="n">person</span><span class="p">.</span><span class="n">worksfor</span><span class="p">().</span><span class="n">phone</span><span class="p">(),</span> <span class="n">tabs</span> <span class="o">+</span> <span class="s">&quot;   &quot;</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">tabs</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;   - Phone   = NONE&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+
+<span class="cm">/**</span>
+<span class="cm"> * Runs the subscriber role of this example.</span>
+<span class="cm"> * @return 0 if a sample is successfully read, 1 otherwise.</span>
+<span class="cm"> */</span>
+<span class="kt">int</span> <span class="nf">subscriber</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="n">argc</span><span class="p">;</span>
+    <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="n">argv</span><span class="p">;</span>
+    <span class="n">try</span>
+    <span class="p">{</span>
+        <span class="kt">int</span> <span class="n">expectedUpdates</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+        <span class="cm">/** A dds::domain::DomainParticipant is created for the default domain. */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">DomainParticipant</span> <span class="n">dp</span><span class="p">(</span><span class="n">org</span><span class="o">::</span><span class="n">opensplice</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">default_id</span><span class="p">());</span>
+
+        <span class="cm">/** A dds::topic::Topic is created for our protobuf type on the domain participant. */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">topic</span><span class="o">::</span><span class="n">Topic</span><span class="o">&lt;</span><span class="n">address</span><span class="o">::</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&quot;Person&quot;</span><span class="p">);</span>
+
+        <span class="cm">/** A dds::pub::Subscriber is created on the domain participant. */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">Subscriber</span> <span class="n">sub</span><span class="p">(</span><span class="n">dp</span><span class="p">);</span>
+
+        <span class="cm">/** The dds::pub::qos::DataWriterQos is derived from the topic qos */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">qos</span><span class="o">::</span><span class="n">DataReaderQos</span> <span class="n">drqos</span><span class="p">;</span>
+
+        <span class="n">drqos</span> <span class="o">&lt;&lt;</span> <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">Reliability</span><span class="o">::</span><span class="n">Reliable</span><span class="p">();</span>
+        <span class="cm">/** A dds::pub::Reader is created on the Subscriber &amp; Topic with the modififed Qos. */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">DataReader</span><span class="o">&lt;</span><span class="n">address</span><span class="o">::</span><span class="n">Person</span><span class="o">&gt;</span> <span class="n">dr</span> <span class="o">=</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">DataReader</span><span class="o">&lt;</span><span class="n">address</span><span class="o">::</span><span class="n">Person</span><span class="o">&gt;</span><span class="p">(</span><span class="n">sub</span><span class="p">,</span> <span class="n">topic</span><span class="p">,</span> <span class="n">drqos</span><span class="p">);</span>
+
+        <span class="cm">/** any sample, view and instance state */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">cond</span><span class="o">::</span><span class="n">ReadCondition</span> <span class="n">readCond</span><span class="p">(</span><span class="n">dr</span><span class="p">,</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">DataState</span><span class="o">::</span><span class="n">any</span><span class="p">());</span>
+        <span class="n">ReadCondHandler</span> <span class="n">personHandler</span><span class="p">;</span>
+        <span class="n">readCond</span><span class="p">.</span><span class="n">handler</span><span class="p">(</span><span class="n">personHandler</span><span class="p">);</span>
+
+        <span class="cm">/** A WaitSet is created and the four conditions created above are attached to it */</span>
+        <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">cond</span><span class="o">::</span><span class="n">WaitSet</span> <span class="n">waitSet</span><span class="p">;</span>
+        <span class="n">waitSet</span> <span class="o">+=</span> <span class="n">readCond</span><span class="p">;</span>
+
+        <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">Duration</span> <span class="n">waitTimeout</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+
+        <span class="cm">/** Wait until the condition in the WaitSet triggers and dispatch the corresponding functor*/</span>
+        <span class="k">do</span> <span class="p">{</span>
+            <span class="n">waitSet</span><span class="p">.</span><span class="n">dispatch</span><span class="p">(</span><span class="n">waitTimeout</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">while</span><span class="p">(</span><span class="n">personHandler</span><span class="p">.</span><span class="n">getUpdateCount</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">expectedUpdates</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">catch</span> <span class="p">(</span><span class="k">const</span> <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">Exception</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Subscriber: ERROR: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Subscriber: terminating...&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="p">}</span>
+<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">EXAMPLE_ENTRYPOINT</span><span class="p">(</span><span class="n">DCPS_ISOCPP_Protobuf_publisher</span><span class="p">,</span> <span class="n">examples</span><span class="o">::</span><span class="n">protobuf</span><span class="o">::</span><span class="n">isocpp</span><span class="o">::</span><span class="n">publisher</span><span class="p">)</span>
+<span class="n">EXAMPLE_ENTRYPOINT</span><span class="p">(</span><span class="n">DCPS_ISOCPP_Protobuf_subscriber</span><span class="p">,</span> <span class="n">examples</span><span class="o">::</span><span class="n">protobuf</span><span class="o">::</span><span class="n">isocpp</span><span class="o">::</span><span class="n">subscriber</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Using the generated API in applications</a><ul>
+<li><a class="reference internal" href="#protobuf-data-model">5.1. Protobuf data model</a></li>
+<li><a class="reference internal" href="#java">5.2. Java</a><ul>
+<li><a class="reference internal" href="#publisher">5.2.1. Publisher</a></li>
+<li><a class="reference internal" href="#subscriber">5.2.2. Subscriber</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#iso-c">5.3. ISO-C++</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="compiling-datamodel.html"
+                        title="previous chapter">4. Compiling the datamodel with the GPB compiler</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="evolving-data-models.html"
+                        title="next chapter">6. Evolving data models</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/using-generated-api.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="evolving-data-models.html" title="6. Evolving data models"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="compiling-datamodel.html" title="4. Compiling the datamodel with the GPB compiler"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

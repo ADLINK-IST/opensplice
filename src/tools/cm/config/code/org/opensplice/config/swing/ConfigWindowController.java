@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.config.swing;
@@ -27,13 +35,15 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
 
+import org.opensplice.common.util.ConfigModeIntializer;
 import org.opensplice.common.util.Report;
 import org.opensplice.config.data.DataConfiguration;
 import org.opensplice.config.data.DataException;
 import org.opensplice.config.meta.MetaConfiguration;
-import org.opensplice.common.util.ConfigModeIntializer;
 
 public class ConfigWindowController implements ActionListener {
+
+
     private final ConfigWindow view;
     private HelpWindow helpView;
     private boolean closeInProgress;
@@ -54,6 +64,11 @@ public class ConfigWindowController implements ActionListener {
         this.saveFileChooser    = new JFileChooser();
         this.curFile            = null;
         this.helpView           = null;
+
+        // Initialize the MetaConfiguration. This is done so the Configurator can know for
+        // which product its meant for, according to the meta config file.
+        MetaConfiguration.getInstance();
+        view.setWindowTitle(ConfigModeIntializer.CONFIGURATOR_MODE);
 
         String osplHome         = System.getenv("OSPL_HOME");
         File f                  = null;
@@ -85,7 +100,6 @@ public class ConfigWindowController implements ActionListener {
         this.saveFileChooser.setFileFilter(new ConfigChooseFilter());
         this.saveFileChooser.setAcceptAllFileFilterUsed(false);
         this.saveFileChooser.setApproveButtonText("Save");
-
     }
 
     @Override
@@ -236,48 +250,60 @@ public class ConfigWindowController implements ActionListener {
                     DataConfiguration config = null;
 
                     try {
-                        if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE) {
+                        if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE &&
+                                ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.LITE_MODE) {
                             ConfigModeIntializer.setMode(ConfigModeIntializer.COMMUNITY_MODE_FILE_OPEN);
                         }
 
                         config = new DataConfiguration(f, false);
                     } catch (DataException e) {
                         Report.getInstance().writeInfoLog("ConfigWindowController handleOpen\n" + e.getMessage());
-                        if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE) {
-                            ConfigModeIntializer.setMode(ConfigModeIntializer.COMMUNITY_MODE);
-                        }
+                        if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.LITE_MODE) {
+                            if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE) {
+                                ConfigModeIntializer.setMode(ConfigModeIntializer.COMMUNITY_MODE);
+                            }
 
-                        int answer = JOptionPane.showConfirmDialog(
-                                view,
-                                "The configuration is not valid.\nReason: " +
-                                e.getMessage() +
-                                "\nTry automatic repairing?",
-                                "Invalid configuration",
-                                JOptionPane.YES_NO_OPTION);
+                            int answer = JOptionPane.showConfirmDialog(
+                                    view,
+                                    "The configuration is not valid.\nReason: " +
+                                    e.getMessage() +
+                                    "\nTry automatic repairing?",
+                                    "Invalid configuration",
+                                    JOptionPane.YES_NO_OPTION);
 
-                        if(answer == JOptionPane.YES_OPTION){
-                            try {
-                                config = new DataConfiguration(f, true);
+                            if(answer == JOptionPane.YES_OPTION){
+                                try {
+                                    config = new DataConfiguration(f, true);
 
-                                view.setStatus("Configuration repaired successfully.", false);
-                            } catch (DataException e1) {
-                                JOptionPane.showMessageDialog(view,
-                                        "Configuration could not be repaired.\nReason: '" +
-                                        e.getMessage() + "'"
-                                        , "Error", JOptionPane.ERROR_MESSAGE);
-                                handleSetStatus("Configuration could not be repaired.", false);
+                                    view.setStatus("Configuration repaired successfully.", false);
+                                } catch (DataException e1) {
+                                    JOptionPane.showMessageDialog(view,
+                                            "Configuration could not be repaired.\nReason: '" +
+                                            e.getMessage() + "'"
+                                            , "Error", JOptionPane.ERROR_MESSAGE);
+                                    handleSetStatus("Configuration could not be repaired.", false);
+                                    handleNextAction();
+                                }
+                            } else if(answer == JOptionPane.NO_OPTION){
+                                handleSetStatus("Configuration not opened.", false);
                                 handleNextAction();
                             }
-                        } else if(answer == JOptionPane.NO_OPTION){
-                            handleSetStatus("Configuration not opened.", false);
-                            handleNextAction();
+                        } else {
+                            JOptionPane.showConfirmDialog(
+                                    view,
+                                    "The configuration is not valid.\nReason: " +
+                                    e.getMessage(),
+                                    "Invalid configuration",
+                                    JOptionPane.PLAIN_MESSAGE);
                         }
                     }
                     if(config != null){
                         view.setDataConfiguration(config);
                         view.setStatus("Configuration opened.", false);
-                        handleNextAction();
+                    } else {
+                        view.setStatus("Configuration could not be opened.", false);
                     }
+                    handleNextAction();
                 }
             };
             SwingUtilities.invokeLater(worker);
@@ -295,58 +321,70 @@ public class ConfigWindowController implements ActionListener {
         }
         file = new File(uri);
 
-        if (file != null) {
-            final File f = file;
-            this.handleSetEnabled(false);
-            view.setStatus("Opening configuration from " + f.getAbsolutePath() + "...", true, true);
-            view.repaint();
+        final File f = file;
+        this.handleSetEnabled(false);
+        view.setStatus("Opening configuration from " + f.getAbsolutePath()
+                + "...", true, true);
+        view.repaint();
 
-            Runnable worker = new Runnable() {
-                @Override
-                public void run() {
-                    view.setDataConfiguration(null);
-                    DataConfiguration config = null;
+        Runnable worker = new Runnable() {
+            @Override
+            public void run() {
+                view.setDataConfiguration(null);
+                DataConfiguration config = null;
 
-                    try {
-                        if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE) {
-                            ConfigModeIntializer.setMode(ConfigModeIntializer.COMMUNITY_MODE_FILE_OPEN);
-                        }
+                try {
+                    if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE) {
+                        ConfigModeIntializer
+                                .setMode(ConfigModeIntializer.COMMUNITY_MODE_FILE_OPEN);
+                    }
 
-                        config = new DataConfiguration(f, false);
-                    } catch (DataException e) {
-                        Report.getInstance().writeInfoLog("ConfigWindowController handleOpen\n" + e.getMessage());
-                        if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE) {
-                            ConfigModeIntializer.setMode(ConfigModeIntializer.COMMUNITY_MODE);
-                        }
+                    config = new DataConfiguration(f, false);
+                } catch (DataException e) {
+                    Report.getInstance().writeInfoLog(
+                            "ConfigWindowController handleOpen\n"
+                                    + e.getMessage());
+                    if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE) {
+                        ConfigModeIntializer
+                                .setMode(ConfigModeIntializer.COMMUNITY_MODE);
+                    }
 
-                        int answer = JOptionPane.showConfirmDialog(view, "The configuration is not valid.\nReason: "
-                                + e.getMessage() + "\nTry automatic repairing?", "Invalid configuration",
-                                JOptionPane.YES_NO_OPTION);
+                    int answer = JOptionPane.showConfirmDialog(
+                            view,
+                            "The configuration is not valid.\nReason: "
+                                    + e.getMessage()
+                                    + "\nTry automatic repairing?",
+                            "Invalid configuration", JOptionPane.YES_NO_OPTION);
 
-                        if (answer == JOptionPane.YES_OPTION) {
-                            try {
-                                config = new DataConfiguration(f, true);
-                                view.setStatus("Configuration repaired successfully.", false);
-                            } catch (DataException e1) {
-                                JOptionPane.showMessageDialog(view, "Configuration could not be repaired.\nReason: '"
-                                        + e.getMessage() + "'", "Error", JOptionPane.ERROR_MESSAGE);
-                                handleSetStatus("Configuration could not be repaired.", false);
-                                handleNextAction();
-                            }
-                        } else if (answer == JOptionPane.NO_OPTION) {
-                            handleSetStatus("Configuration not opened.", false);
+                    if (answer == JOptionPane.YES_OPTION) {
+                        try {
+                            config = new DataConfiguration(f, true);
+                            view.setStatus(
+                                    "Configuration repaired successfully.",
+                                    false);
+                        } catch (DataException e1) {
+                            JOptionPane.showMessageDialog(view,
+                                    "Configuration could not be repaired.\nReason: '"
+                                            + e.getMessage() + "'", "Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                            handleSetStatus(
+                                    "Configuration could not be repaired.",
+                                    false);
                             handleNextAction();
                         }
-                    }
-                    if (config != null) {
-                        view.setDataConfiguration(config);
-                        view.setStatus("Configuration opened.", false);
+                    } else if (answer == JOptionPane.NO_OPTION) {
+                        handleSetStatus("Configuration not opened.", false);
                         handleNextAction();
                     }
                 }
-            };
-            SwingUtilities.invokeLater(worker);
-        }
+                if (config != null) {
+                    view.setDataConfiguration(config);
+                    view.setStatus("Configuration opened.", false);
+                    handleNextAction();
+                }
+            }
+        };
+        SwingUtilities.invokeLater(worker);
         this.curFile = null;
     }
 
@@ -596,8 +634,13 @@ public class ConfigWindowController implements ActionListener {
         public static final String CONFIG_SUFFIX = ".xml";
 
         public ConfigChooseFilter(){
-            ConfigChooseFilter.description = "OpenSplice config files (*" +
-                                ConfigChooseFilter.CONFIG_SUFFIX + ")";
+            if (ConfigModeIntializer.CONFIGURATOR_MODE == ConfigModeIntializer.LITE_MODE) {
+                ConfigChooseFilter.description = "Vortex Lite config files (*" +
+                        ConfigChooseFilter.CONFIG_SUFFIX + ")";
+            } else {
+                ConfigChooseFilter.description = "OpenSplice config files (*" +
+                        ConfigChooseFilter.CONFIG_SUFFIX + ")";
+            }
         }
 
         @Override

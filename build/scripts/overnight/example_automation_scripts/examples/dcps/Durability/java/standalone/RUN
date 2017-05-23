@@ -51,13 +51,13 @@ fi
 echo "============================="
 echo "==== Scenario 3.1      ======"
 echo "============================="
-echo " ===== Launching durability subscriber" 
+echo " ===== Launching durability subscriber"
 
 LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP DurabilityDataSubscriber transient > subResult_3_1.txt &
 
 sleep 5
- 
-echo " ===== Launching durability publisher" 
+
+echo " ===== Launching durability publisher"
 
 LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP DurabilityDataPublisher transient true true > pubResult_3_1.txt &
 
@@ -68,7 +68,7 @@ sleep 30
 echo "=== Scenario 3.1 done"
 
 echo "=== Checking Durability Subscriber results Scenario 3.1"
-tail -10 subResult_3_1.txt > tail_subResult.txt
+grep "^[0-9]" subResult_3_1.txt > tail_subResult.txt
 
 diff -w tail_subResult.txt ../../expected_result > subdiff.txt
 if [ -s subdiff.txt ] || [ ! -r subResult_3_1.txt ];then
@@ -96,15 +96,17 @@ echo === running a first Subscriber
 LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP DurabilityDataSubscriber transient > subResult_3_2_1.txt &
 echo "=== End of first DurabilityDataSubscriber  (Scenario 3.2)"
 
-echo === running a second Subscriber
-LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP DurabilityDataSubscriber transient > subResult_3_2_2.txt &
-echo "=== End of first DurabilityDataSubscriber  (Scenario 3.2)"
-
 sleep 5
- 
-echo " ===== Launching durability publisher" 
+
+echo " ===== Launching durability publisher"
 
 LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP DurabilityDataPublisher transient false true > pubResult_3_2.txt &
+
+sleep 5
+
+echo === running a second Subscriber
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP DurabilityDataSubscriber transient > subResult_3_2_2.txt &
+echo "=== End of second DurabilityDataSubscriber  (Scenario 3.2)"
 
 #Rather than kill the publisher just wait till it completes.
 echo "===== Sleep 30s to let the publisher complete "
@@ -112,7 +114,7 @@ sleep 30
 
 echo "=== Checking Durability second Subscriber results Scenario 3.2"
 # Checking only result of second subscriber
-tail -10 subResult_3_2_2.txt > tail_subResult.txt
+grep "^[0-9]" subResult_3_2_2.txt > tail_subResult.txt
 
 diff -w tail_subResult.txt ../../expected_result > subdiff.txt
 if [ -s subdiff.txt ] || [ ! -r subResult_3_2_2.txt ];then
@@ -141,8 +143,8 @@ LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes
 echo "=== End of first DurabilityDataSubscriber  (Scenario 3.3)"
 
 sleep 5
- 
-echo " ===== Launching durability publisher" 
+
+echo " ===== Launching durability publisher"
 
 LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP DurabilityDataPublisher persistent false true > pubResult_3_3.txt &
 
@@ -165,12 +167,12 @@ echo === running a second Subscriber
 LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP DurabilityDataSubscriber persistent > subResult_3_3_2.txt &
 echo "=== End of first DurabilityDataSubscriber  (Scenario 3.3)"
 
-sleep 20 
+sleep 20
 
 echo "=== Checking Durability second Subscriber results Scenario 3.3"
 echo "    (not empty after restarting OpenSplice)"
 # Checking only result of second subscriber
-tail -2 subResult_3_3_2.txt > tail_subResult.txt
+grep "^[0-9]" subResult_3_3_2.txt > tail_subResult.txt
 if [ -s tail_subResult.txt ];then
    echo OK
 else

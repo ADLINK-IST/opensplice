@@ -1,79 +1,135 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
-#include "u__publisher.h"
-#include "u__writer.h"
+#include "u_publisher.h"
+#include "u_writer.h"
 #include "u__topic.h"
 #include "u__types.h"
+#include "u__object.h"
+#include "u__observable.h"
 #include "u__entity.h"
-#include "u__dispatcher.h"
 #include "u__participant.h"
-#include "u_user.h"
+#include "u__user.h"
 
 #include "v_participant.h"
 #include "v_publisher.h"
+#include "v_publisherQos.h"
 #include "v_group.h"
 
 #include "os_report.h"
 
+#define u_publisherReadClaim(_this, pub, claim) \
+        u_observableReadClaim(u_observable(_this), (v_public *)(pub), claim)
+
+#define u_publisherWriteClaim(_this, pub, claim) \
+        u_observableWriteClaim(u_observable(_this), (v_public *)(pub), claim)
+
+#define u_publisherRelease(_this, claim) \
+        u_observableRelease(u_observable(_this), claim)
+
+static u_result
+u__publisherDeinitW(
+    void *_this)
+{
+    return u__entityDeinitW(_this);
+}
+
+static void
+u__publisherFreeW(
+    void *_this)
+{
+    u__entityFreeW(_this);
+}
+
+static u_result
+u_publisherInit(
+    const u_publisher _this,
+    const v_publisher publisher,
+    const u_participant participant)
+{
+    u_result result;
+
+    if (_this) {
+        result = u_entityInit(u_entity(_this), v_entity(publisher), u_observableDomain(u_observable(participant)));
+    } else {
+        result = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_ERROR,
+                    "u_publisherInit", result,
+                    "Illegal parameter: _this = 0x%"PA_PRIxADDR".",
+                    (os_address)_this);
+    }
+    return result;
+}
+
 u_publisher
 u_publisherNew(
-    u_participant participant,
-    const c_char *name,
-    v_publisherQos qos,
-    c_bool enable)
+    const u_participant participant,
+    const os_char *name,
+    const u_publisherQos qos,
+    u_bool enable)
 {
     u_publisher _this = NULL;
     v_publisher o;
     v_participant kp = NULL;
     u_result result;
 
+    assert(participant);
+
     if (name == NULL) {
         name = "No name specified";
     }
     if (participant!= NULL) {
-        result = u_entityWriteClaim(u_entity(participant),(v_entity*)(&kp));
+        result = u_observableWriteClaim(u_observable(participant),(v_public*)(&kp), C_MM_RESERVATION_LOW);
         if (result == U_RESULT_OK) {
             assert(kp);
-            o = v_publisherNew(kp,name,qos,enable);
+            o = v_publisherNew(kp, name, qos, enable);
             if (o != NULL) {
-                _this = u_entityAlloc(participant,u_publisher,o,TRUE);
+                _this = u_objectAlloc(sizeof(*_this), U_PUBLISHER, u__publisherDeinitW, u__publisherFreeW);
                 if (_this != NULL) {
-                    result = u_publisherInit(_this,participant);
+                    result = u_publisherInit(_this, o, participant);
                     if (result != U_RESULT_OK) {
-                        OS_REPORT_1(OS_ERROR, "u_publisherNew", 0,
+                        OS_REPORT(OS_ERROR, "u_publisherNew", result,
                                     "Initialisation failed. "
                                     "For Publisher: <%s>.", name);
-                        u_publisherFree(_this);
+                        u_objectFree (u_object (_this));
+                        _this = NULL;
                     }
                 } else {
-                    OS_REPORT_1(OS_ERROR, "u_publisherNew", 0,
+                    OS_REPORT(OS_ERROR, "u_publisherNew", U_RESULT_INTERNAL_ERROR,
                                 "Create proxy failed. "
                                 "For Publisher: <%s>.", name);
                 }
                 c_free(o);
             } else {
-                OS_REPORT_1(OS_ERROR, "u_publisherNew", 0,
+                OS_REPORT(OS_ERROR, "u_publisherNew", U_RESULT_INTERNAL_ERROR,
                             "Create kernel entity failed. "
                             "For Publisher: <%s>.", name);
             }
-            result = u_entityRelease(u_entity(participant));
+            u_observableRelease(u_observable(participant), C_MM_RESERVATION_LOW);
         } else {
-            OS_REPORT_2(OS_WARNING, "u_publisherNew", 0,
-                        "Claim Participant (0x%x) failed. "
-                        "For Publisher: <%s>.", participant, name);
+            OS_REPORT(OS_WARNING, "u_publisherNew", result,
+                        "Claim Participant (0x%"PA_PRIxADDR") failed. "
+                        "For Publisher: <%s>.", (os_address)participant, name);
         }
     } else {
-        OS_REPORT_1(OS_ERROR,"u_publisherNew",0,
+        OS_REPORT(OS_ERROR,"u_publisherNew", U_RESULT_ILL_PARAM,
                     "No Participant specified. "
                     "For Publisher: <%s>", name);
     }
@@ -81,486 +137,132 @@ u_publisherNew(
 }
 
 u_result
-u_publisherInit(
-    u_publisher _this,
-    u_participant p)
+u_publisherGetQos (
+    const u_publisher _this,
+    u_publisherQos *qos)
 {
     u_result result;
+    v_publisher vPublisher;
+    v_publisherQos vQos;
 
-    if (_this && p) {
-        result = u_dispatcherInit(u_dispatcher(_this));
-        if (result == U_RESULT_OK) {
-            _this->writers = NULL;
-            _this->participant = p;
-            result = u_participantAddPublisher(p,_this);
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,
-                    "u_publisherInit",0,
-                    "Illegal parameter: _this = 0x%x, participant = 0x%x.",
-                    _this,p);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
+    assert(_this);
+    assert(qos);
 
-u_result
-u_publisherFree(
-    u_publisher _this)
-{
-    u_result result;
-    c_bool destroy;
-
-    result = u_entityLock(u_entity(_this));
+    result = u_publisherReadClaim(_this, &vPublisher, C_MM_RESERVATION_ZERO);
     if (result == U_RESULT_OK) {
-        destroy = u_entityDereference(u_entity(_this));
-        /* if refCount becomes zero then this call
-         * returns true and destruction can take place
-         */
-        if (destroy) {
-            if (u_entityOwner(u_entity(_this))) {
-                result = u_publisherDeinit(_this);
-            } else {
-                /* This user entity is a proxy, meaning that it is not fully
-                 * initialized, therefore only the entity part of the object
-                 * can be deinitialized.
-                 * It would be better to either introduce a separate proxy
-                 * entity for clarity or fully initialize entities and make
-                 * them robust against missing information.
-                 */
-                result = u_entityDeinit(u_entity(_this));
-            }
-            if (result == U_RESULT_OK) {
-                u_entityDealloc(u_entity(_this));
-            } else {
-                OS_REPORT_2(OS_WARNING,
-                            "u_publisherFree",0,
-                            "Operation u_publisherDeinit failed: "
-                            "Publisher = 0x%x, result = %s.",
-                            _this, u_resultImage(result));
-                u_entityUnlock(u_entity(_this));
-            }
-        } else {
-            u_entityUnlock(u_entity(_this));
-        }
-    } else {
-        OS_REPORT_2(OS_WARNING,
-                    "u_publisherFree",0,
-                    "Operation u_entityLock failed: "
-                    "Publisher = 0x%x, result = %s.",
-                    _this, u_resultImage(result));
+        vQos = v_publisherGetQos(vPublisher);
+        *qos = u_publisherQosNew(vQos);
+        c_free(vQos);
+        u_publisherRelease(_this, C_MM_RESERVATION_ZERO);
     }
     return result;
 }
 
 u_result
-u_publisherDeleteContainedEntities (
-    u_publisher _this)
+u_publisherSetQos (
+    const u_publisher _this,
+    const u_publisherQos qos)
 {
     u_result result;
-    u_writer writer;
-    c_iter list;
+    v_publisher vPublisher;
 
-    if (_this != NULL) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            list = _this->writers;
-            _this->writers = NULL;
-            /* Unlock here because following code will take this lock. */
-            u_entityUnlock(u_entity(_this));
-            writer = c_iterTakeFirst(list);
-            while (writer) {
-                result = u_writerFree(writer);
-                u_entityDereference(u_entity(_this));
-                writer = c_iterTakeFirst(list);
-            }
-            c_iterFree(list);
-        } else {
-            OS_REPORT_2(OS_ERROR,
-                        "u_publisherDeleteContainedEntities",0,
-                        "Lock Publisher 0x%x failed: result = %s.",
-                        _this, u_resultImage(result));
-        }
-    } else {
-        OS_REPORT_1(OS_ERROR,
-                    "u_publisherDeleteContainedEntities",0,
-                    "Illegal parameter: _this = 0x%x.",
-                    _this);
-        result = U_RESULT_ILL_PARAM;
+    assert(_this);
+    assert(qos);
+
+    result = u_publisherReadClaim(_this, &vPublisher, C_MM_RESERVATION_LOW);
+    if (result == U_RESULT_OK) {
+        result = u_resultFromKernel(v_publisherSetQos(vPublisher, qos));
+        u_publisherRelease(_this, C_MM_RESERVATION_LOW);
     }
-    return result;
-}
-
-u_result
-u_publisherDeinit(
-    u_publisher _this)
-{
-    u_result result;
-    u_writer writer;
-    c_iter list;
-
-    if (_this != NULL) {
-        result = u_participantRemovePublisher(_this->participant,_this);
-        if (result == U_RESULT_OK) {
-            _this->participant = NULL;
-            if (_this->writers) {
-                list = _this->writers;
-                _this->writers = NULL;
-                u_entityUnlock(u_entity(_this));
-                writer = c_iterTakeFirst(list);
-                while (writer) {
-                    /* No writer should exist!
-                     * This loop is correcting an erronous state.
-                     */
-                    result = u_writerFree(writer);
-                    u_entityDereference(u_entity(_this));
-                    writer = c_iterTakeFirst(list);
-                }
-                c_iterFree(list);
-                result = u_entityLock(u_entity(_this));
-            }
-            result = u_dispatcherDeinit(u_dispatcher(_this));
-        }
-    } else {
-        OS_REPORT_1(OS_ERROR,
-                    "u_publisherDeinit",0,
-                    "Illegal parameter: _this = 0x%x.",
-                    _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_publisherPublish(
-    u_publisher _this,
-    const c_char *partitionExpr)
-{
-    v_publisher kp;
-    u_result result;
-
-    result = u_entityWriteClaim(u_entity(_this),(v_entity*)(&kp));
-    if (result == U_RESULT_OK){
-        assert(kp);
-        v_publisherPublish(kp,partitionExpr);
-        result = u_entityRelease(u_entity(_this));
-        if (result != U_RESULT_OK) {
-            OS_REPORT_1(OS_ERROR,
-                        "u_publisherPublish", 0,
-                        "Release Publisher (0x%x) failed.",
-                        _this);
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_publisherPublish", 0,
-                    "Claim Publisher (0x%x) failed.",
-                    _this);
-    }
-    return result;
-}
-
-u_result
-u_publisherUnPublish(
-    u_publisher _this,
-    const c_char *partitionExpr)
-{
-    v_publisher kp;
-    u_result result;
-
-    result = u_entityReadClaim(u_entity(_this),(v_entity*)(&kp));
-    if (result == U_RESULT_OK){
-        assert(kp);
-        v_publisherUnPublish(kp,partitionExpr);
-        result = u_entityRelease(u_entity(_this));
-        if (result != U_RESULT_OK) {
-            OS_REPORT_1(OS_ERROR, "u_publisherUnPublish", 0,
-                        "Release Publisher (0x%x) failed.", _this);
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING, "u_publisherUnPublish", 0,
-                    "Claim Publisher (0x%x) failed.", _this);
-     }
     return result;
 }
 
 u_result
 u_publisherSuspend(
-    u_publisher _this)
+    const u_publisher _this)
 {
     v_publisher kp;
     u_result result;
 
-    result = u_entityReadClaim(u_entity(_this),(v_entity*)(&kp));
+    assert(_this);
+
+    result = u_publisherReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
     if (result == U_RESULT_OK){
         assert(kp);
         v_publisherSuspend(kp);
-        result = u_entityRelease(u_entity(_this));
-        if (result != U_RESULT_OK) {
-            OS_REPORT_1(OS_ERROR, "u_publisherSuspend", 0,
-                        "Release Publisher (0x%x) failed.", _this);
-        }
+        u_publisherRelease(_this, C_MM_RESERVATION_ZERO);
     } else {
-        OS_REPORT_1(OS_WARNING, "u_publisherSuspend", 0,
-                    "Claim Publisher (0x%x) failed.", _this);
+        OS_REPORT(OS_WARNING, "u_publisherSuspend", result,
+                    "Claim Publisher (0x%"PA_PRIxADDR") failed.", (os_address)_this);
      }
     return result;
 }
 
 u_result
 u_publisherResume(
-    u_publisher _this)
+    const u_publisher _this)
 {
     v_publisher kp;
     u_result result;
-    c_bool resumed;
+    u_bool resumed;
 
-    result = u_entityReadClaim(u_entity(_this),(v_entity*)(&kp));
+    assert(_this);
+
+    result = u_publisherReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
     if (result == U_RESULT_OK){
         assert(kp);
         resumed = v_publisherResume(kp);
-        result = u_entityRelease(u_entity(_this));
-        if (result != U_RESULT_OK) {
-            OS_REPORT_1(OS_ERROR, "u_publisherResume", 0,
-                        "Release Publisher (0x%x) failed.", _this);
-        }
+        u_publisherRelease(_this, C_MM_RESERVATION_ZERO);
         if (resumed == FALSE) {
             result = U_RESULT_PRECONDITION_NOT_MET;
-            OS_REPORT_1(OS_ERROR, "u_publisherResume", 0,
-                        "Resume Publisher (0x%x) failed.", _this);
+            OS_REPORT(OS_ERROR, "u_publisherResume", result,
+                        "Resume Publisher (0x%"PA_PRIxADDR") failed.", (os_address)_this);
         }
     } else {
-        OS_REPORT_1(OS_WARNING, "u_publisherResume", 0,
-                    "Claim Publisher (0x%x) failed.", _this);
+        OS_REPORT(OS_WARNING, "u_publisherResume", result,
+                    "Claim Publisher (0x%"PA_PRIxADDR") failed.", (os_address)_this);
     }
     return result;
 }
 
 u_result
 u_publisherCoherentBegin(
-    u_publisher _this)
+    const u_publisher _this)
 {
     v_publisher kp;
     u_result result;
 
-    result = u_entityReadClaim(u_entity(_this),(v_entity*)(&kp));
+    assert(_this);
+
+    result = u_publisherReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
     if (result == U_RESULT_OK){
         assert(kp);
-        v_publisherCoherentBegin(kp);
-        result = u_entityRelease(u_entity(_this));
-        if (result != U_RESULT_OK) {
-            OS_REPORT_1(OS_ERROR, "u_publisherCoherentBegin", 0,
-                        "Release Publisher (0x%x) failed.", _this);
-        }
+        result = u_resultFromKernel(v_publisherCoherentBegin(kp));
+        u_publisherRelease(_this, C_MM_RESERVATION_ZERO);
     } else {
-        OS_REPORT_1(OS_WARNING, "u_publisherCoherentBegin", 0,
-                    "Claim Publisher (0x%x) failed.", _this);
+        OS_REPORT(OS_WARNING, "u_publisherCoherentBegin", result,
+                    "Claim Publisher (0x%"PA_PRIxADDR") failed.", (os_address)_this);
     }
     return result;
 }
 
 u_result
 u_publisherCoherentEnd(
-    u_publisher _this)
+    const u_publisher _this)
 {
     v_publisher kp;
     u_result result;
 
-    result = u_entityReadClaim(u_entity(_this),(v_entity*)(&kp));
+    assert(_this);
+
+    result = u_publisherReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
     if (result == U_RESULT_OK){
         assert(kp);
-        v_publisherCoherentEnd(kp);
-        result = u_entityRelease(u_entity(_this));
-        if (result != U_RESULT_OK) {
-            OS_REPORT_1(OS_ERROR, "u_publisherCoherentEnd", 0,
-                        "Release Publisher (0x%x) failed.", _this);
-        }
+        result = u_resultFromKernel(v_publisherCoherentEnd(kp));
+        u_publisherRelease(_this, C_MM_RESERVATION_ZERO);
     } else {
-        OS_REPORT_1(OS_WARNING, "u_publisherCoherentEnd", 0,
-                    "Claim Publisher (0x%x) failed.", _this);
-    }
-    return result;
-}
-
-u_result
-u_publisherAddWriter(
-    u_publisher _this,
-    u_writer writer)
-{
-    u_result result;
-
-    if (writer) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            _this->writers = c_iterInsert(_this->writers, writer);
-            u_entityKeep(u_entity(_this));
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT_1(OS_WARNING,
-                      "u_publisherAddWriter",0,
-                      "Failed to lock Publisher: result = %s.",
-                      u_resultImage(result));
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_publisherAddWriter",0,
-                    "Given DataWriter (0x%x) is invalid.",
-                    writer);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_publisherRemoveWriter(
-    u_publisher _this,
-    u_writer writer)
-{
-    u_writer found;
-    u_result result;
-
-    if (writer) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            found = c_iterTake(_this->writers,writer);
-            if (found) {
-                u_entityDereference(u_entity(_this));
-            }
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_publisherRemoveWriter",0,
-                      "Failed to lock Publisher.");
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_publisherRemoveWriter",0,
-                    "Given DataWriter (0x%x) is invalid.",
-                    writer);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-c_bool
-u_publisherContainsWriter(
-    u_publisher _this,
-    u_writer writer)
-{
-    c_bool found = FALSE;
-    u_result result;
-
-    if (writer) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            found = c_iterContains(_this->writers,writer);
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_publisherContainsWriter",0,
-                      "Failed to lock Publisher.");
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_publisherContainsWriter",0,
-                    "Given DataWriter (0x%x) is invalid.",
-                    writer);
-    }
-    return found;
-}
-
-c_long
-u_publisherWriterCount(
-    u_publisher _this)
-{
-    c_long length = -1;
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        length = c_iterLength(_this->writers);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                  "u_publisherWriterCount",0,
-                  "Failed to lock Publisher: result = %s.",
-                  u_resultImage(result));
-    }
-    return length;
-}
-
-struct collect_writers_arg {
-    const c_char *topic_name;
-    c_iter writers;
-};
-
-static void
-collect_writers(
-    c_voidp object,
-    c_voidp arg)
-{
-    struct collect_writers_arg *a = (struct collect_writers_arg *)arg;
-    u_writer w = (u_writer)object;
-    c_char *name;
-
-    if (a->topic_name == NULL) {
-        /* topic_name == NULL is treated as wildcard '*' */
-        a->writers = c_iterInsert(a->writers, w);
-    } else {
-        name = u_writerTopicName(w);
-        if (strcmp(name, a->topic_name) == 0)
-        {
-            a->writers = c_iterInsert(a->writers, w);
-        }
-        if (name != NULL) {
-            os_free(name);
-        }
-    }
-}
-
-c_iter
-u_publisherLookupWriters(
-    u_publisher _this,
-    const c_char *topic_name)
-{
-    struct collect_writers_arg arg;
-    u_result result;
-
-    /* topic_name == NULL is treated as wildcard '*' */
-    arg.topic_name = topic_name;
-    arg.writers = NULL;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        c_iterWalk(_this->writers, collect_writers, &arg);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                  "u_publisherLookupWriters",0,
-                  "Failed to lock Publisher: result = %s.",
-                  u_resultImage(result));
-    }
-    return arg.writers;
-}
-
-u_result
-u_publisherWalkWriters(
-    u_publisher _this,
-    u_writerAction action,
-    c_voidp actionArg)
-{
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        c_iterWalkUntil(_this->writers,
-                        (c_iterAction)action,
-                        actionArg);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                  "u_publisherWalkWriters",0,
-                  "Failed to lock Publisher: result = %s.",
-                  u_resultImage(result));
+        OS_REPORT(OS_WARNING, "u_publisherCoherentEnd", result,
+                    "Claim Publisher (0x%"PA_PRIxADDR") failed.", (os_address)_this);
     }
     return result;
 }

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.data;
@@ -211,11 +219,10 @@ public class UserData {
         }
 
         if(subType instanceof MetaCollection){
-            String actualName;
 
             if((size == 0) && (subTypeIsString)){ //unbounded sequence with unbounded strings
                 Iterator<String> iter = data.keySet().iterator();
-                StringBuffer buf = new StringBuffer(value);
+                StringBuilder buf = new StringBuilder(value);
                 while(iter.hasNext()){
                     fieldName = iter.next();
 
@@ -235,23 +242,32 @@ public class UserData {
             }
             else{
                 int index;
-                StringBuffer buf = new StringBuffer(value);
+                StringBuilder buf = new StringBuilder(value);
+                StringBuilder actualName = new StringBuilder();
+                if (size == 0 || typeName.startsWith("C_SEQUENCE<")) {
+                    size = getCollectionRealSize(name);
+                }
                 for(int i=0; i<size; i++){
-                    index = name.indexOf('[');
+                    index = name.indexOf('[', name.lastIndexOf('.'));
 
+                    actualName.setLength(0);
                     if(index != -1){
-                        actualName = name.substring(0, index) + "[" + i + "]" +
-                                name.substring(index);
+                        actualName.append(name.substring(0, index));
+                        actualName.append("[");
+                        actualName.append(i);
+                        actualName.append("]");
+                        actualName.append(name.substring(index));
                     } else {
-                        actualName = name + "[" + i + "]";
+                        actualName.append(name);
+                        actualName.append("[");
+                        actualName.append(i);
+                        actualName.append("]");
                     }
 
-                    if(i == (size - 1)){ //last, no comma before, no comma after
-                        buf.append(this.getCollectionFieldValue((MetaCollection) subType, actualName));
+                    if(i != 0) {
+                        buf.append(",");
                     }
-                    else{//otherwise; comma after
-                        buf.append(this.getCollectionFieldValue((MetaCollection) subType, actualName) + ",");
-                    }
+                    buf.append(this.getCollectionFieldValue((MetaCollection) subType, actualName.toString()));
                 }
                 value = buf.toString();
             }
@@ -274,50 +290,62 @@ public class UserData {
              * fieldName, if these also match. The field value must be added to
              * the result.
              */
-            Iterator<String> iter = data.keySet().iterator();
-            int index;
-            String fieldNameStripped, nameStripped, fieldNameHooks, nameHooks;
+            /* First, just hope that the given name is actually a full key. */
+            String found = data.get(name);
+            if (found != null) {
+                StringBuilder buf = new StringBuilder(value);
+                buf.append(found);
+                value = buf.toString();
+            } else {
+                /* No full key given, do the slow elaborate search for
+                 * possibly multiple elements. */
+                Iterator<String> iter = data.keySet().iterator();
+                int index;
+                String fieldNameStripped, nameStripped, fieldNameHooks, nameHooks;
 
 
-            index = name.indexOf("[");
-
-            if(index != -1){
-                nameStripped = name.substring(0, index);
-                nameHooks = name.substring(index);
-            }
-            else{
-                nameStripped = name;
-                nameHooks = null;
-            }
-            StringBuffer buf = new StringBuffer(value);
-            while(iter.hasNext()){
-                fieldName = iter.next();
-                index = fieldName.indexOf("[");
+                index = name.indexOf("[", name.lastIndexOf("."));
 
                 if(index != -1){
-                    fieldNameStripped = fieldName.substring(0, index);
-                    fieldNameHooks = fieldName.substring(index);
+                    nameStripped = name.substring(0, index);
+                    nameHooks = name.substring(index);
                 }
                 else{
-                    fieldNameStripped = fieldName;
-                    fieldNameHooks = null;
+                    nameStripped = name;
+                    nameHooks = null;
                 }
+                StringBuilder buf = new StringBuilder(value);
 
-                if( fieldNameStripped.equals(nameStripped)){
-                    if ((fieldNameHooks == null) || (nameHooks == null) ||
-                            (fieldNameHooks.endsWith(nameHooks))){
+                while(iter.hasNext()){
+                    fieldName = iter.next();
+                    index = fieldName.indexOf("[", nameStripped.length());
 
-                        if(first){
-                            buf.append(data.get(fieldName));
-                            first = false;
-                        }
-                        else{
-                            buf.append("," + data.get(fieldName));
+                    if(index != -1){
+                        fieldNameStripped = fieldName.substring(0, index);
+                        fieldNameHooks = fieldName.substring(index);
+                    }
+                    else{
+                        fieldNameStripped = fieldName;
+                        fieldNameHooks = null;
+                    }
+
+                    if( fieldNameStripped.equals(nameStripped)){
+                        if ((fieldNameHooks == null) || (nameHooks == null) ||
+                                (fieldNameHooks.endsWith(nameHooks))){
+
+                            if(first){
+                                buf.append(data.get(fieldName));
+                                first = false;
+                            }
+                            else{
+                                buf.append(",");
+                                buf.append(data.get(fieldName));
+                            }
                         }
                     }
                 }
+                value = buf.toString();
             }
-            value = buf.toString();
         }
 
         if(!typeIsString){
@@ -332,6 +360,29 @@ public class UserData {
         }
 
         return value;
+    }
+
+    public int getCollectionRealSize(String colName) {
+        String nameBeforeIndex = "";
+        String nameAfterIndex = "";
+        int index = colName.indexOf('[', colName.lastIndexOf('.'));
+        if (index != -1) {
+            nameBeforeIndex = colName.substring(0, index).replace("[", "\\[").replace("]", "\\]");
+            nameAfterIndex = colName.substring(index).replace("[", "\\[").replace("]", "\\]");
+        } else {
+            nameBeforeIndex = colName.replace("[", "\\[").replace("]", "\\]");
+        }
+
+        int size = 0;
+        // Iterate through the user data to ascertain the actual size of this sequence
+        Iterator<String> iter = data.keySet().iterator();
+        while (iter.hasNext()) {
+            String field = iter.next();
+            if (field.matches(nameBeforeIndex + "(\\[\\d*\\])*\\[" + size + "\\]" + nameAfterIndex + "(|\\..*)")) {
+                size++;
+            }
+        }
+        return size;
     }
 
     /**

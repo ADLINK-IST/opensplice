@@ -1,0 +1,834 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Topic API Overview &mdash; Vortex OpenSplice Record and Replay API Reference</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Vortex OpenSplice Record and Replay API Reference" href="index.html" />
+    <link rel="next" title="5. Known Issues" href="issues.html" />
+    <link rel="prev" title="3. Scenarios" href="scenarios.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="issues.html" title="5. Known Issues"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="scenarios.html" title="3. Scenarios"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="topic-api-overview">
+<span id="id1"></span><h1>4. Topic API Overview<a class="headerlink" href="#topic-api-overview" title="Permalink to this headline">¶</a></h1>
+<p><em>The RnR Service can be controlled and monitored using a DDS topic API.
+All topics are in a separate DDS partition called</em> <tt class="docutils literal"><span class="pre">RecordAndReplay</span></tt>.</p>
+<div class="section" id="record-replay-topics">
+<h2>4.1. Record &amp; Replay topics<a class="headerlink" href="#record-replay-topics" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="30%" />
+<col width="32%" />
+<col width="38%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Type</th>
+<th class="head">Purpose</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">rr_scenario</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">RnR::Command</span></tt></td>
+<td>Controlling the Record and
+Replay service</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">rr_scenario_v2</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">RnR_V2::Command</span></tt></td>
+<td>Controlling the Record and
+Replay service (version 2)</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">rr_scenarioStatus</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">RnR::ScenarioStatus</span></tt></td>
+<td>Monitoring status of scenarios</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">rr_serviceStatus</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">RnR::ServiceStatus</span></tt></td>
+<td>Monitoring status of services</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">rr_storageStatus</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">RnR::StorageStatus</span></tt></td>
+<td>Monitoring status of storages</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">rr_storageStatistics</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">RnR::StorageStatistics</span></tt></td>
+<td>Monitoring data-characteristics
+of storages</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="relevant-qos-settings">
+<h2>4.2. Relevant QoS settings<a class="headerlink" href="#relevant-qos-settings" title="Permalink to this headline">¶</a></h2>
+<p>The following table shows the topic QoS parameters that deviate from
+the default DDS topic QoS, for the topics used by the Record and
+Replay Service.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="44%" />
+<col width="19%" />
+<col width="38%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Policy</th>
+<th class="head">Scenario
+Topic</th>
+<th class="head">Status + Statistics Topics</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">DurabilityQosPolicy</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">PERSISTENT</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">TRANSIENT</span></tt></td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">DurabilityServiceQosPolicy</span> <span class="pre">=&gt;</span></tt>
+<tt class="docutils literal"><span class="pre">HistoryQosPolicy</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">KEEP_ALL</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">KEEP_LAST</span> <span class="pre">(with</span> <span class="pre">DEPTH=1)</span></tt></td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">ReliabilityQosPolicy</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">RELIABLE</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">RELIABLE</span></tt></td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">HistoryQosPolicy</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">KEEP_ALL</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">KEEP_LAST</span> <span class="pre">(with</span> <span class="pre">DEPTH=1)</span></tt></td>
+</tr>
+</tbody>
+</table>
+<p>This enables readers and writers to use the <tt class="docutils literal"><span class="pre">copy_from_topic_qos()</span></tt> operations
+or the <tt class="docutils literal"><span class="pre">USE_TOPIC_QOS</span></tt> convenience macro to create a reader or writer that is
+compatible with the topics created by the service. Furthermore the status topic
+writers use a <tt class="docutils literal"><span class="pre">KEEP_ALL</span></tt> history QoS so readers can get a full overview of all status
+updates instead of only the last state. The scenario readers are created with a
+<tt class="docutils literal"><span class="pre">VOLATILE</span></tt> durability so they are also able to read samples produced by a <tt class="docutils literal"><span class="pre">VOLATILE</span></tt>
+writer in addition to <tt class="docutils literal"><span class="pre">TRANSIENT</span></tt> and <tt class="docutils literal"><span class="pre">PERSISTENT</span></tt> writers.</p>
+<p>The corresponding IDL code can be found in the
+<a class="reference internal" href="appendixab.html#appendix-a"><em>RnR Topic API specification</em></a>.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>Note that the IDL and diagrams in this section describe the <em>full</em> API.
+The other sections of this manual describe <em>only</em> the features that have
+been implemented in the current release of the RnR Service, and omit
+all members that will be implemented in future releases.</dd>
+</dl>
+</div>
+<div class="section" id="command-type">
+<h2>4.3. Command Type<a class="headerlink" href="#command-type" title="Permalink to this headline">¶</a></h2>
+<p class="centered" id="command-topic">
+<strong><strong>Command Topic</strong></strong></p><a class="reference internal image-reference" href="_images/01_command_topic.png"><img alt="Command Topic" class="align-center" src="_images/01_command_topic.png" style="width: 150mm;" /></a>
+<p>The command type, used by the <tt class="docutils literal"><span class="pre">rr_scenario</span></tt> and <tt class="docutils literal"><span class="pre">rr_scenario_v2</span></tt> topics,
+contains a union that allows the command kind to be set. Depending on the
+command kind, certain members are available that apply only to a specific
+type of command.</p>
+<p>The following command kinds can be set when creating a command:</p>
+<dl class="docutils">
+<dt><strong>START_SCENARIO_COMMAND</strong></dt>
+<dd>Start a scenario (or continue a paused scenario).</dd>
+<dt><strong>STOP_SCENARIO_COMMAND</strong></dt>
+<dd>Stop a running scenario.</dd>
+<dt><strong>SUSPEND_SCENARIO_COMMAND</strong></dt>
+<dd>Suspend processing of new commands in a running scenario.</dd>
+<dt><strong>CONFIG_COMMAND</strong></dt>
+<dd>Modify the runtime configuration of a RnR service.</dd>
+<dt><strong>SETREPLAYSPEED_COMMAND</strong></dt>
+<dd>Change the replay-speed of a storage.</dd>
+<dt><strong>TRUNCATE_COMMAND</strong></dt>
+<dd>Remove data from a storage.</dd>
+<dt><strong>ADD_RECORD_COMMAND</strong></dt>
+<dd>Specify interest to record data to a storage.</dd>
+<dt><strong>REMOVE_RECORD_COMMAND</strong></dt>
+<dd>Remove record-interest from a storage.</dd>
+<dt><strong>ADD_REPLAY_COMMAND</strong></dt>
+<dd>Specify interest to replay data from a storage.</dd>
+<dt><strong>REMOVE_REPLAY_COMMAND</strong></dt>
+<dd>Remove replay-interest from a storage.</dd>
+</dl>
+<p>There are a number of common properties that are shared by all commands:</p>
+<dl class="docutils">
+<dt><strong>rnrId</strong></dt>
+<dd>The <tt class="docutils literal"><span class="pre">rnrId</span></tt> is used to address the command to a specific RnR service.
+It should match the name attribute of the service tag in the OpenSplice
+configuration. The middleware uses this identifier to resolve the configuration
+options that apply to the service. A RnR service only accepts commands with an
+rnrId that matches its service-name. An asterisk <tt class="docutils literal"><span class="pre">*</span></tt> can be used as rnrId for
+commands targeted at all available RnR services in a domain.</dd>
+<dt><strong>scenarioName</strong></dt>
+<dd>The <tt class="docutils literal"><span class="pre">scenarioName</span></tt> is the key of the scenario topic.
+It is used to uniquely identify a specific scenario instance of which
+all samples (commands) together make up the scenario. For more
+information about scenarios, please see
+<a class="reference internal" href="scenarios.html#scenarios"><em>the section on Scenarios</em></a>.</dd>
+<dt><strong>conditions</strong></dt>
+<dd><p class="first">Optionally one or more conditions can be attached to a command.
+The command is only processed when <em>all</em> conditions are met.</p>
+<p class="last"><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Currently only one kind of condition is supported: the
+time-stamp condition. Future extensions will add other kinds
+of conditions which is the reason why the API supports attaching
+multiple conditions to a command.</p>
+</dd>
+</dl>
+<div class="section" id="control-commands">
+<h3>4.3.1. Control commands<a class="headerlink" href="#control-commands" title="Permalink to this headline">¶</a></h3>
+<p>Some kinds of commands are used to control the running state of a
+scenario: the <em>start</em>, <em>stop</em> and <em>suspend</em> commands.</p>
+<p>These all have a single member.</p>
+<dl class="docutils">
+<dt><strong>name</strong></dt>
+<dd><p class="first">The name of the target scenario to control.</p>
+<p class="last"><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Do not confuse this with <tt class="docutils literal"><span class="pre">scenarioName</span></tt>, which is the name
+of the scenario that will process the command.</p>
+</dd>
+<dt><strong>START_SCENARIO_COMMAND</strong></dt>
+<dd>Instructs the service to start processing scenario name.
+The service will publish a status update that changes the state
+of the scenario to <tt class="docutils literal"><span class="pre">RUNNING</span></tt>. If the target scenario is already
+known to the service, and is in the suspended state, a start
+command causes the scenario to resume processing commands,
+changing the scenario status from <tt class="docutils literal"><span class="pre">PAUSED</span></tt> to <tt class="docutils literal"><span class="pre">RUNNING</span></tt>.</dd>
+<dt><strong>SUSPEND_SCENARIO_COMMAND</strong></dt>
+<dd>Suspends the processing of commands by the scenario.
+This allows applications to submit a number of commands to
+a scenario, without any immediate effects. When the scenario
+is resumed all new commands are processed as if they were
+published in a batch while in reality they may have been
+published with varying intervals.</dd>
+<dt><strong>STOP_SCENARIO_COMMAND</strong></dt>
+<dd>Stops the execution of a scenario, including any recording
+and/or replaying that was defined as part of that scenario.</dd>
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>It is important to understand that a scenario, once stopped,
+cannot be started again. However, it is possible to start a new
+scenario with the same name as the stopped scenario. If any
+commands of the original scenario were published as transient data
+they will be delivered to and processed by the new scenario,
+giving the impression that the scenario has been re-started.</dd>
+</dl>
+</div>
+<div class="section" id="config-command">
+<h3>4.3.2. Config command<a class="headerlink" href="#config-command" title="Permalink to this headline">¶</a></h3>
+<p><tt class="docutils literal"><span class="pre">Config</span></tt> commands are used to modify the runtime configuration of a RnR service.</p>
+<dl class="docutils">
+<dt><strong>config</strong></dt>
+<dd>A sequence of <tt class="docutils literal"><span class="pre">KeyValue</span></tt> objects.</dd>
+</dl>
+<p>A <tt class="docutils literal"><span class="pre">config</span></tt> command can be used to add a storage to the service or modify
+properties of an existing storage. Storages can also be configured in the OpenSplice
+configuration file, but <tt class="docutils literal"><span class="pre">config</span></tt> commands provide the opportunity to create and
+configure storages dynamically.</p>
+<p>A single <tt class="docutils literal"><span class="pre">config</span></tt> command can apply to multiple storages, if the <tt class="docutils literal"><span class="pre">config</span></tt>
+sequence consists of multiple elements. The key of the <tt class="docutils literal"><span class="pre">KeyValue</span></tt> object
+should always be <tt class="docutils literal"><span class="pre">Storage</span></tt>.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>Currently, only storages can be manipulated by <tt class="docutils literal"><span class="pre">config</span></tt> commands
+but future versions may enable <tt class="docutils literal"><span class="pre">config</span></tt> commands to modify other
+aspects of the service, using different keys.</dd>
+</dl>
+<p>The value for Storage configuration data is a string describing the storage
+in XML notation. The format of this XML string is identical to the XML used
+in the configuration file (created by the OpenSplice configuration tool).</p>
+<p>An example:</p>
+<div class="highlight-python"><div class="highlight"><pre>command {
+ scenarioName = “MyScenario”,
+ rnrId = “MyService”,
+ conditions = NULL,
+ kind = CONFIG_COMMAND,
+ config[0].keyval = “Storage”,
+ config[0].sValue = “&lt;Storage name=&#39;MyStorage&#39;&gt;
+                       &lt;rr_storageAttrXML&gt;
+                          &lt;filename&gt;my-storage.dat&lt;/filename&gt;
+                       &lt;/rr_storageAttrXML&gt;
+                       &lt;Statistics enabled=”true” publish_interval=”30”/&gt;
+                     &lt;/Storage&gt;”
+ };
+</pre></div>
+</div>
+<p>When a <tt class="docutils literal"><span class="pre">config</span></tt> command is issued for an existing storage, the storage
+properties are modified accordingly.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that storage attributes can only be changed when a storage
+is unused: it cannot be in the <tt class="docutils literal"><span class="pre">OPEN</span></tt> state (see <a class="reference internal" href="#storage-status">Storage Status</a>).
+Properties related to statistics can be modified while the storage
+is in use.</dd>
+</dl>
+</div>
+<div class="section" id="add-record-command">
+<h3>4.3.3. ADD_RECORD_COMMAND<a class="headerlink" href="#add-record-command" title="Permalink to this headline">¶</a></h3>
+<p>This command is used to add interest to record certain DDS data.</p>
+<p><em>Mandatory properties:</em></p>
+<dl class="docutils">
+<dt><strong>storage</strong></dt>
+<dd><p class="first">The name of the storage in which the data has to be stored.
+If the storage cannot be resolved the command is ignored.</p>
+<p class="last">Available storages can be determined by subscribing to
+the <tt class="docutils literal"><span class="pre">StorageStatus</span></tt> topic.</p>
+</dd>
+<dt><strong>interestExpr</strong></dt>
+<dd>A sequence of strings that describe the record interest.
+Each expression is a partition-topic combination where the
+partition- and topic-expression are separated by a period (<tt class="docutils literal"><span class="pre">‘.’</span></tt>).
+Wildcards are supported: <tt class="docutils literal"><span class="pre">‘?’</span></tt> to match a single character and
+<tt class="docutils literal"><span class="pre">‘*’</span></tt> to match any number of characters. If expressions
+overlap, even if only partially, data will only be recorded once.</dd>
+</dl>
+</div>
+<div class="section" id="remove-record-command">
+<h3>4.3.4. REMOVE_RECORD_COMMAND<a class="headerlink" href="#remove-record-command" title="Permalink to this headline">¶</a></h3>
+<p>This command mirrors the add record command and is used to remove record
+interest from a storage.</p>
+<p><em>Mandatory properties:</em></p>
+<dl class="docutils">
+<dt><strong>storage</strong></dt>
+<dd>The name of the storage of which record-interest is removed.</dd>
+<dt><strong>interestExpr</strong></dt>
+<dd><p class="first">The interest expressions describing the record interest to remove.</p>
+<p class="last"><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Note that these interest expressions need to match those used
+previously in an <em>add record</em> command.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="add-replay-command">
+<h3>4.3.5. ADD_REPLAY_COMMAND<a class="headerlink" href="#add-replay-command" title="Permalink to this headline">¶</a></h3>
+<p>This command is similar to a record command but adds interest to replay
+data to the Record and Replay service.</p>
+<p><em>Mandatory properties:</em></p>
+<dl class="docutils">
+<dt><strong>storage</strong></dt>
+<dd><p class="first">The name of the storage from which the data will be replayed.
+If the storage cannot be resolved the command is ignored.</p>
+<p class="last">Available storages can be determined by subscribing to
+the <tt class="docutils literal"><span class="pre">StorageStatus</span></tt> topic.</p>
+</dd>
+<dt><strong>interestExpr</strong></dt>
+<dd>A sequence of strings that describe the replay interest.
+Each expression is a partition-topic combination where the
+partition- and topic-expression are separated by a period (<tt class="docutils literal"><span class="pre">‘.’</span></tt>).
+Wildcards are supported: <tt class="docutils literal"><span class="pre">‘?’</span></tt> to match a single character and
+<tt class="docutils literal"><span class="pre">‘*’</span></tt> to match any number of characters. If expressions
+overlap, even if only partially, data will only be recorded once.</dd>
+</dl>
+<p><em>Optional properties:</em></p>
+<dl class="docutils">
+<dt><strong>timeExpr</strong></dt>
+<dd>A sequence of time-ranges that are used in combination with
+the interest expressions to select a subset of data available
+in a storage for replay.
+Each time-range in the sequence is applied to each interest
+expression. A sample read from a storage is only replayed if
+its partition and topic can be matched against
+the interest expressions and its record-time can be matched
+against the time-range expressions. The time-range expressions
+are optional; when they are omitted a sample is replayed when
+an interest expression matches. For more information about
+time-ranges, see the description of the <a class="reference internal" href="#timerange">TimeRange</a> type.</dd>
+<dt><strong>useOriginalTimestamps</strong></dt>
+<dd>By default this value is <tt class="docutils literal"><span class="pre">true</span></tt>.
+When a sample is recorded, its original write and allocation
+timestamps are preserved. When this sample is replayed, it will
+be delivered to readers with these original timestamps. Depending
+on resource limits and QoS settings, readers may discard the
+replayed data if data with more recent timestamps is available.
+By setting <tt class="docutils literal"><span class="pre">useOriginalTimestamps</span></tt> to <tt class="docutils literal"><span class="pre">false</span></tt>, the timestamps
+will be updated with the current time upon replay.</dd>
+<dt><strong>skipToFirstSample</strong></dt>
+<dd>By default this value is <tt class="docutils literal"><span class="pre">false</span></tt>.
+When a sample matches interest expressions but doesn’t match any
+of the supplied time-ranges, the Record and Replay service tries
+to mimic original timing behaviour by sleeping until the next
+sample is evaluated based on record timestamps.
+Sometimes this is not the required behavior and the service should
+simply skip all non-matching samples and start replaying immediately
+the first sample that matches an interest expression and time-range.
+This behaviour can be enabled by setting <tt class="docutils literal"><span class="pre">skipToFirstSample</span></tt>
+to <tt class="docutils literal"><span class="pre">true</span></tt>.</dd>
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><strong>The following property is only available in
+version 2 of the RnR scenario topic.</strong></dd>
+<dt><strong>transformations</strong></dt>
+<dd><p class="first">A sequence of transformations, applied to each sample upon replay.
+By default, no transformations are applied. Note that samples first
+have to match interest-expression and time-range before any
+transformations are evaluated. The transformations sequence consists
+of <tt class="docutils literal"><span class="pre">KeyValue</span></tt> elements. A specific type of transformation is selected
+by choosing a specific key. Multiple transformations of the same kind
+can be used in the same sequence. The value is a string describing the
+new value. The transformation can be applied conditionally by using
+a <tt class="docutils literal"><span class="pre">‘:’</span></tt> (colon) character to separate original and replacement values
+in the value-string. Note that the original value needs to be an exact
+match, wildcards or expressions are not supported. The supported
+transformations types are listed in the table.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="34%" />
+<col width="66%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Key</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">partition</span></tt></td>
+<td>Partition in which the sample is replayed</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">deadline_period</span></tt></td>
+<td>Deadline QoS policy</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">latency_period</span></tt></td>
+<td>Latency budget QoS policy</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">ownership_strength</span></tt></td>
+<td>Ownership strength QoS policy (applies only
+to samples written with exclusive
+ownership-kind QoS policy)</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">transport_priority</span></tt></td>
+<td>Transport priority QoS policy</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">lifespan_period</span></tt></td>
+<td>Lifespan QoS policy</td>
+</tr>
+</tbody>
+</table>
+<p class="last">Transformations that involve a period can be expressed in either
+DDS-compliant duration (<em>sec.nanosec</em>) or more human-friendly
+floating-point (<em>sec.millis</em>) formats. Floating-point values are
+interpreted locale-independent, using a period <tt class="docutils literal"><span class="pre">‘.’</span></tt> (decimal
+point) character. Partition transformations are supported for
+partition names consisting of alphanumeric and special
+characters <tt class="docutils literal"><span class="pre">‘-’</span></tt>, <tt class="docutils literal"><span class="pre">‘/’</span></tt> and <tt class="docutils literal"><span class="pre">‘_’</span></tt>.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="remove-replay-command">
+<h3>4.3.6. REMOVE_REPLAY_COMMAND<a class="headerlink" href="#remove-replay-command" title="Permalink to this headline">¶</a></h3>
+<p>This command mirrors the <a class="reference internal" href="#add-replay-command">ADD_REPLAY_COMMAND</a>, except for the properties
+<tt class="docutils literal"><span class="pre">useOriginalTimestamps</span></tt> and <tt class="docutils literal"><span class="pre">skipToFirstSample</span></tt>, which change the replay
+behaviour and are not applicable to the <em>remove replay</em> command.</p>
+<p>The command is used to remove replay interest from a storage.
+Mandatory members of the <em>add replay</em> command are also mandatory in the
+remove replay command.</p>
+<p><em>Mandatory properties:</em></p>
+<dl class="docutils">
+<dt><strong>storage</strong></dt>
+<dd>The name of the storage which replay-interest is removed from.</dd>
+<dt><strong>interestExpr</strong></dt>
+<dd><p class="first">The interest expressions describing the replay interest to remove.</p>
+<p class="last"><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Note that these interest expressions need to match those used
+previously in an <em>add replay</em> command.</p>
+</dd>
+</dl>
+<p><em>Optional properties:</em></p>
+<dl class="docutils">
+<dt><strong>timeExpr</strong></dt>
+<dd>The sequence of time ranges to remove.
+Similar to the <em>add replay</em> command. If this parameter is
+specified, only the interest that exactly matches
+the time ranges is removed. As a shortcut, if the time range
+sequence is empty, any interest that matches the interest expressions
+in the <em>remove replay</em> command is removed regardless of the time ranges
+attached to that interest.</dd>
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><strong>The following property is only available in
+version 2 of the RnR scenario topic.</strong></dd>
+<dt><strong>transformations</strong></dt>
+<dd>A sequence of transformations to remove.
+If any replay interest is to be removed completely, this
+sequence should match exactly the sequence included in
+<em>add replay</em> command(s) responsible for adding the interest.
+For more details about the contents of the <tt class="docutils literal"><span class="pre">KeyValue</span></tt>
+sequence elements, please see the <a class="reference internal" href="#add-replay-command">ADD_REPLAY_COMMAND</a>.</dd>
+</dl>
+</div>
+<div class="section" id="truncate-command">
+<h3>4.3.7. TRUNCATE_COMMAND<a class="headerlink" href="#truncate-command" title="Permalink to this headline">¶</a></h3>
+<p>This command can be used to clear a storage. When recording samples to an
+existing storage, by defauilt the data is appended. If instead the required
+behaviour  is to <em>overwrite</em> the storage, the truncate command can be used
+to remove the data recorded to the storage during previous sessions.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that the truncate command can only be executed if the storage
+isn’t busy recording and/or replaying data. Thus is may be required
+to first publish <em>remove record/replay</em> commands, in order to remove
+all interest from a storage so that it gets closed by the RnR service,
+before the truncate command can be succesfully processed. The
+<tt class="docutils literal"><span class="pre">StorageStatus</span></tt> topic should be monitored to determine if this
+is the case.</dd>
+</dl>
+</div>
+<div class="section" id="setreplayspeed-command">
+<h3>4.3.8. SETREPLAYSPEED_COMMAND<a class="headerlink" href="#setreplayspeed-command" title="Permalink to this headline">¶</a></h3>
+<p>Using this command the replay speed of a storage can be manipulated. The replay
+speed affects the delay between replayed samples. For example, a replay speed
+of <tt class="docutils literal"><span class="pre">2</span></tt> will cut the delay in half: samples will be replayed twice as fast
+as originally recorded.</p>
+<p><em>Mandatory properties:</em></p>
+<dl class="docutils">
+<dt><strong>storage</strong></dt>
+<dd>The name of the storage of which to change the replay speed.
+If the storage cannot be resolved the command is ignored.</dd>
+<dt><strong>speed</strong></dt>
+<dd><p class="first">A floating-point value containing the new replay-speed.
+The following values have a special meaning:</p>
+<p><tt class="docutils literal"><span class="pre">-1</span></tt>: <em>Maximum speed</em>; delays between samples are skipped
+and the samples from the storage are inserted into DDS as
+fast as possible.</p>
+<p><tt class="docutils literal"><span class="pre">1</span></tt> : Replay samples with the <em>same</em> timing characteristics as
+when originally recorded.</p>
+<p><tt class="docutils literal"><span class="pre">0</span></tt> : <em>Pause the storage</em>; no samples are replayed until
+the speed is increased.</p>
+<p class="last">The default replay speed is <tt class="docutils literal"><span class="pre">1</span></tt> (samples are replayed with
+the same timing characteristics as when originally recorded).</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="status-types">
+<h2>4.4. Status Types<a class="headerlink" href="#status-types" title="Permalink to this headline">¶</a></h2>
+<p>To monitor the status of various components of the service, applications can take a
+subscription on the status topics published by the Record and Replay service.</p>
+<p class="centered" id="status-topics">
+<strong><strong>Status Topics</strong></strong></p><a class="reference internal image-reference" href="_images/02_status_topics.png"><img alt="Status Topics" class="align-center" src="_images/02_status_topics.png" style="width: 150mm;" /></a>
+<p>Status topics are state-based, meaning that they are only published when a state
+changes. Readers normally only need to read the latest sample of an instance to get
+the latest (current) state. However, a reader can also be created with a <tt class="docutils literal"><span class="pre">KEEP_ALL</span></tt>
+history if it needs to be aware of all states even when state changes occur in quick
+succession.</p>
+<div class="section" id="service-status">
+<h3>4.4.1. Service Status<a class="headerlink" href="#service-status" title="Permalink to this headline">¶</a></h3>
+<p>Each Record and Replay service publishes its own state in the <tt class="docutils literal"><span class="pre">rr_serviceStatus</span></tt>
+topic. The topic uses the <tt class="docutils literal"><span class="pre">ServiceStatus</span></tt> type, which has the following members:</p>
+<dl class="docutils">
+<dt><strong>rnrId</strong></dt>
+<dd>The name identifying the service.
+This is also the key of the topic. The <tt class="docutils literal"><span class="pre">rnrId</span></tt> can be used to identify
+the service responsible for publishing the status update.</dd>
+<dt><strong>state</strong></dt>
+<dd><p class="first">The current state of the service.
+The following states are possible:</p>
+<p><tt class="docutils literal"><span class="pre">INITIALISING</span></tt>: The service is started and initialising,
+but not yet able to process commands.
+During initialization the service processes configuration
+parameters and joins the DDS domain.</p>
+<p><tt class="docutils literal"><span class="pre">OPERATIONAL</span></tt>: The service is successfully initialized
+and ready to accept commands.</p>
+<p><tt class="docutils literal"><span class="pre">TERMINATING</span></tt>: The service is shutting down.</p>
+<p class="last"><tt class="docutils literal"><span class="pre">TERMINATED</span></tt>: The service is detached from the DDS domain
+and stopped.</p>
+</dd>
+</dl>
+<p>The service status topic reflects the life-cycle of a Record and
+Replay service. It is published when the <tt class="docutils literal"><span class="pre">state</span></tt> field changes,
+which normally occurs only during service startup or shutdown
+(<em>i.e.</em> when OpenSplice is started or stopped).</p>
+</div>
+<div class="section" id="scenario-status">
+<h3>4.4.2. Scenario Status<a class="headerlink" href="#scenario-status" title="Permalink to this headline">¶</a></h3>
+<p>The service publishes the state of each known scenario in the
+<tt class="docutils literal"><span class="pre">rr_scenarioStatus</span></tt> topic. This topic, using the <tt class="docutils literal"><span class="pre">ScenarioStatus</span></tt>
+type, contains the following members:</p>
+<dl class="docutils">
+<dt><strong>rnrId</strong></dt>
+<dd>The name identifying the service.</dd>
+<dt><strong>scenarioName</strong></dt>
+<dd>The name identifying a scenario.</dd>
+</dl>
+<p>The <tt class="docutils literal"><span class="pre">scenarioName</span></tt> combined with the <tt class="docutils literal"><span class="pre">rnrId</span></tt> define an instance of
+the scenario status topic, so each update can be related to the service
+and scenario responsible for that status.</p>
+<dl class="docutils">
+<dt><strong>state</strong></dt>
+<dd><p class="first">The current state of the scenario.
+The following states are possible:</p>
+<p><tt class="docutils literal"><span class="pre">RUNNING</span></tt>: The scenario is running and actively processing commands.</p>
+<p><tt class="docutils literal"><span class="pre">SUSPENDED</span></tt>: A scenario enters the suspended state after a
+suspend-scenario command is processed for the scenario. While suspended,
+the scenario doesn’t process any new commands.</p>
+<p class="last"><tt class="docutils literal"><span class="pre">STOPPED</span></tt>: The scenario was stopped and removed from the service.</p>
+</dd>
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>Note that, until a scenario is <em>started</em>, a service is unaware of its
+existence. There may be commands belonging to the scenario, maintained
+by OpenSplice (in persistent or transient stores), but a scenario status
+isn’t published until the state of a scenario within a service is changed
+to <tt class="docutils literal"><span class="pre">RUNNING</span></tt> by issuing a start-scenario command for that scenario to
+a specific service.</dd>
+</dl>
+</div>
+<div class="section" id="storage-status">
+<h3>4.4.3. Storage Status<a class="headerlink" href="#storage-status" title="Permalink to this headline">¶</a></h3>
+<p>The service publishes the state of each known storage in the
+<tt class="docutils literal"><span class="pre">rr_storageStatus</span></tt> topic. This topic, using the <tt class="docutils literal"><span class="pre">StorageStatus</span></tt>
+type, contains the following members:</p>
+<dl class="docutils">
+<dt><strong>rnrId</strong></dt>
+<dd>The name identifying the service.
+This is a key of the topic.</dd>
+<dt><strong>storageName</strong></dt>
+<dd>The name identifying a storage.</dd>
+</dl>
+<p>The <tt class="docutils literal"><span class="pre">storageName</span></tt> combined with the <tt class="docutils literal"><span class="pre">rnrId</span></tt> define an instance
+of the storage status topic and can be used to relate an update
+of the topic to the service and storage responsible.</p>
+<dl class="docutils">
+<dt><strong>state</strong></dt>
+<dd><p class="first">The current state of the storage.
+A storage may have the following states:</p>
+<p><tt class="docutils literal"><span class="pre">READY</span></tt>: This is the initial state after configuring a storage,
+when the configuration is deemed valid. It means the storage was
+defined and available when configured. In the case of a pre-existing
+storage, properties are available in the status update for this state.</p>
+<p><tt class="docutils literal"><span class="pre">OPEN</span></tt>: The storage is in use by one or more scenarios identified
+by the <tt class="docutils literal"><span class="pre">scenarioNames</span></tt> sequence in the status update for this state.</p>
+<p><tt class="docutils literal"><span class="pre">ERROR</span></tt>: The storage is invalid and cannot be used.
+This can either mean an error in the storage configuration or an issue
+related to resources claimed by the storage. Most notably in case of
+an XMLstorage, the service may not have permission to open a file that
+is part of the storage.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Note that it is not currently possible to determine the reason for
+an <tt class="docutils literal"><span class="pre">ERROR</span></tt> state directly from the status update, but a descriptive
+message is written to the OpenSplice log files. A future release will
+make this message available in the status update.</p>
+<p><tt class="docutils literal"><span class="pre">OUTOFRESOURCES</span></tt>: When a storage is used for recording, it may run
+out of resources.</p>
+<p class="last"><tt class="docutils literal"><span class="pre">CLOSED</span></tt>: A storage may enter the closed state for two reasons.
+Usually it is closed when all record and/or replay interest has been
+detached from the storage. This occurs when all scenarios that were
+using the storage are stopped. If the storage is used for replay,
+it may also be closed when all data in the storage has been evaluated
+and the end of the storage was reached.</p>
+</dd>
+<dt><strong>storageAttr</strong></dt>
+<dd>The XML string describing the attributes currently used by the
+storage.
+This is identical to the attributes section of a storage configuration.</dd>
+<dt><strong>properties</strong></dt>
+<dd><p class="first">Properties of the data contained in a storage.
+The following properties are available per recorded topic:</p>
+<ul class="last simple">
+<li>Partition and topic names</li>
+<li>Number of samples and number of bytes</li>
+<li>Record timestamps of the first and last occurrence</li>
+<li>Average data rate</li>
+</ul>
+</dd>
+</dl>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Note that properties are not updated while a storage is open, <em>they are
+only updated when the state of a storage changes</em>.</p>
+<p>Unlike the other status topics, the storage status is determined by more
+than just the <tt class="docutils literal"><span class="pre">state</span></tt> field. The attributes and sequence of scenario
+names are also part of the state. Therefore storage status updates not
+only occur when the <tt class="docutils literal"><span class="pre">state</span></tt> field itself is changed but also when the
+attributes are changed or when a scenario starts (or stops)
+using the storage.</p>
+</div>
+</div>
+<div class="section" id="storage-statistics">
+<h2>4.5. Storage Statistics<a class="headerlink" href="#storage-statistics" title="Permalink to this headline">¶</a></h2>
+<p>The Record and Replay service can optionally maintain runtime statistics
+regarding the data that is recorded to and/or replayed from a storage.
+These statistics can be published in the <tt class="docutils literal"><span class="pre">rr_storageStatistics</span></tt> topic.</p>
+<p class="centered" id="storage-statistics-topic">
+<strong><strong>Storage Statistics Topic</strong></strong></p><a class="reference internal image-reference" href="_images/03_storage_stats.png"><img alt="Storage Statistics Topic" class="align-center" src="_images/03_storage_stats.png" style="width: 120mm;" /></a>
+<p>Statistics are enabled per storage. Publication in the
+<tt class="docutils literal"><span class="pre">rr_storageStatistics</span></tt> topic is optional and can be managed
+by the <tt class="docutils literal"><span class="pre">publish_interval</span></tt> attribute of the statistics
+configuration element.</p>
+<dl class="docutils">
+<dt><strong>Publish_interval</strong></dt>
+<dd>This is the number of seconds between each publication of
+the statistics from a specific storage.
+The value <tt class="docutils literal"><span class="pre">-1</span></tt> has a special meaning: if set, the statistics
+will only be published when the storage is closed. Setting the
+<tt class="docutils literal"><span class="pre">publish_interval</span></tt> to <tt class="docutils literal"><span class="pre">0</span></tt> will also prevent the publication
+of statistics. Note that a config command can be issued to
+change the publication interval on the fly.</dd>
+</dl>
+<p>The statistics values can be reset by setting the <tt class="docutils literal"><span class="pre">reset</span></tt> attribute
+in the XML configuration string of the storage statistics.</p>
+</div>
+<div class="section" id="miscellaneous-types">
+<h2>4.6. Miscellaneous Types<a class="headerlink" href="#miscellaneous-types" title="Permalink to this headline">¶</a></h2>
+<p>The API contains a number of utility types used as members in one or more topics.
+These helper types are described in this section.</p>
+<p class="centered">
+<strong><strong>Miscellaneous Types</strong></strong></p><a class="reference internal image-reference" href="_images/04_misc_types.png"><img alt="Miscellaneous Types" class="align-center" src="_images/04_misc_types.png" style="width: 150mm;" /></a>
+<div class="section" id="keyvalue">
+<h3>4.6.1. KeyValue<a class="headerlink" href="#keyvalue" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">KeyValue</span></tt> type is a generic <em>key:value</em> container.
+It is used for the transformations sequence in add and remove
+replay commands and as the config sequence of a config command,
+to send configuration values to a Record and Replay service
+and/or scenario.</p>
+<dl class="docutils">
+<dt><strong>key</strong></dt>
+<dd>A string that selects a specific configuration value to add
+or update.</dd>
+</dl>
+<p>Depending on the <tt class="docutils literal"><span class="pre">KeyValue</span></tt> kind, a value can take on a number
+of representations: <tt class="docutils literal"><span class="pre">boolean</span></tt>, <tt class="docutils literal"><span class="pre">string</span></tt>, <tt class="docutils literal"><span class="pre">long</span></tt> or <tt class="docutils literal"><span class="pre">float</span></tt>.</p>
+</div>
+<div class="section" id="timerange">
+<h3>4.6.2. TimeRange<a class="headerlink" href="#timerange" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">TimeRange</span></tt> type can be used to limit the selection of data
+in a replay command. Interest expressions select data based on
+partition and topic names, time-ranges filter this selection based
+on record timestamps.</p>
+<p>The <tt class="docutils literal"><span class="pre">DDS::Time_t</span></tt> type is used to express a timestamp. A range
+is defined by a start and an end timestamp.</p>
+<dl class="docutils">
+<dt><strong>start</strong></dt>
+<dd>The start timestamp of the range.
+When <tt class="docutils literal"><span class="pre">TIME_INVALID_SEC</span></tt> and <tt class="docutils literal"><span class="pre">TIME_INVALID_NSEC</span></tt> are specified,
+the start time is considered to be <tt class="docutils literal"><span class="pre">-infinity</span></tt>. This means
+that any sample recorded before the <tt class="docutils literal"><span class="pre">end</span></tt> timestamp is
+matched.</dd>
+<dt><strong>end</strong></dt>
+<dd>The end timestamp of the range.
+When <tt class="docutils literal"><span class="pre">TIME_INVALID_SEC</span></tt> and <tt class="docutils literal"><span class="pre">TIME_INVALID_NSEC</span></tt> are specified,
+the end time is considered to be <tt class="docutils literal"><span class="pre">+infinity</span></tt>. This means
+that any sample recorded after the <tt class="docutils literal"><span class="pre">start</span></tt> timestamp is
+matched.</dd>
+</dl>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Topic API Overview</a><ul>
+<li><a class="reference internal" href="#record-replay-topics">4.1. Record &amp; Replay topics</a></li>
+<li><a class="reference internal" href="#relevant-qos-settings">4.2. Relevant QoS settings</a></li>
+<li><a class="reference internal" href="#command-type">4.3. Command Type</a><ul>
+<li><a class="reference internal" href="#control-commands">4.3.1. Control commands</a></li>
+<li><a class="reference internal" href="#config-command">4.3.2. Config command</a></li>
+<li><a class="reference internal" href="#add-record-command">4.3.3. ADD_RECORD_COMMAND</a></li>
+<li><a class="reference internal" href="#remove-record-command">4.3.4. REMOVE_RECORD_COMMAND</a></li>
+<li><a class="reference internal" href="#add-replay-command">4.3.5. ADD_REPLAY_COMMAND</a></li>
+<li><a class="reference internal" href="#remove-replay-command">4.3.6. REMOVE_REPLAY_COMMAND</a></li>
+<li><a class="reference internal" href="#truncate-command">4.3.7. TRUNCATE_COMMAND</a></li>
+<li><a class="reference internal" href="#setreplayspeed-command">4.3.8. SETREPLAYSPEED_COMMAND</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#status-types">4.4. Status Types</a><ul>
+<li><a class="reference internal" href="#service-status">4.4.1. Service Status</a></li>
+<li><a class="reference internal" href="#scenario-status">4.4.2. Scenario Status</a></li>
+<li><a class="reference internal" href="#storage-status">4.4.3. Storage Status</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#storage-statistics">4.5. Storage Statistics</a></li>
+<li><a class="reference internal" href="#miscellaneous-types">4.6. Miscellaneous Types</a><ul>
+<li><a class="reference internal" href="#keyvalue">4.6.1. KeyValue</a></li>
+<li><a class="reference internal" href="#timerange">4.6.2. TimeRange</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="scenarios.html"
+                        title="previous chapter">3. Scenarios</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="issues.html"
+                        title="next chapter">5. Known Issues</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/topic-api-overview.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="issues.html" title="5. Known Issues"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="scenarios.html" title="3. Scenarios"
+             >previous</a> |</li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

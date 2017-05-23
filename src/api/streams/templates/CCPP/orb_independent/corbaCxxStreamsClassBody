@@ -1,0 +1,102 @@
+extern DDS::Streams::StreamDataWriterQos DefaultStreamDataWriterQos;
+extern DDS::Streams::StreamDataReaderQos DefaultStreamDataReaderQos;
+
+// DDS::Streams::$(scopedtypename)StreamDataWriter Constructors
+
+$(scopedtypename)StreamDataWriter::$(typename)StreamDataWriter(
+    DDS::Publisher_ptr publisher,
+    DDS::Streams::StreamDataWriterQos &sqos,
+    const char * streamName) :
+    DDS::Streams::TStreamDataWriter_impl<$(scopedtypename), $(scopedtypename)StreamDataWriterInterface, $(scopedtypename)StreamSampleDataWriter, $(scopedtypename)StreamSample>(
+        publisher, DDS::DOMAIN_ID_DEFAULT, sqos, new $(scopedtypename)StreamSampleTypeSupport(), streamName)
+{
+    // Parent constructor takes care of everything.
+}
+
+$(scopedtypename)StreamDataWriter::$(typename)StreamDataWriter(
+    DDS::DomainId_t domainId,
+    DDS::Streams::StreamDataWriterQos &sqos,
+    const char * streamName) :
+    DDS::Streams::TStreamDataWriter_impl<$(scopedtypename), $(scopedtypename)StreamDataWriterInterface, $(scopedtypename)StreamSampleDataWriter, $(scopedtypename)StreamSample>(
+        NULL, domainId, sqos, new $(scopedtypename)StreamSampleTypeSupport(), streamName)
+{
+    // Parent constructor takes care of everything.
+}
+
+$(scopedtypename)StreamDataWriter::$(typename)StreamDataWriter(
+    DDS::Streams::StreamDataWriterQos &sqos,
+    const char * streamName) :
+    DDS::Streams::TStreamDataWriter_impl<$(scopedtypename), $(scopedtypename)StreamDataWriterInterface, $(scopedtypename)StreamSampleDataWriter, $(scopedtypename)StreamSample>(
+        NULL, DDS::DOMAIN_ID_DEFAULT, sqos, new $(scopedtypename)StreamSampleTypeSupport(), streamName)
+{
+    // Parent constructor takes care of everything.
+}
+
+$(scopedtypename)StreamDataWriter::$(typename)StreamDataWriter(
+    DDS::Publisher_ptr publisher,
+    const char * streamName) :
+    DDS::Streams::TStreamDataWriter_impl<$(scopedtypename), $(scopedtypename)StreamDataWriterInterface, $(scopedtypename)StreamSampleDataWriter, $(scopedtypename)StreamSample>(
+        publisher, DDS::DOMAIN_ID_DEFAULT, DDS::Streams::DefaultStreamDataWriterQos, new $(scopedtypename)StreamSampleTypeSupport(), streamName)
+{
+    // Parent constructor takes care of everything.
+}
+
+$(scopedtypename)StreamDataWriter::$(typename)StreamDataWriter(
+    DDS::DomainId_t domainId,
+    const char *streamName) :
+    DDS::Streams::TStreamDataWriter_impl<$(scopedtypename), $(scopedtypename)StreamDataWriterInterface, $(scopedtypename)StreamSampleDataWriter, $(scopedtypename)StreamSample>(
+        NULL, domainId, DDS::Streams::DefaultStreamDataWriterQos, new $(scopedtypename)StreamSampleTypeSupport(), streamName)
+{
+    // Parent constructor takes care of everything.
+}
+
+
+// DDS::Streams::$(scopedtypename)StreamDataReader Constructors
+
+$(scopedtypename)StreamDataReader::$(typename)StreamDataReader(
+    DDS::Subscriber_ptr subscriber,
+    DDS::Streams::StreamDataReaderQos &sqos,
+    const char * streamName) :
+    DDS::Streams::TStreamDataReader_impl<$(scopedtypename), $(scopedtypename)StreamDataReaderInterface, $(scopedtypename)StreamSampleDataReader, $(scopedtypename)StreamSample, $(scopedtypename)StreamFilterCallback_ptr, $(scopedtypename)StreamBuf, $(scopedtypename)StreamSampleSeq>(
+        subscriber, DDS::DOMAIN_ID_DEFAULT, sqos, new $(scopedtypename)StreamSampleTypeSupport(), streamName)
+{
+    // Parent constructor takes care of everything.
+}
+
+$(scopedtypename)StreamDataReader::$(typename)StreamDataReader(
+    DDS::DomainId_t domainId,
+    DDS::Streams::StreamDataReaderQos &sqos,
+    const char * streamName) :
+    DDS::Streams::TStreamDataReader_impl<$(scopedtypename), $(scopedtypename)StreamDataReaderInterface, $(scopedtypename)StreamSampleDataReader, $(scopedtypename)StreamSample, $(scopedtypename)StreamFilterCallback_ptr, $(scopedtypename)StreamBuf, $(scopedtypename)StreamSampleSeq>(
+        NULL, domainId, sqos, new $(scopedtypename)StreamSampleTypeSupport(), streamName)
+{
+    // Parent constructor takes care of everything.
+}
+
+$(scopedtypename)StreamDataReader::$(typename)StreamDataReader(
+    DDS::Streams::StreamDataReaderQos &sqos,
+    const char * streamName) :
+    DDS::Streams::TStreamDataReader_impl<$(scopedtypename), $(scopedtypename)StreamDataReaderInterface, $(scopedtypename)StreamSampleDataReader, $(scopedtypename)StreamSample, $(scopedtypename)StreamFilterCallback_ptr, $(scopedtypename)StreamBuf, $(scopedtypename)StreamSampleSeq>(
+        NULL, DDS::DOMAIN_ID_DEFAULT, sqos, new $(scopedtypename)StreamSampleTypeSupport(), streamName)
+{
+    // Parent constructor takes care of everything.
+}
+
+$(scopedtypename)StreamDataReader::$(typename)StreamDataReader(
+    DDS::Subscriber_ptr subscriber,
+    const char * streamName) :
+    DDS::Streams::TStreamDataReader_impl<$(scopedtypename), $(scopedtypename)StreamDataReaderInterface, $(scopedtypename)StreamSampleDataReader, $(scopedtypename)StreamSample, $(scopedtypename)StreamFilterCallback_ptr, $(scopedtypename)StreamBuf, $(scopedtypename)StreamSampleSeq>(
+        subscriber, DDS::DOMAIN_ID_DEFAULT, DDS::Streams::DefaultStreamDataReaderQos, new $(scopedtypename)StreamSampleTypeSupport(), streamName)
+{
+    // Parent constructor takes care of everything.
+}
+
+$(scopedtypename)StreamDataReader::$(typename)StreamDataReader(
+    DDS::DomainId_t domainId,
+    const char *streamName) :
+    DDS::Streams::TStreamDataReader_impl<$(scopedtypename), $(scopedtypename)StreamDataReaderInterface, $(scopedtypename)StreamSampleDataReader, $(scopedtypename)StreamSample, $(scopedtypename)StreamFilterCallback_ptr, $(scopedtypename)StreamBuf, $(scopedtypename)StreamSampleSeq>(
+        NULL, domainId, DDS::Streams::DefaultStreamDataReaderQos, new $(scopedtypename)StreamSampleTypeSupport(), streamName)
+{
+    // Parent constructor takes care of everything.
+}
+

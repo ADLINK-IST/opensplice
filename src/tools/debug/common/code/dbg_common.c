@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -14,7 +22,9 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "os.h"
+#include "vortex_os.h"
+#include "os_atomics.h"
+#include "os_abstract.h"
 #include "c_misc.h"
 #include "c_base.h"
 #include "v_kernel.h"
@@ -71,7 +81,7 @@ printCollectionAction(
     if (o != NULL) {
         type = c_getType(o);
         name = c_metaScopedName(c_metaObject(type));
-        iprintf("Object <0x"PA_ADDRFMT"> refCount=%d type is: <0x"PA_ADDRFMT"> %s\n",
+        iprintf("Object <0x%"PA_PRIxADDR"> refCount=%d type is: <0x%"PA_PRIxADDR"> %s\n",
                 (os_address)o, c_refCount(o), (os_address)type, name);
         os_free(name);
         OBJECT_PUSH(actionData, o);
@@ -86,7 +96,8 @@ printCollection(
     c_collectionType type,
     toolActionData actionData)
 {
-    c_long size, i, offset, esize;
+    os_size_t size, i, offset;
+    os_size_t esize;
     c_object o;
     c_voidp p;
     c_object arrayElement;
@@ -95,22 +106,23 @@ printCollection(
 
     o = c_iterObject(actionData->stack, 0);
     switch (type->kind) {
-    case C_ARRAY:
-    case C_SEQUENCE:
+    case OSPL_C_ARRAY:
+    case OSPL_C_SEQUENCE:
         /* Walk over all entries */
         switch (type->kind) {
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             if (type->maxSize == 0) {
                 size = c_arraySize((c_array)o);
             } else {
                 size = type->maxSize;
             }
         break;
-        case C_SEQUENCE:
+        case OSPL_C_SEQUENCE:
             size = c_arraySize((c_array)o);
         break;
         default:
             size = 0;
+            (void)size;
             assert(FALSE);
         break;
         }
@@ -125,7 +137,7 @@ printCollection(
         p = o;
         offset = 0;
         for (i=0; i<size; i++) {
-            iprintf("Element (%d) Offset (%d)\n",i,offset);
+            iprintf("Element (%"PA_PRIuSIZE") Offset (%"PA_PRIuSIZE")\n",i,offset);
             arrayElement = isRef ? *((c_object *)p) : (c_object) p;
             if (arrayElement != NULL) {
                 OBJECT_PUSH(actionData, arrayElement);
@@ -145,14 +157,14 @@ printCollection(
             offset += esize;
         }
     break;
-    case C_STRING:
+    case OSPL_C_STRING:
         printf(" \"%s\"",(c_char *)o);
     break;
-    case C_SET:
-    case C_LIST:
-    case C_BAG:
-    case C_DICTIONARY:
-    case C_QUERY:
+    case OSPL_C_SET:
+    case OSPL_C_LIST:
+    case OSPL_C_BAG:
+    case OSPL_C_DICTIONARY:
+    case OSPL_C_QUERY:
     {
         if (o != NULL) {
             /* Walk over the elements */
@@ -165,11 +177,11 @@ printCollection(
         }
     }
     break;
-    case C_SCOPE:
+    case OSPL_C_SCOPE:
         c_scopeWalk(o, printCollectionAction, actionData);
     break;
     default:
-        printf("Specified type <0x"PA_ADDRFMT"> is not a valid collection type\n",
+        printf("Specified type <0x%"PA_PRIxADDR"> is not a valid collection type\n",
                (os_address)type);
     break;
     }
@@ -228,8 +240,18 @@ printPrimitive(
     case P_COND:
         printf("<******>");
     break;
-    default:
-        printf("Specified type <0x"PA_ADDRFMT"> is not a valid primitive type\n",
+    case P_PA_UINT32:
+        printf("%"PA_PRIu32, pa_ld32((pa_uint32_t *)o));
+        break;
+    case P_PA_UINTPTR:
+        printf("%"PA_PRIuADDR, pa_ldptr((pa_uintptr_t *)o));
+        break;
+    case P_PA_VOIDP:
+        printf("0x%"PA_PRIxADDR, (os_address)pa_ldvoidp((pa_voidp_t *)o));
+        break;
+    case P_UNDEFINED:
+    case P_COUNT:
+        printf("Specified type <0x%"PA_PRIxADDR"> is not a valid primitive type\n",
                (os_address)_this);
     break;
     }
@@ -242,13 +264,14 @@ printEnum(
     toolActionData actionData)
 {
     c_object o;
-    c_long i, size;
+    c_ulong size;
+    c_long i;
     c_constant constant;
 
     o = c_iterObject(actionData->stack, 0);
     size = c_enumerationCount(_this);
     i = *(c_long *)o;
-    if ((i < 0) || (i > size)) {
+    if ((i < 0) || ((c_ulong) i > size)) {
         printf("(%d) \"Bad enumeration value\"\n", i);
     } else {
         constant = c_enumeration(_this)->elements[i];
@@ -263,7 +286,7 @@ printStructure(
 {
     c_object o;
     c_object object;
-    c_long i, size;
+    c_ulong i, size;
     c_member member;
 
     o = c_iterObject(actionData->stack, 0);
@@ -279,7 +302,7 @@ printStructure(
             member = c_structureMember(_this, i);
             object = C_DISPLACE(o, (c_address)member->offset);
             if (c_typeIsRef(c_memberType(member))) {
-                iprintf("    %s <0x"PA_ADDRFMT">\n",
+                iprintf("    %s <0x%"PA_PRIxADDR">\n",
                        c_specifierName(member),
                        *(os_address *)object);
             } else {
@@ -299,7 +322,7 @@ printStructure(
             v_object vo;
             v_handleClaim(*(v_handle *)o,&vo);
             v_handleRelease(*(v_handle *)o);
-            printf(" /* Handle's object: <0x"PA_ADDRFMT"> */", (os_address)vo);
+            printf(" /* Handle's object: <0x%"PA_PRIxADDR"> */", (os_address)vo);
         }
     }
 }
@@ -322,7 +345,7 @@ walkProperty(
             if (c_baseObjectKind(c_property(object)->type) == M_COLLECTION) {
                 if (addr) {
                     if (c_iterContains(actionData->stack, addr)) {
-                        printf("Ignore cyclic reference 0x"PA_ADDRFMT"\n",
+                        printf("Ignore cyclic reference 0x%"PA_PRIxADDR"\n",
                                (os_address)addr);
                     } else {
                         OBJECT_PUSH(actionData, addr);
@@ -331,10 +354,10 @@ walkProperty(
                         OBJECT_POP(actionData);
                     }
                 } else {
-                    iprintf("    %s <0x"PA_ADDRFMT">", _METANAME(object), (os_address)addr);
+                    iprintf("    %s <0x%"PA_PRIxADDR">", _METANAME(object), (os_address)addr);
                 }
             } else {
-                iprintf("    %s <0x"PA_ADDRFMT">", _METANAME(object), (os_address)addr);
+                iprintf("    %s <0x%"PA_PRIxADDR">", _METANAME(object), (os_address)addr);
                 if (addr) {
                     /* Section for code to print additional type specific info. */
                     if (c_property(object)->type == v_topic_t) {
@@ -404,9 +427,9 @@ printUnion(
     c_value switchValue;
     c_literal label;
     c_object o;
-    int i,j, nCases, nLabels;
+    c_ulong i,j, nCases, nLabels;
 
-    c_long dataOffset;
+    os_size_t dataOffset;
 
     o = c_iterObject(actionData->stack, 0);
     /* action for the union itself */
@@ -414,7 +437,7 @@ printUnion(
     /* action(c_type(v_union), o, actionArg); */
     /* action for the switch */
     printType(v_union->switchType, actionData);
-    printf("\n");
+    printf(": ");
 
     switchType = c_typeActualType(v_union->switchType);
     /* Determine value of the switch field */
@@ -434,6 +457,7 @@ printUnion(
 #undef __CASE__
         default:
             switchValue = c_undefinedValue();
+            (void)switchValue;
             assert(FALSE);
         break;
         }
@@ -443,6 +467,7 @@ printUnion(
     break;
     default:
         switchValue = c_undefinedValue();
+        (void)switchValue;
         assert(FALSE);
     break;
     }
@@ -478,10 +503,13 @@ printUnion(
         } else {
             dataOffset = v_union->switchType->size;
         }
-        unionData = C_DISPLACE(o, (c_address)dataOffset);
+        if (!c_typeIsRef (caseType)) {
+            unionData = C_DISPLACE(o, (c_address)dataOffset);
+        } else {
+            unionData = *((void **) C_DISPLACE(o, (c_address)dataOffset));
+        }
         OBJECT_PUSH(actionData, unionData);
         printType(caseType, actionData);
-        printf("\n");
         OBJECT_POP(actionData);
     }
 }
@@ -492,51 +520,51 @@ printCollectionKind(
     c_collectionType type,
     toolActionData actionData)
 {
-    c_long size;
+    c_ulong size;
     c_object o;
 
     o = c_iterObject(actionData->stack, 0);
     if (o != NULL) {
         switch (type->kind) {
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             size = c_collectionType(type)->maxSize;
             if (size == 0) {
-                printf("<0x"PA_ADDRFMT"> /* C_ARRAY(%d) */", (os_address)o, c_arraySize(o));
+                printf("<0x%"PA_PRIxADDR"> /* C_ARRAY(%d) */", (os_address)o, c_arraySize(o));
             } else {
-                printf("<0x"PA_ADDRFMT"> /* Bounded C_ARRAY(%d) */", (os_address)o, size);
+                printf("<0x%"PA_PRIxADDR"> /* Bounded C_ARRAY(%d) */", (os_address)o, size);
             }
         break;
-        case C_SEQUENCE:
-            printf("<0x"PA_ADDRFMT"> /* C_SEQUENCE(%d) */", (os_address)o, c_sequenceSize(o));
+        case OSPL_C_SEQUENCE:
+            printf("<0x%"PA_PRIxADDR"> /* C_SEQUENCE(%d) */", (os_address)o, c_sequenceSize(o));
         break;
-        case C_STRING:
+        case OSPL_C_STRING:
             printf(" \"%s\"",(c_char *)o);
         break;
-        case C_SET:
-            printf("<0x"PA_ADDRFMT"> /* C_SET(%d) */", (os_address)o, c_count(o));
+        case OSPL_C_SET:
+            printf("<0x%"PA_PRIxADDR"> /* C_SET(%d) */", (os_address)o, c_count(o));
         break;
-        case C_LIST:
-            printf("<0x"PA_ADDRFMT"> /* C_LIST(%d) */", (os_address)o, c_count(o));
+        case OSPL_C_LIST:
+            printf("<0x%"PA_PRIxADDR"> /* C_LIST(%d) */", (os_address)o, c_count(o));
         break;
-        case C_BAG:
-            printf("<0x"PA_ADDRFMT"> /* C_BAG(%d) */", (os_address)o, c_count(o));
+        case OSPL_C_BAG:
+            printf("<0x%"PA_PRIxADDR"> /* C_BAG(%d) */", (os_address)o, c_count(o));
         break;
-        case C_DICTIONARY:
-            printf("<0x"PA_ADDRFMT"> /* C_DICTIONARY(%d) */", (os_address)o, c_count(o));
+        case OSPL_C_DICTIONARY:
+            printf("<0x%"PA_PRIxADDR"> /* C_DICTIONARY(%d) */", (os_address)o, c_count(o));
         break;
-        case C_QUERY:
-            printf("<0x"PA_ADDRFMT"> /* C_QUERY(%d) */", (os_address)o, c_count(o));
+        case OSPL_C_QUERY:
+            printf("<0x%"PA_PRIxADDR"> /* C_QUERY(%d) */", (os_address)o, c_count(o));
         break;
-        case C_SCOPE:
-            printf("<0x"PA_ADDRFMT"> /* C_SCOPE(%d) */", (os_address)o, c_scopeCount(o));
+        case OSPL_C_SCOPE:
+            printf("<0x%"PA_PRIxADDR"> /* C_SCOPE(%d) */", (os_address)o, c_scopeCount(o));
         break;
         default:
-            printf("Specified type <0x"PA_ADDRFMT"> is not a valid collection type\n",
+            printf("Specified type <0x%"PA_PRIxADDR"> is not a valid collection type\n",
                    (os_address)type);
         break;
         }
     } else {
-        printf("<0x"PA_ADDRFMT"> \"Unexpected Internal Stack Error\"", (os_address)o);
+        printf("<0x%"PA_PRIxADDR"> \"Unexpected Internal Stack Error\"", (os_address)o);
     }
 }
 
@@ -577,7 +605,7 @@ printType (
         printUnion(c_union(actualType), actionData);
     break;
     default:
-        printf("Specified type <0x"PA_ADDRFMT"> is not a valid type\n",
+        printf("Specified type <0x%"PA_PRIxADDR"> is not a valid type\n",
                (os_address)type);
         assert(FALSE); /* Only descendants of type possible */
     break;
@@ -590,6 +618,9 @@ printStructureMember(
     toolActionData actionData,
     c_address offset)
 {
+    OS_UNUSED_ARG(_this);
+    OS_UNUSED_ARG(actionData);
+    OS_UNUSED_ARG(offset);
 }
 
 static void
@@ -598,11 +629,14 @@ printCollectionElement(
     toolActionData actionData,
     c_address offset)
 {
+    OS_UNUSED_ARG(_this);
+    OS_UNUSED_ARG(actionData);
+    OS_UNUSED_ARG(offset);
 }
 
 
 typedef struct lookupMetaData {
-    c_long offset;
+    os_size_t offset;
     c_metaObject metaObject;
 } *lookupMetaData;
 
@@ -612,16 +646,17 @@ lookupProperty(
     c_metaWalkActionArg actionArg)
 {
     lookupMetaData actionData = (lookupMetaData)actionArg;
-    c_long offset, size;
+    os_ssize_t offset;
+    os_size_t size;
     c_bool proceed = TRUE;
 
     if (c_baseObjectKind(object) == M_ATTRIBUTE) {
-        offset = actionData->offset - c_property(object)->offset;
+        offset = (os_ssize_t) (actionData->offset - c_property(object)->offset);
         size = c_typeSize(c_property(object)->type);
-        if ((offset >= 0) && (offset < size)) {
+        if ((offset >= 0) && ((os_size_t) offset < size)) {
             assert(actionData->metaObject == NULL);
             actionData->metaObject = object;
-            actionData->offset -= offset; /* calculate correct offset */
+            actionData->offset -= (size_t) offset; /* calculate correct offset */
             proceed = FALSE;
         }
     }
@@ -650,8 +685,8 @@ printInterfaceAttribute(
             c_iter stack;
 
             name = c_metaScopedName(MetaData.metaObject);
-            if (MetaData.offset < (c_long)offset) {
-                printf("Address is %lu bytes in property %s\n",
+            if (MetaData.offset < offset) {
+                printf("Address is %" PA_PRIuADDR " bytes in property %s\n",
                        (offset - MetaData.offset), name);
             } else {
                 printf("Address refers to property %s\n",
@@ -678,9 +713,8 @@ printClassAttribute(
     toolActionData actionData,
     c_address offset)
 {
-    c_long size;
+    os_size_t size;
 
-    size = 0;
     if (_this->extends) {
         size = c_typeSize(c_type(_this->extends));
         if (offset < (c_address)size) {
@@ -696,6 +730,9 @@ printUnionMember(
     toolActionData actionData,
     c_address offset)
 {
+    OS_UNUSED_ARG(_this);
+    OS_UNUSED_ARG(actionData);
+    OS_UNUSED_ARG(offset);
 }
 
 static void
@@ -734,7 +771,7 @@ tryPrintOffset(
         printUnionMember(c_union(actualType), actionData, offset);
     break;
     default:
-        printf("Specified type <0x"PA_ADDRFMT"> is not a valid type\n",
+        printf("Specified type <0x%"PA_PRIxADDR"> is not a valid type\n",
                (os_address)type);
         assert(FALSE); /* Only descendants of type possible */
     break;
@@ -749,10 +786,12 @@ printWalkHistory (
     c_type type;
     c_char *name, *ename;
 
+    OS_UNUSED_ARG(arg);
+
     if (o) {
         type = c_getType(o);
         name = c_metaScopedName(c_metaObject(type));
-        printf("<0x"PA_ADDRFMT"> %s",(os_address)o,name);
+        printf("<0x%"PA_PRIxADDR"> %s",(os_address)o,name);
         if (c_checkType(o, "v_entity") == o) {
             ename = v_entityName(o);
             if (ename != NULL) {

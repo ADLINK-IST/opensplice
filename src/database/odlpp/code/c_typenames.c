@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -27,16 +35,16 @@ c_getCollKindName(
 {
     c_char *result;
 
-#define _CASE_(k) case k: result = os_strdup(#k); break
+#define _CASE_(k) case k: result = os_strdup(#k + 5 /* OSPL_ prefix */); break
     switch(c->kind) {
-    _CASE_(C_ARRAY);
-    _CASE_(C_SEQUENCE);
-    _CASE_(C_SET);
-    _CASE_(C_LIST);
-    _CASE_(C_BAG);
-    _CASE_(C_DICTIONARY);
-    _CASE_(C_STRING);
-    _CASE_(C_WSTRING);
+    _CASE_(OSPL_C_ARRAY);
+    _CASE_(OSPL_C_SEQUENCE);
+    _CASE_(OSPL_C_SET);
+    _CASE_(OSPL_C_LIST);
+    _CASE_(OSPL_C_BAG);
+    _CASE_(OSPL_C_DICTIONARY);
+    _CASE_(OSPL_C_STRING);
+    _CASE_(OSPL_C_WSTRING);
     default:
         assert(FALSE);
         result = os_strdup("C_UNDEFINED");
@@ -61,8 +69,8 @@ c_getCollAnonName(
     kind = c_getCollKindName(c);
     subTypeName = c_getScopedTypeName(scope, c->subType,
                                       separator, C_SCOPE_ALWAYS);
-    result = (c_char *)malloc(strlen(kind) + strlen(subTypeName) + 32);
-    if (c->kind == C_STRING) {
+    result = (c_char *)os_malloc(strlen(kind) + strlen(subTypeName) + 32);
+    if (c->kind == OSPL_C_STRING) {
         if (c->maxSize > 0) {
             os_sprintf(result,"%s<%d>", kind, c->maxSize);
         } else {
@@ -95,6 +103,7 @@ c_getScopedTypeName(
         typeName = c_getCollAnonName(scope, c_collectionType(type),
                                      separator);
     }
+    assert(typeName);
     module = c_metaModule(c_metaObject(type));
     moduleName = c_metaName(module);
     if ((moduleName != NULL) &&
@@ -132,7 +141,7 @@ c_getScopedConstName(
             ((scopeWhen == C_SCOPE_ALWAYS) ||
              ((scopeWhen == C_SCOPE_SMART) && (scope != module)))) {
             /* the const is defined within another module */
-            result = (c_char *)malloc(strlen(moduleName)+
+            result = (c_char *)os_malloc(strlen(moduleName)+
                                       strlen(name)+
                                       strlen(separator)+
                                       1 /* '0' */);

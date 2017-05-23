@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <stdio.h>
 #include <assert.h>
 
@@ -9,6 +28,7 @@
 #include "q_globals.h"
 #include "q_bswap.h"
 #include "sysdeps.h"
+#include "q_pcap.h"
 
 /* pcap format info taken from http://wiki.wireshark.org/Development/LibpcapFileFormat */
 
@@ -92,8 +112,8 @@ FILE *new_pcap_file (const char *name)
 
 static void write_data (FILE *fp, const struct msghdr *msghdr, os_size_t sz)
 {
-  unsigned i, n = 0;
-  for (i = 0; i < (unsigned) msghdr->msg_iovlen && n < sz; i++)
+  size_t i, n = 0;
+  for (i = 0; i < (size_t) msghdr->msg_iovlen && n < sz; i++)
   {
     os_size_t m1 = msghdr->msg_iov[i].iov_len;
     os_size_t m = (n + m1 <= sz) ? m1 : sz - n;
@@ -112,13 +132,13 @@ static unsigned short calc_ipv4_checksum (const unsigned short *x)
     s += x[i];
   }
   s = (s & 0xffff) + (s >> 16);
-  return ~s;
+  return (unsigned short) ~s;
 }
 
 void write_pcap_received
 (
   FILE * fp,
-  os_int64 tstamp,
+  nn_wctime_t tstamp,
   const os_sockaddr_storage * src,
   const os_sockaddr_storage * dst,
   unsigned char * buf,
@@ -136,8 +156,8 @@ void write_pcap_received
     os_size_t sz_ud = sz + UDP_HDR_SIZE;
     os_size_t sz_iud = sz_ud + IPV4_HDR_SIZE;
     os_mutexLock (&gv.pcap_lock);
-    time_to_sec_usec (&pcap_hdr.ts_sec, &pcap_hdr.ts_usec, tstamp);
-    pcap_hdr.incl_len = pcap_hdr.orig_len = sz_iud;
+    wctime_to_sec_usec_32 (&pcap_hdr.ts_sec, &pcap_hdr.ts_usec, tstamp);
+    pcap_hdr.incl_len = pcap_hdr.orig_len = (os_uint32) sz_iud;
     fwrite (&pcap_hdr, sizeof (pcap_hdr), 1, fp);
     u.ipv4_hdr = ipv4_hdr_template;
     u.ipv4_hdr.totallength = toBE2u ((unsigned short) sz_iud);
@@ -148,7 +168,7 @@ void write_pcap_received
     fwrite (&u.ipv4_hdr, sizeof (u.ipv4_hdr), 1, fp);
     udp_hdr.srcport = ((os_sockaddr_in*) src)->sin_port;
     udp_hdr.dstport = ((os_sockaddr_in*) dst)->sin_port;
-    udp_hdr.length = toBE2u (sz_ud);
+    udp_hdr.length = toBE2u ((unsigned short) sz_ud);
     udp_hdr.checksum = 0; /* don't have to compute a checksum for UDPv4 */
     fwrite (&udp_hdr, sizeof (udp_hdr), 1, fp);
     fwrite (buf, sz, 1, fp);
@@ -159,7 +179,7 @@ void write_pcap_received
 void write_pcap_sent
 (
   FILE * fp,
-  os_int64 tstamp,
+  nn_wctime_t tstamp,
   const os_sockaddr_storage * src,
   const struct msghdr * hdr,
   os_size_t sz
@@ -176,8 +196,8 @@ void write_pcap_sent
     os_size_t sz_ud = sz + UDP_HDR_SIZE;
     os_size_t sz_iud = sz_ud + IPV4_HDR_SIZE;
     os_mutexLock (&gv.pcap_lock);
-    time_to_sec_usec (&pcap_hdr.ts_sec, &pcap_hdr.ts_usec, tstamp);
-    pcap_hdr.incl_len = pcap_hdr.orig_len = sz_iud;
+    wctime_to_sec_usec_32 (&pcap_hdr.ts_sec, &pcap_hdr.ts_usec, tstamp);
+    pcap_hdr.incl_len = pcap_hdr.orig_len = (os_uint32) sz_iud;
     fwrite (&pcap_hdr, sizeof (pcap_hdr), 1, fp);
     u.ipv4_hdr = ipv4_hdr_template;
     u.ipv4_hdr.totallength = toBE2u ((unsigned short) sz_iud);
@@ -188,7 +208,7 @@ void write_pcap_sent
     fwrite (&u.ipv4_hdr, sizeof (u.ipv4_hdr), 1, fp);
     udp_hdr.srcport = ((os_sockaddr_in*) src)->sin_port;
     udp_hdr.dstport = ((os_sockaddr_in*) hdr->msg_name)->sin_port;
-    udp_hdr.length = toBE2u (sz_ud);
+    udp_hdr.length = toBE2u ((unsigned short) sz_ud);
     udp_hdr.checksum = 0; /* don't have to compute a checksum for UDPv4 */
     fwrite (&udp_hdr, sizeof (udp_hdr), 1, fp);
     write_data (fp, hdr, sz);

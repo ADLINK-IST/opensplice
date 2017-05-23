@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -20,6 +28,12 @@
 #else
 #ifndef _WRS_KERNEL
 #include <sys/time.h>
+#else
+#include <version.h>
+/* VxWorks versions 6 and newer define _WRS_VXWORKS_MAJOR */
+#if ! ( ( _WRS_VXWORKS_MAJOR >= 7 ) || ( _WRS_VXWORKS_MAJOR == 6 && _WRS_VXWORKS_MINOR >= 9 ) ) || defined _WRS_KERNEL
+#include <sys/times.h>
+#endif
 #endif
 #endif
 
@@ -84,27 +98,27 @@ static const char * read_partition  = "PONG";
 //
 
 static DomainId_t                        myDomain;
-static DomainParticipantFactory_ptr      dpf;
-static DomainParticipant_ptr             dp;
-static Publisher_ptr                     p;
-static Subscriber_ptr                    s;
+static DomainParticipantFactory_var      dpf;
+static DomainParticipant_var             dp;
+static Publisher_var                     p;
+static Subscriber_var                    s;
 static DataWriter_ptr                    dw;
 static DataReader_ptr                    dr;
 
-static PP_min_msgDataWriter_ptr          PP_min_writer;
-static PP_seq_msgDataWriter_ptr          PP_seq_writer;
-static PP_string_msgDataWriter_ptr       PP_string_writer;
-static PP_fixed_msgDataWriter_ptr        PP_fixed_writer;
-static PP_array_msgDataWriter_ptr        PP_array_writer;
-static PP_bseq_msgDataWriter_ptr         PP_bseq_writer;
-static PP_quit_msgDataWriter_ptr         PP_quit_writer;
+static PP_min_msgDataWriter_var          PP_min_writer;
+static PP_seq_msgDataWriter_var          PP_seq_writer;
+static PP_string_msgDataWriter_var       PP_string_writer;
+static PP_fixed_msgDataWriter_var        PP_fixed_writer;
+static PP_array_msgDataWriter_var        PP_array_writer;
+static PP_bseq_msgDataWriter_var         PP_bseq_writer;
+static PP_quit_msgDataWriter_var         PP_quit_writer;
 
-static PP_min_msgDataReader_ptr          PP_min_reader;
-static PP_seq_msgDataReader_ptr          PP_seq_reader;
-static PP_string_msgDataReader_ptr       PP_string_reader;
-static PP_fixed_msgDataReader_ptr        PP_fixed_reader;
-static PP_array_msgDataReader_ptr        PP_array_reader;
-static PP_bseq_msgDataReader_ptr         PP_bseq_reader;
+static PP_min_msgDataReader_var          PP_min_reader;
+static PP_seq_msgDataReader_var          PP_seq_reader;
+static PP_string_msgDataReader_var       PP_string_reader;
+static PP_fixed_msgDataReader_var        PP_fixed_reader;
+static PP_array_msgDataReader_var        PP_array_reader;
+static PP_bseq_msgDataReader_var         PP_bseq_reader;
 
 static PP_min_msgTypeSupport             PP_min_dt;
 static PP_seq_msgTypeSupport             PP_seq_dt;
@@ -122,20 +136,20 @@ static PP_array_msgSeq_var               PP_array_dataList;
 static PP_bseq_msgSeq_var                PP_bseq_dataList;
 static PP_quit_msgSeq_var                PP_quit_dataList;
 
-static StatusCondition_ptr               PP_min_sc;
-static StatusCondition_ptr               PP_seq_sc;
-static StatusCondition_ptr               PP_string_sc;
-static StatusCondition_ptr               PP_fixed_sc;
-static StatusCondition_ptr               PP_array_sc;
-static StatusCondition_ptr               PP_bseq_sc;
+static StatusCondition_var               PP_min_sc;
+static StatusCondition_var               PP_seq_sc;
+static StatusCondition_var               PP_string_sc;
+static StatusCondition_var               PP_fixed_sc;
+static StatusCondition_var               PP_array_sc;
+static StatusCondition_var               PP_bseq_sc;
 
-static Topic_ptr                         PP_min_topic;
-static Topic_ptr                         PP_seq_topic;
-static Topic_ptr                         PP_string_topic;
-static Topic_ptr                         PP_fixed_topic;
-static Topic_ptr                         PP_array_topic;
-static Topic_ptr                         PP_bseq_topic;
-static Topic_ptr                         PP_quit_topic;
+static Topic_var                         PP_min_topic;
+static Topic_var                         PP_seq_topic;
+static Topic_var                         PP_string_topic;
+static Topic_var                         PP_fixed_topic;
+static Topic_var                         PP_array_topic;
+static Topic_var                         PP_bseq_topic;
+static Topic_var                         PP_quit_topic;
 
 static struct timeval                    roundTripTime;
 static struct timeval                    preWriteTime;
@@ -596,24 +610,28 @@ int OSPL_MAIN (int argc, char ** argv)
     // Evaluate cmdline arguments
     //
 #ifdef INTEGRITY
-    nof_blocks = 10;
-    nof_cycles = 100;
-    write_partition = "PongRead";
-    read_partition = "PongWrite";
+    if ( argc == 1 )
+    {
+       nof_blocks = 10;
+       nof_cycles = 100;
+       write_partition = "PongRead";
+       read_partition = "PongWrite";
 #if defined (PING1)
-    topic_id = 'm';
+       topic_id = 'm';
 #elif defined (PING2)
-    topic_id = 'q';
+       topic_id = 'q';
 #elif defined (PING3)
-    topic_id = 's';
+       topic_id = 's';
 #elif defined (PING4)
-    topic_id = 'f';
+       topic_id = 'f';
 #elif defined (PING5)
-    topic_id = 'b';
+       topic_id = 'b';
 #elif defined (PING6)
-    topic_id = 't';
+       topic_id = 't';
 #endif
-#else
+    }
+#endif
+    
     if (argc != 1) {
         if (argc != 6) {
             printf ("Invalid.....\n Usage: %s [blocks blocksize topic_id WRITE_PARTITION READ_PARTITION]\n", argv[0]);
@@ -625,7 +643,6 @@ int OSPL_MAIN (int argc, char ** argv)
         write_partition = argv[4];
         read_partition  = argv[5];
     }
-#endif
 
 #ifdef _WIN32
      init_clock();
@@ -942,7 +959,9 @@ int OSPL_MAIN (int argc, char ** argv)
                                 if ((*conditionList)[i] == exp_condition) {
                                     finish_flag = active_handler (nof_cycles);
                                 } else {
-                                    cout << "PING: unexpected condition triggered: "<<  (*conditionList)[i] << endl;
+                                    cout << "PING: unexpected condition triggered: "<<  (*conditionList)[i] << ", terminating." << endl;
+                                    finish_flag = true;
+                                    terminate = true;
                                 }
                             }
                         } else {
@@ -985,30 +1004,51 @@ int OSPL_MAIN (int argc, char ** argv)
             init_stats (roundtrip,    "round_trip");
         }
     }
-    s->delete_datareader (PP_min_reader);
-    p->delete_datawriter (PP_min_writer);
-    s->delete_datareader (PP_seq_reader);
-    p->delete_datawriter (PP_seq_writer);
-    s->delete_datareader (PP_string_reader);
-    p->delete_datawriter (PP_string_writer);
-    s->delete_datareader (PP_fixed_reader);
-    p->delete_datawriter (PP_fixed_writer);
-    s->delete_datareader (PP_array_reader);
-    p->delete_datawriter (PP_array_writer);
-    s->delete_datareader (PP_bseq_reader);
-    p->delete_datawriter (PP_bseq_writer);
-    p->delete_datawriter (PP_quit_writer);
+    switch (topic_id) {
+        case 'm':
+            w.detach_condition (PP_min_sc);
+            s->delete_datareader (PP_min_reader);
+            p->delete_datawriter (PP_min_writer);
+            dp->delete_topic (PP_min_topic);
+            break;
+        case 'q':
+            w.detach_condition (PP_seq_sc);
+            s->delete_datareader (PP_seq_reader);
+            p->delete_datawriter (PP_seq_writer);
+            dp->delete_topic (PP_seq_topic);
+            break;
+        case 's':
+            w.detach_condition (PP_string_sc);
+            s->delete_datareader (PP_string_reader);
+            p->delete_datawriter (PP_string_writer);
+            dp->delete_topic (PP_string_topic);
+            break;
+        case 'f':
+            w.detach_condition (PP_fixed_sc);
+            s->delete_datareader (PP_fixed_reader);
+            p->delete_datawriter (PP_fixed_writer);
+            dp->delete_topic (PP_fixed_topic);
+            break;
+        case 'a':
+            w.detach_condition (PP_array_sc);
+            s->delete_datareader (PP_array_reader);
+            p->delete_datawriter (PP_array_writer);
+            dp->delete_topic (PP_array_topic);
+            break;
+        case 'b':
+            w.detach_condition (PP_bseq_sc);
+            s->delete_datareader (PP_bseq_reader);
+            p->delete_datawriter (PP_bseq_writer);
+            dp->delete_topic (PP_bseq_topic);
+            break;
+        case 't':
+            p->delete_datawriter (PP_quit_writer);
+            dp->delete_topic (PP_quit_topic);
+            break;
+    }
     dp->delete_subscriber (s);
     dp->delete_publisher (p);
-    dp->delete_topic (PP_min_topic);
-    dp->delete_topic (PP_seq_topic);
-    dp->delete_topic (PP_string_topic);
-    dp->delete_topic (PP_fixed_topic);
-    dp->delete_topic (PP_array_topic);
-    dp->delete_topic (PP_bseq_topic);
-    dp->delete_topic (PP_quit_topic);
     dpf->delete_participant (dp);
-
     printf ("Completed ping example\n");
     fflush(stdout);
     return 0;

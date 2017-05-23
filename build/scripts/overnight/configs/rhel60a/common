@@ -2,4 +2,6 @@ export JAVA_HOME=/usr/local/jdk1.6.0
 export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO211_0-RedHat-EL60-gcc444-inline-32bit-120927-head
 export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/GSOAP
 export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
+export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 unset QTDIR

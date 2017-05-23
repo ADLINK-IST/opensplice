@@ -1,0 +1,1681 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Vortex OpenSplice Configuration Guide &mdash; OpenSplice Configuration Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '60',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Configuration Guide" href="#" />
+    <link rel="next" title="Introduction" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">OpenSplice Configuration Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="vortex-opensplice-configuration-guide">
+<h1>Vortex OpenSplice Configuration Guide<a class="headerlink" href="#vortex-opensplice-configuration-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html">2&nbsp;&nbsp;&nbsp;OpenSplice</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html#domain">3&nbsp;&nbsp;&nbsp;Domain</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#name">3.1&nbsp;&nbsp;&nbsp;Name</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id">3.2&nbsp;&nbsp;&nbsp;Id</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#role">3.3&nbsp;&nbsp;&nbsp;Role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#lease">3.4&nbsp;&nbsp;&nbsp;Lease</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#expirytime">3.4.1&nbsp;&nbsp;&nbsp;ExpiryTime</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#update-factor">3.4.1.1&nbsp;&nbsp;&nbsp;update_factor</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#generalwatchdog">3.5&nbsp;&nbsp;&nbsp;GeneralWatchdog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#scheduling">3.5.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#priority">3.5.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#priority-kind">3.5.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#class">3.5.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#serviceterminateperiod">3.6&nbsp;&nbsp;&nbsp;ServiceTerminatePeriod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#singleprocess">3.7&nbsp;&nbsp;&nbsp;SingleProcess</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#description">3.8&nbsp;&nbsp;&nbsp;Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#cpuaffinity">3.9&nbsp;&nbsp;&nbsp;CPUAffinity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#inprocessexceptionhandling">3.10&nbsp;&nbsp;&nbsp;InProcessExceptionHandling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#daemon">3.11&nbsp;&nbsp;&nbsp;Daemon</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#locking">3.11.1&nbsp;&nbsp;&nbsp;Locking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#watchdog">3.11.2&nbsp;&nbsp;&nbsp;Watchdog</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id1">3.11.2.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id2">3.11.2.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id3">3.11.2.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id4">3.11.2.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#stacksize">3.11.2.2&nbsp;&nbsp;&nbsp;StackSize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#shmmonitor">3.11.3&nbsp;&nbsp;&nbsp;shmMonitor</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id5">3.11.3.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id6">3.11.3.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id7">3.11.3.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id8">3.11.3.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id9">3.11.3.2&nbsp;&nbsp;&nbsp;StackSize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#kernelmanager">3.11.4&nbsp;&nbsp;&nbsp;KernelManager</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id10">3.11.4.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id11">3.11.4.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id12">3.11.4.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id13">3.11.4.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id14">3.11.4.2&nbsp;&nbsp;&nbsp;StackSize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#garbagecollector">3.11.5&nbsp;&nbsp;&nbsp;GarbageCollector</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id15">3.11.5.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id16">3.11.5.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id17">3.11.5.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id18">3.11.5.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id19">3.11.5.2&nbsp;&nbsp;&nbsp;StackSize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#resendmanager">3.11.6&nbsp;&nbsp;&nbsp;ResendManager</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id20">3.11.6.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id21">3.11.6.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id22">3.11.6.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id23">3.11.6.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id24">3.11.6.2&nbsp;&nbsp;&nbsp;StackSize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#heartbeat">3.11.7&nbsp;&nbsp;&nbsp;Heartbeat</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#transport-priority">3.11.7.1&nbsp;&nbsp;&nbsp;transport_priority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id25">3.11.7.2&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id26">3.11.7.2.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id27">3.11.7.2.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id28">3.11.7.2.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id29">3.11.7.3&nbsp;&nbsp;&nbsp;ExpiryTime</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id30">3.11.7.3.1&nbsp;&nbsp;&nbsp;update_factor</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id31">3.11.7.4&nbsp;&nbsp;&nbsp;StackSize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#tracing">3.11.8&nbsp;&nbsp;&nbsp;Tracing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#synchronous">3.11.8.1&nbsp;&nbsp;&nbsp;synchronous</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#outputfile">3.11.8.2&nbsp;&nbsp;&nbsp;OutputFile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#timestamps">3.11.8.3&nbsp;&nbsp;&nbsp;Timestamps</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#absolute">3.11.8.3.1&nbsp;&nbsp;&nbsp;absolute</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#verbosity">3.11.8.4&nbsp;&nbsp;&nbsp;Verbosity</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#database">3.12&nbsp;&nbsp;&nbsp;Database</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#size">3.12.1&nbsp;&nbsp;&nbsp;Size</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#threshold">3.12.2&nbsp;&nbsp;&nbsp;Threshold</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#address">3.12.3&nbsp;&nbsp;&nbsp;Address</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id32">3.12.4&nbsp;&nbsp;&nbsp;Locking</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#listeners">3.13&nbsp;&nbsp;&nbsp;Listeners</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id33">3.13.1&nbsp;&nbsp;&nbsp;StackSize</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#service">3.14&nbsp;&nbsp;&nbsp;Service</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id34">3.14.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#enabled">3.14.2&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#command">3.14.3&nbsp;&nbsp;&nbsp;Command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#memorypoolsize">3.14.4&nbsp;&nbsp;&nbsp;MemoryPoolSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#heapsize">3.14.5&nbsp;&nbsp;&nbsp;HeapSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id35">3.14.6&nbsp;&nbsp;&nbsp;StackSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#configuration">3.14.7&nbsp;&nbsp;&nbsp;Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id36">3.14.8&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id37">3.14.8.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id38">3.14.8.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id39">3.14.8.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id40">3.14.9&nbsp;&nbsp;&nbsp;Locking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#failureaction">3.14.10&nbsp;&nbsp;&nbsp;FailureAction</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#application">3.15&nbsp;&nbsp;&nbsp;Application</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id41">3.15.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id42">3.15.2&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id43">3.15.3&nbsp;&nbsp;&nbsp;Command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#arguments">3.15.4&nbsp;&nbsp;&nbsp;Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#library">3.15.5&nbsp;&nbsp;&nbsp;Library</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#builtintopics">3.16&nbsp;&nbsp;&nbsp;BuiltinTopics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id44">3.16.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#priorityinheritance">3.17&nbsp;&nbsp;&nbsp;PriorityInheritance</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id45">3.17.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#report">3.18&nbsp;&nbsp;&nbsp;Report</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#append">3.18.1&nbsp;&nbsp;&nbsp;append</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id46">3.18.2&nbsp;&nbsp;&nbsp;verbosity</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#statistics">3.19&nbsp;&nbsp;&nbsp;Statistics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#category">3.19.1&nbsp;&nbsp;&nbsp;Category</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id47">3.19.1.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id48">3.19.1.2&nbsp;&nbsp;&nbsp;name</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#retentionperiod">3.20&nbsp;&nbsp;&nbsp;RetentionPeriod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#reportplugin">3.21&nbsp;&nbsp;&nbsp;ReportPlugin</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id49">3.21.1&nbsp;&nbsp;&nbsp;Library</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#file-name">3.21.1.1&nbsp;&nbsp;&nbsp;file_name</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#initialize">3.21.2&nbsp;&nbsp;&nbsp;Initialize</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#symbol-name">3.21.2.1&nbsp;&nbsp;&nbsp;symbol_name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#argument">3.21.2.2&nbsp;&nbsp;&nbsp;argument</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id50">3.21.3&nbsp;&nbsp;&nbsp;Report</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id51">3.21.3.1&nbsp;&nbsp;&nbsp;symbol_name</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#typedreport">3.21.4&nbsp;&nbsp;&nbsp;TypedReport</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id52">3.21.4.1&nbsp;&nbsp;&nbsp;symbol_name</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#finalize">3.21.5&nbsp;&nbsp;&nbsp;Finalize</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id53">3.21.5.1&nbsp;&nbsp;&nbsp;symbol_name</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#suppressdefaultlogs">3.21.6&nbsp;&nbsp;&nbsp;SuppressDefaultLogs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#servicesonly">3.21.7&nbsp;&nbsp;&nbsp;ServicesOnly</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#resourcelimits">3.22&nbsp;&nbsp;&nbsp;ResourceLimits</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#maxsamples">3.22.1&nbsp;&nbsp;&nbsp;MaxSamples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#warnat">3.22.1.1&nbsp;&nbsp;&nbsp;WarnAt</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#maxinstances">3.22.2&nbsp;&nbsp;&nbsp;MaxInstances</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id54">3.22.2.1&nbsp;&nbsp;&nbsp;WarnAt</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#maxsamplesperinstance">3.22.3&nbsp;&nbsp;&nbsp;MaxSamplesPerInstance</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id55">3.22.3.1&nbsp;&nbsp;&nbsp;WarnAt</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#partitionaccess">3.23&nbsp;&nbsp;&nbsp;PartitionAccess</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#partition-expression">3.23.1&nbsp;&nbsp;&nbsp;partition_expression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#access-mode">3.23.2&nbsp;&nbsp;&nbsp;access_mode</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#systemid">3.24&nbsp;&nbsp;&nbsp;SystemId</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#range">3.24.1&nbsp;&nbsp;&nbsp;Range</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#min">3.24.1.1&nbsp;&nbsp;&nbsp;min</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#max">3.24.1.2&nbsp;&nbsp;&nbsp;max</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#userentropy">3.24.2&nbsp;&nbsp;&nbsp;UserEntropy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#topicaccess">3.25&nbsp;&nbsp;&nbsp;TopicAccess</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#topic-expression">3.25.1&nbsp;&nbsp;&nbsp;topic_expression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id56">3.25.2&nbsp;&nbsp;&nbsp;access_mode</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#userclock">3.26&nbsp;&nbsp;&nbsp;UserClock</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#y2038ready">3.26.1&nbsp;&nbsp;&nbsp;y2038Ready</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#userclockmodule">3.26.2&nbsp;&nbsp;&nbsp;UserClockModule</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#userclockstart">3.26.3&nbsp;&nbsp;&nbsp;UserClockStart</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id57">3.26.3.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#userclockstop">3.26.4&nbsp;&nbsp;&nbsp;UserClockStop</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id58">3.26.4.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#userclockquery">3.26.5&nbsp;&nbsp;&nbsp;UserClockQuery</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id59">3.26.5.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#durablepolicies">3.27&nbsp;&nbsp;&nbsp;DurablePolicies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#policy">3.27.1&nbsp;&nbsp;&nbsp;Policy</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#obtain">3.27.1.1&nbsp;&nbsp;&nbsp;obtain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#cache">3.27.1.2&nbsp;&nbsp;&nbsp;cache</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id60">3.28&nbsp;&nbsp;&nbsp;y2038Ready</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html#durabilityservice">4&nbsp;&nbsp;&nbsp;DurabilityService</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id61">4.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#clientdurability">4.2&nbsp;&nbsp;&nbsp;ClientDurability</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id62">4.2.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#entitynames">4.2.2&nbsp;&nbsp;&nbsp;EntityNames</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#publisher">4.2.2.1&nbsp;&nbsp;&nbsp;Publisher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#subscriber">4.2.2.2&nbsp;&nbsp;&nbsp;Subscriber</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#partition">4.2.2.3&nbsp;&nbsp;&nbsp;Partition</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id63">4.3&nbsp;&nbsp;&nbsp;Watchdog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#deadlockdetection">4.3.1&nbsp;&nbsp;&nbsp;deadlockDetection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id64">4.3.2&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id65">4.3.2.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id66">4.3.2.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id67">4.3.2.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#network">4.4&nbsp;&nbsp;&nbsp;Network</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#latency-budget">4.4.1&nbsp;&nbsp;&nbsp;latency_budget</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id68">4.4.2&nbsp;&nbsp;&nbsp;transport_priority</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id69">4.4.3&nbsp;&nbsp;&nbsp;Heartbeat</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id70">4.4.3.1&nbsp;&nbsp;&nbsp;latency_budget</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id71">4.4.3.2&nbsp;&nbsp;&nbsp;transport_priority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id72">4.4.3.3&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id73">4.4.3.3.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id74">4.4.3.3.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id75">4.4.3.3.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id76">4.4.3.4&nbsp;&nbsp;&nbsp;ExpiryTime</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id77">4.4.3.4.1&nbsp;&nbsp;&nbsp;update_factor</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#initialdiscoveryperiod">4.4.4&nbsp;&nbsp;&nbsp;InitialDiscoveryPeriod</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#alignment">4.4.5&nbsp;&nbsp;&nbsp;Alignment</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id78">4.4.5.1&nbsp;&nbsp;&nbsp;latency_budget</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id79">4.4.5.2&nbsp;&nbsp;&nbsp;transport_priority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#timealignment">4.4.5.3&nbsp;&nbsp;&nbsp;TimeAlignment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#alignerscheduling">4.4.5.4&nbsp;&nbsp;&nbsp;AlignerScheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id80">4.4.5.4.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id81">4.4.5.4.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id82">4.4.5.4.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#aligneescheduling">4.4.5.5&nbsp;&nbsp;&nbsp;AligneeScheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id83">4.4.5.5.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id84">4.4.5.5.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id85">4.4.5.5.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#requestcombineperiod">4.4.5.6&nbsp;&nbsp;&nbsp;RequestCombinePeriod</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#initial">4.4.5.6.1&nbsp;&nbsp;&nbsp;Initial</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#operational">4.4.5.6.2&nbsp;&nbsp;&nbsp;Operational</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id86">4.4.5.7&nbsp;&nbsp;&nbsp;Partition</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id87">4.4.5.7.1&nbsp;&nbsp;&nbsp;Name</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#alignment-priority">4.4.5.7.2&nbsp;&nbsp;&nbsp;alignment_priority</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id88">4.4.5.7.3&nbsp;&nbsp;&nbsp;latency_budget</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id89">4.4.5.7.4&nbsp;&nbsp;&nbsp;transport_priority</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#timetowaitforaligner">4.4.5.8&nbsp;&nbsp;&nbsp;TimeToWaitForAligner</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#waitforattachment">4.4.6&nbsp;&nbsp;&nbsp;WaitForAttachment</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#maxwaitcount">4.4.6.1&nbsp;&nbsp;&nbsp;maxWaitCount</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#servicename">4.4.6.2&nbsp;&nbsp;&nbsp;ServiceName</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#persistent">4.5&nbsp;&nbsp;&nbsp;Persistent</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#storedirectory">4.5.1&nbsp;&nbsp;&nbsp;StoreDirectory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#storesessiontime">4.5.2&nbsp;&nbsp;&nbsp;StoreSessionTime</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#storesleeptime">4.5.3&nbsp;&nbsp;&nbsp;StoreSleepTime</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#storemode">4.5.4&nbsp;&nbsp;&nbsp;StoreMode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#smpcount">4.5.5&nbsp;&nbsp;&nbsp;SmpCount</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#keyvaluestore">4.5.6&nbsp;&nbsp;&nbsp;KeyValueStore</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#type">4.5.6.1&nbsp;&nbsp;&nbsp;type</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#storageparameters">4.5.6.2&nbsp;&nbsp;&nbsp;StorageParameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#compression">4.5.6.3&nbsp;&nbsp;&nbsp;Compression</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#algorithm">4.5.6.3.1&nbsp;&nbsp;&nbsp;algorithm</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id90">4.5.6.3.2&nbsp;&nbsp;&nbsp;enabled</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#memorymappedfilestore">4.5.7&nbsp;&nbsp;&nbsp;MemoryMappedFileStore</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id91">4.5.7.1&nbsp;&nbsp;&nbsp;Size</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id92">4.5.7.2&nbsp;&nbsp;&nbsp;Address</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#storeoptimizeinterval">4.5.8&nbsp;&nbsp;&nbsp;StoreOptimizeInterval</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id93">4.5.9&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id94">4.5.9.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id95">4.5.9.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id96">4.5.9.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#namespaces">4.6&nbsp;&nbsp;&nbsp;NameSpaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#namespace">4.6.1&nbsp;&nbsp;&nbsp;NameSpace</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id97">4.6.1.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id98">4.6.1.2&nbsp;&nbsp;&nbsp;Partition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#partitiontopic">4.6.1.3&nbsp;&nbsp;&nbsp;PartitionTopic</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id99">4.6.2&nbsp;&nbsp;&nbsp;Policy</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#merge">4.6.2.1&nbsp;&nbsp;&nbsp;Merge</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id100">4.6.2.1.1&nbsp;&nbsp;&nbsp;type</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#scope">4.6.2.1.2&nbsp;&nbsp;&nbsp;scope</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id101">4.6.2.2&nbsp;&nbsp;&nbsp;nameSpace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#durability">4.6.2.3&nbsp;&nbsp;&nbsp;durability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#aligner">4.6.2.4&nbsp;&nbsp;&nbsp;aligner</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#alignee">4.6.2.5&nbsp;&nbsp;&nbsp;alignee</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#delayedalignment">4.6.2.6&nbsp;&nbsp;&nbsp;delayedAlignment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#equalitycheck">4.6.2.7&nbsp;&nbsp;&nbsp;equalityCheck</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#filters">4.6.3&nbsp;&nbsp;&nbsp;Filters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#filter">4.6.3.1&nbsp;&nbsp;&nbsp;Filter</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#content">4.6.3.1.1&nbsp;&nbsp;&nbsp;content</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id102">4.6.3.1.2&nbsp;&nbsp;&nbsp;PartitionTopic</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id103">4.7&nbsp;&nbsp;&nbsp;EntityNames</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id104">4.7.1&nbsp;&nbsp;&nbsp;Publisher</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id105">4.7.2&nbsp;&nbsp;&nbsp;Subscriber</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id106">4.7.3&nbsp;&nbsp;&nbsp;Partition</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id107">4.8&nbsp;&nbsp;&nbsp;Tracing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id108">4.8.1&nbsp;&nbsp;&nbsp;synchronous</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id109">4.8.2&nbsp;&nbsp;&nbsp;OutputFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id110">4.8.3&nbsp;&nbsp;&nbsp;Timestamps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id111">4.8.3.1&nbsp;&nbsp;&nbsp;absolute</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id112">4.8.4&nbsp;&nbsp;&nbsp;Verbosity</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html#snetworkservice">5&nbsp;&nbsp;&nbsp;SNetworkService</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id113">5.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id114">5.2&nbsp;&nbsp;&nbsp;Watchdog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id115">5.2.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id116">5.2.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id117">5.2.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id118">5.2.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#general">5.3&nbsp;&nbsp;&nbsp;General</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#networkinterfaceaddress">5.3.1&nbsp;&nbsp;&nbsp;NetworkInterfaceAddress</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#forced">5.3.1.1&nbsp;&nbsp;&nbsp;forced</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#ipv6">5.3.1.2&nbsp;&nbsp;&nbsp;ipv6</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#bind">5.3.1.3&nbsp;&nbsp;&nbsp;bind</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#allowreuse">5.3.1.4&nbsp;&nbsp;&nbsp;allowReuse</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#enablemulticastloopback">5.3.2&nbsp;&nbsp;&nbsp;EnableMulticastLoopback</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#legacycompression">5.3.3&nbsp;&nbsp;&nbsp;LegacyCompression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#reconnection">5.3.4&nbsp;&nbsp;&nbsp;Reconnection</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#allowed">5.3.4.1&nbsp;&nbsp;&nbsp;allowed</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#partitioning">5.4&nbsp;&nbsp;&nbsp;Partitioning</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#globalpartition">5.4.1&nbsp;&nbsp;&nbsp;GlobalPartition</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id119">5.4.1.1&nbsp;&nbsp;&nbsp;Address</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#securityprofile">5.4.1.2&nbsp;&nbsp;&nbsp;SecurityProfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#multicasttimetolive">5.4.1.3&nbsp;&nbsp;&nbsp;MulticastTimeToLive</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#networkpartitions">5.4.2&nbsp;&nbsp;&nbsp;NetworkPartitions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#networkpartition">5.4.2.1&nbsp;&nbsp;&nbsp;NetworkPartition</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id120">5.4.2.1.1&nbsp;&nbsp;&nbsp;Name</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id121">5.4.2.1.2&nbsp;&nbsp;&nbsp;Address</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#connected">5.4.2.1.3&nbsp;&nbsp;&nbsp;Connected</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id122">5.4.2.1.4&nbsp;&nbsp;&nbsp;Compression</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id123">5.4.2.1.5&nbsp;&nbsp;&nbsp;SecurityProfile</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id124">5.4.2.1.6&nbsp;&nbsp;&nbsp;MulticastTimeToLive</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#ignoredpartitions">5.4.3&nbsp;&nbsp;&nbsp;IgnoredPartitions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#ignoredpartition">5.4.3.1&nbsp;&nbsp;&nbsp;IgnoredPartition</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#dcpspartitiontopic">5.4.3.1.1&nbsp;&nbsp;&nbsp;DCPSPartitionTopic</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#partitionmappings">5.4.4&nbsp;&nbsp;&nbsp;PartitionMappings</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#partitionmapping">5.4.4.1&nbsp;&nbsp;&nbsp;PartitionMapping</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id125">5.4.4.1.1&nbsp;&nbsp;&nbsp;NetworkPartition</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id126">5.4.4.1.2&nbsp;&nbsp;&nbsp;DCPSPartitionTopic</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#security">5.5&nbsp;&nbsp;&nbsp;Security</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id127">5.5.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id128">5.5.2&nbsp;&nbsp;&nbsp;SecurityProfile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id129">5.5.2.1&nbsp;&nbsp;&nbsp;Name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#cipher">5.5.2.2&nbsp;&nbsp;&nbsp;Cipher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#cipherkey">5.5.2.3&nbsp;&nbsp;&nbsp;CipherKey</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#accesscontrol">5.5.3&nbsp;&nbsp;&nbsp;AccessControl</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id130">5.5.3.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id131">5.5.3.2&nbsp;&nbsp;&nbsp;policy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#accesscontrolmodule">5.5.3.3&nbsp;&nbsp;&nbsp;AccessControlModule</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id132">5.5.3.3.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id133">5.5.3.3.2&nbsp;&nbsp;&nbsp;type</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#authentication">5.5.4&nbsp;&nbsp;&nbsp;Authentication</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id134">5.5.4.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#x509authentication">5.5.4.2&nbsp;&nbsp;&nbsp;X509Authentication</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#credentials">5.5.4.2.1&nbsp;&nbsp;&nbsp;Credentials</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#key">5.5.4.2.1.1&nbsp;&nbsp;&nbsp;Key</a></li>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#cert">5.5.4.2.1.2&nbsp;&nbsp;&nbsp;Cert</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#trustedcertificates">5.5.4.2.2&nbsp;&nbsp;&nbsp;TrustedCertificates</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#channels">5.6&nbsp;&nbsp;&nbsp;Channels</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#channel">5.6.1&nbsp;&nbsp;&nbsp;Channel</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id135">5.6.1.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#reliable">5.6.1.2&nbsp;&nbsp;&nbsp;reliable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#default">5.6.1.3&nbsp;&nbsp;&nbsp;default</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id136">5.6.1.4&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id137">5.6.1.5&nbsp;&nbsp;&nbsp;priority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#portnr">5.6.1.6&nbsp;&nbsp;&nbsp;PortNr</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#fragmentsize">5.6.1.7&nbsp;&nbsp;&nbsp;FragmentSize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#resolution">5.6.1.8&nbsp;&nbsp;&nbsp;Resolution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#adminqueuesize">5.6.1.9&nbsp;&nbsp;&nbsp;AdminQueueSize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#compressionbuffersize">5.6.1.10&nbsp;&nbsp;&nbsp;CompressionBufferSize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#compressionthreshold">5.6.1.11&nbsp;&nbsp;&nbsp;CompressionThreshold</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#sending">5.6.1.12&nbsp;&nbsp;&nbsp;Sending</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#crccheck">5.6.1.12.1&nbsp;&nbsp;&nbsp;CrcCheck</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#queuesize">5.6.1.12.2&nbsp;&nbsp;&nbsp;QueueSize</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#maxburstsize">5.6.1.12.3&nbsp;&nbsp;&nbsp;MaxBurstSize</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#throttlelimit">5.6.1.12.4&nbsp;&nbsp;&nbsp;ThrottleLimit</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#throttlethreshold">5.6.1.12.5&nbsp;&nbsp;&nbsp;ThrottleThreshold</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#maxretries">5.6.1.12.6&nbsp;&nbsp;&nbsp;MaxRetries</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#recoveryfactor">5.6.1.12.7&nbsp;&nbsp;&nbsp;RecoveryFactor</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#diffservfield">5.6.1.12.8&nbsp;&nbsp;&nbsp;DiffServField</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#dontroute">5.6.1.12.9&nbsp;&nbsp;&nbsp;DontRoute</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#timetolive">5.6.1.12.10&nbsp;&nbsp;&nbsp;TimeToLive</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id138">5.6.1.12.11&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id139">5.6.1.12.11.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="guide.html#id140">5.6.1.12.11.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id141">5.6.1.12.11.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#receiving">5.6.1.13&nbsp;&nbsp;&nbsp;Receiving</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id142">5.6.1.13.1&nbsp;&nbsp;&nbsp;CrcCheck</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#receivebuffersize">5.6.1.13.2&nbsp;&nbsp;&nbsp;ReceiveBufferSize</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id143">5.6.1.13.3&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id144">5.6.1.13.3.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="guide.html#id145">5.6.1.13.3.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id146">5.6.1.13.3.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#defragbuffersize">5.6.1.13.4&nbsp;&nbsp;&nbsp;DefragBufferSize</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#smpoptimization">5.6.1.13.5&nbsp;&nbsp;&nbsp;SMPOptimization</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id147">5.6.1.13.5.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#maxreliabbacklog">5.6.1.13.6&nbsp;&nbsp;&nbsp;MaxReliabBacklog</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#packetretentionperiod">5.6.1.13.7&nbsp;&nbsp;&nbsp;PacketRetentionPeriod</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#reliabilityrecoveryperiod">5.6.1.13.8&nbsp;&nbsp;&nbsp;ReliabilityRecoveryPeriod</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#allowedports">5.6.1.14&nbsp;&nbsp;&nbsp;AllowedPorts</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id148">5.6.2&nbsp;&nbsp;&nbsp;AllowedPorts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#discovery">5.7&nbsp;&nbsp;&nbsp;Discovery</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id149">5.7.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id150">5.7.2&nbsp;&nbsp;&nbsp;Scope</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id151">5.7.3&nbsp;&nbsp;&nbsp;PortNr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#probelist">5.7.4&nbsp;&nbsp;&nbsp;ProbeList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id152">5.7.5&nbsp;&nbsp;&nbsp;Sending</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id153">5.7.5.1&nbsp;&nbsp;&nbsp;CrcCheck</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id154">5.7.5.2&nbsp;&nbsp;&nbsp;DiffServField</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id155">5.7.5.3&nbsp;&nbsp;&nbsp;DontRoute</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id156">5.7.5.4&nbsp;&nbsp;&nbsp;TimeToLive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id157">5.7.5.5&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id158">5.7.5.5.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id159">5.7.5.5.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id160">5.7.5.5.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#interval">5.7.5.6&nbsp;&nbsp;&nbsp;Interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#safetyfactor">5.7.5.7&nbsp;&nbsp;&nbsp;SafetyFactor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#salvosize">5.7.5.8&nbsp;&nbsp;&nbsp;SalvoSize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id161">5.7.6&nbsp;&nbsp;&nbsp;Receiving</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id162">5.7.6.1&nbsp;&nbsp;&nbsp;CrcCheck</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id163">5.7.6.2&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id164">5.7.6.2.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id165">5.7.6.2.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id166">5.7.6.2.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#deathdetectioncount">5.7.6.3&nbsp;&nbsp;&nbsp;DeathDetectionCount</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id167">5.7.6.4&nbsp;&nbsp;&nbsp;ReceiveBufferSize</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id168">5.8&nbsp;&nbsp;&nbsp;Tracing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id169">5.8.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id170">5.8.2&nbsp;&nbsp;&nbsp;OutputFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id171">5.8.3&nbsp;&nbsp;&nbsp;Timestamps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id172">5.8.3.1&nbsp;&nbsp;&nbsp;absolute</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#categories">5.8.4&nbsp;&nbsp;&nbsp;Categories</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id173">5.8.4.1&nbsp;&nbsp;&nbsp;Default</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id174">5.8.4.2&nbsp;&nbsp;&nbsp;Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#construction">5.8.4.3&nbsp;&nbsp;&nbsp;Construction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#destruction">5.8.4.4&nbsp;&nbsp;&nbsp;Destruction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#mainloop">5.8.4.5&nbsp;&nbsp;&nbsp;Mainloop</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#groups">5.8.4.6&nbsp;&nbsp;&nbsp;Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#send">5.8.4.7&nbsp;&nbsp;&nbsp;Send</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#receive">5.8.4.8&nbsp;&nbsp;&nbsp;Receive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#throttling">5.8.4.9&nbsp;&nbsp;&nbsp;Throttling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#test">5.8.4.10&nbsp;&nbsp;&nbsp;Test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id175">5.8.4.11&nbsp;&nbsp;&nbsp;Discovery</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id176">5.9&nbsp;&nbsp;&nbsp;Compression</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#pluginlibrary">5.9.1&nbsp;&nbsp;&nbsp;PluginLibrary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#plugininitfunction">5.9.2&nbsp;&nbsp;&nbsp;PluginInitFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#pluginparameter">5.9.3&nbsp;&nbsp;&nbsp;PluginParameter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html#networkservice">6&nbsp;&nbsp;&nbsp;NetworkService</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id177">6.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id178">6.2&nbsp;&nbsp;&nbsp;Watchdog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id179">6.2.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id180">6.2.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id181">6.2.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id182">6.2.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id183">6.3&nbsp;&nbsp;&nbsp;General</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id184">6.3.1&nbsp;&nbsp;&nbsp;NetworkInterfaceAddress</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id185">6.3.1.1&nbsp;&nbsp;&nbsp;forced</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id186">6.3.1.2&nbsp;&nbsp;&nbsp;ipv6</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id187">6.3.1.3&nbsp;&nbsp;&nbsp;bind</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id188">6.3.1.4&nbsp;&nbsp;&nbsp;allowReuse</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id189">6.3.2&nbsp;&nbsp;&nbsp;EnableMulticastLoopback</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id190">6.3.3&nbsp;&nbsp;&nbsp;LegacyCompression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id191">6.3.4&nbsp;&nbsp;&nbsp;Reconnection</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id192">6.3.4.1&nbsp;&nbsp;&nbsp;allowed</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id193">6.4&nbsp;&nbsp;&nbsp;Partitioning</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id194">6.4.1&nbsp;&nbsp;&nbsp;GlobalPartition</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id195">6.4.1.1&nbsp;&nbsp;&nbsp;Address</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id196">6.4.1.2&nbsp;&nbsp;&nbsp;MulticastTimeToLive</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id197">6.4.2&nbsp;&nbsp;&nbsp;NetworkPartitions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id198">6.4.2.1&nbsp;&nbsp;&nbsp;NetworkPartition</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id199">6.4.2.1.1&nbsp;&nbsp;&nbsp;Name</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id200">6.4.2.1.2&nbsp;&nbsp;&nbsp;Address</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id201">6.4.2.1.3&nbsp;&nbsp;&nbsp;Connected</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id202">6.4.2.1.4&nbsp;&nbsp;&nbsp;Compression</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id203">6.4.2.1.5&nbsp;&nbsp;&nbsp;SecurityProfile</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id204">6.4.2.1.6&nbsp;&nbsp;&nbsp;MulticastTimeToLive</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id205">6.4.3&nbsp;&nbsp;&nbsp;IgnoredPartitions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id206">6.4.3.1&nbsp;&nbsp;&nbsp;IgnoredPartition</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id207">6.4.3.1.1&nbsp;&nbsp;&nbsp;DCPSPartitionTopic</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id208">6.4.4&nbsp;&nbsp;&nbsp;PartitionMappings</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id209">6.4.4.1&nbsp;&nbsp;&nbsp;PartitionMapping</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id210">6.4.4.1.1&nbsp;&nbsp;&nbsp;NetworkPartition</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id211">6.4.4.1.2&nbsp;&nbsp;&nbsp;DCPSPartitionTopic</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id212">6.5&nbsp;&nbsp;&nbsp;Channels</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id213">6.5.1&nbsp;&nbsp;&nbsp;Channel</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id214">6.5.1.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id215">6.5.1.2&nbsp;&nbsp;&nbsp;reliable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id216">6.5.1.3&nbsp;&nbsp;&nbsp;default</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id217">6.5.1.4&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id218">6.5.1.5&nbsp;&nbsp;&nbsp;priority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id219">6.5.1.6&nbsp;&nbsp;&nbsp;PortNr</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id220">6.5.1.7&nbsp;&nbsp;&nbsp;FragmentSize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id221">6.5.1.8&nbsp;&nbsp;&nbsp;Resolution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id222">6.5.1.9&nbsp;&nbsp;&nbsp;AdminQueueSize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id223">6.5.1.10&nbsp;&nbsp;&nbsp;CompressionBufferSize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id224">6.5.1.11&nbsp;&nbsp;&nbsp;CompressionThreshold</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id225">6.5.1.12&nbsp;&nbsp;&nbsp;Sending</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id226">6.5.1.12.1&nbsp;&nbsp;&nbsp;CrcCheck</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id227">6.5.1.12.2&nbsp;&nbsp;&nbsp;QueueSize</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id228">6.5.1.12.3&nbsp;&nbsp;&nbsp;MaxBurstSize</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id229">6.5.1.12.4&nbsp;&nbsp;&nbsp;ThrottleLimit</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id230">6.5.1.12.5&nbsp;&nbsp;&nbsp;ThrottleThreshold</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id231">6.5.1.12.6&nbsp;&nbsp;&nbsp;MaxRetries</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id232">6.5.1.12.7&nbsp;&nbsp;&nbsp;RecoveryFactor</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id233">6.5.1.12.8&nbsp;&nbsp;&nbsp;DiffServField</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id234">6.5.1.12.9&nbsp;&nbsp;&nbsp;DontRoute</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id235">6.5.1.12.10&nbsp;&nbsp;&nbsp;TimeToLive</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id236">6.5.1.12.11&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id237">6.5.1.12.11.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="guide.html#id238">6.5.1.12.11.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id239">6.5.1.12.11.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id240">6.5.1.13&nbsp;&nbsp;&nbsp;Receiving</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id241">6.5.1.13.1&nbsp;&nbsp;&nbsp;CrcCheck</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id242">6.5.1.13.2&nbsp;&nbsp;&nbsp;ReceiveBufferSize</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id243">6.5.1.13.3&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id244">6.5.1.13.3.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="guide.html#id245">6.5.1.13.3.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id246">6.5.1.13.3.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id247">6.5.1.13.4&nbsp;&nbsp;&nbsp;DefragBufferSize</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id248">6.5.1.13.5&nbsp;&nbsp;&nbsp;SMPOptimization</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id249">6.5.1.13.5.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id250">6.5.1.13.6&nbsp;&nbsp;&nbsp;MaxReliabBacklog</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id251">6.5.1.13.7&nbsp;&nbsp;&nbsp;PacketRetentionPeriod</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id252">6.5.1.13.8&nbsp;&nbsp;&nbsp;ReliabilityRecoveryPeriod</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id253">6.5.1.14&nbsp;&nbsp;&nbsp;AllowedPorts</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id254">6.5.2&nbsp;&nbsp;&nbsp;AllowedPorts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id255">6.6&nbsp;&nbsp;&nbsp;Discovery</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id256">6.6.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id257">6.6.2&nbsp;&nbsp;&nbsp;Scope</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id258">6.6.3&nbsp;&nbsp;&nbsp;PortNr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id259">6.6.4&nbsp;&nbsp;&nbsp;ProbeList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id260">6.6.5&nbsp;&nbsp;&nbsp;Sending</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id261">6.6.5.1&nbsp;&nbsp;&nbsp;CrcCheck</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id262">6.6.5.2&nbsp;&nbsp;&nbsp;DiffServField</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id263">6.6.5.3&nbsp;&nbsp;&nbsp;DontRoute</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id264">6.6.5.4&nbsp;&nbsp;&nbsp;TimeToLive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id265">6.6.5.5&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id266">6.6.5.5.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id267">6.6.5.5.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id268">6.6.5.5.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id269">6.6.5.6&nbsp;&nbsp;&nbsp;Interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id270">6.6.5.7&nbsp;&nbsp;&nbsp;SafetyFactor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id271">6.6.5.8&nbsp;&nbsp;&nbsp;SalvoSize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id272">6.6.6&nbsp;&nbsp;&nbsp;Receiving</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id273">6.6.6.1&nbsp;&nbsp;&nbsp;CrcCheck</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id274">6.6.6.2&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id275">6.6.6.2.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id276">6.6.6.2.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id277">6.6.6.2.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id278">6.6.6.3&nbsp;&nbsp;&nbsp;DeathDetectionCount</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id279">6.6.6.4&nbsp;&nbsp;&nbsp;ReceiveBufferSize</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id280">6.7&nbsp;&nbsp;&nbsp;Tracing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id281">6.7.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id282">6.7.2&nbsp;&nbsp;&nbsp;OutputFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id283">6.7.3&nbsp;&nbsp;&nbsp;Timestamps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id284">6.7.3.1&nbsp;&nbsp;&nbsp;absolute</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id285">6.7.4&nbsp;&nbsp;&nbsp;Categories</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id286">6.7.4.1&nbsp;&nbsp;&nbsp;Default</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id287">6.7.4.2&nbsp;&nbsp;&nbsp;Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id288">6.7.4.3&nbsp;&nbsp;&nbsp;Construction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id289">6.7.4.4&nbsp;&nbsp;&nbsp;Destruction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id290">6.7.4.5&nbsp;&nbsp;&nbsp;Mainloop</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id291">6.7.4.6&nbsp;&nbsp;&nbsp;Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id292">6.7.4.7&nbsp;&nbsp;&nbsp;Send</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id293">6.7.4.8&nbsp;&nbsp;&nbsp;Receive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id294">6.7.4.9&nbsp;&nbsp;&nbsp;Throttling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id295">6.7.4.10&nbsp;&nbsp;&nbsp;Test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id296">6.7.4.11&nbsp;&nbsp;&nbsp;Discovery</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id297">6.8&nbsp;&nbsp;&nbsp;Compression</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id298">6.8.1&nbsp;&nbsp;&nbsp;PluginLibrary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id299">6.8.2&nbsp;&nbsp;&nbsp;PluginInitFunction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id300">6.8.3&nbsp;&nbsp;&nbsp;PluginParameter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html#networkingbridgeservice">7&nbsp;&nbsp;&nbsp;NetworkingBridgeService</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id301">7.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#exclude">7.2&nbsp;&nbsp;&nbsp;Exclude</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#entry">7.2.1&nbsp;&nbsp;&nbsp;Entry</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id302">7.2.1.1&nbsp;&nbsp;&nbsp;DCPSPartitionTopic</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#include">7.3&nbsp;&nbsp;&nbsp;Include</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id303">7.3.1&nbsp;&nbsp;&nbsp;Entry</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id304">7.3.1.1&nbsp;&nbsp;&nbsp;DCPSPartitionTopic</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id305">7.4&nbsp;&nbsp;&nbsp;Tracing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#appendtofile">7.4.1&nbsp;&nbsp;&nbsp;AppendToFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#enablecategory">7.4.2&nbsp;&nbsp;&nbsp;EnableCategory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id306">7.4.3&nbsp;&nbsp;&nbsp;OutputFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id307">7.4.4&nbsp;&nbsp;&nbsp;Verbosity</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id308">7.5&nbsp;&nbsp;&nbsp;Watchdog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id309">7.5.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id310">7.5.1.1&nbsp;&nbsp;&nbsp;Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id311">7.5.1.2&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id312">7.5.1.2.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html#ddsi2eservice">8&nbsp;&nbsp;&nbsp;DDSI2EService</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id313">8.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id314">8.2&nbsp;&nbsp;&nbsp;Channels</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id315">8.2.1&nbsp;&nbsp;&nbsp;Channel</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id316">8.2.1.1&nbsp;&nbsp;&nbsp;Name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#transportpriority">8.2.1.2&nbsp;&nbsp;&nbsp;TransportPriority</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#auxiliarybandwidthlimit">8.2.1.3&nbsp;&nbsp;&nbsp;AuxiliaryBandwidthLimit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#databandwidthlimit">8.2.1.4&nbsp;&nbsp;&nbsp;DataBandwidthLimit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id317">8.2.1.5&nbsp;&nbsp;&nbsp;DiffServField</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id318">8.2.1.6&nbsp;&nbsp;&nbsp;QueueSize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id319">8.2.1.7&nbsp;&nbsp;&nbsp;Resolution</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#compatibility">8.3&nbsp;&nbsp;&nbsp;Compatibility</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#acknacknumbitsemptyset">8.3.1&nbsp;&nbsp;&nbsp;AckNackNumbitsEmptySet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#arrivalofdataassertsppandepliveliness">8.3.2&nbsp;&nbsp;&nbsp;ArrivalOfDataAssertsPpAndEpLiveliness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#assumertihaspmdendpoints">8.3.3&nbsp;&nbsp;&nbsp;AssumeRtiHasPmdEndpoints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#explicitlypublishqossettodefault">8.3.4&nbsp;&nbsp;&nbsp;ExplicitlyPublishQosSetToDefault</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#manysocketsmode">8.3.5&nbsp;&nbsp;&nbsp;ManySocketsMode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#respondtortiinitzeroackwithinvalidheartbeat">8.3.6&nbsp;&nbsp;&nbsp;RespondToRtiInitZeroAckWithInvalidHeartbeat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#standardsconformance">8.3.7&nbsp;&nbsp;&nbsp;StandardsConformance</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id320">8.4&nbsp;&nbsp;&nbsp;Discovery</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#advertisebuiltintopicwriters">8.4.1&nbsp;&nbsp;&nbsp;AdvertiseBuiltinTopicWriters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#defaultmulticastaddress">8.4.2&nbsp;&nbsp;&nbsp;DefaultMulticastAddress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#domainid">8.4.3&nbsp;&nbsp;&nbsp;DomainId</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#generatebuiltintopics">8.4.4&nbsp;&nbsp;&nbsp;GenerateBuiltinTopics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#localdiscoverypartition">8.4.5&nbsp;&nbsp;&nbsp;LocalDiscoveryPartition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#maxautoparticipantindex">8.4.6&nbsp;&nbsp;&nbsp;MaxAutoParticipantIndex</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#participantindex">8.4.7&nbsp;&nbsp;&nbsp;ParticipantIndex</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#peers">8.4.8&nbsp;&nbsp;&nbsp;Peers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#group">8.4.8.1&nbsp;&nbsp;&nbsp;Group</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#peer">8.4.8.1.1&nbsp;&nbsp;&nbsp;Peer</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id321">8.4.8.1.1.1&nbsp;&nbsp;&nbsp;Address</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id322">8.4.8.2&nbsp;&nbsp;&nbsp;Peer</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id323">8.4.8.2.1&nbsp;&nbsp;&nbsp;Address</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#ports">8.4.9&nbsp;&nbsp;&nbsp;Ports</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#base">8.4.9.1&nbsp;&nbsp;&nbsp;Base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#domaingain">8.4.9.2&nbsp;&nbsp;&nbsp;DomainGain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#multicastdataoffset">8.4.9.3&nbsp;&nbsp;&nbsp;MulticastDataOffset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#multicastmetaoffset">8.4.9.4&nbsp;&nbsp;&nbsp;MulticastMetaOffset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#participantgain">8.4.9.5&nbsp;&nbsp;&nbsp;ParticipantGain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#unicastdataoffset">8.4.9.6&nbsp;&nbsp;&nbsp;UnicastDataOffset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#unicastmetaoffset">8.4.9.7&nbsp;&nbsp;&nbsp;UnicastMetaOffset</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#spdpinterval">8.4.10&nbsp;&nbsp;&nbsp;SPDPInterval</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#spdpmulticastaddress">8.4.11&nbsp;&nbsp;&nbsp;SPDPMulticastAddress</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id324">8.5&nbsp;&nbsp;&nbsp;General</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#allowmulticast">8.5.1&nbsp;&nbsp;&nbsp;AllowMulticast</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#coexistwithnativenetworking">8.5.2&nbsp;&nbsp;&nbsp;CoexistWithNativeNetworking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id325">8.5.3&nbsp;&nbsp;&nbsp;DontRoute</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id326">8.5.4&nbsp;&nbsp;&nbsp;EnableMulticastLoopback</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#externalnetworkaddress">8.5.5&nbsp;&nbsp;&nbsp;ExternalNetworkAddress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#externalnetworkmask">8.5.6&nbsp;&nbsp;&nbsp;ExternalNetworkMask</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id327">8.5.7&nbsp;&nbsp;&nbsp;FragmentSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#maxmessagesize">8.5.8&nbsp;&nbsp;&nbsp;MaxMessageSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#multicastrecvnetworkinterfaceaddresses">8.5.9&nbsp;&nbsp;&nbsp;MulticastRecvNetworkInterfaceAddresses</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id328">8.5.10&nbsp;&nbsp;&nbsp;MulticastTimeToLive</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id329">8.5.11&nbsp;&nbsp;&nbsp;NetworkInterfaceAddress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#startupmodecoverstransient">8.5.12&nbsp;&nbsp;&nbsp;StartupModeCoversTransient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#startupmodeduration">8.5.13&nbsp;&nbsp;&nbsp;StartupModeDuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#useipv6">8.5.14&nbsp;&nbsp;&nbsp;UseIPv6</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#internal">8.6&nbsp;&nbsp;&nbsp;Internal</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#acceleraterexmitblocksize">8.6.1&nbsp;&nbsp;&nbsp;AccelerateRexmitBlockSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#aggressivekeeplastwhc">8.6.2&nbsp;&nbsp;&nbsp;AggressiveKeepLastWhc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id330">8.6.3&nbsp;&nbsp;&nbsp;AggressiveKeepLastWhc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#assumemulticastcapable">8.6.4&nbsp;&nbsp;&nbsp;AssumeMulticastCapable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id331">8.6.5&nbsp;&nbsp;&nbsp;AuxiliaryBandwidthLimit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#builtinendpointset">8.6.6&nbsp;&nbsp;&nbsp;BuiltinEndpointSet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#conservativebuiltinreaderstartup">8.6.7&nbsp;&nbsp;&nbsp;ConservativeBuiltinReaderStartup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#controltopic">8.6.8&nbsp;&nbsp;&nbsp;ControlTopic</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#enable">8.6.8.1&nbsp;&nbsp;&nbsp;enable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#deafmute">8.6.8.2&nbsp;&nbsp;&nbsp;DeafMute</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#ddsi2directmaxthreads">8.6.9&nbsp;&nbsp;&nbsp;DDSI2DirectMaxThreads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#defragreliablemaxsamples">8.6.10&nbsp;&nbsp;&nbsp;DefragReliableMaxSamples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#defragunreliablemaxsamples">8.6.11&nbsp;&nbsp;&nbsp;DefragUnreliableMaxSamples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#deliveryqueuemaxsamples">8.6.12&nbsp;&nbsp;&nbsp;DeliveryQueueMaxSamples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#forwardallmessages">8.6.13&nbsp;&nbsp;&nbsp;ForwardAllMessages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#forwardremotedata">8.6.14&nbsp;&nbsp;&nbsp;ForwardRemoteData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#generatekeyhash">8.6.15&nbsp;&nbsp;&nbsp;GenerateKeyhash</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#lateackmode">8.6.16&nbsp;&nbsp;&nbsp;LateAckMode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#leaseduration">8.6.17&nbsp;&nbsp;&nbsp;LeaseDuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#legacyfragmentation">8.6.18&nbsp;&nbsp;&nbsp;LegacyFragmentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#logstacktraces">8.6.19&nbsp;&nbsp;&nbsp;LogStackTraces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#maxparticipants">8.6.20&nbsp;&nbsp;&nbsp;MaxParticipants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#maxqueuedrexmitbytes">8.6.21&nbsp;&nbsp;&nbsp;MaxQueuedRexmitBytes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#maxqueuedrexmitmessages">8.6.22&nbsp;&nbsp;&nbsp;MaxQueuedRexmitMessages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#maxsamplesize">8.6.23&nbsp;&nbsp;&nbsp;MaxSampleSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#measurehbtoacklatency">8.6.24&nbsp;&nbsp;&nbsp;MeasureHbToAckLatency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#minimumsocketreceivebuffersize">8.6.25&nbsp;&nbsp;&nbsp;MinimumSocketReceiveBufferSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#minimumsocketsendbuffersize">8.6.26&nbsp;&nbsp;&nbsp;MinimumSocketSendBufferSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#mirrorremoteentities">8.6.27&nbsp;&nbsp;&nbsp;MirrorRemoteEntities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#monitorport">8.6.28&nbsp;&nbsp;&nbsp;MonitorPort</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#nackdelay">8.6.29&nbsp;&nbsp;&nbsp;NackDelay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#preemptiveackdelay">8.6.30&nbsp;&nbsp;&nbsp;PreEmptiveAckDelay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#primaryreordermaxsamples">8.6.31&nbsp;&nbsp;&nbsp;PrimaryReorderMaxSamples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#prioritizeretransmit">8.6.32&nbsp;&nbsp;&nbsp;PrioritizeRetransmit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#rediscoveryblacklistduration">8.6.33&nbsp;&nbsp;&nbsp;RediscoveryBlacklistDuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#enforce">8.6.33.1&nbsp;&nbsp;&nbsp;enforce</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#responsivenesstimeout">8.6.34&nbsp;&nbsp;&nbsp;ResponsivenessTimeout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#retransmitmerging">8.6.35&nbsp;&nbsp;&nbsp;RetransmitMerging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#retransmitmergingperiod">8.6.36&nbsp;&nbsp;&nbsp;RetransmitMergingPeriod</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#retryonrejectbesteffort">8.6.37&nbsp;&nbsp;&nbsp;RetryOnRejectBestEffort</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#retryonrejectduration">8.6.38&nbsp;&nbsp;&nbsp;RetryOnRejectDuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#spdpresponsemaxdelay">8.6.39&nbsp;&nbsp;&nbsp;SPDPResponseMaxDelay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#scheduletimerounding">8.6.40&nbsp;&nbsp;&nbsp;ScheduleTimeRounding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#secondaryreordermaxsamples">8.6.41&nbsp;&nbsp;&nbsp;SecondaryReorderMaxSamples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#squashparticipants">8.6.42&nbsp;&nbsp;&nbsp;SquashParticipants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#suppressspdpmulticast">8.6.43&nbsp;&nbsp;&nbsp;SuppressSPDPMulticast</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#synchronousdeliverylatencybound">8.6.44&nbsp;&nbsp;&nbsp;SynchronousDeliveryLatencyBound</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#synchronousdeliveryprioritythreshold">8.6.45&nbsp;&nbsp;&nbsp;SynchronousDeliveryPriorityThreshold</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id332">8.6.46&nbsp;&nbsp;&nbsp;Test</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#xmitlossiness">8.6.46.1&nbsp;&nbsp;&nbsp;XmitLossiness</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#unicastresponsetospdpmessages">8.6.47&nbsp;&nbsp;&nbsp;UnicastResponseToSPDPMessages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#usemulticastifmreqn">8.6.48&nbsp;&nbsp;&nbsp;UseMulticastIfMreqn</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#watermarks">8.6.49&nbsp;&nbsp;&nbsp;Watermarks</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#whcadaptive">8.6.49.1&nbsp;&nbsp;&nbsp;WhcAdaptive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#whchigh">8.6.49.2&nbsp;&nbsp;&nbsp;WhcHigh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#whchighinit">8.6.49.3&nbsp;&nbsp;&nbsp;WhcHighInit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#whclow">8.6.49.4&nbsp;&nbsp;&nbsp;WhcLow</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#writerlingerduration">8.6.50&nbsp;&nbsp;&nbsp;WriterLingerDuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id333">8.7&nbsp;&nbsp;&nbsp;Partitioning</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id334">8.7.1&nbsp;&nbsp;&nbsp;IgnoredPartitions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id335">8.7.1.1&nbsp;&nbsp;&nbsp;IgnoredPartition</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id336">8.7.1.1.1&nbsp;&nbsp;&nbsp;DCPSPartitionTopic</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id337">8.7.2&nbsp;&nbsp;&nbsp;NetworkPartitions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id338">8.7.2.1&nbsp;&nbsp;&nbsp;NetworkPartition</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id339">8.7.2.1.1&nbsp;&nbsp;&nbsp;Address</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id340">8.7.2.1.2&nbsp;&nbsp;&nbsp;Connected</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id341">8.7.2.1.3&nbsp;&nbsp;&nbsp;Name</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id342">8.7.2.1.4&nbsp;&nbsp;&nbsp;SecurityProfile</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id343">8.7.3&nbsp;&nbsp;&nbsp;PartitionMappings</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id344">8.7.3.1&nbsp;&nbsp;&nbsp;PartitionMapping</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id345">8.7.3.1.1&nbsp;&nbsp;&nbsp;DCPSPartitionTopic</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id346">8.7.3.1.2&nbsp;&nbsp;&nbsp;NetworkPartition</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#ssl">8.8&nbsp;&nbsp;&nbsp;SSL</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#certificateverification">8.8.1&nbsp;&nbsp;&nbsp;CertificateVerification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#ciphers">8.8.2&nbsp;&nbsp;&nbsp;Ciphers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id347">8.8.3&nbsp;&nbsp;&nbsp;Enable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#entropyfile">8.8.4&nbsp;&nbsp;&nbsp;EntropyFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#keypassphrase">8.8.5&nbsp;&nbsp;&nbsp;KeyPassphrase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#keystorefile">8.8.6&nbsp;&nbsp;&nbsp;KeystoreFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#selfsignedcertificates">8.8.7&nbsp;&nbsp;&nbsp;SelfSignedCertificates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#verifyclient">8.8.8&nbsp;&nbsp;&nbsp;VerifyClient</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id348">8.9&nbsp;&nbsp;&nbsp;Security</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id349">8.9.1&nbsp;&nbsp;&nbsp;SecurityProfile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id350">8.9.1.1&nbsp;&nbsp;&nbsp;Cipher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id351">8.9.1.2&nbsp;&nbsp;&nbsp;CipherKey</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id352">8.9.1.3&nbsp;&nbsp;&nbsp;Name</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#sizing">8.10&nbsp;&nbsp;&nbsp;Sizing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#endpointsinsystem">8.10.1&nbsp;&nbsp;&nbsp;EndpointsInSystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id353">8.10.2&nbsp;&nbsp;&nbsp;EndpointsInSystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#localendpoints">8.10.3&nbsp;&nbsp;&nbsp;LocalEndpoints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#networkqueuesize">8.10.4&nbsp;&nbsp;&nbsp;NetworkQueueSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id354">8.10.5&nbsp;&nbsp;&nbsp;NetworkQueueSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#receivebufferchunksize">8.10.6&nbsp;&nbsp;&nbsp;ReceiveBufferChunkSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id355">8.10.7&nbsp;&nbsp;&nbsp;ReceiveBufferChunkSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id356">8.10.8&nbsp;&nbsp;&nbsp;Watermarks</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id357">8.10.8.1&nbsp;&nbsp;&nbsp;WhcAdaptive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id358">8.10.8.2&nbsp;&nbsp;&nbsp;WhcHigh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id359">8.10.8.3&nbsp;&nbsp;&nbsp;WhcHighInit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id360">8.10.8.4&nbsp;&nbsp;&nbsp;WhcLow</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#tcp">8.11&nbsp;&nbsp;&nbsp;TCP</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id361">8.11.1&nbsp;&nbsp;&nbsp;Enable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#nodelay">8.11.2&nbsp;&nbsp;&nbsp;NoDelay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#port">8.11.3&nbsp;&nbsp;&nbsp;Port</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#readtimeout">8.11.4&nbsp;&nbsp;&nbsp;ReadTimeout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#writetimeout">8.11.5&nbsp;&nbsp;&nbsp;WriteTimeout</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#threadpool">8.12&nbsp;&nbsp;&nbsp;ThreadPool</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id362">8.12.1&nbsp;&nbsp;&nbsp;Enable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#threadmax">8.12.2&nbsp;&nbsp;&nbsp;ThreadMax</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#threads">8.12.3&nbsp;&nbsp;&nbsp;Threads</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id363">8.13&nbsp;&nbsp;&nbsp;Threads</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#thread">8.13.1&nbsp;&nbsp;&nbsp;Thread</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id364">8.13.1.1&nbsp;&nbsp;&nbsp;Name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id365">8.13.1.2&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id366">8.13.1.2.1&nbsp;&nbsp;&nbsp;Class</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id367">8.13.1.2.2&nbsp;&nbsp;&nbsp;Priority</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id368">8.13.1.3&nbsp;&nbsp;&nbsp;StackSize</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id369">8.14&nbsp;&nbsp;&nbsp;Tracing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id370">8.14.1&nbsp;&nbsp;&nbsp;AppendToFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id371">8.14.2&nbsp;&nbsp;&nbsp;EnableCategory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id372">8.14.3&nbsp;&nbsp;&nbsp;OutputFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#packetcapturefile">8.14.4&nbsp;&nbsp;&nbsp;PacketCaptureFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id373">8.14.5&nbsp;&nbsp;&nbsp;Timestamps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id374">8.14.5.1&nbsp;&nbsp;&nbsp;absolute</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id375">8.14.6&nbsp;&nbsp;&nbsp;Verbosity</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id376">8.15&nbsp;&nbsp;&nbsp;Watchdog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id377">8.15.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id378">8.15.1.1&nbsp;&nbsp;&nbsp;Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id379">8.15.1.2&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id380">8.15.1.2.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html#ddsi2service">9&nbsp;&nbsp;&nbsp;DDSI2Service</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id381">9.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id382">9.2&nbsp;&nbsp;&nbsp;Compatibility</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id383">9.2.1&nbsp;&nbsp;&nbsp;AckNackNumbitsEmptySet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id384">9.2.2&nbsp;&nbsp;&nbsp;ArrivalOfDataAssertsPpAndEpLiveliness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id385">9.2.3&nbsp;&nbsp;&nbsp;AssumeRtiHasPmdEndpoints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id386">9.2.4&nbsp;&nbsp;&nbsp;ExplicitlyPublishQosSetToDefault</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id387">9.2.5&nbsp;&nbsp;&nbsp;ManySocketsMode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id388">9.2.6&nbsp;&nbsp;&nbsp;RespondToRtiInitZeroAckWithInvalidHeartbeat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id389">9.2.7&nbsp;&nbsp;&nbsp;StandardsConformance</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id390">9.3&nbsp;&nbsp;&nbsp;Discovery</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id391">9.3.1&nbsp;&nbsp;&nbsp;AdvertiseBuiltinTopicWriters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id392">9.3.2&nbsp;&nbsp;&nbsp;DefaultMulticastAddress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id393">9.3.3&nbsp;&nbsp;&nbsp;DomainId</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id394">9.3.4&nbsp;&nbsp;&nbsp;GenerateBuiltinTopics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id395">9.3.5&nbsp;&nbsp;&nbsp;LocalDiscoveryPartition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id396">9.3.6&nbsp;&nbsp;&nbsp;MaxAutoParticipantIndex</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id397">9.3.7&nbsp;&nbsp;&nbsp;ParticipantIndex</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id398">9.3.8&nbsp;&nbsp;&nbsp;Peers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id399">9.3.8.1&nbsp;&nbsp;&nbsp;Group</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id400">9.3.8.1.1&nbsp;&nbsp;&nbsp;Peer</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="guide.html#id401">9.3.8.1.1.1&nbsp;&nbsp;&nbsp;Address</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id402">9.3.8.2&nbsp;&nbsp;&nbsp;Peer</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id403">9.3.8.2.1&nbsp;&nbsp;&nbsp;Address</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id404">9.3.9&nbsp;&nbsp;&nbsp;Ports</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id405">9.3.9.1&nbsp;&nbsp;&nbsp;Base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id406">9.3.9.2&nbsp;&nbsp;&nbsp;DomainGain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id407">9.3.9.3&nbsp;&nbsp;&nbsp;MulticastDataOffset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id408">9.3.9.4&nbsp;&nbsp;&nbsp;MulticastMetaOffset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id409">9.3.9.5&nbsp;&nbsp;&nbsp;ParticipantGain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id410">9.3.9.6&nbsp;&nbsp;&nbsp;UnicastDataOffset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id411">9.3.9.7&nbsp;&nbsp;&nbsp;UnicastMetaOffset</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id412">9.3.10&nbsp;&nbsp;&nbsp;SPDPInterval</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id413">9.3.11&nbsp;&nbsp;&nbsp;SPDPMulticastAddress</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id414">9.4&nbsp;&nbsp;&nbsp;General</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id415">9.4.1&nbsp;&nbsp;&nbsp;AllowMulticast</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id416">9.4.2&nbsp;&nbsp;&nbsp;CoexistWithNativeNetworking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id417">9.4.3&nbsp;&nbsp;&nbsp;DontRoute</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id418">9.4.4&nbsp;&nbsp;&nbsp;EnableMulticastLoopback</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id419">9.4.5&nbsp;&nbsp;&nbsp;ExternalNetworkAddress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id420">9.4.6&nbsp;&nbsp;&nbsp;ExternalNetworkMask</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id421">9.4.7&nbsp;&nbsp;&nbsp;FragmentSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id422">9.4.8&nbsp;&nbsp;&nbsp;MaxMessageSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id423">9.4.9&nbsp;&nbsp;&nbsp;MulticastRecvNetworkInterfaceAddresses</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id424">9.4.10&nbsp;&nbsp;&nbsp;MulticastTimeToLive</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id425">9.4.11&nbsp;&nbsp;&nbsp;NetworkInterfaceAddress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id426">9.4.12&nbsp;&nbsp;&nbsp;StartupModeCoversTransient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id427">9.4.13&nbsp;&nbsp;&nbsp;StartupModeDuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id428">9.4.14&nbsp;&nbsp;&nbsp;UseIPv6</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id429">9.5&nbsp;&nbsp;&nbsp;Internal</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id430">9.5.1&nbsp;&nbsp;&nbsp;AccelerateRexmitBlockSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id431">9.5.2&nbsp;&nbsp;&nbsp;AggressiveKeepLastWhc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id432">9.5.3&nbsp;&nbsp;&nbsp;AssumeMulticastCapable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id433">9.5.4&nbsp;&nbsp;&nbsp;BuiltinEndpointSet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id434">9.5.5&nbsp;&nbsp;&nbsp;ConservativeBuiltinReaderStartup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id435">9.5.6&nbsp;&nbsp;&nbsp;ControlTopic</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id436">9.5.6.1&nbsp;&nbsp;&nbsp;enable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id437">9.5.6.2&nbsp;&nbsp;&nbsp;DeafMute</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id438">9.5.7&nbsp;&nbsp;&nbsp;DDSI2DirectMaxThreads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id439">9.5.8&nbsp;&nbsp;&nbsp;DefragReliableMaxSamples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id440">9.5.9&nbsp;&nbsp;&nbsp;DefragUnreliableMaxSamples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id441">9.5.10&nbsp;&nbsp;&nbsp;DeliveryQueueMaxSamples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id442">9.5.11&nbsp;&nbsp;&nbsp;ForwardAllMessages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id443">9.5.12&nbsp;&nbsp;&nbsp;ForwardRemoteData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id444">9.5.13&nbsp;&nbsp;&nbsp;GenerateKeyhash</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id445">9.5.14&nbsp;&nbsp;&nbsp;LateAckMode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id446">9.5.15&nbsp;&nbsp;&nbsp;LeaseDuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id447">9.5.16&nbsp;&nbsp;&nbsp;LegacyFragmentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id448">9.5.17&nbsp;&nbsp;&nbsp;LogStackTraces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id449">9.5.18&nbsp;&nbsp;&nbsp;MaxParticipants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id450">9.5.19&nbsp;&nbsp;&nbsp;MaxQueuedRexmitBytes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id451">9.5.20&nbsp;&nbsp;&nbsp;MaxQueuedRexmitMessages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id452">9.5.21&nbsp;&nbsp;&nbsp;MaxSampleSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id453">9.5.22&nbsp;&nbsp;&nbsp;MeasureHbToAckLatency</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id454">9.5.23&nbsp;&nbsp;&nbsp;MinimumSocketReceiveBufferSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id455">9.5.24&nbsp;&nbsp;&nbsp;MinimumSocketSendBufferSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id456">9.5.25&nbsp;&nbsp;&nbsp;MirrorRemoteEntities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id457">9.5.26&nbsp;&nbsp;&nbsp;MonitorPort</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id458">9.5.27&nbsp;&nbsp;&nbsp;NackDelay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id459">9.5.28&nbsp;&nbsp;&nbsp;PreEmptiveAckDelay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id460">9.5.29&nbsp;&nbsp;&nbsp;PrimaryReorderMaxSamples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id461">9.5.30&nbsp;&nbsp;&nbsp;PrioritizeRetransmit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id462">9.5.31&nbsp;&nbsp;&nbsp;RediscoveryBlacklistDuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id463">9.5.31.1&nbsp;&nbsp;&nbsp;enforce</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id464">9.5.32&nbsp;&nbsp;&nbsp;ResponsivenessTimeout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id465">9.5.33&nbsp;&nbsp;&nbsp;RetransmitMerging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id466">9.5.34&nbsp;&nbsp;&nbsp;RetransmitMergingPeriod</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id467">9.5.35&nbsp;&nbsp;&nbsp;RetryOnRejectBestEffort</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id468">9.5.36&nbsp;&nbsp;&nbsp;RetryOnRejectDuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id469">9.5.37&nbsp;&nbsp;&nbsp;SPDPResponseMaxDelay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id470">9.5.38&nbsp;&nbsp;&nbsp;ScheduleTimeRounding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id471">9.5.39&nbsp;&nbsp;&nbsp;SecondaryReorderMaxSamples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id472">9.5.40&nbsp;&nbsp;&nbsp;SquashParticipants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id473">9.5.41&nbsp;&nbsp;&nbsp;SuppressSPDPMulticast</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id474">9.5.42&nbsp;&nbsp;&nbsp;SynchronousDeliveryLatencyBound</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id475">9.5.43&nbsp;&nbsp;&nbsp;SynchronousDeliveryPriorityThreshold</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id476">9.5.44&nbsp;&nbsp;&nbsp;Test</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id477">9.5.44.1&nbsp;&nbsp;&nbsp;XmitLossiness</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id478">9.5.45&nbsp;&nbsp;&nbsp;UnicastResponseToSPDPMessages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id479">9.5.46&nbsp;&nbsp;&nbsp;UseMulticastIfMreqn</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id480">9.5.47&nbsp;&nbsp;&nbsp;Watermarks</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id481">9.5.47.1&nbsp;&nbsp;&nbsp;WhcAdaptive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id482">9.5.47.2&nbsp;&nbsp;&nbsp;WhcHigh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id483">9.5.47.3&nbsp;&nbsp;&nbsp;WhcHighInit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id484">9.5.47.4&nbsp;&nbsp;&nbsp;WhcLow</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id485">9.5.48&nbsp;&nbsp;&nbsp;WriterLingerDuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id486">9.6&nbsp;&nbsp;&nbsp;SSL</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id487">9.6.1&nbsp;&nbsp;&nbsp;CertificateVerification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id488">9.6.2&nbsp;&nbsp;&nbsp;Ciphers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id489">9.6.3&nbsp;&nbsp;&nbsp;Enable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id490">9.6.4&nbsp;&nbsp;&nbsp;EntropyFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id491">9.6.5&nbsp;&nbsp;&nbsp;KeyPassphrase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id492">9.6.6&nbsp;&nbsp;&nbsp;KeystoreFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id493">9.6.7&nbsp;&nbsp;&nbsp;SelfSignedCertificates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id494">9.6.8&nbsp;&nbsp;&nbsp;VerifyClient</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id495">9.7&nbsp;&nbsp;&nbsp;Sizing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id496">9.7.1&nbsp;&nbsp;&nbsp;EndpointsInSystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id497">9.7.2&nbsp;&nbsp;&nbsp;LocalEndpoints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id498">9.7.3&nbsp;&nbsp;&nbsp;NetworkQueueSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id499">9.7.4&nbsp;&nbsp;&nbsp;ReceiveBufferChunkSize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id500">9.7.5&nbsp;&nbsp;&nbsp;Watermarks</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id501">9.7.5.1&nbsp;&nbsp;&nbsp;WhcAdaptive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id502">9.7.5.2&nbsp;&nbsp;&nbsp;WhcHigh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id503">9.7.5.3&nbsp;&nbsp;&nbsp;WhcHighInit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id504">9.7.5.4&nbsp;&nbsp;&nbsp;WhcLow</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id505">9.8&nbsp;&nbsp;&nbsp;TCP</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id506">9.8.1&nbsp;&nbsp;&nbsp;Enable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id507">9.8.2&nbsp;&nbsp;&nbsp;NoDelay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id508">9.8.3&nbsp;&nbsp;&nbsp;Port</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id509">9.8.4&nbsp;&nbsp;&nbsp;ReadTimeout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id510">9.8.5&nbsp;&nbsp;&nbsp;WriteTimeout</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id511">9.9&nbsp;&nbsp;&nbsp;ThreadPool</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id512">9.9.1&nbsp;&nbsp;&nbsp;Enable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id513">9.9.2&nbsp;&nbsp;&nbsp;ThreadMax</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id514">9.9.3&nbsp;&nbsp;&nbsp;Threads</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id515">9.10&nbsp;&nbsp;&nbsp;Threads</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id516">9.10.1&nbsp;&nbsp;&nbsp;Thread</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id517">9.10.1.1&nbsp;&nbsp;&nbsp;Name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id518">9.10.1.2&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id519">9.10.1.2.1&nbsp;&nbsp;&nbsp;Class</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id520">9.10.1.2.2&nbsp;&nbsp;&nbsp;Priority</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id521">9.10.1.3&nbsp;&nbsp;&nbsp;StackSize</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id522">9.11&nbsp;&nbsp;&nbsp;Tracing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id523">9.11.1&nbsp;&nbsp;&nbsp;AppendToFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id524">9.11.2&nbsp;&nbsp;&nbsp;EnableCategory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id525">9.11.3&nbsp;&nbsp;&nbsp;OutputFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id526">9.11.4&nbsp;&nbsp;&nbsp;PacketCaptureFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id527">9.11.5&nbsp;&nbsp;&nbsp;Timestamps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id528">9.11.5.1&nbsp;&nbsp;&nbsp;absolute</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id529">9.11.6&nbsp;&nbsp;&nbsp;Verbosity</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id530">9.12&nbsp;&nbsp;&nbsp;Watchdog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id531">9.12.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id532">9.12.1.1&nbsp;&nbsp;&nbsp;Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id533">9.12.1.2&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id534">9.12.1.2.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html#tunerservice">10&nbsp;&nbsp;&nbsp;TunerService</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id535">10.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id536">10.2&nbsp;&nbsp;&nbsp;Watchdog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id537">10.2.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id538">10.2.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id539">10.2.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id540">10.2.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#server">10.3&nbsp;&nbsp;&nbsp;Server</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id541">10.3.1&nbsp;&nbsp;&nbsp;PortNr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#backlog">10.3.2&nbsp;&nbsp;&nbsp;Backlog</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id542">10.3.3&nbsp;&nbsp;&nbsp;Verbosity</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#client">10.4&nbsp;&nbsp;&nbsp;Client</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#maxclients">10.4.1&nbsp;&nbsp;&nbsp;MaxClients</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#maxthreadsperclient">10.4.2&nbsp;&nbsp;&nbsp;MaxThreadsPerClient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#leaseperiod">10.4.3&nbsp;&nbsp;&nbsp;LeasePeriod</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id543">10.4.4&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id544">10.4.4.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id545">10.4.4.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id546">10.4.4.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id547">10.5&nbsp;&nbsp;&nbsp;GarbageCollector</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id548">10.5.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id549">10.5.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id550">10.5.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id551">10.5.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#leasemanagement">10.6&nbsp;&nbsp;&nbsp;LeaseManagement</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id552">10.6.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id553">10.6.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id554">10.6.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id555">10.6.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html#dbmsconnectservice">11&nbsp;&nbsp;&nbsp;DbmsConnectService</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id556">11.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id557">11.2&nbsp;&nbsp;&nbsp;Watchdog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id558">11.2.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id559">11.2.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id560">11.2.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id561">11.2.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#ddstodbms">11.3&nbsp;&nbsp;&nbsp;DdsToDbms</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#replication-mode">11.3.1&nbsp;&nbsp;&nbsp;replication_mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id562">11.3.2&nbsp;&nbsp;&nbsp;NameSpace</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id563">11.3.2.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#odbc">11.3.2.2&nbsp;&nbsp;&nbsp;odbc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id564">11.3.2.3&nbsp;&nbsp;&nbsp;partition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#topic">11.3.2.4&nbsp;&nbsp;&nbsp;topic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#update-frequency">11.3.2.5&nbsp;&nbsp;&nbsp;update_frequency</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#dsn">11.3.2.6&nbsp;&nbsp;&nbsp;dsn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#usr">11.3.2.7&nbsp;&nbsp;&nbsp;usr</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#pwd">11.3.2.8&nbsp;&nbsp;&nbsp;pwd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#schema">11.3.2.9&nbsp;&nbsp;&nbsp;schema</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#catalog">11.3.2.10&nbsp;&nbsp;&nbsp;catalog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id565">11.3.2.11&nbsp;&nbsp;&nbsp;replication_mode</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#mapping">11.3.2.12&nbsp;&nbsp;&nbsp;Mapping</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id566">11.3.2.12.1&nbsp;&nbsp;&nbsp;topic</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#table">11.3.2.12.2&nbsp;&nbsp;&nbsp;table</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#query">11.3.2.12.3&nbsp;&nbsp;&nbsp;query</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id567">11.3.2.12.4&nbsp;&nbsp;&nbsp;filter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#dbmstodds">11.4&nbsp;&nbsp;&nbsp;DbmsToDds</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#publish-initial-data">11.4.1&nbsp;&nbsp;&nbsp;publish_initial_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#event-table-policy">11.4.2&nbsp;&nbsp;&nbsp;event_table_policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#trigger-policy">11.4.3&nbsp;&nbsp;&nbsp;trigger_policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#replication-user">11.4.4&nbsp;&nbsp;&nbsp;replication_user</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id568">11.4.5&nbsp;&nbsp;&nbsp;NameSpace</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id569">11.4.5.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id570">11.4.5.2&nbsp;&nbsp;&nbsp;odbc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id571">11.4.5.3&nbsp;&nbsp;&nbsp;partition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id572">11.4.5.4&nbsp;&nbsp;&nbsp;table</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id573">11.4.5.5&nbsp;&nbsp;&nbsp;update_frequency</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id574">11.4.5.6&nbsp;&nbsp;&nbsp;dsn</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id575">11.4.5.7&nbsp;&nbsp;&nbsp;usr</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id576">11.4.5.8&nbsp;&nbsp;&nbsp;pwd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id577">11.4.5.9&nbsp;&nbsp;&nbsp;publish_initial_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#force-key-equality">11.4.5.10&nbsp;&nbsp;&nbsp;force_key_equality</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id578">11.4.5.11&nbsp;&nbsp;&nbsp;event_table_policy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id579">11.4.5.12&nbsp;&nbsp;&nbsp;trigger_policy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id580">11.4.5.13&nbsp;&nbsp;&nbsp;schema</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id581">11.4.5.14&nbsp;&nbsp;&nbsp;catalog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id582">11.4.5.15&nbsp;&nbsp;&nbsp;replication_user</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id583">11.4.5.16&nbsp;&nbsp;&nbsp;Mapping</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id584">11.4.5.16.1&nbsp;&nbsp;&nbsp;table</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id585">11.4.5.16.2&nbsp;&nbsp;&nbsp;topic</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id586">11.4.5.16.3&nbsp;&nbsp;&nbsp;query</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id587">11.4.5.16.4&nbsp;&nbsp;&nbsp;publish_initial_data</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id588">11.4.5.16.5&nbsp;&nbsp;&nbsp;force_key_equality</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id589">11.4.5.16.6&nbsp;&nbsp;&nbsp;event_table_policy</a></li>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id590">11.4.5.16.7&nbsp;&nbsp;&nbsp;trigger_policy</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id591">11.5&nbsp;&nbsp;&nbsp;Tracing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id592">11.5.1&nbsp;&nbsp;&nbsp;OutputFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id593">11.5.2&nbsp;&nbsp;&nbsp;Timestamps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id594">11.5.2.1&nbsp;&nbsp;&nbsp;absolute</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id595">11.5.3&nbsp;&nbsp;&nbsp;Verbosity</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html#rnrservice">12&nbsp;&nbsp;&nbsp;RnRService</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id596">12.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id597">12.2&nbsp;&nbsp;&nbsp;Watchdog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id598">12.2.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id599">12.2.1.1&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id600">12.2.1.1.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id601">12.2.1.2&nbsp;&nbsp;&nbsp;Class</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#storage">12.3&nbsp;&nbsp;&nbsp;Storage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id602">12.3.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#rr-storageattrxml">12.3.2&nbsp;&nbsp;&nbsp;rr_storageAttrXML</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#filename">12.3.2.1&nbsp;&nbsp;&nbsp;filename</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#maxfilesize">12.3.2.2&nbsp;&nbsp;&nbsp;MaxFileSize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#rr-storageattrcdr">12.3.3&nbsp;&nbsp;&nbsp;rr_storageAttrCDR</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id603">12.3.3.1&nbsp;&nbsp;&nbsp;filename</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id604">12.3.3.2&nbsp;&nbsp;&nbsp;MaxFileSize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id605">12.3.4&nbsp;&nbsp;&nbsp;Statistics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id606">12.3.4.1&nbsp;&nbsp;&nbsp;enabled</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#publish-interval">12.3.4.2&nbsp;&nbsp;&nbsp;publish_interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#reset">12.3.4.3&nbsp;&nbsp;&nbsp;reset</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id607">12.4&nbsp;&nbsp;&nbsp;Tracing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id608">12.4.1&nbsp;&nbsp;&nbsp;OutputFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id609">12.4.2&nbsp;&nbsp;&nbsp;AppendToFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id610">12.4.3&nbsp;&nbsp;&nbsp;Verbosity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id611">12.4.4&nbsp;&nbsp;&nbsp;EnableCategory</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide.html#agent">13&nbsp;&nbsp;&nbsp;Agent</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id612">13.1&nbsp;&nbsp;&nbsp;name</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id613">13.2&nbsp;&nbsp;&nbsp;Tracing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id614">13.2.1&nbsp;&nbsp;&nbsp;EnableCategory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id615">13.2.2&nbsp;&nbsp;&nbsp;Verbosity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id616">13.2.3&nbsp;&nbsp;&nbsp;OutputFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id617">13.2.4&nbsp;&nbsp;&nbsp;AppendToFile</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide.html#id618">13.3&nbsp;&nbsp;&nbsp;Watchdog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide.html#id619">13.3.1&nbsp;&nbsp;&nbsp;Scheduling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id620">13.3.1.1&nbsp;&nbsp;&nbsp;Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="guide.html#id621">13.3.1.2&nbsp;&nbsp;&nbsp;Priority</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="guide.html#id622">13.3.1.2.1&nbsp;&nbsp;&nbsp;priority_kind</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="next chapter">Introduction</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             >next</a> |</li>
+        <li><a href="#">OpenSplice Configuration Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

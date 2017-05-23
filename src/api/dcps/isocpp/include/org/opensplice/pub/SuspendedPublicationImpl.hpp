@@ -1,12 +1,20 @@
 /*
 *                         OpenSplice DDS
 *
-*   This software and documentation are Copyright 2006 to 2012 PrismTech
-*   Limited and its licensees. All rights reserved. See file:
-*
-*                     $OSPL_HOME/LICENSE
-*
-*   for full copyright notice and license terms.
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
 *
 */
 
@@ -32,68 +40,39 @@ class SuspendedPublicationImpl;
 }
 }
 
-/** @internal @bug OSPL-1741 This class is not implememted
- * @see http://jira.prismtech.com:8080/browse/OSPL-1741 */
-
 class org::opensplice::pub::SuspendedPublicationImpl
 {
 public:
-    SuspendedPublicationImpl() : t_(dds::core::null), ended_(false)
+	SuspendedPublicationImpl() : pub(dds::core::null), resumed(false) {}
+
+    SuspendedPublicationImpl(const dds::pub::Publisher& pub) : pub(pub), resumed(false)
     {
-        throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-                                              OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+        DDS::ReturnCode_t result = pub->pub_->suspend_publications();
+        org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::suspend_publications"));
     }
 
-    SuspendedPublicationImpl(const dds::pub::Publisher& t) : t_(t), ended_(false)
+    void resume()
     {
-#ifdef _WIN32
-#pragma warning( push )
-#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
-#endif
-        throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-                                              OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
-#ifdef _WIN32
-#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
-#endif
-
-        std::cout << "=== suspend publication" << std::endl;
-    }
-
-    void end()
-    {
-#ifdef _WIN32
-#pragma warning( push )
-#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
-#endif
-        throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-                                              OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
-#ifdef _WIN32
-#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
-#endif
-
-        if(!ended_)
+        if(!resumed)
         {
-            std::cout << "=== resume publication" << std::endl;
-            ended_ = true;
+            DDS::ReturnCode_t result = pub->pub_->resume_publications();
+            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::resume_publications"));
         }
     }
 
     ~SuspendedPublicationImpl()
     {
-        if(!ended_)
-        {
-            this->end();
-        }
+        this->resume();
     }
 
     bool operator ==(const SuspendedPublicationImpl& other) const
     {
-        return t_ == other.t_ && ended_ == other.ended_;
+        return pub == other.pub && resumed == other.resumed;
     }
 
 private:
-    dds::pub::Publisher t_;
-    bool ended_;
+    dds::pub::Publisher pub;
+    bool resumed;
 };
 
 #endif /* ORG_OPENSPLICE_PUB_SUSPENDED_PUBBLICATIONS_IMPL_HPP_ */

@@ -1,18 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "stdincs.h"
 #include "cpp_malloc.h"
 #include "if.h"
-#include "io.h"
+#include "cpp_io.h"
 #include "is.h"
 #include "expr.h"
 #include "symtbl.h"
@@ -38,7 +46,7 @@ void do_if (int sharp)
       outputc('<');
       outputc(sharp ? '#' : '@');
       outputs("if: ");
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
    if (in_false_if())
@@ -49,7 +57,7 @@ void do_if (int sharp)
       if (debugging)
       {
          outputs("in-false, skipped>");
-         // fflush(outfile);
+         /* fflush(outfile); */
       }
 #endif
       if (sharp)
@@ -78,7 +86,7 @@ void do_if (int sharp)
          if (debugging)
          {
             outputc('>');
-            // fflush(outfile);
+            /* fflush(outfile); */
          }
 #endif
          return ;
@@ -96,7 +104,7 @@ void do_if (int sharp)
    if (debugging)
    {
       outputc('>');
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
 }
@@ -112,7 +120,7 @@ void do_ifdef (int sharp)
       outputc('<');
       outputc(sharp ? '#' : '@');
       outputs("ifdef: ");
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
    if (in_false_if())
@@ -123,7 +131,7 @@ void do_ifdef (int sharp)
       if (debugging)
       {
          outputs("in-false, skipped>");
-         // fflush(outfile);
+         /* fflush(outfile); */
       }
 #endif
 
@@ -137,7 +145,7 @@ void do_ifdef (int sharp)
          if (debugging)
          {
             outputs("no ident ");
-            // fflush(outfile);
+            /* fflush(outfile); */
          }
 #endif
          iffalse();
@@ -149,7 +157,7 @@ void do_ifdef (int sharp)
          {
             outputs(w);
             outputc(' ');
-            // fflush(outfile);
+            /* fflush(outfile); */
          }
 #endif
          if (find_def(w))
@@ -166,7 +174,7 @@ void do_ifdef (int sharp)
       if (debugging)
       {
          outputc('>');
-         // fflush(outfile);
+         /* fflush(outfile); */
       }
 #endif
 
@@ -188,7 +196,7 @@ void do_ifndef (int sharp)
       outputc('<');
       outputc(sharp ? '#' : '@');
       outputs("ifndef: ");
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
    if (in_false_if())
@@ -199,7 +207,7 @@ void do_ifndef (int sharp)
       if (debugging)
       {
          outputs("in-false, skipped>");
-         // fflush(outfile);
+         /* fflush(outfile); */
       }
 #endif
 
@@ -213,7 +221,7 @@ void do_ifndef (int sharp)
          if (debugging)
          {
             outputs("no ident ");
-            // fflush(outfile);
+            /* fflush(outfile); */
          }
 #endif
          iftrue();
@@ -225,7 +233,7 @@ void do_ifndef (int sharp)
          {
             outputs(w);
             outputc(' ');
-            // fflush(outfile);
+            /* fflush(outfile); */
          }
 #endif
          if (find_def(w))
@@ -242,7 +250,7 @@ void do_ifndef (int sharp)
       if (debugging)
       {
          outputc('>');
-         // fflush(outfile);
+         /* fflush(outfile); */
       }
 #endif
 
@@ -261,7 +269,7 @@ extern void do_else (int sharp)
       outputc('<');
       outputc(sharp ? '#' : '@');
       outputs("else: ");
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
    if (n_skipped_ifs == 0)
@@ -273,7 +281,7 @@ extern void do_else (int sharp)
          {
             outputs("top ");
             output_ifstate(ifstack->condstate);
-            // fflush(outfile);
+            /* fflush(outfile); */
          }
 #endif
          switch (ifstack->condstate)
@@ -291,7 +299,7 @@ extern void do_else (int sharp)
             outputs(" now ");
             output_ifstate(ifstack->condstate);
             outputc('>');
-            // fflush(outfile);
+            /* fflush(outfile); */
          }
 #endif
 
@@ -302,7 +310,7 @@ extern void do_else (int sharp)
          if (debugging)
          {
             outputs(" no if>");
-            // fflush(outfile);
+            /* fflush(outfile); */
          }
 #endif
          err_head();
@@ -315,7 +323,7 @@ extern void do_else (int sharp)
       if (debugging)
       {
          outputs("in-false, forgetting>");
-         // fflush(outfile);
+         /* fflush(outfile); */
       }
 #endif
 
@@ -362,7 +370,7 @@ extern void do_elif (int sharp)
       outputc('<');
       outputc(sharp ? '#' : '@');
       outputs("elif: ");
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
    if (ifstack == 0)
@@ -377,7 +385,7 @@ extern void do_elif (int sharp)
       if (debugging)
       {
          outputs("being skipped, ignoring>");
-         // fflush(outfile);
+         /* fflush(outfile); */
       }
 #endif
       if (sharp)
@@ -406,7 +414,7 @@ extern void do_elif (int sharp)
          if (debugging)
          {
             outputs("forcing STAYFALSE>");
-            // fflush(outfile);
+            /* fflush(outfile); */
          }
 #endif
          return ;
@@ -420,7 +428,7 @@ extern void do_elif (int sharp)
       outputs("expr ");
       outputd(e);
       outputc(' ');
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
 #ifdef DEBUG_IF
@@ -428,7 +436,7 @@ extern void do_elif (int sharp)
    {
       outputs(" top ");
       output_ifstate(ifstack->condstate);
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
    switch (ifstack->condstate)
@@ -449,7 +457,7 @@ extern void do_elif (int sharp)
       outputs(" now ");
       output_ifstate(ifstack->condstate);
       outputc('>');
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
 }
@@ -465,7 +473,7 @@ extern void do_endif (int sharp)
       outputc('<');
       outputc(sharp ? '#' : '@');
       outputs("endif: ");
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
    if (n_skipped_ifs > 0)
@@ -476,7 +484,7 @@ extern void do_endif (int sharp)
       if (debugging)
       {
          outputs("n_skipped -->");
-         // fflush(outfile);
+         /* fflush(outfile); */
       }
 #endif
 
@@ -491,7 +499,7 @@ extern void do_endif (int sharp)
       if (debugging)
       {
          outputs("popping stack>");
-         // fflush(outfile);
+         /* fflush(outfile); */
       }
 #endif
 
@@ -505,7 +513,7 @@ extern void do_endif (int sharp)
       if (debugging)
       {
          outputc('>');
-         // fflush(outfile);
+         /* fflush(outfile); */
       }
 #endif
 
@@ -530,7 +538,7 @@ static void iftrue (void)
    if (debugging)
    {
       outputs("IFTRUE");
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
 }
@@ -549,7 +557,7 @@ static void iffalse (void)
    if (debugging)
    {
       outputs("IFFALSE");
-      // fflush(outfile);
+      /* fflush(outfile); */
    }
 #endif
 }

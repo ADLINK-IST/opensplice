@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -31,7 +39,7 @@
 #include "idl_genLanguageHelper.h"
 #include "idl_dll.h"
 
-#include "os.h"
+#include "vortex_os.h"
 #include <ctype.h>
 #include "c_typebase.h"
 #include "ut_stack.h"
@@ -42,7 +50,7 @@ struct idl_genSACPPData {
     /** indentation level */
     c_long indent_level;
     /** enumeration element index */
-    c_long enum_element;
+    c_ulong enum_element;
     char *enum_def;
     ut_stack structSpecStack;
     char buffer[MAX_BUFFER];
@@ -95,7 +103,7 @@ idl_arrayDimensions(
     struct idl_genSACPPData *arg)
 {
     char *dims;
-    c_ulong len;
+    size_t len;
     idl_typeSpec ts;
 
     dims = (char *)os_malloc(1);
@@ -243,26 +251,15 @@ idl_macroFromBasename(
     const char *append)
 {
     static c_char macro[200];
-    c_long i;
+    size_t i;
 
-    for (i = 0; i < (c_long)strlen(basename); i++) {
-        macro[i] = toupper(basename[i]);
+    for (i = 0; i < strlen(basename); i++) {
+        macro[i] = (c_char) toupper(basename[i]);
         macro[i+1] = '\0';
     }
-    os_strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
+    os_strncat(macro, append, sizeof(macro)-strlen(append));
 
     return macro;
-}
-
-static os_equality
-defName(
-    void *iterElem,
-    void *arg)
-{
-    if (strcmp((char *)iterElem, (char *)arg) == 0) {
-        return OS_EQ;
-    }
-    return OS_NE;
 }
 
 /* @brief callback function called on opening the IDL input file.
@@ -282,7 +279,10 @@ idl_fileOpen(
     void *userData)
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
-    int i;
+    c_ulong i;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     /* First initialize userData */
     arg->indent_level = 0;
@@ -322,6 +322,8 @@ static void
 idl_fileClose (
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     /* Generate closure of multiple inclusion prevention code */
     idl_fileOutPrintf(idl_fileCur(), "#endif\n");
 
@@ -349,6 +351,9 @@ idl_moduleOpen(
     void *userData)
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(), "namespace %s {\n", name);
@@ -392,6 +397,9 @@ idl_structureOpen(
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
     struct idl_genSACPPStructSpec *output;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     output = (struct idl_genSACPPStructSpec *)os_malloc(sizeof(struct idl_genSACPPStructSpec));
     output->codebuffer.nrOfLines = idl_typeStructNoMembers(structSpec);
@@ -438,7 +446,7 @@ idl_structureClose (
     assert(structSpec->codebuffer.nrOfLines == structSpec->codebuffer.currentLine);
     for (line=0;line<structSpec->codebuffer.currentLine;line++) {
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(), structSpec->codebuffer.lines[line]);
+        idl_fileOutPrintf(idl_fileCur(), "%s", structSpec->codebuffer.lines[line]);
         os_free(structSpec->codebuffer.lines[line]);
     }
     os_free(structSpec->codebuffer.lines);
@@ -491,6 +499,9 @@ idl_structureMemberOpenClose (
     char *memberName;
     char *seqName;
     char *dims;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     memberName = idl_cxxId(name);
     structSpec = (struct idl_genSACPPStructSpec *)ut_stackPop(arg->structSpecStack);
@@ -570,6 +581,9 @@ idl_unionOpen(
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
     struct idl_genSACPPCodeBuffer *codebuffer;
     char *switchTypeName;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     codebuffer = (struct idl_genSACPPCodeBuffer *)os_malloc(sizeof(struct idl_genSACPPCodeBuffer));
     switchTypeName = idl_corbaCxxTypeFromTypeSpec(idl_typeUnionSwitchKind(unionSpec));
@@ -659,7 +673,7 @@ idl_unionClose (
     arg->indent_level++;
     for (line=0;line<codebuffer->currentLine;line++) {
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(), codebuffer->lines[line]);
+        idl_fileOutPrintf(idl_fileCur(), "%s", codebuffer->lines[line]);
         os_free(codebuffer->lines[line]);
     }
     arg->indent_level--;
@@ -711,6 +725,9 @@ idl_unionCaseOpenClose(
     struct idl_genSACPPCodeBuffer *codebuffer;
     char *dims;
     char *seqName;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     /* \TODO: add getter/setter for unioncase */
     codebuffer = (struct idl_genSACPPCodeBuffer *)ut_stackPop(arg->structSpecStack);
@@ -780,6 +797,9 @@ idl_enumerationOpen(
     void *userData)
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(), "enum %s {\n", name);
@@ -808,6 +828,9 @@ idl_enumerationClose (
     void *userData)
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
+    OS_UNUSED_ARG(name);
+
+    OS_UNUSED_ARG(name);
 
 /*    idl_printIndent(arg->indent_level);
       idl_fileOutPrintf(idl_fileCur(), "EORB_FORCE_ENUM32(__%s)\n", name);*/
@@ -846,6 +869,9 @@ idl_enumerationElementOpenClose (
     void *userData)
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     arg->enum_element--;
     idl_printIndent(arg->indent_level);
@@ -878,6 +904,9 @@ idl_typedefOpenClose(
     idl_typeSpec actualType;
     idl_typeSpec refType;
     char *dims;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     actualType = idl_typeDefActual(defSpec);
     refType = idl_typeDefRefered(defSpec);
@@ -980,6 +1009,9 @@ idl_constantOpenClose (
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
     idl_typeSpec t;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     t = idl_constSpecTypeGet(constantSpec);
     idl_printIndent(arg->indent_level);
@@ -1005,6 +1037,7 @@ static idl_programControl *
 idl_getControl(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     return &idl_genSACPPLoadControl;
 }
 

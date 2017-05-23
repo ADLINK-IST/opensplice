@@ -1,0 +1,17 @@
+parseconditions:
+    desc: Durability LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+    normalisejavalog: no
+    normaliseisocpplog: no
+
+    product: OpenSpliceDDS
+
+    conditions: 
+        - name: auto_true
+          type: line
+          inst: 1
+          required: yes
+          line: "IsAutomatic == true"

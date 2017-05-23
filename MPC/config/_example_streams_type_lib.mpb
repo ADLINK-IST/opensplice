@@ -15,5 +15,5 @@ feature(src_co) {
     specific(prop:microsoft) {
         streams_ts_flags += -P  OS_EXAMPLE_API,examples_export.h
     }
-    includes += $(OSPL_OUTER_HOME_NORMALIZED)/examples/include
+    includes += $(OSPL_HOME_NORMALIZED)/examples/include
 }

@@ -281,11 +281,11 @@
                         api_keys = []
                         
                         dcps_message_board_process = []
-                        dcps_chatter_process = []                        
+                        dcps_chatter_process = []
                         
                         #setting arrays of operation keys by key
                         if (api_key == all_key):
-                            api_keys.append(dcps_key)                           
+                            api_keys.append(dcps_key)
                         else:
                             api_keys.append(api_key)
                         for api in api_keys:

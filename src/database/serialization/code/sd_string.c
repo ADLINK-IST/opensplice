@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "os_heap.h"
@@ -35,22 +43,11 @@ sd_stringNew (
 
     size = (size > SD_STRING_MINSIZE) ? size : SD_STRING_MINSIZE;
 
-    str = (sd_string) os_malloc(C_SIZEOF(sd_string));
-    if ( str ) {
-        str->buffer = (c_char *) os_malloc(size);
-        str->size   = size;
-        str->index  = 0UL;
-        if ( str->buffer ) {
-            memset(str->buffer, 0, size);
-        } else {
-            OS_REPORT(OS_ERROR, "sd_string", 0, "memory allocation failed");
-            os_free(str);
-            str = NULL;
-        }
-    } else {
-        OS_REPORT(OS_ERROR, "sd_string", 0, "memory allocation failed");
-    }
-    
+    str = os_malloc(C_SIZEOF(sd_string));
+    str->buffer = (c_char *) os_malloc(size);
+    str->size   = size;
+    str->index  = 0UL;
+    memset(str->buffer, 0, size);
     return str;
 }
 
@@ -77,16 +74,12 @@ sd_stringRealloc (
     assert(str);
 
     size = str->size + SD_STRING_INCREMENT;
-    buffer = (c_char *) os_malloc(size);
-    if ( buffer ) {
-        memcpy(buffer, str->buffer, str->index);
-        memset(&buffer[str->index], 0, size - str->index);
-        os_free(str->buffer);
-        str->buffer = buffer;
-        str->size   = size;
-    } else {
-        OS_REPORT(OS_ERROR, "sd_string", 0, "memory allocation failed");
-    }
+    buffer = os_malloc(size);
+    memcpy(buffer, str->buffer, str->index);
+    memset(&buffer[str->index], 0, size - str->index);
+    os_free(str->buffer);
+    str->buffer = buffer;
+    str->size   = size;
     return str->size;
 }
 
@@ -104,7 +97,7 @@ sd_stringAddImpl (
     c_bool  ready = FALSE;
 
     while ( !ready ) {
-        l = os_vsnprintf(SD_POINTER(str), SD_FREE(str), format, args);
+        l = (c_ulong) os_vsnprintf(SD_POINTER(str), SD_FREE(str), format, args);
         if ( l < SD_FREE(str) ) {
             str->index += l;
             ready = TRUE;

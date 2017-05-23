@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "s_gc.h"
@@ -14,15 +22,15 @@
 #include "s_configuration.h"
 #include "s_misc.h"
 
-#include "os.h"
+#include "vortex_os.h"
 #include "u_user.h"
 
 C_STRUCT(s_garbageCollector) {
-    os_threadId id;
+    ut_thread thr;
     os_mutex mtx;
     os_cond cv;
     int active;
-    u_spliced spliced;
+    spliced spliced;
 };
 
 /**************************************************************
@@ -37,7 +45,9 @@ garbageCollector(
     gc->active++;
     os_condBroadcast(&gc->cv);
     os_mutexUnlock(&gc->mtx);
-    u_splicedGarbageCollector(gc->spliced);
+    /* We can not detect progress here. So, simulate a thread sleep. */
+    ut_threadAsleep(gc->thr, UT_SLEEP_INDEFINITELY);
+    u_splicedGarbageCollector(splicedGetService(gc->spliced));
     return NULL;
 }
 
@@ -54,53 +64,34 @@ s_garbageCollectorNew(
 {
     s_garbageCollector gc;
     s_configuration config;
-    os_mutexAttr mtxAttr;
-    os_condAttr cvAttr;
-    int status;
     os_result osr;
 
-    status = 0;
-    gc = os_malloc((os_uint32)C_SIZEOF(s_garbageCollector));
-    if (gc) {
-        gc->spliced = splicedGetService(daemon);
-        gc->active = 0;
-        osr = os_mutexAttrInit(&mtxAttr);
-        if (osr == os_resultSuccess) {
-            mtxAttr.scopeAttr = OS_SCOPE_PRIVATE;
-            osr = os_mutexInit(&gc->mtx, &mtxAttr);
-        } else {
-            status++;
-        }
-        if (osr == os_resultSuccess) {
-            osr = os_condAttrInit(&cvAttr);
-            if (osr == os_resultSuccess) {
-                cvAttr.scopeAttr = OS_SCOPE_PRIVATE;
-                osr = os_condInit(&gc->cv, &gc->mtx, &cvAttr);
-            } else {
-                os_mutexDestroy(&gc->mtx); /* don't care if this succeeds, already in error situation */
-                status++;
-            }
-            if (osr == os_resultSuccess) {
-                config = splicedGetConfiguration(daemon);
-                osr = os_threadCreate(&gc->id, S_THREAD_GARBAGE_COLLECTOR, &config->garbageCollectorScheduling, garbageCollector, gc);
-                if (osr != os_resultSuccess) {
-                    /* don't care if the following statements succeeds, already in error situation */
-                    os_mutexDestroy(&gc->mtx);
-                    os_condDestroy(&gc->cv);
-                    status++;
-                }
-            }
-        } else {
-            status++;
-        }
+    gc = os_malloc(sizeof *gc);
+
+    gc->spliced = daemon;
+    gc->active = 0;
+    osr = os_mutexInit(&gc->mtx, NULL);
+    if (osr != os_resultSuccess) {
+        goto err_mutexInit;
     }
-    
-    if (status && gc) {
-        os_free(gc);
-        gc = NULL;
+    osr = os_condInit(&gc->cv, &gc->mtx, NULL);
+    if (osr != os_resultSuccess) {
+        goto err_condInit;
     }
-    
+    config = splicedGetConfiguration(daemon);
+    ut_threadCreate(splicedGetThreads(daemon), &(gc->thr), S_THREAD_GARBAGE_COLLECTOR, &config->garbageCollectorAttribute, garbageCollector, gc);
+    if (gc->thr == NULL) {
+        goto err_threadCreate;
+    }
     return gc;
+
+err_threadCreate:
+    os_condDestroy(&gc->cv);
+err_condInit:
+    os_mutexDestroy(&gc->mtx);
+err_mutexInit:
+    os_free(gc);
+    return NULL;
 }
 
 void
@@ -108,29 +99,28 @@ s_garbageCollectorFree(
     s_garbageCollector gc)
 {
     if (gc) { /* gc might be NULL, when spliced has detected other spliced */
-        os_threadWaitExit(gc->id, NULL);
+        ut_threadWaitExit(gc->thr, NULL);
         os_condDestroy(&gc->cv);
         os_mutexDestroy(&gc->mtx);
         os_free(gc);
     }
 }
 
-int
+void
 s_garbageCollectorWaitForActive(
     s_garbageCollector gc)
 {
-    int result;
-    os_time delay = {2, 0};
-    os_result osr;
-    
+    ut_thread self;
+
+    assert(gc);
+
+    self = ut_threadLookupSelf(splicedGetThreads(gc->spliced));
+
     os_mutexLock(&gc->mtx);
-    osr = os_resultSuccess;
-    while ((gc->active == 0) && (osr == os_resultSuccess)) {
-        osr = os_condTimedWait(&gc->cv, &gc->mtx, &delay);
+    while (gc->active == 0) {
+        ut_condWait(self, &gc->cv, &gc->mtx);
     }
-    result = gc->active;
     os_mutexUnlock(&gc->mtx);
-    return result;
 }
 
 /**************************************************************

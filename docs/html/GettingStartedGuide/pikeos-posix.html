@@ -1,0 +1,239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>15. PikeOS POSIX &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="16. UNIX ARM platform" href="unixarm.html" />
+    <link rel="prev" title="14. Windows CE" href="windowsce.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="unixarm.html" title="16. UNIX ARM platform"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="windowsce.html" title="14. Windows CE"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="pikeos-posix">
+<span id="id1"></span><h1>15. PikeOS POSIX<a class="headerlink" href="#pikeos-posix" title="Permalink to this headline">¶</a></h1>
+<p><em>This chapter provides a brief description of how to deploy
+Vortex OpenSplice on PikeOS.</em></p>
+<div class="section" id="how-to-build-for-pikeos">
+<h2>15.1. How to Build for PikeOS<a class="headerlink" href="#how-to-build-for-pikeos" title="Permalink to this headline">¶</a></h2>
+<p>For this target, Vortex OpenSplice must be configured in the single-process
+mode and executables must be statically linked. Also, to avoid requiring
+filesystem support, the <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> configuration file is built into the
+executable. A tool named <tt class="docutils literal"><span class="pre">osplconf2c</span></tt> is provided to generate the code
+required for this.</p>
+<p>When executed with no arguments, <tt class="docutils literal"><span class="pre">osplconf2c</span></tt> takes the configuration
+file specified by <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> (only <tt class="docutils literal"><span class="pre">file:</span></tt> URIs are supported) and
+generates a C source file named <tt class="docutils literal"><span class="pre">ospl_config.c</span></tt> . The URI and filename
+can be specified using the <tt class="docutils literal"><span class="pre">-u</span></tt> and <tt class="docutils literal"><span class="pre">-o</span></tt> options respectively. The
+generated code should be compiled and linked with each executable. It
+comprises an array representing the configuration file and also the
+entry points which allow the configured services to be started as
+threads.</p>
+<p>Vortex OpenSplice is built against the BSD POSIX support in PikeOS
+(<tt class="docutils literal"><span class="pre">bposix</span></tt>), and it also uses the <tt class="docutils literal"><span class="pre">lwIP</span></tt> networking facility. When
+linking an executable for PikeOS deployment it is necessary to specify
+the system libraries as follows:</p>
+<div class="highlight-make"><div class="highlight"><pre>-llwip4 -lsbuf -lm -lc -lp4 -lvm -lstand
+</pre></div>
+</div>
+<p>The Vortex OpenSplice libraries for each configured service (networking,
+cmsoap, <em>etc.</em>) also have to be linked in.</p>
+</div>
+<div class="section" id="deployment-notes">
+<h2>15.2. Deployment Notes<a class="headerlink" href="#deployment-notes" title="Permalink to this headline">¶</a></h2>
+<p>When setting up an integration project in which to deploy an OpenSplice
+executable the following items should be configured:</p>
+<ul class="simple">
+<li>Networking should be enabled using the <tt class="docutils literal"><span class="pre">LwIP</span></tt> stack.</li>
+<li>The amount of available memory will generally need to be increased.</li>
+</ul>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>We recommend a minimum of <strong>48MB</strong> available memory for OpenSplice partitions.</dd>
+</dl>
+<p><strong>Steps in CODEO:</strong></p>
+<ol class="arabic simple">
+<li>Create a new integration project based on the <tt class="docutils literal"><span class="pre">devel-posix</span></tt> template.</li>
+<li>Edit <tt class="docutils literal"><span class="pre">project.xml.conf</span></tt>:</li>
+</ol>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>Configure networking for the <tt class="docutils literal"><span class="pre">muxa</span></tt> in the service partition,
+if required.</li>
+<li>Enable <tt class="docutils literal"><span class="pre">LwIP</span></tt> in the POSIX partition, set its device name and
+IP addresses.</li>
+<li>Add a dependency in the POSIX partition on the network driver
+file provider.</li>
+</ol>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li>Edit <tt class="docutils literal"><span class="pre">vmit.xml</span></tt>:</li>
+</ol>
+<blockquote>
+<div>In the POSIX partition, set the <tt class="docutils literal"><span class="pre">SizeBytes</span></tt> parameter in <tt class="docutils literal"><span class="pre">Memory</span>
+<span class="pre">Requirement-&gt;RAM\_[partition]</span></tt> to at least <tt class="docutils literal"><span class="pre">0x03000000</span></tt> .</div></blockquote>
+<ol class="arabic simple" start="4">
+<li>Copy your Vortex OpenSplice executable into the project&#8217;s target directory
+and build the project.</li>
+</ol>
+</div>
+<div class="section" id="limitations">
+<h2>15.3. Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Multicast networking is not supported on PikeOS POSIX partitions.
+Consequently, the DDSI networking service is not supported.</dd>
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>The native networking service is supported in a <em>broadcast</em> configuration.</dd>
+</dl>
+</div>
+<div class="section" id="pikeos-on-windows-hosts">
+<h2>15.4. PikeOS on Windows Hosts<a class="headerlink" href="#pikeos-on-windows-hosts" title="Permalink to this headline">¶</a></h2>
+<p>Developing with Vortex OpenSplice for PikeOS on Windows differs from Vortex OpenSplice
+on other Windows-hosted platforms. This is because PikeOS uses Cygwin to
+present a Unix-like environment for cross-development. OpenSplice
+development therefore follows similar practice to the Unix-hosted
+editions; for example, you would start a session by entering a <tt class="docutils literal"><span class="pre">bash</span></tt>
+shell and sourcing the <tt class="docutils literal"><span class="pre">release.com</span></tt> file.</p>
+<p>However, the Vortex OpenSplice tools (<tt class="docutils literal"><span class="pre">idlpp</span></tt>, <tt class="docutils literal"><span class="pre">osplconf2c</span></tt>, <tt class="docutils literal"><span class="pre">ospltun</span></tt>,
+<em>etc</em>.) are built as Windows executables or will be running in Java for
+Windows and so need to be run with Windows-style pathnames. This is
+handled using the <tt class="docutils literal"><span class="pre">cygpath</span></tt> command as seen in the <tt class="docutils literal"><span class="pre">release.com</span></tt> script
+and the example <tt class="docutils literal"><span class="pre">makefiles</span></tt>. Tuner and Configurator may be launched
+from the <tt class="docutils literal"><span class="pre">Start</span></tt> menu as usual.</p>
+<div class="section" id="building-the-examples">
+<h3>15.4.1. Building the examples<a class="headerlink" href="#building-the-examples" title="Permalink to this headline">¶</a></h3>
+<p>This proceeds as would be expected in a Unix environment. Assuming that
+Vortex OpenSplice and PikeOS are installed in the default locations:</p>
+<p>Start Cygwin <tt class="docutils literal"><span class="pre">bash</span></tt></p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">declare</span> -x <span class="nv">PIKEOS_HOME</span><span class="o">=</span>/opt/pikeos-3.1
+<span class="nb">declare</span> -x <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$PIKEOS_HOME</span>/cdk/ppc/oea/bin
+. /opt/OpenSpliceDDS-V6.2.3/HDE/ppc.pikeos3/release.com
+<span class="nb">cd</span> <span class="nv">$OSPL_HOME</span>/examples
+make
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-a-custom-lwip">
+<h3>15.4.2. Using a custom LwIP<a class="headerlink" href="#using-a-custom-lwip" title="Permalink to this headline">¶</a></h3>
+<p>The example <tt class="docutils literal"><span class="pre">makefiles</span></tt> are set up by default to link against the build
+of <tt class="docutils literal"><span class="pre">LwIP</span></tt> distributed with PikeOS, but in some circumstances it may
+be useful to rebuild <tt class="docutils literal"><span class="pre">LwIP</span></tt>.</p>
+<p>In this case, before building the examples, set the environment
+variable <tt class="docutils literal"><span class="pre">LWIP_HOME</span></tt> to a directory containing <tt class="docutils literal"><span class="pre">liblwip4.a</span></tt>,
+<tt class="docutils literal"><span class="pre">lwipconfig.o</span></tt> and <tt class="docutils literal"><span class="pre">lwipopts.h</span></tt>.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">15. PikeOS POSIX</a><ul>
+<li><a class="reference internal" href="#how-to-build-for-pikeos">15.1. How to Build for PikeOS</a></li>
+<li><a class="reference internal" href="#deployment-notes">15.2. Deployment Notes</a></li>
+<li><a class="reference internal" href="#limitations">15.3. Limitations</a></li>
+<li><a class="reference internal" href="#pikeos-on-windows-hosts">15.4. PikeOS on Windows Hosts</a><ul>
+<li><a class="reference internal" href="#building-the-examples">15.4.1. Building the examples</a></li>
+<li><a class="reference internal" href="#using-a-custom-lwip">15.4.2. Using a custom LwIP</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="windowsce.html"
+                        title="previous chapter">14. Windows CE</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="unixarm.html"
+                        title="next chapter">16. UNIX ARM platform</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/pikeos-posix.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="unixarm.html" title="16. UNIX ARM platform"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="windowsce.html" title="14. Windows CE"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

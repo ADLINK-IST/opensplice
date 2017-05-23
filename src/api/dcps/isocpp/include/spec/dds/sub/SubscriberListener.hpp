@@ -28,7 +28,7 @@ namespace sub
 {
 
 
-class SubscriberListener : public virtual AnyDataReaderListener
+class OMG_DDS_API SubscriberListener : public virtual AnyDataReaderListener
 {
 public:
     typedef ::dds::core::smart_ptr_traits<SubscriberListener>::ref_type ref_type;
@@ -40,7 +40,7 @@ public:
     virtual void on_data_on_readers(Subscriber& sub) = 0;
 };
 
-class NoOpSubscriberListener :
+class OMG_DDS_API NoOpSubscriberListener :
     public virtual SubscriberListener,
     public virtual NoOpAnyDataReaderListener
 {

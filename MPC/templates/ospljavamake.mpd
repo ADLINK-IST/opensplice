@@ -28,7 +28,7 @@ ifeq ($(CFG), <%platform%> <%configuration%>)
 ifeq ($(CFG), <%configuration%>)
 <%endif%>
 <%endif%>
-JAVAC         = <%cc("javac")%>
+JAVAC         = $(SPLICE_JAVAC)
 JAR           = <%ar("jar")%>
 <%if(nm)%>
 NM            = <%nm%>
@@ -56,7 +56,7 @@ COMPILE.java  = $(JAVAC) $(JAVACFLAGS) -cp $(JAVACCPATH) <%compile_option("-c")%
 <%if(tempinc)%>
 TEMPINCDIR    = <%tempinc%><%if(tempincopt)%><%slash%><%project_name%><%endif%>
 <%endif%>
-JAVACCPATH    = "<%if(libs)%><%foreach(libs)%><%lib%><%pathsep%><%endfor%><%endif%><%if(libpaths)%>$(CLASSDIR)<%pathsep%><%foreach(libpaths)%><%if(targetoutdir)%><%libpath%><%slash%><%targetoutdir%><%pathsep%><%endif%><%libpath%><%pathsep%><%endfor%>"<%endif%><%if(linkflags)%> <%linkflags%><%endif%><%if(profile)%> <%profopt%><%endif%><%if(coverage)%> <%covopt%><%endif%><%if(build64bit && linkflags64)%> <%linkflags64%><%endif%>
+JAVACCPATH    = "$(SPLICE_EXTRA_CP)<%pathsep%><%if(libs)%><%foreach(libs)%><%lib%><%pathsep%><%endfor%><%endif%><%if(libpaths)%>$(CLASSDIR)<%pathsep%><%foreach(libpaths)%><%if(targetoutdir)%><%libpath%><%slash%><%targetoutdir%><%pathsep%><%endif%><%libpath%><%pathsep%><%endfor%>"<%endif%><%if(linkflags)%> <%linkflags%><%endif%><%if(profile)%> <%profopt%><%endif%><%if(coverage)%> <%covopt%><%endif%><%if(build64bit && linkflags64)%> <%linkflags64%><%endif%>
 MAKEFILE      = <%project_file%>
 DEPENDENCIES  = <%if(supports_include)%>.depend.<%endif%>$(MAKEFILE)
 LTARGETDIR    = <%libout%><%if(!compares(libout, .))%><%output_dir_ext%><%endif%><%slash%><%targetoutdir%>

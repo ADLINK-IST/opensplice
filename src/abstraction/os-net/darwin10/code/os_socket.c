@@ -1,22 +1,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
+#include "os_errno.h"
 #include "os_socket.h"
 #include "os_stdlib.h"
-
-int
-os_sockError(void)
-{
-    return errno;
-}
 
 os_socket
 os_sockNew(
@@ -64,7 +67,9 @@ os_sockSendto(
     size_t tolen,
     size_t *bytesSent)
 {
-    ssize_t res = sendto(s, msg, len, 0, to, tolen);
+    ssize_t res;
+    assert (tolen <= 0x7fffffff);
+    res = sendto(s, msg, len, 0, to, (socklen_t) tolen);
     if (res < 0)
     {
         *bytesSent = 0;
@@ -72,7 +77,7 @@ os_sockSendto(
     }
     else
     {
-        *bytesSent = res;
+        *bytesSent = (size_t) res;
         return os_resultSuccess;
     }
 }
@@ -86,20 +91,22 @@ os_sockRecvfrom(
     size_t *fromlen,
     size_t *bytesRead)
 {
-   ssize_t res;
-   socklen_t fl = *fromlen;;
-   res = recvfrom(s, buf, len, 0, from, &fl);
-   if (res < 0)
-   {
-      *bytesRead = 0;
-      return os_resultFail;
-   }
-   else
-   {
-      *fromlen=fl;
-      *bytesRead = (size_t)res;
-      return os_resultSuccess;
-   }
+    ssize_t res;
+    socklen_t fl;
+    assert (*fromlen <= 0x7fffffff);
+    fl = (socklen_t) *fromlen;
+    res = recvfrom(s, buf, len, 0, from, &fl);
+    if (res < 0)
+    {
+        *bytesRead = 0;
+        return os_resultFail;
+    }
+    else
+    {
+        *fromlen=fl;
+        *bytesRead = (size_t)res;
+        return os_resultSuccess;
+    }
 }
 
 os_result
@@ -134,6 +141,12 @@ os_sockSetsockopt(
         /* We know this won't work */
         return os_resultSuccess;
       }
+    }
+    else if (optname == SO_DONTROUTE)
+    {
+        /* Enabling DONTROUTE gives nothing but grief on MacOS (e.g., no multicasting),
+           and I'm not aware of any serious use-case. */
+        return os_resultSuccess;
     }
 
     if (setsockopt(s, level, optname, optval, optlen) == -1) {
@@ -174,7 +187,7 @@ os_sockSetNonBlocking(
             r = os_resultFail;
         }
     } else {
-        switch(errno){
+        switch(os_getErrno()){
             case EAGAIN:
                 r = os_resultBusy;
                 break;
@@ -208,13 +221,15 @@ os_sockSelect(
     fd_set *readfds,
     fd_set *writefds,
     fd_set *errorfds,
-    os_time *timeout)
+    os_duration timeout)
 {
     struct timeval t;
     int r;
 
-    t.tv_sec = (long)timeout->tv_sec;
-    t.tv_usec = (long)(timeout->tv_nsec / 1000);
+    assert(OS_DURATION_ISPOSITIVE(timeout));
+
+    t.tv_sec = (long)OS_DURATION_GET_SECONDS(timeout);
+    t.tv_usec = (long)(OS_DURATION_GET_NANOSECONDS(timeout) / 1000);
     r = select(nfds, readfds, writefds, errorfds, &t);
 
     return r;
@@ -315,13 +330,14 @@ void
 os_sockQueryInterfaceStatusDeinit(
     void *handle)
 {
-
+    OS_UNUSED_ARG (handle);
 }
 
 void *
 os_sockQueryInterfaceStatusInit(
     const char *ifName)
 {
+    OS_UNUSED_ARG (ifName);
     return NULL;
 }
 
@@ -329,10 +345,19 @@ os_sockQueryInterfaceStatusInit(
 os_result
 os_sockQueryInterfaceStatus(
     void *handle,
-    os_time timeout,
+    os_duration timeout,
     os_boolean *status)
 {
+    OS_UNUSED_ARG (handle);
+    OS_UNUSED_ARG (timeout);
+    OS_UNUSED_ARG (status);
     *status = OS_FALSE;
+    return os_resultFail;
+}
 
+os_result
+os_sockQueryInterfaceStatusSignal(void *handle)
+{
+    OS_UNUSED_ARG(handle);
     return os_resultFail;
 }

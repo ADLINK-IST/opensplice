@@ -1,29 +1,39 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 
 #include "cms_configuration.h"
+#include "u_object.h"
 #include "u_participant.h"
 #include "u_participantQos.h"
 #include "u_cfElement.h"
 #include "u_cfNode.h"
 #include "u_cfData.h"
+#include "v_maxValue.h"
 #include "os_heap.h"
+#include "os_process.h"
 #include "os_report.h"
 #include <string.h>
 #include <stdio.h>
-#include "u_scheduler.h"
 
-#define NS_IN_S (1e9F)
+#define NS_IN_S (1e9)
 
 static void cms_configurationInit(cms_configuration config, cms_service cms, const c_char* name);
 
@@ -117,12 +127,12 @@ cms_configurationFormat(
         config->backlog,
         config->verbosity,
         config->port,
-        config->leasePeriod.seconds,
-        config->leasePeriod.nanoseconds,
-        config->leaseRenewalPeriod.seconds,
-        config->leaseRenewalPeriod.nanoseconds,
-        config->clientLeasePeriod.seconds,
-        config->clientLeasePeriod.nanoseconds);
+        OS_DURATION_GET_SECONDS(config->leasePeriod),
+        OS_DURATION_GET_NANOSECONDS(config->leasePeriod),
+        OS_DURATION_GET_SECONDS(config->leaseRenewalPeriod),
+        OS_DURATION_GET_NANOSECONDS(config->leaseRenewalPeriod),
+        OS_DURATION_GET_SECONDS(config->clientLeasePeriod),
+        OS_DURATION_GET_NANOSECONDS(config->clientLeasePeriod));
 
     return (c_char*)(os_strdup(buf));
 }
@@ -131,17 +141,14 @@ cms_configurationFormat(
 static void
 cms_configurationSetDefaults(cms_configuration config)
 {
-    config->maxClients = 2;
-    config->maxThreadsPerClient = 2;
+    config->maxClients = 10;
+    config->maxThreadsPerClient = 10;
     config->backlog = 5;
     config->verbosity = 1;
     config->port = 8000;
-    config->leasePeriod.seconds=10;
-    config->leasePeriod.nanoseconds=0;
-    config->leaseRenewalPeriod.seconds=2; /* = defaultExpiryTime * defaultUpdateFactor == 10.0 * 0.2 */
-    config->leaseRenewalPeriod.nanoseconds=0;
-    config->clientLeasePeriod.seconds=15;
-    config->clientLeasePeriod.nanoseconds=0;
+    config->leasePeriod = OS_DURATION_INIT(10,0);
+    config->leaseRenewalPeriod = OS_DURATION_INIT(2,0); /* = defaultExpiryTime * defaultUpdateFactor == 10.0 * 0.2 */
+    config->clientLeasePeriod = OS_DURATION_INIT(15,0);
 
     os_threadAttrInit(&config->clientScheduling);
     os_threadAttrInit(&config->leaseScheduling);
@@ -177,12 +184,10 @@ cms_configurationInit(
 
         /* then retrieve configuration from TunerService with supplied name */
         path = os_malloc( strlen("TunerService[@name='']") + strlen(name) + 1);
-        if(path != NULL){
-            path[0] = '\0';
-            os_sprintf(path, "TunerService[@name='%s']", name);
-            elements = u_cfElementXPath(root, path);
-            os_free(path);
-        }
+        path[0] = '\0';
+        os_sprintf(path, "TunerService[@name='%s']", name);
+        elements = u_cfElementXPath(root, path);
+        os_free(path);
 
         e = u_cfElement(c_iterTakeFirst(elements));
         if(e != NULL){
@@ -298,11 +303,11 @@ cms_configurationInitMaxClients(
                 if(max > 0 ){
                     config->maxClients = max;
                 } else {
-                    OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                    OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                      "%s Configuration: 'MaxClients' <= 0 not valid.  Applying default.", config->name);
                 }
             } else {
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                  "%s Configuration: 'MaxClients' not valid. Applying default.", config->name);
             }
             u_cfDataFree(data);
@@ -330,11 +335,11 @@ cms_configurationInitMaxThreadsPerClient(
                 if(max > 0 ){
                     config->maxThreadsPerClient = max;
                 } else {
-                    OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                    OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                      "%s Configuration: 'MaxThreadsPerClient' <= 0 not valid.  Applying default.", config->name);
                 }
             } else {
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                  "%s Configuration: 'MaxThreadsPerClient' not valid. Applying default.", config->name);
             }
             u_cfDataFree(data);
@@ -362,11 +367,11 @@ cms_configurationInitBacklog(
                 if(max > 0 ){
                     config->backlog = max;
                 } else {
-                    OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                    OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                      "%s Configuration: 'Backlog' < 0 not valid. Applying default.", config->name);
                 }
             } else {
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                  "%s Configuration: 'Backlog' not valid. Applying Default", config->name);
             }
             u_cfDataFree(data);
@@ -393,7 +398,7 @@ cms_configurationInitVerbosity(
             if(success){
                 config->verbosity = max;
             } else {
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                  "%s Configuration: 'Verbosity' not valid. Applying default.", config->name);
             }
             u_cfDataFree(data);
@@ -427,11 +432,11 @@ cms_configurationInitPort(
                         if(max > 0 ){
                             config->port = max;
                         } else {
-                            OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                            OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                              "%s Configuration: 'Port' <= 0 not valid.  Applying default.", config->name);
                         }
                     } else {
-                        OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                        OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                          "%s Configuration: 'Port' <= 0 not valid. Applying default", config->name);
                     }
                 }
@@ -461,15 +466,14 @@ cms_configurationInitLeasePeriod(
 
             if(success){
                 if(value >= 0.2F){
-                    config->leasePeriod.seconds     = (unsigned int) value;
-                    config->leasePeriod.nanoseconds = (unsigned int) ((value - (float)((unsigned int) value)) * NS_IN_S);
+                    config->leasePeriod = os_durationMul(OS_DURATION_SECOND, value);
                 } else {
-                    OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                    OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                      "%s Configuration: 'LeasePeriod' < 0.2 seconds not allowed.  Applying default.",
                      config->name);
                 }
             } else {
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                  "%s Configuration: 'LeasePeriod' not valid. Applying default.", config->name);
             }
             u_cfDataFree(data);
@@ -483,35 +487,29 @@ cms_configurationInitLeaseRenewalPeriod(
     u_cfElement e)
 {
     u_cfAttribute data;
-    c_float value;
+    c_float update_factor;
     c_bool success;
-    c_float leasePeriod;
-
 
     if(e != NULL){
         data = cms_configurationResolveAttribute(e, "Domain/Lease/ExpiryTime", "update_factor");
 
         if(data != NULL){
-            success = u_cfAttributeFloatValue(data, &value);
+            success = u_cfAttributeFloatValue(data, &update_factor);
 
             if(success){
-                if((value >= 0.01F) && (value <= 1.0F)){
-                    leasePeriod = config->leasePeriod.seconds + (
-                                  config->leasePeriod.nanoseconds / NS_IN_S);
-                    value = leasePeriod * value;
-                    config->leaseRenewalPeriod.seconds     = (unsigned int) value;
-                    config->leaseRenewalPeriod.nanoseconds = (unsigned int) ((value - (float)((unsigned int) value)) * NS_IN_S);
-                } else if(value < 1.0F){
-                    OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                if((update_factor >= 0.01F) && (update_factor <= 1.0F)){
+                    config->leaseRenewalPeriod = os_durationMul(config->leasePeriod, update_factor);
+                } else if(update_factor < 1.0F){
+                    OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                         "%s Configuration: 'update_factor' < 0.01 not allowed. Applying default.",
                          config->name);
                 } else {
-                    OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                    OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                                             "%s Configuration: 'update_factor' > 1 not allowed. Applying default.",
                                              config->name);
                 }
             } else {
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                  "%s Configuration: 'update_factor' not valid. Applying default.", config->name);
             }
             u_cfAttributeFree(data);
@@ -536,15 +534,14 @@ cms_configurationInitClientLeasePeriod(
 
             if(success){
                if((value) < 10.0F){
-                     OS_REPORT_1(OS_INFO, CMS_CONTEXT, 0,
+                     OS_REPORT(OS_INFO, CMS_CONTEXT, 0,
                      "%s Configuration: 'ClientLeasePeriod' < 10 seconds is not valid. Applying default.",
                      config->name);
                 } else {
-                    config->clientLeasePeriod.seconds     = (unsigned int) value;
-                    config->clientLeasePeriod.nanoseconds = (unsigned int) ((value - (float)((unsigned int) value)) * NS_IN_S);
+                    config->clientLeasePeriod = os_durationMul(OS_DURATION_SECOND, value);
                 }
             } else {
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                    "%s Configuration: 'ClientLeasePeriod' not valid. Applying default",
                    config->name);
             }
@@ -575,12 +572,12 @@ static void cms_configurationInitReportingLevel(
                     }
                 }
                 if ( i>=(sizeof(ReportLevelMap)/sizeof(c_char*)) ) {
-                    OS_REPORT_2(OS_ERROR, CMS_CONTEXT, 0,
+                    OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                        "%s Configuration: 'Reporting/Level' %s not valid. Applying default",
                        config->name, value);
                 }
             } else {
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                    "%s Configuration: 'Reporting/Level' not valid. Applying default",
                    config->name);
             }
@@ -605,7 +602,7 @@ static void cms_configurationInitReportingEvents(
             if(success){
                 config->reportEvents = value;
             } else {
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                    "%s Configuration: 'Reporting/Events' not valid. Applying default",
                    config->name);
             }
@@ -630,7 +627,7 @@ static void cms_configurationInitReportingPeriodic(
             if(success){
                 config->reportPeriodic = value;
             } else {
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                    "%s Configuration: 'Reporting/Periodic' not valid. Applying default",
                    config->name);
             }
@@ -655,7 +652,7 @@ static void cms_configurationInitReportingOneShot(
             if(success){
                 config->reportPeriodic = value;
             } else {
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                    "%s Configuration: 'Reporting/Periodic' not valid. Applying default",
                    config->name);
             }
@@ -676,24 +673,19 @@ static void cms_configurationInitScheduling(
     c_char * path)
 {
     c_long schedPrio;
-    c_char* schedClass;
-    c_char* prioKind;
-    c_char* tmp;
+    os_char *schedClass;
+    os_char *prioKind;
+    os_char *tmp;
     u_cfData data;
     u_cfAttribute attribute;
-    c_bool success;
+    u_bool success;
 
-    struct v_schedulePolicy schedule;
-
-    /* TODO: Verify correctness of defaults */
-    schedule.kind = V_SCHED_DEFAULT;
-    schedule.priorityKind = V_SCHED_PRIO_RELATIVE;
-    schedule.priority = 0;
+    attr->schedClass = os_procAttrGetClass();
+    attr->schedPriority = 0;
 
     if (e != NULL) {
         tmp = os_malloc(strlen(path) + strlen(CLASS_PATH) +1 );
         os_sprintf(tmp, "%s%s", path, CLASS_PATH);
-
         data = cms_configurationResolveParameter(e, tmp);
         os_free(tmp);
 
@@ -701,18 +693,18 @@ static void cms_configurationInitScheduling(
             success = u_cfDataStringValue(data, &schedClass);
             if (success) {
                 if (strcmp(schedClass, "Realtime")==0) {
-                    schedule.kind = V_SCHED_REALTIME;
+                    attr->schedClass = OS_SCHED_REALTIME;
                 } else if (strcmp(schedClass, "Timeshare")==0) {
-                    schedule.kind = V_SCHED_TIMESHARING;
-                } else if (strcmp(schedClass, "Default")==0) {
-                    schedule.kind = V_SCHED_DEFAULT;
+                    attr->schedClass = OS_SCHED_TIMESHARE;
                 } else {
-                    OS_REPORT_2(OS_ERROR, CMS_CONTEXT, 0,
-                       "%s Configuration: '%s/Class' not valid. Applying default",
-                       config->name, path);
+                    if (strcmp(schedClass, "Default") != 0) {
+                        OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
+                           "%s Configuration: '%s/Class' not valid. Applying default",
+                           config->name, path);
+                    }
                 }
             } else {
-                OS_REPORT_2(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                    "%s Configuration: '%s/Class' not valid. Applying default",
                    config->name, path);
             }
@@ -728,40 +720,42 @@ static void cms_configurationInitScheduling(
         if (data != NULL) {
             success = u_cfDataLongValue(data, &schedPrio);
             if (success) {
-                schedule.priority = schedPrio;
+                attr->schedPriority = schedPrio;
             } else {
-                OS_REPORT_2(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                    "%s Configuration: '%s/Priority' not valid. Applying default",
                    config->name, path);
             }
+            u_cfDataFree(data);
         }
+
+        attr->schedPriority = os_procAttrGetPriority();
 
         tmp = os_malloc(strlen(path) + strlen(REL_PATH) + 1);
         os_sprintf(tmp, "%s%s", path, REL_PATH);
         attribute = cms_configurationResolveAttribute(e, tmp, REL_ATTR);
         os_free(tmp);
 
-        if (data != NULL) {
+        if (attribute != NULL) {
             success = u_cfAttributeStringValue(attribute, &prioKind);
             if (success) {
                 if (strcmp(prioKind, "Relative")==0) {
-                    schedule.priorityKind = V_SCHED_PRIO_RELATIVE;
-                } else if (strcmp(prioKind, "Absolute")==0) {
-                    schedule.priorityKind = V_SCHED_PRIO_ABSOLUTE;
+                    attr->schedPriority += os_procAttrGetPriority();
                 } else {
-                    OS_REPORT_2(OS_ERROR, CMS_CONTEXT, 0,
-                       "%s Configuration: '%s/Class' not valid. Applying default",
-                       config->name, path);
+                    if (strcmp(prioKind, "Absolute")!=0) {
+                        OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
+                           "%s Configuration: '%s/Class' not valid. Applying default",
+                           config->name, path);
+                    }
                 }
             } else {
-                OS_REPORT_2(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                    "%s Configuration: '%s/Class' not valid. Applying default",
                    config->name, path);
             }
-            u_cfDataFree(data);
+            u_cfAttributeFree(attribute);
         }
     }
-    u_threadAttrInit(&schedule, attr);
 }
 
 static void cms_configurationInitClientScheduling(

@@ -1,8 +1,10 @@
-export JAVA_HOME=/usr/lib/jvm/jdk-7-oracle-armhf
-export JAVA_COMPATJAR=/usr/lib/jvm/jdk-7-oracle-armhf/jre/lib/rt.jar
+export JAVA_HOME=/usr/lib/jvm/jdk-8-oracle-arm-vfp-hflt
+export JAVA_COMPATJAR=/usr/lib/jvm/jdk-8-oracle-arm-vfp-hflt/jre/lib/rt.jar
 export JAVA_VERSION_OVERRIDE=1.7
 export JACORB_HOME=/home/dds/INSTALLED_FOR_DDS/JacORB-v2.3.1.0
 export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/GSOAP
+export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 unset QTDIR
 unset TAO_ROOT

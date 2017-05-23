@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Configuring Node Monitor &mdash; OpenSplice Node Monitor User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Node Monitor User Guide" href="index.html" />
+    <link rel="next" title="5. Data Available through Node Monitor" href="dataavailable.html" />
+    <link rel="prev" title="3. Starting and Stopping Node Monitor" href="startstop.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="dataavailable.html" title="5. Data Available through Node Monitor"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="startstop.html" title="3. Starting and Stopping Node Monitor"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Node Monitor User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="configuring-node-monitor">
+<span id="id1"></span><h1>4. Configuring Node Monitor<a class="headerlink" href="#configuring-node-monitor" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="setting-up-the-configuration-file">
+<h2>4.1. Setting up the configuration file<a class="headerlink" href="#setting-up-the-configuration-file" title="Permalink to this headline">¶</a></h2>
+<p>It is possible to control the frequency of the information and metrics that are pushed
+to the Vortex OpenSplice backbone. Setting the interval to <tt class="docutils literal"><span class="pre">-1</span></tt> for a specific category
+will disable the push of monitoring data for that category.</p>
+<p>To override the default configuration, create your own <tt class="docutils literal"><span class="pre">application.conf</span></tt> file in
+the same directory where you start the Node Monitor.</p>
+<div class="section" id="configuration-parameters">
+<h3>4.1.1. Configuration parameters<a class="headerlink" href="#configuration-parameters" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="30%" />
+<col width="70%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">domain</span></tt></td>
+<td>Domain ID of the OpenSplice system.</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">partition</span></tt></td>
+<td>Partition name to which monitoring data
+will be published. Default is NODE_INFO.
+Do not change this when using with Vortex Insight!</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">historyDepth</span></tt></td>
+<td>History depth for <tt class="docutils literal"><span class="pre">HistoryQosPolicy</span></tt>.
+<tt class="docutils literal"><span class="pre">-1</span></tt> to keep all history.</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">cpuInfo</span></tt></td>
+<td>CPU information interval in milliseconds.
+<tt class="docutils literal"><span class="pre">-1</span></tt> to disable.</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">cpuStats</span></tt></td>
+<td>CPU statistics interval in milliseconds.
+<tt class="docutils literal"><span class="pre">-1</span></tt> to disable.</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">memStats</span></tt></td>
+<td>Memory statistics interval in milliseconds.
+<tt class="docutils literal"><span class="pre">-1</span></tt> to disable.</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">netInfo</span></tt></td>
+<td>Memory statistics interval in milliseconds.
+<tt class="docutils literal"><span class="pre">-1</span></tt> to disable.</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">netInterfaceInfo</span></tt></td>
+<td>Network interface information interval in milliseconds.
+<tt class="docutils literal"><span class="pre">-1</span></tt> to disable.</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">netInterfaceStats</span></tt></td>
+<td>Network interface statistics interval in milliseconds.
+<tt class="docutils literal"><span class="pre">-1</span></tt> to disable.</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">operatingSystemInfo</span></tt></td>
+<td>Operating system information interval in milliseconds.
+<tt class="docutils literal"><span class="pre">-1</span></tt> to disable.</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">processInfo</span></tt></td>
+<td>Process information interval in milliseconds.
+<tt class="docutils literal"><span class="pre">-1</span></tt> to disable.</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">processCPUStats</span></tt></td>
+<td>Process CPU statistics interval in milliseconds.
+<tt class="docutils literal"><span class="pre">-1</span></tt> to disable.</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">processMemoryStats</span></tt></td>
+<td>Process memory statistics interval in milliseconds.
+<tt class="docutils literal"><span class="pre">-1</span></tt> to disable.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="default-configuration-file-application-conf">
+<h2>4.2. Default configuration file (<tt class="docutils literal"><span class="pre">application.conf</span></tt>)<a class="headerlink" href="#default-configuration-file-application-conf" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre># define default scope variables to be used for setting the value of
+other parameters.
+default {
+  domain = 0
+  partition = NODE_INFO
+  historyDepth = 10
+  interval {
+    information = 60000
+    statistics = 2000
+  }
+}
+
+opensplice {
+  hm {
+    nodeinfoservice{
+      domain = ${default.domain}
+      partition = ${default.partition}
+      historyDepth = ${default.historyDepth}
+      interval {
+        cpuInfo = ${default.interval.information}
+        cpuStats = ${default.interval.statistics}
+        memStats = ${default.interval.statistics}
+        netInfo = ${default.interval.information}
+        netInterfaceInfo = ${default.interval.information}
+        netInterfaceStats = ${default.interval.statistics}
+        operatingSystemInfo = ${default.interval.information}
+        processCPUStats = ${default.interval.statistics}
+        processInfo = ${default.interval.information}
+        processMemoryStats = ${default.interval.statistics}
+      }
+    }
+  }
+}
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Configuring Node Monitor</a><ul>
+<li><a class="reference internal" href="#setting-up-the-configuration-file">4.1. Setting up the configuration file</a><ul>
+<li><a class="reference internal" href="#configuration-parameters">4.1.1. Configuration parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#default-configuration-file-application-conf">4.2. Default configuration file (<tt class="docutils literal"><span class="pre">application.conf</span></tt>)</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="startstop.html"
+                        title="previous chapter">3. Starting and Stopping Node Monitor</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dataavailable.html"
+                        title="next chapter">5. Data Available through Node Monitor</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/configuring.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="dataavailable.html" title="5. Data Available through Node Monitor"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="startstop.html" title="3. Starting and Stopping Node Monitor"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Node Monitor User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

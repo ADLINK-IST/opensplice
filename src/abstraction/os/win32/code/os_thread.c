@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file os/win32/code/os_thread.c
@@ -15,15 +23,17 @@
  * Implements thread management for WIN32
  */
 
+#include "os_errno.h"
 #include "os_thread.h"
+
+#include "os_win32incs.h"
+
 #include "os_stdlib.h"
 #include "os_time.h"
 #include "os_heap.h"
 #include "os_abstract.h"
 #include "os__debug.h"
-
-#include <stdio.h>
-#include <assert.h>
+#include "os_report.h"
 
 os_threadInfo id_none = {0, };
 
@@ -36,6 +46,12 @@ typedef struct {
 typedef struct {
     os_uint  protectCount;
 } os_threadProtectInfo;
+
+typedef struct {
+    void *pthreadMem;
+    os_threadPrivMemDestructor destructor;
+    void *userArgs;
+} os_threadRegisteredPrivMem;
 
 static DWORD tlsIndex;
 static os_threadHook os_threadCBs;
@@ -74,12 +90,12 @@ os_threadHookExit(void)
 static void
 os_threadMemInit(void)
 {
-    void **tlsMemArray;
+    os_threadRegisteredPrivMem *tlsMemArray;
     BOOL result;
 
-    tlsMemArray = malloc (sizeof(void *) * OS_THREAD_MEM_ARRAY_SIZE);
+    tlsMemArray = malloc (sizeof(os_threadRegisteredPrivMem) * OS_THREAD_MEM_ARRAY_SIZE);
     if (tlsMemArray) {
-        memset(tlsMemArray, 0, sizeof(void *) * OS_THREAD_MEM_ARRAY_SIZE);
+        memset(tlsMemArray, 0, sizeof(os_threadRegisteredPrivMem) * OS_THREAD_MEM_ARRAY_SIZE);
         result = TlsSetValue(tlsIndex, tlsMemArray);
         if (!result) {
             OS_DEBUG("os_threadMemInit", "Failed to set TLS");
@@ -90,21 +106,20 @@ os_threadMemInit(void)
 static void
 os_threadMemExit(void)
 {
-    void **tlsMemArray;
+    os_threadRegisteredPrivMem *tlsMemArray;
     int i;
 
-    tlsMemArray = (void **)TlsGetValue(tlsIndex);
+    tlsMemArray = (os_threadRegisteredPrivMem*)TlsGetValue(tlsIndex);
     if (tlsMemArray != NULL) {
         for (i = 0; i < OS_THREAD_MEM_ARRAY_SIZE; i++) {
-            if (tlsMemArray[i] != NULL) {
-                free(tlsMemArray[i]);
+            if (tlsMemArray[i].pthreadMem != NULL) {
+                os_threadMemFree(i);
             }
         }
         free(tlsMemArray);
         TlsSetValue(tlsIndex, NULL);
     }
 }
-
 /** \brief Initialize thread attributes
  *
  * - Set \b procAttr->schedClass to \b OS_SCHED_DEFAULT
@@ -112,7 +127,7 @@ os_threadMemExit(void)
  *   non realtime platforms, Real-time for realtime platforms)
  * - Set \b procAttr->schedPriority to \b 0
  */
-os_result
+void
 os_threadAttrInit (
     os_threadAttr *threadAttr)
 {
@@ -120,7 +135,6 @@ os_threadAttrInit (
     threadAttr->schedClass = OS_SCHED_DEFAULT;
     threadAttr->schedPriority = 0;
     threadAttr->stackSize = 1024*1024; /* 1MB */
-    return os_resultSuccess;
 }
 
 /** \brief Initialize the thread module
@@ -133,7 +147,7 @@ os_threadModuleInit(void)
 {
    tlsIndex = TlsAlloc();
    if (tlsIndex == 0xFFFFFFFF) {
-      OS_DEBUG_1("os_threadModuleInit", "Warning: could not allocate thread-local memory (System Error Code: %i)", GetLastError ());
+      OS_DEBUG_1("os_threadModuleInit", "Warning: could not allocate thread-local memory (System Error Code: %i)", os_getErrno ());
    }
    os_threadHookInit();
 }
@@ -248,7 +262,7 @@ void os_threadSetThreadName( DWORD dwThreadID, char* threadName)
     tssThreadName = (char *)os_threadMemGet(OS_THREAD_NAME);
     if (tssThreadName == NULL)
     {
-        tssThreadName = (char *)os_threadMemMalloc(OS_THREAD_NAME, (strlen(threadName) + 1));
+        tssThreadName = (char *)os_threadMemMalloc(OS_THREAD_NAME, (strlen(threadName) + 1), NULL, NULL);
         os_strcpy(tssThreadName, threadName);
     }
 }
@@ -283,6 +297,11 @@ os_startRoutineWrapper(
     }
 
     os_threadCBs.stopCb(id, os_threadCBs.stopArg);
+
+#ifndef LITE
+    os_report_stack_free();
+    os_reportClearApiInfo();
+#endif
 
     /* Free the thread context resources, arguments is responsibility */
     /* for the caller of os_procCreate                                */
@@ -321,8 +340,7 @@ os_threadCreate(
 
     /* Take over the thread context: name, start routine and argument */
     threadContext = os_malloc(sizeof (os_threadContext));
-    threadContext->threadName = os_malloc(strlen (name)+1);
-    os_strncpy(threadContext->threadName, name, strlen (name)+1);
+    threadContext->threadName = os_strdup(name);
     threadContext->startRoutine = start_routine;
     threadContext->arguments = arg;
     threadHandle = CreateThread(NULL,
@@ -331,7 +349,7 @@ os_threadCreate(
         (LPVOID)threadContext,
         (DWORD)0, &threadIdent);
     if (threadHandle == 0) {
-        OS_DEBUG_1("os_threadCreate", "Failed with System Error Code: %i\n", GetLastError ());
+        OS_DEBUG_1("os_threadCreate", "Failed with System Error Code: %i\n", os_getErrno ());
         return os_resultFail;
     }
 
@@ -353,27 +371,27 @@ os_threadCreate(
 
     /* PROCESS_QUERY_INFORMATION rights required
      * to call GetPriorityClass
-     * Ensure that priorities are efectively in the allowed range depending
+     * Ensure that priorities are effectively in the allowed range depending
      * on GetPriorityClass result */
-	effective_priority = threadAttr->schedPriority;
+    effective_priority = threadAttr->schedPriority;
     if (GetPriorityClass(GetCurrentProcess()) == REALTIME_PRIORITY_CLASS) {
         if (threadAttr->schedPriority < -7) {
-        	effective_priority = THREAD_PRIORITY_IDLE;
+            effective_priority = THREAD_PRIORITY_IDLE;
         }
         if (threadAttr->schedPriority > 6) {
-        	effective_priority = THREAD_PRIORITY_TIME_CRITICAL;
+            effective_priority = THREAD_PRIORITY_TIME_CRITICAL;
         }
     } else {
         if (threadAttr->schedPriority < THREAD_PRIORITY_LOWEST) {
-        	effective_priority = THREAD_PRIORITY_IDLE;
+            effective_priority = THREAD_PRIORITY_IDLE;
         }
         if (threadAttr->schedPriority > THREAD_PRIORITY_HIGHEST) {
-        	effective_priority = THREAD_PRIORITY_TIME_CRITICAL;
+            effective_priority = THREAD_PRIORITY_TIME_CRITICAL;
         }
     }
-	if (SetThreadPriority (threadHandle, effective_priority) == 0) {
-		OS_DEBUG_1("os_threadCreate", "SetThreadPriority failed with %d", (int)GetLastError());
-	}
+    if (SetThreadPriority (threadHandle, effective_priority) == 0) {
+      OS_DEBUG_1("os_threadCreate", "SetThreadPriority failed with %d", (int)os_getErrno());
+    }
 
    /* ES: dds2086: Close handle should not be performed here. Instead the handle
     * should not be closed until the os_threadWaitExit(...) call is called.
@@ -420,34 +438,31 @@ os_threadWaitExit(
     os_threadId threadId,
     void **thread_result)
 {
-/*     HANDLE threadHandle; */
     DWORD tr;
     DWORD err;
-    register int callstatus;
-
-/*     threadHandle = OpenThread(THREAD_QUERY_INFORMATION, FALSE, (DWORD)threadId); */
+    DWORD waitres;
+    BOOL status;
 
     if(threadId.handle == NULL){
         OS_DEBUG("os_threadWaitExit", "Parameter threadId is null");
         return os_resultFail;
     }
 
-    callstatus = GetExitCodeThread(threadId.handle, &tr);
-
-    if (callstatus == 0) {
-       err = GetLastError();
-       OS_DEBUG_1("os_threadWaitExit", "GetExitCodeThread Failed %d", err);
+    waitres = WaitForSingleObject(threadId.handle, INFINITE);
+    if (waitres != WAIT_OBJECT_0) {
+        err = os_getErrno();
+        OS_DEBUG_1("os_threadWaitExit", "WaitForSingleObject Failed %d", err);
         return os_resultFail;
-    } else {
-        while (tr == STILL_ACTIVE) {
-           Sleep(100);
-           if (GetExitCodeThread(threadId.handle, &tr) == 0) {
-              err = GetLastError();
-              OS_DEBUG_1("os_threadWaitExit",  "GetExitCodeThread Failed %d", err);
-              return os_resultFail;
-            }
-        }
     }
+
+    status = GetExitCodeThread(threadId.handle, &tr);
+    if (!status) {
+       err = os_getErrno();
+       OS_DEBUG_1("os_threadWaitExit", "GetExitCodeThread Failed %d", err);
+       return os_resultFail;
+    }
+
+    assert(tr != STILL_ACTIVE);
     if (thread_result != NULL) {
         *thread_result = (VOID *)tr;
     }
@@ -483,6 +498,22 @@ os_threadFigureIdentity(
    return size;
 }
 
+os_int32
+os_threadGetThreadName(
+    os_char *buffer,
+    os_uint32 length)
+{
+    os_char *name;
+
+    assert (buffer != NULL);
+
+    if ((name = (os_char *)os_threadMemGet(OS_THREAD_NAME)) == NULL) {
+        name = "";
+    }
+
+    return snprintf (buffer, length, "%s", name);
+}
+
 /** \brief Allocate thread private memory
  *
  * Allocate heap memory of the specified \b size and
@@ -506,22 +537,26 @@ os_threadFigureIdentity(
 void *
 os_threadMemMalloc(
     os_int32 index,
-    os_size_t size)
+    os_size_t size,
+    os_threadPrivMemDestructor destructor,
+    void* userArgs)
 {
-   void **tlsMemArray;
+   os_threadRegisteredPrivMem *tlsMemArray;
    void *threadMemLoc = NULL;
 
     if ((0 <= index) && (index < OS_THREAD_MEM_ARRAY_SIZE)) {
-        tlsMemArray = (void **)TlsGetValue(tlsIndex);
+        tlsMemArray = (os_threadRegisteredPrivMem*)TlsGetValue(tlsIndex);
         if (tlsMemArray == NULL) {
             os_threadMemInit ();
-            tlsMemArray = (void **)TlsGetValue(tlsIndex);
+            tlsMemArray = (os_threadRegisteredPrivMem*)TlsGetValue(tlsIndex);
         }
         if (tlsMemArray != NULL) {
-            if (tlsMemArray[index] == NULL) {
+            if (tlsMemArray[index].pthreadMem == NULL) {
                 threadMemLoc = malloc(size);
                 if (threadMemLoc != NULL) {
-                    tlsMemArray[index] = threadMemLoc;
+                    tlsMemArray[index].pthreadMem = threadMemLoc;
+                    tlsMemArray[index].destructor = destructor;
+                    tlsMemArray[index].userArgs = userArgs;
                 }
             }
         }
@@ -545,15 +580,18 @@ void
 os_threadMemFree(
     os_int32 index)
 {
-    void **tlsMemArray;
+    os_threadRegisteredPrivMem *tlsMemArray;
     void *threadMemLoc = NULL;
 
     if ((0 <= index) && (index < OS_THREAD_MEM_ARRAY_SIZE)) {
-        tlsMemArray = (void **)TlsGetValue(tlsIndex);
+        tlsMemArray = (os_threadRegisteredPrivMem*)TlsGetValue(tlsIndex);
         if (tlsMemArray != NULL) {
-            threadMemLoc = tlsMemArray[index];
+            threadMemLoc = tlsMemArray[index].pthreadMem;
             if (threadMemLoc != NULL) {
-                tlsMemArray[index] = NULL;
+                if (tlsMemArray[index].destructor != NULL) {
+                    tlsMemArray[index].destructor(tlsMemArray[index].pthreadMem, tlsMemArray[index].userArgs);
+                }
+                tlsMemArray[index].pthreadMem = NULL;
                 free(threadMemLoc);
             }
         }
@@ -572,18 +610,25 @@ void *
 os_threadMemGet(
     os_int32 index)
 {
-    void **tlsMemArray;
-    void *data;
+    os_threadRegisteredPrivMem *tlsMemArray;
+    void *data = NULL;
 
-    data = NULL;
     if ((0 <= index) && (index < OS_THREAD_MEM_ARRAY_SIZE)) {
-        tlsMemArray = TlsGetValue(tlsIndex);
+        tlsMemArray = (os_threadRegisteredPrivMem*)TlsGetValue(tlsIndex);
         if (tlsMemArray != NULL) {
-            data = tlsMemArray[index];
+            data = tlsMemArray[index].pthreadMem;
         }
     }
 
     return data;
+}
+
+/** \brief Registered callback on thread detaching from loaded dll
+ *
+ */
+void os_threadMemClear()
+{
+    os_threadMemExit();
 }
 
 os_result
@@ -595,7 +640,9 @@ os_threadProtect(void)
     pi = os_threadMemGet(OS_THREAD_PROTECT);
     if (pi == NULL) {
         pi = os_threadMemMalloc(OS_THREAD_PROTECT,
-                                sizeof(os_threadProtectInfo));
+                                sizeof(os_threadProtectInfo),
+                                NULL,
+                                NULL);
         if (pi) {
             pi->protectCount = 1;
             result = os_resultSuccess;

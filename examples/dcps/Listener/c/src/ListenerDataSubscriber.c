@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -97,6 +105,7 @@ int OSPL_MAIN (int argc, char *argv[])
    checkHandle(guardList, "DDS_ConditionSeq__alloc");
    guardList->_maximum = 1;
    guardList->_length = 0;
+   guardList->_release = TRUE;
    guardList->_buffer = DDS_ConditionSeq_allocbuf(1);
    checkHandle(guardList->_buffer, "DDS_ConditionSeq_allocbuf");
 
@@ -131,6 +140,10 @@ int OSPL_MAIN (int argc, char *argv[])
    // Recursively free the instances sequence using the OpenSplice API.
    DDS_free(message_seq);
    DDS_free(message_infoSeq);
+   DDS_free(message_Listener);
+   DDS_free(guardCondition);
+   DDS_free(guardList);
+   DDS_free(waitSet);
    free(Listener_data);
 
    // Print out an empty line, just to avoid the shell writing on the same line as our last output.

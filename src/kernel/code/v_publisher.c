@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -17,6 +25,8 @@
 #include "v__partitionAdmin.h"
 #include "v__writer.h"
 #include "v__kernel.h"
+#include "v__entity.h"
+#include "v__builtin.h"
 #include "v_group.h"
 #include "v_observable.h"
 #include "v__observer.h"
@@ -24,7 +34,6 @@
 #include "v__policy.h"
 #include "v_event.h"
 #include "v_proxy.h"
-#include "v_time.h"
 #include "v_partition.h"
 
 #include "q_expr.h"
@@ -60,7 +69,7 @@ v_publisherNew(
     c_bool enable)
 {
     v_kernel kernel;
-    v_publisher p;
+    v_publisher p = NULL;
     v_publisherQos q;
     v_accessMode access;
 
@@ -74,42 +83,43 @@ v_publisherNew(
      * partition policy of the qos, then the publisher will not be created at
      * all.
      */
-    if(qos && qos->partition)
-    {
+    if(qos && qos->partition.v) {
         access = v_kernelPartitionAccessMode(kernel, qos->partition);
-    } else
-    {
+    } else {
         access = V_ACCESS_MODE_READ_WRITE;/* default */
     }
-    if(access == V_ACCESS_MODE_READ_WRITE || access == V_ACCESS_MODE_WRITE)
-    {
-        q = v_publisherQosNew(kernel,qos);
-        if (q != NULL) {
-            p = v_publisher(v_objectNew(kernel,K_PUBLISHER));
-            v_observerInit(v_observer(p),name,NULL,enable);
-            p->partitions  = v_partitionAdminNew(kernel);
-            p->writers     = c_setNew(v_kernelType(kernel,K_WRITER));
-            p->qos         = q;
-            p->suspendTime = C_TIME_INFINITE;
-            p->participant = participant;
-            p->transactionId = 0;
-            c_lockInit(&p->lock,SHARED_LOCK);
-            v_participantAdd(participant,v_entity(p));
-            assert(c_refCount(p) == 3);  /* as handle, by participant and the local variable p */
-            if (enable) {
-                v_publisherEnable(p);
+
+    if(access == V_ACCESS_MODE_READ_WRITE || access == V_ACCESS_MODE_WRITE) {
+        if (v_publisherQosCheck(qos) == V_RESULT_OK) {
+            q = v_publisherQosNew(kernel,qos);
+            if (q != NULL) {
+                p = v_publisher(v_objectNew(kernel,K_PUBLISHER));
+                v_entityInit(v_entity(p),name,enable);
+                p->partitions  = v_partitionAdminNew(kernel);
+                p->writers     = c_setNew(v_kernelType(kernel,K_WRITER));
+                p->qos         = q;
+                p->suspendTime = OS_TIMEE_INFINITE;
+                p->participant = participant;
+                p->coherentNestingLevel = 0;
+                p->transactionId = 0;
+                p->tidList = NULL;
+                p->orderbyFixed = FALSE;
+                p->orderby = V_ORDERBY_RECEPTIONTIME;
+                c_lockInit(c_getBase(p), &p->lock);
+                v_participantAdd(participant,v_object(p));
+                assert(c_refCount(p) == 3);  /* as handle, by participant and the local variable p */
+                if (enable) {
+                    v_publisherEnable(p);
+                }
+            } else {
+                OS_REPORT(OS_ERROR, "v_publisherNew", V_RESULT_INTERNAL_ERROR,
+                          "Publisher <%s> not created: cannot create publisher QoS", name);
             }
-        } else {
-            OS_REPORT(OS_ERROR, "v_publisherNew", 0,
-                      "Publisher not created: inconsistent qos");
-            p = NULL;
         }
-    } else
-    {
+    } else {
         OS_REPORT(OS_ERROR,
-              "v_publisherNew", 0,
+              "v_publisherNew", V_RESULT_PRECONDITION_NOT_MET,
               "Publisher not created: Access rights for one of the partitions listed in the partition list was not sufficient (i.e. write or readwrite).");
-        p = NULL;
     }
     return p;
 }
@@ -119,6 +129,7 @@ v_publisherEnable(
     v_publisher _this)
 {
     v_kernel kernel;
+    v_message builtinCMMsg;
     c_iter list;
     c_char *partitionName;
     v_result result = V_RESULT_ILL_PARAM;
@@ -127,7 +138,7 @@ v_publisherEnable(
         kernel = v_objectKernel(_this);
         v_observableAddObserver(v_observable(kernel->groupSet), v_observer(_this), NULL);
 
-        if (_this->qos->partition != NULL) {
+        if (_this->qos->partition.v != NULL) {
             list = v_partitionPolicySplit(_this->qos->partition);
             while((partitionName = c_iterTakeFirst(list)) != NULL) {
                 v_publisherPublish(_this,partitionName);
@@ -135,6 +146,9 @@ v_publisherEnable(
             }
             c_iterFree(list);
         }
+        builtinCMMsg = v_builtinCreateCMPublisherInfo(kernel->builtin, _this);
+        v_writeBuiltinTopic(kernel, V_CMPUBLISHERINFO_ID, builtinCMMsg);
+        c_free(builtinCMMsg);
         result = V_RESULT_OK;
     }
     return result;
@@ -145,12 +159,16 @@ v_publisherFree(
     v_publisher p)
 {
     v_writer o;
+    v_message builtinCMMsg;
+    v_message unregisterCMMsg;
     v_participant participant;
     v_kernel kernel;
 
     assert(C_TYPECHECK(p,v_publisher));
 
     kernel = v_objectKernel(p);
+    builtinCMMsg = v_builtinCreateCMPublisherInfo(kernel->builtin, p);
+    unregisterCMMsg = v_builtinCreateCMPublisherInfo(kernel->builtin, p);
     v_observableRemoveObserver(v_observable(kernel->groupSet),v_observer(p), NULL);
 
     while ((o = c_take(p->writers)) != NULL) {
@@ -160,10 +178,15 @@ v_publisherFree(
     }
     participant = v_participant(p->participant);
     if (participant != NULL) {
-        v_participantRemove(participant,v_entity(p));
+        v_participantRemove(participant,v_object(p));
         p->participant = NULL;
     }
-    v_observerFree(v_observer(p));
+    v_entityFree(v_entity(p));
+
+    v_writeDisposeBuiltinTopic(kernel, V_CMPUBLISHERINFO_ID, builtinCMMsg);
+    v_unregisterBuiltinTopic(kernel, V_CMPUBLISHERINFO_ID, unregisterCMMsg);
+    c_free(builtinCMMsg);
+    c_free(unregisterCMMsg);
 }
 
 void
@@ -172,84 +195,119 @@ v_publisherDeinit(
 {
     assert(C_TYPECHECK(p,v_publisher));
 
-    v_observerDeinit(v_observer(p));
+    v_entityDeinit(v_entity(p));
 }
 
 /**************************************************************
  * Protected functions
  **************************************************************/
+
 v_publisherQos
-v_publisherGetQosRef(
-    v_publisher p)
+v_publisherGetQos(
+    v_publisher _this)
 {
-    assert(p != NULL);
-    assert(C_TYPECHECK(p,v_publisher));
+    v_publisherQos qos;
 
-    return p->qos;  /* the reference is read only! */
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_publisher));
+
+    c_lockRead(&_this->lock);
+    qos = c_keep(_this->qos);
+    c_lockUnlock(&_this->lock);
+
+    return qos;
 }
-
 
 v_result
 v_publisherSetQos(
     v_publisher p,
-    v_publisherQos qos)
+    v_publisherQos tmpl)
 {
     v_result result;
+    v_kernel kernel;
+    v_publisherQos qos;
     v_qosChangeMask cm;
     v_writerNotifyChangedQosArg arg;
     v_partition d;
     v_accessMode access;
+
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
     arg.addedPartitions = NULL;
     arg.removedPartitions = NULL;
 
-    c_lockWrite(&p->lock);
+    result = v_publisherQosCheck(tmpl);
+    if (result == V_RESULT_OK) {
+        c_lockWrite(&p->lock);
+        /* For now we don't allow changing the publisher qos during a coherent update.
+         * we might want to improve this by only disallowing changes that break
+         * connectivity or eventually allow them and correctly handle the impact.
+         */
+        if (p->coherentNestingLevel == 0) {
+            kernel = v_objectKernel(p);
+            qos = v_publisherQosNew(kernel, tmpl);
+            if (!qos) {
+                c_lockUnlock(&p->lock);
+                return V_RESULT_OUT_OF_MEMORY;
+            }
 
-    /* ES, dds1576: When the QoS is being set we have to verify that the partitions
-     * listed in the qos do not have an invalid access mode set. For a publisher
-     * an invalid mode is characterized as 'read' mode. If the partitionAccess
-     * check returns ok, then everything continue as normal. If the
-     * partitionAccess check returns something else, then the setQos operation
-     * is aborted. Please see the partitionAccess check operation to know when
-     * a partition expression is not allowed.
-     */
-    if(qos && qos->partition)
-    {
-        access = v_kernelPartitionAccessMode(v_objectKernel(p), qos->partition);
-    } else
-    {
-        access = V_ACCESS_MODE_READ_WRITE;/* default */
-    }
-    if(access == V_ACCESS_MODE_READ_WRITE || access == V_ACCESS_MODE_WRITE)
-    {
-        result = v_publisherQosSet( p->qos, qos, v_entity(p)->enabled, &cm);
-        if ((result == V_RESULT_OK) && (cm != 0)) {
-            if (cm & V_POLICY_BIT_PARTITION) { /* partition policy has changed! */
-                v_partitionAdminSet(p->partitions, p->qos->partition, &arg.addedPartitions, &arg.removedPartitions);
+            /* ES, dds1576: When the QoS is being set we have to verify that the partitions
+             * listed in the qos do not have an invalid access mode set. For a publisher
+             * an invalid mode is characterized as 'read' mode. If the partitionAccess
+             * check returns ok, then everything continue as normal. If the
+             * partitionAccess check returns something else, then the setQos operation
+             * is aborted. Please see the partitionAccess check operation to know when
+             * a partition expression is not allowed.
+             */
+            if(qos->partition.v) {
+                access = v_kernelPartitionAccessMode(kernel, qos->partition);
+            } else {
+                access = V_ACCESS_MODE_READ_WRITE;/* default */
             }
-            c_walk(p->writers, qosChangedAction, &arg);
+            if (access == V_ACCESS_MODE_READ_WRITE || access == V_ACCESS_MODE_WRITE)
+            {
+                result = v_publisherQosCompare(p->qos, qos, v_entityEnabled(v_entity(p)), &cm);
+                if ((result == V_RESULT_OK) && (cm != 0)) {
+                    v_message builtinCMMsg;
+                    c_free(p->qos);
+                    p->qos = c_keep(qos);
 
-            d = v_partition(c_iterTakeFirst(arg.addedPartitions));
-            while (d != NULL) {
-                c_free(d);
-                d = v_partition(c_iterTakeFirst(arg.addedPartitions));
+                    if (cm & V_POLICY_BIT_PARTITION) { /* partition policy has changed! */
+                        v_partitionAdminSet(p->partitions,
+                                            p->qos->partition,
+                                            &arg.addedPartitions,
+                                            &arg.removedPartitions);
+                    }
+                    c_walk(p->writers, qosChangedAction, &arg);
+
+                    d = v_partition(c_iterTakeFirst(arg.addedPartitions));
+                    while (d != NULL) {
+                        c_free(d);
+                        d = v_partition(c_iterTakeFirst(arg.addedPartitions));
+                    }
+                    c_iterFree(arg.addedPartitions);
+                    d = v_partition(c_iterTakeFirst(arg.removedPartitions));
+                    while (d != NULL) {
+                        c_free(d);
+                        d = v_partition(c_iterTakeFirst(arg.removedPartitions));
+                    }
+                    c_iterFree(arg.removedPartitions);
+                    if (v_entity(p)->enabled) {
+                        builtinCMMsg = v_builtinCreateCMPublisherInfo (kernel->builtin, p);
+                        v_writeBuiltinTopic(kernel, V_CMPUBLISHERINFO_ID, builtinCMMsg);
+                        c_free(builtinCMMsg);
+                    }
+                }
+            } else {
+                result = V_RESULT_PRECONDITION_NOT_MET;
             }
-            c_iterFree(arg.addedPartitions);
-            d = v_partition(c_iterTakeFirst(arg.removedPartitions));
-            while (d != NULL) {
-                c_free(d);
-                d = v_partition(c_iterTakeFirst(arg.removedPartitions));
-            }
-            c_iterFree(arg.removedPartitions);
+            c_free(qos);
+        } else {
+            result = V_RESULT_PRECONDITION_NOT_MET;
         }
-    } else
-    {
-        result = V_RESULT_PRECONDITION_NOT_MET;
+        c_lockUnlock(&p->lock);
     }
-    c_lockUnlock(&p->lock);
-
     return result;
 }
 
@@ -286,7 +344,7 @@ v_publisherAssertLiveliness(
     }
 }
 
-void
+c_bool
 v_publisherConnectNewGroup(
     v_publisher p,
     v_group g)
@@ -301,7 +359,7 @@ v_publisherConnectNewGroup(
     if(v_groupPartitionAccessMode(g) == V_ACCESS_MODE_READ_WRITE ||
        v_groupPartitionAccessMode(g) == V_ACCESS_MODE_WRITE)
     {
-        c_lockWrite(&p->lock);
+        (void)c_lockWrite(&p->lock);
         connect = v_partitionAdminFitsInterest(p->partitions, g->partition);
 
         if (connect) {
@@ -318,6 +376,8 @@ v_publisherConnectNewGroup(
         }/*else do not connect */
         c_lockUnlock(&p->lock);
     }
+
+    return TRUE;
 }
 
 /**************************************************************
@@ -330,18 +390,19 @@ collectPartitions(
 {
     v_partition d = (v_partition)o;
     c_iter iter = (c_iter)arg;
-
-    iter = c_iterInsert(iter,c_keep(d));
+    (void) c_iterInsert(iter,c_keep(d));
     return TRUE;
 }
 
-void
+v_result
 v_publisherAddWriter(
     v_publisher p,
     v_writer w)
 {
+    v_result result = V_RESULT_OK;
     v_partition d;
     c_iter iter;
+    c_ulong transactionId;
 
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
@@ -349,42 +410,93 @@ v_publisherAddWriter(
     assert(C_TYPECHECK(w,v_writer));
 
     iter = c_iterNew(NULL);
-    c_lockWrite(&p->lock);
-    v_partitionAdminWalk(p->partitions, collectPartitions, iter);
-    while ((d = c_iterTakeFirst(iter)) != NULL) {
-        v_writerPublish(w,d);
-        c_free(d);
+    (void)c_lockWrite(&p->lock);
+
+    if (p->qos->presentation.v.access_scope == V_PRESENTATION_GROUP &&
+        p->qos->presentation.v.ordered_access == TRUE)
+    {
+        if (p->orderbyFixed == FALSE) {
+            p->orderbyFixed = TRUE;
+            p->orderby = w->qos->orderby.v.kind;
+        } else if (w->qos->orderby.v.kind != p->orderby) {
+            result = V_RESULT_INCONSISTENT_QOS;
+            OS_REPORT (OS_ERROR, OS_FUNCTION, result,
+                "Could not enable writer, destination order inconsistent with presentation and writer set on publisher");
+        }
     }
-    v_writerCoherentBegin(w,v_publisherTransactionId(p));
-    c_setInsert(p->writers,w);
+
+    if (result == V_RESULT_OK) {
+        if (p->coherentNestingLevel > 0) {
+            v_writerCoherentBegin(w, &transactionId);
+            if (p->qos->presentation.v.access_scope == V_PRESENTATION_GROUP) {
+                /*
+                 * A group coherent update is in progress so extend the existing
+                 * tidList with new writer transactionId.
+                 */
+                c_ulong oldSize = c_arraySize(p->tidList);
+                c_array tidList = p->tidList;
+                p->tidList = c_arrayNew(v_kernelType(v_objectKernel(p), K_TID), oldSize+1);
+                memcpy(p->tidList, tidList, sizeof(struct v_tid)*oldSize);
+
+                ((struct v_tid *)p->tidList)[oldSize].wgid = v_publicGid(v_public(w));
+                ((struct v_tid *)p->tidList)[oldSize].seqnr = transactionId;
+            }
+        }
+
+        v_partitionAdminWalk(p->partitions, collectPartitions, iter);
+        while ((d = c_iterTakeFirst(iter)) != NULL) {
+            v_writerPublish(w,d);
+            c_free(d);
+        }
+        c_setInsert(p->writers,w);
+    }
+
     c_lockUnlock(&p->lock);
     c_iterFree(iter);
-}
 
-void
+    return result;
+}
+#define v_publisherId(_this) v_public(_this)->handle.index
+
+v_result
 v_publisherRemoveWriter(
-    v_publisher p,
+    v_publisher _this,
     v_writer w)
 {
     v_writer found;
+    v_result result;
 
-    assert(p != NULL);
-    assert(C_TYPECHECK(p,v_publisher));
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this, v_publisher));
     assert(w != NULL);
-    assert(C_TYPECHECK(w,v_writer));
+    assert(C_TYPECHECK(w, v_writer));
 
-    c_lockWrite(&p->lock);
-#if 0
-    /* following statement enables deletion of writers within
-     * a transaction and still consider written samples to be
-     * part of the transaction.
-     * Not seen as correct behavior (yet).
-     */
-    v_writerCoherentEnd(w);
-#endif
-    found = c_remove(p->writers,w,NULL,NULL);
-    c_lockUnlock(&p->lock);
-    c_free(found);
+    (void)c_lockWrite(&_this->lock);
+    found = c_remove(_this->writers, w, NULL, NULL);
+    c_lockUnlock(&_this->lock);
+
+    if (found) {
+        c_free(found);
+        result = V_RESULT_OK;
+    } else {
+        result = V_RESULT_ALREADY_DELETED;
+    }
+
+    return result;
+}
+
+void
+v_publisherWalkWriters(
+    v_publisher _this,
+    v_writerAction action,
+    c_voidp arg)
+{
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_publisher));
+
+    (void)c_lockWrite(&_this->lock);
+    (void)c_setWalk(_this->writers,(c_action)action,arg);
+    (void)c_lockUnlock(&_this->lock);
 }
 
 c_bool
@@ -402,21 +514,19 @@ v_publisherPublish(
 {
     v_partition d;
     v_writerNotifyChangedQosArg arg;
-    v_partitionPolicy old;
+    v_partitionPolicyI old;
 
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
     arg.removedPartitions = NULL;
 
-    c_lockWrite(&p->lock);
+    (void)c_lockWrite(&p->lock);
     arg.addedPartitions = v_partitionAdminAdd(p->partitions, partitionExpr);
 
     old = p->qos->partition;
-    p->qos->partition = v_partitionPolicyAdd(old,
-                                             partitionExpr,
-                                             c_getBase(c_object(p)));
-    c_free(old);
+    p->qos->partition = v_partitionPolicyAdd(old, partitionExpr, c_getBase(c_object(p)));
+    c_free(old.v);
 
     c_walk(p->writers, qosChangedAction, &arg);
 
@@ -437,21 +547,19 @@ v_publisherUnPublish(
 {
     v_partition d;
     v_writerNotifyChangedQosArg arg;
-    v_partitionPolicy old;
+    v_partitionPolicyI old;
 
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
     arg.addedPartitions = NULL;
 
-    c_lockWrite(&p->lock);
+    (void)c_lockWrite(&p->lock);
     arg.removedPartitions = v_partitionAdminRemove(p->partitions, partitionExpr);
 
     old = p->qos->partition;
-    p->qos->partition = v_partitionPolicyRemove(old,
-                                                partitionExpr,
-                                                c_getBase(c_object(p)));
-    c_free(old);
+    p->qos->partition = v_partitionPolicyRemove(old, partitionExpr, c_getBase(c_object(p)));
+    c_free(old.v);
 
     c_walk(p->writers, qosChangedAction, &arg);
 
@@ -515,9 +623,9 @@ v_publisherSuspend (
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
-    c_lockWrite(&p->lock);
-    if (c_timeCompare(p->suspendTime, C_TIME_INFINITE) == C_EQ) {
-        p->suspendTime = v_timeGet();
+    (void)c_lockWrite(&p->lock);
+    if (!v_publisherIsSuspended(p)) {
+        p->suspendTime = os_timeEGet(); /* Compared with allocTime */
     } /* else publisher was already suspended, so no-op */
     c_lockUnlock(&p->lock);
 }
@@ -528,24 +636,22 @@ v_publisherResume (
 {
     c_iter writers;
     v_writer w;
-    c_time suspendTime;
+
     c_bool resumed = FALSE;
 
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
-    c_lockWrite(&p->lock);
-    if (c_timeCompare(p->suspendTime, C_TIME_INFINITE) != C_EQ) {
-        suspendTime = p->suspendTime;
-        p->suspendTime = C_TIME_INFINITE;
+    (void)c_lockWrite(&p->lock);
+    if (v_publisherIsSuspended(p)) {
+        const os_timeW resumeTime = os_timeWGet();
+        p->suspendTime = OS_TIMEE_INFINITE;
         writers = ospl_c_select(p->writers, 0);
         c_lockUnlock(&p->lock);
 
-        w = v_writer(c_iterTakeFirst(writers));
-        while (w != NULL) {
-            v_writerResumePublication(w, &suspendTime);
+        while ((w = v_writer(c_iterTakeFirst(writers))) != NULL) {
+            v_writerResumePublication(w, &resumeTime);
             c_free(w);
-            w = v_writer(c_iterTakeFirst(writers));
         }
         c_iterFree(writers);
         resumed = TRUE;
@@ -556,35 +662,95 @@ v_publisherResume (
     return resumed;
 }
 
+struct beginTransactionInfo
+{
+    v_result result;
+    c_array tidList;
+    c_ulong tidCount;
+};
+
 static c_bool
 beginTransaction (
     c_object o,
     c_voidp arg)
 {
     v_writer w = v_writer(o);
-    c_ulong id = *(c_ulong *)arg;
+    struct beginTransactionInfo *info = (struct beginTransactionInfo *)arg;
+    struct v_tid *tidList = (struct v_tid *)info->tidList;
+    c_ulong transactionId;
 
-    v_writerCoherentBegin(w,id);
+    v_writerCoherentBegin(w, &transactionId);
+    if (tidList) {
+        struct v_tid *tid = &tidList[info->tidCount++];
+
+        tid->wgid = v_publicGid(v_public(w));
+        tid->seqnr = transactionId;
+    }
     return TRUE;
 }
 
-void
+c_bool
+v__publisherCoherentTransactionSingleNoLock(
+    v_publisher p,
+    c_ulong *publisherId,
+    c_ulong *transactionId)
+{
+    c_bool result = FALSE;
+    assert(p != NULL);
+    assert(C_TYPECHECK(p,v_publisher));
+    assert(publisherId != NULL);
+    assert(transactionId != NULL);
+
+    if (p->qos->presentation.v.access_scope != V_PRESENTATION_INSTANCE && p->qos->presentation.v.coherent_access == TRUE) {
+        if (p->coherentNestingLevel == 0) {
+            *publisherId = (p->qos->presentation.v.access_scope == V_PRESENTATION_GROUP) ? v_publisherId(p) : 0;
+            *transactionId = p->transactionId++;
+            result = TRUE;
+        }
+    }
+
+    return result;
+}
+
+v_result
 v_publisherCoherentBegin (
     v_publisher p)
 {
-    v_kernel kernel;
+    v_result result = V_RESULT_OK;
 
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
-    c_lockWrite(&p->lock);
-    if (p->transactionId == 0) {
-        kernel = v_objectKernel(p);
-        p->transactionId = v_kernelGetTransactionId(kernel);
-        c_walk(p->writers, beginTransaction, (c_voidp)&p->transactionId);
+    (void)c_lockWrite(&p->lock);
+    if (++(p->coherentNestingLevel) == 1) {
+        if (p->qos->presentation.v.access_scope != V_PRESENTATION_INSTANCE && p->qos->presentation.v.coherent_access == TRUE){
+            struct beginTransactionInfo info;
+
+            assert(p->tidList == NULL);
+            if (p->qos->presentation.v.access_scope == V_PRESENTATION_GROUP) {
+                /* Create a list of participation group coherent writer transactions. */
+                p->tidList = c_arrayNew(v_kernelType(v_objectKernel(p), K_TID),
+                                        c_count(p->writers));
+            }
+            info.result = result;
+            info.tidCount = 0;
+            info.tidList = p->tidList;
+            c_walk(p->writers, beginTransaction, &info);
+            result = info.result;
+        }
     }
     c_lockUnlock(&p->lock);
+
+    return result;
 }
+
+struct endTransactionInfo
+{
+    v_result result;
+    c_array tidList;
+    c_ulong publisherId;
+    c_ulong transactionId;
+};
 
 static c_bool
 endTransaction (
@@ -592,40 +758,51 @@ endTransaction (
     c_voidp arg)
 {
     v_writer w = v_writer(o);
+    struct endTransactionInfo *eotInfo = (struct endTransactionInfo *)arg;
 
-    OS_UNUSED_ARG(arg);
-    v_writerCoherentEnd(w);
+    eotInfo->result = v_writerCoherentEnd(w, eotInfo->publisherId, eotInfo->transactionId, eotInfo->tidList);
 
-    return TRUE;
+    return (eotInfo->result == V_RESULT_OK);
 }
 
-void
+v_result
 v_publisherCoherentEnd (
     v_publisher p)
 {
+    v_result result = V_RESULT_OK;
+
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
 
-    c_lockWrite(&p->lock);
-    if (p->transactionId != 0) {
-        p->transactionId = 0;
-        c_walk(p->writers, endTransaction, NULL);
+    (void)c_lockWrite(&p->lock);
+    if (p->coherentNestingLevel == 0) {
+        result = V_RESULT_PRECONDITION_NOT_MET;
+        OS_REPORT(OS_ERROR, "v_publisherCoherentEnd", V_RESULT_PRECONDITION_NOT_MET,
+                  "Invoked CoherentEnd without a preceding CoherentBegin");
+
+    } else {
+        if ((--(p->coherentNestingLevel) == 0) &&
+            (p->qos->presentation.v.access_scope != V_PRESENTATION_INSTANCE) && p->qos->presentation.v.coherent_access == TRUE)
+        {
+            struct endTransactionInfo eotInfo;
+            eotInfo.result = result;
+            eotInfo.publisherId = 0;
+            eotInfo.transactionId = p->transactionId++;
+            eotInfo.tidList = NULL;
+            if (p->qos->presentation.v.access_scope == V_PRESENTATION_GROUP) {
+                eotInfo.publisherId = v_publisherId(p);
+                eotInfo.tidList = p->tidList;
+                p->tidList = NULL;
+            }
+            if (eotInfo.result == V_RESULT_OK) {
+                c_walk(p->writers, endTransaction, &eotInfo);
+            }
+            result = eotInfo.result;
+            c_free(eotInfo.tidList);
+        }
     }
-    c_lockUnlock(&p->lock);
-}
 
-v_publisherQos
-v_publisherGetQos(
-    v_publisher p)
-{
-    v_publisherQos qos;
-
-    assert(p != NULL);
-    assert(C_TYPECHECK(p,v_publisher));
-
-    c_lockRead(&p->lock);
-    qos = v_publisherQosNew(v_objectKernel(p), p->qos);
     c_lockUnlock(&p->lock);
 
-    return qos;
+    return result;
 }

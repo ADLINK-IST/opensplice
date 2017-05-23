@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl.h"
@@ -39,17 +47,18 @@ be_interface::be_interface()
 
 be_interface::be_interface
 (
-   idl_bool local,
+   bool local,
+   bool abstract,
    UTL_ScopedName* n,
    AST_Interface** ih,
    long nih,
    const UTL_Pragmas &p,
-   idl_bool forward_declare
+   bool forward_declare
 )
 :
    AST_Decl (AST_Decl::NT_interface, n, p),
    UTL_Scope (AST_Decl::NT_interface, n, p),
-   AST_Interface (local ? I_TRUE : I_FALSE, n, ih, nih, p),
+   AST_Interface (local, abstract, n, ih, nih, p),
    m_allOpsLoaded (false),
    m_cppScope (g_feScopeStack.Top()),
    m_cppType (g_feScopeStack.Top(), *n)
@@ -70,7 +79,7 @@ be_interface::be_interface
 
    // initialize typecode
 
-   if (this->local() != I_TRUE)
+   if (this->local() != true)
    {
       m_tc_ctor_val = (DDS_StdString) barScopedName + "_ctor";
       m_tc_dtor_val = (DDS_StdString) barScopedName + "_dtor";
@@ -90,7 +99,9 @@ be_interface::be_interface
 
    m_any_op_id = barScopedName;
    m_typecode->kind = DDS::tk_objref;
-   m_typecode->id = get_decl_pragmas().get_repositoryID()->get_string();
+   UTL_String *temp = get_decl_pragmas().get_repositoryID();
+   m_typecode->id = temp->get_string();
+   delete temp;
    m_typecode->name_of_type = localName;
 
    InitializeTypeMap(this);
@@ -646,7 +657,7 @@ void be_interface::Generate (be_ClientHeader& source)
                   (
                      ip->BaseClassname (),
                      ip->Scope (ip->BaseClassname ()),
-                     ip->local () ? I_TRUE : I_FALSE,
+                     ip->local () ? true : false,
                      true
                   )
                );
@@ -663,7 +674,7 @@ void be_interface::Generate (be_ClientHeader& source)
       }
       else
       {
-         AddParent (new be_ClassParent (stub, stub, local () ? I_TRUE : I_FALSE, true));
+         AddParent (new be_ClassParent (stub, stub, local () ? true : false, true));
       }
 
       // initialize hashtable for client stub generation
@@ -711,7 +722,7 @@ void be_interface::Generate (be_ClientHeader& source)
       g_cppScopeStack.Pop();
 
       // Stub
-      if (local() != I_TRUE)
+      if (local() != true)
       {
          GenerateStubDefinition (source);
       }
@@ -890,7 +901,7 @@ void be_interface::GenerateGlobalTypedef (be_ClientHeader & source)
    ostream & os = source.Stream ();
    be_Tab tab (source);
 
-   if (local() != I_TRUE)
+   if (local() != true)
    {
       os << tab << "typedef " << Scope (stubClassname)
          << " DDS_IDLC_" << TypedefName () << "_stub" << ";" << nl;
@@ -914,13 +925,14 @@ be_interface_fwd::be_interface_fwd()
 
 be_interface_fwd::be_interface_fwd
 (
-   idl_bool local,
+   bool local,
+   bool abstract, 
    UTL_ScopedName *n,
    const UTL_Pragmas &p
 )
 :
    AST_Decl (AST_Decl::NT_interface_fwd, n, p),
-   AST_InterfaceFwd (local ? true : false, n, p)
+   AST_InterfaceFwd (local ? true : false, abstract ? true : false, n, p)
 {
    isAtModuleScope(pbfalse);
    enclosingScope = be_Type::EnclosingScopeString(this);

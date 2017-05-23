@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "s_kernelManager.h"
@@ -14,18 +22,24 @@
 #include "s_configuration.h"
 #include "spliced.h"
 
-#include "os.h"
+#include "vortex_os.h"
 #include "u_user.h"
 
 C_STRUCT(s_kernelManager) {
-    os_threadId id;
+    ut_thread thr;
+    ut_thread resendManager;
+    ut_thread cAndMCommandManager;
     os_mutex mtx;
     os_cond cv;
-    int active;
     u_spliced spliced;
-    os_threadId resendManager;
-    os_threadId cAndMCommandManager;
+    os_uchar active;
+    os_uchar expected;
+    spliced internal_spliced;
 };
+
+#define S_KERNELMANAGER   (1 << 0)
+#define S_RESENDMANAGER   (1 << 1)
+#define S_CANDMCMDMANAGER (1 << 2)
 
 /**************************************************************
  * Private functions
@@ -36,10 +50,13 @@ kernelManager(
 {
     s_kernelManager km = (s_kernelManager)arg;
     os_mutexLock(&km->mtx);
-    km->active++;
+    km->active |= S_KERNELMANAGER;
     os_condBroadcast(&km->cv);
     os_mutexUnlock(&km->mtx);
+    /* We can not detect progress here. So, simulate a thread sleep. */
+    ut_threadAsleep(km->thr, UT_SLEEP_INDEFINITELY);
     u_splicedKernelManager(km->spliced);
+    splicedSignalTerminate(km->internal_spliced, SPLICED_EXIT_CODE_OK, SPLICED_SHM_OK);
     return NULL;
 }
 
@@ -50,12 +67,14 @@ resendManager(
 {
     s_kernelManager km = (s_kernelManager)arg;
     os_mutexLock(&km->mtx);
-    km->active++;
+    km->active |= S_RESENDMANAGER;
     os_condBroadcast(&km->cv);
     os_mutexUnlock(&km->mtx);
+    /* We can not detect progress here. So, simulate a thread sleep. */
+    ut_threadAsleep(km->resendManager, UT_SLEEP_INDEFINITELY);
     u_splicedBuiltinResendManager(km->spliced);
     return NULL;
- 
+
 }
 
 static void *
@@ -64,12 +83,13 @@ cAndMCommandManager(
 {
     s_kernelManager km = (s_kernelManager)arg;
     os_mutexLock(&km->mtx);
-    km->active++;
+    km->active |= S_CANDMCMDMANAGER;
     os_condBroadcast(&km->cv);
     os_mutexUnlock(&km->mtx);
+    /* We can not detect progress here. So, simulate a thread sleep. */
+    ut_threadAsleep(km->cAndMCommandManager, UT_SLEEP_INDEFINITELY);
     u_splicedBuiltinCAndMCommandDispatcher(km->spliced);
     return NULL;
- 
 }
 
 
@@ -86,123 +106,123 @@ s_kernelManagerNew(
 {
     s_kernelManager km;
     s_configuration config;
-    os_mutexAttr mtxAttr;
-    os_condAttr cvAttr;
-    int status;
     os_result osr;
 
-    status = 0;
-    km = os_malloc((os_uint32)C_SIZEOF(s_kernelManager));
-    if (km) {
-        km->spliced = splicedGetService(daemon);
-        km->active = 0;
-        osr = os_mutexAttrInit(&mtxAttr);
-        if (osr == os_resultSuccess) {
-            mtxAttr.scopeAttr = OS_SCOPE_PRIVATE;
-            osr = os_mutexInit(&km->mtx, &mtxAttr);
-        } else {
-            status++;
-        }
-        if (osr == os_resultSuccess) {
-            osr = os_condAttrInit(&cvAttr);
-            if (osr == os_resultSuccess) {
-                cvAttr.scopeAttr = OS_SCOPE_PRIVATE;
-                osr = os_condInit(&km->cv, &km->mtx, &cvAttr);
-            } else {
-                os_mutexDestroy(&km->mtx); /* don't care if this succeeds, already in error situation */
-                status++;
-            }
-            if (osr == os_resultSuccess) {
-                config = splicedGetConfiguration(daemon);
-                osr = os_threadCreate(&km->id, 
-                            S_THREAD_KERNELMANAGER, &config->kernelManagerScheduling, 
-                            kernelManager, km);
-                if (osr != os_resultSuccess) {
-                    /* don't care if the following statements succeeds, already in error situation */
-                    os_mutexDestroy(&km->mtx);
-                    os_condDestroy(&km->cv);
-                    status++;
-                }
-            }
-            if (osr == os_resultSuccess) {
-                config = splicedGetConfiguration(daemon);
-                osr = os_threadCreate(&km->resendManager,
-                            S_THREAD_RESENDMANAGER, &config->resendManagerScheduling,
-                            resendManager, km);
-                if (osr != os_resultSuccess) {
-                    /* don't care if the following statements succeeds, already in error situation */
-                    os_mutexDestroy(&km->mtx);
-                    os_condDestroy(&km->cv);
-                    status++;
-                }
-            }
-            if (osr == os_resultSuccess ) {
-                config = splicedGetConfiguration(daemon);
-                if (config->enableCandMCommandThread ) {
-                   osr = os_threadCreate(&km->cAndMCommandManager,
-                                         S_THREAD_C_AND_M_COMMANDMANAGER,
-                                         &config->cAndMCommandScheduling,
-                                         cAndMCommandManager, km);
-                   if (osr != os_resultSuccess) {
-                      /* don't care if the following statements succeeds, already in error situation */
-                      os_mutexDestroy(&km->mtx);
-                      os_condDestroy(&km->cv);
-                      status++;
-                   }
-                }
-            }
-        } else {
-            status++;
-        }
+    assert(daemon);
+
+    km = os_malloc(sizeof *km);
+    km->internal_spliced = daemon;
+    km->spliced = splicedGetService(daemon);
+    assert(km->spliced);
+    km->expected = km->active = 0;
+
+    if((osr = os_mutexInit(&km->mtx, NULL)) != os_resultSuccess){
+        OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED, 0,
+                "Mutex initialization failed; os_mutexInit returned %s.", os_resultImage(osr));
+        goto err_mutexInit;
     }
-    
-    if (status && km) {
-        os_free(km);
-        km = NULL;
+
+    if((osr = os_condInit(&km->cv, &km->mtx, NULL)) != os_resultSuccess){
+        OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED, 0,
+                "Condition variable initialization failed; os_condInit returned %s.", os_resultImage(osr));
+        goto err_condInit;
     }
-    
+
+    config = splicedGetConfiguration(daemon);
+    assert(config);
+
+    ut_threadCreate(splicedGetThreads(daemon), &(km->thr), S_THREAD_KERNELMANAGER,
+                &config->kernelManagerAttribute, kernelManager, km);
+    if (km->thr == NULL) {
+        OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED, 0,
+                "Failed to start " S_THREAD_KERNELMANAGER " thread.");
+        goto err_kmThreadCreate;
+    }
+    km->expected |= S_KERNELMANAGER;
+
+    ut_threadCreate(splicedGetThreads(daemon), &(km->resendManager), S_THREAD_RESENDMANAGER,
+                &config->resendManagerAttribute, resendManager, km);
+    if (km->resendManager == NULL) {
+        OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED, 0,
+                "Failed to start " S_THREAD_RESENDMANAGER " thread.");
+        goto err_rmThreadCreate;
+    }
+    km->expected |= S_RESENDMANAGER;
+
+    if (config->enableCandMCommandThread) {
+        ut_threadCreate(splicedGetThreads(daemon), &(km->cAndMCommandManager), S_THREAD_C_AND_M_COMMANDMANAGER,
+                    &config->cAndMCommandAttribute, cAndMCommandManager, km);
+        if (km->cAndMCommandManager == NULL) {
+            OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED, 0,
+                    "Failed to start " S_THREAD_C_AND_M_COMMANDMANAGER " thread.");
+            goto err_cmThreadCreate;
+        }
+        km->expected |= S_CANDMCMDMANAGER;
+    }
+
     return km;
+
+/* Error handling */
+err_cmThreadCreate:
+    if(u_splicedPrepareTermination(km->spliced) == U_RESULT_OK) {
+        (void) ut_threadWaitExit(km->resendManager, NULL);
+    }
+err_rmThreadCreate:
+    if(u_splicedPrepareTermination(km->spliced) == U_RESULT_OK) {
+        (void) ut_threadWaitExit(km->thr, NULL);
+    }
+err_kmThreadCreate:
+    os_condDestroy(&km->cv);
+err_condInit:
+    os_mutexDestroy(&km->mtx);
+err_mutexInit:
+    os_free(km);
+    return NULL;
 }
 
 void
 s_kernelManagerFree(
     s_kernelManager km)
 {
-    u_result r;
-    v_spliced s;
+    assert(km);
 
-    if (km) { /* km might be NULL, when spliced has detected other spliced */
-        os_threadWaitExit(km->id, NULL);
-        os_threadWaitExit(km->resendManager, NULL);
-        u_splicedCAndMCommandDispatcherQuit(km->spliced);
-        os_threadWaitExit(km->cAndMCommandManager, NULL);
-        os_condDestroy(&km->cv);
-        os_mutexDestroy(&km->mtx);
-        os_free(km);
+    if(km->expected & S_KERNELMANAGER){
+        ut_threadWaitExit(km->thr, NULL);
     }
+    if(km->expected & S_RESENDMANAGER){
+        ut_threadWaitExit(km->resendManager, NULL);
+    }
+    if(km->expected & S_CANDMCMDMANAGER){
+        u_splicedCAndMCommandDispatcherQuit(km->spliced);
+        ut_threadWaitExit(km->cAndMCommandManager, NULL);
+    }
+    os_condDestroy(&km->cv);
+    os_mutexDestroy(&km->mtx);
+    os_free(km);
 }
 
-int
+void
 s_kernelManagerWaitForActive(
     s_kernelManager km)
 {
-    int result;
-    os_time delay = {1, 0};
-    os_time cur;
-    os_time start;
-    os_result osr;
-    
+    os_duration delay = 1*OS_DURATION_SECOND;
+    os_timeM start;
+    os_timeM cur;
+    ut_thread self;
+
+    assert(km);
+
+    self = ut_threadLookupSelf(splicedGetThreads(km->internal_spliced));
+
     os_mutexLock(&km->mtx);
-    osr = os_resultSuccess;
-    cur = os_timeGet();
+    cur = os_timeMGet();
     start = cur;
-    while ((km->active < 2) && (cur.tv_sec - start.tv_sec < 20)) {
-        osr = os_condTimedWait(&km->cv, &km->mtx, &delay);
-        cur = os_timeGet();
+    while ((km->active != km->expected) &&
+           (os_timeMDiff(cur, start) < 20*OS_DURATION_SECOND)) {
+        (void)ut_condTimedWait(self, &km->cv, &km->mtx, delay);
+        cur = os_timeMGet();
     }
-    result = km->active;
     os_mutexUnlock(&km->mtx);
-    return result;
 }
 
 /**************************************************************

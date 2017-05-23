@@ -20,7 +20,6 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
   <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
   <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
-  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li>NetworkPartitions</li>
@@ -28,7 +27,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../Throughput/README.html">Throughput</a></li>
 </ul>
 <h2> NetworkPartitions</h2>
-
+<span class="ex-lifecycle" data-timeout="10" style="display:none"></span>
 <h3>1) Description</h3>
 
 <p>The NetworkPartitions example is used to illustrate the concept of traffic partitioning using QoS settings and OpenSplice DDS configuration. The example uses simplified versions of executables from the Tutorial example and four configuration files. Two of the configuration files cause the applications to use the OpenSplice DDS Networking Service. The other two configuration files cause the applications to use the OpenSplice DDS DDSIE service.</p>
@@ -36,8 +35,8 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <h3>2) Design</h3>
 <p>The 2 executables are : </p>
 <ul>
-     <li> Chatter : sends messages to the chatbox</li>
-     <li> MessageBoard : displays all available chatmessages</li>
+     <li class="ex-unit"> <span class="ex-unit-key" data-langcpp="Chatter">Chatter</span> : <span class="ex-unit-desc">sends messages to the chatbox</span></li>
+     <li class="ex-unit"> <span class="ex-unit-key" data-langcpp="MessageBoard">MessageBoard</span> : <span class="ex-unit-desc">displays all available chatmessages</span></li>
 </ul>
 
 <p>The 2 Networking Service configuration files, located in the etc directory, are : </p>
@@ -96,7 +95,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
    <ul>
      <li>The OpenSplice daemon should not be started manually. Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required.</li>
      <li>Open 2 or more terminals. Set up the environment and go to directory <b>standalone</b> as described above.</li>
-     <li>Set the required configuraton file e.g. <i>export OSPL_URI="file://$OSPL_HOME/examples/dcps/NetworkPartitions/etc/network1.xml"</i></li>
+     <li>Set the required configuraton file e.g. <i>export OSPL_URI=file://$OSPL_HOME/examples/dcps/NetworkPartitions/etc/network1.xml</i></li>
    </ul>
 
    <p><b>Starting the MessageBoard and Chatter</b></p>
@@ -140,7 +139,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
    <ul>
      <li>The OpenSplice daemon should not be started manually. Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required.</li>
      <li>Open 3 terminals. Setup the environment and go to directory <b>standalone</b> as described above.</li>
-     <li>Set the required configuration file e.g. <i>export OSPL_URI="file://$OSPL_HOME/examples/dcps/NetworkPartitions/etc/ddsie1.xml"</i></li>
+     <li>Set the required configuration file e.g. <i>export OSPL_URI=file://$OSPL_HOME/examples/dcps/NetworkPartitions/etc/ddsie1.xml</i></li>
    </ul>
 
    <p><b>Starting the subscriber and publisher</b></p>
@@ -197,7 +196,7 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
    <ul>
      <li>The OpenSplice daemon should not be started manually. Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required.</li>
      <li>Open 2 or more terminals. Set up the environment and go to directory <b>standalone</b> as described above.</li>
-     <li>Set the required configuration file e.g. <i>set OSPL_URI="file://%OSPL_HOME%\examples\dcps\NetworkPartitions\etc\network1.xml"</i></li>
+     <li>Set the required configuration file e.g. <i>set OSPL_URI=file://%OSPL_HOME%\examples\dcps\NetworkPartitions\etc\network1.xml</i></li>
    </ul>
 
    <p><b>Starting the MessageBoard and Chatter</b></p>
@@ -241,7 +240,7 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
    <ul>
      <li>The OpenSplice daemon should not be started manually. Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required.</li>
      <li>Open 3 terminals. Set up the environment and go to directory <b>standalone</b> as described above.</li>
-     <li>Set the required configuration file e.g. <i>set OSPL_URI="file://%OSPL_HOME%\examples\dcps\NetworkPartitions\etc\ddsie1.xml"</i></li>
+     <li>Set the required configuration file e.g. <i>set OSPL_URI=file://%OSPL_HOME%\examples\dcps\NetworkPartitions\etc\ddsie1.xml</i></li>
    </ul>
 
    <p><b>Starting the subscriber and publisher</b></p>

@@ -1,0 +1,163 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The IDL PreProcessor Guide &mdash; IDL PreProcessor Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="IDL PreProcessor Guide" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-idl-preprocessor-guide">
+<h1>The IDL PreProcessor Guide<a class="headerlink" href="#the-idl-preprocessor-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-idl-preprocessor-guide">1.1. About the IDL PreProcessor Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#intended-audience">1.2. Intended Audience</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#organisation">1.3. Organisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#conventions">1.4. Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">2. Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#introduction">2.1. Introduction</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="prerequisites.html">3. Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commandline.html">4. Command Line Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ddsmodes.html">5. OpenSplice Modes and Languages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="grammar.html">6. IDL Pre-processor Grammar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="keys.html">7. Keys</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="keys.html#defining-keys">7.1. Defining Keys</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="keys.html#supported-types-for-keys">7.1.1. Supported types for keys</a></li>
+<li class="toctree-l3"><a class="reference internal" href="keys.html#character-arrays-as-keys">7.1.2. Character arrays as Keys</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="keys.html#bounded-strings-as-character-arrays">7.2. Bounded strings as character arrays</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modeslanguages.html">8. Modes, Languages and Processing steps</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modeslanguages.html#integrated-c-orb">8.1. Integrated C++ ORB</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeslanguages.html#c-standalone">8.2. C++ Standalone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeslanguages.html#isoc">8.3. ISOC++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeslanguages.html#isoc-2">8.4. ISOC++2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeslanguages.html#id3">8.5. C Standalone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeslanguages.html#c99-standalone">8.6. C99 Standalone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeslanguages.html#java-standalone">8.7. Java Standalone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeslanguages.html#integrated-java-orb">8.8. Integrated Java ORB</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="topictypes.html">9. Extensible and Dynamic Topic Types for DDS annotation support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ddsdatatypes.html">10. Built-in DDS data types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bibliography.html">11. References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">12. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">12.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">12.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The IDL PreProcessor Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

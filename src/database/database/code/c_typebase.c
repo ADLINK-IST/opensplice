@@ -1,21 +1,29 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include <math.h>
-#include <errno.h>
 #include <stdlib.h>
 
 #include "c_typebase.h"
 #include "c_base.h" /* for c_keep and c_free */
 
+#include "os_errno.h"
 #include "os_report.h"
 #include "os_abstract.h"
 #include "os_stdlib.h"
@@ -30,7 +38,7 @@ c_value
 c_undefinedValue()
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_UNDEFINED;
     return v;
@@ -41,7 +49,7 @@ c_shortValue (
     const c_short value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_SHORT;
     v.is.Short = value;
@@ -53,7 +61,7 @@ c_addressValue (
     const c_address value)
 {
     c_value v;
-    
+
     memset(&v, 0, sizeof(v));
     v.kind = V_ADDRESS;
     v.is.Address = value;
@@ -65,7 +73,7 @@ c_longValue (
     const c_long value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_LONG;
     v.is.Long = value;
@@ -77,7 +85,7 @@ c_longlongValue (
     const c_longlong value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_LONGLONG;
     v.is.LongLong = value;
@@ -89,7 +97,7 @@ c_ushortValue (
     const c_ushort value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_USHORT;
     v.is.UShort = value;
@@ -101,7 +109,7 @@ c_ulongValue (
     const c_ulong value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_ULONG;
     v.is.ULong = value;
@@ -113,7 +121,7 @@ c_ulonglongValue (
     const c_ulonglong value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_ULONGLONG;
     v.is.ULongLong = value;
@@ -125,7 +133,7 @@ c_boolValue (
     const c_bool value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_BOOLEAN;
     v.is.Boolean = value;
@@ -137,7 +145,7 @@ c_octetValue (
     const c_octet value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_OCTET;
     v.is.Octet = value;
@@ -149,7 +157,7 @@ c_charValue (
     const c_char value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_CHAR;
     v.is.Char = value;
@@ -161,7 +169,7 @@ c_wcharValue (
     const c_wchar value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_WCHAR;
     v.is.WChar = value;
@@ -173,7 +181,7 @@ c_floatValue (
     const c_float value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_FLOAT;
     v.is.Float = value;
@@ -185,7 +193,7 @@ c_doubleValue (
     const c_double value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_DOUBLE;
     v.is.Double = value;
@@ -197,7 +205,7 @@ c_stringValue (
     const c_string value)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_STRING;
     v.is.String = value;
@@ -209,7 +217,7 @@ c_wstringValue (
     const c_wstring value)
 {
     c_value v;
- 
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_WSTRING;
     v.is.WString = value;
@@ -221,7 +229,7 @@ c_objectValue (
     const c_voidp object)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_OBJECT;
     v.is.Object = object;
@@ -233,11 +241,163 @@ c_voidpValue (
     const c_voidp object)
 {
     c_value v;
-    
+
     purify_memset(&v, 0, sizeof(v));
     v.kind = V_VOIDP;
     v.is.Voidp = object;
     return v;
+}
+
+c_value
+c_shortMinValue()
+{
+    return c_shortValue(C_MIN_SHORT);
+}
+
+c_value
+c_longMinValue()
+{
+    return c_longValue(C_MIN_LONG);
+}
+
+c_value
+c_longlongMinValue()
+{
+    return c_longlongValue(C_MIN_LONGLONG);
+}
+
+c_value
+c_ushortMinValue()
+{
+    return c_ushortValue(C_MIN_USHORT);
+}
+
+c_value
+c_ulongMinValue()
+{
+    return c_ulongValue(C_MIN_ULONG);
+}
+
+c_value
+c_ulonglongMinValue()
+{
+    return c_ulonglongValue(C_MIN_ULONGLONG);
+}
+
+c_value
+c_boolMinValue()
+{
+    return c_boolValue(0);
+}
+
+c_value
+c_octetMinValue()
+{
+    return c_octetValue(C_MIN_OCTET);
+}
+
+c_value
+c_charMinValue()
+{
+    c_value val;
+    /* A char can be signed or unsigned by default,
+     * depending on platform and compiler flags. */
+    if ((char)-1 < 0) {
+        /* char is signed */
+        val = c_charValue((c_char)C_MIN_SCHAR);
+    } else {
+        /* char is unsigned */
+        val = c_charValue((c_char)C_MIN_UCHAR);
+    }
+    return val;
+}
+
+c_value
+c_floatMinValue()
+{
+    return c_floatValue(C_MIN_FLOAT);
+}
+
+c_value
+c_doubleMinValue()
+{
+    return c_doubleValue(C_MIN_DOUBLE);
+}
+
+c_value
+c_shortMaxValue()
+{
+    return c_shortValue(C_MAX_SHORT);
+}
+
+c_value
+c_longMaxValue()
+{
+    return c_longValue(C_MAX_LONG);
+}
+
+c_value
+c_longlongMaxValue()
+{
+    return c_longlongValue(C_MAX_LONGLONG);
+}
+
+c_value
+c_ushortMaxValue()
+{
+    return c_ushortValue(C_MAX_USHORT);
+}
+
+c_value
+c_ulongMaxValue()
+{
+    return c_ulongValue(C_MAX_ULONG);
+}
+
+c_value
+c_ulonglongMaxValue()
+{
+    return c_ulonglongValue(C_MAX_ULONGLONG);
+}
+
+c_value
+c_boolMaxValue()
+{
+    return c_boolValue(1);
+}
+
+c_value
+c_octetMaxValue()
+{
+    return c_octetValue(C_MAX_OCTET);
+}
+
+c_value
+c_charMaxValue()
+{
+    c_value val;
+    /* A char can be signed or unsigned by default,
+     * depending on platform and compiler flags. */
+    if ((char)-1 < 0) {
+        /* char is signed */
+        val = c_charValue((c_char)C_MAX_SCHAR);
+    } else {
+        /* char is unsigned */
+        val = c_charValue((c_char)C_MAX_UCHAR);
+    }
+    return val;
+}
+
+c_value
+c_floatMaxValue()
+{
+    return c_floatValue(C_MAX_FLOAT);
+}
+
+c_value
+c_doubleMaxValue()
+{
+    return c_doubleValue(C_MAX_DOUBLE);
 }
 
 
@@ -262,15 +422,15 @@ c_valueImage(
     case V_LONGLONG:
         {
             char llstr[36];
-            llstr[35] = '\0';
-            snprintf(buf,1024,"%s",os_lltostr(value.is.LongLong, &llstr[35]));
+            (void)os_lltostr(value.is.LongLong, llstr, sizeof(llstr), NULL);
+            snprintf(buf,1024,"%s",llstr);
         }
     break;
     case V_ULONGLONG:
         {
             char llstr[36];
-            llstr[35] = '\0';
-            snprintf(buf,1024,"%s",os_ulltostr(value.is.ULongLong, &llstr[35]));
+            (void)os_ulltostr(value.is.ULongLong, llstr, sizeof(llstr), NULL);
+            snprintf(buf,1024,"%s",llstr);
         }
     break;
     case V_SHORT:     snprintf(buf,1024,"%d",value.is.Short); break;
@@ -280,7 +440,7 @@ c_valueImage(
     case V_ULONG:     snprintf(buf,1024,"%u",value.is.ULong); break;
     case V_CHAR:
     {
-        unsigned char c = value.is.Char;
+        unsigned char c = (unsigned char) value.is.Char;
 
             if (c < 32 || c >= 127) {
                 snprintf(buf,1024,"\\%03o",c);
@@ -333,7 +493,7 @@ c_imageValue(
             c_free(l);
         } else {
             imgValue->kind = V_UNDEFINED;
-            OS_REPORT_1(OS_API_INFO,
+            OS_REPORT(OS_ERROR,
                          "c_typebase::c_imageValue",0,
                          "expected legal enum label instead of \"%s\".",
                          image);
@@ -341,7 +501,7 @@ c_imageValue(
         break;
     }
     case M_COLLECTION:
-        if (c_collectionTypeKind(t) == C_STRING) {
+        if (c_collectionTypeKind(t) == OSPL_C_STRING) {
             if(imgValue->is.String){
                 c_free(imgValue->is.String);
             }
@@ -386,7 +546,7 @@ c_imageValue(
             }
             break;
         case P_LONG:
-            imgValue->is.Long = strtol (image, &endptr, 0);
+            imgValue->is.Long = (c_long) strtol (image, &endptr, 0);
             if (*endptr == '\0') {
                 imgValue->kind = V_LONG;
             } else {
@@ -413,7 +573,7 @@ c_imageValue(
             }
             break;
         case P_ULONG:
-            imgValue->is.ULong = strtoul (image, &endptr, 0);
+            imgValue->is.ULong = (c_ulong) strtoul (image, &endptr, 0);
             if (*endptr == '\0') {
                 imgValue->kind = V_ULONG;
             } else {
@@ -429,14 +589,15 @@ c_imageValue(
             }
             break;
         case  P_FLOAT:
-            if (sscanf(image,"%f",&imgValue->is.Float)) {
+            imgValue->is.Float = os_strtof (image, &endptr);
+            if (*endptr == '\0') {
                 imgValue->kind = V_FLOAT;
             } else {
                 imgValue->kind = V_UNDEFINED;
             }
             break;
         case  P_DOUBLE:
-            imgValue->is.Double = strtod (image, &endptr);
+            imgValue->is.Double = os_strtod (image, &endptr);
             if (*endptr == '\0') {
                 imgValue->kind = V_DOUBLE;
             } else {
@@ -511,6 +672,57 @@ c_valueCompare(
     return C_NE;
 }
 
+#if 0
+/* Some compilers have an optimizer that turns this very simple matcher
+   into something just as fast as the one below, but not all of them. So
+   better use the one in which the recursion has been partially eliminated
+   by hand. */
+static int patmatch (const char *pat, const char *str)
+{
+    switch (*pat) {
+        case 0:   return *str == 0;
+        case '?': return *str == 0 ? 0 : patmatch (pat+1, str+1);
+        case '*': return patmatch (pat+1, str) || (*str != 0 && patmatch (pat, str+1));
+        default:  return *str != *pat ? 0 : patmatch (pat+1, str+1);
+    }
+}
+#else
+static int patmatch (const char *pat, const char *str)
+{
+    while (*pat) {
+        if (*pat == '?') {
+            /* any character will do */
+            if (*str++ == 0) {
+                return 0;
+            }
+            pat++;
+        } else if (*pat == '*') {
+            /* collapse a sequence of wildcards, requiring as many
+               characters in str as there are ?s in the sequence */
+            while (*pat == '*' || *pat == '?') {
+                if (*pat == '?' && *str++ == 0) {
+                    return 0;
+                }
+                pat++;
+            }
+            /* try matching on all positions where str matches pat */
+            while (*str) {
+                if (*str == *pat && patmatch (pat+1, str+1)) {
+                    return 1;
+                }
+                str++;
+            }
+            return *pat == 0;
+        } else {
+            /* only an exact match */
+            if (*str++ != *pat++) {
+                return 0;
+            }
+        }
+    }
+    return *str == 0;
+}
+#endif
 
 c_value
 c_valueStringMatch (
@@ -520,53 +732,16 @@ c_valueStringMatch (
     c_value v;
     c_char *pattern;
     c_char *str;
-    c_char *strRef = NULL;
-    c_char *ptnRef = NULL;
 
     assert(patternValue.kind == V_STRING);
     assert(stringValue.kind == V_STRING);
 
     pattern = patternValue.is.String;
     str = stringValue.is.String;
-
     assert(pattern != NULL);
 
     v.kind = V_BOOLEAN;
-    if (str == NULL) {
-        v.is.Boolean = FALSE;
-        return v;
-    }
-    while ((*str != 0) && (*pattern != 0)) {
-        if (*pattern == '*') {
-            pattern++;
-            while ((*str != 0) && (*str != *pattern)) { str++; }
-            if (*str != 0) {
-                strRef = str+1;
-                ptnRef = pattern-1;
-            }
-        } else if (*pattern == '?') {
-            pattern++;
-            str++;
-        } else if (*pattern++ != *str++) {
-            if (strRef == NULL) {
-                v.is.Boolean = FALSE;
-                return v;
-            }
-            str = strRef;
-            pattern = ptnRef;
-            strRef = NULL;
-        }
-    }
-    if (*str == (char)0) {
-        while (*pattern == '*') { pattern++; }
-        if (*pattern == (char)0) {
-            v.is.Boolean = TRUE;
-        } else {
-            v.is.Boolean = FALSE;
-        }
-    } else {
-        v.is.Boolean = FALSE;
-    }
+    v.is.Boolean = (c_bool) patmatch (pattern, str ? str : "");
     return v;
 }
 
@@ -576,21 +751,21 @@ c_valueADD (
     c_value v1,
     c_value v2)
 {
-#define _CASE_(l,t) case l: v1.is.t += v2.is.t; break
+#define _CASE_(l,t,ct) case l: v1.is.t = (ct) (v1.is.t + v2.is.t); break
     switch (v1.kind) {
-    _CASE_(V_ADDRESS,Address);
-    _CASE_(V_BOOLEAN,Boolean);
-    _CASE_(V_SHORT,Short);
-    _CASE_(V_LONG,Long);
-    _CASE_(V_LONGLONG,LongLong);
-    _CASE_(V_OCTET,Octet);
-    _CASE_(V_USHORT,UShort);
-    _CASE_(V_ULONG,ULong);
-    _CASE_(V_ULONGLONG,ULongLong);
-    _CASE_(V_CHAR,Char);
-    _CASE_(V_WCHAR,WChar);
-    _CASE_(V_FLOAT,Float);
-    _CASE_(V_DOUBLE,Double);
+    _CASE_(V_ADDRESS,Address,c_address);
+    _CASE_(V_BOOLEAN,Boolean,c_bool);
+    _CASE_(V_SHORT,Short,c_short);
+    _CASE_(V_LONG,Long,c_long);
+    _CASE_(V_LONGLONG,LongLong,c_longlong);
+    _CASE_(V_OCTET,Octet,c_octet);
+    _CASE_(V_USHORT,UShort,c_ushort);
+    _CASE_(V_ULONG,ULong,c_ulong);
+    _CASE_(V_ULONGLONG,ULongLong,c_ulonglong);
+    _CASE_(V_CHAR,Char,c_char);
+    _CASE_(V_WCHAR,WChar,c_wchar);
+    _CASE_(V_FLOAT,Float,c_float);
+    _CASE_(V_DOUBLE,Double,c_double);
      default: assert(FALSE);
     }
     return v1;
@@ -602,21 +777,21 @@ c_valueSUB (
     c_value v1,
     c_value v2)
 {
-#define _CASE_(l,t) case l: v1.is.t -= v2.is.t; break
+#define _CASE_(l,t,ct) case l: v1.is.t = (ct) (v1.is.t - v2.is.t); break
     switch (v1.kind) {
-    _CASE_(V_ADDRESS,Address);
-    _CASE_(V_BOOLEAN,Boolean);
-    _CASE_(V_SHORT,Short);
-    _CASE_(V_LONG,Long);
-    _CASE_(V_LONGLONG,LongLong);
-    _CASE_(V_OCTET,Octet);
-    _CASE_(V_USHORT,UShort);
-    _CASE_(V_ULONG,ULong);
-    _CASE_(V_ULONGLONG,ULongLong);
-    _CASE_(V_CHAR,Char);
-    _CASE_(V_WCHAR,WChar);
-    _CASE_(V_FLOAT,Float);
-    _CASE_(V_DOUBLE,Double);
+    _CASE_(V_ADDRESS,Address,c_address);
+    _CASE_(V_BOOLEAN,Boolean,c_bool);
+    _CASE_(V_SHORT,Short,c_short);
+    _CASE_(V_LONG,Long,c_long);
+    _CASE_(V_LONGLONG,LongLong,c_longlong);
+    _CASE_(V_OCTET,Octet,c_octet);
+    _CASE_(V_USHORT,UShort,c_ushort);
+    _CASE_(V_ULONG,ULong,c_ulong);
+    _CASE_(V_ULONGLONG,ULongLong,c_ulonglong);
+    _CASE_(V_CHAR,Char,c_char);
+    _CASE_(V_WCHAR,WChar,c_wchar);
+    _CASE_(V_FLOAT,Float,c_float);
+    _CASE_(V_DOUBLE,Double,c_double);
      default: assert(FALSE);
     }
     return v1;
@@ -628,19 +803,19 @@ c_valueLOR (
     c_value v1,
     c_value v2)
 {
-#define _CASE_(l,t) case l: v1.is.t |= v2.is.t; break
+#define _CASE_(l,t,ct) case l: v1.is.t = (ct) (v1.is.t | v2.is.t); break
     switch (v1.kind) {
-    _CASE_(V_ADDRESS,Address);
-    _CASE_(V_BOOLEAN,Boolean);
-    _CASE_(V_SHORT,Short);
-    _CASE_(V_LONG,Long);
-    _CASE_(V_LONGLONG,LongLong);
-    _CASE_(V_OCTET,Octet);
-    _CASE_(V_USHORT,UShort);
-    _CASE_(V_ULONG,ULong);
-    _CASE_(V_ULONGLONG,ULongLong);
-    _CASE_(V_CHAR,Char);
-    _CASE_(V_WCHAR,WChar);
+    _CASE_(V_ADDRESS,Address,c_address);
+    _CASE_(V_BOOLEAN,Boolean,c_bool);
+    _CASE_(V_SHORT,Short,c_short);
+    _CASE_(V_LONG,Long,c_long);
+    _CASE_(V_LONGLONG,LongLong,c_longlong);
+    _CASE_(V_OCTET,Octet,c_octet);
+    _CASE_(V_USHORT,UShort,c_ushort);
+    _CASE_(V_ULONG,ULong,c_ulong);
+    _CASE_(V_ULONGLONG,ULongLong,c_ulonglong);
+    _CASE_(V_CHAR,Char,c_char);
+    _CASE_(V_WCHAR,WChar,c_wchar);
      default: assert(FALSE);
     }
     return v1;
@@ -652,19 +827,19 @@ c_valueLXOR (
     c_value v1,
     c_value v2)
 {
-#define _CASE_(l,t) case l: v1.is.t ^= v2.is.t; break
+#define _CASE_(l,t,ct) case l: v1.is.t = (ct) (v1.is.t ^ v2.is.t); break
     switch (v1.kind) {
-    _CASE_(V_ADDRESS,Address);
-    _CASE_(V_BOOLEAN,Boolean);
-    _CASE_(V_SHORT,Short);
-    _CASE_(V_LONG,Long);
-    _CASE_(V_LONGLONG,LongLong);
-    _CASE_(V_OCTET,Octet);
-    _CASE_(V_USHORT,UShort);
-    _CASE_(V_ULONG,ULong);
-    _CASE_(V_ULONGLONG,ULongLong);
-    _CASE_(V_CHAR,Char);
-    _CASE_(V_WCHAR,WChar);
+    _CASE_(V_ADDRESS,Address,c_address);
+    _CASE_(V_BOOLEAN,Boolean,c_bool);
+    _CASE_(V_SHORT,Short,c_short);
+    _CASE_(V_LONG,Long,c_long);
+    _CASE_(V_LONGLONG,LongLong,c_longlong);
+    _CASE_(V_OCTET,Octet,c_octet);
+    _CASE_(V_USHORT,UShort,c_ushort);
+    _CASE_(V_ULONG,ULong,c_ulong);
+    _CASE_(V_ULONGLONG,ULongLong,c_ulonglong);
+    _CASE_(V_CHAR,Char,c_char);
+    _CASE_(V_WCHAR,WChar,c_wchar);
      default: assert(FALSE);
     }
     return v1;
@@ -676,19 +851,19 @@ c_valueLAND (
     c_value v1,
     c_value v2)
 {
-#define _CASE_(l,t) case l: v1.is.t &= v2.is.t; break
+#define _CASE_(l,t,ct) case l: v1.is.t = (ct) (v1.is.t & v2.is.t); break
     switch (v1.kind) {
-    _CASE_(V_ADDRESS,Address);
-    _CASE_(V_BOOLEAN,Boolean);
-    _CASE_(V_SHORT,Short);
-    _CASE_(V_LONG,Long);
-    _CASE_(V_LONGLONG,LongLong);
-    _CASE_(V_OCTET,Octet);
-    _CASE_(V_USHORT,UShort);
-    _CASE_(V_ULONG,ULong);
-    _CASE_(V_ULONGLONG,ULongLong);
-    _CASE_(V_CHAR,Char);
-    _CASE_(V_WCHAR,WChar);
+    _CASE_(V_ADDRESS,Address,c_address);
+    _CASE_(V_BOOLEAN,Boolean,c_bool);
+    _CASE_(V_SHORT,Short,c_short);
+    _CASE_(V_LONG,Long,c_long);
+    _CASE_(V_LONGLONG,LongLong,c_longlong);
+    _CASE_(V_OCTET,Octet,c_octet);
+    _CASE_(V_USHORT,UShort,c_ushort);
+    _CASE_(V_ULONG,ULong,c_ulong);
+    _CASE_(V_ULONGLONG,ULongLong,c_ulonglong);
+    _CASE_(V_CHAR,Char,c_char);
+    _CASE_(V_WCHAR,WChar,c_wchar);
      default: assert(FALSE);
     }
     return v1;
@@ -700,21 +875,21 @@ c_valueMUL (
     c_value v1,
     c_value v2)
 {
-#define _CASE_(l,t) case l: v1.is.t *= v2.is.t; break
+#define _CASE_(l,t,ct) case l: v1.is.t = (ct) (v1.is.t * v2.is.t); break
     switch (v1.kind) {
-    _CASE_(V_ADDRESS,Address);
-    _CASE_(V_BOOLEAN,Boolean);
-    _CASE_(V_SHORT,Short);
-    _CASE_(V_LONG,Long);
-    _CASE_(V_LONGLONG,LongLong);
-    _CASE_(V_OCTET,Octet);
-    _CASE_(V_USHORT,UShort);
-    _CASE_(V_ULONG,ULong);
-    _CASE_(V_ULONGLONG,ULongLong);
-    _CASE_(V_CHAR,Char);
-    _CASE_(V_WCHAR,WChar);
-    _CASE_(V_FLOAT,Float);
-    _CASE_(V_DOUBLE,Double);
+    _CASE_(V_ADDRESS,Address,c_address);
+    _CASE_(V_BOOLEAN,Boolean,c_bool);
+    _CASE_(V_SHORT,Short,c_short);
+    _CASE_(V_LONG,Long,c_long);
+    _CASE_(V_LONGLONG,LongLong,c_longlong);
+    _CASE_(V_OCTET,Octet,c_octet);
+    _CASE_(V_USHORT,UShort,c_ushort);
+    _CASE_(V_ULONG,ULong,c_ulong);
+    _CASE_(V_ULONGLONG,ULongLong,c_ulonglong);
+    _CASE_(V_CHAR,Char,c_char);
+    _CASE_(V_WCHAR,WChar,c_wchar);
+    _CASE_(V_FLOAT,Float,c_float);
+    _CASE_(V_DOUBLE,Double,c_double);
      default: assert(FALSE);
     }
     return v1;
@@ -726,21 +901,21 @@ c_valueDIV (
     c_value v1,
     c_value v2)
 {
-#define _CASE_(l,t) case l: v1.is.t /= v2.is.t; break
+#define _CASE_(l,t,ct) case l: v1.is.t = (ct) (v1.is.t / v2.is.t); break
     switch (v1.kind) {
-    _CASE_(V_ADDRESS,Address);
-    _CASE_(V_BOOLEAN,Boolean);
-    _CASE_(V_SHORT,Short);
-    _CASE_(V_LONG,Long);
-    _CASE_(V_LONGLONG,LongLong);
-    _CASE_(V_OCTET,Octet);
-    _CASE_(V_USHORT,UShort);
-    _CASE_(V_ULONG,ULong);
-    _CASE_(V_ULONGLONG,ULongLong);
-    _CASE_(V_CHAR,Char);
-    _CASE_(V_WCHAR,WChar);
-    _CASE_(V_FLOAT,Float);
-    _CASE_(V_DOUBLE,Double);
+    _CASE_(V_ADDRESS,Address,c_address);
+    _CASE_(V_BOOLEAN,Boolean,c_bool);
+    _CASE_(V_SHORT,Short,c_short);
+    _CASE_(V_LONG,Long,c_long);
+    _CASE_(V_LONGLONG,LongLong,c_longlong);
+    _CASE_(V_OCTET,Octet,c_octet);
+    _CASE_(V_USHORT,UShort,c_ushort);
+    _CASE_(V_ULONG,ULong,c_ulong);
+    _CASE_(V_ULONGLONG,ULongLong,c_ulonglong);
+    _CASE_(V_CHAR,Char,c_char);
+    _CASE_(V_WCHAR,WChar,c_wchar);
+    _CASE_(V_FLOAT,Float,c_float);
+    _CASE_(V_DOUBLE,Double,c_double);
      default: assert(FALSE);
     }
     return v1;
@@ -752,19 +927,19 @@ c_valueMOD (
     c_value v1,
     c_value v2)
 {
-#define _CASE_(l,t) case l: v1.is.t %= v2.is.t; break
+#define _CASE_(l,t,ct) case l: v1.is.t = (ct) (v1.is.t % v2.is.t); break
     switch (v1.kind) {
-    _CASE_(V_ADDRESS,Address);
-    _CASE_(V_BOOLEAN,Boolean);
-    _CASE_(V_SHORT,Short);
-    _CASE_(V_LONG,Long);
-    _CASE_(V_LONGLONG,LongLong);
-    _CASE_(V_OCTET,Octet);
-    _CASE_(V_USHORT,UShort);
-    _CASE_(V_ULONG,ULong);
-    _CASE_(V_ULONGLONG,ULongLong);
-    _CASE_(V_CHAR,Char);
-    _CASE_(V_WCHAR,WChar);
+    _CASE_(V_ADDRESS,Address,c_address);
+    _CASE_(V_BOOLEAN,Boolean,c_bool);
+    _CASE_(V_SHORT,Short,c_short);
+    _CASE_(V_LONG,Long,c_long);
+    _CASE_(V_LONGLONG,LongLong,c_longlong);
+    _CASE_(V_OCTET,Octet,c_octet);
+    _CASE_(V_USHORT,UShort,c_ushort);
+    _CASE_(V_ULONG,ULong,c_ulong);
+    _CASE_(V_ULONGLONG,ULongLong,c_ulonglong);
+    _CASE_(V_CHAR,Char,c_char);
+    _CASE_(V_WCHAR,WChar,c_wchar);
      default: assert(FALSE);
     }
     return v1;
@@ -777,7 +952,7 @@ c_valuePOW (
     c_value v2)
 {
 #define _CASE_(l,s,t) case l: v1.is.s = \
-                              (t)pow(v1.is.s, v2.is.s); break
+                              (t)pow((double)v1.is.s, (double)v2.is.s); break
     switch (v1.kind) {
     _CASE_(V_ADDRESS,Address,c_address);
     _CASE_(V_SHORT,Short,c_short);
@@ -802,18 +977,18 @@ c_valueSL (
     c_value v,
     c_value a)
 {
-#define _CASE_(l,t) case l: v.is.t = v.is.t << a.is.Long; break
+#define _CASE_(l,t,ct) case l: v.is.t = (ct) (v.is.t << a.is.t); break
     switch(v.kind) {
-    _CASE_(V_ADDRESS,Address);
-    _CASE_(V_SHORT,Short);
-    _CASE_(V_LONG,Long);
-    _CASE_(V_LONGLONG,LongLong);
-    _CASE_(V_OCTET,Octet);
-    _CASE_(V_USHORT,UShort);
-    _CASE_(V_ULONG,ULong);
-    _CASE_(V_ULONGLONG,ULongLong);
-    _CASE_(V_CHAR,Char);
-    _CASE_(V_WCHAR,WChar);
+    _CASE_(V_ADDRESS,Address,c_address);
+    _CASE_(V_SHORT,Short,c_short);
+    _CASE_(V_LONG,Long,c_long);
+    _CASE_(V_LONGLONG,LongLong,c_longlong);
+    _CASE_(V_OCTET,Octet,c_octet);
+    _CASE_(V_USHORT,UShort,c_ushort);
+    _CASE_(V_ULONG,ULong,c_ulong);
+    _CASE_(V_ULONGLONG,ULongLong,c_ulonglong);
+    _CASE_(V_CHAR,Char,c_char);
+    _CASE_(V_WCHAR,WChar,c_wchar);
      default: assert(FALSE);
     }
     return v;
@@ -825,18 +1000,18 @@ c_valueSR (
     c_value v,
     c_value a)
 {
-#define _CASE_(l,t) case l: v.is.t = v.is.t >> a.is.Long; break
+#define _CASE_(l,t,ct) case l: v.is.t = (ct) (v.is.t >> a.is.t); break
     switch(v.kind) {
-    _CASE_(V_ADDRESS,Address);
-    _CASE_(V_SHORT,Short);
-    _CASE_(V_LONG,Long);
-    _CASE_(V_LONGLONG,LongLong);
-    _CASE_(V_OCTET,Octet);
-    _CASE_(V_USHORT,UShort);
-    _CASE_(V_ULONG,ULong);
-    _CASE_(V_ULONGLONG,ULongLong);
-    _CASE_(V_CHAR,Char);
-    _CASE_(V_WCHAR,WChar);
+    _CASE_(V_ADDRESS,Address,c_address);
+    _CASE_(V_SHORT,Short,c_short);
+    _CASE_(V_LONG,Long,c_long);
+    _CASE_(V_LONGLONG,LongLong,c_longlong);
+    _CASE_(V_OCTET,Octet,c_octet);
+    _CASE_(V_USHORT,UShort,c_ushort);
+    _CASE_(V_ULONG,ULong,c_ulong);
+    _CASE_(V_ULONGLONG,ULongLong,c_ulonglong);
+    _CASE_(V_CHAR,Char,c_char);
+    _CASE_(V_WCHAR,WChar,c_wchar);
      default: assert(FALSE);
     }
     return v;
@@ -1199,7 +1374,7 @@ c_valueCalculate(
     } else {
         memcpy(&v2Cast, &v2, sizeof(v2));
     }
-    
+
     v.kind = V_BOOLEAN;
 #define _EVAL_(l,r,o) (c_valueCompare(l,r) == o)
     switch(o) {

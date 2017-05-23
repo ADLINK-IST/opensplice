@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v_filter.h"
@@ -15,7 +23,7 @@
 #include "c_filter.h"
 
 #include "os_report.h"
-#include "os.h"
+#include "vortex_os.h"
 #include "q_helper.h"
 #include "v_index.h"
 
@@ -29,7 +37,7 @@ resolveField(
 
     c_field field;
     c_array path;
-    c_long i, length;
+    c_ulong i, length;
     q_list list;
     c_char* metaName;
     c_type fieldType;
@@ -58,8 +66,8 @@ resolveField(
     c_free(fieldType);
     if (field == NULL) {
         metaName = c_metaName(c_metaObject(fieldType));
-        OS_REPORT_2(OS_ERROR,
-                    "kernel::v_filter::v_filterNew:",0,
+        OS_REPORT(OS_ERROR,
+                    "kernel::v_filter::v_filterNew:",V_RESULT_ILL_PARAM,
                     "Field %s not found in type %s\n",
                     name,metaName);
         c_free(metaName);
@@ -68,7 +76,8 @@ resolveField(
     path = c_fieldPath(field);
     length = c_arraySize(path);
     list = NULL;
-    for (i=(length-1);i>=0;i--) {
+    i = length;
+    while (i-- > 0) {
         metaName = c_metaName(path[i]);
         list = q_insert(list,q_newId(metaName));
         c_free(metaName);
@@ -139,7 +148,7 @@ v_filter
 v_filterNew(
     v_topic t,
     q_expr e,
-    c_value params[])
+    const c_value params[])
 {
     v_kernel kernel;
     c_type type;
@@ -154,14 +163,14 @@ v_filterNew(
     if (t) {
         if (type) {
             if (!resolveFields(type,e, FALSE)) {
-                OS_REPORT_1(OS_ERROR,
-                            "kernel::v_filter::v_filterNew",0,
+                OS_REPORT(OS_ERROR,
+                            "kernel::v_filter::v_filterNew",V_RESULT_ILL_PARAM,
                             "Failed to resolve fields in filter expression."
                             OS_REPORT_NL "Topic = \"%s\"",
                             v_topicName(t));
             } else {
                 filter = c_new(v_kernelType(kernel, K_FILTER));
-    
+
                 if (filter) {
                     filter->topic = c_keep(t);
                     filter->predicate = c_filterNew(type,e,params);
@@ -170,8 +179,8 @@ v_filterNew(
                         filter = NULL;
                     }
                 } else {
-                    OS_REPORT_1(OS_ERROR,
-                                "kernel::v_filter::v_filterNew",0,
+                    OS_REPORT(OS_ERROR,
+                                "kernel::v_filter::v_filterNew",V_RESULT_INTERNAL_ERROR,
                                 "Failed to allocate a filter."
                                 OS_REPORT_NL "Topic = \"%s\"",
                                 v_topicName(t));
@@ -179,14 +188,14 @@ v_filterNew(
                 }
             }
         } else {
-            OS_REPORT_1(OS_ERROR,
-                        "kernel::v_filter::v_filterNew",0,
+            OS_REPORT(OS_ERROR,
+                        "kernel::v_filter::v_filterNew",V_RESULT_ILL_PARAM,
                         "Failed to resolve type for Topic \"%s\".",
                         v_topicName(t));
         }
     } else {
         OS_REPORT(OS_ERROR,
-                  "kernel::v_filter::v_filterNew",0,
+                  "kernel::v_filter::v_filterNew",V_RESULT_PRECONDITION_NOT_MET,
                   "Pre condition failed: Topic is not specified (NULL).");
     }
     return filter;
@@ -196,62 +205,50 @@ v_filter
 v_filterNewFromIndex(
     v_index i,
     q_expr e,
-    c_value params[])
+    const c_value params[])
 {
     v_kernel kernel;
     c_type type;
     v_filter filter;
 
+    assert(i);
     assert(C_TYPECHECK(i,v_index));
 
     filter = NULL;
-    if (i) {
-        kernel = v_objectKernel(i);
+    kernel = v_objectKernel(i);
 
-        type = i->objectType;
-        assert(type);
-        if (type) {
-            if (!resolveFields(type,e, TRUE)) {
-                OS_REPORT_1(OS_ERROR,
-                            "kernel::v_filter::v_filterNewFromIndex",0,
-                            "Failed to resolve fields in filter expression."
-                            OS_REPORT_NL "Topic = \"%s\"",
-                            v_topicName(i));
-            } else {
-                filter = c_new(v_kernelType(kernel, K_FILTER));
-
-                if (filter) {
-                    filter->predicate = c_filterNew(type,e,params);
-                    if (filter->predicate == NULL) {
-                        c_free(filter);
-                        filter = NULL;
-                        OS_REPORT_1(OS_ERROR,
-                                    "kernel::v_filter::v_filterNewFromIndex",0,
-                                    "Failed to allocate a filter expression."
-                                    OS_REPORT_NL "Topic = \"%s\"",
-                                    v_topicName(i));
-                                    assert(FALSE);
-                    }
-                } else {
-                    OS_REPORT_1(OS_ERROR,
-                                "kernel::v_filter::v_filterNewFromIndex",0,
-                                "Failed to allocate a filter."
-                                OS_REPORT_NL "Topic = \"%s\"",
-                                v_topicName(i));
-                    assert(FALSE);
-                }
-            }
+    type = i->objectType;
+    assert(type);
+    if (type) {
+        if (!resolveFields(type,e, TRUE)) {
+            OS_REPORT(OS_ERROR,
+                      "kernel::v_filter::v_filterNewFromIndex",V_RESULT_ILL_PARAM,
+                      "Failed to resolve fields in filter expression.");
         } else {
-            OS_REPORT_1(OS_ERROR,
-                        "kernel::v_filter::v_filterNewFromIndex",0,
-                        "Failed to resolve type for Topic \"%s\".",
-                        v_topicName(i));
+            filter = c_new(v_kernelType(kernel, K_FILTER));
+            
+            if (filter) {
+                filter->predicate = c_filterNew(type,e,params);
+                if (filter->predicate == NULL) {
+                    c_free(filter);
+                    filter = NULL;
+                    OS_REPORT(OS_ERROR,
+                              "kernel::v_filter::v_filterNewFromIndex",V_RESULT_INTERNAL_ERROR,
+                              "Failed to allocate a filter expression.");
+                }
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "kernel::v_filter::v_filterNewFromIndex",V_RESULT_INTERNAL_ERROR,
+                          "Failed to allocate a filter.");
+                assert(FALSE);
+            }
         }
     } else {
         OS_REPORT(OS_ERROR,
-                  "kernel::v_filter::v_filterNew",0,
-                  "Pre condition failed: Topic is not specified (NULL).");
+                  "kernel::v_filter::v_filterNewFromIndex",V_RESULT_ILL_PARAM,
+                  "Failed to resolve type for Topic.");
     }
+    
     return filter;
 }
 
@@ -264,23 +261,30 @@ v_filterEval(v_filter f, c_object o)
 
 #define PRINT_QUERY (0)
 
-void v_filterSplit(v_topic topic, q_expr where, c_value *params, c_array *instanceQ, c_array *sampleQ, v_index index)
+void v_filterSplit(
+    v_topic topic,
+    q_expr where,
+    const c_value params[],
+    c_array *instanceQ,
+    c_array *sampleQ,
+    v_index index)
 {
     c_iter list;
-    c_long i,len;
+    c_ulong i,len;
     q_expr subExpr,keyExpr,progExpr;
     c_array sourceKeyList, indexKeyList;
-    q_expr  WithoutWhere = q_getPar(q_exprCopy(where),0);
+    q_expr  copyWhere = q_exprCopy(where);
+    q_expr  filter = q_takePar(copyWhere, 0);
     v_kernel kernel = v_objectKernel(topic);
+    q_dispose(copyWhere);
 
-    if (WithoutWhere != NULL)
+    if (filter != NULL)
     {
+        q_prefixFieldNames(&filter,"sample.message.userData");
 
-        q_prefixFieldNames(&WithoutWhere,"sample.message.userData");
-
-        q_disjunctify(WithoutWhere);
-        WithoutWhere = q_removeNots(WithoutWhere);
-        list = deOr(WithoutWhere,NULL);
+        q_disjunctify(filter);
+        filter = q_removeNots(filter);
+        list = deOr(filter,NULL);
         len = c_iterLength(list);
         *instanceQ = c_arrayNew(v_kernelType(kernel, K_FILTER),len);
         *sampleQ = c_arrayNew(v_kernelType(kernel, K_FILTER),len);
@@ -305,6 +309,9 @@ void v_filterSplit(v_topic topic, q_expr where, c_value *params, c_array *instan
                 assert(keyExpr);
             }
 
+            c_free(sourceKeyList);
+            c_free(indexKeyList);
+
             if (keyExpr != NULL) {
 #if PRINT_QUERY
                 printf("keyExpr[%d]: ",i);
@@ -318,10 +325,12 @@ void v_filterSplit(v_topic topic, q_expr where, c_value *params, c_array *instan
                 q_dispose(progExpr);
                 if ((*instanceQ)[i] == NULL) {
                     c_free(*instanceQ);
+                    *instanceQ = NULL;
                     c_free(*sampleQ);
+                    *sampleQ = NULL;
                     c_iterFree(list);
-                    OS_REPORT(OS_ERROR,
-                              "v_filterSplit failed",0,
+                    OS_REPORT(OS_CRITICAL,
+                              "v_filterSplit failed",V_RESULT_ILL_PARAM,
                               "error in expression");
                     return;
                 }
@@ -344,10 +353,12 @@ void v_filterSplit(v_topic topic, q_expr where, c_value *params, c_array *instan
                 q_dispose(progExpr);
                 if ((*sampleQ)[i] == NULL) {
                     c_free(*instanceQ);
+                    *instanceQ = NULL;
                     c_free(*sampleQ);
+                    *sampleQ = NULL;
                     c_iterFree(list);
-                    OS_REPORT(OS_ERROR,
-                              "v_filterSplit failed",0,
+                    OS_REPORT(OS_CRITICAL,
+                              "v_filterSplit failed",V_RESULT_ILL_PARAM,
                               "error in expression");
                     return;
                 }
@@ -359,16 +370,11 @@ void v_filterSplit(v_topic topic, q_expr where, c_value *params, c_array *instan
             }
         }
 #if PRINT_QUERY
-    printf("End v_filterSplit\n\n");
+        printf("End v_filterSplit\n\n");
 #endif
-    c_iterFree(list);
-    }
-    else
-    {
-        *instanceQ = c_arrayNew(v_kernelType(kernel, K_FILTER),1);
-        *sampleQ = c_arrayNew(v_kernelType(kernel, K_FILTER),1);
-
-        (*instanceQ)[0] = v_filterNew(topic, where, params);
-        (*sampleQ)[0] = v_filterNew(topic, where, params);
+        c_iterFree(list);
+    } else {
+        *instanceQ = NULL;
+        *sampleQ = NULL;
     }
 }

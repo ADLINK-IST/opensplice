@@ -1,451 +1,136 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "saj_FooDataReader.h"
+#include "saj__fooDataReader.h"
 #include "saj_copyIn.h"
 #include "saj_copyOut.h"
 #include "saj_utilities.h"
 #include "saj__readerContext.h"
-
-#include "gapi.h"
+#include "v_dataReaderSample.h"
+#include "saj_dataReaderParDem.h"
+#include "cmn_samplesList.h"
+#include "cmn_reader.h"
 
 #include "os_heap.h"
+#include "saj__report.h"
 
 /* Defines the package of the java implementation classes */
 #define SAJ_PACKAGENAME "org/opensplice/dds/dcps/"
 #define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_FooDataReaderImpl_##name
 
-struct sajParDemContext_s{
-    os_ushort       nrofWorkers; /* Number of worker threads. This is configured #threads - 1 (application thread participates as well) */
-    struct {
-        os_ushort threshold; /* Number of samples threshold at which parallelization should be performed */
-        os_ushort block;     /* Number of samples to be read without inter-thread sync */
-    } heuristics;
-    struct {
-        os_uint32       nextIndex; /* Next index to be read by worker thread */
-        unsigned int    len;       /* The number of samples to be copied */
-        jobject         dataSeq;   /* Weak-ref to the data-sqeuence to copy-out to */
-        jobject         infoSeq;   /* Weak-ref to the info-sqeuence to copy-out to */
-        saj_copyCache   copyCache; /* Reference to the copyCache */
-        gapi_copyOut    copyOut;   /* Copy-out function pointer */
-        gapi_dataSampleSeq *samples;
-        jobject         jreader;   /* Weak-ref to the reader Object */
-    } copy_info;
-    os_mutex        superMtx;  /* Mutex that should be held by the 'main' read thread in order to serialize concurrent reads on a parralelized reader */
-    os_mutex        mtx;
-    os_cond         startCnd;  /* Condition for notifying worker threads that work is to be done */
-    os_cond         readyCnd;  /* Condition for notifying application thread that all work is done */
-    os_ushort       readyCnt;  /* Counter for readyCnd broadcast */
-    /* The parity is used for the loop-condition for readyCnd. Members of the
-     * copy_info struct may be reused, so don't provide a safe loop-condition.
-     * The parity toggles every loop and since it is not changed until all threads
-     * are waiting on the next loop, it is a safe loop condition. */
-    os_boolean      parity;
-    os_ushort       terminate; /* Flag used to signal blocked threads to stop. */
-};
-
-static sajParDemContext
-saj_parDemContext_new()
-{
-    sajParDemContext pdc;
-    os_mutexAttr mtxAttrs;
-    os_condAttr cndAttrs;
-
-    if(os_mutexAttrInit(&mtxAttrs) != os_resultSuccess) goto err_attrs_init;
-    mtxAttrs.scopeAttr = OS_SCOPE_PRIVATE;
-
-    if(os_condAttrInit(&cndAttrs) != os_resultSuccess) goto err_attrs_init;
-    cndAttrs.scopeAttr = OS_SCOPE_PRIVATE;
-
-    if((pdc = os_malloc(sizeof(*pdc))) == NULL) goto err_malloc;
-
-    pdc->nrofWorkers = 0U;
-    pdc->heuristics.threshold = 2U; /* Parallelization only helps for at least 2 samples */
-    pdc->heuristics.block = 1U;     /* A block of 1 is the bare minimum */
-    pdc->copy_info.nextIndex = 0U;
-    pdc->copy_info.len = 0U;
-    pdc->copy_info.dataSeq = NULL;
-    pdc->copy_info.infoSeq = NULL;
-    pdc->copy_info.copyCache = NULL;
-    pdc->copy_info.copyOut = NULL;
-    pdc->copy_info.samples = NULL;
-
-    if(os_mutexInit(&pdc->superMtx, &mtxAttrs) != os_resultSuccess) goto err_supermtx_init;
-    if(os_mutexInit(&pdc->mtx, &mtxAttrs) != os_resultSuccess) goto err_mtx_init;
-    if(os_condInit(&pdc->startCnd, &pdc->mtx, &cndAttrs) != os_resultSuccess) goto err_startcnd_init;
-    if(os_condInit(&pdc->readyCnd, &pdc->mtx, &cndAttrs) != os_resultSuccess) goto err_readycnd_init;
-
-    pdc->readyCnt = 0U;
-    pdc->parity = OS_FALSE;
-    pdc->terminate = 0u;
-
-    return pdc;
-
-/* Error-handling */
-err_readycnd_init:
-    os_condDestroy(&pdc->startCnd); /* Ignore result */
-err_startcnd_init:
-    os_mutexDestroy(&pdc->mtx); /* Ignore result */
-err_mtx_init:
-    os_mutexDestroy(&pdc->superMtx); /* Ignore result */
-err_supermtx_init:
-    os_free(pdc);
-err_malloc:
-err_attrs_init:
-    return NULL;
-}
-
-static void
-saj_parDemContext_free(
-    sajParDemContext pdc)
-{
-    if(pdc){
-        os_condDestroy(&pdc->readyCnd);
-        os_condDestroy(&pdc->startCnd);
-        os_mutexDestroy(&pdc->mtx);
-        os_mutexDestroy(&pdc->superMtx);
-        os_free(pdc);
-    }
-}
-
-static void
-saj_parDemContext_signal_terminate(
-    sajParDemContext pdc)
-{
-    assert(pdc);
-
-    if(os_mutexLock(&pdc->superMtx) == os_resultSuccess){
-        if(os_mutexLock(&pdc->mtx) == os_resultSuccess){
-            pdc->terminate = 1U;
-            os_condBroadcast(&pdc->startCnd);
-            os_mutexUnlock(&pdc->mtx);
-        }
-        os_mutexUnlock(&pdc->superMtx);
-    }
-}
-
-static void
-saj_dataReaderParallelCopy(
+static saj_returnCode
+fillReaderContext(
     JNIEnv *env,
-    sajParDemContext pdc)
+    jobject dataReader,
+    jlong uReader,
+    saj_copyCache copyCache,
+    jobject data_seq,
+    jobject info_seq,
+    jint max_samples,
+    saj_readerContext *ctx)
 {
-    os_uint32 i;
-    C_STRUCT(saj_dstInfo) dst;
-    jobject info_element;
-
-    assert(pdc);
-    assert(pdc->heuristics.block > 0U);
-    assert(pdc->copy_info.len);
-    assert(pdc->copy_info.dataSeq);
-    assert(pdc->copy_info.infoSeq);
-    assert(pdc->copy_info.copyCache);
-    assert(pdc->copy_info.copyOut);
-    assert(pdc->copy_info.samples);
-    assert(pdc->copy_info.jreader);
-
-    dst.copyProgram = pdc->copy_info.copyCache;
-    dst.javaEnv = env;
-    dst.jreader = pdc->copy_info.jreader;
-
-    while((i = pa_increment(&pdc->copy_info.nextIndex) - 1) < pdc->copy_info.len){
-        dst.javaObject = (*env)->GetObjectArrayElement(env, pdc->copy_info.dataSeq, i);
-        pdc->copy_info.copyOut(pdc->copy_info.samples->_buffer[i].data, &dst);
-        (*env)->SetObjectArrayElement(env, pdc->copy_info.dataSeq, i, dst.javaObject);
-        (*env)->DeleteLocalRef(env, dst.javaObject);
-        info_element = (*env)->GetObjectArrayElement(env, pdc->copy_info.infoSeq, i);
-        saj_sampleInfoCopyOut(env, &pdc->copy_info.samples->_buffer[i].info, &info_element);
-        (*env)->SetObjectArrayElement(env, pdc->copy_info.infoSeq, i, info_element);
-        (*env)->DeleteLocalRef(env, info_element);
-    }
-}
-
-/* Call with pcd->mtx locked */
-static void pdc_readyCndBroadcast(
-    JNIEnv *env,
-    sajParDemContext pdc)
-{
-    assert(env);
-    assert(pdc);
-
-    (*env)->DeleteWeakGlobalRef(env, pdc->copy_info.dataSeq);
-    (*env)->DeleteWeakGlobalRef(env, pdc->copy_info.infoSeq);
-    pdc->copy_info.dataSeq = NULL;
-    pdc->copy_info.infoSeq = NULL;
-    pdc->parity = !pdc->parity;
-    os_condBroadcast(&pdc->readyCnd);
-}
-
-void
-saj_dataReaderCopy(
-    gapi_dataSampleSeq *samples,
-    gapi_readerInfo *arg)
-{
-    unsigned int i;
-    unsigned int len;
-    unsigned int copyLen;
-    unsigned int singleThreadedCopy = 1U;
-    gapi_readerInfo *info = arg;
-    saj_readerContext *ctx = info->data_buffer;
-    JNIEnv *env = ctx->javaEnv;
-    saj_copyCache copyCache = ctx->copyCache;
+    int result;
+    /* TODO: Implement this function properly. */
     sajReaderCopyCache *rc = saj_copyCacheReaderCache(copyCache);
-    jobject dataSeq;
-    jobject infoSeq;
-    jobject info_element;
-    jobject ie;
-    jobject de;
-    C_STRUCT(saj_dstInfo) dst;
 
-    if (samples) {
-        len = samples->_length;
-        if ((info->max_samples != (unsigned int)GAPI_LENGTH_UNLIMITED) && (len > info->max_samples)) {
-            len = info->max_samples;
-        }
-        if (ctx->dataSeqLen != len) {
-            if (ctx->dataSeqLen > len) {
-                copyLen = len;
-            } else {
-                copyLen = ctx->dataSeqLen;
-            }
-            dataSeq = (*env)->NewObjectArray(env, len, rc->dataClass, NULL);
-            for (i = 0; i < copyLen; i++) {
-                de = (*env)->GetObjectArrayElement(env, ctx->dataSeq, i);
-                (*env)->SetObjectArrayElement(env, dataSeq, i, de);
-                (*env)->DeleteLocalRef(env, de);
-            }
-            (*env)->SetObjectField(env, ctx->dataSeqHolder, rc->dataSeqHolder_value_fid, dataSeq);
-            ctx->dataSeq = dataSeq;
-            infoSeq = (*env)->NewObjectArray(env, len, GET_CACHED (sampleInfo_class), NULL);
-            for (i = 0; i < copyLen; i++) {
-                ie = (*env)->GetObjectArrayElement(env, ctx->infoSeq, i);
-                (*env)->SetObjectArrayElement(env, infoSeq, i, ie);
-                (*env)->DeleteLocalRef(env, ie);
-            }
-            (*env)->SetObjectField(env, ctx->infoSeqHolder, GET_CACHED(sampleInfoSeqHolder_value_fid), infoSeq);
-            ctx->infoSeq = infoSeq;
-        } else {
-            dataSeq = (*env)->GetObjectField(env, ctx->dataSeqHolder, rc->dataSeqHolder_value_fid);
-            infoSeq = (*env)->GetObjectField(env, ctx->infoSeqHolder, GET_CACHED(sampleInfoSeqHolder_value_fid));
-        }
+    ctx->samplesList = NULL;
+
+    if (data_seq == NULL) {
+        result = SAJ_RETCODE_BAD_PARAMETER;
+        SAJ_REPORT(result, "data_values '<NULL>' is invalid.");
+        return result;
+    }
+    if (info_seq == NULL) {
+        result = SAJ_RETCODE_BAD_PARAMETER;
+        SAJ_REPORT(result, "info_seq 'null' is invalid.");
+        return result;
+    }
+
+    ctx->javaEnv = env;
+    ctx->copyCache = copyCache;
+    ctx->dataSeqHolder = data_seq;
+    ctx->infoSeqHolder = info_seq;
+
+    ctx->dataSeq = (*env)->GetObjectField(env, ctx->dataSeqHolder, rc->dataSeqHolder_value_fid);
+    CHECK_EXCEPTION(env);
+    ctx->infoSeq = GET_OBJECT_FIELD(env, ctx->infoSeqHolder, sampleInfoSeqHolder_value);
+    ctx->max_samples = max_samples;
+    if (ctx->dataSeq) {
+        ctx->dataSeqLen = GET_ARRAY_LENGTH(env, ctx->dataSeq);
     } else {
-        len = 0;
-        /* No data available, claim and set zero sized arrays */
-        dataSeq = (*env)->NewObjectArray(env, len, rc->dataClass, NULL);
-        (*env)->SetObjectField(env, ctx->dataSeqHolder, rc->dataSeqHolder_value_fid, dataSeq);
-        ctx->dataSeq = dataSeq;
-        infoSeq = (*env)->NewObjectArray(env, len, GET_CACHED (sampleInfo_class), NULL);
-        (*env)->SetObjectField(env, ctx->infoSeqHolder, GET_CACHED(sampleInfoSeqHolder_value_fid), infoSeq);
-        ctx->infoSeq = infoSeq;
+        ctx->dataSeqLen = 0;
+    }
+    if (ctx->infoSeq) {
+        ctx->infoSeqLen = GET_ARRAY_LENGTH(env, ctx->infoSeq);
+    } else {
+        ctx->infoSeqLen = 0;
+    }
+    /* Rule 1 : Both sequences must have equal len, max_len and owns properties.*/
+    if (ctx->dataSeqLen != ctx->infoSeqLen) {
+        result = SAJ_RETCODE_PRECONDITION_NOT_MET;
+        SAJ_REPORT(result, "lengths of data_values(%d) and info_seq(%d) sequences are not equal", ctx->dataSeqLen, ctx->infoSeqLen);
+        return result;
+    }
+    /* Rule 5: when max_samples != LENGTH_UNLIMITED, then the following condition
+    // needs to be met: maxSamples <= max_len  */
+    if ((ctx->dataSeqLen > 0) &&
+        (ctx->max_samples > ctx->dataSeqLen) &&
+        (ctx->max_samples != (os_uint32)-1))
+    {
+        SAJ_REPORT(SAJ_RETCODE_PRECONDITION_NOT_MET, "Creation of the sampleslist failed (maxSamples(%d) > max_len(%d)).",ctx->max_samples,ctx->dataSeqLen);
+        return SAJ_RETCODE_PRECONDITION_NOT_MET;
+    }
+    if (max_samples == 0) {
+        /* Optimization to avoid going into the kernel. */
+        return SAJ_RETCODE_NO_DATA;
     }
 
-    if (len > 0) {
-        if(ctx->pardemCtx && len >= ctx->pardemCtx->heuristics.threshold){
-            sajParDemContext pdc = ctx->pardemCtx;
-            /* By keeping the pdc->superMtx locked, concurrent reads on
-             * a parallelized reader be serialized. It furthermore
-             * prevents new workers to be added/removed while copying. */
-            if(os_mutexLock(&pdc->superMtx) == os_resultSuccess){
-                if(pdc->nrofWorkers > 0){
-                    if(os_mutexLock(&pdc->mtx) == os_resultSuccess){
-                        pdc->readyCnt = 0U;
-                        pdc->copy_info.nextIndex = 0U;
-                        pdc->copy_info.len = len;
-                        pdc->copy_info.dataSeq = (*env)->NewWeakGlobalRef(env, dataSeq);
-                        pdc->copy_info.infoSeq = (*env)->NewWeakGlobalRef(env, infoSeq);
-                        pdc->copy_info.copyCache = copyCache;
-                        pdc->copy_info.copyOut = ctx->CDRCopy ? saj_CDROutStruct : info->copy_out;
-                        pdc->copy_info.samples = samples;
-                        pdc->copy_info.jreader = (*env)->NewWeakGlobalRef(env, ctx->jreader);
-                        os_condBroadcast(&pdc->startCnd);
-                        os_mutexUnlock(&pdc->mtx);
-                    }
+    ctx->max_samples = max_samples;
+    assert(GET_CACHED(dataReaderImplClassParallelDemarshallingContext_fid));
+    ctx->pardemCtx = (sajParDemContext)(PA_ADDRCAST)GET_LONG_FIELD(
+        env, dataReader, dataReaderImplClassParallelDemarshallingContext);
+    assert(GET_CACHED(dataReaderImplClassCDRCopy_fid));
+    ctx->CDRCopy = GET_LONG_FIELD(env, dataReader, dataReaderImplClassCDRCopy);
+    ctx->jreader = dataReader;
+    ctx->uReader = uReader;
 
-                    /* Perform the copy */
-                    saj_dataReaderParallelCopy(env, pdc);
-
-                    if(os_mutexLock(&pdc->mtx) == os_resultSuccess){
-                        pdc->readyCnt++;
-                        if(pdc->readyCnt > pdc->nrofWorkers){
-                            /* I am the last one to finish, notify workers */
-                            pdc_readyCndBroadcast(env, pdc);
-                        } else {
-                            const os_boolean parity = pdc->parity;
-                            while(parity == pdc->parity){
-                                os_condWait(&pdc->readyCnd, &pdc->mtx);
-                            }
-                        }
-                        os_mutexUnlock(&pdc->mtx);
-                    }
-                    /* Parallel copy succeeded; disable singeThreadedCopy fallback */
-                    singleThreadedCopy = 0;
-                }
-                os_mutexUnlock(&pdc->superMtx);
-            }
-        }
-
-        if(singleThreadedCopy) {
-            dst.copyProgram = copyCache;
-            dst.javaEnv = env;
-            dst.jreader = ctx->jreader;
-            for (i = 0; i < len; i++) {
-                dst.javaObject = (*env)->GetObjectArrayElement(env, dataSeq, i);
-                if (ctx->CDRCopy) {
-                    saj_CDROutStruct(samples->_buffer[i].data, &dst);
-                } else {
-                    info->copy_out(samples->_buffer[i].data, &dst);
-                }
-                (*env)->SetObjectArrayElement(env, dataSeq, i, dst.javaObject);
-                (*env)->DeleteLocalRef(env, dst.javaObject);
-                info_element = (*env)->GetObjectArrayElement(env, infoSeq, i);
-                saj_sampleInfoCopyOut(env, &samples->_buffer[i].info, &info_element);
-                (*env)->SetObjectArrayElement(env, infoSeq, i, info_element);
-                (*env)->DeleteLocalRef(env, info_element);
-            }
-        }
+    ctx->samplesList = cmn_samplesList_new(FALSE);
+    if (ctx->samplesList == NULL) {
+        return SAJ_RETCODE_ERROR;
     }
-    info->num_samples = len;
-}
-
-
-int
-saj_fooDataReaderParallelDemarshallingMain(
-    JNIEnv * env,
-    sajParDemContext pdc)
-{
-    if(os_mutexLock(&pdc->superMtx) != os_resultSuccess) goto err_mtx_lock;
-    if(os_mutexLock(&pdc->mtx) != os_resultSuccess) goto err_double_mtx_lock;
-    pdc->nrofWorkers++;
-    os_mutexUnlock(&pdc->mtx);
-    os_mutexUnlock(&pdc->superMtx);
-
-    do {
-        if(os_mutexLock(&pdc->mtx) != os_resultSuccess) goto err_mtx_lock;
-        while(!pdc->terminate && !pdc->copy_info.dataSeq){
-            if(os_condWait(&pdc->startCnd, &pdc->mtx) != os_resultSuccess) goto err_condwait;
-        }
-        os_mutexUnlock(&pdc->mtx);
-        /* pdc->terminate is guaranteed to only toggle to TRUE in a lock,
-         * so reading outside the lock is OK. */
-        if(pdc->terminate) break;
-
-        saj_dataReaderParallelCopy(env, pdc);
-
-        if(os_mutexLock(&pdc->mtx) != os_resultSuccess) goto err_mtx_lock;
-        pdc->readyCnt++;
-        if(pdc->readyCnt > pdc->nrofWorkers){
-            /* Main thread was already done, so notify */
-            pdc_readyCndBroadcast(env, pdc);
-        } else {
-            const os_boolean parity = pdc->parity;
-            while(parity == pdc->parity){
-                os_condWait(&pdc->readyCnd, &pdc->mtx);
-            }
-        }
-        os_mutexUnlock(&pdc->mtx);
-    } while(TRUE);
-
-    if(os_mutexLock(&pdc->superMtx) != os_resultSuccess) goto err_mtx_lock;
-    if(os_mutexLock(&pdc->mtx) != os_resultSuccess) goto err_double_mtx_lock;
-    pdc->nrofWorkers--;
-    os_mutexUnlock(&pdc->mtx);
-    os_mutexUnlock(&pdc->superMtx);
+    cmn_samplesList_reset(ctx->samplesList, (os_int32)max_samples);
 
     return SAJ_RETCODE_OK;
-
-err_double_mtx_lock:
-    os_mutexUnlock(&pdc->superMtx);
-err_mtx_lock:
-    return SAJ_RETCODE_ERROR;
-
-err_condwait:
-    os_mutexUnlock(&pdc->mtx);
-    return SAJ_RETCODE_ERROR;
+    CATCH_EXCEPTION: return SAJ_RETCODE_ERROR;
 }
 
-int
-saj_fooDataReaderParallelDemarshallingContextFinalize(
-    JNIEnv * env,
-    jobject jdatareader,
-    sajParDemContext pdc)
+static void
+emptyReaderContext(
+    saj_readerContext *ctx )
 {
-    if(pdc){
-        saj_parDemContext_signal_terminate(pdc);
-        (*env)->CallVoidMethod(env, jdatareader, GET_CACHED(dataReaderImplClassJoinWorkers_mid));
-        /* Assert that all threads are actually stopped. */
-        assert(pdc->nrofWorkers == 0);
-
-        saj_parDemContext_free(pdc);
+    if (ctx->samplesList != NULL) {
+        cmn_samplesList_free(ctx->samplesList);
+        ctx->samplesList = NULL;
     }
-
-    return SAJ_RETCODE_OK;
 }
 
-int
-saj_fooDataReaderSetParallelReadThreadCount(
-    JNIEnv * env,
-    jobject jdatareader,
-    int value)
-{
-    int started = 0;
-    sajParDemContext pdc = NULL;
-
-
-    if(saj_read_parallelDemarshallingContext_address(env, jdatareader, &pdc) != SAJ_RETCODE_OK){
-        goto err_get_address;
-    }
-
-    if(pdc){
-        /* Signal eventual current threads to shutdown */
-        saj_parDemContext_signal_terminate(pdc);
-        /* Join threads */
-        (*env)->CallVoidMethod(env, jdatareader, GET_CACHED(dataReaderImplClassJoinWorkers_mid));
-        /* Assert that all threads are actually stopped */
-        assert(pdc->nrofWorkers == 0);
-        /* pdc can be reused if new set number is >1, reset terminate flag */
-        pdc->terminate = 0;
-        /* If the requested size is 0 or 1, this will both result in a single-threaded
-         * copy, so we don't have to start any extra threads. If previously there
-         * were threads created, we can now cleanup the context as well. */
-        if(value <= 1){
-            saj_parDemContext_free(pdc);
-            pdc = NULL;
-            if(saj_write_parallelDemarshallingContext_address(env, jdatareader, NULL) != SAJ_RETCODE_OK){
-                goto fatal_set_address;
-            }
-        }
-    }
-
-    if(value > 1){
-        if(!pdc){
-            /* Create and assign the parallelDemarshalling context. It
-             * is OK if saj_parDemContextNew fails. The pointer will
-             * then be set to 0. */
-            if((pdc = saj_parDemContext_new()) == NULL) { goto err_out_of_resources; }
-            if(saj_write_parallelDemarshallingContext_address(env, jdatareader, pdc) != SAJ_RETCODE_OK){
-                goto fatal_set_address;
-            }
-        }
-
-        started = (*env)->CallIntMethod(env, jdatareader, GET_CACHED(dataReaderImplClassStartWorkers_mid), value > 1 ? value - 1 : 0);
-    }
-
-    return started;
-
-err_get_address:
-    return -1;
-err_out_of_resources:
-    return -2; /* TODO: map on SAJ_RETCODE_OUT_OF_RESOURCES when merging to newer version */
-fatal_set_address:
-    return -3;
-}
 
 int
 saj_fooDataReaderSetCDRCopy(
@@ -459,73 +144,6 @@ saj_fooDataReaderSetCDRCopy(
     return 0;
 }
 
-static jint
-fillReaderContext(
-    JNIEnv *env,
-    jobject dataReader,
-    saj_copyCache copyCache,
-    jobject received_data,
-    jobject info_seq,
-    jint max_samples,
-    saj_readerContext *ctx)
-{
-    sajReaderCopyCache *rc = saj_copyCacheReaderCache(copyCache);
-
-    ctx->javaEnv = env;
-    ctx->copyCache = copyCache;
-    ctx->dataSeqHolder = received_data;
-    ctx->infoSeqHolder = info_seq;
-    if ((ctx->dataSeqHolder == NULL) || (ctx->infoSeqHolder == NULL)) {
-        return GAPI_RETCODE_BAD_PARAMETER;
-    }
-    ctx->dataSeq = (*env)->GetObjectField(env, ctx->dataSeqHolder, rc->dataSeqHolder_value_fid);
-    ctx->infoSeq = (*env)->GetObjectField(env, ctx->infoSeqHolder, GET_CACHED(sampleInfoSeqHolder_value_fid));
-    if (ctx->dataSeq) {
-        ctx->dataSeqLen = (*env)->GetArrayLength(env, ctx->dataSeq);
-    } else {
-        ctx->dataSeqLen = 0;
-    }
-    if (ctx->infoSeq) {
-        ctx->infoSeqLen = (*env)->GetArrayLength (env, ctx->infoSeq);
-    } else {
-        ctx->infoSeqLen = 0;
-    }
-    ctx->max_samples = max_samples;
-    assert(GET_CACHED(dataReaderImplClassParallelDemarshallingContext_fid));
-    ctx->pardemCtx = (sajParDemContext)(PA_ADDRCAST)(*env)->GetLongField(env, dataReader, GET_CACHED(dataReaderImplClassParallelDemarshallingContext_fid));
-    assert(GET_CACHED(dataReaderImplClassCDRCopy_fid));
-    ctx->CDRCopy = (*env)->GetLongField(env, dataReader, GET_CACHED(dataReaderImplClassCDRCopy_fid));
-    ctx->jreader = dataReader;
-    return GAPI_RETCODE_OK;
-}
-
-static jint
-inputRulesCheckedOk(
-    gapi_fooDataReader dataReader,
-    saj_readerContext *ctx)
-{
-    /* Rule 1 : Both sequences must have equal len, max_len and owns properties.*/
-    if (ctx->dataSeqLen != ctx->infoSeqLen) {
-        return FALSE;
-    }
-
-    /* Rule 4: When max_len > 0, then own must be true.*/
-    if ((ctx->dataSeqLen > 0) &&
-        gapi_fooDataReader_is_loan(dataReader, ctx->dataSeq, ctx->infoSeq)) {
-        return FALSE;
-    }
-
-    /* Rule 5: when max_samples != LENGTH_UNLIMITED, then the following condition
-    // needs to be met: maxSamples <= max_len  */
-    if ((ctx->dataSeqLen > 0) &&
-         (ctx->max_samples > ctx->dataSeqLen) &&
-         (ctx->max_samples != (unsigned int)GAPI_LENGTH_UNLIMITED)) {
-        return FALSE;
-    }
-
-    /* In all other cases, the provided sequences are valid.*/
-    return TRUE;
-}
 
 /*
  * Class:     org_opensplice_dds_dcps_FooDataReaderImpl
@@ -548,6 +166,7 @@ SAJ_FUNCTION(jniRead)(
     JNIEnv *env,
     jclass object,
     jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject received_data,
     jobject info_seq,
@@ -556,36 +175,74 @@ SAJ_FUNCTION(jniRead)(
     jint view_states,
     jint instance_states)
 {
-    jint result;
+    u_sampleMask mask;
+    u_result uResult;
     saj_readerContext ctx;
-    gapi_fooDataReader dataReader;
+    saj_returnCode retcode;
 
     OS_UNUSED_ARG(object);
 
-    dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
-    result = fillReaderContext(env, DataReader,
-                (saj_copyCache)(PA_ADDRCAST)copyCache,
-                received_data,
-                info_seq,
-                max_samples,
-                &ctx);
-
-    if (result == GAPI_RETCODE_OK) {
-        if (inputRulesCheckedOk (dataReader, &ctx)) {
-            result = (jint)gapi_fooDataReader_read (
-                dataReader,
-                (gapi_fooSeq *)&ctx,
-                (gapi_sampleInfoSeq *)info_seq,
-                max_samples,
-                sample_states,
-                view_states,
-                instance_states);
-        } else {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    retcode = fillReaderContext(env, DataReader, uReader,
+                     (saj_copyCache)(PA_ADDRCAST)copyCache,
+                     received_data,
+                     info_seq,
+                     max_samples,
+                     &ctx);
+    if (retcode == SAJ_RETCODE_OK) {
+        retcode = DDS_SAMPLE_MASK_CHECK(sample_states, view_states, instance_states);
+        if (retcode == SAJ_RETCODE_BAD_PARAMETER) {
+            SAJ_REPORT(retcode, "Invalid sample mask(0x%x),view mask(0x%x) or instance mask(0x%x)", sample_states, view_states, instance_states);
         }
     }
+    if (retcode == SAJ_RETCODE_OK) {
+        mask = DDS_SAMPLE_MASK(sample_states, view_states, instance_states);
+        uResult = u_dataReaderRead(SAJ_VOIDP(uReader), mask, cmn_reader_action, ctx.samplesList, OS_DURATION_ZERO);
+        retcode = saj_retcode_from_user_result(uResult);
+        if (retcode == SAJ_RETCODE_OK || retcode == SAJ_RETCODE_NO_DATA) {
+            retcode = saj_dataReaderParDemStack_copy_out(&ctx);
+        }
+    }
+    emptyReaderContext(&ctx);
 
-    return result;
+    return (jint)retcode;
+}
+
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniReadWCondition)(
+    JNIEnv *env,
+    jclass object,
+    jobject DataReader,
+    jlong uReader,
+    jlong copyCache,
+    jobject received_data,
+    jobject info_seq,
+    jint max_samples,
+    jlong uQuery)
+{
+    u_result uResult;
+    saj_readerContext ctx;
+    saj_returnCode retcode;
+
+    OS_UNUSED_ARG(object);
+    OS_UNUSED_ARG(uReader);
+
+    retcode = fillReaderContext(env, DataReader, uQuery,
+                     (saj_copyCache)(PA_ADDRCAST)copyCache,
+                     received_data,
+                     info_seq,
+                     max_samples,
+                     &ctx);
+
+    if (retcode == SAJ_RETCODE_OK) {
+        uResult = u_queryRead(SAJ_VOIDP(uQuery), cmn_reader_action, ctx.samplesList, OS_DURATION_ZERO);
+        retcode = saj_retcode_from_user_result(uResult);
+        if (retcode == SAJ_RETCODE_OK || retcode == SAJ_RETCODE_NO_DATA) {
+            retcode = saj_dataReaderParDemStack_copy_out(&ctx);
+        }
+    }
+    emptyReaderContext(&ctx);
+
+    return (jint)retcode;
 }
 
 /*
@@ -609,6 +266,7 @@ SAJ_FUNCTION(jniTake)(
     JNIEnv *env,
     jclass object,
     jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject received_data,
     jobject info_seq,
@@ -617,146 +275,74 @@ SAJ_FUNCTION(jniTake)(
     jint view_states,
     jint instance_states)
 {
-    jint result;
+    u_sampleMask mask;
     saj_readerContext ctx;
-    gapi_fooDataReader dataReader;
+    saj_returnCode retcode;
+    u_result uResult;
 
     OS_UNUSED_ARG(object);
 
-    dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
-    result = fillReaderContext(env, DataReader,
+    retcode = fillReaderContext(env, DataReader, uReader,
         (saj_copyCache)(PA_ADDRCAST)copyCache,
         received_data,
         info_seq,
         max_samples,
         &ctx);
 
-    if (result == GAPI_RETCODE_OK) {
-        if (inputRulesCheckedOk(dataReader, &ctx)) {
-            result = (jint)gapi_fooDataReader_take(
-                            (gapi_fooDataReader)saj_read_gapi_address(env, DataReader),
-                            (gapi_fooSeq *)&ctx,
-                            (gapi_sampleInfoSeq *)info_seq,
-                            max_samples,
-                            sample_states,
-                            view_states,
-                            instance_states);
-        } else {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    if (retcode == SAJ_RETCODE_OK) {
+        retcode = DDS_SAMPLE_MASK_CHECK(sample_states, view_states, instance_states);
+        if (retcode == SAJ_RETCODE_BAD_PARAMETER) {
+            SAJ_REPORT(retcode, "Invalid sample mask(0x%x),view mask(0x%x) or instance mask(0x%x)", sample_states, view_states, instance_states);
         }
     }
-
-    return result;
-}
-
-/*
- * Class:     org_opensplice_dds_dcps_FooDataReaderImpl
- * Method:    jniReadWCondition
- * Signature: (Ljava/lang/Object;Ljava/lang/Object;LDDS/SampleInfoSeqHolder;ILDDS/ReadCondition;)I
- */
-/*
-    private native static int jniReadWCondition (
-        Object DataReader,
-        long copyCache,
-        Object received_data,
-        DDS.SampleInfoSeqHolder info_seq,
-        int max_samples,
-        DDS.ReadCondition a_condition);
-*/
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniReadWCondition)(
-    JNIEnv *env,
-    jclass object,
-    jobject DataReader,
-    jlong copyCache,
-    jobject received_data,
-    jobject info_seq,
-    jint max_samples,
-    jobject a_condition)
-{
-    jint result;
-    saj_readerContext ctx;
-    gapi_fooDataReader dataReader;
-
-    OS_UNUSED_ARG(object);
-
-    dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
-    result = fillReaderContext(env, DataReader,
-                (saj_copyCache)(PA_ADDRCAST)copyCache,
-                received_data,
-                info_seq,
-                max_samples,
-                &ctx);
-
-    if (result == GAPI_RETCODE_OK) {
-        if (inputRulesCheckedOk (dataReader, &ctx)) {
-            result = (jint)gapi_fooDataReader_read_w_condition(
-                            (gapi_fooDataReader)saj_read_gapi_address(env, DataReader),
-                            (gapi_fooSeq *)&ctx,
-                            (gapi_sampleInfoSeq *)info_seq,
-                            max_samples,
-                            (gapi_readCondition)saj_read_gapi_address(env, a_condition));
-        } else {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    if (retcode == SAJ_RETCODE_OK) {
+        mask = DDS_SAMPLE_MASK(sample_states, view_states, instance_states);
+        uResult = u_dataReaderTake(SAJ_VOIDP(uReader), mask, cmn_reader_action, ctx.samplesList, OS_DURATION_ZERO);
+        retcode = saj_retcode_from_user_result(uResult);
+        if (retcode == SAJ_RETCODE_OK || retcode == SAJ_RETCODE_NO_DATA) {
+            retcode = saj_dataReaderParDemStack_copy_out(&ctx);
         }
     }
+    emptyReaderContext(&ctx);
 
-    return result;
+    return (jint)retcode;
 }
 
-/*
- * Class:     org_opensplice_dds_dcps_FooDataReaderImpl
- * Method:    jniTakeWCondition
- * Signature: (Ljava/lang/Object;Ljava/lang/Object;LDDS/SampleInfoSeqHolder;ILDDS/ReadCondition;)I
- */
-/*
-    private native static int jniTakeWCondition (
-        Object DataReader,
-        long copyCache,
-        Object received_data,
-        DDS.SampleInfoSeqHolder info_seq,
-        int max_samples,
-        DDS.ReadCondition a_condition);
-*/
 JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniTakeWCondition)(
     JNIEnv *env,
     jclass object,
     jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject received_data,
     jobject info_seq,
     jint max_samples,
-    jobject a_condition)
+    jlong uQuery)
 {
-    jint result;
+    u_result uResult;
     saj_readerContext ctx;
-    gapi_fooDataReader dataReader;
+    saj_returnCode retcode;
 
     OS_UNUSED_ARG(object);
+    OS_UNUSED_ARG(uReader);
 
-    dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
-    result = fillReaderContext(env, DataReader,
-                (saj_copyCache)(PA_ADDRCAST)copyCache,
-                received_data,
-                info_seq,
-                max_samples,
-                &ctx);
-
-    if (result == GAPI_RETCODE_OK) {
-        if (inputRulesCheckedOk (dataReader, &ctx)) {
-            result = (jint)gapi_fooDataReader_take_w_condition(
-                            (gapi_fooDataReader)saj_read_gapi_address(env, DataReader),
-                            (gapi_fooSeq *)&ctx,
-                            (gapi_sampleInfoSeq *)info_seq,
-                            max_samples,
-                            (gapi_readCondition)saj_read_gapi_address(env, a_condition));
-        } else {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    retcode = fillReaderContext(env, DataReader, uQuery,
+                     (saj_copyCache)(PA_ADDRCAST)copyCache,
+                     received_data,
+                     info_seq,
+                     max_samples,
+                     &ctx);
+    if (retcode == SAJ_RETCODE_OK) {
+        uResult = u_queryTake(SAJ_VOIDP(uQuery), cmn_reader_action, ctx.samplesList, OS_DURATION_ZERO);
+        retcode = saj_retcode_from_user_result(uResult);
+        if (retcode == SAJ_RETCODE_OK || retcode == SAJ_RETCODE_NO_DATA) {
+            retcode = saj_dataReaderParDemStack_copy_out(&ctx);
         }
     }
+    emptyReaderContext(&ctx);
 
-    return result;
+    return (jint)retcode;
 }
 
 /*
@@ -776,45 +362,20 @@ SAJ_FUNCTION(jniReadNextSample)(
     JNIEnv *env,
     jclass object,
     jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject received_data,
     jobject sample_info)
 {
-    jint result;
-    gapi_sampleInfo sampleInfo;
-    gapi_sampleInfo *si = NULL;
-    C_STRUCT(saj_dstInfo) dstInfo;
-    gapi_foo *dst = NULL;
-    jobject data_element = NULL;
-    sajReaderCopyCache *rc = saj_copyCacheReaderCache((saj_copyCache)(PA_ADDRCAST)copyCache);
-
+    OS_UNUSED_ARG(env);
     OS_UNUSED_ARG(object);
-    assert (DataReader);
-
-    if (received_data != NULL) {
-        data_element = (*env)->GetObjectField(env, received_data, rc->dataHolder_value_fid);
-        dstInfo.javaEnv = env;
-        dstInfo.javaObject = received_data;
-        dstInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        dst = (gapi_foo *)&dstInfo;
-    }
-    if (sample_info != NULL) {
-        si = &sampleInfo;
-    }
-
-    result = (jint)gapi_fooDataReader_read_next_sample(
-        (gapi_fooDataReader)saj_read_gapi_address(env, DataReader),
-        (gapi_foo *)dst,
-        si);
-    if (result == GAPI_RETCODE_OK) {
-        if (data_element != dstInfo.javaObject) {
-            (*env)->SetObjectField(env, received_data, rc->dataHolder_value_fid, dstInfo.javaObject);
-        }
-        if (saj_sampleInfoHolderCopyOut(env, &sampleInfo, &sample_info) != SAJ_RETCODE_OK) {
-            result = GAPI_RETCODE_ERROR;
-        }
-    }
-    return result;
+    OS_UNUSED_ARG(DataReader);
+    OS_UNUSED_ARG(uReader);
+    OS_UNUSED_ARG(copyCache);
+    OS_UNUSED_ARG(received_data);
+    OS_UNUSED_ARG(sample_info);
+    SAJ_REPORT(SAJ_RETCODE_UNSUPPORTED, "ReadNextSample not supported");
+    return (jint)SAJ_RETCODE_UNSUPPORTED;
 }
 
 /*
@@ -834,46 +395,20 @@ SAJ_FUNCTION(jniTakeNextSample)(
     JNIEnv *env,
     jclass object,
     jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject received_data,
     jobject sample_info)
 {
-    jint result;
-    gapi_sampleInfo sampleInfo;
-    gapi_sampleInfo *si = NULL;
-    C_STRUCT(saj_dstInfo) dstInfo;
-    gapi_foo *dst = NULL;
-    jobject data_element = NULL;
-    sajReaderCopyCache *rc = saj_copyCacheReaderCache((saj_copyCache)(PA_ADDRCAST)copyCache);
-
+    OS_UNUSED_ARG(env);
     OS_UNUSED_ARG(object);
-
-    if (received_data != NULL) {
-        data_element = (*env)->GetObjectField(env, received_data, rc->dataHolder_value_fid);
-        dstInfo.javaEnv = env;
-        dstInfo.javaObject = data_element;
-        dstInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        dst = (gapi_foo *)&dstInfo;
-    }
-    if (sample_info != NULL) {
-        si = &sampleInfo;
-    }
-
-    assert (DataReader);
-
-    result = (jint)gapi_fooDataReader_take_next_sample(
-        (gapi_fooDataReader)saj_read_gapi_address (env, DataReader),
-        dst,
-        si);
-    if (result == GAPI_RETCODE_OK) {
-        if (data_element != dstInfo.javaObject) {
-            (*env)->SetObjectField(env, received_data, rc->dataHolder_value_fid, dstInfo.javaObject);
-        }
-        if (saj_sampleInfoHolderCopyOut(env, &sampleInfo, &sample_info) != SAJ_RETCODE_OK) {
-            result = GAPI_RETCODE_ERROR;
-        }
-    }
-    return result;
+    OS_UNUSED_ARG(DataReader);
+    OS_UNUSED_ARG(uReader);
+    OS_UNUSED_ARG(copyCache);
+    OS_UNUSED_ARG(received_data);
+    OS_UNUSED_ARG(sample_info);
+    SAJ_REPORT(SAJ_RETCODE_UNSUPPORTED, "TakeNextSample not supported");
+    return (jint)SAJ_RETCODE_UNSUPPORTED;
 }
 
 /*
@@ -898,6 +433,7 @@ SAJ_FUNCTION(jniReadInstance)(
     JNIEnv *env,
     jclass object,
     jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject received_data,
     jobject info_seq,
@@ -907,37 +443,37 @@ SAJ_FUNCTION(jniReadInstance)(
     jint view_states,
     jint instance_states)
 {
-    jint result;
+    u_sampleMask mask;
     saj_readerContext ctx;
-    gapi_fooDataReader dataReader;
+    saj_returnCode retcode;
+    u_result uResult;
 
     OS_UNUSED_ARG(object);
 
-    dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
-    result = fillReaderContext(env, DataReader,
-                (saj_copyCache)(PA_ADDRCAST)copyCache,
-                received_data,
-                info_seq,
-                max_samples,
-                &ctx);
+    retcode = fillReaderContext(env, DataReader, uReader,
+        (saj_copyCache)(PA_ADDRCAST)copyCache,
+        received_data,
+        info_seq,
+        max_samples,
+        &ctx);
 
-    if (result == GAPI_RETCODE_OK) {
-        if (inputRulesCheckedOk (dataReader, &ctx)) {
-            result = (jint)gapi_fooDataReader_read_instance(
-                            (gapi_fooDataReader)saj_read_gapi_address (env, DataReader),
-                            (gapi_fooSeq *)&ctx,
-                            (gapi_sampleInfoSeq *)info_seq,
-                            max_samples,
-                            (gapi_instanceHandle_t)a_handle,
-                            sample_states,
-                            view_states,
-                            instance_states);
-        } else {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    if (retcode == SAJ_RETCODE_OK) {
+        retcode = DDS_SAMPLE_MASK_CHECK(sample_states, view_states, instance_states);
+        if (retcode == SAJ_RETCODE_BAD_PARAMETER) {
+            SAJ_REPORT(retcode, "Invalid sample mask(0x%x),view mask(0x%x) or instance mask(0x%x)", sample_states, view_states, instance_states);
         }
     }
+    if (retcode == SAJ_RETCODE_OK) {
+        mask = DDS_SAMPLE_MASK(sample_states, view_states, instance_states);
+        uResult = u_dataReaderReadInstance(SAJ_VOIDP(uReader), a_handle, mask, cmn_reader_action, ctx.samplesList, OS_DURATION_ZERO);
+        retcode = saj_retcode_from_user_result(uResult);
+        if (retcode == SAJ_RETCODE_OK || retcode == SAJ_RETCODE_NO_DATA) {
+            retcode = saj_dataReaderParDemStack_copy_out(&ctx);
+        }
+    }
+    emptyReaderContext(&ctx);
 
-    return result;
+    return (jint)retcode;
 }
 
 /*
@@ -962,6 +498,7 @@ SAJ_FUNCTION(jniTakeInstance)(
     JNIEnv *env,
     jclass object,
     jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject received_data,
     jobject info_seq,
@@ -971,37 +508,37 @@ SAJ_FUNCTION(jniTakeInstance)(
     jint view_states,
     jint instance_states)
 {
-    jint result;
+    u_sampleMask mask;
     saj_readerContext ctx;
-    gapi_fooDataReader dataReader;
+    saj_returnCode retcode;
+    u_result uResult;
 
     OS_UNUSED_ARG(object);
 
-    dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
-    result = fillReaderContext(env, DataReader,
-                (saj_copyCache)(PA_ADDRCAST)copyCache,
-                received_data,
-                info_seq,
-                max_samples,
-                &ctx);
+    retcode = fillReaderContext(env, DataReader, uReader,
+        (saj_copyCache)(PA_ADDRCAST)copyCache,
+        received_data,
+        info_seq,
+        max_samples,
+        &ctx);
 
-    if (result == GAPI_RETCODE_OK) {
-        if (inputRulesCheckedOk(dataReader, &ctx)) {
-            result = (jint)gapi_fooDataReader_take_instance(
-                            (gapi_fooDataReader)saj_read_gapi_address (env, DataReader),
-                            (gapi_fooSeq *)&ctx,
-                            (gapi_sampleInfoSeq *)info_seq,
-                            max_samples,
-                            (gapi_instanceHandle_t)a_handle,
-                            sample_states,
-                            view_states,
-                            instance_states);
-        } else {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    if (retcode == SAJ_RETCODE_OK) {
+        retcode = DDS_SAMPLE_MASK_CHECK(sample_states, view_states, instance_states);
+        if (retcode == SAJ_RETCODE_BAD_PARAMETER) {
+            SAJ_REPORT(retcode, "Invalid sample mask(0x%x),view mask(0x%x) or instance mask(0x%x)", sample_states, view_states, instance_states);
         }
     }
+    if (retcode == SAJ_RETCODE_OK) {
+        mask = DDS_SAMPLE_MASK(sample_states, view_states, instance_states);
+        uResult = u_dataReaderTakeInstance(SAJ_VOIDP(uReader), a_handle, mask, cmn_reader_action, ctx.samplesList, OS_DURATION_ZERO);
+        retcode = saj_retcode_from_user_result(uResult);
+        if (retcode == SAJ_RETCODE_OK || retcode == SAJ_RETCODE_NO_DATA) {
+            retcode = saj_dataReaderParDemStack_copy_out(&ctx);
+        }
+    }
+    emptyReaderContext(&ctx);
 
-    return result;
+    return (jint)retcode;
 }
 
 /*
@@ -1026,6 +563,7 @@ SAJ_FUNCTION(jniReadNextInstance)(
     JNIEnv *env,
     jclass object,
     jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject received_data,
     jobject info_seq,
@@ -1035,37 +573,37 @@ SAJ_FUNCTION(jniReadNextInstance)(
     jint view_states,
     jint instance_states)
 {
-    jint result;
+    u_sampleMask mask;
     saj_readerContext ctx;
-    gapi_fooDataReader dataReader;
+    saj_returnCode retcode;
+    u_result uResult;
 
     OS_UNUSED_ARG(object);
 
-    dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
-    result = fillReaderContext(env, DataReader,
-                (saj_copyCache)(PA_ADDRCAST)copyCache,
-                received_data,
-                info_seq,
-                max_samples,
-                &ctx);
+    retcode = fillReaderContext(env, DataReader, uReader,
+        (saj_copyCache)(PA_ADDRCAST)copyCache,
+        received_data,
+        info_seq,
+        max_samples,
+        &ctx);
 
-    if (result == GAPI_RETCODE_OK) {
-        if (inputRulesCheckedOk(dataReader, &ctx)) {
-            result = (jint)gapi_fooDataReader_read_next_instance(
-                            (gapi_fooDataReader)saj_read_gapi_address(env, DataReader),
-                            (gapi_fooSeq *)&ctx,
-                            (gapi_sampleInfoSeq *)info_seq,
-                            max_samples,
-                            (gapi_instanceHandle_t)a_handle,
-                            sample_states,
-                            view_states,
-                            instance_states);
-        } else {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    if (retcode == SAJ_RETCODE_OK) {
+        retcode = DDS_SAMPLE_MASK_CHECK(sample_states, view_states, instance_states);
+        if (retcode == SAJ_RETCODE_BAD_PARAMETER) {
+            SAJ_REPORT(retcode, "Invalid sample mask(0x%x),view mask(0x%x) or instance mask(0x%x)", sample_states, view_states, instance_states);
         }
     }
+    if (retcode == SAJ_RETCODE_OK) {
+        mask = DDS_SAMPLE_MASK(sample_states, view_states, instance_states);
+        uResult = u_dataReaderReadNextInstance(SAJ_VOIDP(uReader), a_handle, mask, cmn_reader_nextInstanceAction, ctx.samplesList, OS_DURATION_ZERO);
+        retcode = saj_retcode_from_user_result(uResult);
+        if (retcode == SAJ_RETCODE_OK || retcode == SAJ_RETCODE_NO_DATA) {
+            retcode = saj_dataReaderParDemStack_copy_out(&ctx);
+        }
+    }
+    emptyReaderContext(&ctx);
 
-    return result;
+    return (jint)retcode;
 }
 
 /*
@@ -1076,7 +614,6 @@ SAJ_FUNCTION(jniReadNextInstance)(
 /*
     private native static int jniTakeNextInstance (
         Object DataReader,
-        long copyCache,
         long copyCache,
         Object received_data,
         DDS.SampleInfoSeqHolder info_seq,
@@ -1091,6 +628,7 @@ SAJ_FUNCTION(jniTakeNextInstance)(
     JNIEnv *env,
     jclass object,
     jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject received_data,
     jobject info_seq,
@@ -1100,155 +638,116 @@ SAJ_FUNCTION(jniTakeNextInstance)(
     jint view_states,
     jint instance_states)
 {
-    jint result;
+    u_sampleMask mask;
     saj_readerContext ctx;
-    gapi_fooDataReader dataReader;
+    saj_returnCode retcode;
+    u_result uResult;
 
     OS_UNUSED_ARG(object);
 
-    dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
-    result = fillReaderContext(env, DataReader,
-                (saj_copyCache)(PA_ADDRCAST)copyCache,
-                received_data,
-                info_seq,
-                max_samples,
-                &ctx);
+    retcode = fillReaderContext(env, DataReader, uReader,
+        (saj_copyCache)(PA_ADDRCAST)copyCache,
+        received_data,
+        info_seq,
+        max_samples,
+        &ctx);
 
-    if (result == GAPI_RETCODE_OK) {
-        if (inputRulesCheckedOk(dataReader, &ctx)) {
-            result = (jint)gapi_fooDataReader_take_next_instance(
-                            (gapi_fooDataReader)saj_read_gapi_address(env, DataReader),
-                            (gapi_fooSeq *)&ctx,
-                            (gapi_sampleInfoSeq *)info_seq,
-                            max_samples,
-                            (gapi_instanceHandle_t)a_handle,
-                            sample_states,
-                            view_states,
-                            instance_states);
-        } else {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    if (retcode == SAJ_RETCODE_OK) {
+        retcode = DDS_SAMPLE_MASK_CHECK(sample_states, view_states, instance_states);
+        if (retcode == SAJ_RETCODE_BAD_PARAMETER) {
+            SAJ_REPORT(retcode, "Invalid sample mask(0x%x),view mask(0x%x) or instance mask(0x%x)", sample_states, view_states, instance_states);
         }
     }
+    if (retcode == SAJ_RETCODE_OK) {
+        mask = DDS_SAMPLE_MASK(sample_states, view_states, instance_states);
+        uResult = u_dataReaderTakeNextInstance(SAJ_VOIDP(uReader), a_handle, mask, cmn_reader_nextInstanceAction, ctx.samplesList, OS_DURATION_ZERO);
+        retcode = saj_retcode_from_user_result(uResult);
+        if (retcode == SAJ_RETCODE_OK || retcode == SAJ_RETCODE_NO_DATA) {
+            retcode = saj_dataReaderParDemStack_copy_out(&ctx);
+        }
+    }
+    emptyReaderContext(&ctx);
 
-    return result;
+    return (jint)retcode;
 }
 
-/*
- * Class:     org_opensplice_dds_dcps_FooDataReaderImpl
- * Method:    jniReadNextInstanceWCondition
- * Signature: (Ljava/lang/Object;Ljava/lang/Object;LDDS/SampleInfoSeqHolder;IILDDS/ReadCondition;)I
- */
-/*
-    private native static int jniReadNextInstanceWCondition (
-        Object DataReader,
-        long copyCache,
-        Object received_data,
-        DDS.SampleInfoSeqHolder info_seq,
-        int max_samples,
-        long a_handle,
-        DDS.ReadCondition a_condition);
-*/
 JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniReadNextInstanceWCondition)(
     JNIEnv *env,
     jclass object,
     jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject received_data,
     jobject info_seq,
     jint max_samples,
     jlong a_handle,
-    jobject a_condition)
+    jlong uQuery)
 {
-    jint result;
     saj_readerContext ctx;
-    gapi_fooDataReader dataReader;
+    saj_returnCode retcode;
+    u_result uResult;
 
     OS_UNUSED_ARG(object);
+    OS_UNUSED_ARG(uReader);
 
-    dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
-    result = fillReaderContext(env, DataReader,
-                (saj_copyCache)(PA_ADDRCAST)copyCache,
-                received_data,
-                info_seq,
-                max_samples,
-                &ctx);
+    retcode = fillReaderContext(env, DataReader, uQuery,
+        (saj_copyCache)(PA_ADDRCAST)copyCache,
+        received_data,
+        info_seq,
+        max_samples,
+        &ctx);
 
-    if (result == GAPI_RETCODE_OK) {
-        if (inputRulesCheckedOk(dataReader, &ctx)) {
-            result = (jint)gapi_fooDataReader_read_next_instance_w_condition(
-                            (gapi_fooDataReader)saj_read_gapi_address(env, DataReader),
-                            (gapi_fooSeq *)&ctx,
-                            (gapi_sampleInfoSeq *)info_seq,
-                            max_samples,
-                            (gapi_instanceHandle_t)a_handle,
-                            (gapi_readCondition)saj_read_gapi_address (env, a_condition));
-        } else {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    if (retcode == SAJ_RETCODE_OK) {
+        uResult = u_queryReadNextInstance(SAJ_VOIDP(uQuery), a_handle, cmn_reader_nextInstanceAction, ctx.samplesList, OS_DURATION_ZERO);
+        retcode = saj_retcode_from_user_result(uResult);
+        if (retcode == SAJ_RETCODE_OK || retcode == SAJ_RETCODE_NO_DATA) {
+            retcode = saj_dataReaderParDemStack_copy_out(&ctx);
         }
     }
+    emptyReaderContext(&ctx);
 
-    return result;
+    return (jint)retcode;
 }
 
-/*
- * Class:     org_opensplice_dds_dcps_FooDataReaderImpl
- * Method:    jniTakeNextInstanceWCondition
- * Signature: (Ljava/lang/Object;Ljava/lang/Object;LDDS/SampleInfoSeqHolder;IILDDS/ReadCondition;)I
- */
-/*
-    private native static int jniTakeNextInstanceWCondition (
-        Object DataReader,
-        long copyCache,
-        Object received_data,
-        DDS.SampleInfoSeqHolder info_seq,
-        int max_samples,
-        long a_handle,
-        DDS.ReadCondition a_condition);
-*/
 JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniTakeNextInstanceWCondition)(
     JNIEnv *env,
     jclass object,
     jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject received_data,
     jobject info_seq,
     jint max_samples,
     jlong a_handle,
-    jobject a_condition)
+    jlong uQuery)
 {
-    jint result;
     saj_readerContext ctx;
-    gapi_fooDataReader dataReader;
+    saj_returnCode retcode;
+    u_result uResult;
 
     OS_UNUSED_ARG(object);
+    OS_UNUSED_ARG(uReader);
 
-    dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
-    result = fillReaderContext(env, DataReader,
-                (saj_copyCache)(PA_ADDRCAST)copyCache,
-                received_data,
-                info_seq,
-                max_samples,
-                &ctx);
+    retcode = fillReaderContext(env, DataReader, uQuery,
+        (saj_copyCache)(PA_ADDRCAST)copyCache,
+        received_data,
+        info_seq,
+        max_samples,
+        &ctx);
 
-    if (result == GAPI_RETCODE_OK) {
-        if (inputRulesCheckedOk(dataReader, &ctx)) {
-            result = (jint)gapi_fooDataReader_take_next_instance_w_condition(
-                            (gapi_fooDataReader)saj_read_gapi_address (env, DataReader),
-                            (gapi_fooSeq *)&ctx,
-                            (gapi_sampleInfoSeq *)info_seq,
-                            max_samples,
-                            (gapi_instanceHandle_t)a_handle,
-                            (gapi_readCondition)saj_read_gapi_address(env, a_condition));
-        } else {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    if (retcode == SAJ_RETCODE_OK) {
+        uResult = u_queryTakeNextInstance(SAJ_VOIDP(uQuery), a_handle, cmn_reader_nextInstanceAction, ctx.samplesList, OS_DURATION_ZERO);
+        retcode = saj_retcode_from_user_result(uResult);
+        if (retcode == SAJ_RETCODE_OK || retcode == SAJ_RETCODE_NO_DATA) {
+            retcode = saj_dataReaderParDemStack_copy_out(&ctx);
         }
     }
+    emptyReaderContext(&ctx);
 
-    return result;
+    return (jint)retcode;
 }
-
 
 /*
  * Class:     org_opensplice_dds_dcps_FooDataReaderImpl
@@ -1266,36 +765,71 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetKeyValue)(
     JNIEnv *env,
     jclass object,
-    jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject key_holder,
     jlong handle)
 {
     C_STRUCT(saj_dstInfo) dstInfo;
-    gapi_foo *dst = NULL;
-    jint result;
-    jobject element = NULL;
+    u_result uResult;
+    saj_returnCode retcode;
     sajReaderCopyCache *rc = saj_copyCacheReaderCache((saj_copyCache)(PA_ADDRCAST)copyCache);
 
     OS_UNUSED_ARG(object);
 
-    assert (DataReader);
-
     if (key_holder != NULL) {
-        element = (*env)->GetObjectField(env, key_holder, rc->dataHolder_value_fid);
         dstInfo.javaEnv = env;
-        dstInfo.javaObject = element;
+        dstInfo.javaObject = NULL;
         dstInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        dst = (gapi_foo *)&dstInfo;
+
+        uResult = u_dataReaderCopyKeysFromInstanceHandle(
+                        SAJ_VOIDP(uReader),
+                        (u_instanceHandle)handle,
+                        (u_copyOut)saj_copyOutStruct,
+                        &dstInfo);
+        retcode = saj_retcode_from_user_result(uResult);
+        if (retcode == SAJ_RETCODE_ALREADY_DELETED) {
+            /* Already deleted is caused by an invalid handle.
+             * In the context of this operation this should result
+             * in a precondition not met error code.
+             */
+            retcode = SAJ_RETCODE_PRECONDITION_NOT_MET;
+        }
+        (*env)->SetObjectField(env, key_holder, rc->dataHolder_value_fid, dstInfo.javaObject);
+        CHECK_EXCEPTION(env);
+        DELETE_LOCAL_REF(env, dstInfo.javaObject);
+    } else {
+        retcode = SAJ_RETCODE_BAD_PARAMETER;
     }
 
-    result = gapi_fooDataReader_get_key_value(
-                (gapi_fooDataReader)saj_read_gapi_address(env, DataReader),
-                (gapi_foo *)dst,
-                (gapi_instanceHandle_t)handle);
+    return (jint)retcode;
 
-    if ((key_holder != NULL) && (dstInfo.javaObject != element)) {
-        (*env)->SetObjectField(env, key_holder, rc->dataHolder_value_fid, dstInfo.javaObject);
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+static v_copyin_result
+fooCopyIn (
+    c_type type,
+    const void *data,
+    void *to)
+{
+    v_copyin_result result;
+    os_int32 copyResult = saj_copyInStruct(c_getBase(type), data, to);
+
+    switch (copyResult) {
+    case OS_RETCODE_OK:
+        result = V_COPYIN_RESULT_OK;
+        break;
+    case OS_RETCODE_BAD_PARAMETER:
+        result = V_COPYIN_RESULT_INVALID;
+        break;
+    case OS_RETCODE_OUT_OF_RESOURCES:
+        result = V_COPYIN_RESULT_OUT_OF_MEMORY;
+        break;
+    default:
+        result = V_COPYIN_RESULT_OK;
+        break;
     }
 
     return result;
@@ -1316,27 +850,28 @@ JNIEXPORT jlong JNICALL
 SAJ_FUNCTION(jniLookupInstance)(
     JNIEnv *env,
     jclass object,
-    jobject DataReader,
+    jlong uReader,
     jlong copyCache,
     jobject instance)
 {
+    saj_returnCode result;
     C_STRUCT(saj_srcInfo) srcInfo;
-    gapi_foo *src = NULL;
-    jlong result;
+    u_result uResult;
+    u_instanceHandle uHandle = U_INSTANCEHANDLE_NIL;
 
     OS_UNUSED_ARG(object);
-    assert (DataReader);
 
     if (instance != NULL) {
         srcInfo.javaEnv = env;
         srcInfo.javaObject = instance;
         srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        src = (gapi_foo *)&srcInfo;
+        uResult = u_dataReaderLookupInstance(SAJ_VOIDP(uReader), &srcInfo, fooCopyIn, &uHandle);
+        result = saj_retcode_from_user_result(uResult);
+        if (result != SAJ_RETCODE_OK) {
+            SAJ_REPORT(result, "Failed to lookup instance.");
+        }
+    } else {
+        SAJ_REPORT(SAJ_RETCODE_ERROR, "Instance is null.");
     }
-
-    result = (jlong)gapi_fooDataReader_lookup_instance(
-                (gapi_fooDataReader)saj_read_gapi_address(env, DataReader),
-                (gapi_foo *)src);
-
-    return result;
+    return (jlong)uHandle;
 }

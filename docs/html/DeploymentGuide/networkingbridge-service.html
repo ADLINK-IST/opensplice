@@ -1,0 +1,236 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>8. The NetworkingBridge Service &mdash; The OpenSplice Deployment Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The OpenSplice Deployment Guide" href="index.html" />
+    <link rel="next" title="9. The Tuner Service" href="tuner-service.html" />
+    <link rel="prev" title="7. The DDSI2 and DDSI2E Networking Services" href="ddsi2-networking-service.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tuner-service.html" title="9. The Tuner Service"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ddsi2-networking-service.html" title="7. The DDSI2 and DDSI2E Networking Services"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-networkingbridge-service">
+<span id="id1"></span><h1>8. The NetworkingBridge Service<a class="headerlink" href="#the-networkingbridge-service" title="Permalink to this headline">¶</a></h1>
+<p><em>The OpenSplice NetworkingBridge is a pluggable service that allows bridging of
+data between networking services. This section gives an overview of the features of
+the NetworkingBridge.</em></p>
+<p>The configuration parameters that control the behaviour of the NetworkingBridge
+are described in the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section.</p>
+<div class="section" id="background">
+<span id="id2"></span><h2>8.1. Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>When a networking service is selected that best suits a specific deployment,
+sometimes a part of the data needs to be obtained from or disclosed to a system that
+is using a different kind of networking service. The NetworkingBridge allows
+<tt class="docutils literal"><span class="pre">DCPSPublications</span></tt> and <tt class="docutils literal"><span class="pre">DCPSSubscriptions</span></tt> to be matched and the related
+data forwarded between a RTNetworking system and a DDSI2 system and <em>vice
+versa</em>.</p>
+<p>The NetworkingBridge employs a fast path in the OpenSplice kernel by directly
+connecting the network queues of the bridged services. This also allows full
+end-to-end flow control mechanisms to be realised across the bridge. Which
+publications/subscriptions are bridged can be controlled by means of white- and
+black-lists.</p>
+<p>The NetworkingBridge relies on the discovery of publications and subscriptions by
+the common means for the networking services. This means that it relies on the real
+transient topics, aligned by the Durability service, for the RTNetworking part of the
+bridge. For the part that connects to DDSI2 the native DDSI2 discovery of
+end-points is used. In order for DDSI2 to only advertise bridged publications and
+subscriptions, the <tt class="docutils literal"><span class="pre">LocalDiscoveryPartition</span></tt> used for regular discovery should
+be set to a non-existent partition, as can be seen in the following example. This
+discovery takes some time and can introduce a short delay before data is bridged.</p>
+</div>
+<div class="section" id="example-configuration">
+<span id="id3"></span><h2>8.2. Example Configuration<a class="headerlink" href="#example-configuration" title="Permalink to this headline">¶</a></h2>
+<p>In order to properly configure the NetworkingBridge for bridging data between
+RTNetworking and DDSI2, both networking services (and the Durability service for
+the alignment of the builtin topics of the RTNetworking side) have to be configured.
+Filtering is also configured with the NetworkingBridge.</p>
+<p>An example configuration file for bridging of all data (excluding Topic
+<em>MyLocalTopic</em>) in partition <em>BridgedPartition</em> is shown below.</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;OpenSplice&gt;</span>
+   <span class="nt">&lt;Domain&gt;</span>
+      <span class="nt">&lt;Name&gt;</span>NetworkingBridgeExample<span class="nt">&lt;/Name&gt;</span>
+      <span class="nt">&lt;Id&gt;</span>0<span class="nt">&lt;/Id&gt;</span>
+      <span class="nt">&lt;Service</span> <span class="na">name=</span><span class="s">&quot;networking&quot;</span><span class="nt">&gt;</span>
+         <span class="nt">&lt;Command&gt;</span>networking<span class="nt">&lt;/Command&gt;</span>
+      <span class="nt">&lt;/Service&gt;</span>
+      <span class="nt">&lt;Service</span> <span class="na">name=</span><span class="s">&quot;ddsi2e&quot;</span><span class="nt">&gt;</span>
+         <span class="nt">&lt;Command&gt;</span>ddsi2e<span class="nt">&lt;/Command&gt;</span>
+      <span class="nt">&lt;/Service&gt;</span>
+      <span class="nt">&lt;Service</span> <span class="na">name=</span><span class="s">&quot;nwbridge&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;Command&gt;</span>nwbridge<span class="nt">&lt;/Command&gt;</span>
+      <span class="nt">&lt;/Service&gt;</span>
+      <span class="nt">&lt;Service</span> <span class="na">name=</span><span class="s">&quot;durability&quot;</span><span class="nt">&gt;</span>
+         <span class="nt">&lt;Command&gt;</span>durability<span class="nt">&lt;/Command&gt;</span>
+      <span class="nt">&lt;/Service&gt;</span>
+   <span class="nt">&lt;/Domain&gt;</span>
+   <span class="nt">&lt;NetworkService</span> <span class="na">name=</span><span class="s">&quot;networking&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;Partitioning&gt;</span>
+         <span class="nt">&lt;GlobalPartition</span> <span class="na">Address=</span><span class="s">&quot;broadcast&quot;</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;/Partitioning&gt;</span>
+      <span class="nt">&lt;Channels&gt;</span>
+         <span class="nt">&lt;Channel</span> <span class="na">default=</span><span class="s">&quot;true&quot;</span> <span class="na">enabled=</span><span class="s">&quot;true&quot;</span> <span class="na">name=</span><span class="s">&quot;BestEffort&quot;</span> <span class="na">reliable=</span><span class="s">&quot;false&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;PortNr&gt;</span>54400<span class="nt">&lt;/PortNr&gt;</span>
+         <span class="nt">&lt;/Channel&gt;</span>
+         <span class="nt">&lt;Channel</span> <span class="na">enabled=</span><span class="s">&quot;true&quot;</span> <span class="na">name=</span><span class="s">&quot;Reliable&quot;</span> <span class="na">reliable=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;PortNr&gt;</span>54410<span class="nt">&lt;/PortNr&gt;</span>
+         <span class="nt">&lt;/Channel&gt;</span>
+      <span class="nt">&lt;/Channels&gt;</span>
+      <span class="nt">&lt;Discovery</span> <span class="na">enabled=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;</span>
+         <span class="nt">&lt;PortNr&gt;</span>54420<span class="nt">&lt;/PortNr&gt;</span>
+      <span class="nt">&lt;/Discovery&gt;</span>
+   <span class="nt">&lt;/NetworkService&gt;</span>
+   <span class="nt">&lt;DDSI2EService</span> <span class="na">name=</span><span class="s">&quot;ddsi2e&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;Discovery&gt;</span>
+        <span class="nt">&lt;LocalDiscoveryPartition&gt;</span>ThisIsNotAPartition<span class="nt">&lt;/LocalDiscoveryPartition&gt;</span>
+      <span class="nt">&lt;/Discovery&gt;</span>
+   <span class="nt">&lt;/DDSI2EService&gt;</span>
+   <span class="nt">&lt;NetworkingBridgeService</span> <span class="na">name=</span><span class="s">&quot;nwbridge&quot;</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;Include&gt;</span>
+       <span class="c">&lt;!-- Multiple entries can be added here with DCPSPartitionTopic expressions</span>
+<span class="c">            on what to include --&gt;</span>
+       <span class="nt">&lt;Entry</span> <span class="na">DCPSPartitionTopic=</span><span class="s">&quot;BridgedPartition.*&quot;</span><span class="nt">/&gt;</span>
+     <span class="nt">&lt;/Include&gt;</span>
+     <span class="nt">&lt;Exclude&gt;</span>
+       <span class="c">&lt;!-- Multiple entries can be added here with DCPSPartitionTopic expressions</span>
+<span class="c">            on what to exclude.</span>
+<span class="c">            If a DCPSPublication or DCPSSubscription matches both the include- and</span>
+<span class="c">            exclude expressions it will be excluded. --&gt;</span>
+       <span class="nt">&lt;Entry</span> <span class="na">DCPSPartitionTopic=</span><span class="s">&quot;*.MyLocalTopic&quot;</span><span class="nt">/&gt;</span>
+     <span class="nt">&lt;/Exclude&gt;</span>
+   <span class="nt">&lt;/NetworkingBridgeService&gt;</span>
+   <span class="nt">&lt;DurabilityService</span> <span class="na">name=</span><span class="s">&quot;durability&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;Network&gt;</span>
+         <span class="nt">&lt;Alignment&gt;</span>
+            <span class="nt">&lt;TimeAlignment&gt;</span>FALSE<span class="nt">&lt;/TimeAlignment&gt;</span>
+            <span class="nt">&lt;RequestCombinePeriod&gt;</span>
+               <span class="nt">&lt;Initial&gt;</span>2.5<span class="nt">&lt;/Initial&gt;</span>
+               <span class="nt">&lt;Operational&gt;</span>0.1<span class="nt">&lt;/Operational&gt;</span>
+            <span class="nt">&lt;/RequestCombinePeriod&gt;</span>
+         <span class="nt">&lt;/Alignment&gt;</span>
+         <span class="nt">&lt;WaitForAttachment</span> <span class="na">maxWaitCount=</span><span class="s">&quot;10&quot;</span><span class="nt">&gt;</span>
+           <span class="nt">&lt;ServiceName&gt;</span>networking<span class="nt">&lt;/ServiceName&gt;</span>
+           <span class="nt">&lt;ServiceName&gt;</span>ddsi2e<span class="nt">&lt;/ServiceName&gt;</span>
+         <span class="nt">&lt;/WaitForAttachment&gt;</span>
+      <span class="nt">&lt;/Network&gt;</span>
+      <span class="nt">&lt;NameSpaces&gt;</span>
+         <span class="nt">&lt;NameSpace</span> <span class="na">name=</span><span class="s">&quot;defaultNamespace&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;Partition&gt;</span>*<span class="nt">&lt;/Partition&gt;</span>
+         <span class="nt">&lt;/NameSpace&gt;</span>
+         <span class="nt">&lt;Policy</span> <span class="na">nameSpace=</span><span class="s">&quot;defaultNamespace&quot;</span> <span class="na">durability=</span><span class="s">&quot;Durable&quot;</span>
+                           <span class="na">alignee=</span><span class="s">&quot;Initial&quot;</span> <span class="na">aligner=</span><span class="s">&quot;True&quot;</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;/NameSpaces&gt;</span>
+   <span class="nt">&lt;/DurabilityService&gt;</span>
+   <span class="nt">&lt;Description&gt;</span>Federated deployment for extending an RTNetworking-based
+                domain into a DDSI network.<span class="nt">&lt;/Description&gt;</span>
+<span class="nt">&lt;/OpenSplice&gt;</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">8. The NetworkingBridge Service</a><ul>
+<li><a class="reference internal" href="#background">8.1. Background</a></li>
+<li><a class="reference internal" href="#example-configuration">8.2. Example Configuration</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ddsi2-networking-service.html"
+                        title="previous chapter">7. The DDSI2 and DDSI2E Networking Services</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tuner-service.html"
+                        title="next chapter">9. The Tuner Service</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/networkingbridge-service.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tuner-service.html" title="9. The Tuner Service"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ddsi2-networking-service.html" title="7. The DDSI2 and DDSI2E Networking Services"
+             >previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

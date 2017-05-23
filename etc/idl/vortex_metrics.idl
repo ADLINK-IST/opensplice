@@ -1,0 +1,118 @@
+module org {
+    module vortex {
+        module metrics {
+            /*****************************************************************
+             *
+             * Metric types
+             *
+             ****************************************************************/
+            typedef long long MetricId;
+            // URI: Format to be defined, but required for relating
+            // metric to dds entity
+            typedef string URI;
+            typedef sequence<octet> BLOB;
+            typedef unsigned long long Time;
+
+            enum MetricKind {
+                METRIC_COUNTER,
+                METRIC_GAUGE,
+                METRIC_DISTRIBUTION,
+                METRIC_LABEL,
+                METRIC_RATE,
+                METRIC_MAVG,
+                METRIC_TIMER
+            };
+
+            enum ValueKind {
+                VALUEKIND_STRING,
+                VALUEKIND_CHAR,
+                VALUEKIND_OCTET,
+                VALUEKIND_SHORT,
+                VALUEKIND_LONG,
+                VALUEKIND_LONGLONG,
+                VALUEKIND_USHORT,
+                VALUEKIND_ULONG,
+                VALUEKIND_ULONGLONG,
+                VALUEKIND_DOUBLE,
+                VALUEKIND_FLOAT,
+                VALUEKIND_BOOLEAN,
+                VALUEKIND_TIME,
+                VALUEKIND_BLOB
+            };
+
+            /**
+             * Union for the value of a metric supporting different types
+             * of values.
+             */
+
+            union BasicValue switch(ValueKind) {
+                case VALUEKIND_STRING:    string    strValue;
+                case VALUEKIND_CHAR:      char      cValue;
+                case VALUEKIND_OCTET:     octet     oValue;
+                case VALUEKIND_SHORT:     short     sValue;
+                case VALUEKIND_LONG:      long      lValue;
+                case VALUEKIND_LONGLONG:  long long llValue;
+                case VALUEKIND_USHORT:    unsigned short     usValue;
+                case VALUEKIND_ULONG:     unsigned long      ulValue;
+                case VALUEKIND_ULONGLONG: unsigned long long ullValue;
+                case VALUEKIND_FLOAT:     float     fValue;
+                case VALUEKIND_DOUBLE:    double    dValue;
+                case VALUEKIND_BOOLEAN:   boolean   bValue;
+                case VALUEKIND_TIME:      Time      tValue;
+                case VALUEKIND_BLOB:      BLOB      blValue;
+            };
+
+            typedef string Range;
+            typedef string Units;
+            typedef sequence<float> RateSeq;
+            typedef sequence<float> MAvgSeq;
+            typedef sequence<float> PercentileSeq;
+            typedef sequence<long>  LongSeq;
+
+            union TypeData switch(MetricKind) {
+                case METRIC_DISTRIBUTION: LongSeq percentiles;
+                case METRIC_RATE:         LongSeq rate_intervals;
+                case METRIC_MAVG:         LongSeq mavg_intervals;
+                default:                  char dummy;
+            };
+
+            struct Info {
+                MetricId      metric_id;
+                URI           uri;
+                string        name;
+                string        description;
+                MetricKind    kind;
+                Range         range;
+                Units         units;
+                TypeData      type_data;
+            };
+            typedef sequence <Info> InfoSeq;
+
+            struct DistributionValue {
+                long  count;
+                float median;
+                float max;
+                float min;
+                float mean;
+                float stdDev;
+                PercentileSeq percentileValues;
+            };
+
+            union MetricValue switch(MetricKind) {
+                case METRIC_COUNTER:      long              counter;
+                case METRIC_GAUGE:        BasicValue        gauge;
+                case METRIC_DISTRIBUTION: DistributionValue distribution;
+                case METRIC_LABEL:        BasicValue        label;
+                case METRIC_RATE:         RateSeq           rate;
+                case METRIC_MAVG:         MAvgSeq           mavg;
+                case METRIC_TIMER:        Time              timer;
+            };
+
+            struct Value {
+                string metric_name;
+                MetricValue value;
+            };
+            typedef sequence <Value> ValueSeq;
+        };
+    };
+};

@@ -11,14 +11,14 @@ the macros \ref OSPL_USE_CXX11, \ref OSPL_USE_TR1, or \ref OSPL_USE_BOOST
 defined.
 
 The file [dds/core/detail/macros.hpp](@ref dds/core/detail/macros.hpp) could be
-edited directly to do this, or these can be defined on the compile commnd line.
+edited directly to do this, or these can be defined on the compile command line.
 
 GCC Re-compilation                                                              {#isocpp_customlibs_gcc}
 ------------------
 
 Makefiles are provided that will re-build the DCPS API libraries _as is_ with
 the compiler currently on your search path. These are found in
-`$OSPL_HOME/cusom_lib`. They can be edited to suit your requirements if
+`$OSPL_HOME/custom_lib`. They can be edited to suit your requirements if
 necessary. To rebuild the ISO C++ API you might then do, for example:
 
     make -C $OSPL_HOME/custom_lib -f Makefile.Build_DCPS_ISO_Cpp_Lib

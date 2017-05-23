@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+ <xs:element name="connections_list">
+  <xs:complexType>
+   <xs:sequence>
+    <xs:element name="connection" maxOccurs="unbounded">
+     <xs:complexType>
+      <xs:sequence>
+       <xs:element name="name" type="xs:string" minOccurs = "1"></xs:element>
+       <xs:element name="type" minOccurs = "1">
+        <xs:simpleType>
+         <xs:restriction base="xs:string">
+          <xs:pattern value="DDS"/>
+         </xs:restriction>
+        </xs:simpleType>
+       </xs:element>
+       <xs:element name="direction" minOccurs = "1">
+        <xs:simpleType>
+         <xs:restriction base="xs:string">
+          <xs:enumeration value="SOURCE" />
+          <xs:enumeration value="DESTINATION" />
+         </xs:restriction>
+        </xs:simpleType>
+       </xs:element>
+       <xs:element name="platform_view_guid" type="xs:int" minOccurs = "1"></xs:element>
+       <xs:element name="refresh_period" type="xs:int" minOccurs = "1"></xs:element>
+       <xs:element name="domain_id" minOccurs = "0">
+        <xs:simpleType>
+         <xs:restriction base="xs:int">
+          <xs:minInclusive value="0" />
+          <xs:maxInclusive value="230" />
+         </xs:restriction>
+        </xs:simpleType>
+       </xs:element>
+       <xs:element name="topic_name" minOccurs = "1">
+        <xs:simpleType>
+         <xs:restriction base="xs:string">
+          <xs:pattern value="[a-zA-Z\-_]([a-zA-Z0-9\-_])*"/>
+         </xs:restriction>
+        </xs:simpleType>
+       </xs:element>
+       <xs:element name="type_name" type="xs:string" minOccurs = "1"></xs:element>
+       <xs:element name="qos" minOccurs = "0">
+        <xs:complexType>
+         <xs:sequence>
+          <xs:element name="uri" type="xs:string" minOccurs = "1"></xs:element>
+          <xs:element name="profile" type="xs:string" minOccurs = "1"></xs:element>
+          <xs:element name="domainparticipant_qos_id" type="xs:string" minOccurs = "0"></xs:element>
+          <xs:element name="topic_qos_id" type="xs:string" minOccurs = "0"></xs:element>
+          <xs:element name="publisher_qos_id" type="xs:string" minOccurs = "0"></xs:element>
+          <xs:element name="datawriter_qos_id" type="xs:string" minOccurs = "0"></xs:element>
+          <xs:element name="subscriber_qos_id" type="xs:string" minOccurs = "0"></xs:element>
+          <xs:element name="datareader_qos_id" type="xs:string" minOccurs = "0"></xs:element>
+         </xs:sequence>
+        </xs:complexType>
+       </xs:element>
+      </xs:sequence>
+     </xs:complexType>
+    </xs:element>
+   </xs:sequence>
+  </xs:complexType>
+ </xs:element>
+</xs:schema>

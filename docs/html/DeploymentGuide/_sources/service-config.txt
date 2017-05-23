@@ -1,0 +1,14 @@
+.. _`Service Configurations`:
+
+######################
+Service Configurations
+######################
+
+
+Full details of the configuration elements and attributes of all 
+Vortex OpenSplice services are given in the separate
+*Vortex OpenSplice Configuration Guide*; references to specific
+sections of that *Guide* are included at appropriate places in this one. 
+
+.. EoF
+  

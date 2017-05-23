@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. Impact on DDS Domain &mdash; Vortex OpenSplice Record and Replay API Reference</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Vortex OpenSplice Record and Replay API Reference" href="index.html" />
+    <link rel="next" title="7. Appendix A" href="appendixa.html" />
+    <link rel="prev" title="5. Known Issues" href="issues.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="appendixa.html" title="7. Appendix A"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="issues.html" title="5. Known Issues"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="impact-on-dds-domain">
+<span id="id1"></span><h1>6. Impact on DDS Domain<a class="headerlink" href="#impact-on-dds-domain" title="Permalink to this headline">¶</a></h1>
+<p><em>This section describes additional aspects of the Record and
+Replay Service and its interaction with other systems.</em></p>
+<div class="section" id="intrusiveness">
+<h2>6.1. Intrusiveness<a class="headerlink" href="#intrusiveness" title="Permalink to this headline">¶</a></h2>
+<p>Relevant characteristics of the Record and Replay Service
+with respect to ‘intrusiveness’ for an existing system are:</p>
+<ul class="simple">
+<li>The service can be optionally configured on any DDS node in the system.<ul>
+<li>When run as part of an existing federation of applications,
+it utilizes the federation’s shared-memory segment to obtain
+the data (so locally-published data is not required to travel
+over the network to be recorded by the service, and <em>vice-versa</em>
+for replaying towards co-located subscribers).</li>
+<li>When run on a dedicated RnR node, data to be recorded is
+transparently forwarded to that RnR node, typically using
+multicast network features (and so not inducing extra network
+traffic).</li>
+</ul>
+</li>
+<li>Services are controlled in ‘the DDS way’, <em>i.e.</em> a data-centric
+way where command and status topics allow DDS-based ‘remote control’
+over the service from anywhere in the system.<ul>
+<li>A dedicated <tt class="docutils literal"><span class="pre">RecordAndReplay</span></tt> partition is utilized by RnR
+to bound (contain) the control/status flows.</li>
+<li>In the case of a dedicated RnR node, this partition can be
+configured to be a so-called ‘local Partition’ thus bounding
+(containing) all control/status traffic to the RnR node.</li>
+</ul>
+</li>
+<li>Replaying (subsets) of recorded data <em>‘by definition’</em> has impact
+on an existing system:<ul>
+<li>It can induce unanticipated traffic-flows towards subscribing
+applications</li>
+<li>It typically triggers application-processing of such replayed
+data...</li>
+<li>which can be considered ‘intentional’ and inherent to the
+purpose of replaying recorded data</li>
+</ul>
+</li>
+</ul>
+<p>Summarizing, it can be stated that when dedicating a specific computing
+node for Record and Replay and confining the control and status traffic
+to control the service to stay ‘inside’ that node, recording of data
+in a multicast-enabled network is non-intrusive.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Note that the few shared topic-definitions (definitions <em>only</em>, not actual samples of
+these topics when these are ‘confined’ to the RnR node) that would be visible
+system-wide when inspecting the built-in topics of the system (for instance with a
+tool like the Vortex OpenSplice Tuner) are considered non-intrusive as they only imply a
+small and static amount of data occupied by the related built-in topic samples.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">6. Impact on DDS Domain</a><ul>
+<li><a class="reference internal" href="#intrusiveness">6.1. Intrusiveness</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="issues.html"
+                        title="previous chapter">5. Known Issues</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="appendixa.html"
+                        title="next chapter">7. Appendix A</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/impact.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="appendixa.html" title="7. Appendix A"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="issues.html" title="5. Known Issues"
+             >previous</a> |</li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

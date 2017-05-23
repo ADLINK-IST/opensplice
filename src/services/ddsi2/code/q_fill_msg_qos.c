@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include <stddef.h>
@@ -14,13 +22,8 @@
 
 /* FIXME: rename this file -- there is not even a fill_msg_qos anymore ... */
 
-#include "v_public.h"
-#include "v_entity.h"
-#include "v_group.h"
-#include "v_topic.h"
-#include "v_state.h"
-#include "v__messageQos.h"
-#include "kernelModule.h"
+#include "v_messageQos.h"
+#include "kernelModuleI.h"
 #include "ut_collection.h"
 #include "u_participant.h"
 #include "os_abstract.h" /* big or little endianness */
@@ -39,37 +42,24 @@
 /* To our great surprise and dismay, messageQos has all fields in
    big-edian format. */
 
-static v_duration ddsi_duration_to_BE_c_time (nn_duration_t dd)
+static int ddsi_duration_to_BE_c_time (c_time *kd, nn_duration_t dd)
 {
-  const v_duration kdinf = C_TIME_INFINITE;
-  v_duration kd;
-#if DDSI_DURATION_ACCORDING_TO_SPEC
-  if (dd.sec == 0x7fffffff && dd.nanosec == 0x7fffffff)
+  const os_int64 tt = nn_from_ddsi_duration (dd);
+  if (tt == T_NEVER)
   {
-    kd.seconds = toBE4 (kdinf.seconds);
-    kd.nanoseconds = toBE4 (kdinf.nanoseconds);
+    const c_time kdinf = C_TIME_INFINITE;
+    kd->seconds = toBE4 (kdinf.seconds);
+    kd->nanoseconds = toBE4u (kdinf.nanoseconds);
+    return 1;
   }
   else
   {
-    kd.seconds = toBE4 (dd.sec);
-    kd.nanoseconds = toBE4 (dd.nanosec);
+    os_int32 sec = (os_int32) (tt / T_SECOND);
+    os_uint32 nsec = (os_uint32) (tt % T_SECOND);
+    kd->seconds = toBE4 (sec);
+    kd->nanoseconds = toBE4u (nsec);
+    return 0;
   }
-#else
-  if (dd.seconds == 0x7fffffff && dd.fraction == 0xffffffff)
-  {
-    kd.seconds = toBE4 (kdinf.seconds);
-    kd.nanoseconds = toBE4 (kdinf.nanoseconds);
-  }
-  else
-  {
-    /* result of division will be truncated (fraction is known to be
-       positive, so that means rounded down), and therefore 0 <=
-       nanoseconds < 10^9 */
-    kd.seconds = toBE4 (dd.seconds);
-    kd.nanoseconds = toBE4 ((int) (dd.fraction / 4.294967296));
-  }
-#endif
-  return kd;
 }
 
 c_array new_v_message_qos (const nn_xqos_t *xqos)
@@ -142,49 +132,50 @@ c_array new_v_message_qos (const nn_xqos_t *xqos)
 
   assert (xqos->present & QP_LATENCY_BUDGET);
   {
-    v_duration dur = ddsi_duration_to_BE_c_time (xqos->latency_budget.duration);
-    if (c_timeIsZero (dur))
+    c_time durBE;
+    (void) ddsi_duration_to_BE_c_time (&durBE, xqos->latency_budget.duration);
+    if (durBE.seconds == 0 && durBE.nanoseconds == 0)
       byte0 |= _LSHIFT_(1,MQ_BYTE0_LATENCY_OFFSET);
     else
     {
-      memcpy (dst, &dur, sizeof (dur));
-      dst += sizeof (dur);
+      memcpy (dst, &durBE, sizeof (durBE));
+      dst += sizeof (durBE);
     }
   }
 
   assert (xqos->present & QP_DEADLINE);
   {
-    v_duration dur = ddsi_duration_to_BE_c_time (xqos->deadline.deadline);
-    if (c_timeIsInfinite (dur))
+    c_time durBE;
+    if (ddsi_duration_to_BE_c_time (&durBE, xqos->deadline.deadline))
       byte0 |= _LSHIFT_(1,MQ_BYTE0_DEADLINE_OFFSET);
     else
     {
-      memcpy (dst, &dur, sizeof (dur));
-      dst += sizeof (dur);
+      memcpy (dst, &durBE, sizeof (durBE));
+      dst += sizeof (durBE);
     }
   }
 
   assert (xqos->present & QP_LIVELINESS);
   {
-    v_duration dur = ddsi_duration_to_BE_c_time (xqos->liveliness.lease_duration);
-    if (c_timeIsInfinite (dur))
+    c_time durBE;
+    if (ddsi_duration_to_BE_c_time (&durBE, xqos->liveliness.lease_duration))
       byte0 |= _LSHIFT_(1,MQ_BYTE0_LIVELINESS_OFFSET);
     else
     {
-      memcpy (dst, &dur, sizeof (dur));
-      dst += sizeof (dur);
+      memcpy (dst, &durBE, sizeof (durBE));
+      dst += sizeof (durBE);
     }
   }
 
   assert (xqos->present & QP_LIFESPAN);
   {
-    v_duration dur = ddsi_duration_to_BE_c_time (xqos->lifespan.duration);
-    if (c_timeIsInfinite (dur))
+    c_time durBE;
+    if (ddsi_duration_to_BE_c_time (&durBE, xqos->lifespan.duration))
       byte0 |= _LSHIFT_(1,MQ_BYTE0_LIFESPAN_OFFSET);
     else
     {
-      memcpy (dst, &dur, sizeof (dur));
-      dst += sizeof (dur);
+      memcpy (dst, &durBE, sizeof (durBE));
+      dst += sizeof (durBE);
     }
   }
 
@@ -239,13 +230,13 @@ c_array new_v_message_qos (const nn_xqos_t *xqos)
     byte1 |= _LSHIFT_(caccess, MQ_BYTE1_COHERENT_ACCESS_OFFSET);
   }
 
-  assert (dst - qosbase <= (ptrdiff_t) sizeof (qosbase));
+  assert ((size_t) (dst - qosbase) <= sizeof (qosbase));
   qosbase[0] = byte0;
   qosbase[1] = byte1;
 
-  msgqos = c_newArray (gv.ospl_qostype, (int) (dst - qosbase));
+  msgqos = c_newArray (gv.ospl_qostype, (c_ulong) (dst - qosbase));
   if (msgqos != NULL)
-    memcpy (msgqos, qosbase, dst - qosbase);
+    memcpy (msgqos, qosbase, (size_t) (dst - qosbase));
   return msgqos;
 }
 

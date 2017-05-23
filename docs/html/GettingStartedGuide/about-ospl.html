@@ -1,0 +1,531 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. About Vortex Opensplice &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="3. Product Details" href="product-info.html" />
+    <link rel="prev" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="product-info.html" title="3. Product Details"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="about-vortex-opensplice">
+<span id="about-opensplice"></span><h1>2. About Vortex Opensplice<a class="headerlink" href="#about-vortex-opensplice" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="why-vortex-opensplice">
+<h2>2.1. Why Vortex OpenSplice<a class="headerlink" href="#why-vortex-opensplice" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="what-is-vortex-opensplice">
+<h3>2.1.1. What is Vortex OpenSplice?<a class="headerlink" href="#what-is-vortex-opensplice" title="Permalink to this headline">¶</a></h3>
+<p>The purpose of Vortex OpenSplice is to provide an infrastructure and
+middleware layer for real-time distributed systems. This is a
+realisation of the OMG-DDS-DCPS Specification for a Data Distribution
+Service based upon a Data Centric Publish Subscribe architecture.</p>
+</div>
+<div class="section" id="why-use-it">
+<h3>2.1.2. Why Use It?<a class="headerlink" href="#why-use-it" title="Permalink to this headline">¶</a></h3>
+<p>Vortex OpenSplice provides an infrastructure for real-time data
+distribution and offers middleware services to applications. It provides
+a real-time data distribution service that aims at:</p>
+<ul class="simple">
+<li>reducing the complexity of the real-time distributed systems</li>
+<li>providing an infrastructure upon which fault-tolerant real-time systems
+can be built</li>
+<li>supporting incremental development and deployment of systems</li>
+</ul>
+</div>
+<div class="section" id="vortex-opensplice-summary">
+<h3>2.1.3. Vortex OpenSplice Summary<a class="headerlink" href="#vortex-opensplice-summary" title="Permalink to this headline">¶</a></h3>
+<p><em>Vortex OpenSplice</em> is the leading (commercial and Open Source) implementation
+of the Object Management Group&#8217;s (OMG)
+<em>Data Distribution Service (DDS) for Real-Time Systems</em> datasharing
+middleware standard. Vortex OpenSplice is an advanced and proven data-centric solution that enables seamless,
+timely, scalable and dependable distributed data sharing. Vortex OpenSplice
+delivers the right data, in the right place, at the right time, every
+time&#8211;even in the <em>largest-scale mission- and business-critical systems</em>.</p>
+<p><strong>Key features and benefits are:</strong></p>
+<ul class="simple">
+<li>Genuinely the fastest, most scalable and most reliable Open Source
+integration technology</li>
+<li>Deployed in the most challenging business- and mission-critical systems</li>
+<li>Genuine Open Source Apache 2.0 licensing for both the Community and
+Commercial editions</li>
+<li>Field-proven interoperability with other DDS implementations</li>
+<li>Largest ecosystem of plug-ins and tools for modeling, deployment
+and testing</li>
+<li>Richest set of QoS policies for controlling efficiency, determinism and
+fault-tolerance</li>
+<li>Supported by world-renowned professional services expertise from the
+developers of the DDS standard</li>
+<li>Unprecedented throughput of millions of samples/sec for
+typical &#8216;stream&#8217; data</li>
+</ul>
+<p>Please go to <a class="reference external" href="http://www.prismtech.com">http://www.prismtech.com</a> to obtain evaluation copies of
+Vortex OpenSplice, and <a class="reference external" href="http://www.opensplice.org">http://www.opensplice.org</a> for free downloads of the
+community version.</p>
+</div>
+</div>
+<div class="section" id="vortex-opensplice-architecture">
+<h2>2.2. Vortex OpenSplice Architecture<a class="headerlink" href="#vortex-opensplice-architecture" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="overall">
+<h3>2.2.1. Overall<a class="headerlink" href="#overall" title="Permalink to this headline">¶</a></h3>
+<p>To ensure scalability, flexibility and extensibility, Vortex OpenSplice has
+an internal architecture that, when selected, uses shared memory to
+`interconnect&#8217; not only all applications that reside within one
+computing node, but also `hosts&#8217; a configurable and extensible set of
+services. These services provide `pluggable&#8217; functionality such as
+networking (providing QoS driven real-time networking based on multiple
+reliable multicast `channels&#8217;), durability (providing fault tolerant
+storage for both real-time `state&#8217; data as well as persistent
+`settings&#8217;), and remote control &amp; monitoring `soap service&#8217; (providing
+remote web based access using the SOAP protocol from the OpenSplice DDS
+Tuner tools).</p>
+</div>
+<div class="section" id="scalability">
+<h3>2.2.2. Scalability<a class="headerlink" href="#scalability" title="Permalink to this headline">¶</a></h3>
+<p>Vortex OpenSplice is capable of using a shared-memory architecture where
+data is physically present only once on any machine, and where smart
+administration still provides each subscriber with his own private
+`view&#8217; on this data. This allows a subscriber&#8217;s data cache to be
+perceived as an individual `database&#8217; that can be content-filtered,
+queried, etc. (using the content-subscription profile as supported by
+OpenSplice DDS). This shared-memory architecture results in an extremely
+small footprint, excellent scalability and optimal performance when
+compared to implementations where each reader/writer are `communication
+endpoints&#8217; each with its own storage (in other words, historical data
+both at reader and writer) and where the data itself still has to be
+moved, even within the same physical node.</p>
+</div>
+<div class="section" id="configuration">
+<h3>2.2.3. Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>Vortex OpenSplice is highly configurable, even allowing the architectural
+structure of the DDS middleware to be chosen by the user at deployment
+time. Vortex OpenSplice can be configured to run using a <em>shared memory</em>
+architecture, where both the DDS related administration (including the
+optional pluggable services) and DDS applications interface directly
+with shared memory. Alternatively, Vortex OpenSplice also supports a
+<em>single process</em> library architecture, where one or more DDS
+applications, together with the OpenSplice administration and services,
+can all be grouped into a single operating system process. Both
+deployment modes support a configurable and extensible set of services,
+providing functionality such as:</p>
+<ul class="simple">
+<li><em>networking</em> - providing real-time networking options allowing for
+trade-offs between `interoperability&#8217; (with other DDS vendors) and
+scalability (supporting ultra-large systems).</li>
+<li><em>durability</em> - providing fault-tolerant storage for both real-time state
+data as well as persistent settings</li>
+<li><em>remote control and monitoring SOAP service</em> - providing remote web-based
+access using the SOAP protocol from the OpenSplice Tuner tool</li>
+<li><em>dbms service</em> - providing a connection between the real-time and the
+enterprise domain by bridging data from DDS to DBMS and <em>vice versa</em></li>
+</ul>
+<p>The Vortex OpenSplice middleware can be easily configured, on the fly,
+using its pluggable architecture: the services that are needed can be
+specified together with their optimum configuration for the particular
+application domain, including networking parameters, and durability
+levels for example).</p>
+<p>There are advantages to both the single process and shared memory
+deployment architectures, so the most appropriate deployment choice
+depends on the user&#8217;s exact requirements and DDS scenario.</p>
+</div>
+</div>
+<div class="section" id="single-process-library-architecture">
+<h2>2.3. Single Process Library Architecture<a class="headerlink" href="#single-process-library-architecture" title="Permalink to this headline">¶</a></h2>
+<p>This deployment allows the DDS applications and OpenSplice
+administration to be contained together within one single operating
+system process. This single process deployment option is most useful in
+environments where shared memory is unavailable or undesirable. As
+dynamic heap memory is utilized in the single process deployment
+environment, there is no need to pre-configure a shared memory segment
+which in some use cases is also seen as an advantage of this deployment
+option.</p>
+<p>Each DDS application on a processing node is implemented as an
+individual, self-contained operating system process (<em>i.e.</em> all of the
+DDS administration and necessary services have been linked into the
+application process). This is known as a <em>single process application</em>.
+Communication between multiple single process applications co-located on
+the same machine node is done via the (loop-back) network, since there
+is no memory shared between them.</p>
+<p>An extension to the single process architecture is the option to
+co-locate multiple DDS applications into a single process. This can be
+done be creating application libraries rather than application
+executables that can be `linked&#8217; into the single process in a similar
+way to how the DDS middleware services are linked into the single
+process. This is known as a <em>single process application cluster</em>.
+Communication between clustered applications (that together form a
+single process) can still benefit from using the process&#8217;s heap memory,
+which typically is an order of magnitude faster than using a network,
+yet the lifecycle of these clustered applications will be tightly
+coupled.</p>
+<p>The Single Process deployment is the default architecture provided
+within Vortex OpenSplice and allows for easy deployment with minimal
+configuration required for a running DDS system.</p>
+<p>The figure <a class="reference internal" href="#the-opensplice-single-process-architecture">The OpenSplice Single Process Architecture</a>
+shows an overview of the single process architecture of Vortex OpenSplice.</p>
+<div class="figure" id="the-opensplice-single-process-architecture">
+<a class="reference internal image-reference" href="_images/SingleProcessArchitecture.png"><img alt="The OpenSplice Single Process Architecture" src="_images/SingleProcessArchitecture.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>The OpenSplice Single Process Architecture</strong></p>
+</div>
+</div>
+<div class="section" id="shared-memory-architecture">
+<h2>2.4. Shared Memory architecture<a class="headerlink" href="#shared-memory-architecture" title="Permalink to this headline">¶</a></h2>
+<p>In the shared memory architecture data is physically present only once
+on any machine but smart administration still provides each subscriber
+with his own private view on this data. Both the DDS applications and
+OpenSplice administration interface directly with the shared memory
+which is created by the OpenSplice daemon on start up. This architecture
+enables a subscriber&#8217;s data cache to be seen as an individual database
+and the content can be filtered, queried, etc. by using the OpenSplice
+content subscription profile.</p>
+<p>Typically for advanced DDS users, the shared memory architecture is a
+more powerful mode of operation and results in extremely low footprint,
+excellent scalability and optimal performance when compared to the
+implementation where each reader/writer are communication end points
+each with its own storage (<em>i.e.</em> historical data both at reader and
+writer) and where the data itself still has to be moved, even within the
+same platform.</p>
+<p>The figure <a class="reference internal" href="#the-opensplice-shared-memory-architecture">The OpenSplice Shared Memory Architecture</a>
+shows an overview of the shared memory architecture of
+Vortex OpenSplice on <em>one</em> computing node. Typically, there
+are <em>many</em> nodes within a system.</p>
+<div class="figure" id="the-opensplice-shared-memory-architecture">
+<a class="reference internal image-reference" href="_images/SharedMemoryArchitecture.png"><img alt="The OpenSplice Shared Memory Architecture" src="_images/SharedMemoryArchitecture.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>The OpenSplice Shared Memory Architecture</strong></p>
+</div>
+</div>
+<div class="section" id="vortex-opensplice-features-and-benefits">
+<h2>2.5. Vortex OpenSplice Features and Benefits<a class="headerlink" href="#vortex-opensplice-features-and-benefits" title="Permalink to this headline">¶</a></h2>
+<p>The table below shows the following
+aspects of Vortex OpenSplice, where:</p>
+<blockquote>
+<div><p><em>Features</em> are significant characteristics of OpenSplice</p>
+<p><em>Advantages</em> shows why a feature is important</p>
+<p><em>Benefits</em> describes how users of OpenSplice can exploit the advantages</p>
+</div></blockquote>
+<table border="1" class="docutils">
+<colgroup>
+<col width="24%" />
+<col width="28%" />
+<col width="38%" />
+<col width="10%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Features</th>
+<th class="head">Advantages</th>
+<th class="head">Benefits</th>
+<th class="head">=+!</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td colspan="4"><strong>GENERAL</strong></td>
+</tr>
+<tr class="row-odd"><td>Information-
+centric</td>
+<td>Enable dynamic,
+loosely-coupled system</td>
+<td>Simplified and better
+scalable architectures</td>
+<td>=</td>
+</tr>
+<tr class="row-even"><td>Open standard</td>
+<td>&#8216;Off-the-shelf&#8217;
+solutions</td>
+<td>Lower cost, no vendor
+lock-in</td>
+<td>=</td>
+</tr>
+<tr class="row-odd"><td>Built on
+proven
+technology</td>
+<td>Intended for the
+most demanding
+situations</td>
+<td>Assured quality and
+applicability</td>
+<td>++</td>
+</tr>
+<tr class="row-even"><td>TNN/PT
+&#8216;inheritance&#8217;</td>
+<td>Decade of  &#8216;DDS&#8217;
+experience</td>
+<td>Proven suitability in
+mission-critical
+domain</td>
+<td>!!!</td>
+</tr>
+<tr class="row-odd"><td>Open Source
+model</td>
+<td>Strong and large
+user community</td>
+<td>Security of supply of
+most widely-used DDS</td>
+<td>!!!</td>
+</tr>
+<tr class="row-even"><td colspan="4"><strong>FUNCTIONAL</strong></td>
+</tr>
+<tr class="row-odd"><td>Real-time
+pub/sub</td>
+<td>Dynamic/asynchronous data
+communication</td>
+<td>Autonomous decoupled
+applications</td>
+<td>=</td>
+</tr>
+<tr class="row-even"><td>Persistence
+profile</td>
+<td>Fault-tolerant
+data persistence</td>
+<td>Application fault
+tolerance and data high
+availability</td>
+<td>!!!</td>
+</tr>
+<tr class="row-odd"><td>Content-sub.
+Profile</td>
+<td>Reduced
+complexity and
+higher
+performance</td>
+<td>Easier application
+design and scalable
+systems</td>
+<td>!!!</td>
+</tr>
+<tr class="row-even"><td colspan="4"><strong>PERFORMANCE</strong></td>
+</tr>
+<tr class="row-odd"><td>Shared
+memory</td>
+<td>Small footprint,
+instant data
+availability</td>
+<td>Processor scalability</td>
+<td>++</td>
+</tr>
+<tr class="row-even"><td>Smart
+networking</td>
+<td>Efficient data
+transport</td>
+<td>Network scalability</td>
+<td>++</td>
+</tr>
+<tr class="row-odd"><td>Extensive IDL
+support</td>
+<td>Includes
+unbounded strings
+and sequences</td>
+<td>Data scalability</td>
+<td>++</td>
+</tr>
+<tr class="row-even"><td colspan="4"><strong>USABILITY</strong></td>
+</tr>
+<tr class="row-odd"><td>Multiple
+languages</td>
+<td>Any (mix) of
+C, C++, Java,
+C#</td>
+<td>Supports legacy code,
+allows hybrid systems</td>
+<td>++</td>
+</tr>
+<tr class="row-even"><td>Multiple
+platforms</td>
+<td>Any (mix) of
+Enterprise and
+RTE OSs</td>
+<td>Intercons, Enterprise
+and embedded systems</td>
+<td>=</td>
+</tr>
+<tr class="row-odd"><td colspan="4"><strong>INTEROPERABILITY</strong></td>
+</tr>
+<tr class="row-even"><td>DDSI/RTPS</td>
+<td>Interoperability
+between DDS
+vendors</td>
+<td>Smooth integration with
+non-OpenSplice (legacy)
+DDS systems</td>
+<td>!!!</td>
+</tr>
+<tr class="row-odd"><td colspan="4"><strong>TOOLING AND EASE OF USE</strong></td>
+</tr>
+<tr class="row-even"><td>All metadata
+at runtime</td>
+<td>Dynamic discovery
+of all &#8216;entity
+info&#8217;</td>
+<td>Guaranteed data
+integrity</td>
+<td>=</td>
+</tr>
+<tr class="row-odd"><td>Powerful
+tooling</td>
+<td>Support for
+complete system
+lifecycle</td>
+<td>Enhanced productivity
+and System Integration</td>
+<td>!!!</td>
+</tr>
+<tr class="row-even"><td>Remote
+connect</td>
+<td>Web-based
+remote access
+and control</td>
+<td>Remote diagnostics
+using standard
+protocols</td>
+<td>!!!</td>
+</tr>
+<tr class="row-odd"><td colspan="4">&nbsp;</td>
+</tr>
+<tr class="row-even"><td colspan="2"><strong>Legend:</strong></td>
+<td><p class="first"><em>Equal to the</em>
+<em>competition</em></p>
+<p><em>Better than the</em>
+<em>competition</em></p>
+<p class="last"><em>Far superior to the</em>
+<em>competition</em></p>
+</td>
+<td><p class="first">=</p>
+<p>++</p>
+<p class="last">!!!</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="conclusion">
+<h2>2.6. Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this headline">¶</a></h2>
+<p>PrismTech&#8217;s Vortex OpenSplice product complemented by its tool support
+together encompass the industry&#8217;s most profound expertise on the OMG&#8217;s
+DDS standard and products.</p>
+<p>The result is unrivalled functional DDS coverage and performance in
+large-scale mission-critical systems, fault tolerance in information
+availability, and total lifecycle support including round-trip
+engineering. A complete DDS solution to ensure a customer&#8217;s successful
+adoption of this exciting new technology and to support delivery of the
+highest-quality applications with the shortest time to market in the
+demanding real-time world.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. About Vortex Opensplice</a><ul>
+<li><a class="reference internal" href="#why-vortex-opensplice">2.1. Why Vortex OpenSplice</a><ul>
+<li><a class="reference internal" href="#what-is-vortex-opensplice">2.1.1. What is Vortex OpenSplice?</a></li>
+<li><a class="reference internal" href="#why-use-it">2.1.2. Why Use It?</a></li>
+<li><a class="reference internal" href="#vortex-opensplice-summary">2.1.3. Vortex OpenSplice Summary</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#vortex-opensplice-architecture">2.2. Vortex OpenSplice Architecture</a><ul>
+<li><a class="reference internal" href="#overall">2.2.1. Overall</a></li>
+<li><a class="reference internal" href="#scalability">2.2.2. Scalability</a></li>
+<li><a class="reference internal" href="#configuration">2.2.3. Configuration</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#single-process-library-architecture">2.3. Single Process Library Architecture</a></li>
+<li><a class="reference internal" href="#shared-memory-architecture">2.4. Shared Memory architecture</a></li>
+<li><a class="reference internal" href="#vortex-opensplice-features-and-benefits">2.5. Vortex OpenSplice Features and Benefits</a></li>
+<li><a class="reference internal" href="#conclusion">2.6. Conclusion</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="previous chapter">1. Preface</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="product-info.html"
+                        title="next chapter">3. Product Details</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/about-ospl.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="product-info.html" title="3. Product Details"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

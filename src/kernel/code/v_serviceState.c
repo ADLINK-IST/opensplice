@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -19,7 +27,6 @@
 #include "v_serviceState.h"
 #include "v__serviceState.h"
 #include "v_service.h"
-#include "v_time.h"
 #include "v__observable.h"
 #include "v_entity.h"
 #include "v_event.h"
@@ -61,13 +68,13 @@ v_serviceStateNew(
             }
 
             if ((correctType == FALSE) && (t != NULL)) {
-                OS_REPORT(OS_FATAL, "v_serviceState", 0, "Given type not a class");
+                OS_REPORT(OS_FATAL, "v_serviceState", V_RESULT_ILL_PARAM, "Given type not a class");
                 assert(0);
             } else {
 
                 if (correctType == FALSE) {
                     OS_REPORT(OS_FATAL, "v_serviceState",
-                              0, "Given type does not extend v_serviceState");
+                              V_RESULT_ILL_PARAM, "Given type does not extend v_serviceState");
                     assert(0);
                 }
             }
@@ -78,7 +85,7 @@ v_serviceStateNew(
                 v_object(s)->kernel = k;
             } else {
                 OS_REPORT(OS_ERROR,
-                          "v_serviceStateNew",0,
+                          "v_serviceStateNew",V_RESULT_INTERNAL_ERROR,
                           "Failed to allocate v_serviceState object.");
                 assert(FALSE);
             }
@@ -100,9 +107,11 @@ v_serviceStateInit(
 {
     assert(C_TYPECHECK(serviceState, v_serviceState));
 
-    v_observableInit(v_observable(serviceState),name, NULL, TRUE);
+    v_observableInit(v_observable(serviceState));
 
-    c_lockInit(&serviceState->lock, SHARED_LOCK);
+    serviceState->name = c_stringNew(c_getBase(serviceState),name);
+
+    c_lockInit(c_getBase(serviceState), &serviceState->lock);
     serviceState->stateKind = STATE_NONE;
 }
 
@@ -165,7 +174,7 @@ v_serviceStateChangeState(
       }
       break;
     default:
-      OS_REPORT_1(OS_ERROR,"Kernel::ServiceState",0,
+      OS_REPORT(OS_ERROR,"Kernel::ServiceState",V_RESULT_ILL_PARAM,
                   "Unkown state (%d) kind provided.",stateKind);
       assert(FALSE); /* unknown state */
       break;
@@ -178,8 +187,8 @@ v_serviceStateChangeState(
     c_lockUnlock(&serviceState->lock);
 
     event.kind = V_EVENT_SERVICESTATE_CHANGED;
-    event.source = v_publicHandle(v_public(serviceState));
-    event.userData = NULL;
+    event.source = v_observable(serviceState);
+    event.data = NULL;
     v_observableNotify(v_observable(serviceState),&event);
 
     return changed;
@@ -209,7 +218,7 @@ v_serviceStateGetName(
     assert(C_TYPECHECK(serviceState, v_serviceState));
 
     c_lockRead(&serviceState->lock);
-    name = v_entityName(serviceState);
+    name = serviceState->name;
     c_lockUnlock(&serviceState->lock);
 
     return (const c_char *)name;

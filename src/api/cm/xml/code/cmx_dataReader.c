@@ -1,19 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cmx__factory.h"
 #include "cmx__dataReader.h"
 #include "cmx_dataReader.h"
 #include "cmx__entity.h"
-#include "cmx__qos.h"
+#include "u_observable.h"
 #include "u_entity.h"
 #include "u_subscriber.h"
 #include "u_dataReader.h"
@@ -33,61 +41,31 @@ cmx_dataReaderNew(
     u_subscriber sub;
     u_dataReader rea;
     c_char* result;
-    cmx_entityArg arg;
     u_result ur;
-    cmx_entityKernelArg kernelArg;
-    v_readerQos rqos;
-    q_expr qexpr;
+    cmx_entity ce;
 
+    ur = U_RESULT_UNDEFINED;
     result = NULL;
-    sub = u_subscriber(cmx_entityUserEntity(subscriber));
 
-    if(sub != NULL){
-        kernelArg = cmx_entityKernelArg(os_malloc(C_SIZEOF(cmx_entityKernelArg)));
-        u_entityAction(u_entity(sub),
-                       cmx_entityKernelAction,
-                       (c_voidp)kernelArg);
-
-        if(qos != NULL){
-            rqos = v_readerQos(cmx_qosKernelQosFromKind(qos, K_DATAREADER, c_getBase(c_object(kernelArg->kernel))));
-
-            if(rqos == NULL){
-                rqos = v_readerQosNew(kernelArg->kernel, NULL);
-            }
-        } else {
-            rqos = v_readerQosNew(kernelArg->kernel, NULL);
-        }
+    ce = cmx_entityClaim(subscriber);
+    if(ce != NULL){
+        sub = u_subscriber(ce->uentity);
         if(view != NULL){
-            qexpr = q_parse(view);
-
-            if(qexpr != NULL){
-                rea = u_dataReaderNew(sub, name,  qexpr, NULL, rqos, TRUE);
-                q_dispose(qexpr);
-            } else {
-                rea = NULL;
-                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
-                    "cmx_dataReaderNew: invalid view expression.");
-            }
+            rea = u_dataReaderNew(sub, name,  view, NULL, NULL, FALSE);
         } else {
-            rea = u_dataReaderNew(sub, name,  NULL, NULL, rqos, TRUE);
+            rea = u_dataReaderNew(sub, name,  NULL, NULL, NULL, FALSE);
         }
-        c_free(rqos);
-        os_free(kernelArg);
-
+        cmx_entityRelease(ce);
         if(rea != NULL){
-            cmx_registerEntity(u_entity(rea));
-            arg = cmx_entityArg(os_malloc((os_uint32)(C_SIZEOF(cmx_entityArg))));
-            arg->entity = u_entity(rea);
-            arg->create = FALSE;
-            arg->participant = NULL;
-            arg->result = NULL;
-            ur = u_entityAction(u_entity(rea),
-                                cmx_entityNewFromAction,
-                                (c_voidp)(arg));
-
+            ur = U_RESULT_OK;
+            if ((qos != NULL) && (strlen(qos) > 0)) {
+                ur = u_entitySetXMLQos(u_entity(rea), qos);
+            }
             if(ur == U_RESULT_OK){
-                result = arg->result;
-                os_free(arg);
+                ur = u_entityEnable(u_entity(rea));
+            }
+            if(ur == U_RESULT_OK){
+                ur = cmx_entityRegister(u_object(rea), ce->participant, &result);
             }
         }
     }
@@ -99,6 +77,7 @@ cmx_dataReaderInit(
     v_dataReader entity)
 {
     assert(C_TYPECHECK(entity, v_dataReader));
+    OS_UNUSED_ARG(entity);
 
     return (c_char*)(os_strdup("<kind>DATAREADER</kind>"));
 }
@@ -106,15 +85,17 @@ cmx_dataReaderInit(
 const c_char*
 cmx_dataReaderWaitForHistoricalData(
     const c_char* dataReader,
-    const c_time timeout)
+    const os_duration timeout)
 {
     u_result ur;
     const c_char* result;
+    cmx_entity ce;
     u_dataReader entity;
 
-    entity = u_dataReader(cmx_entityUserEntity(dataReader));
+    ce = cmx_entityClaim(dataReader);
 
-    if(entity != NULL){
+    if(ce != NULL){
+        entity = u_dataReader(ce->uentity);
         ur = u_dataReaderWaitForHistoricalData(entity, timeout);
 
         if(ur == U_RESULT_OK){
@@ -124,6 +105,7 @@ cmx_dataReaderWaitForHistoricalData(
         } else {
             result = CMX_RESULT_FAILED;
         }
+        cmx_entityRelease(ce);
     } else {
         result = CMX_RESULT_ENTITY_NOT_AVAILABLE;
     }

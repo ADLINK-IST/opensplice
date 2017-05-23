@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -34,8 +42,8 @@
 #include "os_time.h"
 #define PRINT_TIME                                        \
     {                                                     \
-       os_time t = os_timeGet();                          \
-       printf("%5d.%3.3d ", t.tv_sec, t.tv_nsec/1000000); \
+       os_timeW t = os_timeWGet();                        \
+       printf(" %"PA_PRItime" ", OS_TIMEW_PRINT(t)); \
     }
 #define __PRINT__(msg) \
     PRINT_TIME         \
@@ -61,7 +69,7 @@
 /* ----------------------------- v_networkReaderEntry ----------------------- */
 
 
-#define NW_ROT_CHAR(val, rot) (((val) << (rot)) + ((val) >> (8-(rot))))
+#define NW_ROT_CHAR(val, rot) ((c_octet) (((val) << (rot)) + ((val) >> (8-(rot)))))
 
 static v_networkHashValue
 v_networkReaderEntryCalculateHashValue(
@@ -82,37 +90,20 @@ v_networkReaderEntryCalculateHashValue(
          * when compiling the NW_ROT_CHAR macro twice in same command :
          * these assignments are deliberatly split over 2 lines as workaround.
          */
-
-        result.h1 = NW_ROT_CHAR(result.h1, 1);
-        result.h1 += NW_ROT_CHAR(*currentPtr, 4);
-
-        result.h2 = NW_ROT_CHAR(result.h2, 2);
-        result.h2 += NW_ROT_CHAR(*currentPtr, 7);
-
-        result.h3 = NW_ROT_CHAR(result.h3, 3);
-        result.h3 += NW_ROT_CHAR(*currentPtr, 1);
-
-        result.h4 = NW_ROT_CHAR(result.h4, 4);
-        result.h4 += NW_ROT_CHAR(*currentPtr, 5);
-
-        currentPtr = &(currentPtr[1]);
+        result.h1 = (c_octet) (NW_ROT_CHAR(result.h1, 1) + NW_ROT_CHAR(*currentPtr, 4));
+        result.h2 = (c_octet) (NW_ROT_CHAR(result.h2, 2) + NW_ROT_CHAR(*currentPtr, 7));
+        result.h3 = (c_octet) (NW_ROT_CHAR(result.h3, 3) + NW_ROT_CHAR(*currentPtr, 1));
+        result.h4 = (c_octet) (NW_ROT_CHAR(result.h4, 4) + NW_ROT_CHAR(*currentPtr, 5));
+        currentPtr++;
     }
 
     currentPtr = topicName;
     while (*currentPtr != '\0') {
-        result.h1 = NW_ROT_CHAR(result.h1, 4);
-        result.h1 += NW_ROT_CHAR(*currentPtr, 7);
-
-        result.h2 = NW_ROT_CHAR(result.h2, 3);
-        result.h2 += NW_ROT_CHAR(*currentPtr, 1);
-
-        result.h3 = NW_ROT_CHAR(result.h3, 2);
-        result.h3 += NW_ROT_CHAR(*currentPtr, 5);
-
-        result.h4 = NW_ROT_CHAR(result.h4, 1);
-        result.h4 += NW_ROT_CHAR(*currentPtr, 4);
-
-        currentPtr = &(currentPtr[1]);
+        result.h1 = (c_octet) (NW_ROT_CHAR(result.h1, 4) + NW_ROT_CHAR(*currentPtr, 7));
+        result.h2 = (c_octet) (NW_ROT_CHAR(result.h2, 3) + NW_ROT_CHAR(*currentPtr, 1));
+        result.h3 = (c_octet) (NW_ROT_CHAR(result.h3, 2) + NW_ROT_CHAR(*currentPtr, 5));
+        result.h4 = (c_octet) (NW_ROT_CHAR(result.h4, 1) + NW_ROT_CHAR(*currentPtr, 4));
+        currentPtr++;
     }
     return result;
 }
@@ -126,7 +117,7 @@ v_networkReaderEntryInit(
     v_networkId networkId,
     c_ulong channelsToConnect,
     v_networkPartitionId networkPartitionId,
-    c_bool isRouting)
+    v_networkRoutingMode routing)
 {
     v_networkReaderEntry found;
 
@@ -135,10 +126,10 @@ v_networkReaderEntryInit(
     entry->group = c_keep(group);
     entry->networkId = networkId;
     entry->channelCountdown = channelsToConnect;
-    c_mutexInit(&entry->channelCountdownMutex, SHARED_MUTEX);
+    c_mutexInit(c_getBase(entry), &entry->channelCountdownMutex);
     entry->networkPartitionId = networkPartitionId;
     entry->hashValue = v_networkReaderEntryCalculateHashValue(entry);
-    entry->isRouting = isRouting;
+    entry->routing = routing;
 
     found = v_networkReaderEntry(v_readerAddEntry(v_reader(reader), v_entry(entry)));
     assert(found == entry);
@@ -154,7 +145,7 @@ v_networkReaderEntryNew(
     v_networkId networkId,
     c_ulong channelsToConnect,
     v_networkPartitionId networkPartitionId,
-    c_bool isRouting)
+    v_networkRoutingMode routing)
 {
     v_kernel kernel;
     v_networkReaderEntry result;
@@ -164,8 +155,7 @@ v_networkReaderEntryNew(
 
     kernel = v_objectKernel(reader);
     result = v_networkReaderEntry(v_objectNew(kernel,K_NETWORKREADERENTRY));
-    v_networkReaderEntryInit(result, reader, group, networkId,
-        channelsToConnect, networkPartitionId, isRouting);
+    v_networkReaderEntryInit(result, reader, group, networkId, channelsToConnect, networkPartitionId, routing);
 
     return result;
 }
@@ -190,10 +180,8 @@ v_networkReaderEntryNotifyConnected(
     if (allChannelsConnected) {
         v_groupAddEntry(v_group(entry->group), v_entry(entry));
         v_groupNotifyAwareness(v_group(entry->group),serviceName,TRUE);
-        v_groupGetHistoricalData(v_group(entry->group), v_entry(entry));
     }
 }
-
 
 c_bool
 v_networkReaderEntryIsRouting(
@@ -201,7 +189,7 @@ v_networkReaderEntryIsRouting(
 {
     assert(C_TYPECHECK(entry, v_networkReaderEntry));
 
-    return entry->isRouting;
+    return entry->routing >= V_NETWORKROUTING_ROUTING;
 }
 
 void
@@ -216,39 +204,44 @@ v_writeResult
 v_networkReaderEntryWrite(
     v_networkReaderEntry entry,
     v_message message,
-    v_networkId writingNetworkId)
+    v_networkId writingNetworkId,
+    c_bool groupRoutingEnabled)
 {
-    v_writeResult result = V_WRITE_SUCCESS;
-    c_bool writeSucceeded;
-    static v_gid zeroAddressee = {0,0,0};
+    static const v_gid zeroAddressee = {0, 0, 0};
 
     assert(C_TYPECHECK(entry, v_networkReaderEntry));
     assert(message != NULL);
 
-    /* First check if there is any remote interest at all */
+    if (!v_networkReader(v_entry(entry)->reader)->remoteActivity) {
+        return V_WRITE_SUCCESS;
+    }
 
-    if (v_networkReader(v_entry(entry)->reader)->remoteActivity) {
-        /* Only forward messages that come from this kernel */
-        if (writingNetworkId == V_NETWORKID_LOCAL || entry->isRouting) {
-            /* OK, message is from this kernel or this is a routing entry. Now
-             * attach the correct fields if needed */
-
-            /* TODO: For networking services that support routing perhaps
-             * messages shouldn't be forwarded to 'self' (e.g., echo cancellation
-             * may be needed). For R&R this modus is fine. */
-            writeSucceeded = v_networkReaderWrite(
-                                  v_networkReader(v_entry(entry)->reader),
-                                  message, entry, 0, message->writerGID,
-                                  FALSE /* no p2p */, zeroAddressee);
-            if (writeSucceeded) {
-                result = V_WRITE_SUCCESS;
-            } else {
-                result = V_WRITE_REJECTED;
-            }
+    if (writingNetworkId != V_NETWORKID_LOCAL)
+    {
+        switch (entry->routing)
+        {
+            case V_NETWORKROUTING_NONE:
+                return V_WRITE_SUCCESS;
+            case V_NETWORKROUTING_FROM_GROUP:
+                if (writingNetworkId == entry->networkId || !groupRoutingEnabled) {
+                    return V_WRITE_SUCCESS;
+                }
+                break;
+            case V_NETWORKROUTING_ROUTING:
+                if (writingNetworkId == entry->networkId) {
+                    return V_WRITE_SUCCESS;
+                }
+                break;
+            case V_NETWORKROUTING_ECHO:
+                break;
         }
     }
 
-    return result;
+    if (v_networkReaderWrite(v_networkReader(v_entry(entry)->reader), message, entry, 0, message->writerGID, FALSE /* no p2p */, zeroAddressee)) {
+        return V_WRITE_SUCCESS;
+    } else {
+        return V_WRITE_REJECTED;
+    }
 }
 
 v_writeResult

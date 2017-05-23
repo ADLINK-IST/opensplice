@@ -6,21 +6,21 @@ using System;
 using System.Collections.Generic;
 
 /**
- * 
- * 
- * @date May 04, 2012 
+ *
+ *
+ * @date May 04, 2012
  */
  namespace test.sacs
  {
 	public class SampleInfo1 {
-	    
+
 	    public const int MAX_DEPTH = 10;
 	    public const int MAX_INSTANCE = 10;
-	    
+
         public const int C_LT = -1;
         public const int C_EQ = 0;
         public const int C_GT = 1;
-        
+
 	    public class InstanceData {
 	        public InstanceStateKind        instanceState;
 	        public ViewStateKind            viewState;
@@ -30,7 +30,7 @@ using System.Collections.Generic;
 	        public LinkedList<SampleData>   samples;
 	        public LinkedList<SampleData>   expected;
 	    };
-	    
+
 	    public class SampleData {
 	        public tst                 data;
 	        public SampleStateKind     SampleState;
@@ -43,35 +43,35 @@ using System.Collections.Generic;
 	        public int                 AbsoluteGenerationRank;
 	        public bool                seen;
 	    };
-	    
+
 	    public interface SampleSelect {
 	        bool matches (SampleData sample, int arg);
 	    }
-	    
+
 	    public class FieldValueGreaterOrEqual : SampleSelect {
 	        public bool matches (SampleData sample, int arg)
 	        {
 	            bool match = false;
-	
+
 	            if ( sample.data.long_3 >= arg ) {
 	                match = true;
 	            }
 	            return match;
 	        }
 	    }
-	    
+
 	    public class FieldValueLessOrEqual : SampleSelect {
 	        public bool matches (SampleData sample, int arg)
 	        {
 	            bool match = false;
-	
+
 	            if ( sample.data.long_3 <= arg ) {
 	                match = true;
 	            }
 	            return match;
 	        }
 	    }
-	    
+
 	    private TestFramework tfw;
 	    private int domainId = 0;
 	    private DomainParticipantFactory factory;
@@ -91,11 +91,11 @@ using System.Collections.Generic;
 	    private FieldValueLessOrEqual fieldValueLessOrEqual = new FieldValueLessOrEqual();
 	    private InstanceData[] instanceDataList = new InstanceData[MAX_INSTANCE];
 	    private tst[] testData = new tst[MAX_INSTANCE];
-	        
+
 	    public SampleInfo1() {
 	        tfw = new TestFramework();
 	    }
-	    
+
 	    static int timeCompare(Time t1, Time t2)
 	    {
 	        if (t1.Sec < t2.Sec) return C_LT;
@@ -104,11 +104,11 @@ using System.Collections.Generic;
 	        if (t1.NanoSec > t2.NanoSec) return C_GT;
 	        return C_EQ;
 	    }
-	    
+
 	    void reportResultCode(ReturnCode code)
 	    {
 	        string msg;
-	
+
 	        switch ( code ) {
 	            case ReturnCode.Ok:
 	                msg = "result is OK";
@@ -150,16 +150,16 @@ using System.Collections.Generic;
 	                msg = "result is UNKNOWN";
 	                break;
 	        }
-	
+
 	        tfw.TestMessage(TestMessage.Note, msg);
 	    }
-	
+
 	    private bool checkSampleInfo (SampleInfo info, SampleData reference)
 	    {
 	        bool equal = true;
-	
+
 	        if ( info.SampleState != reference.SampleState ) {
-	            Console.Write(string.Format("                : " + 
+	            Console.Write(string.Format("                : " +
 	                   "received info.SampleState = {0}   " +
 	                   "expected reference.SampleState = {1}\n",
 	                   info.SampleState,
@@ -189,7 +189,7 @@ using System.Collections.Generic;
 	            equal = false;
 	        }
 	        if ( info.DisposedGenerationCount != reference.DisposedGenerationCount ) {
-	            Console.Write(string.Format("                : " + 
+	            Console.Write(string.Format("                : " +
 	                   "received info.DisposedGenerationCount = {0} " +
 	                   "expected reference.DisposedGenerationCount = {1}\n",
 	                   info.DisposedGenerationCount,
@@ -247,11 +247,11 @@ using System.Collections.Generic;
 	                         "SampleInfo: SourceTimestamp > ReceptionTimestamp");
 	            equal = false;
 	        }
-	        
+
 	        return equal;
 	    }
-	
-	    
+
+
 	    private void initialiseInstanceData ()
 	    {
 	        for ( int i = 0; i < MAX_INSTANCE; i++ ) {
@@ -264,22 +264,22 @@ using System.Collections.Generic;
 	            instanceDataList[i].expected = null;
 	            instanceDataList[i].numSamples = 0;
 	        }
-	    } 
-	       
+	    }
+
 	    private void addSample (tst data)
 	    {
 	        InstanceData instanceData;
 	        SampleData   sampleData = new SampleData();
-	
+
 	        instanceData = instanceDataList[data.long_1];
-	
+
 	        sampleData.data = new tst();
 	        sampleData.data.long_1 = data.long_1;
-	        sampleData.data.long_2 = data.long_2; 
+	        sampleData.data.long_2 = data.long_2;
 	        sampleData.data.long_3 = data.long_3;
-	
+
 	        sampleData.SampleState = SampleStateKind.NotRead;
-	
+
 	        if ( instanceData.samples.Count > 0 ) {
 	            if ( instanceData.instanceState != InstanceStateKind.Alive ) {
 	                instanceData.viewState = ViewStateKind.New;
@@ -287,12 +287,12 @@ using System.Collections.Generic;
 	                instanceData.viewState = ViewStateKind.NotNew;
 	            }
 	        }
-	
+
 	        instanceData.instanceState = InstanceStateKind.Alive;
-	
+
 	        sampleData.DisposedGenerationCount   = instanceData.DisposedGenerationCount;
 	        sampleData.NoWritersGenerationCount = instanceData.NoWritersGenerationCount;
-	
+
 	        instanceData.numSamples++;
 	        if ( instanceData.numSamples > MAX_DEPTH ) {
 	            instanceData.samples.RemoveLast();
@@ -300,126 +300,126 @@ using System.Collections.Generic;
 	        }
 	        instanceData.samples.AddFirst(sampleData);
 	    }
-	    
+
 	    private void markRead (tst[] data, int len)
 	    {
 	        for ( int i = 0; i < len; i++ ) {
 	            InstanceData instanceData = null;
 	            SampleData sampleData = null;
-	
+
 	            instanceData = instanceDataList[data[i].long_1];
-	
+
 	            instanceData.viewState = ViewStateKind.NotNew;
-	
+
 	            foreach (SampleData index in instanceData.samples) {
 	                if (sampleCompare(index.data, data[i]) == C_EQ) {
 	                    sampleData = index;
 	                    break;
 	                }
 	            }
-	            
+
 	            if ( sampleData != null) {
 	                sampleData.SampleState = SampleStateKind.Read;
 	            }
 	        }
 	    }
-	
+
 	    private void markDisposedAction(SampleData sample)
 	    {
 	        sample.InstanceState = InstanceStateKind.NotAliveDisposed;
 	    }
-	
+
 	    private void markDisposed (int i)
 	    {
 	        InstanceData instanceData;
-	
+
 	        instanceData = instanceDataList[i];
-	
+
 	        instanceData.instanceState = InstanceStateKind.NotAliveDisposed;
 	        instanceData.DisposedGenerationCount++;
-	
+
 	        foreach (SampleData sampleData in instanceData.samples) {
 	            markDisposedAction(sampleData);
 	        }
 	    }
-	    
+
 	    private void markNoWriterAction(SampleData sample)
 	    {
 	        sample.InstanceState = InstanceStateKind.NotAliveNoWriters;
 	    }
-	
+
 	    private void markNoWriter (int i)
 	    {
 	        InstanceData instanceData;
-	
+
 	        instanceData = instanceDataList[i];
-	
+
 	        instanceData.instanceState = InstanceStateKind.NotAliveNoWriters;
 	        instanceData.NoWritersGenerationCount++;
-	
+
 	        foreach (SampleData sampleData in instanceData.samples) {
 	            markNoWriterAction(sampleData);
 	        }
 	    }
-	
-	    
+
+
 	    private ReturnCode writeSample (ItstDataWriter writer, tst data)
 	    {
 	        ReturnCode result;
-	
+
 	        result = writer.Write(data, InstanceHandle.Nil);
-	
+
 	        if ( result == ReturnCode.Ok ) {
 	            addSample(data);
 	        }
 	        return result;
 	    }
-	    
+
 	    private ReturnCode disposeSample (ItstDataWriter writer, tst data)
 	    {
 	        ReturnCode result;
-	
+
 	        result = writer.Dispose(data, InstanceHandle.Nil);
-	
+
 	        if ( result == ReturnCode.Ok ) {
 	            markDisposed(data.long_1);
 	        }
 	        return result;
 	    }
-	
-	    
+
+
 	    public class GenerationRankActionArg {
 	        public int mrsCount;
 	        public int mrsicCount;
 	    };
-	
-	    
+
+
 	    private void determineGenerationRankAction(SampleData sample, GenerationRankActionArg a)
 	    {
 	        int count;
-	
+
 	        if (sample != null) {
 	            count = sample.DisposedGenerationCount + sample.NoWritersGenerationCount;
 	            sample.GenerationRank = a.mrsicCount - count;
 	            sample.AbsoluteGenerationRank = a.mrsCount - count;
 	        }
 	    }
-	    
+
 	    private void determineGenerationRank (InstanceData instanceData, SampleData mrs, SampleData mrsic)
 	    {
 	        GenerationRankActionArg arg = new GenerationRankActionArg();
-	
+
 	        if ((instanceData != null) && (mrs != null) && (mrsic != null)) {
 	            arg.mrsCount   = mrs.DisposedGenerationCount + mrs.NoWritersGenerationCount;
 	            arg.mrsicCount = mrsic.DisposedGenerationCount + mrsic.NoWritersGenerationCount;
-	
+
 	            foreach (SampleData sampleData in instanceData.expected) {
 	                determineGenerationRankAction(sampleData, arg);
 	            }
 	        }
 	    }
-	
-	    
+
+
 	    public class SelectSampleActionArg {
 	        public SampleSelect  matches;
 	        public InstanceData instanceData;
@@ -428,7 +428,7 @@ using System.Collections.Generic;
 	        public int rank;
 	        public int arg;
 	    };
-	    
+
 	    private void selectSampleAction(SampleData sampleData, SelectSampleActionArg a)
 	    {
 	        if (sampleData != null) {
@@ -449,11 +449,11 @@ using System.Collections.Generic;
 	            }
 	        }
 	    }
-	    
+
 	    private void selectSamples (SampleSelect matches, int arg)
 	    {
 	        SelectSampleActionArg actionArg = new SelectSampleActionArg();
-	
+
 	        for ( int i = 0; i < MAX_INSTANCE; i++ ) {
 	            actionArg.matches = matches;
 	            actionArg.instanceData = instanceDataList[i];
@@ -462,17 +462,17 @@ using System.Collections.Generic;
 	            actionArg.mrsic = null;
 	            actionArg.rank = 0;
 	            actionArg.arg = arg;
-	            
+
 	            foreach (SampleData sampleData in instanceDataList[i].samples) {
 	                selectSampleAction(sampleData, actionArg);
 	            }
-	
+
 	            determineGenerationRank(actionArg.instanceData,
 	                                    actionArg.mrs,
 	                                    actionArg.mrsic);
 	        }
 	    }
-	    
+
 	    private bool
 	    markSeenAction(SampleData sample, bool seen)
 	    {
@@ -481,12 +481,12 @@ using System.Collections.Generic;
 	        }
 	        return seen;
 	    }
-	
-	    
+
+
 	    private bool allSamplesReceived ()
 	    {
 	        bool seen = true;
-	
+
 	        for ( int i = 0; seen && (i < MAX_INSTANCE); i++ ) {
 	            foreach (SampleData sampleData in instanceDataList[i].expected) {
 	                seen = markSeenAction(sampleData, seen);
@@ -494,16 +494,16 @@ using System.Collections.Generic;
 	        }
 	        return seen;
 	    }
-	
-	    
+
+
 	    private bool checkReceivedInstanceSample (tst[] data, SampleInfo[] info, int len)
 	    {
 	        SampleData sampleData = null;
 	        bool noError = true;
-	
+
 	        for ( int i = 0; noError && (i < len); i++ ) {
 	            int x = data[i].long_1;
-	
+
 	            if ( x < MAX_INSTANCE ) {
 	                if ( instanceDataList[x].expected != null) {
 	                    foreach (SampleData index in instanceDataList[x].expected) {
@@ -525,18 +525,18 @@ using System.Collections.Generic;
 	                noError = false;
 	            }
 	        }
-	
+
 	        if ( noError ) {
 	            noError = allSamplesReceived();
 	        }
-	
+
 	        return noError;
 	    }
-	    
+
 	    private int sampleCompare (tst sample1, tst sample2)
 	    {
 	        int result;
-	
+
 	        if ( (sample1.long_1 == sample2.long_1) &&
 	             (sample1.long_2 == sample2.long_2) &&
 	             (sample1.long_3 == sample2.long_3) ) {
@@ -560,16 +560,16 @@ using System.Collections.Generic;
 	                result = C_GT;
 	            }
 	        }
-	
+
 	        return result;
 	    }
-	
-	    
+
+
 	    private void init()
 	    {
 	        tstTypeSupport typeSupport;
 	        string errMsg = "Unknown error";
-	        
+
 	        for ( int i = 0; i < MAX_INSTANCE; i++ ) {
 	            testData[i] = new tst();
 	            testData[i].long_1 = i;
@@ -577,8 +577,8 @@ using System.Collections.Generic;
 	            testData[i].long_3 = 0;
 	        }
 	        initialiseInstanceData();
-	
-	        
+
+
 	        /**
 	         * @addtogroup group_dds1290
 	         *
@@ -610,39 +610,39 @@ using System.Collections.Generic;
 	        tfw.TestStart ("sacs_sampleInfo_000","SampleInfo","initialization");
 	        tfw.TestTitle ("Test SampleInfo initialization.");
 	        tfw.TestPurpose ("Test SampleInfo initialization.");
-	
+
 	        factory = DomainParticipantFactory.Instance;
-	        
+
 	        if(factory == null){
 	            errMsg = "DomainParticipantFactory could NOT be resolved";
 	            proceed = false;
 	        } else {
 	            participant = factory.CreateParticipant(domainId);
-	
+
 	            if(participant == null){
 	                errMsg = "DomainParticipant could NOT be created";
 	                proceed = false;
 	            } else {
 	                typeSupport = new tstTypeSupport();
-	
+
 	                result = typeSupport.RegisterType(participant, "tst");
 	                if(result == ReturnCode.Ok){
 	                    topic = participant.CreateTopic("my_topic", "tst");
-	
+
 	                    if(topic != null){
 	                        subscriber = participant.CreateSubscriber();
-	
+
 	                        if(subscriber != null){
 	                            subscriber.GetDefaultDataReaderQos(ref drQos);
-	                            
+
 	                            if(drQos != null){
 	                                drQos.History.Kind  = HistoryQosPolicyKind.KeepLastHistoryQos;
 	                                drQos.History.Depth = MAX_DEPTH;
 	                                reader = subscriber.CreateDataReader(topic, drQos) as tstDataReader;
-	    
+
 	                                if(reader != null){
 	                                    publisher = participant.CreatePublisher();
-	    
+
 	                                    if(publisher != null){
 	                                        result = publisher.GetDefaultDataWriterQos(ref dwQos);
 	                                        if(dwQos != null && result == ReturnCode.Ok){
@@ -661,7 +661,7 @@ using System.Collections.Generic;
 	                                        errMsg = "Publisher could NOT be created";
 	                                        proceed = false;
 	                                    }
-	    
+
 	                                } else {
 	                                    errMsg = "DataReader could NOT be created";
 	                                    proceed = false;
@@ -684,7 +684,7 @@ using System.Collections.Generic;
 	                }
 	            }
 	        }
-	        
+
 	        if(proceed == true){
 	            tfw.TestResult("Initialization OK", "Initialization OK", TestVerdict.Pass, TestVerdict.Pass);
 	            tfw.TestFinish();
@@ -694,13 +694,13 @@ using System.Collections.Generic;
 	        }
 	        /*- END OF INITIALIZATION --------------------------------------------------*/
 	    }
-	    
+
 	    private void runTests() {
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_001","tc_sampleinfo","DataReader.read");
+	        tfw.TestStart ("sacs_sampleinfo_001","SampleInfo","DataReader.read");
 	        tfw.TestTitle ("read data when no samples available");
 	        tfw.TestPurpose ("Check that the read returns NO_DATA");
-	
+
 	        if ( reader != null) {
 	            result = reader.Read(ref dataList, ref infoList, Length.Unlimited);
 	            if ( result == ReturnCode.NoData ) {
@@ -715,11 +715,11 @@ using System.Collections.Generic;
 	            tfw.TestResult ("precondition ok",
 	                                "precondition failed",TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
-	
+
 	        if ( writer != null) {
 	            for ( int i = 0; proceed && (i < MAX_INSTANCE); i++ ) {
 	                result = writeSample(writer, testData[i]);
@@ -734,12 +734,12 @@ using System.Collections.Generic;
 	                selectSamples(fieldValueGreaterOrEqual, 0);
 	            }
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_002","tc_sampleinfo","DataReader.read");
+	        tfw.TestStart ("sacs_sampleinfo_002","SampleInfo","DataReader.read");
 	        tfw.TestTitle ("read data when one sample per instance is available");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            result = reader.Read(ref dataList, ref infoList, Length.Unlimited);
 	            if ( result == ReturnCode.Ok ) {
@@ -761,19 +761,19 @@ using System.Collections.Generic;
 	            tfw.TestResult ("precondition ok",
 	                                "precondition failed",TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
 	        {
 	            selectSamples(fieldValueGreaterOrEqual, 0);
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_003","tc_sampleinfo","DataReader.read");
+	        tfw.TestStart ("sacs_sampleinfo_003","SampleInfo","DataReader.read");
 	        tfw.TestTitle ("read data second time when one sample per instance is available");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            result = reader.Read(ref dataList, ref infoList, Length.Unlimited);
 	            if ( result == ReturnCode.Ok ) {
@@ -795,9 +795,9 @@ using System.Collections.Generic;
 	            tfw.TestResult ("precondition ok",
 	                                "precondition failed",TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
 	        if ( writer != null) {
 	            for ( int i = 0; proceed && (i < MAX_INSTANCE); i++ ) {
@@ -813,12 +813,12 @@ using System.Collections.Generic;
 	                selectSamples(fieldValueGreaterOrEqual, 0);
 	            }
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_004","tc_sampleinfo","DataReader.read");
+	        tfw.TestStart ("sacs_sampleinfo_004","SampleInfo","DataReader.read");
 	        tfw.TestTitle ("read data when two samples per instance are available");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            result = reader.Read(ref dataList, ref infoList, Length.Unlimited);
 	            if ( result == ReturnCode.Ok ) {
@@ -840,9 +840,9 @@ using System.Collections.Generic;
 	            tfw.TestResult ("precondition ok",
 	                                "precondition failed",TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
 	        if ( writer != null) {
 	            for ( int j = 0; proceed && (j < MAX_DEPTH); j++ ) {
@@ -860,12 +860,12 @@ using System.Collections.Generic;
 	                selectSamples(fieldValueGreaterOrEqual, 0);
 	            }
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_005","tc_sampleinfo","DataReader.read");
+	        tfw.TestStart ("sacs_sampleinfo_005","SampleInfo","DataReader.read");
 	        tfw.TestTitle ("read data when a number of samples per instance is available");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            result = reader.Read(ref dataList, ref infoList, Length.Unlimited);
 	            if ( result == ReturnCode.Ok ) {
@@ -887,23 +887,23 @@ using System.Collections.Generic;
 	            tfw.TestResult ("precondition ok",
 	                                "precondition failed",TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
 	        {
 	            selectSamples(fieldValueLessOrEqual, 5);
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_006","tc_sampleinfo","DataReader.read_w_condition");
+	        tfw.TestStart ("sacs_sampleinfo_006","SampleInfo","DataReader.read_w_condition");
 	        tfw.TestTitle ("read a selection of the samples using a query condition");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            string[] prms = new string[0];
 	            IQueryCondition query;
-	
+
 	            query = reader.CreateQueryCondition(SampleStateKind.Any, ViewStateKind.Any, InstanceStateKind.Any, "long_3 <= 5", prms);
 	            if ( query != null) {
 	                result = reader.ReadWithCondition(ref dataList, ref infoList, Length.Unlimited, query);
@@ -931,7 +931,7 @@ using System.Collections.Generic;
 	            tfw.TestResult ("precondition ok",
 	                                "precondition failed",TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
 	        /**************************************************************************/
 	        if ( writer != null) {
@@ -948,12 +948,12 @@ using System.Collections.Generic;
 	                selectSamples(fieldValueGreaterOrEqual, 0);
 	            }
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_007","tc_sampleinfo","DataReader.read");
+	        tfw.TestStart ("sacs_sampleinfo_007","SampleInfo","DataReader.read");
 	        tfw.TestTitle ("read data when the instances are disposed");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            result = reader.Read(ref dataList, ref infoList, Length.Unlimited);
 	            if ( result == ReturnCode.Ok ) {
@@ -975,23 +975,23 @@ using System.Collections.Generic;
 	            tfw.TestResult ("precondition ok",
 	                                "precondition failed",TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
 	        {
 	            selectSamples(fieldValueLessOrEqual, 5);
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_008","tc_sampleinfo","DataReader.read_w_condition");
+	        tfw.TestStart ("sacs_sampleinfo_008","SampleInfo","DataReader.read_w_condition");
 	        tfw.TestTitle ("read a selection of the samples using a query condition when the instances are not ALIVE");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            string[] prms = new string[0];
 	            IQueryCondition query;
-	
+
 	            query = reader.CreateQueryCondition(SampleStateKind.Any, ViewStateKind.Any, InstanceStateKind.Any, "long_3 <= 5", prms);
 	            if ( query != null) {
 	                result = reader.ReadWithCondition(ref dataList, ref infoList, Length.Unlimited, query);
@@ -1019,9 +1019,9 @@ using System.Collections.Generic;
 	            tfw.TestResult ("precondition ok",
 	                                "precondition failed",TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
 	        if ( writer != null) {
 	            for ( int i = 0; proceed && (i < MAX_INSTANCE); i++ ) {
@@ -1037,12 +1037,12 @@ using System.Collections.Generic;
 	                selectSamples(fieldValueGreaterOrEqual, 0);
 	            }
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_009","tc_sampleinfo","DataReader.read");
+	        tfw.TestStart ("sacs_sampleinfo_009","SampleInfo","DataReader.read");
 	        tfw.TestTitle ("read data when the instances are alive again");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            result = reader.Read(ref dataList, ref infoList, Length.Unlimited);
 	            if ( result == ReturnCode.Ok ) {
@@ -1068,23 +1068,23 @@ using System.Collections.Generic;
 	                                "precondition failed",
 	                                 TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
 	        {
 	            selectSamples(fieldValueLessOrEqual, 5);
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_010","tc_sampleinfo","DataReader.read_w_condition");
+	        tfw.TestStart ("sacs_sampleinfo_010","SampleInfo","DataReader.read_w_condition");
 	        tfw.TestTitle ("read a selection of the samples using a query condition when the instances are alive");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            string[] prms = new string[0];
 	            IQueryCondition query;
-	
+
 	            query = reader.CreateQueryCondition(SampleStateKind.Any, ViewStateKind.Any, InstanceStateKind.Any, "long_3 <= 5", prms);
 	            if ( query != null) {
 	                result = reader.ReadWithCondition(ref dataList, ref infoList, Length.Unlimited, query);
@@ -1119,9 +1119,9 @@ using System.Collections.Generic;
 	                                "precondition failed",
 	                                 TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
 	        if ( writer != null) {
 	            for ( int i = 0; proceed && (i < MAX_INSTANCE); i++ ) {
@@ -1137,12 +1137,12 @@ using System.Collections.Generic;
 	                selectSamples(fieldValueGreaterOrEqual, 0);
 	            }
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_011","tc_sampleinfo","DataReader.read");
+	        tfw.TestStart ("sacs_sampleinfo_011","SampleInfo","DataReader.read");
 	        tfw.TestTitle ("read data when the instances are alive again");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            result = reader.Read(ref dataList, ref infoList, Length.Unlimited);
 	            if ( result == ReturnCode.Ok ) {
@@ -1168,9 +1168,9 @@ using System.Collections.Generic;
 	                                "precondition failed",
 	                                 TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
 	        if ( writer != null) {
 	            for ( int i = 0; proceed && (i < MAX_INSTANCE); i++ ) {
@@ -1186,12 +1186,12 @@ using System.Collections.Generic;
 	                selectSamples(fieldValueGreaterOrEqual, 0);
 	            }
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_012","tc_sampleinfo","DataReader.read");
+	        tfw.TestStart ("sacs_sampleinfo_012","SampleInfo","DataReader.read");
 	        tfw.TestTitle ("read data when the instances are alive again");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            result = reader.Read(ref dataList, ref infoList, Length.Unlimited);
 	            if ( result == ReturnCode.Ok ) {
@@ -1217,9 +1217,9 @@ using System.Collections.Generic;
 	                                "precondition failed",
 	                                 TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
 	        if ( writer != null) {
 	            result = publisher.DeleteDataWriter(writer);
@@ -1237,12 +1237,12 @@ using System.Collections.Generic;
 	        } else {
 	            proceed = false;
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_013","tc_sampleinfo","DataReader.read");
+	        tfw.TestStart ("sacs_sampleinfo_013","SampleInfo","DataReader.read");
 	        tfw.TestTitle ("read data when the instances have become not_alive_no_writers again");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            result = reader.Read(ref dataList, ref infoList, Length.Unlimited);
 	            if ( result == ReturnCode.Ok ) {
@@ -1268,9 +1268,9 @@ using System.Collections.Generic;
 	                                "precondition failed",
 	                                 TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	        /**************************************************************************/
 	        if ( proceed ) {
 	            writer = publisher.CreateDataWriter(topic, dwQos, null, 0) as tstDataWriter;
@@ -1278,7 +1278,7 @@ using System.Collections.Generic;
 	                proceed = false;
 	            }
 	        }
-	
+
 	        if ( writer != null) {
 	            for ( int i = 0; proceed && (i < MAX_INSTANCE); i++ ) {
 	                result = writeSample(writer, testData[i]);
@@ -1293,12 +1293,12 @@ using System.Collections.Generic;
 	                selectSamples(fieldValueGreaterOrEqual, 0);
 	            }
 	        }
-	
+
 	        /**************************************************************************/
-	        tfw.TestStart ("sacs_sampleinfo_014","tc_sampleinfo","DataReader.read");
+	        tfw.TestStart ("sacs_sampleinfo_014","SampleInfo","DataReader.read");
 	        tfw.TestTitle ("read data when the instances are alive again");
 	        tfw.TestPurpose ("Check that the read returns the correct SampleInfo");
-	
+
 	        if ( proceed && reader != null) {
 	            result = reader.Read(ref dataList, ref infoList, Length.Unlimited);
 	            if ( result == ReturnCode.Ok ) {
@@ -1320,11 +1320,11 @@ using System.Collections.Generic;
 	            tfw.TestResult ("precondition ok",
 	                                "precondition failed",TestVerdict.Unresolved,TestVerdict.Unresolved);
 	        }
-	
+
 	        tfw.TestFinish();
-	
+
 	    }
-	    
+
 	    private void deinit()
 	    {
 	        /**
@@ -1347,19 +1347,19 @@ using System.Collections.Generic;
 	         * If the call to delete_contained_entities is not successful, the test fails.
 	         */
 	        /*- DEINITIALIZATION -------------------------------------------------------*/
-	        tfw.TestStart  ("sacs_invalid_data_999","invalid_data","deinitialization");
+	        tfw.TestStart  ("sacs_sampleinfo_999","invalid_data","deinitialization");
 	        tfw.TestTitle  ("Test deinitialization.");
 	        tfw.TestPurpose("Test deinitialization.");
 	        /*--------------------------------------------------------------------------*/
-	
+
 	        if(proceed == true){
 	            if(participant != null){
-	
+
 	                result = participant.DeleteContainedEntities();
 	                if (result == ReturnCode.Ok){
 	                   factory.DeleteParticipant(participant);
 	                }
-	
+
 	                if(result == ReturnCode.Ok){
 	                    tfw.TestResult("Deinitialization OK", "Deinitialization OK", TestVerdict.Pass, TestVerdict.Pass);
 	                } else {
@@ -1373,10 +1373,10 @@ using System.Collections.Generic;
 	            tfw.TestResult("OK", "Unresolved", TestVerdict.Pass, TestVerdict.Unresolved);
 	        }
 	        tfw.TestFinish();
-	
+
 	        /*- DEINITIALIZATION -------------------------------------------------------*/
 	    }
-	    
+
 	    public void runAll()
 	    {
 	        init();

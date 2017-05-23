@@ -1,0 +1,1955 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>11. Appendix B &mdash; Modeling Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.5.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Modeling Guide" href="index.html" />
+    <link rel="next" title="12. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="10. Appendix A" href="appendixa.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="12. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="appendixa.html" title="10. Appendix A"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="appendix-b">
+<span id="id1"></span><h1>11. Appendix B<a class="headerlink" href="#appendix-b" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p>This appendix contains the example, user-written C++ source code
+included with the Vortex OpenSplice Modeler <tt class="docutils literal"><span class="pre">Chatroom</span></tt> C++ example.
+The Chatroom system is the example used in the
+<a class="reference internal" href="tutorial.html#tutorial"><em>Tutorial</em></a>.</p>
+<p>There are two different versions of some of the Chatroom’s C++ modules,
+one version for Linux, the other for Windows, in order to accommodate
+differences between these platforms.</p>
+<p>The source code is given in the following order:</p>
+<p><strong>Chatter Application:</strong></p>
+<blockquote>
+<div><p><a class="reference internal" href="#chatterapplication-cpp-linux-version">ChatterApplication.cpp, Linux Version</a></p>
+<p><a class="reference internal" href="#chatterapplication-cpp-windows-version">ChatterApplication.cpp, Windows Version</a></p>
+</div></blockquote>
+<p><strong>MessageBoard Application:</strong></p>
+<blockquote>
+<div><p><a class="reference internal" href="#messageboardapplication-cpp-linux-version">MessageBoardApplication.cpp, Linux Version</a></p>
+<p><a class="reference internal" href="#messageboardapplication-cpp-windows-version">MessageBoardApplication.cpp, Windows Version</a></p>
+<p><a class="reference internal" href="#chatmessagedatareaderlistenerimpl-h-linux-version">ChatMessageDataReaderListenerImpl.h, Linux version</a></p>
+<p><a class="reference internal" href="#chatmessagedatareaderlistenerimpl-h-windows-version">ChatMessageDataReaderListenerImpl.h, Windows version</a></p>
+<p><a class="reference internal" href="#chatmessagedatareaderlistenerimpl-cpp">ChatMessageDataReaderListenerImpl.cpp</a></p>
+<p><a class="reference internal" href="#namedmessagedatareaderlistenerimpl-h-linux-version">NamedMessageDataReaderListenerImpl.h, Linux Version</a></p>
+<p><a class="reference internal" href="#namedmessagedatareaderlistenerimpl-h-windows-version">NamedMessageDataReaderListenerImpl.h, Windows Version</a></p>
+<p><a class="reference internal" href="#namedmessagedatareaderlistenerimpl-cpp">NamedMessageDataReaderListenerImpl.cpp</a></p>
+</div></blockquote>
+<p><strong>UserLoad Application:</strong></p>
+<blockquote>
+<div><p><a class="reference internal" href="#userloadapplication-cpp-linux-version">UserLoadApplication.cpp, Linux Version</a></p>
+<p><a class="reference internal" href="#userloadapplication-cpp-windows-version">UserLoadApplication.cpp, Windows Version</a></p>
+<p><a class="reference internal" href="#checkstatus-h">CheckStatus.h</a></p>
+<p><a class="reference internal" href="#checkstatus-cpp">CheckStatus.cpp</a></p>
+</div></blockquote>
+<div class="section" id="chatroom-example-c-source-code">
+<span id="appx-b-cpp"></span><span id="id2"></span><h2>11.1. Chatroom Example, C++ Source Code<a class="headerlink" href="#chatroom-example-c-source-code" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="chatter-application">
+<h3>11.1.1. Chatter Application<a class="headerlink" href="#chatter-application" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="chatterapplication-cpp-linux-version">
+<h4>11.1.1.1. ChatterApplication.cpp, Linux Version<a class="headerlink" href="#chatterapplication-cpp-linux-version" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">ChatterApplication</span><span class="p">.</span><span class="n">cpp</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    ChatterApplication.cpp</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Example for the C++  programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the &#39;ChatterApplication&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+<span class="cp">#include &lt;string&gt;</span>
+<span class="cp">#include &lt;sstream&gt;</span>
+<span class="cp">#include &lt;iostream&gt;</span>
+<span class="cp">#include &lt;unistd.h&gt;</span>
+
+<span class="cp">#include &quot;ChatterApplication.h&quot;</span>
+<span class="cp">#include &quot;CheckStatus.h&quot;</span>
+
+<span class="cp">#define NUM_MSG 10</span>
+<span class="cp">#define TERMINATION_MESSAGE -1</span>
+
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">DDS</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">Chat</span><span class="p">;</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+   <span class="cm">/* Sample definitions */</span>
+   <span class="n">ChatMessage</span> <span class="o">*</span><span class="n">msg</span><span class="p">;</span> <span class="cm">/* Example on Heap */</span>
+   <span class="n">NameService</span> <span class="n">ns</span><span class="p">;</span> <span class="cm">/* Example on Stack */</span>
+
+   <span class="cm">/* DDS Identifiers */</span>
+   <span class="n">InstanceHandle_t</span> <span class="n">userHandle</span><span class="p">;</span>
+   <span class="n">ReturnCode_t</span> <span class="n">status</span><span class="p">;</span>
+
+   <span class="cm">/* Others */</span>
+   <span class="kt">int</span> <span class="n">ownID</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+   <span class="kt">char</span> <span class="o">*</span><span class="n">chatterName</span><span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+   <span class="n">ostringstream</span> <span class="n">buf</span><span class="p">;</span>
+
+   <span class="cm">/* Initialize the application */</span>
+   <span class="n">ChatterApplicationWrapperImplementation</span> <span class="n">chatterApplication</span><span class="p">;</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="n">chatterApplication</span><span class="p">.</span><span class="n">start</span><span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Exception occurred while starting the application:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">();</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Type-specific DDS entities */</span>
+   <span class="n">NameServiceDataWriter_ptr</span> <span class="n">nameServer</span> <span class="o">=</span>
+         <span class="n">chatterApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getPublisherWrapper</span><span class="p">()</span>
+            <span class="o">-&gt;</span><span class="n">getNameServiceDataWriterWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getDataWriter</span><span class="p">();</span>
+   <span class="n">ChatMessageDataWriter_ptr</span> <span class="n">talker</span> <span class="o">=</span>
+         <span class="n">chatterApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getPublisherWrapper</span><span class="p">()</span>
+            <span class="o">-&gt;</span><span class="n">getChatMessageDataWriterWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getDataWriter</span><span class="p">();</span>
+
+   <span class="cm">/* Options: Chatter [ownID [name]] */</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">istringstream</span> <span class="n">args</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+      <span class="n">args</span> <span class="o">&gt;&gt;</span> <span class="n">ownID</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+         <span class="n">chatterName</span> <span class="o">=</span> <span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+      <span class="p">}</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Initialize the NameServer attributes */</span>
+   <span class="n">ns</span><span class="p">.</span><span class="n">userID</span> <span class="o">=</span> <span class="n">ownID</span><span class="p">;</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">chatterName</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">ns</span><span class="p">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">string_dup</span><span class="p">(</span><span class="n">chatterName</span><span class="p">);</span>
+   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">buf</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Chatter &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">ownID</span><span class="p">;</span>
+      <span class="n">ns</span><span class="p">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">string_dup</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">()</span> <span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Write the user-information into the system</span>
+<span class="cm">      (registering the instance implicitly). */</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">write</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">HANDLE_NIL</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;NameServiceDataWriter::write&quot;</span><span class="p">);</span>
+
+   <span class="cm">/* Initialize the chat messages on Heap. */</span>
+   <span class="n">msg</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ChatMessage</span><span class="p">();</span>
+   <span class="n">checkHandle</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s">&quot;new ChatMessage&quot;</span><span class="p">);</span>
+   <span class="n">msg</span><span class="o">-&gt;</span><span class="n">userID</span> <span class="o">=</span> <span class="n">ownID</span><span class="p">;</span>
+   <span class="n">msg</span><span class="o">-&gt;</span><span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+   <span class="n">buf</span><span class="p">.</span><span class="n">str</span><span class="p">(</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">)</span> <span class="p">);</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">ownID</span> <span class="o">==</span> <span class="n">TERMINATION_MESSAGE</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">buf</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Termination message.&quot;</span><span class="p">;</span>
+   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">buf</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Hi there, I will send you &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">NUM_MSG</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; more messages.&quot;</span><span class="p">;</span>
+   <span class="p">}</span>
+   <span class="n">msg</span><span class="o">-&gt;</span><span class="n">content</span> <span class="o">=</span> <span class="n">string_dup</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">()</span> <span class="p">);</span>
+   <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Writing message: </span><span class="se">\&quot;</span><span class="s">&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">msg</span><span class="o">-&gt;</span><span class="n">content</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+
+   <span class="cm">/* Register a chat message for this user (pre-allocating resources for it!!) */</span>
+   <span class="n">userHandle</span> <span class="o">=</span> <span class="n">talker</span><span class="o">-&gt;</span><span class="n">register_instance</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="p">);</span>
+
+   <span class="cm">/* Write a message using the pre-generated instance handle. */</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">talker</span><span class="o">-&gt;</span><span class="n">write</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="p">,</span> <span class="n">userHandle</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;ChatMessageDataWriter::write&quot;</span><span class="p">);</span>
+
+   <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span> <span class="cm">/* do not run so fast! */</span>
+
+   <span class="cm">/* Write any number of messages,</span>
+<span class="cm">      re-using the existing string-buffer: no leak!!. */</span>
+   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">NUM_MSG</span> <span class="o">&amp;&amp;</span> <span class="n">ownID</span> <span class="o">!=</span> <span class="n">TERMINATION_MESSAGE</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">buf</span><span class="p">.</span><span class="n">str</span><span class="p">(</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">)</span> <span class="p">);</span>
+      <span class="n">msg</span><span class="o">-&gt;</span><span class="n">index</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+      <span class="n">buf</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Message no. &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">i</span><span class="p">;</span>
+      <span class="n">msg</span><span class="o">-&gt;</span><span class="n">content</span> <span class="o">=</span> <span class="n">string_dup</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">()</span> <span class="p">);</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Writing message: </span><span class="se">\&quot;</span><span class="s">&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">msg</span><span class="o">-&gt;</span><span class="n">content</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">status</span> <span class="o">=</span> <span class="n">talker</span><span class="o">-&gt;</span><span class="n">write</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="p">,</span> <span class="n">userHandle</span><span class="p">);</span>
+      <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;ChatMessageDataWriter::write&quot;</span><span class="p">);</span>
+      <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span> <span class="cm">/* do not run so fast! */</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Leave the room by disposing and unregistering the message instance. */</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">talker</span><span class="o">-&gt;</span><span class="n">dispose</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="p">,</span> <span class="n">userHandle</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;ChatMessageDataWriter::dispose&quot;</span><span class="p">);</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">talker</span><span class="o">-&gt;</span><span class="n">unregister_instance</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="p">,</span> <span class="n">userHandle</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;ChatMessageDataWriter::unregister_instance&quot;</span><span class="p">);</span>
+
+   <span class="cm">/* Also unregister our name. */</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">unregister_instance</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">HANDLE_NIL</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;NameServiceDataWriter::unregister_instance&quot;</span><span class="p">);</span>
+
+   <span class="cm">/* Release the data-samples. */</span>
+   <span class="k">delete</span> <span class="n">msg</span><span class="p">;</span> <span class="c1">// msg allocated on heap: explicit de-allocation required!!</span>
+
+   <span class="cm">/* stop application */</span>
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="n">chatterApplication</span><span class="p">.</span><span class="n">stop</span><span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Exception occurred while stopping the application:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">();</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="chatterapplication-cpp-windows-version">
+<h4>11.1.1.2. ChatterApplication.cpp, Windows Version<a class="headerlink" href="#chatterapplication-cpp-windows-version" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">ChatterApplication</span><span class="p">.</span><span class="n">cpp</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    ChatterApplication.cpp</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Example for the C++  programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the &#39;ChatterApplication&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+<span class="cp">#include &lt;string&gt;</span>
+<span class="cp">#include &lt;sstream&gt;</span>
+<span class="cp">#include &lt;iostream&gt;</span>
+
+<span class="cp">#include &quot;ChatterApplication.h&quot;</span>
+<span class="cp">#include &quot;CheckStatus.h&quot;</span>
+
+<span class="cp">#define NUM_MSG 10</span>
+<span class="cp">#define TERMINATION_MESSAGE -1</span>
+
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">DDS</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">Chat</span><span class="p">;</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+   <span class="cm">/* Sample definitions */</span>
+   <span class="n">ChatMessage</span> <span class="o">*</span><span class="n">msg</span><span class="p">;</span> <span class="cm">/* Example on Heap */</span>
+   <span class="n">NameService</span> <span class="n">ns</span><span class="p">;</span> <span class="cm">/* Example on Stack */</span>
+
+   <span class="cm">/* DDS Identifiers */</span>
+   <span class="n">InstanceHandle_t</span> <span class="n">userHandle</span><span class="p">;</span>
+   <span class="n">ReturnCode_t</span> <span class="n">status</span><span class="p">;</span>
+
+   <span class="cm">/* Others */</span>
+   <span class="kt">int</span> <span class="n">ownID</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+   <span class="kt">char</span> <span class="o">*</span><span class="n">chatterName</span><span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+   <span class="n">ostringstream</span> <span class="n">buf</span><span class="p">;</span>
+
+   <span class="cm">/* Initialize the application */</span>
+   <span class="n">ChatterApplicationWrapperImplementation</span> <span class="n">chatterApplication</span><span class="p">;</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="n">chatterApplication</span><span class="p">.</span><span class="n">start</span><span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Exception occurred while starting the application:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">();</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Type-specific DDS entities */</span>
+   <span class="n">NameServiceDataWriter_ptr</span> <span class="n">nameServer</span> <span class="o">=</span>
+         <span class="n">chatterApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getPublisherWrapper</span><span class="p">()</span>
+         <span class="o">-&gt;</span><span class="n">getNameServiceDataWriterWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getDataWriter</span><span class="p">();</span>
+   <span class="n">ChatMessageDataWriter_ptr</span> <span class="n">talker</span> <span class="o">=</span>
+         <span class="n">chatterApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getPublisherWrapper</span><span class="p">()</span>
+         <span class="o">-&gt;</span><span class="n">getChatMessageDataWriterWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getDataWriter</span><span class="p">();</span>
+
+   <span class="cm">/* Options: Chatter [ownID [name]] */</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">istringstream</span> <span class="n">args</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+      <span class="n">args</span> <span class="o">&gt;&gt;</span> <span class="n">ownID</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+         <span class="n">chatterName</span> <span class="o">=</span> <span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+      <span class="p">}</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Initialize the NameServer attributes */</span>
+   <span class="n">ns</span><span class="p">.</span><span class="n">userID</span> <span class="o">=</span> <span class="n">ownID</span><span class="p">;</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">chatterName</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">ns</span><span class="p">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">string_dup</span><span class="p">(</span><span class="n">chatterName</span><span class="p">);</span>
+   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">buf</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Chatter &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">ownID</span><span class="p">;</span>
+      <span class="n">ns</span><span class="p">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">string_dup</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">()</span> <span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Write the user-information into the system</span>
+<span class="cm">      (registering the instance implicitly). */</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">write</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">HANDLE_NIL</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;NameServiceDataWriter::write&quot;</span><span class="p">);</span>
+
+   <span class="cm">/* Initialize the chat messages on Heap. */</span>
+   <span class="n">msg</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ChatMessage</span><span class="p">();</span>
+   <span class="n">checkHandle</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s">&quot;new ChatMessage&quot;</span><span class="p">);</span>
+   <span class="n">msg</span><span class="o">-&gt;</span><span class="n">userID</span> <span class="o">=</span> <span class="n">ownID</span><span class="p">;</span>
+   <span class="n">msg</span><span class="o">-&gt;</span><span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+   <span class="n">buf</span><span class="p">.</span><span class="n">str</span><span class="p">(</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">)</span> <span class="p">);</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">ownID</span> <span class="o">==</span> <span class="n">TERMINATION_MESSAGE</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">buf</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Termination message.&quot;</span><span class="p">;</span>
+   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">buf</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Hi there, I will send you &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">NUM_MSG</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; more messages.&quot;</span><span class="p">;</span>
+   <span class="p">}</span>
+   <span class="n">msg</span><span class="o">-&gt;</span><span class="n">content</span> <span class="o">=</span> <span class="n">string_dup</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">()</span> <span class="p">);</span>
+   <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Writing message: </span><span class="se">\&quot;</span><span class="s">&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">msg</span><span class="o">-&gt;</span><span class="n">content</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+
+   <span class="cm">/* Register a chat message for this user (pre-allocating resources for it!!) */</span>
+   <span class="n">userHandle</span> <span class="o">=</span> <span class="n">talker</span><span class="o">-&gt;</span><span class="n">register_instance</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="p">);</span>
+
+   <span class="cm">/* Write a message using the pre-generated instance handle. */</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">talker</span><span class="o">-&gt;</span><span class="n">write</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="p">,</span> <span class="n">userHandle</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;ChatMessageDataWriter::write&quot;</span><span class="p">);</span>
+
+   <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span> <span class="cm">/* do not run so fast! */</span>
+
+   <span class="cm">/* Write any number of messages,</span>
+<span class="cm">      re-using the existing string-buffer: no leak!!. */</span>
+   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">NUM_MSG</span> <span class="o">&amp;&amp;</span> <span class="n">ownID</span> <span class="o">!=</span> <span class="n">TERMINATION_MESSAGE</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">buf</span><span class="p">.</span><span class="n">str</span><span class="p">(</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">)</span> <span class="p">);</span>
+      <span class="n">msg</span><span class="o">-&gt;</span><span class="n">index</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+      <span class="n">buf</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Message no. &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">i</span><span class="p">;</span>
+      <span class="n">msg</span><span class="o">-&gt;</span><span class="n">content</span> <span class="o">=</span> <span class="n">string_dup</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">()</span> <span class="p">);</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Writing message: </span><span class="se">\&quot;</span><span class="s">&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">msg</span><span class="o">-&gt;</span><span class="n">content</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">status</span> <span class="o">=</span> <span class="n">talker</span><span class="o">-&gt;</span><span class="n">write</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="p">,</span> <span class="n">userHandle</span><span class="p">);</span>
+      <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;ChatMessageDataWriter::write&quot;</span><span class="p">);</span>
+      <span class="n">Sleep</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span> <span class="cm">/* do not run so fast! */</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Leave the room by disposing and unregistering the message instance. */</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">talker</span><span class="o">-&gt;</span><span class="n">dispose</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="p">,</span> <span class="n">userHandle</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;ChatMessageDataWriter::dispose&quot;</span><span class="p">);</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">talker</span><span class="o">-&gt;</span><span class="n">unregister_instance</span><span class="p">(</span><span class="o">*</span><span class="n">msg</span><span class="p">,</span> <span class="n">userHandle</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;ChatMessageDataWriter::unregister_instance&quot;</span><span class="p">);</span>
+
+   <span class="cm">/* Also unregister our name. */</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">unregister_instance</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">HANDLE_NIL</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;NameServiceDataWriter::unregister_instance&quot;</span><span class="p">);</span>
+
+   <span class="cm">/* Release the data-samples. */</span>
+   <span class="k">delete</span> <span class="n">msg</span><span class="p">;</span> <span class="c1">// msg allocated on heap: explicit de-allocation required!!</span>
+
+   <span class="cm">/* stop application */</span>
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="n">chatterApplication</span><span class="p">.</span><span class="n">stop</span><span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Exception occurred while stopping the application:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">();</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="messageboard-application">
+<h3>11.1.2. MessageBoard Application<a class="headerlink" href="#messageboard-application" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="messageboardapplication-cpp-linux-version">
+<h4>11.1.2.1. MessageBoardApplication.cpp, Linux Version<a class="headerlink" href="#messageboardapplication-cpp-linux-version" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">MessageBoardApplication</span><span class="p">.</span><span class="n">cpp</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    MessageBoardApplication.cpp</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the</span>
+<span class="cm"> * &#39;MessageBoardApplication&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+
+<span class="cp">#include &lt;iostream&gt;</span>
+<span class="cp">#include &lt;string&gt;</span>
+<span class="cp">#include &lt;sstream&gt;</span>
+<span class="cp">#include &lt;unistd.h&gt;</span>
+
+<span class="cp">#include &quot;CheckStatus.h&quot;</span>
+<span class="cp">#include &quot;MessageBoardApplication.h&quot;</span>
+
+<span class="cp">#include &quot;ChatMessageDataReaderListenerImpl.h&quot;</span>
+<span class="cp">#include &quot;NamedMessageDataReaderListenerImpl.h&quot;</span>
+
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">DDS</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">Chat</span><span class="p">;</span>
+
+<span class="cp">#define TERMINATION_MESSAGE -1</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+   <span class="cm">/* DDS Identifiers */</span>
+   <span class="n">string</span> <span class="n">ownID</span> <span class="o">=</span> <span class="s">&quot;0&quot;</span><span class="p">;</span>
+
+   <span class="cm">/* Options: MessageBoard [ownID] */</span>
+   <span class="cm">/* Messages having owner ownID will be ignored */</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">istringstream</span> <span class="n">args</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+      <span class="n">args</span> <span class="o">&gt;&gt;</span> <span class="n">ownID</span><span class="p">;;</span>
+   <span class="p">}</span>
+
+   <span class="n">MessageBoardApplicationWrapperImplementation</span> <span class="n">messageBoardApplication</span><span class="p">;</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="n">StringSeq</span> <span class="n">exprParams</span><span class="p">;</span>
+      <span class="n">exprParams</span><span class="p">.</span><span class="n">length</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+      <span class="n">exprParams</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">DDS</span><span class="o">::</span><span class="n">string_dup</span><span class="p">(</span><span class="n">ownID</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+      <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span>
+         <span class="o">-&gt;</span><span class="n">getNamedMessageFilteredTopicWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setExpressionParameters</span><span class="p">(</span>
+         <span class="n">exprParams</span><span class="p">);</span>
+      <span class="cm">/* Initialize the application */</span>
+      <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">start</span><span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Exception occurred while initializing the application:&quot;</span>
+            <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">();</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Create the listeners for the MessageBoard application */</span>
+   <span class="n">ChatMessageDataReaderListenerImpl</span><span class="o">*</span> <span class="n">chatMessageDataReaderListener</span> <span class="o">=</span>
+         <span class="k">new</span> <span class="n">ChatMessageDataReaderListenerImpl</span><span class="p">(</span><span class="o">&amp;</span><span class="n">messageBoardApplication</span><span class="p">);</span>
+
+   <span class="cm">/* put the object in a smart pointer for resource management */</span>
+   <span class="n">DDS</span><span class="o">::</span><span class="n">DataReaderListener_var</span> <span class="n">chatMessageDataReaderListenerVar</span><span class="p">(</span>
+         <span class="n">chatMessageDataReaderListener</span><span class="p">);</span>
+
+   <span class="n">NamedMessageDataReaderListenerImpl</span><span class="o">*</span> <span class="n">namedMessageDataReaderListener</span> <span class="o">=</span>
+         <span class="k">new</span> <span class="n">NamedMessageDataReaderListenerImpl</span><span class="p">(</span><span class="o">&amp;</span><span class="n">messageBoardApplication</span><span class="p">);</span>
+
+   <span class="n">DDS</span><span class="o">::</span><span class="n">DataReaderListener_var</span> <span class="n">namedMessageDataReaderListenerVar</span><span class="p">(</span>
+         <span class="n">namedMessageDataReaderListener</span><span class="p">);</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="cm">/* Attach the ChatMessageDataReaderListener to the ChatMessageDataReader */</span>
+      <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">getPrivateParticipantWrapper</span><span class="p">()</span>
+         <span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getChatMessageDataReaderWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">attach</span><span class="p">(</span>
+            <span class="n">chatMessageDataReaderListener</span><span class="p">);</span>
+
+      <span class="cm">/* Attach the NamedMessageDataReaderListener to NamedMessageDataReader */</span>
+      <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span>
+         <span class="o">-&gt;</span><span class="n">getNamedMessageDataReaderWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">attach</span><span class="p">(</span>
+            <span class="n">namedMessageDataReaderListener</span><span class="p">);</span>
+   <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Exception occurred while attaching a listener:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">();</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="n">cout</span>
+      <span class="o">&lt;&lt;</span> <span class="s">&quot;MessageBoard has opened: send ChatMessage with userID = -1 to close it.&quot;</span>
+      <span class="o">&lt;&lt;</span> <span class="n">endl</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+
+   <span class="cm">/* Wait for the ChatMessageDataReaderListener to finish */</span>
+   <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">chatMessageDataReaderListener</span><span class="o">-&gt;</span><span class="n">isTerminated</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Wait for the NamedMessageDataReaderListener to finish */</span>
+   <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">namedMessageDataReaderListener</span><span class="o">-&gt;</span><span class="n">isTerminated</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Termination message received: exiting...&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="cm">/* Detach the ChatMessageDataReaderListener to the ChatMessageDataReader */</span>
+      <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">getPrivateParticipantWrapper</span><span class="p">()</span>
+         <span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getChatMessageDataReaderWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">detach</span><span class="p">(</span>
+            <span class="n">chatMessageDataReaderListener</span><span class="p">);</span>
+
+      <span class="cm">/* Detach the NamedMessageDataReaderListener to the NamedMessageDataReader */</span>
+      <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span>
+         <span class="o">-&gt;</span><span class="n">getNamedMessageDataReaderWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">detach</span><span class="p">(</span>
+            <span class="n">namedMessageDataReaderListener</span><span class="p">);</span>
+   <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Exception occurred while detaching a listener:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">();</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="n">chatMessageDataReaderListener</span><span class="o">-&gt;</span><span class="n">cleanup</span><span class="p">();</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="cm">/* Stop the application */</span>
+      <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">stop</span><span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Exception occurred while stopping the application:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">();</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="messageboardapplication-cpp-windows-version">
+<h4>11.1.2.2. MessageBoardApplication.cpp, Windows Version<a class="headerlink" href="#messageboardapplication-cpp-windows-version" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">MessageBoardApplication</span><span class="p">.</span><span class="n">cpp</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    MessageBoardApplication.cpp</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the &#39;MessageBoard&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+
+<span class="cp">#include &lt;iostream&gt;</span>
+<span class="cp">#include &lt;string&gt;</span>
+<span class="cp">#include &lt;sstream&gt;</span>
+
+<span class="cp">#include &quot;ccpp_dds_dcps.h&quot;</span>
+<span class="cp">#include &quot;CheckStatus.h&quot;</span>
+<span class="cp">#include &quot;exported_MessageBoardApplicationDcps.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplicationWrapperImplementation.h&quot;</span>
+<span class="cp">#include &quot;Chat/NamedMessageFilteredTopicWrapper.h&quot;</span>
+
+<span class="cp">#include &quot;Chat/MessageBoardApplication/ParticipantWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/Participant/SubscriberWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/Participant/Subscriber/NamedMessageDataReaderWrapper.h&quot;</span>
+
+<span class="cp">#include &quot;Chat/MessageBoardApplication/PrivateParticipantWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/PrivateParticipant/SubscriberWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/PrivateParticipant/Subscriber/ChatMessageDataReaderWrapper.h&quot;</span>
+
+<span class="cp">#include &quot;ChatMessageDataReaderListenerImpl.h&quot;</span>
+<span class="cp">#include &quot;NamedMessageDataReaderListenerImpl.h&quot;</span>
+
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">DDS</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">Chat</span><span class="p">;</span>
+
+<span class="cp">#define TERMINATION_MESSAGE -1</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+   <span class="cm">/* DDS Identifiers */</span>
+   <span class="n">string</span> <span class="n">ownID</span> <span class="o">=</span> <span class="s">&quot;0&quot;</span><span class="p">;</span>
+
+   <span class="cm">/* Options: MessageBoard [ownID] */</span>
+   <span class="cm">/* Messages having owner ownID will be ignored */</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">istringstream</span> <span class="n">args</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+      <span class="n">args</span> <span class="o">&gt;&gt;</span> <span class="n">ownID</span><span class="p">;;</span>
+   <span class="p">}</span>
+
+   <span class="n">MessageBoardApplicationWrapperImplementation</span> <span class="n">messageBoardApplication</span><span class="p">;</span>
+
+   <span class="n">StringSeq</span> <span class="n">exprParams</span><span class="p">;</span>
+   <span class="n">exprParams</span><span class="p">.</span><span class="n">length</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+   <span class="n">exprParams</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">DDS</span><span class="o">::</span><span class="n">string_dup</span><span class="p">(</span><span class="n">ownID</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+
+   <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span>
+      <span class="o">-&gt;</span><span class="n">getNamedMessageFilteredTopicWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">set_expression_parameters</span><span class="p">(</span>
+         <span class="n">exprParams</span><span class="p">);</span>
+
+   <span class="cm">/* Initialize the application */</span>
+   <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">start</span><span class="p">();</span>
+
+   <span class="cm">/* Create the listeners for the MessageBoard application */</span>
+   <span class="n">ChatMessageDataReaderListenerImpl</span><span class="o">*</span> <span class="n">chatMessageDataReaderListener</span> <span class="o">=</span>
+         <span class="k">new</span> <span class="n">ChatMessageDataReaderListenerImpl</span><span class="p">(</span><span class="o">&amp;</span><span class="n">messageBoardApplication</span><span class="p">);</span>
+
+   <span class="cm">/* put the object in a smart pointer for resource management */</span>
+   <span class="n">DDS</span><span class="o">::</span><span class="n">DataReaderListener_var</span>
+         <span class="n">chatMessageDataReaderListenerVar</span><span class="p">(</span><span class="n">chatMessageDataReaderListener</span><span class="p">);</span>
+
+   <span class="n">NamedMessageDataReaderListenerImpl</span><span class="o">*</span> <span class="n">namedMessageDataReaderListener</span> <span class="o">=</span>
+         <span class="k">new</span> <span class="n">NamedMessageDataReaderListenerImpl</span><span class="p">(</span><span class="o">&amp;</span><span class="n">messageBoardApplication</span><span class="p">);</span>
+
+   <span class="n">DDS</span><span class="o">::</span><span class="n">DataReaderListener_var</span>
+         <span class="n">namedMessageDataReaderListenerVar</span><span class="p">(</span><span class="n">namedMessageDataReaderListener</span><span class="p">);</span>
+
+   <span class="cm">/* Attach the ChatMessageDataReaderListener to the ChatMessageDataReader */</span>
+   <span class="n">ReturnCode_t</span> <span class="n">status</span> <span class="o">=</span> <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">getPrivateParticipantWrapper</span><span class="p">()</span>
+      <span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getChatMessageDataReaderWrapper</span><span class="p">()</span>
+      <span class="o">-&gt;</span><span class="n">set_listener</span><span class="p">(</span><span class="n">chatMessageDataReaderListener</span><span class="p">,</span>
+         <span class="n">chatMessageDataReaderListener</span><span class="o">-&gt;</span><span class="n">getStatusMask</span><span class="p">());</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::ChatMessageDataReader::set_listener&quot;</span><span class="p">);</span>
+
+   <span class="cm">/* Attach the NamedMessageDataReaderListener to the NamedMessageDataReader */</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span>
+      <span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getNamedMessageDataReaderWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getDataReader</span><span class="p">()</span>
+      <span class="o">-&gt;</span><span class="n">set_listener</span><span class="p">(</span><span class="n">namedMessageDataReaderListener</span><span class="p">,</span>
+         <span class="n">namedMessageDataReaderListener</span><span class="o">-&gt;</span><span class="n">getStatusMask</span><span class="p">());</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::ChatMessageDataReader::set_listener&quot;</span><span class="p">);</span>
+
+   <span class="n">cout</span>
+      <span class="o">&lt;&lt;</span> <span class="s">&quot;MessageBoard has opened: send ChatMessage with userID = -1 to close it.&quot;</span>
+      <span class="o">&lt;&lt;</span> <span class="n">endl</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+
+   <span class="cm">/* Wait for the ChatMessageDataReaderListener to finish */</span>
+   <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">chatMessageDataReaderListener</span><span class="o">-&gt;</span><span class="n">isTerminated</span><span class="p">())</span>
+   <span class="p">{</span>
+      <span class="n">Sleep</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="cm">/* Wait for the NamedMessageDataReaderListener to finish */</span>
+   <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">namedMessageDataReaderListener</span><span class="o">-&gt;</span><span class="n">isTerminated</span><span class="p">())</span>
+   <span class="p">{</span>
+      <span class="n">Sleep</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Termination message received: exiting...&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+
+   <span class="cm">/* Detach the ChatMessageDataReaderListener to the ChatMessageDataReader */</span>
+   <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">getPrivateParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span>
+      <span class="o">-&gt;</span><span class="n">set_listener</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+
+   <span class="cm">/* Detach the NamedMessageDataReaderListener to the NamedMessageDataReader */</span>
+   <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span>
+      <span class="o">-&gt;</span><span class="n">set_listener</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+
+   <span class="n">chatMessageDataReaderListener</span><span class="o">-&gt;</span><span class="n">cleanup</span><span class="p">();</span>
+
+   <span class="cm">/* Stop the application */</span>
+   <span class="n">messageBoardApplication</span><span class="p">.</span><span class="n">stop</span><span class="p">();</span>
+
+   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="chatmessagedatareaderlistenerimpl-h-linux-version">
+<h4>11.1.2.3. ChatMessageDataReaderListenerImpl.h, Linux version<a class="headerlink" href="#chatmessagedatareaderlistenerimpl-h-linux-version" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">ChatMessageDataReaderListenerImpl</span><span class="p">.</span><span class="n">h</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    ChatMessageDataReaderListenerImpl.h</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the &#39;MessageBoard&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+<span class="cp">#ifndef _CHATMESSAGEDATAREADERLISTENERIMPL_H_</span>
+<span class="cp">#define _CHATMESSAGEDATAREADERLISTENERIMPL_H_</span>
+
+<span class="cp">#include &lt;string&gt;</span>
+
+<span class="cp">#include &lt;pthread.h&gt;</span>
+
+<span class="cp">#include &quot;Chat/MessageBoardApplication/ChatMessageDataReaderListener.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplicationWrapper.h&quot;</span>
+<span class="cp">#include &quot;exported_MessageBoardApplicationDcps.h&quot;</span>
+
+<span class="k">class</span> <span class="nc">ChatMessageDataReaderListenerImpl</span> <span class="o">:</span>
+   <span class="k">public</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplication</span><span class="o">::</span><span class="n">ChatMessageDataReaderListener</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+   <span class="n">ChatMessageDataReaderListenerImpl</span><span class="p">(</span>
+         <span class="k">const</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplicationWrapper</span><span class="o">*</span> <span class="n">messageBoardApplication</span><span class="p">);</span>
+
+   <span class="kt">void</span> <span class="nf">on_data_available</span><span class="p">(</span><span class="n">DDS</span><span class="o">::</span><span class="n">DataReader_ptr</span> <span class="n">dataReader</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">cleanup</span><span class="p">();</span>
+   <span class="kt">bool</span> <span class="nf">isTerminated</span><span class="p">();</span>
+
+<span class="k">private</span><span class="o">:</span>
+
+   <span class="k">class</span> <span class="nc">IsTerminated</span>
+   <span class="p">{</span>
+   <span class="k">public</span><span class="o">:</span>
+      <span class="n">IsTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="n">m_isTerminated</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+         <span class="n">pthread_mutex_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+      <span class="p">}</span>
+
+      <span class="k">virtual</span> <span class="o">~</span><span class="n">IsTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="n">pthread_mutex_destroy</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">);</span>
+      <span class="p">}</span>
+
+      <span class="kt">bool</span> <span class="n">isTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="kt">bool</span> <span class="n">ret</span><span class="p">;</span>
+
+         <span class="n">pthread_mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">);</span>
+         <span class="n">ret</span> <span class="o">=</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+         <span class="n">pthread_mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">);</span>
+
+         <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
+      <span class="p">}</span>
+
+      <span class="kt">void</span> <span class="n">setTerminated</span><span class="p">(</span><span class="kt">bool</span> <span class="n">isTerminated</span><span class="p">)</span>
+      <span class="p">{</span>
+         <span class="n">pthread_mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">);</span>
+         <span class="n">m_isTerminated</span> <span class="o">=</span> <span class="n">isTerminated</span><span class="p">;</span>
+         <span class="n">pthread_mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">);</span>
+      <span class="p">}</span>
+
+   <span class="k">private</span><span class="o">:</span>
+      <span class="kt">pthread_mutex_t</span> <span class="n">m_mutex</span><span class="p">;</span>
+      <span class="kt">bool</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+   <span class="p">};</span>
+
+   <span class="n">IsTerminated</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+
+   <span class="k">static</span> <span class="kt">int</span> <span class="n">TERMINATION_MESSAGE</span><span class="p">;</span>
+
+   <span class="k">const</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplicationWrapper</span><span class="o">*</span> <span class="n">m_messageBoardApplication</span><span class="p">;</span>
+   <span class="n">Chat</span><span class="o">::</span><span class="n">ChatMessageDataReader_ptr</span> <span class="n">m_chatMsgReader</span><span class="p">;</span>
+   <span class="n">Chat</span><span class="o">::</span><span class="n">NameServiceDataReader_ptr</span> <span class="n">m_nameServiceReader</span><span class="p">;</span>
+   <span class="n">Chat</span><span class="o">::</span><span class="n">NamedMessageDataWriter_ptr</span> <span class="n">m_namedMessageWriter</span><span class="p">;</span>
+
+   <span class="n">DDS</span><span class="o">::</span><span class="n">QueryCondition_ptr</span> <span class="n">m_nameFinder</span><span class="p">;</span>
+   <span class="n">DDS</span><span class="o">::</span><span class="n">StringSeq</span> <span class="n">m_nameFinderParams</span><span class="p">;</span>
+
+   <span class="n">DDS</span><span class="o">::</span><span class="n">ReadCondition_ptr</span> <span class="n">m_newMessages</span><span class="p">;</span>
+
+   <span class="kt">int</span> <span class="n">m_previousID</span><span class="p">;</span>
+   <span class="n">DDS</span><span class="o">::</span><span class="n">String_mgr</span> <span class="n">m_userName</span><span class="p">;</span>
+
+<span class="p">};</span>
+
+<span class="cp">#endif </span><span class="c1">// _CHATMESSAGEDATAREADERLISTENERIMPL_H_</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="chatmessagedatareaderlistenerimpl-h-windows-version">
+<h4>11.1.2.4. ChatMessageDataReaderListenerImpl.h, Windows version<a class="headerlink" href="#chatmessagedatareaderlistenerimpl-h-windows-version" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">ChatMessageDataReaderListenerImpl</span><span class="p">.</span><span class="n">h</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    ChatMessageDataReaderListenerImpl.h</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the &#39;MessageBoard&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+<span class="cp">#ifndef _CHATMESSAGEDATAREADERLISTENERIMPL_H_</span>
+<span class="cp">#define _CHATMESSAGEDATAREADERLISTENERIMPL_H_</span>
+
+<span class="cp">#include &lt;string&gt;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/ChatMessageDataReaderListener.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplicationWrapper.h&quot;</span>
+<span class="cp">#include &quot;exported_MessageBoardApplicationDcps.h&quot;</span>
+
+<span class="k">class</span> <span class="nc">ChatMessageDataReaderListenerImpl</span> <span class="o">:</span>
+   <span class="k">public</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplication</span><span class="o">::</span><span class="n">ChatMessageDataReaderListener</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+   <span class="n">ChatMessageDataReaderListenerImpl</span><span class="p">(</span>
+         <span class="k">const</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplicationWrapper</span><span class="o">*</span> <span class="n">messageBoardApplication</span><span class="p">);</span>
+
+   <span class="kt">void</span> <span class="nf">on_data_available</span><span class="p">(</span><span class="n">DDS</span><span class="o">::</span><span class="n">DataReader_ptr</span> <span class="n">dataReader</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">cleanup</span><span class="p">();</span>
+   <span class="kt">bool</span> <span class="nf">isTerminated</span><span class="p">();</span>
+
+<span class="k">private</span><span class="o">:</span>
+
+   <span class="k">class</span> <span class="nc">IsTerminated</span>
+   <span class="p">{</span>
+   <span class="k">public</span><span class="o">:</span>
+      <span class="n">IsTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="n">m_isTerminated</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+         <span class="n">m_mutex</span> <span class="o">=</span> <span class="n">CreateMutex</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="n">FALSE</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+      <span class="p">}</span>
+
+      <span class="k">virtual</span> <span class="o">~</span><span class="n">IsTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="n">CloseHandle</span><span class="p">(</span><span class="n">m_mutex</span><span class="p">);</span>
+      <span class="p">}</span>
+
+      <span class="kt">bool</span> <span class="n">isTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="kt">bool</span> <span class="n">ret</span><span class="p">;</span>
+
+         <span class="n">WaitForSingleObject</span><span class="p">(</span><span class="n">m_mutex</span><span class="p">,</span> <span class="n">INFINITE</span><span class="p">);</span>
+         <span class="n">ret</span> <span class="o">=</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+         <span class="n">ReleaseMutex</span><span class="p">(</span><span class="n">m_mutex</span><span class="p">);</span>
+
+         <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
+      <span class="p">}</span>
+
+      <span class="kt">void</span> <span class="n">setTerminated</span><span class="p">(</span><span class="kt">bool</span> <span class="n">isTerminated</span><span class="p">)</span>
+      <span class="p">{</span>
+         <span class="n">WaitForSingleObject</span><span class="p">(</span><span class="n">m_mutex</span><span class="p">,</span> <span class="n">INFINITE</span><span class="p">);</span>
+         <span class="n">m_isTerminated</span> <span class="o">=</span> <span class="n">isTerminated</span><span class="p">;</span>
+         <span class="n">ReleaseMutex</span><span class="p">(</span><span class="n">m_mutex</span><span class="p">);</span>
+      <span class="p">}</span>
+
+   <span class="k">private</span><span class="o">:</span>
+      <span class="n">HANDLE</span> <span class="n">m_mutex</span><span class="p">;</span>
+      <span class="kt">bool</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+   <span class="p">};</span>
+
+   <span class="n">IsTerminated</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+
+   <span class="k">static</span> <span class="kt">int</span> <span class="n">TERMINATION_MESSAGE</span><span class="p">;</span>
+
+   <span class="k">const</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplicationWrapper</span><span class="o">*</span> <span class="n">m_messageBoardApplication</span><span class="p">;</span>
+   <span class="n">Chat</span><span class="o">::</span><span class="n">ChatMessageDataReader_ptr</span> <span class="n">m_chatMsgReader</span><span class="p">;</span>
+   <span class="n">Chat</span><span class="o">::</span><span class="n">NameServiceDataReader_ptr</span> <span class="n">m_nameServiceReader</span><span class="p">;</span>
+   <span class="n">Chat</span><span class="o">::</span><span class="n">NamedMessageDataWriter_ptr</span> <span class="n">m_namedMessageWriter</span><span class="p">;</span>
+
+   <span class="n">DDS</span><span class="o">::</span><span class="n">QueryCondition_ptr</span> <span class="n">m_nameFinder</span><span class="p">;</span>
+   <span class="n">DDS</span><span class="o">::</span><span class="n">StringSeq</span> <span class="n">m_nameFinderParams</span><span class="p">;</span>
+
+   <span class="n">DDS</span><span class="o">::</span><span class="n">ReadCondition_ptr</span> <span class="n">m_newMessages</span><span class="p">;</span>
+
+   <span class="kt">int</span> <span class="n">m_previousID</span><span class="p">;</span>
+   <span class="n">DDS</span><span class="o">::</span><span class="n">String_mgr</span> <span class="n">m_userName</span><span class="p">;</span>
+
+<span class="p">};</span>
+
+<span class="cp">#endif </span><span class="c1">// _CHATMESSAGEDATAREADERLISTENERIMPL_H_</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="chatmessagedatareaderlistenerimpl-cpp">
+<h4>11.1.2.5. ChatMessageDataReaderListenerImpl.cpp<a class="headerlink" href="#chatmessagedatareaderlistenerimpl-cpp" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">ChatMessageDataReaderListenerImpl</span><span class="p">.</span><span class="n">cpp</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    ChatMessageDataReaderListenerImpl.cpp</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the &#39;MessageBoard&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+<span class="cp">#include &lt;sstream&gt;</span>
+
+<span class="cp">#include &quot;ChatMessageDataReaderListenerImpl.h&quot;</span>
+
+<span class="cp">#include &quot;ccpp_dds_dcps.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/PrivateParticipantWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/PrivateParticipant/SubscriberWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/PrivateParticipant/Subscriber/ChatMessageDataReaderWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/PrivateParticipant/Subscriber/NameServiceDataReaderWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/PrivateParticipant/PublisherWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/PrivateParticipant/Publisher/NamedMessageDataWriterWrapper.h&quot;</span>
+<span class="cp">#include &quot;CheckStatus.h&quot;</span>
+
+<span class="kt">int</span> <span class="n">ChatMessageDataReaderListenerImpl</span><span class="o">::</span><span class="n">TERMINATION_MESSAGE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">DDS</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">Chat</span><span class="p">;</span>
+
+<span class="n">ChatMessageDataReaderListenerImpl</span><span class="o">::</span><span class="n">ChatMessageDataReaderListenerImpl</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplicationWrapper</span><span class="o">*</span> <span class="n">messageBoardApplication</span><span class="p">)</span> <span class="o">:</span>
+         <span class="n">m_messageBoardApplication</span><span class="p">(</span><span class="n">messageBoardApplication</span><span class="p">),</span>
+         <span class="n">m_chatMsgReader</span><span class="p">(</span>
+               <span class="n">messageBoardApplication</span><span class="o">-&gt;</span><span class="n">getPrivateParticipantWrapper</span><span class="p">()</span>
+               <span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getChatMessageDataReaderWrapper</span><span class="p">()</span>
+               <span class="o">-&gt;</span><span class="n">getDataReader</span><span class="p">()),</span>
+               <span class="n">m_nameServiceReader</span><span class="p">(</span>
+               <span class="n">messageBoardApplication</span><span class="o">-&gt;</span><span class="n">getPrivateParticipantWrapper</span><span class="p">()</span>
+               <span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getNameServiceDataReaderWrapper</span><span class="p">()</span>
+               <span class="o">-&gt;</span><span class="n">getDataReader</span><span class="p">()),</span>
+               <span class="n">m_namedMessageWriter</span><span class="p">(</span>
+               <span class="n">messageBoardApplication</span><span class="o">-&gt;</span><span class="n">getPrivateParticipantWrapper</span><span class="p">()</span>
+               <span class="o">-&gt;</span><span class="n">getPublisherWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getNamedMessageDataWriterWrapper</span><span class="p">()</span>
+               <span class="o">-&gt;</span><span class="n">getDataWriter</span><span class="p">()),</span>
+               <span class="n">m_previousID</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+   <span class="cm">/* Create a QueryCondition that will look up userName for a specified userID */</span>
+   <span class="n">m_nameFinderParams</span><span class="p">.</span><span class="n">length</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+   <span class="n">m_nameFinderParams</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">string_dup</span><span class="p">(</span><span class="s">&quot;0&quot;</span><span class="p">);</span>
+
+   <span class="n">m_nameFinder</span> <span class="o">=</span> <span class="n">m_nameServiceReader</span><span class="o">-&gt;</span><span class="n">create_querycondition</span><span class="p">(</span><span class="n">ANY_SAMPLE_STATE</span><span class="p">,</span>
+         <span class="n">ANY_VIEW_STATE</span><span class="p">,</span> <span class="n">ANY_INSTANCE_STATE</span><span class="p">,</span> <span class="s">&quot;userID = %0&quot;</span><span class="p">,</span>
+         <span class="n">m_nameFinderParams</span><span class="p">);</span>
+   <span class="n">checkHandle</span><span class="p">(</span><span class="n">m_nameFinder</span><span class="p">,</span>
+         <span class="s">&quot;Chat::NameServiceDataReader::create_querycondition&quot;</span><span class="p">);</span>
+
+   <span class="n">m_newMessages</span> <span class="o">=</span> <span class="n">m_chatMsgReader</span><span class="o">-&gt;</span><span class="n">create_readcondition</span><span class="p">(</span><span class="n">ANY_SAMPLE_STATE</span><span class="p">,</span>
+         <span class="n">ANY_VIEW_STATE</span><span class="p">,</span> <span class="n">ANY_INSTANCE_STATE</span><span class="p">);</span>
+   <span class="n">checkHandle</span><span class="p">(</span><span class="n">m_newMessages</span><span class="p">,</span>
+         <span class="s">&quot;Chat::ChatMessageDataReader::create_readcondition&quot;</span><span class="p">);</span>
+
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">ChatMessageDataReaderListenerImpl</span><span class="o">::</span><span class="n">on_data_available</span><span class="p">(</span>
+      <span class="n">DDS</span><span class="o">::</span><span class="n">DataReader_ptr</span> <span class="n">dataReader</span><span class="p">)</span> <span class="p">{</span>
+
+   <span class="cm">/* Ignore new data if termination message already received */</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">m_isTerminated</span><span class="p">.</span><span class="n">isTerminated</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">return</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="kt">bool</span> <span class="n">terminationReceived</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+   <span class="kt">int</span> <span class="n">status</span><span class="p">;</span>
+
+   <span class="k">if</span> <span class="p">(</span><span class="n">dataReader</span> <span class="o">==</span> <span class="n">m_chatMsgReader</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">ChatMessageSeq</span> <span class="n">chatMsgSeq</span><span class="p">;</span>
+      <span class="n">SampleInfoSeq</span> <span class="n">chatMsgInfoSeq</span><span class="p">;</span>
+
+      <span class="n">status</span> <span class="o">=</span> <span class="n">m_chatMsgReader</span><span class="o">-&gt;</span><span class="n">take_w_condition</span><span class="p">(</span><span class="n">chatMsgSeq</span><span class="p">,</span> <span class="n">chatMsgInfoSeq</span><span class="p">,</span>
+            <span class="n">LENGTH_UNLIMITED</span><span class="p">,</span> <span class="n">m_newMessages</span><span class="p">);</span>
+      <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::ChatMessageDataReader::take_w_condition&quot;</span><span class="p">);</span>
+
+      <span class="cm">/* For each message, extract the key-field and find the corresponding name */</span>
+      <span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">chatMsgSeq</span><span class="p">.</span><span class="n">length</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+         <span class="n">NameServiceSeq</span> <span class="n">nameServiceSeq</span><span class="p">;</span>
+         <span class="n">SampleInfoSeq</span> <span class="n">nameServiceInfoSeq</span><span class="p">;</span>
+
+         <span class="cm">/* Set program termination flag if termination message is received */</span>
+         <span class="k">if</span> <span class="p">(</span><span class="n">chatMsgSeq</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">userID</span> <span class="o">==</span> <span class="n">TERMINATION_MESSAGE</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">terminationReceived</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+            <span class="k">break</span><span class="p">;</span>
+         <span class="p">}</span>
+
+         <span class="cm">/* Find the corresponding named message */</span>
+         <span class="k">if</span> <span class="p">(</span><span class="n">chatMsgSeq</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">userID</span> <span class="o">!=</span> <span class="n">m_previousID</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">m_previousID</span> <span class="o">=</span> <span class="n">chatMsgSeq</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">userID</span><span class="p">;</span>
+
+            <span class="n">ostringstream</span> <span class="n">previousID</span><span class="p">;</span>
+            <span class="n">previousID</span> <span class="o">&lt;&lt;</span> <span class="n">m_previousID</span><span class="p">;</span>
+            <span class="n">m_nameFinderParams</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">string_dup</span><span class="p">(</span><span class="n">previousID</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+
+            <span class="n">status</span> <span class="o">=</span> <span class="n">m_nameFinder</span><span class="o">-&gt;</span><span class="n">set_query_parameters</span><span class="p">(</span><span class="n">m_nameFinderParams</span><span class="p">);</span>
+            <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                  <span class="s">&quot;QueryCondition::set_query_arguments(m_nameFinderParams)&quot;</span><span class="p">);</span>
+
+            <span class="n">status</span> <span class="o">=</span> <span class="n">m_nameServiceReader</span><span class="o">-&gt;</span><span class="n">read_w_condition</span><span class="p">(</span><span class="n">nameServiceSeq</span><span class="p">,</span>
+                  <span class="n">nameServiceInfoSeq</span><span class="p">,</span> <span class="n">LENGTH_UNLIMITED</span><span class="p">,</span> <span class="n">m_nameFinder</span><span class="p">);</span>
+            <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                  <span class="s">&quot;Chat::NameServiceDataReader::read_w_condition&quot;</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">status</span> <span class="o">==</span> <span class="n">RETCODE_NO_DATA</span><span class="p">)</span> <span class="p">{</span>
+               <span class="n">ostringstream</span> <span class="n">os</span><span class="p">;</span>
+               <span class="n">os</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Name not found!! id = &quot;</span> <span class="o">+</span> <span class="n">m_previousID</span><span class="p">;</span>
+               <span class="n">m_userName</span> <span class="o">=</span> <span class="n">string_dup</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">());</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+               <span class="n">m_userName</span> <span class="o">=</span> <span class="n">nameServiceSeq</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">name</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="cm">/* Release the name sample again */</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">m_nameServiceReader</span><span class="o">-&gt;</span><span class="n">return_loan</span><span class="p">(</span><span class="n">nameServiceSeq</span><span class="p">,</span>
+                  <span class="n">nameServiceInfoSeq</span><span class="p">);</span>
+            <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NameServiceDataReader::return_loan&quot;</span><span class="p">);</span>
+         <span class="p">}</span>
+
+         <span class="n">NamedMessage</span> <span class="n">namedMsg</span><span class="p">;</span>
+
+         <span class="cm">/* Write merged Topic with userName instead of userID */</span>
+
+         <span class="n">namedMsg</span><span class="p">.</span><span class="n">userName</span> <span class="o">=</span> <span class="n">m_userName</span><span class="p">;</span>
+         <span class="n">namedMsg</span><span class="p">.</span><span class="n">userID</span> <span class="o">=</span> <span class="n">m_previousID</span><span class="p">;</span>
+         <span class="n">namedMsg</span><span class="p">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">chatMsgSeq</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">index</span><span class="p">;</span>
+         <span class="n">namedMsg</span><span class="p">.</span><span class="n">content</span> <span class="o">=</span> <span class="n">chatMsgSeq</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">content</span><span class="p">;</span>
+
+         <span class="k">if</span> <span class="p">(</span><span class="n">chatMsgInfoSeq</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">valid_data</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">m_namedMessageWriter</span><span class="o">-&gt;</span><span class="n">write</span><span class="p">(</span><span class="n">namedMsg</span><span class="p">,</span> <span class="n">HANDLE_NIL</span><span class="p">);</span>
+            <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NamedMessageDataWriter::write&quot;</span><span class="p">);</span>
+         <span class="p">}</span>
+      <span class="p">}</span>
+
+      <span class="n">status</span> <span class="o">=</span> <span class="n">m_chatMsgReader</span><span class="o">-&gt;</span><span class="n">return_loan</span><span class="p">(</span><span class="n">chatMsgSeq</span><span class="p">,</span> <span class="n">chatMsgInfoSeq</span><span class="p">);</span>
+      <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::ChatMessageDataReader::return_loan&quot;</span><span class="p">);</span>
+
+      <span class="k">if</span> <span class="p">(</span><span class="n">terminationReceived</span><span class="p">)</span> <span class="p">{</span>
+         <span class="n">m_isTerminated</span><span class="p">.</span><span class="n">setTerminated</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+      <span class="p">}</span>
+   <span class="p">}</span>
+
+<span class="p">}</span>
+
+<span class="kt">bool</span> <span class="n">ChatMessageDataReaderListenerImpl</span><span class="o">::</span><span class="n">isTerminated</span><span class="p">()</span> <span class="p">{</span>
+   <span class="k">return</span> <span class="n">m_isTerminated</span><span class="p">.</span><span class="n">isTerminated</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">ChatMessageDataReaderListenerImpl</span><span class="o">::</span><span class="n">cleanup</span><span class="p">()</span> <span class="p">{</span>
+   <span class="cm">/* Remove all Read Conditions from the DataReaders */</span>
+
+   <span class="kt">int</span> <span class="n">status</span> <span class="o">=</span> <span class="n">m_nameServiceReader</span><span class="o">-&gt;</span><span class="n">delete_readcondition</span><span class="p">(</span><span class="n">m_nameFinder</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+         <span class="s">&quot;Chat::NameServiceDataReader::delete_readcondition(nameFinder)&quot;</span><span class="p">);</span>
+
+   <span class="n">status</span> <span class="o">=</span> <span class="n">m_chatMsgReader</span><span class="o">-&gt;</span><span class="n">delete_readcondition</span><span class="p">(</span><span class="n">m_newMessages</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+         <span class="s">&quot;Chat::ChatMessageDataReader::delete_readcondition(newMessages)&quot;</span><span class="p">);</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="namedmessagedatareaderlistenerimpl-h-linux-version">
+<h4>11.1.2.6. NamedMessageDataReaderListenerImpl.h, Linux Version<a class="headerlink" href="#namedmessagedatareaderlistenerimpl-h-linux-version" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">NamedMessageDataReaderListenerImpl</span><span class="p">.</span><span class="n">h</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    NamedMessageDataReaderListenerImpl.h</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the &#39;MessageBoard&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+<span class="cp">#ifndef _NAMEDMESSAGEDATAREADERLISTENERIMPL_H_</span>
+<span class="cp">#define _NAMEDMESSAGEDATAREADERLISTENERIMPL_H_</span>
+
+<span class="cp">#include &lt;pthread.h&gt;</span>
+
+<span class="cp">#include &quot;exported_MessageBoardApplicationDcps.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplicationWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/NamedMessageDataReaderListener.h&quot;</span>
+
+<span class="k">class</span> <span class="nc">NamedMessageDataReaderListenerImpl</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplication</span><span class="o">::</span><span class="n">NamedMessageDataReaderListener</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+   <span class="n">NamedMessageDataReaderListenerImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplicationWrapper</span><span class="o">*</span> <span class="n">messageBoardApplication</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">on_data_available</span> <span class="p">(</span><span class="n">DDS</span><span class="o">::</span><span class="n">DataReader_ptr</span> <span class="n">dataReader</span><span class="p">);</span>
+   <span class="kt">bool</span> <span class="nf">isTerminated</span><span class="p">();</span>
+
+<span class="k">private</span><span class="o">:</span>
+   <span class="k">class</span> <span class="nc">IsTerminated</span>
+   <span class="p">{</span>
+   <span class="k">public</span><span class="o">:</span>
+      <span class="n">IsTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="n">m_isTerminated</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+         <span class="n">pthread_mutex_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+      <span class="p">}</span>
+
+      <span class="k">virtual</span> <span class="o">~</span><span class="n">IsTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="n">pthread_mutex_destroy</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">);</span>
+      <span class="p">}</span>
+
+      <span class="kt">bool</span> <span class="n">isTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="kt">bool</span> <span class="n">ret</span><span class="p">;</span>
+
+         <span class="n">pthread_mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">);</span>
+         <span class="n">ret</span> <span class="o">=</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+         <span class="n">pthread_mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">);</span>
+
+         <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
+      <span class="p">}</span>
+
+      <span class="kt">void</span> <span class="n">setTerminated</span><span class="p">(</span><span class="kt">bool</span> <span class="n">isTerminated</span><span class="p">)</span>
+      <span class="p">{</span>
+         <span class="n">pthread_mutex_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">);</span>
+         <span class="n">m_isTerminated</span> <span class="o">=</span> <span class="n">isTerminated</span><span class="p">;</span>
+         <span class="n">pthread_mutex_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">m_mutex</span><span class="p">);</span>
+      <span class="p">}</span>
+
+   <span class="k">private</span><span class="o">:</span>
+      <span class="kt">pthread_mutex_t</span> <span class="n">m_mutex</span><span class="p">;</span>
+      <span class="kt">bool</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+   <span class="p">};</span>
+
+   <span class="n">IsTerminated</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+
+   <span class="k">const</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplicationWrapper</span><span class="o">*</span> <span class="n">m_messageBoardApplication</span><span class="p">;</span>
+
+   <span class="n">Chat</span><span class="o">::</span><span class="n">NamedMessageDataReader_ptr</span> <span class="n">m_namedMsgReader</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="cp">#endif </span><span class="c1">// _NAMEDMESSAGEDATAREADERLISTENERIMPL_H_</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="namedmessagedatareaderlistenerimpl-h-windows-version">
+<h4>11.1.2.7. NamedMessageDataReaderListenerImpl.h, Windows Version<a class="headerlink" href="#namedmessagedatareaderlistenerimpl-h-windows-version" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">NamedMessageDataReaderListenerImpl</span><span class="p">.</span><span class="n">h</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    NamedMessageDataReaderListenerImpl.h</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the &#39;MessageBoard&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+<span class="cp">#ifndef _NAMEDMESSAGEDATAREADERLISTENERIMPL_H_</span>
+<span class="cp">#define _NAMEDMESSAGEDATAREADERLISTENERIMPL_H_</span>
+
+<span class="cp">#include &lt;Windows.h&gt;</span>
+
+<span class="cp">#include &quot;exported_MessageBoardApplicationDcps.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplicationWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/NamedMessageDataReaderListener.h&quot;</span>
+
+<span class="k">class</span> <span class="nc">NamedMessageDataReaderListenerImpl</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplication</span><span class="o">::</span><span class="n">NamedMessageDataReaderListener</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+   <span class="n">NamedMessageDataReaderListenerImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplicationWrapper</span><span class="o">*</span> <span class="n">messageBoardApplication</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="nf">on_data_available</span> <span class="p">(</span><span class="n">DDS</span><span class="o">::</span><span class="n">DataReader_ptr</span> <span class="n">dataReader</span><span class="p">);</span>
+   <span class="kt">bool</span> <span class="nf">isTerminated</span><span class="p">();</span>
+
+<span class="k">private</span><span class="o">:</span>
+      <span class="k">class</span> <span class="nc">IsTerminated</span>
+   <span class="p">{</span>
+   <span class="k">public</span><span class="o">:</span>
+      <span class="n">IsTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="n">m_isTerminated</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+         <span class="n">m_mutex</span> <span class="o">=</span> <span class="n">CreateMutex</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="n">FALSE</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+      <span class="p">}</span>
+
+      <span class="k">virtual</span> <span class="o">~</span><span class="n">IsTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="n">CloseHandle</span><span class="p">(</span><span class="n">m_mutex</span><span class="p">);</span>
+      <span class="p">}</span>
+
+      <span class="kt">bool</span> <span class="n">isTerminated</span><span class="p">()</span>
+      <span class="p">{</span>
+         <span class="kt">bool</span> <span class="n">ret</span><span class="p">;</span>
+
+         <span class="n">WaitForSingleObject</span><span class="p">(</span><span class="n">m_mutex</span><span class="p">,</span> <span class="n">INFINITE</span><span class="p">);</span>
+         <span class="n">ret</span> <span class="o">=</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+         <span class="n">ReleaseMutex</span><span class="p">(</span><span class="n">m_mutex</span><span class="p">);</span>
+
+         <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
+      <span class="p">}</span>
+
+      <span class="kt">void</span> <span class="n">setTerminated</span><span class="p">(</span><span class="kt">bool</span> <span class="n">isTerminated</span><span class="p">)</span>
+      <span class="p">{</span>
+         <span class="n">WaitForSingleObject</span><span class="p">(</span><span class="n">m_mutex</span><span class="p">,</span> <span class="n">INFINITE</span><span class="p">);</span>
+         <span class="n">m_isTerminated</span> <span class="o">=</span> <span class="n">isTerminated</span><span class="p">;</span>
+         <span class="n">ReleaseMutex</span><span class="p">(</span><span class="n">m_mutex</span><span class="p">);</span>
+      <span class="p">}</span>
+
+   <span class="k">private</span><span class="o">:</span>
+      <span class="n">HANDLE</span> <span class="n">m_mutex</span><span class="p">;</span>
+      <span class="kt">bool</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+   <span class="p">};</span>
+
+   <span class="n">IsTerminated</span> <span class="n">m_isTerminated</span><span class="p">;</span>
+
+   <span class="k">const</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplicationWrapper</span><span class="o">*</span> <span class="n">m_messageBoardApplication</span><span class="p">;</span>
+
+   <span class="n">Chat</span><span class="o">::</span><span class="n">NamedMessageDataReader_ptr</span> <span class="n">m_namedMsgReader</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="cp">#endif </span><span class="c1">// _NAMEDMESSAGEDATAREADERLISTENERIMPL_H_</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="namedmessagedatareaderlistenerimpl-cpp">
+<h4>11.1.2.8. NamedMessageDataReaderListenerImpl.cpp<a class="headerlink" href="#namedmessagedatareaderlistenerimpl-cpp" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">NamedMessageDataReaderListenerImpl</span><span class="p">.</span><span class="n">cpp</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    NamedMessageDataReaderListenerImpl.cpp</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the &#39;MessageBoard&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+<span class="cp">#include &lt;iostream&gt;</span>
+
+<span class="cp">#include &quot;NamedMessageDataReaderListenerImpl.h&quot;</span>
+
+<span class="cp">#include &quot;Chat/MessageBoardApplication/ParticipantWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/Participant/SubscriberWrapper.h&quot;</span>
+<span class="cp">#include &quot;Chat/MessageBoardApplication/Participant/Subscriber/NamedMessageDataReaderWrapper.h&quot;</span>
+
+<span class="cp">#include &quot;CheckStatus.h&quot;</span>
+
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">DDS</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">Chat</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+
+<span class="n">NamedMessageDataReaderListenerImpl</span><span class="o">::</span><span class="n">NamedMessageDataReaderListenerImpl</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">Chat</span><span class="o">::</span><span class="n">MessageBoardApplicationWrapper</span><span class="o">*</span> <span class="n">messageBoardApplication</span><span class="p">)</span> <span class="o">:</span>
+         <span class="n">m_messageBoardApplication</span><span class="p">(</span><span class="n">messageBoardApplication</span><span class="p">),</span>
+         <span class="n">m_namedMsgReader</span><span class="p">(</span><span class="n">messageBoardApplication</span><span class="o">-&gt;</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getNamedMessageDataReaderWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getDataReader</span><span class="p">())</span>
+<span class="p">{</span>
+   <span class="n">m_isTerminated</span><span class="p">.</span><span class="n">setTerminated</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">NamedMessageDataReaderListenerImpl</span><span class="o">::</span><span class="n">on_data_available</span><span class="p">(</span>
+      <span class="n">DDS</span><span class="o">::</span><span class="n">DataReader_ptr</span> <span class="n">dataReader</span><span class="p">)</span>
+<span class="p">{</span>
+   <span class="n">NamedMessageSeq</span> <span class="n">namedMsgSeq</span><span class="p">;</span>
+   <span class="n">DDS</span><span class="o">::</span><span class="n">SampleInfoSeq</span> <span class="n">infoSeq</span><span class="p">;</span>
+
+   <span class="n">m_isTerminated</span><span class="p">.</span><span class="n">setTerminated</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span>
+
+   <span class="kt">int</span> <span class="n">status</span> <span class="o">=</span> <span class="n">m_namedMsgReader</span><span class="o">-&gt;</span><span class="n">take</span><span class="p">(</span><span class="n">namedMsgSeq</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">,</span> <span class="n">LENGTH_UNLIMITED</span><span class="p">,</span>
+         <span class="n">NOT_READ_SAMPLE_STATE</span><span class="p">,</span> <span class="n">ANY_VIEW_STATE</span><span class="p">,</span> <span class="n">ALIVE_INSTANCE_STATE</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NamedMessageDataReader::read&quot;</span><span class="p">);</span>
+
+   <span class="cm">/* For each message, print the message */</span>
+   <span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">namedMsgSeq</span><span class="p">.</span><span class="n">length</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+   <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">namedMsgSeq</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">userName</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">namedMsgSeq</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">content</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="n">status</span> <span class="o">=</span> <span class="n">m_namedMsgReader</span><span class="o">-&gt;</span><span class="n">return_loan</span><span class="p">(</span><span class="n">namedMsgSeq</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NamedMessageDataReader::return_loan&quot;</span><span class="p">);</span>
+
+   <span class="n">m_isTerminated</span><span class="p">.</span><span class="n">setTerminated</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">bool</span> <span class="n">NamedMessageDataReaderListenerImpl</span><span class="o">::</span><span class="n">isTerminated</span><span class="p">()</span>
+<span class="p">{</span>
+   <span class="k">return</span> <span class="n">m_isTerminated</span><span class="p">.</span><span class="n">isTerminated</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="userload-application">
+<h3>11.1.3. UserLoad Application<a class="headerlink" href="#userload-application" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="userloadapplication-cpp-linux-version">
+<h4>11.1.3.1. UserLoadApplication.cpp, Linux Version<a class="headerlink" href="#userloadapplication-cpp-linux-version" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">UserLoadApplication</span><span class="p">.</span><span class="n">cpp</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    UserLoadApplication.cpp</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the &#39;UserLoadApplication&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+
+<span class="cp">#include &lt;iostream&gt;</span>
+<span class="cp">#include &lt;sstream&gt;</span>
+<span class="cp">#include &lt;unistd.h&gt;</span>
+<span class="cp">#include &lt;string.h&gt;</span>
+<span class="cp">#include &lt;pthread.h&gt;</span>
+<span class="cp">#include &lt;assert.h&gt;</span>
+
+<span class="cp">#include &quot;UserLoadApplication.h&quot;</span>
+<span class="cp">#include &quot;CheckStatus.h&quot;</span>
+
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">DDS</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">Chat</span><span class="p">;</span>
+
+<span class="cm">/* entities required by all threads. */</span>
+<span class="k">static</span> <span class="n">DDS</span><span class="o">::</span><span class="n">GuardCondition_ptr</span> <span class="n">escape</span><span class="p">;</span>
+
+<span class="cm">/* Sleeper thread: sleeps 60 seconds and then triggers the WaitSet. */</span>
+<span class="kt">void</span> <span class="o">*</span> <span class="nf">delayedEscape</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">arg</span><span class="p">)</span> <span class="p">{</span>
+   <span class="n">DDS</span><span class="o">::</span><span class="n">ReturnCode_t</span> <span class="n">status</span><span class="p">;</span>
+
+   <span class="n">sleep</span><span class="p">(</span><span class="mi">60</span><span class="p">);</span> <span class="cm">/* wait for 60 sec. */</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">escape</span><span class="o">-&gt;</span><span class="n">set_trigger_value</span><span class="p">(</span><span class="n">TRUE</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;DDS::GuardCondition::set_trigger_value&quot;</span><span class="p">);</span>
+
+   <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+   <span class="cm">/* DDS Identifiers */</span>
+   <span class="n">ReturnCode_t</span> <span class="n">status</span><span class="p">;</span>
+   <span class="n">ConditionSeq</span> <span class="n">guardList</span><span class="p">;</span>
+
+   <span class="n">ChatMessageSeq</span> <span class="n">msgList</span><span class="p">;</span>
+   <span class="n">NameServiceSeq</span> <span class="n">nsList</span><span class="p">;</span>
+   <span class="n">SampleInfoSeq</span> <span class="n">infoSeq</span><span class="p">;</span>
+   <span class="n">SampleInfoSeq</span> <span class="n">infoSeq2</span><span class="p">;</span>
+
+   <span class="cm">/* Others */</span>
+   <span class="n">StringSeq</span> <span class="n">args</span><span class="p">;</span>
+
+   <span class="kt">bool</span> <span class="n">closed</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+   <span class="n">Long</span> <span class="n">prevCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+   <span class="kt">pthread_t</span> <span class="n">tid</span><span class="p">;</span>
+
+   <span class="n">UserLoadApplicationWrapperImplementation</span> <span class="n">userLoadApplication</span><span class="p">;</span>
+
+   <span class="cm">/* Initialize the Query Arguments. */</span>
+   <span class="n">args</span><span class="p">.</span><span class="n">length</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+   <span class="n">args</span><span class="p">[</span><span class="mi">0UL</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;0&quot;</span><span class="p">;</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getQueryConditionWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setQueryParameters</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+
+      <span class="cm">/* Initialize the application */</span>
+      <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">start</span><span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Error while initializing the application:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="cm">/* start the WaitSet */</span>
+      <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getUserLoadWaitSetWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">start</span><span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Error while starting the WaitSet:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">stop</span><span class="p">();</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="n">WaitSet_ptr</span> <span class="n">userLoadWS</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getUserLoadWaitSetWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getWaitSet</span><span class="p">();</span>
+
+   <span class="cm">/* Generic DDS entities */</span>
+   <span class="n">LivelinessChangedStatus</span>         <span class="n">livChangStatus</span><span class="p">;</span>
+
+   <span class="n">escape</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getGuardConditionWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getCondition</span><span class="p">();</span>
+
+   <span class="cm">/* Type-specific DDS entities */</span>
+   <span class="n">NameServiceDataReader_ptr</span> <span class="n">nameServer</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getNameServiceDataReaderWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getDataReader</span><span class="p">();</span>
+   <span class="n">ChatMessageDataReader_ptr</span> <span class="n">loadAdmin</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getChatMessageDataReaderWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getDataReader</span><span class="p">();</span>
+   <span class="n">QueryCondition_ptr</span> <span class="n">singleUser</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getQueryConditionWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getCondition</span><span class="p">();</span>
+    <span class="n">ReadCondition_ptr</span> <span class="n">newUser</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getReadConditionWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getCondition</span><span class="p">();</span>
+    <span class="n">StatusCondition_ptr</span> <span class="n">leftUser</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getStatusConditionWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getCondition</span><span class="p">();</span>
+
+    <span class="cm">/* Initialize and pre-allocate the GuardList used to obtain the triggered Conditions. */</span>
+    <span class="n">guardList</span><span class="p">.</span><span class="n">length</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+
+    <span class="cm">/* Remove all known Users that are not currently active. */</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">take</span><span class="p">(</span>
+        <span class="n">nsList</span><span class="p">,</span>
+        <span class="n">infoSeq</span><span class="p">,</span>
+        <span class="n">LENGTH_UNLIMITED</span><span class="p">,</span>
+        <span class="n">ANY_SAMPLE_STATE</span><span class="p">,</span>
+        <span class="n">ANY_VIEW_STATE</span><span class="p">,</span>
+        <span class="n">NOT_ALIVE_INSTANCE_STATE</span><span class="p">);</span>
+    <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NameServiceDataReader::take&quot;</span><span class="p">);</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">return_loan</span><span class="p">(</span><span class="n">nsList</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">);</span>
+    <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NameServiceDataReader::return_loan&quot;</span><span class="p">);</span>
+
+   <span class="cm">/* Start the sleeper thread */</span>
+   <span class="n">pthread_create</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">tid</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">delayedEscape</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+
+   <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">closed</span><span class="p">)</span> <span class="p">{</span>
+      <span class="cm">/* Wait until at least one of the Conditions in the waitset triggers. */</span>
+      <span class="n">status</span> <span class="o">=</span> <span class="n">userLoadWS</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">(</span><span class="n">guardList</span><span class="p">,</span> <span class="n">DURATION_INFINITE</span><span class="p">);</span>
+      <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;DDS::WaitSet::wait&quot;</span><span class="p">);</span>
+
+      <span class="cm">/* Walk over all guards to display information */</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">ULong</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">guardList</span><span class="p">.</span><span class="n">length</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+         <span class="k">if</span> <span class="p">(</span><span class="n">guardList</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">in</span><span class="p">()</span> <span class="o">==</span> <span class="n">newUser</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="cm">/* The newUser ReadCondition contains data */</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">read_w_condition</span><span class="p">(</span><span class="n">nsList</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">,</span>
+                  <span class="n">LENGTH_UNLIMITED</span><span class="p">,</span> <span class="n">newUser</span> <span class="p">);</span>
+            <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                  <span class="s">&quot;Chat::NameServiceDataReader::read_w_condition&quot;</span><span class="p">);</span>
+
+            <span class="k">for</span> <span class="p">(</span><span class="n">ULong</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">nsList</span><span class="p">.</span><span class="n">length</span><span class="p">();</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+               <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;New user: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">nsList</span><span class="p">[</span><span class="n">j</span><span class="p">].</span><span class="n">name</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">return_loan</span><span class="p">(</span><span class="n">nsList</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">);</span>
+            <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NameServiceDataReader::return_loan&quot;</span><span class="p">);</span>
+
+         <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">guardList</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">in</span><span class="p">()</span> <span class="o">==</span> <span class="n">leftUser</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="cm">/* Some liveliness has changed (either a DataWriter joined or a DataWriter left) */</span>
+            <span class="n">status</span>
+                  <span class="o">=</span> <span class="n">loadAdmin</span><span class="o">-&gt;</span><span class="n">get_liveliness_changed_status</span><span class="p">(</span><span class="n">livChangStatus</span><span class="p">);</span>
+            <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                  <span class="s">&quot;DDS::DataReader::get_liveliness_changed_status&quot;</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">livChangStatus</span><span class="p">.</span><span class="n">alive_count</span> <span class="o">&lt;</span> <span class="n">prevCount</span><span class="p">)</span> <span class="p">{</span>
+               <span class="cm">/* A user has left the ChatRoom, since a DataWriter lost its liveliness */</span>
+               <span class="cm">/* Take the effected users so tey will not appear in the list later on. */</span>
+
+               <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">take</span><span class="p">(</span><span class="n">nsList</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">,</span>
+                     <span class="n">LENGTH_UNLIMITED</span><span class="p">,</span> <span class="n">ANY_SAMPLE_STATE</span><span class="p">,</span> <span class="n">ANY_VIEW_STATE</span><span class="p">,</span>
+                     <span class="n">NOT_ALIVE_INSTANCE_STATE</span><span class="p">);</span>
+               <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NameServiceDataReader::take&quot;</span><span class="p">);</span>
+
+               <span class="k">for</span> <span class="p">(</span><span class="n">ULong</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">nsList</span><span class="p">.</span><span class="n">length</span><span class="p">();</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                  <span class="cm">/* re-apply query arguments */</span>
+                  <span class="n">ostringstream</span> <span class="n">numberString</span><span class="p">;</span>
+                  <span class="n">numberString</span> <span class="o">&lt;&lt;</span> <span class="n">nsList</span><span class="p">[</span><span class="n">j</span><span class="p">].</span><span class="n">userID</span><span class="p">;</span>
+                  <span class="n">args</span><span class="p">[</span><span class="mi">0UL</span><span class="p">]</span> <span class="o">=</span> <span class="n">numberString</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">();</span>
+                  <span class="n">status</span> <span class="o">=</span> <span class="n">singleUser</span><span class="o">-&gt;</span><span class="n">set_query_parameters</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+                  <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                        <span class="s">&quot;DDS::QueryCondition::set_query_parameters&quot;</span><span class="p">);</span>
+
+                  <span class="cm">/* Read this users history */</span>
+                  <span class="n">status</span> <span class="o">=</span> <span class="n">loadAdmin</span><span class="o">-&gt;</span><span class="n">take_w_condition</span><span class="p">(</span><span class="n">msgList</span><span class="p">,</span> <span class="n">infoSeq2</span><span class="p">,</span>
+                        <span class="n">LENGTH_UNLIMITED</span><span class="p">,</span> <span class="n">singleUser</span> <span class="p">);</span>
+                  <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                        <span class="s">&quot;Chat::ChatMessageDataReader::take_w_condition&quot;</span><span class="p">);</span>
+
+                  <span class="cm">/* Display the user and his history */</span>
+                  <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Departed user &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">nsList</span><span class="p">[</span><span class="n">j</span><span class="p">].</span><span class="n">name</span>
+                        <span class="o">&lt;&lt;</span> <span class="s">&quot; has sent &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">msgList</span><span class="p">.</span><span class="n">length</span><span class="p">()</span>
+                        <span class="o">&lt;&lt;</span> <span class="s">&quot; messages.&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+                  <span class="n">status</span> <span class="o">=</span> <span class="n">loadAdmin</span><span class="o">-&gt;</span><span class="n">return_loan</span><span class="p">(</span><span class="n">msgList</span><span class="p">,</span> <span class="n">infoSeq2</span><span class="p">);</span>
+                  <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                        <span class="s">&quot;Chat::ChatMessageDataReader::return_loan&quot;</span><span class="p">);</span>
+               <span class="p">}</span>
+               <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">return_loan</span><span class="p">(</span><span class="n">nsList</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">);</span>
+               <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                     <span class="s">&quot;Chat::NameServiceDataReader::return_loan&quot;</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="n">prevCount</span> <span class="o">=</span> <span class="n">livChangStatus</span><span class="p">.</span><span class="n">alive_count</span><span class="p">;</span>
+
+         <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">guardList</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">in</span><span class="p">()</span> <span class="o">==</span> <span class="n">escape</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;UserLoad has terminated.&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+            <span class="n">closed</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+         <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">assert</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+         <span class="p">};</span>
+      <span class="p">}</span> <span class="cm">/* for */</span>
+   <span class="p">}</span> <span class="cm">/* while (!closed) */</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="cm">/* Stop the application */</span>
+      <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">stop</span> <span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Error while stopping the application:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="userloadapplication-cpp-windows-version">
+<h4>11.1.3.2. UserLoadApplication.cpp, Windows Version<a class="headerlink" href="#userloadapplication-cpp-windows-version" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">UserLoadApplication</span><span class="p">.</span><span class="n">cpp</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    UserLoadApplication.cpp</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the &#39;UserLoadApplication&#39; executable.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+
+<span class="cp">#include &lt;iostream&gt;</span>
+<span class="cp">#include &lt;sstream&gt;</span>
+<span class="cp">#include &lt;string.h&gt;</span>
+<span class="cp">#include &lt;assert.h&gt;</span>
+
+<span class="cp">#include &quot;UserLoadApplication.h&quot;</span>
+<span class="cp">#include &quot;CheckStatus.h&quot;</span>
+
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">DDS</span><span class="p">;</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">Chat</span><span class="p">;</span>
+
+<span class="cm">/* entities required by all threads. */</span>
+<span class="k">static</span> <span class="n">DDS</span><span class="o">::</span><span class="n">GuardCondition_ptr</span> <span class="n">escape</span><span class="p">;</span>
+
+<span class="cm">/* Sleeper thread: sleeps 60 seconds and then triggers the WaitSet. */</span>
+<span class="n">DWORD</span> <span class="n">WINAPI</span>
+<span class="nf">delayedEscape</span><span class="p">(</span>
+    <span class="n">LPVOID</span> <span class="n">arg</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">DDS</span><span class="o">::</span><span class="n">ReturnCode_t</span> <span class="n">status</span><span class="p">;</span>
+
+    <span class="n">Sleep</span><span class="p">(</span><span class="mi">60000</span><span class="p">);</span>     <span class="cm">/* wait for 60 sec. */</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">escape</span><span class="o">-&gt;</span><span class="n">set_trigger_value</span><span class="p">(</span><span class="n">TRUE</span><span class="p">);</span>
+    <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;DDS::GuardCondition::set_trigger_value&quot;</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+   <span class="cm">/* DDS Identifiers */</span>
+   <span class="n">ReturnCode_t</span> <span class="n">status</span><span class="p">;</span>
+   <span class="n">ConditionSeq</span> <span class="n">guardList</span><span class="p">;</span>
+
+   <span class="n">ChatMessageSeq</span> <span class="n">msgList</span><span class="p">;</span>
+   <span class="n">NameServiceSeq</span> <span class="n">nsList</span><span class="p">;</span>
+   <span class="n">SampleInfoSeq</span> <span class="n">infoSeq</span><span class="p">;</span>
+   <span class="n">SampleInfoSeq</span> <span class="n">infoSeq2</span><span class="p">;</span>
+
+   <span class="cm">/* Others */</span>
+   <span class="n">StringSeq</span> <span class="n">args</span><span class="p">;</span>
+
+   <span class="kt">bool</span> <span class="n">closed</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+   <span class="n">Long</span> <span class="n">prevCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+   <span class="n">DWORD</span> <span class="n">tid</span><span class="p">;</span>
+   <span class="n">HANDLE</span> <span class="n">tHandle</span> <span class="o">=</span> <span class="n">INVALID_HANDLE_VALUE</span><span class="p">;</span>
+
+   <span class="n">UserLoadApplicationWrapperImplementation</span> <span class="n">userLoadApplication</span><span class="p">;</span>
+
+   <span class="cm">/* Initialize the Query Arguments. */</span>
+   <span class="n">args</span><span class="p">.</span><span class="n">length</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+   <span class="n">args</span><span class="p">[</span><span class="mi">0UL</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;0&quot;</span><span class="p">;</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getQueryConditionWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setQueryParameters</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+
+      <span class="cm">/* Initialize the application */</span>
+      <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">start</span><span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Error while initializing the application:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="cm">/* start the WaitSet */</span>
+      <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getUserLoadWaitSetWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">start</span><span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Error while starting the WaitSet:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">stop</span><span class="p">();</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="n">WaitSet_ptr</span> <span class="n">userLoadWS</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getUserLoadWaitSetWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getWaitSet</span><span class="p">();</span>
+
+   <span class="cm">/* Generic DDS entities */</span>
+   <span class="n">LivelinessChangedStatus</span>         <span class="n">livChangStatus</span><span class="p">;</span>
+
+   <span class="n">escape</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getGuardConditionWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getCondition</span><span class="p">();</span>
+
+   <span class="cm">/* Type-specific DDS entities */</span>
+   <span class="n">NameServiceDataReader_ptr</span> <span class="n">nameServer</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getNameServiceDataReaderWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getDataReader</span><span class="p">();</span>
+   <span class="n">ChatMessageDataReader_ptr</span> <span class="n">loadAdmin</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSubscriberWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getChatMessageDataReaderWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getDataReader</span><span class="p">();</span>
+   <span class="n">QueryCondition_ptr</span> <span class="n">singleUser</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getQueryConditionWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getCondition</span><span class="p">();</span>
+   <span class="n">ReadCondition_ptr</span> <span class="n">newUser</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getReadConditionWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getCondition</span><span class="p">();</span>
+   <span class="n">StatusCondition_ptr</span> <span class="n">leftUser</span> <span class="o">=</span> <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">getStatusConditionWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getCondition</span><span class="p">();</span>
+
+   <span class="cm">/* Initialize and pre-allocate the GuardList used to obtain the triggered Conditions. */</span>
+   <span class="n">guardList</span><span class="p">.</span><span class="n">length</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+
+   <span class="cm">/* Remove all known Users that are not currently active. */</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">take</span><span class="p">(</span>
+       <span class="n">nsList</span><span class="p">,</span>
+       <span class="n">infoSeq</span><span class="p">,</span>
+       <span class="n">LENGTH_UNLIMITED</span><span class="p">,</span>
+       <span class="n">ANY_SAMPLE_STATE</span><span class="p">,</span>
+       <span class="n">ANY_VIEW_STATE</span><span class="p">,</span>
+       <span class="n">NOT_ALIVE_INSTANCE_STATE</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NameServiceDataReader::take&quot;</span><span class="p">);</span>
+   <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">return_loan</span><span class="p">(</span><span class="n">nsList</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">);</span>
+   <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NameServiceDataReader::return_loan&quot;</span><span class="p">);</span>
+
+   <span class="cm">/* Start the sleeper thread */</span>
+   <span class="n">tHandle</span> <span class="o">=</span> <span class="n">CreateThread</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">delayedEscape</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">tid</span><span class="p">);</span>
+
+   <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">closed</span><span class="p">)</span> <span class="p">{</span>
+      <span class="cm">/* Wait until at least one of the Conditions in the waitset triggers. */</span>
+      <span class="n">status</span> <span class="o">=</span> <span class="n">userLoadWS</span><span class="o">-&gt;</span><span class="n">wait</span><span class="p">(</span><span class="n">guardList</span><span class="p">,</span> <span class="n">DURATION_INFINITE</span><span class="p">);</span>
+      <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;DDS::WaitSet::wait&quot;</span><span class="p">);</span>
+
+      <span class="cm">/* Walk over all guards to display information */</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">ULong</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">guardList</span><span class="p">.</span><span class="n">length</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+         <span class="k">if</span> <span class="p">(</span><span class="n">guardList</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">in</span><span class="p">()</span> <span class="o">==</span> <span class="n">newUser</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="cm">/* The newUser ReadCondition contains data */</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">read_w_condition</span><span class="p">(</span><span class="n">nsList</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">,</span>
+                  <span class="n">LENGTH_UNLIMITED</span><span class="p">,</span> <span class="n">newUser</span> <span class="p">);</span>
+            <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                  <span class="s">&quot;Chat::NameServiceDataReader::read_w_condition&quot;</span><span class="p">);</span>
+
+            <span class="k">for</span> <span class="p">(</span><span class="n">ULong</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">nsList</span><span class="p">.</span><span class="n">length</span><span class="p">();</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+               <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;New user: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">nsList</span><span class="p">[</span><span class="n">j</span><span class="p">].</span><span class="n">name</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">return_loan</span><span class="p">(</span><span class="n">nsList</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">);</span>
+            <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NameServiceDataReader::return_loan&quot;</span><span class="p">);</span>
+
+         <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">guardList</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">in</span><span class="p">()</span> <span class="o">==</span> <span class="n">leftUser</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="cm">/* Some liveliness has changed (either a DataWriter joined or a DataWriter left) */</span>
+            <span class="n">status</span>
+                  <span class="o">=</span> <span class="n">loadAdmin</span><span class="o">-&gt;</span><span class="n">get_liveliness_changed_status</span><span class="p">(</span><span class="n">livChangStatus</span><span class="p">);</span>
+            <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                  <span class="s">&quot;DDS::DataReader::get_liveliness_changed_status&quot;</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">livChangStatus</span><span class="p">.</span><span class="n">alive_count</span> <span class="o">&lt;</span> <span class="n">prevCount</span><span class="p">)</span> <span class="p">{</span>
+               <span class="cm">/* A user has left the ChatRoom, since a DataWriter lost its liveliness */</span>
+               <span class="cm">/* Take the effected users so tey will not appear in the list later on. */</span>
+
+               <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">take</span><span class="p">(</span><span class="n">nsList</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">,</span>
+                     <span class="n">LENGTH_UNLIMITED</span><span class="p">,</span> <span class="n">ANY_SAMPLE_STATE</span><span class="p">,</span> <span class="n">ANY_VIEW_STATE</span><span class="p">,</span>
+                     <span class="n">NOT_ALIVE_INSTANCE_STATE</span><span class="p">);</span>
+               <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="s">&quot;Chat::NameServiceDataReader::take&quot;</span><span class="p">);</span>
+
+               <span class="k">for</span> <span class="p">(</span><span class="n">ULong</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">nsList</span><span class="p">.</span><span class="n">length</span><span class="p">();</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                  <span class="cm">/* re-apply query arguments */</span>
+                  <span class="n">ostringstream</span> <span class="n">numberString</span><span class="p">;</span>
+                  <span class="n">numberString</span> <span class="o">&lt;&lt;</span> <span class="n">nsList</span><span class="p">[</span><span class="n">j</span><span class="p">].</span><span class="n">userID</span><span class="p">;</span>
+                  <span class="n">args</span><span class="p">[</span><span class="mi">0UL</span><span class="p">]</span> <span class="o">=</span> <span class="n">numberString</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">();</span>
+                  <span class="n">status</span> <span class="o">=</span> <span class="n">singleUser</span><span class="o">-&gt;</span><span class="n">set_query_parameters</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+                  <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                        <span class="s">&quot;DDS::QueryCondition::set_query_parameters&quot;</span><span class="p">);</span>
+
+                  <span class="cm">/* Read this users history */</span>
+                  <span class="n">status</span> <span class="o">=</span> <span class="n">loadAdmin</span><span class="o">-&gt;</span><span class="n">take_w_condition</span><span class="p">(</span><span class="n">msgList</span><span class="p">,</span> <span class="n">infoSeq2</span><span class="p">,</span>
+                        <span class="n">LENGTH_UNLIMITED</span><span class="p">,</span> <span class="n">singleUser</span> <span class="p">);</span>
+                  <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                        <span class="s">&quot;Chat::ChatMessageDataReader::take_w_condition&quot;</span><span class="p">);</span>
+
+                  <span class="cm">/* Display the user and his history */</span>
+                  <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Departed user &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">nsList</span><span class="p">[</span><span class="n">j</span><span class="p">].</span><span class="n">name</span>
+                        <span class="o">&lt;&lt;</span> <span class="s">&quot; has sent &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">msgList</span><span class="p">.</span><span class="n">length</span><span class="p">()</span>
+                        <span class="o">&lt;&lt;</span> <span class="s">&quot; messages.&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+                  <span class="n">status</span> <span class="o">=</span> <span class="n">loadAdmin</span><span class="o">-&gt;</span><span class="n">return_loan</span><span class="p">(</span><span class="n">msgList</span><span class="p">,</span> <span class="n">infoSeq2</span><span class="p">);</span>
+                  <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                        <span class="s">&quot;Chat::ChatMessageDataReader::return_loan&quot;</span><span class="p">);</span>
+               <span class="p">}</span>
+               <span class="n">status</span> <span class="o">=</span> <span class="n">nameServer</span><span class="o">-&gt;</span><span class="n">return_loan</span><span class="p">(</span><span class="n">nsList</span><span class="p">,</span> <span class="n">infoSeq</span><span class="p">);</span>
+               <span class="n">checkStatus</span><span class="p">(</span><span class="n">status</span><span class="p">,</span>
+                     <span class="s">&quot;Chat::NameServiceDataReader::return_loan&quot;</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="n">prevCount</span> <span class="o">=</span> <span class="n">livChangStatus</span><span class="p">.</span><span class="n">alive_count</span><span class="p">;</span>
+
+         <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">guardList</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">in</span><span class="p">()</span> <span class="o">==</span> <span class="n">escape</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;UserLoad has terminated.&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+            <span class="n">closed</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+         <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">assert</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+         <span class="p">};</span>
+      <span class="p">}</span> <span class="cm">/* for */</span>
+   <span class="p">}</span> <span class="cm">/* while (!closed) */</span>
+
+   <span class="n">try</span> <span class="p">{</span>
+      <span class="cm">/* Stop the application */</span>
+      <span class="n">userLoadApplication</span><span class="p">.</span><span class="n">stop</span> <span class="p">();</span>
+   <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="n">WrapperException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Error while stopping the application:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+      <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="n">CloseHandle</span><span class="p">(</span><span class="n">tHandle</span><span class="p">);</span>
+
+   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="checkstatus-h">
+<h4>11.1.3.3. CheckStatus.h<a class="headerlink" href="#checkstatus-h" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">CheckStatus</span><span class="p">.</span><span class="n">h</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    CheckStatus.h</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the headers for the error handling operations.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+
+<span class="cp">#ifndef __CHECKSTATUS_H__</span>
+<span class="cp">#define __CHECKSTATUS_H__</span>
+
+<span class="cp">#include &quot;ccpp_dds_dcps.h&quot;</span>
+<span class="cp">#include &lt;iostream&gt;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Returns the name of an error code.</span>
+<span class="cm"> **/</span>
+<span class="kt">char</span> <span class="o">*</span><span class="n">getErrorName</span><span class="p">(</span><span class="n">DDS</span><span class="o">::</span><span class="n">ReturnCode_t</span> <span class="n">status</span><span class="p">);</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Check the return status for errors. If there is an error, then terminate.</span>
+<span class="cm"> **/</span>
+<span class="kt">void</span> <span class="nf">checkStatus</span><span class="p">(</span><span class="n">DDS</span><span class="o">::</span><span class="n">ReturnCode_t</span> <span class="n">status</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">info</span><span class="p">);</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Check whether a valid handle has been returned. If not, then terminate.</span>
+<span class="cm"> **/</span>
+<span class="kt">void</span> <span class="nf">checkHandle</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">handle</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">info</span><span class="p">);</span>
+
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="checkstatus-cpp">
+<h4>11.1.3.4. CheckStatus.cpp<a class="headerlink" href="#checkstatus-cpp" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">CheckStatus</span><span class="p">.</span><span class="n">cpp</span>
+
+<span class="cm">/************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * Copyright (c) 2012 to 2016</span>
+<span class="cm"> * PrismTech Ltd.</span>
+<span class="cm"> * All rights Reserved.</span>
+<span class="cm"> *</span>
+<span class="cm"> * LOGICAL_NAME:    CheckStatus.cpp</span>
+<span class="cm"> * FUNCTION:        Vortex OpenSplice Modeler Tutorial example code.</span>
+<span class="cm"> * MODULE:          Tutorial for the C++ programming language.</span>
+<span class="cm"> * DATE             January 2012.</span>
+<span class="cm"> ************************************************************************</span>
+<span class="cm"> *</span>
+<span class="cm"> * This file contains the implementation for the error handling operations.</span>
+<span class="cm"> *</span>
+<span class="cm"> ***/</span>
+
+<span class="cp">#include &quot;CheckStatus.h&quot;</span>
+
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+
+<span class="cm">/* Array to hold the names for all ReturnCodes. */</span>
+<span class="kt">char</span> <span class="o">*</span><span class="n">RetCodeName</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;DDS_RETCODE_OK&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_ERROR&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_UNSUPPORTED&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_BAD_PARAMETER&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_PRECONDITION_NOT_MET&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_OUT_OF_RESOURCES&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_NOT_ENABLED&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_IMMUTABLE_POLICY&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_INCONSISTENT_POLICY&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_ALREADY_DELETED&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_TIMEOUT&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_NO_DATA&quot;</span><span class="p">,</span>
+    <span class="s">&quot;DDS_RETCODE_ILLEGAL_OPERATION&quot;</span> <span class="p">};</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Returns the name of an error code.</span>
+<span class="cm"> **/</span>
+<span class="kt">char</span> <span class="o">*</span><span class="nf">getErrorName</span><span class="p">(</span><span class="n">DDS</span><span class="o">::</span><span class="n">ReturnCode_t</span> <span class="n">status</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="n">RetCodeName</span><span class="p">[</span><span class="n">status</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Check the return status for errors. If there is an error, then terminate.</span>
+<span class="cm"> **/</span>
+<span class="kt">void</span> <span class="nf">checkStatus</span><span class="p">(</span>
+    <span class="n">DDS</span><span class="o">::</span><span class="n">ReturnCode_t</span> <span class="n">status</span><span class="p">,</span>
+    <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">info</span> <span class="p">)</span> <span class="p">{</span>
+
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">status</span> <span class="o">!=</span> <span class="n">DDS</span><span class="o">::</span><span class="n">RETCODE_OK</span> <span class="o">&amp;&amp;</span> <span class="n">status</span> <span class="o">!=</span> <span class="n">DDS</span><span class="o">::</span><span class="n">RETCODE_NO_DATA</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Error in &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">info</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">getErrorName</span><span class="p">(</span><span class="n">status</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+        <span class="n">exit</span> <span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * Check whether a valid handle has been returned. If not, then terminate.</span>
+<span class="cm"> **/</span>
+<span class="kt">void</span> <span class="nf">checkHandle</span><span class="p">(</span>
+    <span class="kt">void</span> <span class="o">*</span><span class="n">handle</span><span class="p">,</span>
+    <span class="kt">char</span> <span class="o">*</span><span class="n">info</span> <span class="p">)</span> <span class="p">{</span>
+
+     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">handle</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Error in &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">info</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;: Creation failed: invalid handle&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+        <span class="n">exit</span> <span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+     <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">11. Appendix B</a><ul>
+<li><a class="reference internal" href="#chatroom-example-c-source-code">11.1. Chatroom Example, C++ Source Code</a><ul>
+<li><a class="reference internal" href="#chatter-application">11.1.1. Chatter Application</a><ul>
+<li><a class="reference internal" href="#chatterapplication-cpp-linux-version">11.1.1.1. ChatterApplication.cpp, Linux Version</a></li>
+<li><a class="reference internal" href="#chatterapplication-cpp-windows-version">11.1.1.2. ChatterApplication.cpp, Windows Version</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#messageboard-application">11.1.2. MessageBoard Application</a><ul>
+<li><a class="reference internal" href="#messageboardapplication-cpp-linux-version">11.1.2.1. MessageBoardApplication.cpp, Linux Version</a></li>
+<li><a class="reference internal" href="#messageboardapplication-cpp-windows-version">11.1.2.2. MessageBoardApplication.cpp, Windows Version</a></li>
+<li><a class="reference internal" href="#chatmessagedatareaderlistenerimpl-h-linux-version">11.1.2.3. ChatMessageDataReaderListenerImpl.h, Linux version</a></li>
+<li><a class="reference internal" href="#chatmessagedatareaderlistenerimpl-h-windows-version">11.1.2.4. ChatMessageDataReaderListenerImpl.h, Windows version</a></li>
+<li><a class="reference internal" href="#chatmessagedatareaderlistenerimpl-cpp">11.1.2.5. ChatMessageDataReaderListenerImpl.cpp</a></li>
+<li><a class="reference internal" href="#namedmessagedatareaderlistenerimpl-h-linux-version">11.1.2.6. NamedMessageDataReaderListenerImpl.h, Linux Version</a></li>
+<li><a class="reference internal" href="#namedmessagedatareaderlistenerimpl-h-windows-version">11.1.2.7. NamedMessageDataReaderListenerImpl.h, Windows Version</a></li>
+<li><a class="reference internal" href="#namedmessagedatareaderlistenerimpl-cpp">11.1.2.8. NamedMessageDataReaderListenerImpl.cpp</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#userload-application">11.1.3. UserLoad Application</a><ul>
+<li><a class="reference internal" href="#userloadapplication-cpp-linux-version">11.1.3.1. UserLoadApplication.cpp, Linux Version</a></li>
+<li><a class="reference internal" href="#userloadapplication-cpp-windows-version">11.1.3.2. UserLoadApplication.cpp, Windows Version</a></li>
+<li><a class="reference internal" href="#checkstatus-h">11.1.3.3. CheckStatus.h</a></li>
+<li><a class="reference internal" href="#checkstatus-cpp">11.1.3.4. CheckStatus.cpp</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="appendixa.html"
+                        title="previous chapter">10. Appendix A</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">12. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/appendixb.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="12. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="appendixa.html" title="10. Appendix A"
+             >previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

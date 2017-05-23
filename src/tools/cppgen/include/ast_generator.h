@@ -106,23 +106,34 @@ public:
                                  const UTL_Pragmas &p);
 
    // Create a node representing an interface
-   virtual AST_Interface *create_interface(idl_bool local,
-                                           UTL_ScopedName *n,
-                                           AST_Interface **ih,
-                                           long nih,
-                                           const UTL_Pragmas &p);
+
+   virtual AST_Interface *create_interface
+   (
+      bool local,
+      bool abstract,
+      UTL_ScopedName *n,
+      AST_Interface **ih,
+      long nih,
+      const UTL_Pragmas &p
+   );
 
    // Create a node representing a forward declaration of an interface
-   virtual AST_InterfaceFwd *create_interface_fwd(idl_bool local,
-                                                  UTL_ScopedName *n,
-                                                  const UTL_Pragmas &p);
+
+   AST_InterfaceFwd * create_interface_fwd
+   (
+      bool local,
+      bool abstract,
+      UTL_ScopedName *n,
+      const UTL_Pragmas &p
+   );
 
    // Create a node representing a value type
+
    virtual AST_Value *create_valuetype
    (
-      idl_bool abstract,
-      idl_bool custom,
-      idl_bool truncatable,
+      bool abstract,
+      bool custom,
+      bool truncatable,
       UTL_ScopedName *n,
       AST_Value **ih,
       long nih,
@@ -134,7 +145,7 @@ public:
    // Create a node representing a forward declaration of a value type
    virtual AST_ValueFwd *create_valuetype_fwd
    (
-      idl_bool abstract,
+      bool abstract,
       UTL_ScopedName *n,
       const UTL_Pragmas &p
    );
@@ -142,7 +153,7 @@ public:
    // Create a node representing a state member
    virtual AST_StateMember *create_state_member
    (
-      idl_bool public_access,
+      bool public_access,
       AST_Type *ft,
       UTL_ScopedName *n,
       const UTL_Pragmas &p
@@ -194,15 +205,18 @@ public:
                                          const UTL_Pragmas &p);
 
    // Create a node representing an attribute
-   virtual AST_Attribute *create_attribute(idl_bool ro,
+   virtual AST_Attribute *create_attribute(bool ro,
                                            AST_Type *ft,
                                            UTL_ScopedName *n,
                                            const UTL_Pragmas &p);
 
    // Create a node representing a union
-   virtual AST_Union *create_union(AST_ConcreteType *dt,
-                                   UTL_ScopedName *n,
-                                   const UTL_Pragmas &p);
+
+   virtual AST_Union * create_union
+   (
+      UTL_ScopedName * n,
+      const UTL_Pragmas & p
+   );
 
    // Create a node representing one branch in a union
    virtual AST_UnionBranch *create_union_branch(AST_UnionLabel *lab,
@@ -266,4 +280,4 @@ public:
                                      const UTL_Pragmas &p);
 };
 
-#endif           // _AST_GENERATOR_AST_GENERATOR_HH
+#endif

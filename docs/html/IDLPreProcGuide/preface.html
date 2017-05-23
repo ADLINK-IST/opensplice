@@ -1,0 +1,210 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1. Preface &mdash; IDL PreProcessor Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="IDL PreProcessor Guide" href="index.html" />
+    <link rel="next" title="2. Overview" href="overview.html" />
+    <link rel="prev" title="The IDL PreProcessor Guide" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="overview.html" title="2. Overview"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="The IDL PreProcessor Guide"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="preface">
+<span id="id1"></span><h1>1. Preface<a class="headerlink" href="#preface" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="about-the-idl-preprocessor-guide">
+<h2>1.1. About the IDL PreProcessor Guide<a class="headerlink" href="#about-the-idl-preprocessor-guide" title="Permalink to this headline">¶</a></h2>
+<p>The <em>IDL Pre-processor Guide</em> describes what the Vortex OpenSplice IDL
+Pre-processor is, and how to use it.</p>
+<p>The Vortex OpenSplice IDL Pre-processor is included with
+the Vortex OpenSplice product.</p>
+</div>
+<div class="section" id="intended-audience">
+<h2>1.2. Intended Audience<a class="headerlink" href="#intended-audience" title="Permalink to this headline">¶</a></h2>
+<p>The <em>IDL Pre-processor Guide</em> is intended to be used by developers creating
+applications which use Vortex OpenSplice.</p>
+</div>
+<div class="section" id="organisation">
+<h2>1.3. Organisation<a class="headerlink" href="#organisation" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="overview.html#overview"><em>Overview</em></a> gives a general description of
+and brief introduction to the IDL Pre-processor.</p>
+<p><a class="reference internal" href="prerequisites.html#prerequisites"><em>Prerequisites</em></a> describes the prerequisites needed
+to run the pre-processor.</p>
+<p><a class="reference internal" href="commandline.html#command-line-options"><em>IDL Pre-processor Command Line Options</em></a>
+gives detailed descriptions of the options that are available for
+running the pre-processor.</p>
+<p><a class="reference internal" href="ddsmodes.html#opensplice-modes-and-languages"><em>OpenSplice Modes and Languages</em></a>
+provides a summary of OpenSplice’s supported modes and languages, as well as
+an overview of the applicable Vortex OpenSplice libraries.</p>
+<p><a class="reference internal" href="grammar.html#idl-pre-processor-grammar"><em>IDL Pre-processor Grammar</em></a>
+shows the IDL grammar that is supported by the Vortex OpenSplice IDL Pre-processor.</p>
+<p><a class="reference internal" href="keys.html#keys"><em>Keys</em></a>
+describes the mechanism for the use of keys with particular data types.</p>
+<p><a class="reference internal" href="modeslanguages.html#modes-languages-and-processing-steps"><em>Modes, Languages and Processing steps</em></a>
+describes the steps required for creating programs for each of the modes and
+languages supported by the Pre-processor.</p>
+<p><a class="reference internal" href="topictypes.html#extensible-and-dynamic-topic-types"><em>Extensible and Dynamic Topic Types for DDS annotation support</em></a>
+describes how the IDL Pre-processor handles the annotation language extension.</p>
+<p><a class="reference internal" href="ddsdatatypes.html#built-in-dds-data-types"><em>Built-in DDS data types</em></a>
+describes the built-in DDS data types and provides language-specific
+guidelines on how to use them.</p>
+<p>Finally, there is <a class="reference internal" href="bibliography.html#references"><em>a bibliography</em></a> which lists
+all of the publications referred to in this <em>Guide</em>.</p>
+</div>
+<div class="section" id="conventions">
+<h2>1.4. Conventions<a class="headerlink" href="#conventions" title="Permalink to this headline">¶</a></h2>
+<p>The icons shown below are used in PrismTech product documentation
+to help readers to quickly identify information relevant to their
+specific use of Vortex OpenSplice.</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><em>Icon</em></th>
+<th class="head"><em>Meaning</em></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></td>
+<td>Item of special significance or where caution needs to be taken.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></td>
+<td>Item contains helpful hint or special information.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></td>
+<td>Information applies to Windows (<em>e.g.</em> XP, 2003, Windows 7) only.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a></td>
+<td>Information applies to Unix-based systems (<em>e.g.</em> Solaris) only.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></td>
+<td>Information applies to Linux-based systems (<em>e.g.</em> Ubuntu) only.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-c.png"><img alt="c" src="_images/icon-c.png" style="height: 6mm;" /></a></td>
+<td>C language specific.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></td>
+<td>C++ language specific.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-csharp.png"><img alt="csharp" src="_images/icon-csharp.png" style="height: 6mm;" /></a></td>
+<td>C# language specific.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></td>
+<td>Java language specific.</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1. Preface</a><ul>
+<li><a class="reference internal" href="#about-the-idl-preprocessor-guide">1.1. About the IDL PreProcessor Guide</a></li>
+<li><a class="reference internal" href="#intended-audience">1.2. Intended Audience</a></li>
+<li><a class="reference internal" href="#organisation">1.3. Organisation</a></li>
+<li><a class="reference internal" href="#conventions">1.4. Conventions</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">The IDL PreProcessor Guide</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="overview.html"
+                        title="next chapter">2. Overview</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/preface.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="overview.html" title="2. Overview"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="The IDL PreProcessor Guide"
+             >previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

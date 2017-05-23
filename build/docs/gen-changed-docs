@@ -1,0 +1,217 @@
+#!/bin/bash
+
+BRANCH=$1
+
+if [ -n "$WORKSPACE" ]
+then
+   export OSPL_HOME=$WORKSPACE/ospli
+   export OSPL_OUTER_HOME=$WORKSPACE/osplo
+fi
+
+if [ -z "$OSPL_HOME" ]
+then
+   echo "OSPL_HOME not set"
+   exit 1
+fi
+
+if [ -z "$OSPL_OUTER_HOME" ]
+then
+   echo "OSPL_OUTER_HOME not set"
+   exit 1
+fi
+
+docs_changed="False"
+
+DOCS_DIR=$OSPL_HOME/build/docs
+
+cd $OSPL_HOME/build/docs
+
+while read line
+do 
+   guide=${line:0:4}
+   sha=${line:5}
+
+   case $guide in
+        "MCNX")
+            mcnx_sha=$sha
+            ;;
+        "MCNF")
+            mcnf_sha=$sha
+            ;;
+        "MCGE")
+            mcge_sha=$sha
+            ;;
+        "CONF")
+            conf_sha=$sha
+            ;;
+        "DDST")
+            ddst_sha=$sha
+            ;;
+        "DEPL")
+            depl_sha=$sha
+            ;;
+        "EVAL")
+            eval_sha=$sha
+            ;;
+        "GSTA")
+            gsta_sha=$sha
+            ;;
+        "IDLP")
+            idlp_sha=$sha
+            ;;
+        "NODE")
+            node_sha=$sha
+            ;;
+        "GPBT")
+            gpbt_sha=$sha
+            ;;
+        "RMIG")
+            rmig_sha=$sha
+            ;;
+        "RNRR")
+            rnrr_sha=$sha
+            ;;
+        "RNRM")
+            rnrm_sha=$sha
+            ;;
+        "STRM")
+            strm_sha=$sha
+            ;;   
+        "TEST")
+            test_sha=$sha
+            ;;       
+        "TUNE")
+            tune_sha=$sha
+            ;;
+        "SNET")
+            snet_sha=$sha
+            ;;
+        "MODL")
+            modl_sha=$sha
+            ;;
+        *)
+   esac
+done < $DOCS_DIR/docs-commit-sha
+
+generate_conf_guide ()
+{
+   make xml
+   cd $DOCS_DIR/ConfGuide
+   make html
+
+   cd ../
+   cat $DOCS_DIR/ConfGuide/source/intro.rst > $DOCS_DIR/DeploymentGuide/source/guide.rst 
+   sed -i "s/guide/section/g" $DOCS_DIR/DeploymentGuide/source/guide.rst 
+   cat $DOCS_DIR/ConfGuide/source/guide.rst >> $DOCS_DIR/DeploymentGuide/source/guide.rst 
+   sed -i "s/.. sectnum:://g" $DOCS_DIR/DeploymentGuide/source/guide.rst 
+   sed -i "s/:start: 2//g" $DOCS_DIR/DeploymentGuide/source/guide.rst 
+   sed -i "s/Introduction/Configuration/g" $DOCS_DIR/DeploymentGuide/source/guide.rst 
+
+   # Remove files that are not to be committed.
+   rm -rf $DOCS_DIR/ConfGuide/build
+   rm -rf $DOCS_DIR/ConfGuide/source/osplconf.xml
+   rm -rf $DOCS_DIR/ConfGuide/source/guide.rst
+}
+
+build_docs()
+{
+   if [  "$1" == "ConfGuide" -o "$1" == "extract.py" -o "$1" == "xml2rst.py" -o "$1" == "../../src/tools/cm/config/code/splice_metaconfig_6.1.xml" ];
+   then
+      generate_conf_guide
+
+      # If the ConfGuide has changed we need to rebuild the DeploymentGuide
+      build_docs DeploymentGuide
+   else
+      if [ "$1" == "DeploymentGuide" ];
+      then
+         if [ ! -f "$DOCS_DIR/DeploymentGuide/source/guide.rst" ]
+         then
+            generate_conf_guide         
+         fi
+      fi
+
+      cd $1
+      make html
+      if [ $? != 0 ]
+      then
+         exit 1
+      fi
+
+      make latexpdf
+      if [ $? != 0 ]
+      then
+         exit 1
+      fi
+
+      if [ ! -d $OSPL_HOME/docs/html/$1 ];
+      then
+         mkdir $OSPL_HOME/docs/html/$1
+      fi
+
+      cp -r $OSPL_HOME/build/docs/$1/build/html/* $OSPL_HOME/docs/html/$1
+      cp -p $OSPL_HOME/build/docs/$1/build/latex/OpenSplice_*.pdf $OSPL_HOME/docs/pdf/
+
+      if [ "$1" == "DeploymentGuide" ];
+      then
+         rm -rf $DOCS_DIR/DeploymentGuide/source/guide.rst
+      fi
+
+      rm -rf $DOCS_DIR/$1/build
+   fi
+ 
+   cd $DOCS_DIR
+}
+
+check_for_changes()
+{
+   commit=`git log -1 $1`
+
+   last_sha=${commit:7:40}
+
+   saved_sha=$2
+   key=$3
+
+   echo "saved_sha is ${saved_sha}"
+   echo "last_sha is ${last_sha}"
+
+   if [ "${saved_sha}" == "${last_sha}" ];
+   then
+      echo "No change to $1"
+   else
+      echo "$1 has changed"
+      build_docs $1
+      sed -i "s/${key} ${saved_sha}/${key} ${last_sha}/g" docs-commit-sha
+      docs_changed="True"
+   fi
+}
+
+check_for_changes "extract.py" ${mcnf_sha} "MCNF"
+check_for_changes "xml2rst.py" ${mcnx_sha} "MCNX"
+check_for_changes "../../src/tools/cm/config/code/splice_metaconfig_6.1.xml" ${mcge_sha} "MCGE"
+check_for_changes "ConfGuide" ${conf_sha} "CONF"
+check_for_changes "DDSTutorial" ${ddst_sha} "DDST"
+check_for_changes "DeploymentGuide" ${depl_sha} "DEPL"
+check_for_changes "EvaluationGuide" ${eval_sha} "EVAL"
+check_for_changes "GettingStartedGuide" ${gsta_sha} "GSTA"
+check_for_changes "IDLPreProcGuide" ${idlp_sha} "IDLP"
+check_for_changes "NodeMonitorGuide" ${node_sha} "NODE"
+check_for_changes "GPBTutorial" ${gpbt_sha} "GPBT"
+check_for_changes "RMIGettingStarted" ${rmig_sha} "RMIG"
+check_for_changes "RnRAPIReference" ${rnrr_sha} "RNRR"
+check_for_changes "RnRManagerGuide" ${rnrm_sha} "RNRM"
+check_for_changes "StreamsAPIReference" ${strm_sha} "STRM"
+check_for_changes "TesterUserGuide" ${test_sha} "TEST"
+check_for_changes "TunerGuide" ${tune_sha} "TUNE"
+check_for_changes "SecureNetworking" ${snet_sha} "SNET"
+check_for_changes "ModelingGuide" ${modl_sha} "MODL"
+
+cd $OSPL_HOME/docs
+
+if [ "$docs_changed" == "True" ];
+then
+   git add -A :/
+   git commit -a -m "$TAG Updated documentation generated"
+   git push origin HEAD:$BRANCH
+else
+   echo "No doc changes to commit"
+fi

@@ -1,24 +1,30 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef U_CFNODE_H
 #define U_CFNODE_H
 
-#include "c_typebase.h"
 #include "u_types.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
-#include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -53,7 +59,7 @@ C_CLASS(u_cfNode);
  */
 OS_API v_cfKind
 u_cfNodeKind(
-    u_cfNode node);
+    const u_cfNode node);
 
 /**
  * \brief Returns the name of the configuration node.
@@ -66,9 +72,9 @@ u_cfNodeKind(
  *
  * \return the name of the configuration node.
  */
-OS_API c_char *
+OS_API os_char *
 u_cfNodeName(
-    u_cfNode node);
+    const u_cfNode node);
 
 OS_API void
 u_cfNodeFree (

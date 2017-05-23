@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -60,6 +68,7 @@ extern "C" {
  * <li> \b T_ERR: \b An error value.
  * <li> \b T_VAR: \b A variable id.
  * <li> \b T_INT: \b An integer value.
+ * <li> \b T_UINT:\b An unsigned integer value.
  * <li> \b T_DBL: \b A real value.
  * <li> \b T_CHR: \b A character value.
  * <li> \b T_STR: \b A string value.
@@ -70,7 +79,7 @@ extern "C" {
  *
  */
 typedef enum q_kind {
-    T_ERR, T_VAR, T_INT, T_DBL, T_CHR, T_STR, T_ID, T_FNC, T_TYP
+    T_ERR, T_VAR, T_INT, T_UINT, T_DBL, T_CHR, T_STR, T_ID, T_FNC, T_TYP
 } q_kind;
 
 /** \brief This enumeration type specifies the operation of a function.
@@ -247,6 +256,17 @@ OS_API q_expr
 q_newInt(
     c_longlong value);
 
+/** \brief The unsigned integer value expression constructor.
+ *
+ * This constructor creates an unsigned integer value expression from a given value.
+ *
+ * \param value The given unsigned integer value.
+ * \return The created unsigned integer value expression.
+ */
+OS_API q_expr
+q_newUInt(
+    c_ulonglong value);
+
 /** \brief The real value expression constructor.
  *
  * This constructor creates a real value expression from a given value.
@@ -363,6 +383,10 @@ OS_API c_longlong
 q_getInt(
     q_expr expr);
 
+OS_API c_ulonglong
+q_getUInt(
+    q_expr expr);
+
 OS_API c_double
 q_getDbl(
     q_expr expr);
@@ -400,6 +424,10 @@ OS_API c_bool
 q_isInt(
     q_expr expr);
     
+OS_API c_bool
+q_isUInt(
+    q_expr expr);
+
 OS_API c_bool
 q_isDbl(
     q_expr expr);
@@ -554,7 +582,8 @@ OS_API q_expr     q_takeKey        (q_expr *e, c_array keyList);
 OS_API void       q_prefixFieldNames (q_expr *e, c_char *prefix);
 OS_API void       q_disjunctify    (q_expr e);
 OS_API q_expr     q_removeNots     (q_expr e);
-OS_API c_long     q_countVar       (q_expr e);
+OS_API c_ulong    q_countVar       (q_expr e);
+OS_API c_ulong    q_getLastVar     (q_expr e);
 
 OS_API c_char    *q_propertyName   (q_expr e);
 

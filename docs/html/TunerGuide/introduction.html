@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Introduction &mdash; Tuner Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Tuner Guide" href="index.html" />
+    <link rel="next" title="3. Using the Vortex OpenSplice Tuner" href="using01.html" />
+    <link rel="prev" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="using01.html" title="3. Using the Vortex OpenSplice Tuner"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Tuner Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="introduction">
+<span id="id1"></span><h1>2. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p><em>This section describes the Vortex OpenSplice Tuner.</em></p>
+<div class="section" id="general-description">
+<h2>2.1. General Description<a class="headerlink" href="#general-description" title="Permalink to this headline">¶</a></h2>
+<p>Vortex OpenSplice Tuner has been implemented in the Java language. It is
+possible to use it on every platform where a Java Virtual Machine
+(JVM) implementation is available. That means that Vortex OpenSplice Tuner
+does not require OpenSplice to be available on the local system (see
+Vortex OpenSplice Tuner Z at Node C).</p>
+<p>The diagram below shows a high-level view of a typical environment with
+both Vortex OpenSplice and Vortex OpenSplice Tuner.</p>
+<p>Vortex OpenSplice is available at Node A and Node B. Vortex OpenSplice
+Tuner is available at Node A and Node C. At both Node A and Node B
+there are some Vortex OpenSplice applications running (Applications 1 -
+5).</p>
+<p class="centered" id="typical-opensplice-tuner-environment">
+<strong><strong>Typical OpenSplice Tuner Environment</strong></strong></p><a class="reference internal image-reference" href="_images/001_TunerEnvironment.png"><img alt="Typical OpenSplice Tuner Environment" class="align-center" src="_images/001_TunerEnvironment.png" style="width: 160mm;" /></a>
+<p>Vortex OpenSplice Tuner is able to connect to one specific OpenSplice
+DDS domain at one specific node, both locally and remotely. A local
+connection is achieved by directly accessing OpenSplice at the local
+node. The diagram shows two local connections. Both OpenSplice Tuner X
+and Y are connected to Domain II. This implies it is possible to
+simultaneous connect two Vortex OpenSplice Tuners to one specific domain
+and node.</p>
+<p>A remote connection can be achieved by means of an agent within
+Vortex OpenSplice. This agent allows Vortex OpenSplice Tuner to communicate
+with a remote node. In the diagram, the red dashed line indicates the
+possible remote connections of SPLICE-Tuner Z at Node C to the
+Vortex OpenSplice domains at the other two nodes.</p>
+<p>Possible connections of Vortex OpenSplice Tuners to a domain and node
+shown are:</p>
+<blockquote>
+<div><p>OpenSplice Tuner X &#8212;&gt; Domain I at Node A</p>
+<p>OpenSplice Tuner X &#8212;&gt; Domain II at Node A</p>
+<p>OpenSplice Tuner X &#8212;&gt; Domain I at Node B</p>
+<p>OpenSplice Tuner X &#8212;&gt; Domain II at Node B</p>
+<p>OpenSplice Tuner Y &#8212;&gt; Domain I at Node A</p>
+<p>OpenSplice Tuner Y &#8212;&gt; Domain II at Node A</p>
+<p>OpenSplice Tuner Y &#8212;&gt; Domain I at Node B</p>
+<p>OpenSplice Tuner Y &#8212;&gt; Domain II at Node B</p>
+<p>OpenSplice Tuner Z &#8212;&gt; Domain I at Node A</p>
+<p>OpenSplice Tuner Z &#8212;&gt; Domain II at Node A</p>
+<p>OpenSplice Tuner Z &#8212;&gt; Domain I at Node B</p>
+<p>OpenSplice Tuner Z &#8212;&gt; Domain II at Node B</p>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Introduction</a><ul>
+<li><a class="reference internal" href="#general-description">2.1. General Description</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="previous chapter">1. Preface</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="using01.html"
+                        title="next chapter">3. Using the Vortex OpenSplice Tuner</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/introduction.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="using01.html" title="3. Using the Vortex OpenSplice Tuner"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >previous</a> |</li>
+        <li><a href="index.html">Tuner Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

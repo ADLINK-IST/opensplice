@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -16,97 +24,116 @@
  * Implements posix based time management functions
  */
 
-#include "os_report.h"
-
-#ifdef __APPLE__
-#include <sys/time.h>
-#endif
 #include <time.h>
-#include <errno.h>
+#include "os_errno.h"
 
-static os_time (*clockGet)(void) = NULL;
-
-/** \brief Get the current time
- *
- * \b os_timeGet gets the current time by calling 
- * \b clock_gettime with clock ID \b CLOCK_REALTIME
- * and converting the result in \b struct
- * \b timespec format into \b os_time format.
+/*  \brief Get the current time
  */
-os_time
-os_timeGet (
-    void)
+static os_timeW
+os__timeWGet(void)
 {
-#ifdef __APPLE__
-    struct timeval tv;
-#else
     struct timespec t;
-#endif
-    int result;
-    os_time rt;
+    os_timeW rt;
 
-    if (clockGet) {
-        rt = clockGet ();
-    } else {
-#ifdef __APPLE__
-        result = gettimeofday (&tv, NULL);
-#else
-        result = clock_gettime (CLOCK_REALTIME, &t);
-#endif
-        if (result == 0) {
-#ifdef __APPLE__
-	    rt.tv_sec = tv.tv_sec;
-	    rt.tv_nsec = tv.tv_usec*1000;
-#else
-	    rt.tv_sec = t.tv_sec;
-	    rt.tv_nsec = t.tv_nsec;
-#endif
-        } else {
-	    OS_REPORT_1 (OS_WARNING, "os_timeGet", 1, "clock_gettime failed with error %d", errno);
-	    rt.tv_sec = 0;
-	    rt.tv_nsec = 0;
-        } 
-    } 
+    /* POSIX specifies that all implementations of clock_gettime(...)
+     * support the system-wide real-time clock, which is identified
+     * by CLOCK_REALTIME, so the result of the call below can safely
+     * be ignored. */
+    (void) clock_gettime (CLOCK_REALTIME, &t);
+
+    rt = OS_TIMEW_INIT(t.tv_sec, t.tv_nsec);
+
     return rt;
 }
 
-/** \brief Set the user clock
+/** \brief Get high resolution, monotonic time.
  *
- * \b os_timeSetUserClock sets the current time source
- * get function.
+ * Sufficiently recent versions of GNU libc and the Linux kernel support
+ * monotonic clocks. In case monotonic clocks are NOT supported the
+ * real-time clock is used as fallback. This ensures that the products
+ * still works as long as no time jumps occur.
+ *
+ * \return high resolution, monotonic time if monotonic clocks are supported.
+ * \return real-time, otherwise
  */
-void
-os_timeSetUserClock (
-    os_time (*userClock)(void)
-    )
+os_timeM
+os_timeMGet(void)
 {
-    clockGet = userClock;
+    os_timeM t;
+    struct timespec tv;
+
+#ifdef _POSIX_MONOTONIC_CLOCK
+    /* The CLOCK_MONOTONIC is the best (and most accurate) monotonic clock for
+     * obtaining time with near real-time progression, since it may be slewed
+     * based on NTP adjustments on some Linux providing more stable time
+     * progression (assuming that the Caesium clocks are better at timekeeping
+     * than the quartz crystal in an average PC). */
+    (void) clock_gettime (CLOCK_MONOTONIC, &tv);
+#else
+
+    /* Unfortunately no monotonic clock is supported for this POSIX platform.
+     * Fall-back to the CLOCK_REALTIME instead. Unfortunately this means that
+     * time jumps are not supported. */
+    (void) clock_gettime (CLOCK_REALTIME, &tv);
+#endif
+
+    t = OS_TIMEM_INIT(tv.tv_sec, tv.tv_nsec);
+
+    return t;
+}
+
+/** \brief Get elapsed time.
+ *
+ * This is implemented by means of the CLOCK_BOOTTIME clock which is available
+ * since Linux 2.6.39, but is Linux specific. If it is not available, the
+ * monotonic clock will be used as a fall-back.
+ *
+ * \return elapsed time since some unspecified fixed past time
+ * \return os_timeMGet() otherwise
+ */
+os_timeE
+os_timeEGet(void)
+{
+    os_timeE t;
+#ifdef CLOCK_BOOTTIME
+    struct timespec tv;
+
+    /* The CLOCK_BOOTTIME includes time spent during suspend, but is
+     * Linux specific. */
+    (void) clock_gettime (CLOCK_BOOTTIME, &tv);
+
+    t = OS_TIMEE_INIT(tv.tv_sec, tv.tv_nsec);
+#else
+    os_timeM m = os_timeMGet();
+    t.et = m.mt;
+#endif /* CLOCK_MONOTONIC_BOOTTIME */
+
+    return t;
 }
 
 /** \brief Suspend the execution of the calling thread for the specified time
  *
  * \b os_nanoSleep suspends the calling thread for the required
  * time by calling \b nanosleep. First it converts the \b delay in
- * \b os_time definition into a time in \b struct \b timeval definition.
+ * \b os_duration definition into a time in \b struct \b timeval definition.
  * In case the \b nanosleep is interrupted, the call is re-entered with
  * the remaining time.
  */
 os_result
-os_nanoSleep (
-    os_time delay)
+os_sleep(
+    os_duration delay)
 {
     struct timespec t;
     struct timespec r;
     int result;
     os_result rv;
 
-    assert (delay.tv_nsec >= 0);
-    assert (delay.tv_nsec < 1000000000);
-    if( delay.tv_sec >= 0 ) {
-        t.tv_sec = delay.tv_sec;
-        t.tv_nsec = delay.tv_nsec;
+    if (OS_DURATION_ISPOSITIVE(delay)) {
+        /* Time should be normalized */
+        t.tv_sec = (time_t) OS_DURATION_GET_SECONDS(delay);
+        t.tv_nsec = OS_DURATION_GET_NANOSECONDS(delay);
         result = nanosleep (&t, &r);
-        while (result && errno == EINTR) {
+        while (result && os_getErrno() == EINTR) {
             t = r;
             result = nanosleep (&t, &r);
         }
@@ -116,10 +143,8 @@ os_nanoSleep (
             rv = os_resultFail;
         }
     } else {
-        /* Negative time-interval gives an illegal param error in most posix implementations.
-         * However, VxWorks casts it to an unsigned int, and waits for years.
-         */
         rv = os_resultFail;
     }
     return rv;
 }
+

@@ -1,0 +1,285 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Product Details &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="4. Documentation and Support" href="documentation.html" />
+    <link rel="prev" title="2. About Vortex Opensplice" href="about-ospl.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="documentation.html" title="4. Documentation and Support"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="about-ospl.html" title="2. About Vortex Opensplice"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="product-details">
+<span id="id1"></span><h1>3. Product Details<a class="headerlink" href="#product-details" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="key-components">
+<h2>3.1. Key Components<a class="headerlink" href="#key-components" title="Permalink to this headline">¶</a></h2>
+<p>Vortex OpenSplice includes the key components listed here.</p>
+<div class="section" id="services">
+<h3>3.1.1. Services<a class="headerlink" href="#services" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>Domain Service</strong> (<tt class="docutils literal"><span class="pre">spliced</span></tt>)
+Manages a DDS domain.</li>
+<li><strong>Durability Service</strong>
+Responsible for handling non-volatile data.</li>
+<li><strong>Networking Service</strong> (<tt class="docutils literal"><span class="pre">RTNetworking</span> <span class="pre">or</span> <span class="pre">DDSI2</span></tt>)
+Responsible for handling communication between a
+node and the rest of the nodes on `the network&#8217;.</li>
+<li><strong>Tuner Service</strong> (<tt class="docutils literal"><span class="pre">cmsoap</span></tt>)
+Responsible for providing remote SOAP-based access to a deployed
+DDS system by providing a control-and-monitoring (C&amp;M) API</li>
+<li><strong>Networking Bridge Service</strong>
+Responsible for bridging DDS traffic between multiple
+networks (each with a related Networking Service)</li>
+<li><strong>Recording and Replay Service</strong>
+Responsible for recording and replaying of real-time DDS
+data, controlled a topic-based API (as also used by the
+Vortex RnR Manager tool)</li>
+<li><strong>DBMS Connect Service</strong>
+Responsible for bi-directional bridging between DDS and a
+relational database (RDBMS) system</li>
+</ul>
+</div>
+<div class="section" id="tools">
+<h3>3.1.2. Tools<a class="headerlink" href="#tools" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>IDL Preprocessor</strong>
+Generates topic types, type-specific readers and writers.</li>
+<li><strong>OpenSplice Tuner</strong>
+Allows local and/or remote &#8216;white-box&#8217; inspection and tuning
+of a deployed Vortex OpenSplice federation and/or appliciation.</li>
+<li><strong>OpenSplice Tester</strong>
+Allows for script-based &#8216;black-box&#8217; regression-testing
+of locally or remotely deployed Vortex OpenSplice Systems.</li>
+<li><strong>OpenSplice Configurator</strong>
+Simplifies the process for configuring the services.</li>
+<li><strong>mmstat</strong>
+Helps to monitor the memory usage within Vortex OpenSplice.</li>
+</ul>
+</div>
+<div class="section" id="key-features">
+<h3>3.1.3. Key Features<a class="headerlink" href="#key-features" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Vortex OpenSplice is the most complete second generation OMG DDS
+implementation that supports all DCPS profiles.</li>
+<li>It is proven in the field for a decade of deployment in
+mission critical environments.</li>
+<li>It targets both real-time embedded and large-scale fault-tolerant systems.</li>
+<li>It is Highly optimised implementation from DDS users for DDS users.</li>
+<li>It offers total lifecycle support from prototyping through to remote maintenance.</li>
+<li>Vortex OpenSplice supports both Single Process (library) and Shared Memory (federated)
+deployment architectures, targeting either ease of use or advanced scalability
+and determinism scenarios.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="language-and-compiler-bindings">
+<h2>3.2. Language and Compiler Bindings<a class="headerlink" href="#language-and-compiler-bindings" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice DCPS API is available for the following languages:</p>
+<ul class="simple">
+<li>C</li>
+<li>C++ (including OMG&#8217;s latest ISO-C++ API)</li>
+<li>C#</li>
+<li>Java (including OMG&#8217;s latest Java5 API)</li>
+</ul>
+<p>With Vortex OpenSplice, there is also the ability to use the DDS and DCPS
+APIs in CORBA cohabitation mode. Cohabitation allows you to use
+objects in both DCPS and CORBA without copying them from one
+representation to the other. This means that CORBA objects can be
+published directly in DCPS and the other way around. There is no
+difference in the DDS API, only in the generated code produced by the
+<tt class="docutils literal"><span class="pre">idlpp</span></tt> tool in the development process. Vortex OpenSplice has CORBA
+cohabitation for C++ and Java, using (by default) OpenFusion TAO and
+OpenFusion JacORB. Other variations are available, please check the
+<em>Release Notes</em> for full platform and language ORB coverage.</p>
+<p>The full range of language bindings available is:</p>
+<ul class="simple">
+<li>C (Standalone only ) - sac</li>
+<li>C++ (Standalone and CORBA Cohabitation) - isocpp / isocpp2 / sacpp / ccpp</li>
+<li>C# (Standalone only) - sacs</li>
+<li>Java (Standalone and CORBA Cohabitation) - saj / saj5 / cj</li>
+</ul>
+<p>Vortex OpenSplice is delivered with a preset compiler for C++. Details of
+this can be found in the <em>Release Notes</em>.</p>
+<p>These compilers are the officially-supported set, but we have experience
+of customers who will use the delivered libraries with slight variants
+of the compiler. In most cases this works, but PrismTech has provided
+the source code so that customers can rebuild the C++ APIs for their
+compiler of choice.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><strong>NOTE:</strong> PrismTech only provides support on the officially-supported
+platforms due to difficult-to-fix issues with compiler-generated code,
+but some customers will fund us to qualify OpenSplice on their platform.
+If you wish to use a variant of an official platform, then as long as
+the issue can be recreated on the official platform it will be covered
+under an Vortex OpenSplice support contract. If you wish to request support
+on a specific platform then please contact PrismTech
+(<a class="reference external" href="http://www.prismtech.com/contact-us">http://www.prismtech.com/contact-us</a>)</dd>
+</dl>
+</div>
+<div class="section" id="interaction-patterns">
+<h2>3.3. Interaction patterns<a class="headerlink" href="#interaction-patterns" title="Permalink to this headline">¶</a></h2>
+<p>Apart from the DDS pub/sub interaction pattern (DCPS), Vortex OpenSplice also supports
+the following additional patterns modeled on top of DDS:</p>
+<ul class="simple">
+<li>RMI (a request-reply API based on modeled interfaces in IDL)</li>
+<li>Streams (a streaming-data API based on transparent batching of samples)</li>
+</ul>
+</div>
+<div class="section" id="support-for-evolutionary-data-models">
+<h2>3.4. Support for evolutionary data models<a class="headerlink" href="#support-for-evolutionary-data-models" title="Permalink to this headline">¶</a></h2>
+<p>Apart from the OMG IDL based data-modeling, Vortex OpenSplice also supports modeling of
+evolutionary types using the popular Google Protocol Buffers (GPB) technology (and the
+related .proto files).</p>
+</div>
+<div class="section" id="building-your-own-c">
+<h2>3.5. Building your own C++<a class="headerlink" href="#building-your-own-c" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="building-your-own-iso-c-api">
+<h3>3.5.1. Building your own ISO C++ API<a class="headerlink" href="#building-your-own-iso-c-api" title="Permalink to this headline">¶</a></h3>
+<p>The Vortex OpenSplice DCPS API for the ISO C++ language binding without
+CORBA cohabitation is delivered using a specific compiler.</p>
+<p>To be able to use a different compiler with the Vortex OpenSplice ISO C++
+API, we deliver the source code for this language with the OpenSplice
+DDS distribution. This is contained in a directory
+<tt class="docutils literal"><span class="pre">&lt;Vortex</span> <span class="pre">OpenSplice</span> <span class="pre">Installation</span> <span class="pre">directory&gt;/custom_lib/isocpp</span></tt>
+together with a <tt class="docutils literal"><span class="pre">README</span></tt> file describing how to generate the custom library.</p>
+</div>
+<div class="section" id="building-your-own-standalone-c-api">
+<h3>3.5.2. Building your own Standalone C++ API<a class="headerlink" href="#building-your-own-standalone-c-api" title="Permalink to this headline">¶</a></h3>
+<p>The Vortex OpenSplice DCPS API for the C++ language binding without CORBA
+cohabitation is delivered using a specific compiler.</p>
+<p>To be able to use a different compiler with the Vortex OpenSplice
+Standalone C++ API, we deliver the source code for this language with
+the Vortex OpenSplice distribution. This is contained in a directory
+<tt class="docutils literal"><span class="pre">&lt;Vortex</span> <span class="pre">OpenSplice</span> <span class="pre">Installation</span> <span class="pre">directory&gt;/custom_lib/sacpp</span></tt>
+together with a <tt class="docutils literal"><span class="pre">README</span></tt> file describing how to generate the custom library.</p>
+</div>
+</div>
+<div class="section" id="platforms">
+<h2>3.6. Platforms<a class="headerlink" href="#platforms" title="Permalink to this headline">¶</a></h2>
+<p>The platforms supported by Vortex OpenSplice are listed in the Release
+Notes.</p>
+<p>Please refer to <a class="reference internal" href="platforms.html#platform-specific-information"><em>Platform-specific Information</em></a> for information
+about using Vortex OpenSplice on specific platforms.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Product Details</a><ul>
+<li><a class="reference internal" href="#key-components">3.1. Key Components</a><ul>
+<li><a class="reference internal" href="#services">3.1.1. Services</a></li>
+<li><a class="reference internal" href="#tools">3.1.2. Tools</a></li>
+<li><a class="reference internal" href="#key-features">3.1.3. Key Features</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#language-and-compiler-bindings">3.2. Language and Compiler Bindings</a></li>
+<li><a class="reference internal" href="#interaction-patterns">3.3. Interaction patterns</a></li>
+<li><a class="reference internal" href="#support-for-evolutionary-data-models">3.4. Support for evolutionary data models</a></li>
+<li><a class="reference internal" href="#building-your-own-c">3.5. Building your own C++</a><ul>
+<li><a class="reference internal" href="#building-your-own-iso-c-api">3.5.1. Building your own ISO C++ API</a></li>
+<li><a class="reference internal" href="#building-your-own-standalone-c-api">3.5.2. Building your own Standalone C++ API</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#platforms">3.6. Platforms</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="about-ospl.html"
+                        title="previous chapter">2. About Vortex Opensplice</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="documentation.html"
+                        title="next chapter">4. Documentation and Support</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/product-info.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="documentation.html" title="4. Documentation and Support"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="about-ospl.html" title="2. About Vortex Opensplice"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

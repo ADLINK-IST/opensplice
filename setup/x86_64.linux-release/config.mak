@@ -11,6 +11,6 @@ include $(OSPL_HOME)/setup/$(PROC).$(OS)$(OS_REV)-default.mak
 endif
 
 # Compiler flags
-CFLAGS_OPT       = -O4 -fno-strict-aliasing $(CFLAGS_LTO)
+CFLAGS_OPT       = -O3 -fno-strict-aliasing $(CFLAGS_LTO)
 CFLAGS_DEBUG     = -DNDEBUG
-JCFLAGS          = -g:none -nowarn
+JCFLAGS          = -g -nowarn

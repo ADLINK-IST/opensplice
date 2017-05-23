@@ -13,7 +13,7 @@ endif
 # Compiler flags
 CFLAGS_OPT       = -O2 -fno-strict-aliasing
 CFLAGS_DEBUG     = -DNDEBUG #-D_TYPECHECK_ -DE_DEBUG
-JCFLAGS          = -g:none -nowarn
+JCFLAGS          = -g -nowarn
 
 # Csc compiler flags
 CSFLAGS_DEBUG    = -define:DEBUG\;TRACE -debug+ -debug:full

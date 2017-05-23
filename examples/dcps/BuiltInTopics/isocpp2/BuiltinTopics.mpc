@@ -1,0 +1,25 @@
+// -*- MPC -*-
+// $Id:$
+
+project (ISO_Cxx_v2*Impl) : ospl_dcpsisocpp2, _example_dcps_impl_lib, c_or_cplusplus_example {
+    requires += dcps_isocpp_example
+    Source_Files {
+        implementation.cpp
+    }
+
+    Documentation_Files {
+        ../../.
+    }
+}
+
+project (ISO_Cxx_v2*Sub) : ospl_dcpsisocpp2, c_or_cplusplus_example {
+    requires += dcps_isocpp_example
+    after += ISO_Cxx_v2*Impl
+    libs += ISO_Cxx_v2*Impl
+    Header_Files {
+    }
+
+    Source_Files {
+        subscriber.cpp
+    }
+}

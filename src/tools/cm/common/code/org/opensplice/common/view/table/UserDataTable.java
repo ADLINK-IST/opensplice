@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.view.table;
@@ -15,6 +23,8 @@ import java.awt.Point;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
@@ -23,6 +33,7 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
+import org.opensplice.cmdataadapter.protobuf.ProtobufFieldProperties;
 import org.opensplice.common.model.UserDataFilter;
 import org.opensplice.common.model.table.UserDataTableModel;
 import org.opensplice.common.model.table.UserDataTableSorter;
@@ -43,7 +54,8 @@ import org.opensplice.common.view.StatusPanel;
  * @date Oct 22, 2004 
  */
 public class UserDataTable extends JTable{
-	private String userDataKeys = null;
+    private String userDataKeys = null;
+    private Map<String, ProtobufFieldProperties> protobufProps = null;
     
     /**
      * Constructs a new UserDataTable that displays a UserDataTableSorter,
@@ -52,13 +64,11 @@ public class UserDataTable extends JTable{
      *
      * @param sorter The sorter that contains the data and is able to sort the
      *               data in its model.
-     * @param keyList The list of keys in the data the model contains.
      */
-    public UserDataTable(UserDataTableSorter sorter, String keyList){
+    public UserDataTable(UserDataTableSorter sorter){
         super(sorter);
         this.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         this.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        this.setKeyList(keyList);
         this.configureEnclosingScrollPane();
         this.setColumnSizes(100);
     }
@@ -81,11 +91,22 @@ public class UserDataTable extends JTable{
      * column headers that contain (parts of) the keylist.
      * 
      * @param keyList The list of keys the table is displaying.
+     * @param protoProps The Map of the data type's field names to their corresponding ProtobufFieldProperties.
      */
-    public void setKeyList(String keyList){
+    public void setTableHighlight(String keyList, Map<String, ProtobufFieldProperties> protoProps){
         String[] keys;
         String key;
-        
+        protobufProps = protoProps;
+        for (Entry<String, ProtobufFieldProperties> propsEntry : protoProps.entrySet()) {
+            if (propsEntry.getValue().isRequired()) {
+                TableColumn tc = this.getColumn(propsEntry.getKey());
+                if (tc != null) {
+                    DefaultTableCellRenderer renderer = new DefaultTableCellRenderer();
+                    renderer.setBackground(Config.getCustomColor1());
+                    tc.setHeaderRenderer(renderer);
+                }
+            }
+        }
         if(keyList != null){
             userDataKeys = keyList;
             keys = keyList.split(",");
@@ -113,7 +134,7 @@ public class UserDataTable extends JTable{
      *
      */
     public void repaintHeader(){
-        this.setKeyList(userDataKeys);
+        this.setTableHighlight(userDataKeys, protobufProps);
     }
     
     /**
@@ -300,41 +321,43 @@ public class UserDataTable extends JTable{
             public void mouseClicked(MouseEvent e) {
                 int column = columnModel.getColumnIndexAtX(e.getX());
 
-                /* columns might have been moved to another index in the table
-                 * Look up index in model.
-                 */
-                if(!(model.getColumnName(column).equals(columnModel.getColumn(column).getIdentifier()))){
-                    String tableColName = (String) columnModel.getColumn(column).getIdentifier();
-                    boolean found = false;
-                    int i = 0;
-                    
-                    while(!found){
-                        if(model.getColumnName(i).equals(tableColName)){
-                            column = i;
-                            found = true;
+                if (column != -1) {
+                    /* columns might have been moved to another index in the table
+                     * Look up index in model.
+                     */
+                    if(!(model.getColumnName(column).equals(columnModel.getColumn(column).getIdentifier()))){
+                        String tableColName = (String) columnModel.getColumn(column).getIdentifier();
+                        boolean found = false;
+                        int i = 0;
+
+                        while(!found){
+                            if(model.getColumnName(i).equals(tableColName)){
+                                column = i;
+                                found = true;
+                            }
+                            i++;
                         }
-                        i++;
                     }
-                }
-                
-                if (e.getButton() == MouseEvent.BUTTON3 && e.getClickCount() == 1 && column != -1) {
-                    String tableColName = (String) columnModel.getColumn(column).getIdentifier();
-                    int shiftPressed = e.getModifiers()&InputEvent.SHIFT_MASK; 
-                    boolean asc = (shiftPressed == 0);
-                    sorter.sortByColumn(column, asc);
-                    
-                    if(getRowCount() > 0){
-                        changeSelection(0, 0, false, false);
-                    }
-                    if(sp != null){
-                        String ascDesc;
-                        
-                        if(asc){
-                            ascDesc = "ascending";
-                        } else {
-                            ascDesc = "descending";
+
+                    if (e.getButton() == MouseEvent.BUTTON3 && e.getClickCount() == 1) {
+                        String tableColName = (String) columnModel.getColumn(column).getIdentifier();
+                        int shiftPressed = e.getModifiers()&InputEvent.SHIFT_MASK;
+                        boolean asc = (shiftPressed == 0);
+                        sorter.sortByColumn(column, asc);
+
+                        if(getRowCount() > 0){
+                            changeSelection(0, 0, false, false);
                         }
-                        sp.setStatus("Sorted column '" + tableColName + "' " + ascDesc + ".", false, false);
+                        if(sp != null){
+                            String ascDesc;
+
+                            if(asc){
+                                ascDesc = "ascending";
+                            } else {
+                                ascDesc = "descending";
+                            }
+                            sp.setStatus("Sorted column '" + tableColName + "' " + ascDesc + ".", false, false);
+                        }
                     }
                 }
             }

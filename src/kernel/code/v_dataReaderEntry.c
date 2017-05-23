@@ -1,19 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v_kernel.h"
 #include "v__entry.h"
-#include "v_dataReaderEntry.h"
+#include "v__dataReaderEntry.h"
 #include "v__dataReader.h"
-#include "v_reader.h"
+#include "v__reader.h"
 #include "v_filter.h"
 #include "v__dataReaderInstance.h"
 #include "v_dataView.h"
@@ -24,20 +32,21 @@
 #include "v__dataReaderSample.h"
 #include "v_policy.h"
 #include "v_state.h"
-#include "v_time.h"
 #include "v_instance.h"
 #include "v__deadLineInstanceList.h"
 #include "v__lifespanAdmin.h"
-#include "v_participant.h"
-#include "v_subscriber.h"
+#include "v__transaction.h"
+#include "v__participant.h"
+#include "v__subscriber.h"
 #include "v_builtin.h"
 #include "v_topic.h"
-#include "v__statisticsInterface.h"
 #include "v_message.h"
-#include "v__messageQos.h"
+#include "v_messageQos.h"
 #include "v__deliveryService.h"
 #include "v__kernel.h"
+#include "v_proxy.h"
 
+#include "os_heap.h"
 #include "os_report.h"
 
 /**************************************************************
@@ -47,7 +56,7 @@ typedef struct v_lifespanArg_s {
    v_readerSampleAction action;
    c_voidp arg;
    v_index index;
-   c_time time;
+   os_timeE time;
 } *v_lifespanArg;
 
 static c_bool
@@ -62,15 +71,16 @@ lifespanTakeAction(
     /* Data is expired, remove the sample from its instance
      * NOTE: the sampleCount of index is decreased by this function */
     if (lifespanArg->action != NULL) {
-       result = lifespanArg->action(v_readerSample(sample), lifespanArg->arg);
+        v_actionResult actresult = lifespanArg->action(v_readerSample(sample), lifespanArg->arg);
+        result = (actresult != V_STOP);
     } else {
-       result = TRUE;
+        result = TRUE;
     }
     if (result) {
         instance = v_dataReaderInstance(v_readerSample(sample)->instance);
-        v_dataReaderInstanceSampleRemove(instance, v_dataReaderSample(sample));
+        v_dataReaderInstanceSampleRemove(instance, v_dataReaderSample(sample), FALSE);
 
-        assert(v_dataReader(lifespanArg->index->reader)->sampleCount >= 0);
+        assert(v_dataReader(lifespanArg->index->reader)->resourceSampleCount >= 0);
         if (v_dataReaderInstanceEmpty(instance)) {
             v_dataReaderRemoveInstance(lifespanArg->index->reader, instance);
             /* No statistics, the index will update the statistics here */
@@ -86,9 +96,10 @@ lifespanTakeAction(
 v_dataReaderEntry
 v_dataReaderEntryNew(
     v_dataReader dataReader,
+    v_index index,
     v_topic topic,
-    c_array filterInstance,
-    c_array filterData)
+    q_expr _where,
+    const c_value *params[])
 {
     v_kernel kernel;
     v_dataReaderEntry e;
@@ -101,14 +112,24 @@ v_dataReaderEntryNew(
     v_entryInit(v_entry(e), v_reader(dataReader));
     e->topic = c_keep(topic);
 
-    e->filterInstance = c_keep(filterInstance);
-    e->filterData = c_keep(filterData);
+    v_filterSplit(topic, _where, *params, &e->filterInstance, &e->filterData, index);
 
     /* Aministration for lifespan of messages */
     e->lifespanAdmin = v_lifespanAdminNew(kernel);
     /* The time-ordered lists for autopurging and garbagecollection */
     e->purgeListNotEmpty = c_listNew(v_kernelType(kernel, K_PURGELISTITEM));
     e->purgeListDisposed = c_listNew(v_kernelType(kernel, K_PURGELISTITEM));
+    if (v_reader(dataReader)->subQos->presentation.v.coherent_access) {
+        v_transactionGroupAdmin gAdmin = NULL;
+        if (v_reader(dataReader)->subQos->presentation.v.access_scope == V_PRESENTATION_GROUP)
+        {
+            gAdmin = v_subscriberLookupTransactionGroupAdmin(v_reader(dataReader)->subscriber);
+            assert(gAdmin);
+        }
+        e->transactionAdmin = v_transactionAdminNew(v_object(dataReader), gAdmin, topic);
+    } else {
+        e->transactionAdmin = NULL;
+    }
 
     return e;
 }
@@ -137,17 +158,13 @@ onSampleRejected(
     v_dataReaderNotifySampleRejected(dataReader, kind, instanceGid);
 
     /* update statistics */
-    if (v_statisticsValid(dataReader)) {
+    if (dataReader->statistics) {
         switch (kind) {
         case S_REJECTED_BY_INSTANCES_LIMIT:
-            v_statisticsULongValueInc(v_reader,
-                                      numberOfSamplesRejectedByInstancesLimit,
-                                      dataReader);
+            dataReader->statistics->numberOfSamplesRejectedByInstancesLimit++;
         break;
         case S_REJECTED_BY_SAMPLES_LIMIT:
-            v_statisticsULongValueInc(v_reader,
-                                      numberOfSamplesRejectedBySamplesLimit,
-                                      dataReader);
+            dataReader->statistics->numberOfSamplesRejectedBySamplesLimit++;
         break;
         case S_REJECTED_BY_SAMPLES_PER_INSTANCE_LIMIT:
             /*NOT SUPPORTED*/
@@ -159,154 +176,23 @@ onSampleRejected(
     }
 }
 
-C_STRUCT(updateArg) {
-    v_message msg;
-    c_bool found;
-    v_transaction remove;
-    v_dataReaderEntry entry;
-};
-
-static c_bool
-updateTransaction(
-    c_object o,
-    c_voidp arg)
-{
-    v_transaction t = (v_transaction)o;
-    C_STRUCT(updateArg) *a = (C_STRUCT(updateArg) *)arg;
-    c_bool result = TRUE;
-    if (t->transactionId == V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(a->msg->transactionId)) {
-        if (v_gidEqual(t->writerGID,a->msg->writerGID)) {
-            if (v_stateTest(v_nodeState(a->msg),L_TRANSACTION)) {
-                t->count -= V_MESSAGE_GET_TRANSACTION_COUNT(a->msg->transactionId);
-            } else {
-                t->count++;
-            }
-            a->found = TRUE;
-            if (t->count == 0) {
-                a->remove = c_keep(t);
-            }
-        }
-    }
-    return result;
-}
-
-static c_bool
-makeSamplesAvailable (
-    c_object o,
-    c_voidp arg)
-{
-    v_dataReaderInstanceFlushTransaction(v_dataReaderInstance(o),V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(*(c_ulong *)arg));
-    return TRUE;
-}
-
-static void
-transactionListUpdate(
-    v_dataReaderEntry entry,
-    v_message msg)
-{
-    v_transaction item = NULL;
-    v_dataReader reader;
-
-    C_STRUCT(updateArg) update;
-
-    if ((msg->transactionId != 0) &&
-        (v_reader(v_entry(entry)->reader)->subQos->presentation.coherent_access) &&
-        (!v_messageStateTest(msg,L_REGISTER)))
-    {
-        /* The given message belongs to a transaction and this DataReader
-         * is interested in Coherent Updates so update the transaction adminitration.
-         */
-        update.msg = msg;
-        update.found = FALSE;
-        update.remove = NULL;
-        update.entry = entry;
-        /* Lookup and update transaction info record for the message.
-         */
-        c_walk(entry->transactionList, updateTransaction, &update);
-
-        if (!update.found) {
-            /* No existing transaction info is found,
-             * So this is the first message for this transaction.
-             * Create and insert a new transaction info record for this transaction.
-             */
-            item = c_new(v_kernelType(v_objectKernel(entry),K_TRANSACTION));
-            if (item) {
-                item->writerGID = msg->writerGID;
-                item->count = 1;
-                item->transactionId = V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(msg->transactionId);
-                if (v_stateTest(v_nodeState(msg),L_TRANSACTION)) {
-                    item->count -= V_MESSAGE_GET_TRANSACTION_COUNT(msg->transactionId);
-                }
-                if (entry->transactionList == NULL) {
-                    entry->transactionList =
-                        c_listNew(v_kernelType(v_objectKernel(entry),
-                                               K_TRANSACTION));
-                }
-                c_insert(entry->transactionList,item);
-                c_free(item);
-            } else {
-                OS_REPORT(OS_ERROR,
-                          "v_dataReaderEntry::transactionListUpdate",0,
-                          "Failed to allocate v_transaction object");
-                assert(FALSE);
-            }
-        } else if (update.remove) {
-            /* An existing transaction has become complete and can therefore
-             * all data belonging to the transaction can be made available and
-             * the transaction info record can be removed from the administration.
-             */
-            if (v_entryReaderQos(entry)->userKey.enable) {
-                c_walk(entry->index->notEmptyList,
-                       makeSamplesAvailable,
-                       &msg->transactionId);
-            } else {
-                c_walk(entry->index->objects,
-                       makeSamplesAvailable,
-                       &msg->transactionId);
-            }
-
-            /* At this point we have made the data belonging to the transaction
-             * available, but we still need to wakeup threads that are blocked
-             * on waitsets for the data.
-             * This is what we do here by calling v_dataReaderNotifyDataAvailable
-             * with a NULL sample, since there is not a specific sample associated
-             * with a transaction */
-
-            reader = v_dataReader(v_entry(entry)->reader);
-            v_dataReaderNotifyDataAvailable (reader, NULL);
-
-            item = c_remove(entry->transactionList, update.remove, NULL, NULL);
-            c_free(item);
-            c_free(update.remove);
-        }
-    }
-}
-
 static void
 purgeListInsert(
     c_collection purgeList,
     v_dataReaderInstance instance)
 {
     v_purgeListItem item;
-
     item = c_new(v_kernelType(v_objectKernel(instance),K_PURGELISTITEM));
-    if (item) {
-        item->instance = c_keep(instance);
-        item->insertionTime = v_timeGet();
-        if (v_dataReaderInstanceStateTest(instance, L_DISPOSED)) {
-            item->genCount = instance->disposeCount;
-        } else {
-            item->genCount = instance->noWritersCount;
-        }
-        c_append(purgeList,item);
-        instance->purgeInsertionTime = item->insertionTime;
-        c_free(item);
+    item->instance = c_keep(instance);
+    item->insertionTime = os_timeMGet();
+    if (v_dataReaderInstanceStateTest(instance, L_DISPOSED)) {
+        item->genCount = instance->disposeCount;
     } else {
-        OS_REPORT(OS_ERROR,
-                  "v_dataReaderEntry::purgeListInsert",0,
-                  "Failed to allocate v_purgeListItem object");
-        assert(FALSE);
+        item->genCount = instance->noWritersCount;
     }
+    c_append(purgeList,item);
+    instance->purgeInsertionTime = item->insertionTime;
+    c_free(item);
 }
 
 static void
@@ -320,14 +206,13 @@ doInstanceAutoPurge(
 
     if (!v_dataReaderInstanceEmpty(instance)) {
         /* Remove all samples from the instance, where
-	   sample->disposed-/noWritersCount <= disposed-/noWritersCount
+       sample->disposed-/noWritersCount <= disposed-/noWritersCount
         */
         sampleCount = v_dataReaderInstanceSampleCount(instance);
         v_dataReaderInstancePurge(instance, disposedCount, noWritersCount);
         sampleCount -= v_dataReaderInstanceSampleCount(instance);
         assert(sampleCount >= 0);
-        reader->sampleCount -= sampleCount;
-        assert(reader->sampleCount >= 0);
+        assert(reader->resourceSampleCount >= 0);
         if (v_dataReaderInstanceEmpty(instance)) {
             v_dataReaderRemoveInstance(reader,instance);
         }
@@ -341,13 +226,14 @@ v_dataReaderEntryUpdatePurgeLists(
     v_dataReaderEntry entry)
 {
     struct v_lifespanArg_s lifespanArg;
-    c_time now, timestamp;
+    os_timeM now, timestamp;
     c_list purgeList;
+    os_compare equality;
     v_purgeListItem purgeListItem, testItem;
     v_dataReaderInstance purgeInstance;
     v_readerQos qos;
     v_dataReader reader;
-    c_ulong count, delta; /* statistics */
+    c_long count, delta; /* statistics */
 
     reader = v_dataReader(v_entry(entry)->reader);
 
@@ -355,7 +241,7 @@ v_dataReaderEntryUpdatePurgeLists(
     if ((c_listCount(entry->purgeListNotEmpty) > 0) ||
         (c_listCount(entry->purgeListDisposed) > 0) ||
         (v_lifespanAdminSampleCount(entry->lifespanAdmin) > 0)) {
-        now = v_timeGet();
+        now = os_timeMGet();
     } else {
         return;
     }
@@ -366,23 +252,22 @@ v_dataReaderEntryUpdatePurgeLists(
         lifespanArg.action = onSampleDumpedAction;
         lifespanArg.arg = reader;
         lifespanArg.index = entry->index;
-        lifespanArg.time = now;
+        lifespanArg.time = os_timeEGet();
 
         /* get current sample count for statistics */
-        count = reader->sampleCount;
+        count = reader->resourceSampleCount;
 
         v_lifespanAdminTakeExpired(entry->lifespanAdmin,
+                                   lifespanArg.time,
                                    lifespanTakeAction,
                                    &lifespanArg);
 
         /* update statistics */
-        if (v_statisticsValid(reader)) {
-            delta = count - reader->sampleCount;
+        if (reader->statistics) {
+            delta = count - reader->resourceSampleCount;
             if (delta) {
                 assert(delta > 0);
-                *(v_statisticsGetRef(v_reader,
-                                     numberOfSamplesExpired,
-                                     reader)) += delta;
+                reader->statistics->numberOfSamplesExpired += (c_ulong) delta;
             }
         }
     }
@@ -392,15 +277,16 @@ v_dataReaderEntryUpdatePurgeLists(
     qos = v_reader(reader)->qos;
     purgeList = entry->purgeListNotEmpty;
     if (c_listCount(purgeList) > 0) {
-        timestamp = c_timeSub(now, qos->lifecycle.autopurge_nowriter_samples_delay);
-        count = reader->sampleCount; /* statistics */
+        timestamp = os_timeMSub(now, qos->lifecycle.v.autopurge_nowriter_samples_delay);
+        count = reader->resourceSampleCount; /* statistics */
         purgeListItem = c_removeAt(purgeList, 0);
         while (purgeListItem != NULL) {
-            if (v_timeCompare(purgeListItem->insertionTime,timestamp) == C_LT) {
+            equality = os_timeMCompare(purgeListItem->insertionTime,timestamp);
+            if ((equality == OS_LESS) || (equality == OS_EQUAL)) {
                 purgeInstance = purgeListItem->instance;
 
-                if (v_timeCompare(purgeListItem->insertionTime,
-                                  purgeInstance->purgeInsertionTime) == C_EQ){
+                if (os_timeMCompare(purgeListItem->insertionTime,
+                                    purgeInstance->purgeInsertionTime) == OS_EQUAL){
                     doInstanceAutoPurge(reader, purgeInstance, -1, purgeListItem->genCount);
                 }
 
@@ -412,33 +298,32 @@ v_dataReaderEntryUpdatePurgeLists(
                 */
                testItem = c_listInsert(purgeList, purgeListItem);
                assert(testItem == purgeListItem);
+               OS_UNUSED_ARG(testItem);
                c_free(purgeListItem);
                purgeListItem = NULL;
             }
         }
         /* Update statistics */
-        if (v_statisticsValid(reader)) {
-        delta = count - reader->sampleCount;
+        if (reader->statistics) {
+            delta = count - reader->resourceSampleCount;
             if (delta) {
-                assert(delta > 0);
-                *(v_statisticsGetRef(v_reader,
-                                     numberOfSamplesPurgedByNoWriters,
-                                     reader)) += delta;
+                reader->statistics->numberOfSamplesPurgedByNoWriters += (c_ulong) delta;
             }
         }
     }
 
     purgeList = entry->purgeListDisposed;
     if (c_listCount(purgeList) > 0) {
-        timestamp = c_timeSub(now, qos->lifecycle.autopurge_disposed_samples_delay);
-        count = reader->sampleCount; /* statistics */
+        timestamp = os_timeMSub(now, qos->lifecycle.v.autopurge_disposed_samples_delay);
+        count = reader->resourceSampleCount; /* statistics */
         purgeListItem = c_removeAt(purgeList, 0);
         while (purgeListItem != NULL) {
-            if (v_timeCompare(purgeListItem->insertionTime,timestamp) == C_LT) {
+            equality = os_timeMCompare(purgeListItem->insertionTime,timestamp);
+            if ((equality == OS_LESS) || (equality == OS_EQUAL)) {
                 purgeInstance = purgeListItem->instance;
 
-                if (v_timeCompare(purgeListItem->insertionTime,
-                                  purgeInstance->purgeInsertionTime) == C_EQ){
+                if (os_timeMCompare(purgeListItem->insertionTime,
+                                    purgeInstance->purgeInsertionTime) == OS_EQUAL){
                     doInstanceAutoPurge(reader, purgeInstance, purgeListItem->genCount, -1);
                 }
 
@@ -455,90 +340,72 @@ v_dataReaderEntryUpdatePurgeLists(
             }
         }
         /* Update statistics. */
-        if (v_statisticsValid(reader)) {
-            delta = count - reader->sampleCount;
+        if (reader->statistics) {
+            delta = count - reader->resourceSampleCount;
             if (delta) {
-                assert(delta > 0);
-                v_statisticsULongValueAdd(v_reader,
-                                          numberOfSamplesPurgedByDispose,
-                                          reader,
-                                          delta);
+                reader->statistics->numberOfSamplesPurgedByDispose += (c_ulong) delta;
             }
         }
     }
     /* Why have statistic attributes if already available? */
     /* Update statistics. */
-    v_statisticsULongSetValue(v_reader,
-                              numberOfInstances,
-                              reader,
-                              v_dataReaderInstanceCount(reader));
-    v_statisticsULongSetValue(v_reader,
-                              numberOfSamples,
-                              reader,
-                              reader->sampleCount);
+    if (reader->statistics) {
+        reader->statistics->numberOfInstances = (c_ulong) v_dataReaderInstanceCount(reader);
+        reader->statistics->numberOfSamples = (c_ulong) reader->resourceSampleCount;
+    }
 }
-
-#ifndef NDEBUG
-static c_bool
-alwaysFalse(
-    c_object found,
-    c_object requested,
-    c_voidp arg)
-{
-    c_object *o = (c_object *)arg;
-    OS_UNUSED_ARG(requested);
-
-    assert(o != NULL);
-    assert(*o == NULL); /* out param */
-
-    *o = c_keep(found);
-
-    return FALSE;
-}
-#endif
 
 static v_writeResult
 doWrite(
     v_dataReaderEntry _this,
     v_dataReaderInstance found,
-    v_message message)
+    v_message message,
+    v_messageContext context,
+    os_boolean *a_work_around_for_dispose_all_to_indicate_the_instance_is_deleted)
 {
     v_dataReaderResult res;
     v_readerQos qos;
     v_writeResult result;
-    v_reader reader;
+    v_dataReader reader;
 
     result = V_WRITE_SUCCESS;
-    reader = v_entryReader(_this);
-    qos = reader->qos;
+    reader = v_dataReader(v_entryReader(_this));
+    qos = v_reader(reader)->qos;
 
     if(found){
         v_state oldState = v_dataReaderInstanceState(found);
         c_bool wasEmpty = v_dataReaderInstanceEmpty(found);
-        v_dataReader(reader)->sampleCount -=
-                 v_dataReaderInstanceSampleCount(found);
-        res = v_dataReaderInstanceInsert(found, message);
-        v_dataReader(reader)->sampleCount +=
-                 v_dataReaderInstanceSampleCount(found);
+        res = v_dataReaderInstanceInsert(found, message, context);
         v_checkMaxSamplesWarningLevel(v_objectKernel(reader),
-                v_dataReader(reader)->sampleCount);
-
+                (c_ulong) v_dataReader(reader)->resourceSampleCount);
 
         switch (res) {
         case V_DATAREADER_INSERTED:
-            UPDATE_READER_STATISTICS(_this->index,found,oldState);
-            if (qos->userKey.enable == FALSE) {
+            UPDATE_READER_STATISTICS(_this,found,oldState);
+            if (qos->userKey.v.enable == FALSE) {
                 if (!v_dataReaderInstanceEmpty(found)) {
                     if (wasEmpty && !v_dataReaderInstanceInNotEmptyList(found)) {
                         c_tableInsert(_this->index->notEmptyList, found);
                         v_dataReaderInstanceInNotEmptyList(found) = TRUE;
                     }
                     if (v_dataReaderInstanceStateTest(found,L_DISPOSED)) {
-                        if (!c_timeIsInfinite(qos->lifecycle.autopurge_disposed_samples_delay)) {
+                        if (!v_gidIsValid(message->writerGID) &&
+                            qos->lifecycle.v.autopurge_dispose_all) {
+                            /* This is a dispose_all and the instance needs to be
+                             * purged immediately.
+                             * Dispose all is indicated by the lack of a writerGID. */
+                            doInstanceAutoPurge(v_dataReader(reader),
+                                                found,
+                                                found->disposeCount,
+                                                -1);
+                            if (a_work_around_for_dispose_all_to_indicate_the_instance_is_deleted) {
+                                *a_work_around_for_dispose_all_to_indicate_the_instance_is_deleted = OS_TRUE;
+                            }
+                        } else if (!OS_DURATION_ISINFINITE(qos->lifecycle.v.autopurge_disposed_samples_delay)) {
                             purgeListInsert(_this->purgeListDisposed, found);
                         }
                     } else if (v_dataReaderInstanceStateTest(found,L_NOWRITERS)) {
-                        if (!c_timeIsInfinite(qos->lifecycle.autopurge_nowriter_samples_delay)) {
+                        if (!OS_DURATION_ISINFINITE(qos->lifecycle.v.autopurge_nowriter_samples_delay)) {
                             purgeListInsert(_this->purgeListNotEmpty, found);
                         }
                     }
@@ -553,9 +420,7 @@ doWrite(
             result = V_WRITE_SUCCESS;
         break;
         case V_DATAREADER_INSTANCE_FULL:
-            onSampleRejected(v_dataReader(reader),
-                             S_REJECTED_BY_INSTANCES_LIMIT,
-                             v_publicGid(NULL));
+            onSampleRejected(reader, S_REJECTED_BY_SAMPLES_PER_INSTANCE_LIMIT, v_publicGid(NULL));
             result = V_WRITE_REJECTED;
         break;
         case V_DATAREADER_FILTERED_OUT:
@@ -565,11 +430,17 @@ doWrite(
             result = V_WRITE_SUCCESS;
         break;
         case V_DATAREADER_SAMPLE_LOST:
-            v_dataReaderUpdateSampleLost(reader, 1);
+            v_dataReaderNotifySampleLost(reader, 1);
             result = V_WRITE_SUCCESS;
         break;
         case V_DATAREADER_OUT_OF_MEMORY:
             /* Return rejection to force a retransmit at a later moment of time. */
+            result = V_WRITE_REJECTED;
+        break;
+        case V_DATAREADER_MAX_SAMPLES:
+            onSampleRejected(v_dataReader(reader),
+                             S_REJECTED_BY_SAMPLES_LIMIT,
+                             v_publicGid(NULL));
             result = V_WRITE_REJECTED;
         break;
         default:
@@ -578,14 +449,14 @@ doWrite(
         }
     }
     /* statistics */
-    {
-        c_long cnt;
-        cnt = v_dataReaderInstanceCount(v_dataReader(reader));
-        v_statisticsULongSetValue(v_reader,numberOfInstances,reader,cnt);
-        v_statisticsMaxValueSetValue(v_reader,maxNumberOfInstances,reader,cnt);
-        cnt = v_dataReader(reader)->sampleCount;
-        v_statisticsULongSetValue(v_reader,numberOfSamples,reader,cnt);
-        v_statisticsMaxValueSetValue(v_reader,maxNumberOfSamples,reader,cnt);
+    if (reader->statistics) {
+        c_ulong cnt;
+        cnt = (c_ulong) v_dataReaderInstanceCount(reader);
+        reader->statistics->numberOfInstances = cnt;
+        reader->statistics->maxNumberOfInstances.value = cnt;
+        cnt = (c_ulong) reader->resourceSampleCount;
+        reader->statistics->numberOfSamples = cnt;
+        reader->statistics->maxNumberOfSamples.value = cnt;
     }
 
     if (result==V_WRITE_SUCCESS) {
@@ -594,7 +465,6 @@ doWrite(
             v_gid gid = v_publicGid(v_public(reader));
             v_deliveryServiceAckMessage(kernel->deliveryService,message,gid);
         }
-        transactionListUpdate(_this,message);
     }
 
     V_MESSAGE_STAMP(message,readerNotifyTime);
@@ -606,18 +476,19 @@ v_writeResult
 v_dataReaderEntryWrite(
     v_dataReaderEntry _this,
     v_message message,
-    v_instance *instancePtr)
+    v_instance *instancePtr,
+    v_messageContext context)
 {
     v_writeResult result = V_WRITE_REJECTED;
-    v_reader reader;
+    v_dataReader reader;
     v_readerQos qos;
-    c_long count;
-    c_long maxSamples;
     v_state state;
     v_dataReaderInstance instance=NULL, found;
     c_table instanceSet;
-    c_bool filter = FALSE;
-    int index = 0;
+    c_ulong index = 0;
+    c_ulong length;
+    v_subscriber subscriber;
+    c_bool complete = FALSE;
 
     assert(C_TYPECHECK(_this,v_dataReaderEntry));
     assert(message != NULL);
@@ -625,8 +496,16 @@ v_dataReaderEntryWrite(
     V_MESSAGE_STAMP(message,readerInsertTime);
 
     /* Only write if the message is not produced by an incompatible writer. */
-    reader = v_entryReader(_this);
+    reader = v_dataReader(v_entryReader(_this));
     v_observerLock(v_observer(reader));
+    subscriber = v_readerSubscriber(v_reader(reader));
+    if (!subscriber) {
+        /* The subscriber is detached meaning that the reader is in progress of being deleted.
+         * Abort message insertion and return success as if the reader was already deleted.
+         */
+        v_observerUnlock(v_observer(reader));
+        return V_WRITE_SUCCESS; /* reader is in progress of being deleted */
+    }
 
     /* Purge samples */
     v_dataReaderEntryUpdatePurgeLists(_this);
@@ -639,10 +518,10 @@ v_dataReaderEntryWrite(
         *instancePtr = NULL;
     }
 
-    qos = reader->qos;
+    qos = v_reader(reader)->qos;
     state = v_nodeState(message);
 
-    if (qos->userKey.enable) {
+    if (qos->userKey.v.enable) {
         if (!v_stateTest(state, L_WRITE)) {
             /* by user defined keys the instance state has no meaning and
              * therefore processing can be saved by filtering out all instance
@@ -656,130 +535,126 @@ v_dataReaderEntryWrite(
         }
     }
     /* Filter-out all QoS-incompatible messages. */
-    if (!v_messageQos_isReaderCompatible(message->qos,reader)) {
+    if (!v_messageQos_isReaderCompatible(message->qos,v_reader(reader))) {
         v_observerUnlock(v_observer(reader));
         return V_WRITE_SUCCESS;
     }
 
-    v_statisticsULongValueInc(v_reader, numberOfSamplesArrived, reader);
-
-    if (v_messageStateTest(message,L_TRANSACTION)) {
-        /* The message is a transaction end message.
-         * Store the transaction size in the transaction admin.
-         */
-        transactionListUpdate(_this,message);
-        /*
-         * This message is meaningless for further processing so exit here.
-         */
-        v_observerUnlock(v_observer(reader));
-        return V_WRITE_SUCCESS;
+    if (reader->statistics) {
+        reader->statistics->numberOfSamplesArrived++;
     }
 
-    if ((instancePtr == NULL) || (*instancePtr == NULL))
-    {
+    if ((instancePtr == NULL) || (*instancePtr == NULL)) {
+        os_boolean a_work_around_for_dispose_all_to_indicate_the_instance_is_deleted = OS_FALSE;
+
+        /* Drop invalid messages when the datareader instance is not known */
+        if (c_getType(message) == v_kernelType(v_objectKernel(_this), K_MESSAGE)) {
+            v_observerUnlock(v_observer(reader));
+            return V_WRITE_SUCCESS;
+        }
+
         instance = v_dataReaderInstanceNew(v_dataReader(reader),message);
-        if (!instance)
-        {
-            OS_REPORT(OS_ERROR,
-                      "v_dataReaderEntry::v_dataReaderEntryWrite",0,
+        if (!instance) {
+            OS_REPORT(OS_CRITICAL,
+                      "v_dataReaderEntry::v_dataReaderEntryWrite",V_RESULT_INTERNAL_ERROR,
                       "Failed to allocate v_dataReaderInstance object.");
             /* failed to create a new instance. */
             v_observerUnlock(v_observer(reader));
             return V_WRITE_OUT_OF_RESOURCES;
         }
-    }
+        if (_this->filterInstance) {
+            c_bool key_filter = TRUE; /* only key fields in filter */
+            c_bool pass = TRUE;
+            length = c_arraySize(_this->filterInstance);
+            for (index=0; index<length; index++) {
+                c_bool DataMatch = TRUE;
+                c_bool KeyMatch = TRUE;
 
-    for (;index < c_arraySize(_this->filterInstance); index++)
-    {
-        c_bool DataMatch = TRUE;
-        c_bool KeyMatch = TRUE;
-
-        if ((v_stateTest(state, L_WRITE))&&(_this->filterData)&&(_this->filterData[index]))
-        {
-            DataMatch = v_filterEval(_this->filterData[index],message);
+                if (_this->filterData[index]) {
+                    if (v_messageStateTest(message, L_WRITE)) {
+                        DataMatch = v_filterEval(_this->filterData[index],message);
+                    }
+                    key_filter = FALSE;
+                }
+                if ((DataMatch == TRUE)&&(_this->filterInstance[index])) {
+                    KeyMatch = v_filterEval(_this->filterInstance[index],instance);
+                }
+                if ((pass = (DataMatch && KeyMatch)) == TRUE) {
+                    break;
+                }
+            }
+            if (pass == FALSE) {
+                c_bool is_transaction = v_message_isTransaction(message);
+                /* a filter that is only operates on key fields will block all data of complying instances.
+                 * so avoid creation of instance and pipeline for key values not passing a pure key filter
+                 * except for transactions which require data for completeness verification.
+                 */
+                if (v_stateTest(state, L_WRITE) || (key_filter && !is_transaction)) {
+                    if (is_transaction && _this->transactionAdmin) {
+                        (void)v_transactionAdminInsertMessage(_this->transactionAdmin, message, NULL, FALSE, &complete);
+                        if (complete && v__readerIsGroupCoherent(v_reader(reader))) {
+                            v_subscriberTriggerGroupCoherent(subscriber, v_reader(reader));
+                        }
+                    }
+                    v_dataReaderInstanceFree(instance);
+                    v_observerUnlock(v_observer(reader));
+                    return V_WRITE_SUCCESS;
+                }
+            }
         }
-
-        if ((DataMatch == TRUE) &&(_this->filterInstance[index]))
-        {
-            KeyMatch = v_filterEval(_this->filterInstance[index],instance==NULL?v_dataReaderInstance(*instancePtr):instance);
-        }
-        filter = (DataMatch && KeyMatch);
-        if (filter == TRUE)
-        {
-            break;
-        }
-    }
-    if (filter != TRUE)
-    {
-        transactionListUpdate(_this,message);
-        v_observerUnlock(v_observer(reader));
-        c_free(instance);
-        return V_WRITE_SUCCESS;
-    }
-
-    /* Check the max samples limit. If no resources then report message rejected. */
-    maxSamples = qos->resource.max_samples;
-    count = v_dataReader(reader)->sampleCount;
-    assert(count >= 0);
-
-    /* Reject data if max sample limit is reached. */
-    if ((maxSamples != V_LENGTH_UNLIMITED) &&
-        (count >= maxSamples) &&
-        (v_stateTest(state, L_WRITE)))
-    {
-        onSampleRejected(v_dataReader(reader),
-                         S_REJECTED_BY_SAMPLES_LIMIT,
-                         v_publicGid(NULL));
-        v_observerUnlock(v_observer(reader));
-        c_free(instance);
-        return V_WRITE_REJECTED;
-    }
-
-
-    result = V_WRITE_SUCCESS;
-    if ((instancePtr == NULL) || (*instancePtr == NULL)) {
-        assert(c_refCount(instance) == 1);
-        if (qos->userKey.enable) {
+        assert(c_refCount(instance) == 2);
+        if (qos->userKey.v.enable) {
             instanceSet = _this->index->notEmptyList;
         } else {
             instanceSet = _this->index->objects;
         }
-        assert(c_refCount(instance) == 1);
+        assert(c_refCount(instance) == 2);
         found = c_tableInsert(instanceSet, instance);
         if (found == instance) {
             /* Instance did not yet exist */
-            assert(c_refCount(found) == 2);
-            if (v_dataReader(reader)->maxInstances == TRUE) {
+            assert(c_refCount(found) == 3);
+#if 0
+    /* The max_instance limit is disabled because it rejects the register message from the group
+     * meaning that the pipeline will not be build which results in a permanent disconnect for this instance
+     * even if later on room for new instances becomes available.
+     * see OSPL-22
+     */
+            if (qos->resource.v.max_instances != V_LENGTH_UNLIMITED) {
+                reader->maxInstances = (qos->resource.v.max_instances < (c_long)c_tableCount(instanceSet));
+            }
+#endif
+            if (reader->maxInstances == TRUE) {
                 /* The maximum number of instances was already reached.
                  * Therefore the instance was inserted unnecessarily and must
                  * be removed. */
                 found = c_remove(instanceSet, instance,NULL,NULL);
                 assert(found == instance);
-                c_free(found);
-                assert(c_refCount(found) == 1);
+                c_free(instance);
+                v_dataReaderInstanceFree(instance);
                 found = NULL;
-                onSampleRejected(v_dataReader(reader),
-                                 S_REJECTED_BY_SAMPLES_LIMIT,
-                                 v_publicGid(NULL));
+                onSampleRejected(reader, S_REJECTED_BY_INSTANCES_LIMIT, v_publicGid(NULL));
                 result = V_WRITE_REJECTED;
-
-                assert(c_refCount(instance) == 1);
+                if (v_message_isTransaction(message) || v_messageStateTest(message, L_ENDOFTRANSACTION)) {
+                    if (_this->transactionAdmin) {
+                        (void)v_transactionAdminInsertMessage(_this->transactionAdmin, message, NULL, TRUE, &complete);
+                        if (complete && v__readerIsGroupCoherent(v_reader(reader))) {
+                            v_subscriberTriggerGroupCoherent(subscriber, v_reader(reader));
+                        }
+                    }
+                }
             } else if (v_messageStateTest(message,L_UNREGISTER)) {
                 /* There is no use case to support implicit unregister.
                  * Therefore the instance was inserted unnecessarily and can
                  * be removed. */
                 found = c_remove(instanceSet, instance,NULL,NULL);
                 assert(found == instance);
-                c_free(found);
-                assert(c_refCount(found) == 1);
+                c_free(instance);
+                v_dataReaderInstanceFree(instance);
                 found = NULL;
                 result = V_WRITE_SUCCESS;
-                assert(c_refCount(instance) == 1);
             } else {
-                v_publicInit(v_public(found));
-                c_keep(found);
-                assert(c_refCount(found) == 4);
-                assert(c_refCount(instance) == 4);
+                assert(c_refCount(found) == 3);
+                assert(c_refCount(instance) == 3);
                 /* The reader statistics are updated for the newly inserted
                  * instance (with its initial values). The previous state
                  * was nothing, so 0 is passed as the oldState. Officially,
@@ -787,131 +662,190 @@ v_dataReaderEntryWrite(
                  * L_NOWRITERS set, this change triggers an unwanted de-
                  * crement of the Alive-counter. This special case has to be
                  * handled in the statistics updating. */
-                UPDATE_READER_STATISTICS(_this->index,found,0);
+                UPDATE_READER_STATISTICS(_this,found,0);
+                V_MESSAGE_STAMP(message,readerLookupTime);
+                result = doWrite(_this, found, message, context,
+                                 &a_work_around_for_dispose_all_to_indicate_the_instance_is_deleted);
             }
         } else {
             /* c_tableInsert returned an existing instance.
              * The instance is not yet kept by c_tableInsert so keep it
-             * to fullfil the following invariant.
+             * to fulfill the following invariant.
              */
-            c_keep(found);
+            v_dataReaderInstanceFree(instance);
+            V_MESSAGE_STAMP(message,readerLookupTime);
+            result = doWrite(_this, found, message, context,
+                             &a_work_around_for_dispose_all_to_indicate_the_instance_is_deleted);
         }
-        c_free(instance);
+        if (instancePtr && !a_work_around_for_dispose_all_to_indicate_the_instance_is_deleted) {
+            *instancePtr = c_keep(found);
+        }
     } else {
-        /* Use the provided instance.
-         * The instance need to be kept because it will be freed at the end of
-         * this method.
-         */
-        c_free(instance);
-#ifndef NDEBUG
-        if (qos->userKey.enable) {
-            instanceSet = _this->index->notEmptyList;
-        } else {
-            instanceSet = _this->index->objects;
+        if (_this->filterInstance) {
+            c_bool key_filter = TRUE; /* only key fields in filter */
+            c_bool pass = TRUE;
+            length = c_arraySize(_this->filterInstance);
+            for (index=0; index<length; index++) {
+                c_bool DataMatch = TRUE;
+                c_bool KeyMatch = TRUE;
+
+                if (_this->filterData[index]) {
+                    if (v_messageStateTest(message, L_WRITE)) {
+                        DataMatch = v_filterEval(_this->filterData[index],message);
+                    }
+                    key_filter = FALSE;
+                }
+                if ((DataMatch == TRUE)&&(_this->filterInstance[index])) {
+                    KeyMatch = v_filterEval(_this->filterInstance[index],v_dataReaderInstance(*instancePtr));
+                }
+                if ((pass = (DataMatch && KeyMatch)) == TRUE) {
+                    break;
+                }
+            }
+            if (pass == FALSE) {
+                c_bool is_transaction = v_message_isTransaction(message);
+                /* a filter that is only operates on key fields will block all data of complying instances.
+                 * so avoid creation of instance and pipeline for key values not passing a pure key filter
+                 * except for transactions which require data for completeness verification.
+                 */
+                if (v_stateTest(state, L_WRITE) || (key_filter && !is_transaction)) {
+                    if (is_transaction && _this->transactionAdmin) {
+                        (void)v_transactionAdminInsertMessage(_this->transactionAdmin, message, NULL, FALSE, &complete);
+                        if (complete && v__readerIsGroupCoherent(v_reader(reader))) {
+                            v_subscriberTriggerGroupCoherent(subscriber, v_reader(reader));
+                        }
+                    }
+                    v_observerUnlock(v_observer(reader));
+                    return V_WRITE_SUCCESS;
+                }
+            }
         }
-        found = NULL;
-        c_tableRemove(instanceSet, *instancePtr, alwaysFalse, &found);
-        assert(found == v_dataReaderInstance(*instancePtr));
-#else
-        found = c_keep(*instancePtr);
-#endif
-    }
-
-    V_MESSAGE_STAMP(message,readerLookupTime);
-
-    /* Invariant: found == NULL or is locally kept. */
-    if ((result == V_WRITE_SUCCESS) && (found)) {
-        result = doWrite(_this, found, message);
-
-        if ((instancePtr) && (*instancePtr == NULL)) {
-            *instancePtr = v_instance(found); /* transfer keep */
-        } else {
-            c_free(found);
-        }
+        V_MESSAGE_STAMP(message,readerLookupTime);
+        result = doWrite(_this, v_dataReaderInstance(*instancePtr), message, context, NULL);
     }
     v_observerUnlock(v_observer(reader));
 
     return result;
 }
 
-C_CLASS(disposeAllArg);
-C_STRUCT(disposeAllArg) {
-    v_writeResult result;
-    v_message disposeMsg;
+v_writeResult
+v_dataReaderEntryWriteEOT(
+    v_dataReaderEntry _this,
+    v_message message)
+{
+    v_reader reader = v_entryReader(_this);
+    v_subscriber subscriber = NULL;
+    c_bool complete = FALSE;
+
+    v_observerLock(v_observer(reader));
+    subscriber = v_readerSubscriber(reader);
+    /* Filter-out all QoS-incompatible messages. */
+    if (subscriber && _this->transactionAdmin) {
+        if (v_messageQos_isReaderCompatible(message->qos,reader)) {
+            (void)v_transactionAdminInsertMessage(_this->transactionAdmin, message, NULL, FALSE, &complete);
+            if (complete && v__readerIsGroupCoherent(reader)) {
+                v_subscriberTriggerGroupCoherent(subscriber, reader);
+            }
+        }
+    }
+    v_observerUnlock(v_observer(reader));
+
+    return V_WRITE_SUCCESS;
+}
+
+void
+v_dataReaderEntryFlushTransactionNoLock(
+    v_instance instance,
+    v_message message,
+    c_voidp arg)
+{
+    v_dataReaderInstance rinst;
     v_dataReaderEntry entry;
+    v_writeResult result;
+    OS_UNUSED_ARG(arg);
+
+    /* Only if the subscriber is still attached, otherwise the reader is in progress of being deleted.  */
+    if (instance && v_readerSubscriber(v_reader(v_dataReaderInstanceReader(instance)))) {
+        /* Push the message from the transaction into its corresponding instance.
+         * Since the sample already consumed resource limits in the transactional
+         * administration, no additional resource claim is needed.
+         */
+        rinst = v_dataReaderInstance(instance);
+        entry = v_dataReaderEntry(v_index(rinst->index)->entry);
+        result = doWrite(entry, rinst, message, V_CONTEXT_TRANSACTIONFLUSH, NULL);
+    }
+    OS_UNUSED_ARG(result);
+}
+
+struct collectArg {
+    c_bool (*condition)(c_object instance, c_voidp arg);
+    c_voidp conditionArg;
+    c_iter instances;
 };
 
 static c_bool
-disposeAll (
+collectMatchingInstances(
     c_object o,
     c_voidp arg)
 {
-    v_dataReaderInstance instance = v_dataReaderInstance(o);
-    disposeAllArg a = (disposeAllArg)arg;
+    struct collectArg *a = (struct collectArg *)arg;
 
-    a->result = doWrite(a->entry, instance, a->disposeMsg);
-
-    return (a->result != V_WRITE_REJECTED);
+    if (a->condition == NULL || a->condition(o, a->conditionArg)) {
+        a->instances = c_iterInsert(a->instances, o);
+    }
+    return TRUE;
 }
 
 v_writeResult
 v_dataReaderEntryDisposeAll (
     v_dataReaderEntry _this,
-    v_message disposeMsg)
+    v_message disposeMsg,
+    c_bool (*condition)(c_object instance, c_voidp arg),
+    c_voidp arg)
 {
-    C_STRUCT(disposeAllArg) disposeArg;
+    v_writeResult result = V_WRITE_SUCCESS;
     v_reader reader;
+    c_table set;
+    v_dataReaderInstance instance;
+    struct collectArg ca;
 
     assert(C_TYPECHECK(_this,v_dataReaderEntry));
 
     reader = v_entryReader(_this);
     v_observerLock(v_observer(reader));
 
-    /* Purge samples */
-    v_dataReaderEntryUpdatePurgeLists(_this);
+    /* Only if the subscriber is still attached, otherwise the reader is in progress of being deleted.  */
+    if (v_readerSubscriber(v_reader(reader))) {
 
-    disposeArg.result = V_WRITE_SUCCESS;
-    disposeArg.disposeMsg = disposeMsg;
-    disposeArg.entry = _this;
+        /* Purge samples */
+        v_dataReaderEntryUpdatePurgeLists(_this);
 
-    if (reader->qos->userKey.enable) {
-        c_tableWalk(_this->index->notEmptyList, disposeAll, &disposeArg);
-    } else {
-        c_tableWalk(_this->index->objects, disposeAll, &disposeArg);
+        if (reader->qos->userKey.v.enable) {
+            set = _this->index->notEmptyList;
+        } else {
+            set = _this->index->objects;
+        }
+        /* Following first collects all instances before performing
+         * the doWrite on each instance.
+         * A walk over the set of instances and inserting the dispose message
+         * would be more elegant because it is less heavy weight than the doWrite.
+         * The doWrite operation potentially also writes the message to the network
+         * which is not required and the doWrite potentially modifies
+         * the set which is not allowed during a walk.
+         */
+        ca.condition = condition;
+        ca.conditionArg = arg;
+        ca.instances = NULL;
+
+        (void)c_walk(set, collectMatchingInstances, &ca);
+        while ((instance = c_iterTakeFirst(ca.instances)) != NULL) {
+            result = doWrite(_this, instance, disposeMsg, V_CONTEXT_GROUPWRITE, NULL);
+        }
+        c_iterFree(ca.instances);
     }
     v_observerUnlock(v_observer(reader));
 
-    return disposeArg.result;
-}
-
-static c_bool
-markInstance (
-    c_object o,
-    c_voidp arg)
-{
-    v_dataReaderInstance instance = v_dataReaderInstance(o);
-    c_ulong flags = *((c_ulong *)arg);
-
-    v_dataReaderInstanceStateSet(instance, flags);
-
-    return TRUE;
-}
-
-void
-v_dataReaderEntryMarkInstanceStates (
-    v_dataReaderEntry _this,
-    c_ulong flags)
-{
-    v_reader reader;
-
-    assert(C_TYPECHECK(_this,v_dataReaderEntry));
-
-    reader = v_entryReader(_this);
-    v_observerLock(v_observer(reader));
-
-    c_tableWalk(_this->index->objects, markInstance, &flags);
-
-    v_observerUnlock(v_observer(reader));
+    return result;
 }
 
 static c_bool
@@ -944,99 +878,17 @@ v_dataReaderEntryUnmarkInstanceStates (
     v_observerUnlock(v_observer(reader));
 }
 
-v_dataReaderResult
-v_dataReaderEntryApplyUnregisterMessageToInstanceList (
-    v_dataReaderEntry _this,
-    v_message unregisterMsg,
-    c_iter instanceList)
+v_typeRepresentation
+v__dataReaderEntryGetTypeRepresentation (
+    v_dataReaderEntry _this)
 {
-    v_reader reader;
-    v_dataReaderInstance drInst;
-    v_dataReaderResult result =  V_DATAREADER_INSERTED;
+    c_char *typeName;
+    v_typeRepresentation found;
 
-    assert(C_TYPECHECK(_this,v_dataReaderEntry));
+    typeName = c_metaScopedName(c_metaObject(v_topicDataType(v_dataReaderEntryTopic(_this))));
+    found = v_participantLookupTypeRepresentation(v_subscriberParticipant(v_readerSubscriber(v_reader(_this))), typeName);
+    os_free(typeName);
 
-    reader = v_entryReader(_this);
-
-    /* Walk over all instances, and unregister each of them. */
-    v_observerLock(v_observer(reader));
-    drInst = v_dataReaderInstance(c_iterTakeFirst(instanceList));
-    while (drInst != NULL &&
-            result != V_DATAREADER_OUT_OF_MEMORY &&
-            result != V_DATAREADER_INTERNAL_ERROR)
-    {
-        result = v_dataReaderInstanceInsert(drInst, unregisterMsg);
-        drInst = v_dataReaderInstance(c_iterTakeFirst(instanceList));
-    }
-    v_observerUnlock(v_observer(reader));
-
-    return result;
+    return found;
 }
 
-/**************************************************************
- * Protected functions
- **************************************************************/
-static c_bool
-removeSamples (
-    c_object o,
-    c_voidp arg)
-{
-    v_dataReaderInstanceAbortTransaction(v_dataReaderInstance(o),*(c_ulong *)arg);
-    return TRUE;
-}
-
-static void
-abortTransaction (
-    v_dataReaderEntry entry,
-    c_ulong transactionId)
-{
-    c_table instanceSet;
-    v_readerQos qos;
-    v_dataReader reader;
-
-    reader = v_dataReader(v_entry(entry)->reader);
-    qos = v_reader(reader)->qos;
-    if (qos->userKey.enable) {
-        instanceSet = entry->index->notEmptyList;
-    } else {
-        instanceSet = entry->index->objects;
-    }
-    c_walk(instanceSet,removeSamples,&transactionId);
-}
-
-C_STRUCT(findTransactionIdArg) {
-    v_gid writerGID;
-    v_dataReaderEntry entry;
-};
-C_CLASS(findTransactionIdArg);
-
-static c_bool
-findTransactionId(
-    c_object o,
-    c_voidp arg)
-{
-    v_transaction t = (v_transaction)o;
-    findTransactionIdArg a = (findTransactionIdArg)arg;
-    c_bool result = TRUE;
-
-    if (v_gidEqual(a->writerGID,t->writerGID)) {
-        abortTransaction(a->entry,t->transactionId);
-    }
-    return result;
-}
-
-void
-v_dataReaderEntryAbortTransaction(
-    v_dataReaderEntry _this,
-    v_gid writerGID)
-{
-    C_STRUCT(findTransactionIdArg) arg;
-
-    arg.writerGID = writerGID;
-    arg.entry = _this;
-    c_walk(_this->transactionList, findTransactionId, &arg);
-}
-
-/**************************************************************
- * Public functions
- **************************************************************/

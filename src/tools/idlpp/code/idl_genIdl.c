@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_program.h"
@@ -15,6 +23,7 @@
 #include "idl_genIdlHelper.h"
 #include "idl_genCxxHelper.h"
 #include "idl_genSplHelper.h"
+#include "idl_genLanguageHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_keyDef.h"
 
@@ -46,6 +55,11 @@ idl_fileOpen(
     int tmplFile;
     struct os_stat tmplStat;
     unsigned int nRead;
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
 
     tmplPath = os_getenv("OSPL_TMPL_PATH");
     if (tmplPath == NULL) {
@@ -55,7 +69,12 @@ idl_fileOpen(
     idlPath = "IDL";
 
     /* Prepare file header template */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ccorbaIdlInterfaceHeader", tmplPath, OS_FILESEPCHAR, idlPath, OS_FILESEPCHAR);
+    if (idl_getLanguage() == IDL_LANG_LITE_CXX) {
+        snprintf(tmplFileName, sizeof(tmplFileName), "%s%cliteIdlInterfaceHeader", tmplPath, OS_FILESEPCHAR);
+    } else {
+        snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ccorbaIdlInterfaceHeader", tmplPath, OS_FILESEPCHAR, idlPath, OS_FILESEPCHAR);
+    }
+
     /* QAC EXPECT 3416; No side effects here */
     if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -63,10 +82,10 @@ idl_fileOpen(
         return (idl_abort);
     }
     /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+    idlpp_template = os_malloc(tmplStat.stat_size+1);
     tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+    nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+    memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
     close(tmplFile);
     idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
     idlpp_macroSet = idl_macroSetNew();
@@ -79,7 +98,12 @@ idl_fileOpen(
     idl_tmplExpFree(te);
 
     /* Prepare class definition template */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ccorbaIdlInterface", tmplPath, OS_FILESEPCHAR, idlPath, OS_FILESEPCHAR);
+    if (idl_getLanguage() == IDL_LANG_LITE_CXX) {
+        snprintf(tmplFileName, sizeof(tmplFileName), "%s%cliteIdlInterface", tmplPath, OS_FILESEPCHAR);
+    } else {
+        snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ccorbaIdlInterface", tmplPath, OS_FILESEPCHAR, idlPath, OS_FILESEPCHAR);
+    }
+
     /* QAC EXPECT 3416; No side effects here */
     if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -87,10 +111,10 @@ idl_fileOpen(
         return (idl_abort);
     }
     /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+    idlpp_template = os_malloc(tmplStat.stat_size+1);
     tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+    nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+    memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
     close(tmplFile);
 
     idlpp_indent_level = 0;
@@ -103,6 +127,8 @@ static void
 idl_fileClose(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     idl_fileOutPrintf(idl_fileCur(), "#endif\n");
 }
 
@@ -112,6 +138,7 @@ idl_moduleOpen (
     const char *name,
     void *userData)
  {
+     OS_UNUSED_ARG(userData);
     /* Test whether the module contains a component within the pragma keylist.
      * If it does not, then the module should not be generated since it will
      * contain no items (which is itself illegal idl syntax).
@@ -125,7 +152,7 @@ idl_moduleOpen (
     if (os_iterLength (idl_idlScopeKeyList) == 0) {
         return idl_abort;
     } else {
-        c_long li = 0;
+        c_ulong li = 0;
         c_bool scopesMatch = FALSE;
         idl_scope moduleScope;
         idl_scopeElement newElement;
@@ -167,6 +194,8 @@ static void
 idl_moduleClose(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     idlpp_indent_level--;
     idl_printIndent(idlpp_indent_level);
     idl_fileOutPrintf(idl_fileCur(), "};\n");
@@ -182,6 +211,11 @@ idl_structureOpen(
 {
     c_char spaces[20];
     idl_tmplExp te;
+    OS_UNUSED_ARG(structSpec);
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(structSpec);
+    OS_UNUSED_ARG(userData);
 
     /* QAC EXPECT 3416; No side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
@@ -190,7 +224,7 @@ idl_structureOpen(
         idl_macroSetAdd(idlpp_macroSet,
             idl_macroNew("namescope", idl_scopeElementName(idl_scopeCur(scope))));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew ("typename", name));
-        snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
+        snprintf(spaces, sizeof(spaces), "%d", idlpp_indent_level*4);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew ("spaces", spaces));
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
@@ -209,6 +243,11 @@ idl_unionOpen (
 {
     c_char spaces[20];
     idl_tmplExp te;
+    OS_UNUSED_ARG(unionSpec);
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(unionSpec);
+    OS_UNUSED_ARG(userData);
 
     /* QAC EXPECT 3416; No side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
@@ -217,7 +256,7 @@ idl_unionOpen (
         idl_macroSetAdd(idlpp_macroSet,
             idl_macroNew("namescope", idl_scopeElementName(idl_scopeCur(scope))));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", name));
-        snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
+        snprintf(spaces, sizeof(spaces), "%d", idlpp_indent_level*4);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
@@ -236,6 +275,9 @@ idl_typedefOpenClose(
 {
     c_char spaces[20];
     idl_tmplExp te;
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(userData);
 
     if ((idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tstruct ||
         idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tunion) &&
@@ -245,7 +287,7 @@ idl_typedefOpenClose(
         idl_macroSetAdd(idlpp_macroSet,
             idl_macroNew("namescope", idl_scopeElementName(idl_scopeCur(scope))));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", name));
-        snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
+        snprintf(spaces, sizeof(spaces), "%d", idlpp_indent_level*4);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());

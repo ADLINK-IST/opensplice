@@ -76,7 +76,7 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * Return TRUE if the node d represents an IDL construct whose name
  * can be redefined.
  */
-idl_bool can_be_redefined (AST_Decl *d)
+bool can_be_redefined (AST_Decl *d)
 {
    switch (d->node_type ())
    {
@@ -97,7 +97,7 @@ idl_bool can_be_redefined (AST_Decl *d)
       case AST_Decl::NT_union_branch:
       case AST_Decl::NT_value:
       case AST_Decl::NT_value_fwd:
-         return I_TRUE;
+         return true;
 
       case AST_Decl::NT_field:
       case AST_Decl::NT_attr:
@@ -106,5 +106,5 @@ idl_bool can_be_redefined (AST_Decl *d)
       default:
          break;
    }
-   return I_FALSE;
+   return false;
 }

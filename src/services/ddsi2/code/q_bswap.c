@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include "q_bswap.h"
 
 nn_guid_prefix_t nn_hton_guid_prefix (nn_guid_prefix_t p)
@@ -50,7 +69,7 @@ void bswap_sequence_number_set_hdr (nn_sequence_number_set_t *snset)
 
 void bswap_sequence_number_set_bitmap (nn_sequence_number_set_t *snset)
 {
-  int i, n = (snset->numbits + 31) / 32;
+  unsigned i, n = (snset->numbits + 31) / 32;
   for (i = 0; i < n; i++)
     snset->bits[i] = bswap4u (snset->bits[i]);
 }
@@ -63,7 +82,7 @@ void bswap_fragment_number_set_hdr (nn_fragment_number_set_t *fnset)
 
 void bswap_fragment_number_set_bitmap (nn_fragment_number_set_t *fnset)
 {
-  int i, n = (fnset->numbits + 31) / 32;
+  unsigned i, n = (fnset->numbits + 31) / 32;
   for (i = 0; i < n; i++)
     fnset->bits[i] = bswap4u (fnset->bits[i]);
 }

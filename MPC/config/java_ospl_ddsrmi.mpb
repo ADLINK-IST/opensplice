@@ -7,12 +7,14 @@ project : java_only {
 
 feature(!src_co) {
     libpaths += $(OSPL_HOME)<%slash%>jar<%slash%>ddsrmi.jar
+    libpaths += $(OSPL_HOME)<%slash%>jar<%slash%>dcpssaj.jar
     specific (prop:java) {
     }
 }
 
 feature(src_co) {
     libpaths += $(OSPL_HOME_NORMALIZED)<%slash%>jar<%slash%>$(SPLICE_TARGET)<%slash%>ddsrmi.jar
+    libpaths += $(OSPL_HOME_NORMALIZED)<%slash%>jar<%slash%>$(SPLICE_TARGET)<%slash%>dcpssaj.jar
     specific (prop:java) {
     }
 }

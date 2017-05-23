@@ -96,17 +96,20 @@ check_example_result()
                # Add extra output to indicate how many of the warnings are "Missed heartbeats"
                # so we can quickly identify new warnings appearing
                WARNINGS=`grep -ci "WARNING" ./ospl-info.log`
-               MISSEDHEARTBEAT=`grep -ci "Missed heartbeat" ./ospl-info.log`
-               NONRESP=`grep -i "considering reader" ./ospl-info.log | grep -c "non-responsive"`
+               NONRESP=`grep -i "considering reader" ./ospl-info.log | grep -c "responsive"`
                SENDKILL=`grep -i "did not terminate" ./ospl-info.log | grep -c "sending kill"`
-               CONCESSIONED=`expr $MISSEDHEARTBEAT + $NONRESP + $SENDKILL`
+               TIMEJUMP=`grep -i "Time jumps are not supported" ./ospl-info.log | grep -c "Time jumps are not supported"`
+               NWINTERFACE=`grep -i "using network interface" ./ospl-info.log | grep -c "selected arbitrarily from"`
+               DURABLITYRESEND=`grep -i "Already tried to resend .* message" ./ospl-info.log | grep -c "times"`
+               DURABILITYFSEND=`grep -i "Failed to send d_sampleChain message with result 'U_RESULT_TIMEOUT'" ./ospl-info.log | grep -c "Failed to send"`
+               CONCESSIONED=`expr $NONRESP + $SENDKILL + $TIMEJUMP + $NWINTERFACE + $DURABLITYRESEND + $DURABILITYFSEND`
                if [ "$WARNINGS" = "$CONCESSIONED" ]
                then
                    MESSAGE="$MESSAGE $WARNINGS WARNINGS in ospl-info.log - all are concessioned - OK"
                    SUCC=`expr $SUCC + 1`
-                   echo " ### Missed heartbeat warnings = $MISSEDHEARTBEAT.." >> run.log
-                   echo " ### writer <n> considering reader <n> non-responsive warnings = $NONRESP.." >> run.log
+                   echo " ### writer <n> considering reader <n> non-responsive/reponsive again warnings = $NONRESP.." >> run.log
                    echo " ### Service .. did not terminate, sending kill warnings = $SENDKILL .." >> run.log
+                   echo " ### Time jumps are not supported on this platform = $TIMEJUMP .." >> run.log
                    echo " ### Run $PROJECT PASSED $MESSAGE ### " >> run.log
                    echo " $EXAMPLEDIR PASSED $MESSAGE" >> $RUN_SUMMARY_LOG
                else

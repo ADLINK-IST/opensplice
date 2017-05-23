@@ -1,0 +1,45 @@
+parseconditions:
+    desc: DBMSconnect LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: write_msg
+          type: line
+          inst: 4
+          required: yes
+          line: "Writing message: *Hi *here, I will send you 10 * messages."
+
+        - name: msg_no
+          type: line
+          inst: 40
+          required: yes
+          line: "Writing message: *Message no *"
+
+        - name: term_msg
+          type: line
+          inst: 2
+          required: yes
+          line: "Termination message received: exiting..."
+
+        - name: sqlddsdbms_msg
+          type: line
+          inst: 20
+          required: yes
+          line: "SqlToDdsAndDbms: Message no *"
+
+        - name: sqldds_msg
+          type: line
+          inst: 10
+          required: yes
+          line: "SqlToDdsOnly: Message no *"
+
+        - name: ddsdbms_msg
+          type: line
+          inst: 10
+          required: yes
+          line: "DdsToDdsAndDbms: Message no *"

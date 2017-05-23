@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "sd_xmlNode.h"
@@ -39,18 +47,12 @@ sd_xmlElement
 sd_xmlElementNew (
     void)
 {
-    sd_xmlElement node;
-
-    node = (sd_xmlElement) os_malloc(C_SIZEOF(sd_xmlElement));
-
-    if ( node ) {
-        sd_xmlNodeInit(sd_xmlNode(node), SD_XMLNODE_KIND_ELEMENT);
-        node->parent     = NULL;
-        node->children   = NULL;
-        node->attributes = NULL;
-        node->data       = NULL;
-    }
-
+    sd_xmlElement node = os_malloc(C_SIZEOF(sd_xmlElement));
+    sd_xmlNodeInit(sd_xmlNode(node), SD_XMLNODE_KIND_ELEMENT);
+    node->parent     = NULL;
+    node->children   = NULL;
+    node->attributes = NULL;
+    node->data       = NULL;
     return node;
 }
 
@@ -93,15 +95,9 @@ sd_xmlAttribute
 sd_xmlAttributeNew (
     void)
 {
-    sd_xmlAttribute node;
-
-    node = (sd_xmlAttribute) os_malloc(C_SIZEOF(sd_xmlAttribute));
-
-    if ( node ) {
-        sd_xmlNodeInit(sd_xmlNode(node), SD_XMLNODE_KIND_ATTRIBUTE);
-        node->value     = NULL;
-    }
-
+    sd_xmlAttribute node = os_malloc(C_SIZEOF(sd_xmlAttribute));
+    sd_xmlNodeInit(sd_xmlNode(node), SD_XMLNODE_KIND_ATTRIBUTE);
+    node->value     = NULL;
     return node;
 }
 
@@ -124,15 +120,9 @@ sd_xmlData
 sd_xmlDataNew (
     void)
 {
-    sd_xmlData node;
-
-    node = (sd_xmlData) os_malloc(C_SIZEOF(sd_xmlData));
-
-    if ( node ) {
-        sd_xmlNodeInit(sd_xmlNode(node), SD_XMLNODE_KIND_DATA);
-        node->data     = NULL;
-    }
-
+    sd_xmlData node = os_malloc(C_SIZEOF(sd_xmlData));
+    sd_xmlNodeInit(sd_xmlNode(node), SD_XMLNODE_KIND_DATA);
+    node->data     = NULL;
     return node;
 }
 
@@ -309,7 +299,7 @@ sd_xmlFindNodeAction (
     sd_xmlNode node,
     void *arg)
 {
-    sd_xmlFindNodeArg *argument = (sd_xmlFindNodeArg *) arg;
+    sd_xmlFindNodeArg *argument = arg;
     c_bool result = TRUE;
 
     assert(node->name);

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -54,41 +62,32 @@ os_procGetProcessName(
     char *procName,
     os_uint procNameSize)
 {
-char* process_env_name;
-char* exec;
-os_uint32 size = _OS_PROCESS_DEFAULT_NAME_LEN_;
+    char* process_env_name;
+    char* exec;
 
     if (processName == NULL) {
-        processName = (char*) os_malloc(_OS_PROCESS_DEFAULT_NAME_LEN_);
+        processName = os_malloc(_OS_PROCESS_DEFAULT_NAME_LEN_);
         *processName = 0;
         process_env_name = os_getenv("SPLICE_PROCNAME");
         if (process_env_name != NULL) {
-            size = snprintf(processName, size, "%s",process_env_name);
-        }
-        else {
-            if (_NSGetExecutablePath(processName, &size) != 0) {
+            (void) snprintf(processName, _OS_PROCESS_DEFAULT_NAME_LEN_, "%s", process_env_name);
+        } else {
+            uint32_t usize = _OS_PROCESS_DEFAULT_NAME_LEN_;
+            if (_NSGetExecutablePath(processName, &usize) != 0) {
                 /* processName is longer than allocated */
-                char *tmp = (char*) os_realloc(processName, size + 1);
-                if (tmp != NULL) {
-                    /* reallocation successful */
-                    processName = tmp;
-                    if (_NSGetExecutablePath(processName, &size) == 0) {
-                        /* path set successful */
-                    }
+                processName = os_realloc(processName, usize + 1);
+                if (_NSGetExecutablePath(processName, &usize) == 0) {
+                    /* path set successful */
                 }
             }
-            if (processName) {
-                exec = strrchr(processName,'/');
-                if (exec) {
-                    /* move everything following the last slash forward */
-                    memmove (processName, exec+1, strlen (exec+1) + 1);
-                }
+            exec = strrchr(processName,'/');
+            if (exec) {
+                /* move everything following the last slash forward */
+                memmove (processName, exec+1, strlen (exec+1) + 1);
             }
-
         }
     }
-    size = snprintf(procName, procNameSize, "%s", processName);
-    return size;
+    return snprintf(procName, procNameSize, "%s", processName);
 }
 #undef _OS_PROCESS_DEFAULT_NAME_LEN_
 

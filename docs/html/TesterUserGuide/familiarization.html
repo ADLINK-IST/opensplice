@@ -1,0 +1,1097 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Familiarization Exercises &mdash; Test Tool User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Test Tool User Guide" href="index.html" />
+    <link rel="next" title="5. Command Reference" href="commandref.html" />
+    <link rel="prev" title="3. Getting Started" href="getstarted.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="commandref.html" title="5. Command Reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="getstarted.html" title="3. Getting Started"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="familiarization-exercises">
+<span id="id1"></span><h1>4. Familiarization Exercises<a class="headerlink" href="#familiarization-exercises" title="Permalink to this headline">¶</a></h1>
+<p><em>This section gives step-by-step instructions for using the  Vortex OpenSplice Tester to perform many
+typical tasks to help you become familiar with the way it operates.</em></p>
+<p><em>The exercises in this section assume that OpenSplice and the Tester have been
+succesfully installed. These illustrations make use of the example data supplied with
+the product.</em></p>
+<div class="section" id="starting-the-tester">
+<h2>4.1. Starting the Tester<a class="headerlink" href="#starting-the-tester" title="Permalink to this headline">¶</a></h2>
+<p>OpenSplice must already be running before you start the Tester.</p>
+<p>Step 1:  Start Vortex OpenSplice</p>
+<p>Step 2:  Start the Tester:</p>
+<ul class="simple">
+<li>On Linux, run <tt class="docutils literal"><span class="pre">ospltest</span></tt>.</li>
+<li>On Windows, choose Vortex OpenSplice Tester from the <em>Start</em> menu
+or run <tt class="docutils literal"><span class="pre">ospltest</span></tt> from the Vortex OpenSplice command prompt.</li>
+</ul>
+<p class="centered" id="starting-tester">
+<strong><strong>Starting Tester</strong></strong></p><a class="reference internal image-reference" href="_images/020_start.png"><img alt="Starting Tester" class="align-center" src="_images/020_start.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="connection-management">
+<h2>4.2. Connection management<a class="headerlink" href="#connection-management" title="Permalink to this headline">¶</a></h2>
+<p>When it starts, the Tester will automatically try to establish a connection
+to a running instance of OpenSplice using the default URI. You can also make
+or break connections from the main window by following the steps given below.</p>
+<p>The command line option <tt class="docutils literal"><span class="pre">-nac</span></tt> stops Tester from making a connection at startup,
+and with the <tt class="docutils literal"><span class="pre">-uri</span></tt> command line option a connection to an alternative URI can be
+made at startup.</p>
+<div class="section" id="to-connect-to-a-local-opensplice-instance">
+<h3>4.2.1. To Connect to a local OpenSplice instance<a class="headerlink" href="#to-connect-to-a-local-opensplice-instance" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>File &gt; Connect</em>.</p>
+<p>Step 2:  Set the path or Browse to the configuration file
+(<em>e.g.</em>, <tt class="docutils literal"><span class="pre">file://&lt;OpenSplice</span> <span class="pre">install</span> <span class="pre">dir&gt;/etc/config/ospl.xml</span></tt>).</p>
+<p>Step 3:  Click the <em>OK</em> button.</p>
+<p class="centered" id="connecting-to-a-local-opensplice-instance">
+<strong><strong>Connecting to a local OpenSplice instance</strong></strong></p><a class="reference internal image-reference" href="_images/021_connect_a.png"><img alt="Connecting to a local OpenSplice instance" class="align-center" src="_images/021_connect_a.png" style="width: 150mm;" /></a>
+</div>
+<div class="section" id="to-connect-to-a-remote-opensplice-instance">
+<h3>4.2.2. To Connect to a remote OpenSplice instance<a class="headerlink" href="#to-connect-to-a-remote-opensplice-instance" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>File &gt; Connect</em>.</p>
+<p>Step 2:  Enter the URI for the remote OpenSplice system
+(<em>e.g.</em>, <tt class="docutils literal"><span class="pre">http://127.0.0.1:8000</span></tt>).</p>
+<p><em>Note</em>: The port number must be set to the port number as
+configured for the SOAP service of the remote OpenSplice instance.</p>
+<p>Step 3:  Click the <em>OK</em> button.</p>
+<p class="centered" id="connecting-to-a-remote-opensplice-instance">
+<strong><strong>Connecting to a remote OpenSplice instance</strong></strong></p><a class="reference internal image-reference" href="_images/022_connect_b.png"><img alt="Connecting to a remote OpenSplice instance" class="align-center" src="_images/022_connect_b.png" style="width: 140mm;" /></a>
+</div>
+<div class="section" id="to-disconnect">
+<h3>4.2.3. To Disconnect<a class="headerlink" href="#to-disconnect" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>File &gt; Disconnect</em>.</p>
+</div>
+<div class="section" id="to-exit-tester">
+<h3>4.2.4. To Exit Tester<a class="headerlink" href="#to-exit-tester" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>File &gt; Exit</em> or click the <em>Close</em> button <a class="reference internal" href="_images/138_icon_close.png"><img alt="close" src="_images/138_icon_close.png" style="height: 3mm;" /></a> on
+the Tester main window.</p>
+</div>
+</div>
+<div class="section" id="topics-and-readers">
+<h2>4.3. Topics and Readers<a class="headerlink" href="#topics-and-readers" title="Permalink to this headline">¶</a></h2>
+<p>Tester can subscribe to multiple topics. These Readers will comprise a timeline for
+testing. Samples of those topics are automatically read and displayed in the Sample
+List. Tester readers can also be used to write or edit samples.</p>
+<div class="section" id="the-topic-list">
+<h3>4.3.1. The Topic list<a class="headerlink" href="#the-topic-list" title="Permalink to this headline">¶</a></h3>
+<p>Check the Topic list. Make sure that the Tester is connected to the default URI.</p>
+</div>
+<div class="section" id="to-view-a-topic-s-type-definition">
+<h3>4.3.2. To View a Topic&#8217;s Type definition<a class="headerlink" href="#to-view-a-topic-s-type-definition" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select the <em>Topics</em> tab.</p>
+<p>Step 2:  Right-click <em>OsplTestTopic</em>.</p>
+<p>Step 3:  Choose <em>View Topic Type</em> from the pop-up menu.
+The <em>View Topic Type</em> window will appear, displaying the type name
+and type description for the chosen topic.</p>
+<p class="centered" id="viewing-a-topics-type">
+<strong><strong>Viewing a topic’s type</strong></strong></p><a class="reference internal image-reference" href="_images/023_topictype.png"><img alt="Viewing a topic’s type" class="align-center" src="_images/023_topictype.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="to-add-a-reader-from-the-topic-list">
+<h3>4.3.3. To Add a Reader from the Topic list<a class="headerlink" href="#to-add-a-reader-from-the-topic-list" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select the <em>Topics</em> tab.</p>
+<p>Step 2:  Right-click <em>OsplTestTopic</em>.</p>
+<p class="centered" id="create-readers-from-the-topics-list">
+<strong><strong>Create Readers from the Topics list</strong></strong></p><a class="reference internal image-reference" href="_images/024_readerfromtopic.png"><img alt="Create Readers from the Topics list" class="align-center" src="_images/024_readerfromtopic.png" style="width: 90mm;" /></a>
+<p>Step 3:  Choose <em>Create Default Reader</em> from the pop-up menu.
+The reader will automatically be named the same as the topic.</p>
+<p>Step 4:  Choose <em>Create Reader</em> and modify the (writer) QoS or
+reader name if desired.</p>
+<p>Step 5:  Click <em>Add</em>.</p>
+<p class="centered" id="create-myreader">
+<strong><strong>Create myReader</strong></strong></p><a class="reference internal image-reference" href="_images/025_createmyreader.png"><img alt="Create myReader" class="align-center" src="_images/025_createmyreader.png" style="width: 50mm;" /></a>
+<p>Step 6:  Open the <em>Readers</em> tab and you will see the readers you just created.</p>
+</div>
+<div class="section" id="to-add-a-reader-from-the-file-menu">
+<h3>4.3.4. To Add a Reader from the File menu<a class="headerlink" href="#to-add-a-reader-from-the-file-menu" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select the <em>Readers</em> tab.</p>
+<p>Step 2:  Choose <em>File &gt; Add Reader</em>.</p>
+<p>Step 3:  Select <em>OsplTestTopic</em> from the drop-down list.</p>
+<p>Step 4:  Click <em>Add</em>.</p>
+<p class="centered" id="adding-a-reader-from-the-file-menu">
+<strong><strong>Adding a Reader from the File menu</strong></strong></p><a class="reference internal image-reference" href="_images/026_readerfromfilemenu.png"><img alt="Adding a Reader from the File menu" class="align-center" src="_images/026_readerfromfilemenu.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="to-add-multiple-readers-to-the-tester-timeline">
+<h3>4.3.5. To Add multiple Readers to the Tester timeline<a class="headerlink" href="#to-add-multiple-readers-to-the-tester-timeline" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>File &gt; Add Readers</em>.</p>
+<p>Step 2:  Type <tt class="docutils literal"><span class="pre">ospl</span></tt> in the filter field to limit the list of topics.
+Select <em>OsplArrayTopic</em> and <em>OsplSequenceTopic</em>.</p>
+<p>Step 3:  Click <em>Add</em>.</p>
+<p class="centered" id="adding-multiple-readers">
+<strong><strong>Adding multiple Readers</strong></strong></p><a class="reference internal image-reference" href="_images/027_addmultiplereaders.png"><img alt="Adding multiple Readers" class="align-center" src="_images/027_addmultiplereaders.png" style="width: 100mm;" /></a>
+</div>
+<div class="section" id="to-save-the-current-readers-to-a-file">
+<h3>4.3.6. To Save the current Readers to a file<a class="headerlink" href="#to-save-the-current-readers-to-a-file" title="Permalink to this headline">¶</a></h3>
+<p>If you need to preserve the Readers for a timeline, you can save the
+current Readers list.</p>
+<p>Step 1:  Choose <em>File &gt; Save Readers List</em>.</p>
+<p>Step 2:  Enter a name for the new file.</p>
+<p>Step 3:  Click <em>Save</em>.</p>
+</div>
+<div class="section" id="to-remove-all-readers">
+<h3>4.3.7. To Remove all Readers<a class="headerlink" href="#to-remove-all-readers" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>File &gt; Remove all Readers</em>.</p>
+</div>
+<div class="section" id="to-load-readers-from-a-saved-file">
+<h3>4.3.8. To Load Readers from a saved file<a class="headerlink" href="#to-load-readers-from-a-saved-file" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>File &gt; Load Readers List</em>.</p>
+<p>Step 2:  Select the name of the saved file.</p>
+<p>Step 3:  Click <em>Load</em>.</p>
+</div>
+<div class="section" id="to-delete-a-reader">
+<h3>4.3.9. To Delete a Reader<a class="headerlink" href="#to-delete-a-reader" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select <em>OsplTestTopic</em> reader from the list.</p>
+<p>Step 2:  Press the <em>[Delete]</em> key or right-click on <em>OsplTestTopic</em>
+and choose <em>Delete Reader</em> from the pop-up menu.</p>
+</div>
+</div>
+<div class="section" id="samples">
+<h2>4.4. Samples<a class="headerlink" href="#samples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="writing-and-editing-samples">
+<h3>4.4.1. Writing and Editing Samples<a class="headerlink" href="#writing-and-editing-samples" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="to-write-sample-topic-data">
+<h4>4.4.1.1. To Write Sample Topic data<a class="headerlink" href="#to-write-sample-topic-data" title="Permalink to this headline">¶</a></h4>
+<p>Step 1:  Select <em>OsplTestTopic</em> reader from the list.</p>
+<p>Step 2:  Press <em>[F4]</em> or choose <em>Edit Sample</em> from the pop-up menu.</p>
+<p>Step 3:  Enter following values for the fields in the list:</p>
+<blockquote>
+<div><em>id</em>: <tt class="docutils literal"><span class="pre">0</span></tt>, <em>t</em>: <tt class="docutils literal"><span class="pre">1</span></tt>, <em>x</em>: <tt class="docutils literal"><span class="pre">1</span></tt>, <em>y</em>: <tt class="docutils literal"><span class="pre">1</span></tt>, <em>z</em>: <tt class="docutils literal"><span class="pre">1</span></tt></div></blockquote>
+<p class="centered" id="entering-sample-topic-data">
+<strong><strong>Entering sample topic data</strong></strong></p><a class="reference internal image-reference" href="_images/028_editsample.png"><img alt="Entering sample topic data" class="align-center" src="_images/028_editsample.png" style="width: 100mm;" /></a>
+<p>Step 4:  Click the <em>write</em> button.</p>
+<p>Step 5:  Close the <em>Edit Sample</em> window.</p>
+</div>
+<div class="section" id="to-display-detailed-information-on-sample-data">
+<h4>4.4.1.2. To display detailed information on sample data<a class="headerlink" href="#to-display-detailed-information-on-sample-data" title="Permalink to this headline">¶</a></h4>
+<p>Step 1:  Double-click on the first <em>OsplTestTopic</em> sample in
+the <em>Sample List</em> window.</p>
+<p class="centered" id="display-detailed-sample-data-information">
+<strong><strong>Display detailed sample data information</strong></strong></p><a class="reference internal image-reference" href="_images/029_detailedsample.png"><img alt="Display detailed sample data information" class="align-center" src="_images/029_detailedsample.png" style="width: 100mm;" /></a>
+</div>
+<div class="section" id="more-information-on-sample-info">
+<h4>4.4.1.3. More information on sample info<a class="headerlink" href="#more-information-on-sample-info" title="Permalink to this headline">¶</a></h4>
+<p>The detailed sample data table displays sample info data of
+a given sample. Some fields are derived from middleware sample
+info data, while others are not. What follows is a description
+of some of those fields.</p>
+<ul class="simple">
+<li>The <em>insert_latency</em> is a calculated value representing the
+difference between the sample&#8217;s insert timestamp, and its
+write timestamp, as it is received in the sample info.</li>
+<li>The <em>relative_time</em> is a Tester specific time measurement,
+in seconds. It does not represent any actual timestamps from
+the middleware. Its main use is determining the time elapsed
+between a Tester scenario script execution start and the
+sample receipt. It&#8217;s mainly meant as a loose measurement of
+time tracking since start of sample reading or start of a
+script scenario, and not as a strict real-time middleware
+timing.</li>
+</ul>
+</div>
+<div class="section" id="to-display-extra-fields">
+<h4>4.4.1.4. To Display extra fields<a class="headerlink" href="#to-display-extra-fields" title="Permalink to this headline">¶</a></h4>
+<p>By default the Sample List displays topic-independent fields. You can add
+topic-specific fields as follows:</p>
+<p>Step 1:  Select any sample.</p>
+<p>Step 2:  Press <em>[F9]</em> or right-click and choose <em>Select Extra Fields</em> from
+the pop-up menu.</p>
+<p>Step 3:  Click to select (‘check’) <em>x</em>, <em>y</em>, <em>z</em> and <em>t</em>.</p>
+<p class="centered" id="selecting-extra-fields-to-display">
+<strong><strong>Selecting extra fields to display</strong></strong></p><a class="reference internal image-reference" href="_images/030_selectextrafields.png"><img alt="Selecting extra fields to display" class="align-center" src="_images/030_selectextrafields.png" style="width: 50mm;" /></a>
+<p>Step 4:  Click <em>OK</em>.</p>
+<p>The selected fields will be added to the Sample List.</p>
+<p class="centered" id="new-fields-added">
+<strong><strong>New fields added</strong></strong></p><a class="reference internal image-reference" href="_images/031_extrafieldsadded.png"><img alt="New fields added" class="align-center" src="_images/031_extrafieldsadded.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="to-edit-a-sample">
+<h4>4.4.1.5. To Edit a sample<a class="headerlink" href="#to-edit-a-sample" title="Permalink to this headline">¶</a></h4>
+<p>Step 1:  Select the first sample.</p>
+<p>Step 2:  Press <em>[F4]</em> or choose <em>Edit Sample</em> from the pop-up menu.</p>
+<p>Step 3:  Enter following values in the fields:</p>
+<blockquote>
+<div><em>id</em>: <tt class="docutils literal"><span class="pre">0</span></tt>, <em>x</em>: <tt class="docutils literal"><span class="pre">1</span></tt>, <em>y</em>: <tt class="docutils literal"><span class="pre">2</span></tt>, <em>z</em>: <tt class="docutils literal"><span class="pre">1</span></tt>, <em>t</em>: <tt class="docutils literal"><span class="pre">1</span></tt></div></blockquote>
+<p>Step 4:  Click <em>Write</em>.</p>
+<p>Step 5:  Enter following values in the fields:</p>
+<blockquote>
+<div><em>id</em>: <tt class="docutils literal"><span class="pre">0</span></tt>, <em>x</em>: <tt class="docutils literal"><span class="pre">1</span></tt>, <em>y</em>: <tt class="docutils literal"><span class="pre">4</span></tt>, <em>z</em>: <tt class="docutils literal"><span class="pre">2</span></tt>, <em>t</em>: <tt class="docutils literal"><span class="pre">1</span></tt></div></blockquote>
+<p>Step 6:  Click <em>Write</em>.</p>
+<p>Step 7:  Enter following values in the fields:</p>
+<blockquote>
+<div><em>id</em>: <tt class="docutils literal"><span class="pre">0</span></tt>, <em>x</em>: <tt class="docutils literal"><span class="pre">1</span></tt>, <em>y</em>: <tt class="docutils literal"><span class="pre">8</span></tt>, <em>z</em>: <tt class="docutils literal"><span class="pre">3</span></tt>, <em>t</em>: <tt class="docutils literal"><span class="pre">1</span></tt></div></blockquote>
+<p>Step 8:  Click <em>Write</em>.</p>
+<dl class="docutils">
+<dt>Step 9:  Enter following values in the fields:</dt>
+<dd><em>id</em>: <tt class="docutils literal"><span class="pre">1</span></tt>, <em>x</em>: <tt class="docutils literal"><span class="pre">1</span></tt>, <em>y</em>: <tt class="docutils literal"><span class="pre">8</span></tt>, <em>z</em>: <tt class="docutils literal"><span class="pre">4</span></tt>, <em>t</em>: <tt class="docutils literal"><span class="pre">1</span></tt></dd>
+</dl>
+<p>Step 10: Click <em>WriteDispose</em>.</p>
+</div>
+<div class="section" id="to-compare-two-samples">
+<h4>4.4.1.6. To Compare two samples<a class="headerlink" href="#to-compare-two-samples" title="Permalink to this headline">¶</a></h4>
+<p>Step 1:  Double-click the sample with the values
+<em>id</em>: <tt class="docutils literal"><span class="pre">0</span></tt>, <em>x</em>: <tt class="docutils literal"><span class="pre">1</span></tt>, <em>y</em>: <tt class="docutils literal"><span class="pre">4</span></tt>, <em>z</em>: <tt class="docutils literal"><span class="pre">2</span></tt>, <em>t</em>: <tt class="docutils literal"><span class="pre">1</span></tt>.</p>
+<p>Step 2:  Select the sample with the values
+<em>id</em>: <tt class="docutils literal"><span class="pre">0</span></tt>, <em>x</em>: <tt class="docutils literal"><span class="pre">1</span></tt>, <em>y</em>: <tt class="docutils literal"><span class="pre">8</span></tt>, <em>z</em>: <tt class="docutils literal"><span class="pre">3</span></tt>, <em>t</em>: <tt class="docutils literal"><span class="pre">1</span></tt>.</p>
+<p>Step 3:  Press <em>[F2]</em> or choose <em>Compare Samples</em> from the pop-up menu.</p>
+<p class="centered" id="comparing-samples">
+<strong><strong>Comparing samples</strong></strong></p><a class="reference internal image-reference" href="_images/032_comparesamples.png"><img alt="Comparing samples" class="align-center" src="_images/032_comparesamples.png" style="width: 145mm;" /></a>
+</div>
+</div>
+</div>
+<div class="section" id="filtering">
+<h2>4.5. Filtering<a class="headerlink" href="#filtering" title="Permalink to this headline">¶</a></h2>
+<p class="centered" id="filtering-un-filtered-topic-list">
+<strong><strong>Filtering: un-filtered Topic list</strong></strong></p><a class="reference internal image-reference" href="_images/033_unfilteredtopics.png"><img alt="Filtering: un-filtered Topic list" class="align-center" src="_images/033_unfilteredtopics.png" style="width: 145mm;" /></a>
+<div class="section" id="to-filter-the-sample-list-on-a-topic">
+<h3>4.5.1. To Filter the Sample List on a Topic<a class="headerlink" href="#to-filter-the-sample-list-on-a-topic" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select the <em>OsplTestTopic</em> sample.</p>
+<p>Step 2:  Press <em>[F5]</em> or choose <em>Filter on Topic</em> from the pop-up menu.</p>
+<p class="centered" id="sample-list-filtered-by-topic">
+<strong><strong>Sample List filtered by Topic</strong></strong></p><a class="reference internal image-reference" href="_images/034_samplelistbytopic.png"><img alt="Sample List filtered by Topic" class="align-center" src="_images/034_samplelistbytopic.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="to-reset-filters-and-display-all-samples">
+<h3>4.5.2. To Reset Filters and display all samples<a class="headerlink" href="#to-reset-filters-and-display-all-samples" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Press <em>[F7]</em> or choose <em>Reset filter</em> from the pop-up menu or
+click the <em>Reset</em> button on the <em>Sample List</em> window.</p>
+</div>
+<div class="section" id="to-filter-on-both-topic-and-key">
+<h3>4.5.3. To Filter on both Topic and Key<a class="headerlink" href="#to-filter-on-both-topic-and-key" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select <em>OsplTestTopic</em> with <em>id(key)</em>: <tt class="docutils literal"><span class="pre">1</span></tt>.</p>
+<p>Step 2:  Press <em>[F5]</em> or choose <em>Filter on topic and key</em> from the pop-up menu.</p>
+<p class="centered" id="sample-list-filtered-by-topic-and-key">
+<strong><strong>Sample List filtered by Topic and Key</strong></strong></p><a class="reference internal image-reference" href="_images/035_listbytopicandkey.png"><img alt="Sample List filtered by Topic and Key" class="align-center" src="_images/035_listbytopicandkey.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="filter-samples-on-state">
+<h3>4.5.4. Filter samples on State<a class="headerlink" href="#filter-samples-on-state" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select a sample with a <em>State</em> of <tt class="docutils literal"><span class="pre">SEND_AND_ALIVE</span></tt>.</p>
+<p>Step 2:  Choose <em>Filter on State</em> from the pop-up menu.</p>
+<p class="centered" id="sample-list-filtered-by-state">
+<strong><strong>Sample List filtered by State</strong></strong></p><a class="reference internal image-reference" href="_images/036_listbystate.png"><img alt="Sample List filtered by State" class="align-center" src="_images/036_listbystate.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="to-filter-samples-on-key-value">
+<h3>4.5.5. To Filter Samples on Key value<a class="headerlink" href="#to-filter-samples-on-key-value" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select <em>OsplTestTopic</em> with <em>id(key)</em>: <tt class="docutils literal"><span class="pre">0</span></tt>.</p>
+<p>Step 2:  Choose <em>Filter on key</em> from the pop-up menu.</p>
+<p class="centered" id="sample-list-filtered-by-key-value">
+<strong><strong>Sample List filtered by Key value</strong></strong></p><a class="reference internal image-reference" href="_images/037_listbykeyvalue.png"><img alt="Sample List filtered by Key value" class="align-center" src="_images/037_listbykeyvalue.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="filter-on-column-text">
+<h3>4.5.6. Filter on column text<a class="headerlink" href="#filter-on-column-text" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select the <em>State</em> column of any sample.</p>
+<p>Step 2:  Choose <em>Filter on column text</em> from the pop-up menu.</p>
+<p>Step 3:  Type in <tt class="docutils literal"><span class="pre">send</span></tt>.</p>
+<p>Step 4:  Press the <em>[Enter]</em> key.</p>
+<p class="centered" id="sample-list-filtered-by-column-text">
+<strong><strong>Sample List filtered by column text</strong></strong></p><a class="reference internal image-reference" href="_images/038_listbycolmtext.png"><img alt="Sample List filtered by column text" class="align-center" src="_images/038_listbycolmtext.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="find-specific-text">
+<h3>4.5.7. Find specific text<a class="headerlink" href="#find-specific-text" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Press <em>[Ctrl+F]</em> to open the <em>Find</em> dialog.</p>
+<p class="centered" id="the-find-dialog">
+<strong><strong>The Find dialog</strong></strong></p><a class="reference internal image-reference" href="_images/039_finddialog.png"><img alt="The Find dialog" class="align-center" src="_images/039_finddialog.png" style="width: 60mm;" /></a>
+<p>Step 2:  Type in the text to search for, and select any of the options if required.</p>
+<p>Step 3:  Click <em>Find</em>. The first occurrence of the search text is highlighted.</p>
+<p>Step 4:  Click <em>Find</em> again to find the next occurrence of the search text.</p>
+</div>
+<div class="section" id="global-topic-filters">
+<h3>4.5.8. Global Topic filters<a class="headerlink" href="#global-topic-filters" title="Permalink to this headline">¶</a></h3>
+<p class="centered" id="topic-filters">
+<strong><strong>Topic filters</strong></strong></p><a class="reference internal image-reference" href="_images/093_topicfilters.png"><img alt="Topic filters" class="align-center" src="_images/093_topicfilters.png" style="width: 110mm;" /></a>
+<p>It is possible to completely hide certain topics from all views in the tool. These
+are global topic filter preferences, which can be enabled (<tt class="docutils literal"><span class="pre">true</span></tt>) or disabled (<tt class="docutils literal"><span class="pre">false</span></tt>).
+They are accessed from the preferences window in <em>File &gt; Preferences &gt; Topic Filters</em>.
+Enabling a given filter will hide the matching topics from the Topics table and from
+the system browser view.</p>
+</div>
+</div>
+<div class="section" id="working-with-samples">
+<h2>4.6. Working with Samples<a class="headerlink" href="#working-with-samples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="to-delete-a-column-from-the-sample-list-table">
+<h3>4.6.1. To Delete a column from the Sample List table<a class="headerlink" href="#to-delete-a-column-from-the-sample-list-table" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select the <em>x</em> column of any sample.</p>
+<p>Step 2:  Press the <em>[Delete]</em> key.</p>
+<p class="centered" id="column-deleted-from-sample-list-display">
+<strong><strong>Column deleted from Sample List display</strong></strong></p><a class="reference internal image-reference" href="_images/040_colmdeleted.png"><img alt="Column deleted from Sample List display" class="align-center" src="_images/040_colmdeleted.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="to-chart-sample-data">
+<h3>4.6.2. To Chart Sample Data<a class="headerlink" href="#to-chart-sample-data" title="Permalink to this headline">¶</a></h3>
+<p>Using any list of samples:</p>
+<p>Step 1:  Select the <em>z</em> column of any sample and press the <em>[X]</em> key.</p>
+<p>Step 2:  Select the <em>y</em> column of any sample and press the <em>[Y]</em> key.</p>
+<p>Step 3:  Choose <em>SampleList &gt; Show Chart</em> or press <em>[Alt+Shift+C]</em> to
+display the chart.</p>
+<p class="centered" id="chart-of-sample-data">
+<strong><strong>Chart of Sample data</strong></strong></p><a class="reference internal image-reference" href="_images/041_chartsamples.png"><img alt="Chart of Sample data" class="align-center" src="_images/041_chartsamples.png" style="width: 80mm;" /></a>
+</div>
+<div class="section" id="to-dump-a-sample-list-to-a-file">
+<h3>4.6.3. To Dump a sample list to a file<a class="headerlink" href="#to-dump-a-sample-list-to-a-file" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>SampleList &gt; Dump</em>.</p>
+<p>Step 2:  Enter a name for the file to save.</p>
+<p>Step 3:  Click <em>Save</em>.</p>
+</div>
+<div class="section" id="to-dump-selected-samples-only">
+<h3>4.6.4. To Dump selected Samples only<a class="headerlink" href="#to-dump-selected-samples-only" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select <em>OsplTestTopic</em> with <em>key</em>: <tt class="docutils literal"><span class="pre">1</span></tt>.</p>
+<p>Step 2:  Choose <em>SampleList &gt; Dump Selection</em>.</p>
+<p>Step 3:  Enter a name for the file to save.</p>
+<p>Step 4:  Click <em>Save</em>.</p>
+</div>
+<div class="section" id="to-dump-to-a-csv-format-file">
+<h3>4.6.5. To Dump to a CSV format file<a class="headerlink" href="#to-dump-to-a-csv-format-file" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>SampleList &gt; Dump to CSV</em>.</p>
+<p>Step 2:  Enter a name for the file to save.</p>
+<p>Step 3:  Click <em>Save</em>.</p>
+</div>
+<div class="section" id="to-dispose-data-with-alive-state">
+<h3>4.6.6. To Dispose data with Alive state<a class="headerlink" href="#to-dispose-data-with-alive-state" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>SampleList &gt; Dispose Alive</em>.</p>
+<p class="centered" id="disposing-data-with-alive-state">
+<strong><strong>Disposing data with ‘Alive’ state</strong></strong></p><a class="reference internal image-reference" href="_images/042_disposealive.png"><img alt="Disposing data with ‘Alive’ state" class="align-center" src="_images/042_disposealive.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="to-translate-sample-data-to-test-script">
+<h3>4.6.7. To Translate Sample data to test script<a class="headerlink" href="#to-translate-sample-data-to-test-script" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>SampleList &gt; Diff Script</em>.</p>
+<p>The Scripting commands to replicate all of the sample data will be inserted into the
+current scenario in the <em>Edit</em> window.</p>
+</div>
+<div class="section" id="translate-selected-sample-to-test-script">
+<h3>4.6.8. Translate selected sample to test script<a class="headerlink" href="#translate-selected-sample-to-test-script" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Select a set of samples.</p>
+<p>Step 2:  Choose <em>SampleList &gt; DiffScript Selection</em>.</p>
+<p>The Scripting commands to replicate this subset of the sample data will be inserted
+into the current scenario in the <em>Edit</em> window.</p>
+</div>
+<div class="section" id="to-display-samples-with-not-alive-no-writers-state">
+<h3>4.6.9. To display samples with not_alive_no_writers state<a class="headerlink" href="#to-display-samples-with-not-alive-no-writers-state" title="Permalink to this headline">¶</a></h3>
+<p>There is a setting to control whether Tester’s active data readers
+ignore samples whose state is <tt class="docutils literal"><span class="pre">NOT_ALIVE_NO_WRITERS</span></tt>.</p>
+<p>If an application data writer has a QoS of
+<tt class="docutils literal"><span class="pre">autodispose_unregistered_instances</span></tt> set to <tt class="docutils literal"><span class="pre">false</span></tt> and then
+<tt class="docutils literal"><span class="pre">unregister_instance</span></tt> is called on a data writer for some instance, a sample
+reaches matching data readers with the <tt class="docutils literal"><span class="pre">no_writers</span></tt> state.</p>
+<p>The default setting is <tt class="docutils literal"><span class="pre">true</span></tt>, which means that these samples are ignored and not
+displayed.</p>
+<p class="centered" id="max-samples-and-not-alive-options">
+<strong><strong>‘Max samples’ and ‘not_alive’ options</strong></strong></p><a class="reference internal image-reference" href="_images/043_IgnoreNotAlive.png"><img alt="‘Max samples’ and ‘not_alive’ options" class="align-center" src="_images/043_IgnoreNotAlive.png" style="width: 110mm;" /></a>
+</div>
+<div class="section" id="to-control-the-number-of-samples-kept-per-reader">
+<h3>4.6.10. To control the number of samples kept per reader<a class="headerlink" href="#to-control-the-number-of-samples-kept-per-reader" title="Permalink to this headline">¶</a></h3>
+<p>It is possible to limit the number of samples kept per reader. This setting,
+<em>Max Samples kept per reader</em>, is accessed by choosing <em>File &gt; Preferences &gt;
+Settings</em>.</p>
+<p>This setting accepts integer values. The default value is <tt class="docutils literal"><span class="pre">0</span></tt>, which means
+that there is no limit imposed on the number of samples that will be stored.</p>
+</div>
+</div>
+<div class="section" id="groups">
+<h2>4.7. Groups<a class="headerlink" href="#groups" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="definition-of-a-group-in-tester">
+<h3>4.7.1. Definition of a Group in Tester<a class="headerlink" href="#definition-of-a-group-in-tester" title="Permalink to this headline">¶</a></h3>
+<p>Vortex OpenSplice supports setting of the Presentation policy of publishers
+and subscribers. As a result, Tester can set these policies on its own created
+publishers and subscribers and be able to write/read coherent sets of
+data into/from the system.</p>
+<p>Just as in Tester where data reader and data writer are aggregated into a <em>Reader</em>
+and listed in the Readers list, a custom created publisher and subscriber pair are
+aggregated into a <em>Group</em> and are listed in the Groups list. A Group has a defined
+Partition and Presentation QoS policy that is set on creation and is set to its
+contained publisher and subscriber.</p>
+</div>
+<div class="section" id="to-add-a-reader-under-a-group">
+<h3>4.7.2. To Add a Reader under a Group<a class="headerlink" href="#to-add-a-reader-under-a-group" title="Permalink to this headline">¶</a></h3>
+<p>Step 1: Choose <em>File &gt; Add Reader</em>.</p>
+<p>Step 2: Select <em>OsplTestTopic</em> from the drop-down topics list.</p>
+<p>Step 3: Check the box labeled <em>Create as group</em>.</p>
+<p>Step 4a: Choose a name for the Group (Group name must be unique and non empty).</p>
+<p>Step 4b: Fill in desired <em>Partition</em>, and Presentation policy settings
+(<em>Access scope</em>, <em>Coherent access</em> and <em>Ordered access</em>).</p>
+<p>OR</p>
+<p>Step 4c: Select an already existing Group from the drop-down Groups list.
+Partition and Presentation form elements will populate to existing values for
+the selected Group and become disabled.</p>
+<p>Step 5: Click <em>Add</em>.</p>
+<p class="centered" id="create-a-reader-under-a-group">
+<strong><strong>Create a Reader under a Group</strong></strong></p><a class="reference internal image-reference" href="_images/043a_AddReaderGroup.png"><img alt="Create a Reader under a Group" class="align-center" src="_images/043a_AddReaderGroup.png" style="width: 60mm;" /></a>
+<p>Completing this action will create the <em>Groups</em> tab on the main panel if this is
+the first Group that has been created in the current session.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> If there is already a reader existing on the selected topic, then the
+new reader must have a unique name assigned to it, else the new reader will not
+be created and assigned to the Group.</p>
+</div>
+<div class="section" id="to-add-multiple-readers-under-a-group">
+<h3>4.7.3. To Add multiple Readers under a Group<a class="headerlink" href="#to-add-multiple-readers-under-a-group" title="Permalink to this headline">¶</a></h3>
+<p>Step 1: Choose <em>File &gt; Add Readers</em>.</p>
+<p>Step 2: Select <em>OsplTestTopic</em>, <em>OsplArrayTopic</em>, and <em>OsplSequenceTopic</em> from table.</p>
+<p>Step 3: Check the box labeled <em>Create as group</em>.</p>
+<p>Step 4a: Choose a name for the Group (Group name must be unique and non empty).</p>
+<p>Step 4b: Fill in desired <em>Partition</em>, and Presentation policy settings
+(<em>Access scope</em>, <em>Coherent access</em> and <em>Ordered access</em>).</p>
+<p>OR</p>
+<p>Step 4c: Select an already existing Group from the drop-down Groups list.
+Partition and Presentation form elements will populate to existing values for
+the selected Group and become disabled.</p>
+<p>Step 5: Click <em>Add</em>.</p>
+<p class="centered" id="create-multiple-readers-under-a-group">
+<strong><strong>Create multiple Readers under a Group</strong></strong></p><a class="reference internal image-reference" href="_images/043b_AddReadersGroup.png"><img alt="Create multiple Readers under a Group" class="align-center" src="_images/043b_AddReadersGroup.png" style="width: 60mm;" /></a>
+<p>Completing this action will create the <em>Groups</em> tab on the main panel if this is
+the first Group that has been created in the current session.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> If there is already a reader existing on a selected topic, then the
+new reader must have a unique name assigned to it, else the new reader will not
+be created and assigned to the Group. In this case, one should use the method in
+<a class="reference internal" href="#to-add-a-reader-under-a-group">To Add a Reader under a Group</a>.</p>
+</div>
+<div class="section" id="to-publish-coherent-sets">
+<h3>4.7.4. To Publish coherent sets<a class="headerlink" href="#to-publish-coherent-sets" title="Permalink to this headline">¶</a></h3>
+<p>Once at least one Group has been created, the <em>Groups</em> tab will become visible.
+It contains a list of currently active groups, their QoS policies, and current
+number of Tester readers (readers under the subscriber, writers under the publisher).</p>
+<p>There are two actions available to rows of this table: <em>Delete Group</em>, and <em>Publish
+Coherent Data</em>.</p>
+<p>Deleting a Group will also delete the readers that it owns.</p>
+<p>If <em>Publish Coherent Data</em> is selected, then a new window will appear.</p>
+<p class="centered" id="publish-coherent-sets-menu">
+<strong><strong>Publish coherent sets menu</strong></strong></p><a class="reference internal image-reference" href="_images/043c_PublishCoherentSetsMenu.png"><img alt="Publish coherent sets menu" class="align-center" src="_images/043c_PublishCoherentSetsMenu.png" style="width: 100mm;" /></a>
+<p class="centered" id="coherent-publisher-window">
+<strong><strong>Coherent Publisher Window</strong></strong></p><a class="reference internal image-reference" href="_images/043d_CoherentPublisherWindow.png"><img alt="Coherent Publisher Window" class="align-center" src="_images/043d_CoherentPublisherWindow.png" style="width: 100mm;" /></a>
+<p>This new view contains two parts: the list of writers currently under this Publisher,
+and the user data table containing data about the outgoing samples in a coherent set.</p>
+<p>The actions available to the user in this view are:</p>
+<ul class="simple">
+<li><em>Begin coherent changes</em></li>
+<li><em>End coherent changes</em></li>
+<li><em>Refresh writer list</em></li>
+</ul>
+<p><em>Begin coherent changes</em> will set the publisher in coherent mode. In this state, samples
+written by this publisher&#8217;s writers will not be made visible to remote readers (under a
+subscriber with matching Presentation policy) until the <em>End coherent changes</em> action is
+made. Otherwise, samples written while the publisher is not in coherent mode are published
+normally.</p>
+<p>Samples can be constructed and written from this view by either double clicking or right
+clicking on a writer in the writers list and selecting <em>Write data</em>. This brings up a
+writer window identical to the one in <a class="reference internal" href="#writing-and-editing-samples">Writing and Editing Samples</a>, only this one
+will update the Coherent publish window with written data.</p>
+<p>When a sample is constructed in the writer window and then written, disposed, or any other
+writer action made, and if the publisher is in coherent mode, then the sample will appear
+in the Coherent publish window&#8217;s data table.</p>
+<p>The data table displays the written sample&#8217;s instance key, the outgoing instance state, and
+the originating writer&#8217;s name. Samples in the data table can be double clicked to bring up a
+view of the sample edit window populated with the selected sample&#8217;s fields and field values.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> Once a sample has been written from the writer window, regardless if the publisher
+is in coherent mode or not, it is live in the system and cannot be edited.</p>
+<p>Once editing a set of coherent data is complete, clicking <em>End coherent changes</em> button will
+notify the publisher that the set is complete, and remote coherent subscribers will allow
+access to the published data.</p>
+<p>The <em>Refresh writer list</em> action (accessible from the <em>Edit</em> menu or <strong>F5</strong> keystroke)
+refreshes the current list writers that the publisher owns, if any writers were created or
+deleted since the creation of the window.</p>
+</div>
+<div class="section" id="to-subscribe-coherent-sets">
+<h3>4.7.5. To Subscribe coherent sets<a class="headerlink" href="#to-subscribe-coherent-sets" title="Permalink to this headline">¶</a></h3>
+<p>The Group&#8217;s readers behave in the same way that normal Tester readers behave. All readers are
+periodically polled for available data and added to the <em>Sample list</em>. A Group&#8217;s reader is polled
+in such a way that it maintains coherent and ordered access.</p>
+</div>
+</div>
+<div class="section" id="system-browser-browser-window">
+<h2>4.8. System Browser (Browser window)<a class="headerlink" href="#system-browser-browser-window" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="browse-tree">
+<h3>4.8.1. Browse tree<a class="headerlink" href="#browse-tree" title="Permalink to this headline">¶</a></h3>
+<p>The System Browser is used to examine the Nodes, Participants, and Topics in your
+system using a tree paradigm.</p>
+<p>Step 1:  Choose <em>View &gt; Browser</em> or click the <em>Browser</em> tab of the main window.</p>
+<p>Step 2:  Expand the <em>all</em> tree.</p>
+<p>Step 3:  Select <em>Tester participant</em> from the <em>Browser</em> tree. Note that your own
+Tester is highlighted in yellow in the tree.</p>
+<div class="highlight-python"><div class="highlight"><pre>All participants
+- OpenSplice Tester
+</pre></div>
+</div>
+<p>Step 4:  Select <em>Built-in participant</em> from</p>
+<div class="highlight-python"><div class="highlight"><pre>Nodes
+  + &lt;your machine name&gt;
+    + java.exe
+      - Built-in participant
+</pre></div>
+</div>
+<p>Step 5:  Select Build-in participant from</p>
+<div class="highlight-python"><div class="highlight"><pre>Nodes
+  + &lt;your machine name&gt;
+    + java.exe
+      - ddsi2
+</pre></div>
+</div>
+<p>Step 6:  View readers and writers of durability service. Select
+<em>Build-in participant</em> from</p>
+<div class="highlight-python"><div class="highlight"><pre>Nodes
+  + &lt;your machine name&gt;
+    + java.exe
+      - durability
+</pre></div>
+</div>
+<p>Step 7:  View readers and writers of <tt class="docutils literal"><span class="pre">splicedaemon</span></tt>. Select
+<em>Build-in participant</em> from</p>
+<div class="highlight-python"><div class="highlight"><pre>Nodes
+  + &lt;your machine name&gt;
+    + java.exe
+      - splicedaemon
+</pre></div>
+</div>
+<p class="centered" id="browser-window">
+<strong><strong>Browser window</strong></strong></p><a class="reference internal image-reference" href="_images/044_browser.png"><img alt="Browser window" class="align-center" src="_images/044_browser.png" style="width: 145mm;" /></a>
+<p>(The red boxes in the illustration indicate the current Open Connection.)</p>
+</div>
+<div class="section" id="readers-and-writers-tables-are-updated-when-a-new-reader-is-created">
+<h3>4.8.2. Readers and Writers tables are updated when a new Reader is created<a class="headerlink" href="#readers-and-writers-tables-are-updated-when-a-new-reader-is-created" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Open the <em>Browser</em> window.</p>
+<p>Step 2:  Select <em>OpenSplice Tester participant</em> from the <em>All participants</em> tree.</p>
+<p>Step 3:  Create a new <tt class="docutils literal"><span class="pre">OsplTestTopic</span></tt> reader (see
+<a class="reference internal" href="#to-add-a-reader-from-the-topic-list">To Add a Reader from the Topic list</a> for instructions).</p>
+<p>Step 4:  The Readers and Writers table will be updated.</p>
+<p class="centered" id="readers-and-writers-table-updated">
+<strong><strong>Readers and Writers table updated</strong></strong></p><a class="reference internal image-reference" href="_images/045_tableupdated.png"><img alt="Readers and Writers table updated" class="align-center" src="_images/045_tableupdated.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="readers-and-writers-tables-are-updated-when-a-new-reader-is-deleted">
+<h3>4.8.3. Readers and Writers tables are updated when a new Reader is deleted<a class="headerlink" href="#readers-and-writers-tables-are-updated-when-a-new-reader-is-deleted" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Open the <em>Browser</em> window.</p>
+<p>Step 2:  Select the <em>OpenSplice Tester participant</em> from the <em>All participants</em> tree.</p>
+<p>Step 3:  Delete the existing <tt class="docutils literal"><span class="pre">OsplTestTopic</span></tt> reader.</p>
+<p>Step 4:  The deleted reader will be highlighted with orange to indicate that
+the reader is disposed.</p>
+<p class="centered" id="reader-deleted">
+<strong><strong>Reader deleted</strong></strong></p><a class="reference internal image-reference" href="_images/046_readerdeleted.png"><img alt="Reader deleted" class="align-center" src="_images/046_readerdeleted.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="to-check-reader-and-writer-compatibility">
+<h3>4.8.4. To Check Reader and Writer compatibility<a class="headerlink" href="#to-check-reader-and-writer-compatibility" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>Create Reader</em> from the pop-up menu from <tt class="docutils literal"><span class="pre">OsplTestTopic</span></tt>.</p>
+<p>Step 2:  Enter <tt class="docutils literal"><span class="pre">boo</span></tt> for the name and <tt class="docutils literal"><span class="pre">boo_partition</span></tt> for the partition.</p>
+<p>Step 3:  Create another reader with <tt class="docutils literal"><span class="pre">hoo</span></tt> for the name and <tt class="docutils literal"><span class="pre">hoo_partition</span></tt>
+for the partition.</p>
+<p>Step 4:  Choose <em>Create Default Reader</em> to create a default reader.</p>
+<p>Step 5:  Open the <em>Browser</em> window and select <em>Topics/OsplTestTopic</em> from the
+browser tree.</p>
+<p>Step 6:  Select a Reader with <tt class="docutils literal"><span class="pre">*</span></tt> partition from the Readers table.</p>
+<p class="centered" id="reader-with-partition-selected">
+<strong><strong>Reader with ‘*’ partition selected</strong></strong></p><a class="reference internal image-reference" href="_images/047_selectreader.png"><img alt="Reader with ‘*’ partition selected" class="align-center" src="_images/047_selectreader.png" style="width: 145mm;" /></a>
+<p>Step 7:  Select a Reader with <tt class="docutils literal"><span class="pre">boo</span></tt> partition from the Readers table.</p>
+<p class="centered" id="reader-with-boo-partition-selected">
+<strong><strong>Reader with ‘boo’ partition selected</strong></strong></p><a class="reference internal image-reference" href="_images/048_selectreaderboo.png"><img alt="Reader with ‘boo’ partition selected" class="align-center" src="_images/048_selectreaderboo.png" style="width: 145mm;" /></a>
+<p>Step 8:  Select a Reader with <tt class="docutils literal"><span class="pre">hoo</span></tt> partition from the Readers table.</p>
+<p class="centered" id="reader-with-hoo-partition-selected">
+<strong><strong>Reader with ‘hoo’ partition selected</strong></strong></p><a class="reference internal image-reference" href="_images/049_selectreaderhoo.png"><img alt="Reader with ‘hoo’ partition selected" class="align-center" src="_images/049_selectreaderhoo.png" style="width: 145mm;" /></a>
+<p>In the <em>Browser</em> window, Readers/Writers are highlighted with red to indicate
+incompatibility with the selected Writer/Reader (yellow).</p>
+</div>
+<div class="section" id="to-show-disposed-participants-from-the-browser-tree">
+<h3>4.8.5. To Show Disposed Participants from the Browser tree<a class="headerlink" href="#to-show-disposed-participants-from-the-browser-tree" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Open the <em>Browser</em> window.</p>
+<p>Step 2:  Select (check) <em>Show disposed participants</em>.</p>
+<p>Step 3:  Expand the <em>Nodes</em> tree.</p>
+<p>Step 4:  Expand the <em>All participants</em> tree.</p>
+<p>Step 5:  De-select (un-check) <em>Show disposed participants</em>.</p>
+<p class="centered" id="disposed-participants">
+<strong><strong>Disposed participants</strong></strong></p><a class="reference internal image-reference" href="_images/050_disposedparticipants.png"><img alt="Disposed participants" class="align-center" src="_images/050_disposedparticipants.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="to-spawn-a-tuner-from-the-system-browser">
+<span id="spawn-tuner-from-system-browser"></span><h3>4.8.6. To Spawn a Tuner from the System Browser<a class="headerlink" href="#to-spawn-a-tuner-from-the-system-browser" title="Permalink to this headline">¶</a></h3>
+<p>Any domain participant that is part of a configuration that includes a SOAP service
+should have the <em>Start Tuner</em> pop-up menu.</p>
+<p>Step 1:  Connect Tester using the <tt class="docutils literal"><span class="pre">ospl_sp_ddsi_statistics.xml</span></tt> configuration
+file in the <tt class="docutils literal"><span class="pre">etc/config</span></tt> directory.</p>
+<p>Step 2:  Open the <em>Browser</em> window.</p>
+<p>Step 3:  Expand the <em>Nodes</em> tree.</p>
+<p>Step 4:  Right-click on the <em>OpenSplice Tester</em> participant.</p>
+<p>Step 5:  Choose <em>Start Tuner</em> from the pop-up menu.</p>
+</div>
+<div class="section" id="statistics">
+<h3>4.8.7. Statistics<a class="headerlink" href="#statistics" title="Permalink to this headline">¶</a></h3>
+<p>First, connect Tester using the <tt class="docutils literal"><span class="pre">ospl_sp_ddsi_statistics.xml</span></tt> configuration
+file in the <tt class="docutils literal"><span class="pre">etc/config</span></tt> directory.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> Note that statistics can only be gathered from the Tester process.</p>
+<p class="centered" id="the-statistics-window">
+<strong><strong>The Statistics window</strong></strong></p><a class="reference internal image-reference" href="_images/051_statistics.png"><img alt="The Statistics window" class="align-center" src="_images/051_statistics.png" style="width: 145mm;" /></a>
+<div class="section" id="statistics-participants">
+<h4>4.8.7.1. Statistics - participants<a class="headerlink" href="#statistics-participants" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="write-sample-topics-and-check-statistics-window-content">
+<h5>4.8.7.1.1. Write sample topics and check statistics window content<a class="headerlink" href="#write-sample-topics-and-check-statistics-window-content" title="Permalink to this headline">¶</a></h5>
+<p>Step 1:  Create a default reader for <em>OsplTestTopic</em>.</p>
+<p>Step 2:  Write four samples.</p>
+<p>Step 3:  Open the <em>Participant</em> tab of the <em>Statistics</em> window.</p>
+<p>Step 4:  Select the <em>OpenSplice Tester</em> participant from the list.</p>
+</div>
+</div>
+<div class="section" id="statistics-topics">
+<h4>4.8.7.2. Statistics - topics<a class="headerlink" href="#statistics-topics" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="id2">
+<h5>4.8.7.2.1. Write sample topics and check statistics window content<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h5>
+<p>Step 1:  Create a default reader for <em>OsplTestTopic</em>.</p>
+<p>Step 2:  Write four samples.</p>
+<p>Step 3:  Open the <em>Topics</em> tab of the <em>Statistics</em> window.</p>
+<p>Step 4:  Select <em>OsplTestTopic</em> from the list.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="scripting">
+<h2>4.9. Scripting<a class="headerlink" href="#scripting" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="to-create-a-new-scenario">
+<h3>4.9.1. To Create a New Scenario<a class="headerlink" href="#to-create-a-new-scenario" title="Permalink to this headline">¶</a></h3>
+<p>Note that you can only have <em>one</em> scenario open at a time. To avoid losing
+changes in the current scenario you must save it before creating a new
+scenario or selecting a different one from the drop-down list of
+recently-used scenarios (next to the <em>Clear and Execute</em> button).</p>
+<p>Step 1:  Choose <em>Editor &gt; New Scenario</em> to create a new scenario and open it in
+the editor, or if the Editor window is already open, press <em>[Ctrl+N]</em> to create
+and open a new scenario. A warning is displayed if there are unsaved changes
+in the current scenario.</p>
+<p>Step 2:  In the <em>File Save</em> dialog that appears, specify the location of the
+new scenario and give it a name.</p>
+</div>
+<div class="section" id="to-create-a-new-macro">
+<h3>4.9.2. To Create a New Macro<a class="headerlink" href="#to-create-a-new-macro" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>Editor &gt; New Macro</em> to create a new macro and open it in the
+editor, or if the Editor window is already open, press <em>[Ctrl+M]</em> to create
+and open a new macro.</p>
+<p>You can have multiple macros open at the same time. Use the drop-down list
+next to the <em>Clear and Execute</em> button to see or select them.</p>
+<p>Step 2:  In the <em>File Save</em> dialog that appears, specify the location of the
+new macro and give it a name.</p>
+</div>
+<div class="section" id="to-edit-an-existing-scenario-or-macro">
+<h3>4.9.3. To Edit an Existing Scenario or Macro<a class="headerlink" href="#to-edit-an-existing-scenario-or-macro" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>Editor &gt; Open</em> from the top menu.</p>
+<p>Step 2:  In the dialog that appears, type in or browse to the location of
+the macro or scenario you wish to open, then click <em>Open</em>.</p>
+</div>
+<div class="section" id="to-save-an-open-scenario-or-macro">
+<h3>4.9.4. To Save an open Scenario or Macro<a class="headerlink" href="#to-save-an-open-scenario-or-macro" title="Permalink to this headline">¶</a></h3>
+<p>Save the current scenario or macro.</p>
+<p>Step 1:  Choose <em>File &gt; Save</em> from the top menu or press <em>[Ctrl+S]</em>.</p>
+<p>Step 2:  If the scenario or macro has been saved before, then it is
+immediately saved, over-writing the previous version.</p>
+<p>Step 3:  If the scenario or macro has <em>not</em> been saved before, a
+<em>Save As...</em> dialog appears; type in or browse to an appropriate location
+and enter a name for the scenario or macro, then click <em>Save</em>.</p>
+</div>
+<div class="section" id="to-complete-and-compile-a-scenario">
+<h3>4.9.5. To Complete and Compile a Scenario<a class="headerlink" href="#to-complete-and-compile-a-scenario" title="Permalink to this headline">¶</a></h3>
+<p>This function ‘wraps’ the current text in the Edit window with <tt class="docutils literal"><span class="pre">&quot;scenario&quot;</span></tt>
+and <tt class="docutils literal"><span class="pre">&quot;end</span> <span class="pre">scenario&quot;</span></tt>.</p>
+<p><em>Complete</em> is only used when a new scenario is created without a template,
+from <em>DiffScript</em> or the <em>Write</em> button in a sample editor. <em>Compile</em> is
+only needed when you do not want to execute, but just check the syntax.</p>
+<p>Step 1:  Choose <em>Edit &gt; Complete</em> from the top menu.</p>
+<p>Step 2:  Click the <em>Compile</em> button.</p>
+<p>Step 3:  Click the <em>Execute</em> button.</p>
+<p>Step 4:  Click the <em>Clear and Execute</em> button.</p>
+</div>
+<div class="section" id="script-selection">
+<h3>4.9.6. Script selection<a class="headerlink" href="#script-selection" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Expand the <em>Script Selection</em> drop-down list of recently-used
+scripts near the <em>Clear and Execute</em> button.</p>
+</div>
+<div class="section" id="code-completion">
+<h3>4.9.7. Code completion<a class="headerlink" href="#code-completion" title="Permalink to this headline">¶</a></h3>
+<p>The Tester has a ‘code completion’ function which reduces the amount of typing
+that you have to do and reduces the chances of errors. For example, you can
+press the <em>[Ctrl+Space]</em> keys after you have typed the first few characters
+of a reader name and the Tester will display a list of the names of the
+readers which start with the same characters and you can choose the one you want.</p>
+<p>Assuming that the <em>OsplTestTopic</em> reader already exists, and that a new script is
+open in the <em>Edit</em> tab:</p>
+<p>Step 1:  Complete the current scenario by choosing <em>Editor &gt; Complete</em> from the
+top menu. (Note that it is generally preferable to start from a template.)</p>
+<p>Step 2:  Type <tt class="docutils literal"><span class="pre">send</span> <span class="pre">Ospl</span></tt> then press <em>[Ctrl+Space]</em>.</p>
+<p>Step 3:  ‘OsplTestTopic’ appears; press <em>[Enter]</em> to accept it, and the
+instruction is completed.</p>
+<p>This also pops up the sample editor, enabling you to set the arguments. The sample
+editor can also be activated by <em>[Ctrl+Space]</em> when the cursor is in the
+instruction, or <em>[Ctrl+left-click]</em> on the instruction.</p>
+<p class="centered" id="code-completion-send">
+<strong><strong>Code completion (send)</strong></strong></p><a class="reference internal image-reference" href="_images/052_codecompletesend.png"><img alt="Code completion (send)" class="align-center" src="_images/052_codecompletesend.png" style="width: 145mm;" /></a>
+<p>Step 4:  Type <tt class="docutils literal"><span class="pre">check</span> <span class="pre">Ospl</span></tt> then press <em>[Ctrl+Space]</em>.</p>
+<p>Step 5:  ‘OsplTestTopic’ appears; press <em>[Enter]</em> to accept it, and the
+instruction is completed.</p>
+<p class="centered" id="code-completion-check">
+<strong><strong>Code completion (check)</strong></strong></p><a class="reference internal image-reference" href="_images/053_codecompletecheck.png"><img alt="Code completion (check)" class="align-center" src="_images/053_codecompletecheck.png" style="width: 145mm;" /></a>
+</div>
+</div>
+<div class="section" id="execute-and-debug">
+<h2>4.10. Execute and Debug<a class="headerlink" href="#execute-and-debug" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="to-run-the-current-script">
+<h3>4.10.1. To Run the Current Script<a class="headerlink" href="#to-run-the-current-script" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Click the <em>Execute</em> (‘Play’ <a class="reference internal" href="_images/134_icon_play.png"><img alt="play" src="_images/134_icon_play.png" style="height: 3mm;" /></a> ) button in the <em>Debug</em> window to
+run the current script.</p>
+<p>Step 2:  While the script is still executing, click the ‘Pause’ <a class="reference internal" href="_images/135_icon_pause.png"><img alt="pause" src="_images/135_icon_pause.png" style="height: 3mm;" /></a> button
+in the <em>Debug</em> window.</p>
+<p>Step 3:  While the script is still executing, click the ‘Stop’ <a class="reference internal" href="_images/136_icon_stop.png"><img alt="stop" src="_images/136_icon_stop.png" style="height: 3mm;" /></a> button
+in the <em>Debug</em> window.</p>
+<p>Step 4:  In the <em>Debug</em> window, double-click the entry where the column <em>Location</em>
+has a value of <tt class="docutils literal"><span class="pre">6</span></tt>. Double-clicking on an entry in the <em>Debug</em> window highlights
+the relevant line in the <em>Editor</em> window.</p>
+<p class="centered" id="debugging-a-script">
+<strong><strong>Debugging a script</strong></strong></p><a class="reference internal image-reference" href="_images/054_debugging.png"><img alt="Debugging a script" class="align-center" src="_images/054_debugging.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="batch-execution-batch-window">
+<h3>4.10.2. Batch execution (Batch window)<a class="headerlink" href="#batch-execution-batch-window" title="Permalink to this headline">¶</a></h3>
+<p>Load and run batch scenario.</p>
+<p>Step 1:  Choose <em>Script &gt; Batch</em> from the top menu.</p>
+<p>Step 2:  In the <em>Batch</em> window, choose <em>File &gt; Load batch</em>.</p>
+<p>Step 3:  Select <em>batch.bd</em> in the example script directory.</p>
+<p>Step 4:  Click the <em>Start</em> button.</p>
+<p class="centered" id="batch-execution">
+<strong><strong>Batch execution</strong></strong></p><a class="reference internal image-reference" href="_images/055_batch.png"><img alt="Batch execution" class="align-center" src="_images/055_batch.png" style="width: 70mm;" /></a>
+</div>
+<div class="section" id="to-run-a-batch-script-from-the-command-line">
+<h3>4.10.3. To Run a Batch Script from the Command Line<a class="headerlink" href="#to-run-a-batch-script-from-the-command-line" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Change directory to the example scripts directory where the
+<tt class="docutils literal"><span class="pre">batch.bd</span></tt> is found (<tt class="docutils literal"><span class="pre">&lt;OSPL_HOME&gt;/examples/</span> <span class="pre">...</span></tt>).</p>
+<p>Step 2:  Run <tt class="docutils literal"><span class="pre">ospltest</span> <span class="pre">-e</span> <span class="pre">-b</span> <span class="pre">batch.bd</span></tt>.</p>
+</div>
+<div class="section" id="batch-results">
+<h3>4.10.4. Batch results<a class="headerlink" href="#batch-results" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="load-batch-result">
+<h4>4.10.4.1. Load batch result<a class="headerlink" href="#load-batch-result" title="Permalink to this headline">¶</a></h4>
+<p>Step 1:  Choose <em>Scripts &gt; Batch results</em> from the top menu.</p>
+<p>Step 2:  With the <em>Batch results</em> window open, choose <em>File &gt; Load result</em>
+from the top menu.</p>
+<p>Step 3:  Select the batch result file from the batch run.</p>
+<p class="centered" id="id3">
+<strong><strong>Batch results</strong></strong></p><a class="reference internal image-reference" href="_images/056_batchresult.png"><img alt="Batch results" class="align-center" src="_images/056_batchresult.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="scan-regression-folder-for-batch-results">
+<h4>4.10.4.2. Scan regression folder for batch results<a class="headerlink" href="#scan-regression-folder-for-batch-results" title="Permalink to this headline">¶</a></h4>
+<p>Step 1:  Choose <em>File &gt; Scan Regression</em> from the top menu.</p>
+<p>Step 2:  Double-click the test result column of any test.</p>
+<p>The results displayed will appear similar to the example in Figure 56.</p>
+</div>
+<div class="section" id="scan-regression-for-specified-directory">
+<h4>4.10.4.3. Scan regression for specified directory<a class="headerlink" href="#scan-regression-for-specified-directory" title="Permalink to this headline">¶</a></h4>
+<p>Step 1:  Choose <em>File &gt; Scan Regression dir</em> from the top menu.</p>
+<p>Step 2:  Select the directory (folder) that contains batch results.</p>
+<p>The results displayed will appear similar to the example in Figure 56.</p>
+</div>
+</div>
+</div>
+<div class="section" id="adding-virtual-fields">
+<h2>4.11. Adding virtual fields<a class="headerlink" href="#adding-virtual-fields" title="Permalink to this headline">¶</a></h2>
+<p><em>‘Virtual fields’</em> are fields with calculated values. For example, a
+translation from radians to degrees, or from cartesian to polar coordinates.
+The virtual field can be provided in Java (inside a plugin, see <a class="reference internal" href="#plugins">Plugins</a>
+later in this section) or a script language (see the section on
+<a class="reference internal" href="scripting.html#scripting"><em>scripting</em></a>, as well as the following example).</p>
+<div class="section" id="add-virtual-fields-to-the-topic">
+<h3>4.11.1. Add virtual fields to the topic<a class="headerlink" href="#add-virtual-fields-to-the-topic" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Choose <em>File &gt; Add fields</em> from the top menu.</p>
+<p>Step 2:  Browse to the example directory and select <tt class="docutils literal"><span class="pre">fields.txt</span></tt>.</p>
+<p>Step 3:  Open the <em>SampleList</em> window.</p>
+<p>Step 4:  Select the <em>OsplTestTopic</em> sample.</p>
+<p>Step 5:  Add extra fields from the pop-up menu.</p>
+<p class="centered" id="adding-extra-fields-to-a-sample">
+<strong><strong>Adding extra fields to a sample</strong></strong></p><a class="reference internal image-reference" href="_images/057_addfields.png"><img alt="Adding extra fields to a sample" class="align-center" src="_images/057_addfields.png" style="width: 50mm;" /></a>
+</div>
+</div>
+<div class="section" id="plugins">
+<h2>4.12. Plugins<a class="headerlink" href="#plugins" title="Permalink to this headline">¶</a></h2>
+<p>Plugins can extend the functionality of Tester by providing
+virtual fields (see <a class="reference internal" href="#adding-virtual-fields">Adding virtual fields</a>),
+or additional interfaces. Plugins are automatically loaded upon
+startup from the specified plugin directory. Two sample plugins
+are provided with Tester: <em>SimplePlugin</em> adds virtual fields, and
+<em>TestInterface</em> adds a UDP/IP message interface (see
+<a class="reference internal" href="messageinterfaces.html#message-interfaces"><em>Message Interfaces</em></a>).</p>
+<div class="section" id="install-uninstall-plugins">
+<h3>4.12.1. Install / Uninstall plugins<a class="headerlink" href="#install-uninstall-plugins" title="Permalink to this headline">¶</a></h3>
+<p>Step 1:  Go to the <tt class="docutils literal"><span class="pre">examples/tools/ospltest/SimplePlugin</span></tt> directory.</p>
+<p>Step 2:  Run <tt class="docutils literal"><span class="pre">ant</span></tt> from the command console to build the <em>SimplePlugin</em> example.</p>
+<p>Step 3:  Run Tester and choose <em>File &gt; Preference</em> from the top menu.</p>
+<p>Step 4:  In the <em>Settings</em> tab, set the correct value for <em>Plugins dir</em>
+and click <em>OK</em>.</p>
+<p class="centered" id="setting-the-path-to-the-plugins-directory">
+<strong><strong>Setting the path to the Plugins directory</strong></strong></p><a class="reference internal image-reference" href="_images/058_pluginspath.png"><img alt="Setting the path to the Plugins directory" class="align-center" src="_images/058_pluginspath.png" style="width: 100mm;" /></a>
+<p>Step 5:  Choose <em>File &gt; Plugins</em> from the top menu.</p>
+<p>Step 6:  Click <em>SimplePlugin</em> to select it.</p>
+<p class="centered" id="the-simpleplugin-example">
+<strong><strong>The SimplePlugin example</strong></strong></p><a class="reference internal image-reference" href="_images/059_simpleplugin.png"><img alt="The SimplePlugin example" class="align-center" src="_images/059_simpleplugin.png" style="width: 70mm;" /></a>
+<p>Step 7:  Double-click any <em>OsplTestTopic</em> data in the <em>SampleList</em> window.
+New fields are added.</p>
+<p class="centered" id="fields-added-to-ospltesttopic-sample">
+<strong><strong>Fields added to OsplTestTopic sample</strong></strong></p><a class="reference internal image-reference" href="_images/060_OsplTestTopic.png"><img alt="Fields added to OsplTestTopic sample" class="align-center" src="_images/060_OsplTestTopic.png" style="width: 145mm;" /></a>
+<p>Step 8:  In the <em>Select extra field</em> dialog (<em>[F9]</em>), one more field is added.</p>
+<p class="centered" id="extra-field-added">
+<strong><strong>Extra field added</strong></strong></p><a class="reference internal image-reference" href="_images/061_fieldadded.png"><img alt="Extra field added" class="align-center" src="_images/061_fieldadded.png" style="width: 50mm;" /></a>
+</div>
+</div>
+<div class="section" id="more-on-virtual-fields">
+<h2>4.13. More on Virtual fields<a class="headerlink" href="#more-on-virtual-fields" title="Permalink to this headline">¶</a></h2>
+<p>Additional virtual fields can be provided <em>via</em> a plugin or <em>via</em> a script.</p>
+<div class="section" id="adding-virtual-fields-via-plugin">
+<h3>4.13.1. Adding Virtual Fields <em>via</em> plugin<a class="headerlink" href="#adding-virtual-fields-via-plugin" title="Permalink to this headline">¶</a></h3>
+<p>Override the class:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">ExtraTopicField</span></tt></div></blockquote>
+<p>Compile this class in a plugin and in the ‘install’ function register the extra fields
+with:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">connection.registerExtraField(&lt;instance</span> <span class="pre">of</span> <span class="pre">extra</span> <span class="pre">topic</span> <span class="pre">field</span> <span class="pre">class&gt;);</span></tt></div></blockquote>
+<p>An example of a plugin with an extra field is provided in examples:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">&lt;OSPL_HOME&gt;/examples/tools/ospltest/plugins/SimplePlugin</span></tt></div></blockquote>
+</div>
+<div class="section" id="adding-virtual-fields-via-script">
+<h3>4.13.2. Adding Virtual Fields <em>via</em> script<a class="headerlink" href="#adding-virtual-fields-via-script" title="Permalink to this headline">¶</a></h3>
+<p>A script file can be loaded using the top menu: <em>File &gt; Add Fields</em>.</p>
+<p>The script file has the following syntax:</p>
+<div class="highlight-python"><div class="highlight"><pre>[#!&lt;language&gt;]
+&lt;name of the field&gt;
+&lt;name of the applicable topic&gt;
+&lt;script which returns a value and can have multiple lines&gt;
+next_field
+&lt;name of the field&gt;
+&lt;name of the applicable topic&gt;
+&lt;script which returns a value and can have multiple lines&gt;
+</pre></div>
+</div>
+<p>The language description is optional. 1 to <em>n</em> fields can be described in
+a single file.</p>
+<p>The data of the sample is available in an object variable which is pushed
+to the script engine before the execution of the script. The object
+sample provides the following functions:</p>
+<div class="highlight-python"><div class="highlight"><pre>String getDayTime();
+long getTime();
+long getId();
+String getMsgName();
+String getKey();
+String getInstanceState();
+boolean isALive();
+String getSource();
+String getFieldValue(String fieldname);
+</pre></div>
+</div>
+<p>These functions can be used to retrieve data from the current sample
+and determine the value for the extra field. An example of a script
+file is provided in <tt class="docutils literal"><span class="pre">examples/tools/ospltest/fields.txt</span></tt>.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Familiarization Exercises</a><ul>
+<li><a class="reference internal" href="#starting-the-tester">4.1. Starting the Tester</a></li>
+<li><a class="reference internal" href="#connection-management">4.2. Connection management</a><ul>
+<li><a class="reference internal" href="#to-connect-to-a-local-opensplice-instance">4.2.1. To Connect to a local OpenSplice instance</a></li>
+<li><a class="reference internal" href="#to-connect-to-a-remote-opensplice-instance">4.2.2. To Connect to a remote OpenSplice instance</a></li>
+<li><a class="reference internal" href="#to-disconnect">4.2.3. To Disconnect</a></li>
+<li><a class="reference internal" href="#to-exit-tester">4.2.4. To Exit Tester</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#topics-and-readers">4.3. Topics and Readers</a><ul>
+<li><a class="reference internal" href="#the-topic-list">4.3.1. The Topic list</a></li>
+<li><a class="reference internal" href="#to-view-a-topic-s-type-definition">4.3.2. To View a Topic&#8217;s Type definition</a></li>
+<li><a class="reference internal" href="#to-add-a-reader-from-the-topic-list">4.3.3. To Add a Reader from the Topic list</a></li>
+<li><a class="reference internal" href="#to-add-a-reader-from-the-file-menu">4.3.4. To Add a Reader from the File menu</a></li>
+<li><a class="reference internal" href="#to-add-multiple-readers-to-the-tester-timeline">4.3.5. To Add multiple Readers to the Tester timeline</a></li>
+<li><a class="reference internal" href="#to-save-the-current-readers-to-a-file">4.3.6. To Save the current Readers to a file</a></li>
+<li><a class="reference internal" href="#to-remove-all-readers">4.3.7. To Remove all Readers</a></li>
+<li><a class="reference internal" href="#to-load-readers-from-a-saved-file">4.3.8. To Load Readers from a saved file</a></li>
+<li><a class="reference internal" href="#to-delete-a-reader">4.3.9. To Delete a Reader</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#samples">4.4. Samples</a><ul>
+<li><a class="reference internal" href="#writing-and-editing-samples">4.4.1. Writing and Editing Samples</a><ul>
+<li><a class="reference internal" href="#to-write-sample-topic-data">4.4.1.1. To Write Sample Topic data</a></li>
+<li><a class="reference internal" href="#to-display-detailed-information-on-sample-data">4.4.1.2. To display detailed information on sample data</a></li>
+<li><a class="reference internal" href="#more-information-on-sample-info">4.4.1.3. More information on sample info</a></li>
+<li><a class="reference internal" href="#to-display-extra-fields">4.4.1.4. To Display extra fields</a></li>
+<li><a class="reference internal" href="#to-edit-a-sample">4.4.1.5. To Edit a sample</a></li>
+<li><a class="reference internal" href="#to-compare-two-samples">4.4.1.6. To Compare two samples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#filtering">4.5. Filtering</a><ul>
+<li><a class="reference internal" href="#to-filter-the-sample-list-on-a-topic">4.5.1. To Filter the Sample List on a Topic</a></li>
+<li><a class="reference internal" href="#to-reset-filters-and-display-all-samples">4.5.2. To Reset Filters and display all samples</a></li>
+<li><a class="reference internal" href="#to-filter-on-both-topic-and-key">4.5.3. To Filter on both Topic and Key</a></li>
+<li><a class="reference internal" href="#filter-samples-on-state">4.5.4. Filter samples on State</a></li>
+<li><a class="reference internal" href="#to-filter-samples-on-key-value">4.5.5. To Filter Samples on Key value</a></li>
+<li><a class="reference internal" href="#filter-on-column-text">4.5.6. Filter on column text</a></li>
+<li><a class="reference internal" href="#find-specific-text">4.5.7. Find specific text</a></li>
+<li><a class="reference internal" href="#global-topic-filters">4.5.8. Global Topic filters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#working-with-samples">4.6. Working with Samples</a><ul>
+<li><a class="reference internal" href="#to-delete-a-column-from-the-sample-list-table">4.6.1. To Delete a column from the Sample List table</a></li>
+<li><a class="reference internal" href="#to-chart-sample-data">4.6.2. To Chart Sample Data</a></li>
+<li><a class="reference internal" href="#to-dump-a-sample-list-to-a-file">4.6.3. To Dump a sample list to a file</a></li>
+<li><a class="reference internal" href="#to-dump-selected-samples-only">4.6.4. To Dump selected Samples only</a></li>
+<li><a class="reference internal" href="#to-dump-to-a-csv-format-file">4.6.5. To Dump to a CSV format file</a></li>
+<li><a class="reference internal" href="#to-dispose-data-with-alive-state">4.6.6. To Dispose data with Alive state</a></li>
+<li><a class="reference internal" href="#to-translate-sample-data-to-test-script">4.6.7. To Translate Sample data to test script</a></li>
+<li><a class="reference internal" href="#translate-selected-sample-to-test-script">4.6.8. Translate selected sample to test script</a></li>
+<li><a class="reference internal" href="#to-display-samples-with-not-alive-no-writers-state">4.6.9. To display samples with not_alive_no_writers state</a></li>
+<li><a class="reference internal" href="#to-control-the-number-of-samples-kept-per-reader">4.6.10. To control the number of samples kept per reader</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#groups">4.7. Groups</a><ul>
+<li><a class="reference internal" href="#definition-of-a-group-in-tester">4.7.1. Definition of a Group in Tester</a></li>
+<li><a class="reference internal" href="#to-add-a-reader-under-a-group">4.7.2. To Add a Reader under a Group</a></li>
+<li><a class="reference internal" href="#to-add-multiple-readers-under-a-group">4.7.3. To Add multiple Readers under a Group</a></li>
+<li><a class="reference internal" href="#to-publish-coherent-sets">4.7.4. To Publish coherent sets</a></li>
+<li><a class="reference internal" href="#to-subscribe-coherent-sets">4.7.5. To Subscribe coherent sets</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#system-browser-browser-window">4.8. System Browser (Browser window)</a><ul>
+<li><a class="reference internal" href="#browse-tree">4.8.1. Browse tree</a></li>
+<li><a class="reference internal" href="#readers-and-writers-tables-are-updated-when-a-new-reader-is-created">4.8.2. Readers and Writers tables are updated when a new Reader is created</a></li>
+<li><a class="reference internal" href="#readers-and-writers-tables-are-updated-when-a-new-reader-is-deleted">4.8.3. Readers and Writers tables are updated when a new Reader is deleted</a></li>
+<li><a class="reference internal" href="#to-check-reader-and-writer-compatibility">4.8.4. To Check Reader and Writer compatibility</a></li>
+<li><a class="reference internal" href="#to-show-disposed-participants-from-the-browser-tree">4.8.5. To Show Disposed Participants from the Browser tree</a></li>
+<li><a class="reference internal" href="#to-spawn-a-tuner-from-the-system-browser">4.8.6. To Spawn a Tuner from the System Browser</a></li>
+<li><a class="reference internal" href="#statistics">4.8.7. Statistics</a><ul>
+<li><a class="reference internal" href="#statistics-participants">4.8.7.1. Statistics - participants</a><ul>
+<li><a class="reference internal" href="#write-sample-topics-and-check-statistics-window-content">4.8.7.1.1. Write sample topics and check statistics window content</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#statistics-topics">4.8.7.2. Statistics - topics</a><ul>
+<li><a class="reference internal" href="#id2">4.8.7.2.1. Write sample topics and check statistics window content</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scripting">4.9. Scripting</a><ul>
+<li><a class="reference internal" href="#to-create-a-new-scenario">4.9.1. To Create a New Scenario</a></li>
+<li><a class="reference internal" href="#to-create-a-new-macro">4.9.2. To Create a New Macro</a></li>
+<li><a class="reference internal" href="#to-edit-an-existing-scenario-or-macro">4.9.3. To Edit an Existing Scenario or Macro</a></li>
+<li><a class="reference internal" href="#to-save-an-open-scenario-or-macro">4.9.4. To Save an open Scenario or Macro</a></li>
+<li><a class="reference internal" href="#to-complete-and-compile-a-scenario">4.9.5. To Complete and Compile a Scenario</a></li>
+<li><a class="reference internal" href="#script-selection">4.9.6. Script selection</a></li>
+<li><a class="reference internal" href="#code-completion">4.9.7. Code completion</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#execute-and-debug">4.10. Execute and Debug</a><ul>
+<li><a class="reference internal" href="#to-run-the-current-script">4.10.1. To Run the Current Script</a></li>
+<li><a class="reference internal" href="#batch-execution-batch-window">4.10.2. Batch execution (Batch window)</a></li>
+<li><a class="reference internal" href="#to-run-a-batch-script-from-the-command-line">4.10.3. To Run a Batch Script from the Command Line</a></li>
+<li><a class="reference internal" href="#batch-results">4.10.4. Batch results</a><ul>
+<li><a class="reference internal" href="#load-batch-result">4.10.4.1. Load batch result</a></li>
+<li><a class="reference internal" href="#scan-regression-folder-for-batch-results">4.10.4.2. Scan regression folder for batch results</a></li>
+<li><a class="reference internal" href="#scan-regression-for-specified-directory">4.10.4.3. Scan regression for specified directory</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#adding-virtual-fields">4.11. Adding virtual fields</a><ul>
+<li><a class="reference internal" href="#add-virtual-fields-to-the-topic">4.11.1. Add virtual fields to the topic</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#plugins">4.12. Plugins</a><ul>
+<li><a class="reference internal" href="#install-uninstall-plugins">4.12.1. Install / Uninstall plugins</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#more-on-virtual-fields">4.13. More on Virtual fields</a><ul>
+<li><a class="reference internal" href="#adding-virtual-fields-via-plugin">4.13.1. Adding Virtual Fields <em>via</em> plugin</a></li>
+<li><a class="reference internal" href="#adding-virtual-fields-via-script">4.13.2. Adding Virtual Fields <em>via</em> script</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="getstarted.html"
+                        title="previous chapter">3. Getting Started</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="commandref.html"
+                        title="next chapter">5. Command Reference</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/familiarization.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="commandref.html" title="5. Command Reference"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="getstarted.html" title="3. Getting Started"
+             >previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

@@ -39,7 +39,7 @@ class TGuardCondition;
  * completely under the control of the application.
  * When first created the trigger_value is set to FALSE.
  * The purpose of the GuardCondition is to provide the means for the
- * application to manually wake up a WaitSet. This is accomplished by
+ * application to manually triggering a waitset to stop waiting. This is accomplished by
  * attaching the GuardCondition to the WaitSet and then setting the
  * trigger_value by means of the set trigger_value operation.
  */

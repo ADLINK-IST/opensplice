@@ -1,0 +1,384 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>8. QoS policies XML schema &mdash; RMI User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RMI User Guide" href="index.html" />
+    <link rel="next" title="9. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="7. RMI Runtime Configuration Options" href="runtime-config.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="9. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="runtime-config.html" title="7. RMI Runtime Configuration Options"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="qos-policies-xml-schema">
+<span id="id1"></span><h1>8. QoS policies XML schema<a class="headerlink" href="#qos-policies-xml-schema" title="Permalink to this headline">¶</a></h1>
+<div class="highlight-XML"><div class="highlight"><pre><span class="cp">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+<span class="nt">&lt;xsd:schema</span> <span class="na">xmlns:xsd=</span><span class="s">&quot;http://www.w3.org/2001/XMLSchema&quot;</span>
+            <span class="na">targetNamespace=</span><span class="s">&quot;http://www.omg.org/dds/&quot;</span>
+            <span class="na">xmlns=</span><span class="s">&quot;http://www.omg.org/dds/&quot;</span>
+            <span class="na">elementFormDefault=</span><span class="s">&quot;qualified&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;dcps&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;xsd:complexType&gt;</span>
+            <span class="nt">&lt;xsd:all&gt;</span>
+                <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;domain&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;/xsd:all&gt;</span>
+        <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;domain&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;xsd:complexType&gt;</span>
+            <span class="nt">&lt;xsd:sequence&gt;</span>
+                <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;topic&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;unbounded&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;/xsd:sequence&gt;</span>
+            <span class="nt">&lt;xsd:attribute</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:string&quot;</span> <span class="na">use=</span><span class="s">&quot;required&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;topic&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;xsd:complexType&gt;</span>
+            <span class="nt">&lt;xsd:all&gt;</span>
+                <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;keylist&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+                <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;topic_qos&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;/xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:attribute</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:string&quot;</span> <span class="na">use=</span><span class="s">&quot;required&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:attribute</span> <span class="na">name=</span><span class="s">&quot;idltype&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:string&quot;</span> <span class="na">use=</span><span class="s">&quot;required&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:attribute</span> <span class="na">name=</span><span class="s">&quot;idlfile&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:string&quot;</span> <span class="na">use=</span><span class="s">&quot;required&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;keylist&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;xsd:complexType&gt;</span>
+          <span class="nt">&lt;xsd:sequence&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;keyMember&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;unbounded&quot;</span><span class="nt">/&gt;</span>
+          <span class="nt">&lt;/xsd:sequence&gt;</span>
+        <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;keyMember&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:string&quot;</span><span class="nt">/&gt;</span>
+
+     <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;topic_qos&quot;</span><span class="nt">&gt;</span>
+       <span class="nt">&lt;xsd:complexType&gt;</span>
+        <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;topicDataQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;deadlineQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;durabilityQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;durabilityServiceQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span>
+                             <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;latencyBudgetQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;livelinessQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;reliabilityQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;destinationOrderQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span>
+                             <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;historyQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;resourceLimitsQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span>
+                             <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;transportPriorityQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span>
+                             <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;lifespanQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;ownershipQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;timeBasedFilterQosPolicy&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;0&quot;</span>
+                             <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:all&gt;</span>
+      <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;deadlineQosPolicy&quot;</span><span class="nt">&gt;</span>
+       <span class="nt">&lt;xsd:complexType&gt;</span>
+          <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;duration&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+          <span class="nt">&lt;/xsd:all&gt;</span>
+       <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;timeBasedFilterQosPolicy&quot;</span><span class="nt">&gt;</span>
+       <span class="nt">&lt;xsd:complexType&gt;</span>
+          <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;duration&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+          <span class="nt">&lt;/xsd:all&gt;</span>
+       <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+     <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;topicDataQosPolicy&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;xsd:complexType&gt;</span>
+          <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;value&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:base64Binary&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span>
+                              <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+          <span class="nt">&lt;/xsd:all&gt;</span>
+        <span class="nt">&lt;/xsd:complexType&gt;</span>
+     <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;duration&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:complexType&gt;</span>
+        <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;sec&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:string&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;nanosec&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:string&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span>
+                              <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:all&gt;</span>
+      <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;durabilityQosPolicy&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:complexType&gt;</span>
+        <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;durabilityKind&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:all&gt;</span>
+      <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;durabilityKind&quot;</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;xsd:simpleType&gt;</span>
+        <span class="nt">&lt;xsd:restriction</span> <span class="na">base=</span><span class="s">&quot;xsd:string&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;VOLATILE_DURABILITY_QOS&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;TRANSIENT_LOCAL_DURABILITY_QOS&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;TRANSIENT_DURABILITY_QOS&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;PERSISTENT_DURABILITY_QOS&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:restriction&gt;</span>
+     <span class="nt">&lt;/xsd:simpleType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;durabilityServiceQosPolicy&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:complexType&gt;</span>
+        <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;duration&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;historyKind&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;history_depth&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:positiveInteger&quot;</span>
+                              <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;max_samples&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:positiveInteger&quot;</span>
+                              <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;max_instances&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:positiveInteger&quot;</span>
+                              <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;max_samples_per_instance&quot;</span>
+                         <span class="na">type=</span><span class="s">&quot;xsd:positiveInteger&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:all&gt;</span>
+      <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;historyKind&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:simpleType&gt;</span>
+        <span class="nt">&lt;xsd:restriction</span> <span class="na">base=</span><span class="s">&quot;xsd:string&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;KEEP_LAST_HISTORY_QOS&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;KEEP_ALL_HISTORY_QOS&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:restriction&gt;</span>
+      <span class="nt">&lt;/xsd:simpleType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;latencyBudgetQosPolicy&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;xsd:complexType&gt;</span>
+          <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;duration&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+          <span class="nt">&lt;/xsd:all&gt;</span>
+        <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;livelinessQosPolicy&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;xsd:complexType&gt;</span>
+          <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;duration&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;livelinessKind&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+          <span class="nt">&lt;/xsd:all&gt;</span>
+        <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;reliabilityQosPolicy&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:complexType&gt;</span>
+        <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;reliabilityKind&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;duration&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:all&gt;</span>
+      <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;reliabilityKind&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:simpleType&gt;</span>
+        <span class="nt">&lt;xsd:restriction</span> <span class="na">base=</span><span class="s">&quot;xsd:string&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;BEST_EFFORT_RELIABILITY_QOS&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;RELIABLE_RELIABILITY_QOS&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:restriction&gt;</span>
+      <span class="nt">&lt;/xsd:simpleType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;destinationOrderQosPolicy&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:complexType&gt;</span>
+        <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;destinationOrderKind&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:all&gt;</span>
+      <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;destinationOrderKind&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:simpleType&gt;</span>
+        <span class="nt">&lt;xsd:restriction</span> <span class="na">base=</span><span class="s">&quot;xsd:string&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:restriction&gt;</span>
+      <span class="nt">&lt;/xsd:simpleType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;livelinessKind&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:simpleType&gt;</span>
+        <span class="nt">&lt;xsd:restriction</span> <span class="na">base=</span><span class="s">&quot;xsd:string&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;AUTOMATIC_LIVELINESS_QOS&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;MANUAL_BY_PARTICIPANT_LIVELINESS_QOS&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;MANUAL_BY_TOPIC_LIVELINESS_QOS&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:restriction&gt;</span>
+      <span class="nt">&lt;/xsd:simpleType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;historyQosPolicy&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:complexType&gt;</span>
+        <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;historyKind&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;depth&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:positiveInteger&quot;</span> <span class="na">default=</span><span class="s">&quot;1&quot;</span>
+                              <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:all&gt;</span>
+      <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;resourceLimitsQosPolicy&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:complexType&gt;</span>
+        <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;max_samples&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:positiveInteger&quot;</span>
+                              <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;max_instances&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:positiveInteger&quot;</span>
+                              <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;max_samples_per_instance&quot;</span>
+                              <span class="na">type=</span><span class="s">&quot;xsd:positiveInteger&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span>
+                              <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;initial_samples&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:positiveInteger&quot;</span>
+            <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;initial_instances&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:positiveInteger&quot;</span>
+                              <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:all&gt;</span>
+      <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;transportPriorityQosPolicy&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:complexType&gt;</span>
+        <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;value&quot;</span> <span class="na">type=</span><span class="s">&quot;xsd:nonNegativeInteger&quot;</span>
+                              <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:all&gt;</span>
+      <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;lifespanQosPolicy&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:complexType&gt;</span>
+        <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;duration&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:all&gt;</span>
+      <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;ownershipQosPolicy&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:complexType&gt;</span>
+        <span class="nt">&lt;xsd:all&gt;</span>
+            <span class="nt">&lt;xsd:element</span> <span class="na">ref=</span><span class="s">&quot;ownershipKind&quot;</span> <span class="na">minOccurs=</span><span class="s">&quot;1&quot;</span> <span class="na">maxOccurs=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:all&gt;</span>
+      <span class="nt">&lt;/xsd:complexType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+
+    <span class="nt">&lt;xsd:element</span> <span class="na">name=</span><span class="s">&quot;ownershipKind&quot;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;xsd:simpleType&gt;</span>
+        <span class="nt">&lt;xsd:restriction</span> <span class="na">base=</span><span class="s">&quot;xsd:string&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;SHARED_OWNERSHIP_QOS&quot;</span><span class="nt">/&gt;</span>
+            <span class="nt">&lt;xsd:enumeration</span> <span class="na">value=</span><span class="s">&quot;EXCLUSIVE_OWNERSHIP_QOS&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/xsd:restriction&gt;</span>
+      <span class="nt">&lt;/xsd:simpleType&gt;</span>
+    <span class="nt">&lt;/xsd:element&gt;</span>
+<span class="nt">&lt;/xsd:schema&gt;</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="runtime-config.html"
+                        title="previous chapter">7. RMI Runtime Configuration Options</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">9. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/qos-policies.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="9. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="runtime-config.html" title="7. RMI Runtime Configuration Options"
+             >previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

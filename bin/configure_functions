@@ -114,7 +114,7 @@ generateReleaseInfo ()
 {
     . $OSPL_HOME/bin/checkconf
     . $OSPL_HOME/release_info/RELEASE_tmpl
-    BASE_VERSION=`echo "$PACKAGE_VERSION" | sed 's/\(.*[^0-9.]\)\([0-9][0-9]*.[0-9][0-9]*.[0-9][0-9]*\)\(.*\)$/\2/'`
+    BASE_VERSION=`echo "$PACKAGE_VERSION" | sed 's/\([0-9][0-9]*.[0-9][0-9]*.[0-9][0-9]*\)\(.*\)$/\1/'`
     set_var BASE_VERSION "$BASE_VERSION"
     # We can't base this on git as users aren't necessarily working with a checkout
     # As we only need this to be unique todays date will do.
@@ -198,7 +198,7 @@ print_setup ()
 
 display_and_get_target ()
 {
-    while [ -z "$SPLICE_TARGET" ]
+    while [ -z "$SPLICE_TARGET_ENV" ]
     do
         echo "Available targets are:"
         n=1
@@ -214,11 +214,11 @@ display_and_get_target ()
         do
             if [ "$n" = "$ARGUMENT" ]
             then
-                SPLICE_TARGET=$i
+                SPLICE_TARGET_ENV=$i
             fi
             n=`expr $n + 1`
         done
-        if [ -z "$SPLICE_TARGET" ]
+        if [ -z "$SPLICE_TARGET_ENV" ]
         then
             echo
             echo "Invalid selection, try again!"
@@ -308,16 +308,16 @@ set_target_alternate ()
         esac
     done
 
-    SPLICE_TARGET=$TARGET_ARG
+    set_var SPLICE_TARGET_ENV $TARGET_ARG
     if [ ! -z "$SPLICE_PLATFORM" ]
     then
-        SPLICE_TARGET=$SPLICE_PLATFORM
+        set_var SPLICE_TARGET_ENV $SPLICE_PLATFORM
     fi
 
-    if [ ! -f "$FIRST_HOME/setup/environment/${SPLICE_TARGET}" -a \
-        ! -f "$SECOND_HOME/setup/environment/${SPLICE_TARGET}" ]
+    if [ ! -f "$FIRST_HOME/setup/environment/${SPLICE_TARGET_ENV}" -a \
+        ! -f "$SECOND_HOME/setup/environment/${SPLICE_TARGET_ENV}" ]
     then
-    echo "Specified envionment \"${SPLICE_TARGET}\" is not supported"
+    echo "Specified envionment \"${SPLICE_TARGET_ENV}\" is not supported"
         echo
         return 1
     fi
@@ -357,6 +357,11 @@ setup_pathed_vars ()
     fi
     LD_LIBRARY_PATH="${SPLICE_LIBRARY_PATH}:${LD_LIBRARY_PATH}"
     set_var SPLICE_LIBRARY_PATH "$SPLICE_LIBRARY_PATH"
+    case $host in
+        CYGWIN_NT*)
+        PATH="${SPLICE_LIBRARY_PATH}:${PATH}"
+            ;;
+    esac
 
     if [ -n "$OSPL_OUTER_HOME" ]
     then
@@ -368,6 +373,11 @@ setup_pathed_vars ()
         fi
         LD_LIBRARY_PATH="${SPLICE_LIBRARY_TEST_PATH}:${LD_LIBRARY_PATH}"
         set_var SPLICE_LIBRARY_TEST_PATH "$SPLICE_LIBRARY_TEST_PATH"
+        case $host in
+            CYGWIN_NT*)
+            PATH="${SPLICE_LIBRARY_TEST_PATH}:${PATH}"
+                ;;
+        esac
     fi
 
     if [ "_${SPLICE_HOST}" != "_${SPLICE_TARGET}" ]
@@ -420,6 +430,11 @@ export_vars ()
     set_var SPLICE_TARGET "$SPLICE_TARGET"
     set_var SPLICE_REAL_TARGET "$SPLICE_TARGET"
     set_var OSPL_TMPL_PATH "$OSPL_TMPL_PATH"
+    if [ -n "${PROTOBUF_HOME}" ]
+    then
+        PROTOBUF_HOME_NORMALIZED=`"$OSPL_HOME/bin/ospl_normalizePath" "$PROTOBUF_HOME"`
+        set_var PROTOBUF_HOME_NORMALIZED "$PROTOBUF_HOME_NORMALIZED"
+    fi
 }
 
 cleanup ()

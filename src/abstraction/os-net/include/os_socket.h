@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -15,13 +23,41 @@
 
 #include "os_defs.h"
 #include "os_time.h"
+#include "os_iterator.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
-/* Include OS specific header file              */
-#include "include/os_socket.h"
+  /* Platform specific includes */
+#if __linux__ == 1
+#include <../linux/include/os_os_socket.h>
+#elif __vxworks == 1
+#if __RTP__ == 1
+#include <../vxworks_rtp/include/os_os_socket.h>
+#else
+#include <../vxworks_km/include/os_os_socket.h>
+#endif
+#elif __sun == 1
+#include <../solaris/include/os_os_socket.h>
+#elif defined(__INTEGRITY)
+#include <../integrity/include/os_os_socket.h>
+#elif __PikeOS__ == 1
+#include <../pikeos3/include/os_os_socket.h>
+#elif defined(__QNX__)
+#include <../qnx/include/os_os_socket.h>
+#elif defined(_MSC_VER)
+#ifdef _WIN32_WCE
+#include <../wince/include/os_os_socket.h>
+#else
+#include <../win32/include/os_os_socket.h>
+#endif
+#elif defined __APPLE__
+#include <../darwin10/include/os_os_socket.h>
+#else
+#error Platform missing from os_socket.h list
+#endif
+
 #include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
@@ -54,11 +90,10 @@ stuff seems to be not always be available */
 typedef struct sockaddr_in os_sockaddr_in;
 typedef struct sockaddr os_sockaddr;
 
-
 #ifdef OS_SOCKET_HAS_IPV6
 #if (OS_SOCKET_HAS_IPV6 == 0)
 struct foo_in6_addr {
-    unsigned char   s6_addr[16];
+    unsigned char   foo_s6_addr[16];
 };
 typedef struct foo_in6_addr os_in6_addr;
 
@@ -109,6 +144,7 @@ typedef struct sockaddr_in6 os_sockaddr_in6;
 #endif
 
 OS_API extern const os_in6_addr os_in6addr_any;
+OS_API extern const os_in6_addr os_in6addr_loopback;
 
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 46 /* strlen("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255") + 1 */
@@ -152,9 +188,6 @@ typedef struct os_ifAttributes_s {
     os_uint interfaceIndexNo;
 } os_ifAttributes;
 
-OS_API int
-os_sockError(void);
-
 OS_API os_result
 os_sockQueryInterfaces(
     os_ifAttributes *ifList,
@@ -189,8 +222,12 @@ os_sockQueryInterfaceStatusDeinit(
 OS_API os_result
 os_sockQueryInterfaceStatus(
     void *handle,
-    os_time timeout,
+    os_duration timeout,
     os_boolean *status);
+
+OS_API os_result
+os_sockQueryInterfaceStatusSignal(
+    void *handle);
 
 OS_API os_socket
 os_sockNew(
@@ -271,7 +308,7 @@ os_sockSelect(
     fd_set *readfds,
     fd_set *writefds,
     fd_set *errorfds,
-    os_time *timeout);
+    os_duration timeout);
 
 
 /* docced in implementation file */
@@ -283,6 +320,11 @@ os_sockaddrInit(os_sockaddr* sa,
 OS_API os_boolean
 os_sockaddrIPAddressEqual(const os_sockaddr* this_sock,
                            const os_sockaddr* that_sock);
+
+OS_API os_equality
+os_sockaddrIpAddressCompare(const os_sockaddr* addr1,
+                            const os_sockaddr* addr2) __nonnull_all__
+                                                      __attribute_pure__;
 
 /* docced in implementation file */
 OS_API os_boolean

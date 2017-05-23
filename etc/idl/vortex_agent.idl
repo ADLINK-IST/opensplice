@@ -1,0 +1,59 @@
+#include "vortex_metrics.idl"
+
+module org {
+    module vortex {
+        module agent {
+            /*****************************************************************
+             *
+             * Agent types
+             *
+             ****************************************************************/
+            struct UUID {
+                unsigned long long low;
+                unsigned long long high;
+            };
+
+            struct CommandId {
+                UUID uuid;                     //unique id per source
+                unsigned long long request_id; //sequence nr per request
+            };
+
+            /*****************************************************************
+             *
+             * Agent Command Topic
+             *
+             ****************************************************************/
+            struct Command {
+                string          agent_name;
+                CommandId       command_id;
+                string          command;
+            };
+#pragma keylist Command command_id.uuid.low command_id.uuid.high
+            /*****************************************************************
+             *
+             * Agent reply Topics
+             *
+             ****************************************************************/
+            struct Reply {
+                string          agent_name;
+                CommandId       command_id;
+                string          message;
+            };
+#pragma keylist Reply agent_name
+
+            struct InfoList {
+                string                         agent_name;
+                CommandId                      command_id;
+                org::vortex::metrics::InfoSeq  metrics;
+            };
+#pragma keylist InfoList agent_name
+
+            struct ValueList {
+                string                         agent_name;
+                CommandId                      command_id;
+                org::vortex::metrics::ValueSeq values;
+            };
+#pragma keylist ValueList agent_name
+        };
+    };
+};

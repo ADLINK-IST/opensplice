@@ -1,0 +1,23 @@
+project (face*Types) : _repetitive_face_cpp_example_types {
+}
+
+
+project (face*Publisher) : ospl_dcpsisocpp2, c_or_cplusplus_example, ospl_ddsface {
+    requires += dcps_isocpp_example
+    after += face*Types
+    libs += face*Types
+    libpaths += .
+    Source_Files {
+        publisher.cpp
+    }
+}
+
+project (face*Subscriber) : ospl_dcpsisocpp2, c_or_cplusplus_example, ospl_ddsface {
+    requires += dcps_isocpp_example
+    after += face*Types
+    libs += face*Types
+    libpaths += .
+    Source_Files {
+        subscriber.cpp
+    }
+}

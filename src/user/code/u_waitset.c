@@ -1,17 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "u_waitset.h"
-#include "u_waitsetEvent.h"
+#include "u_waitsetEntry.h"
 #include "u__types.h"
+#include "u__object.h"
+#include "u__observable.h"
 #include "u__entity.h"
 #include "u__participant.h"
 #include "u__domain.h"
@@ -23,511 +33,752 @@
 #include "os_report.h"
 
 #include "u__user.h"
+#include "u__waitset.h"
+#include "os_atomics.h"
 
-u_waitset
-u_waitsetNew(
-    u_participant p)
+
+static u_result
+waitset_notify (
+    const u_waitset _this,
+    void *eventArg)
 {
-    u_waitset _this = NULL;
-    u_result result;
-    v_entity ke;
-    v_participant kp = NULL;
+    u_result result = U_RESULT_OK;
+    c_ulong length;
 
-    if (p != NULL) {
-        result = u_entityWriteClaim(u_entity(p),(v_entity*)(&kp));
-        if (result == U_RESULT_OK) {
-            assert(kp);
-            ke = v_entity(v_waitsetNew(kp));
-            if (ke != NULL) {
-                v_observerSetEventMask(v_observer(ke), V_EVENTMASK_ALL);
-                _this = u_entityAlloc(p,u_waitset,ke,TRUE);
-                if (_this != NULL) {
-                    result = u_waitsetInit(_this);
-                    if (result != U_RESULT_OK) {
-                        OS_REPORT_1(OS_ERROR, "u_waitsetNew", 0,
-                                    "Initialisation failed. "
-                                    "For Participant (0x%x)", p);
-                        u_waitsetFree(_this);
-                    }
-                } else {
-                    OS_REPORT_1(OS_ERROR, "u_waitsetNew", 0,
-                                "Create user proxy failed. "
-                                "For Participant (0x%x)", p);
-                }
-                c_free(ke);
-            } else {
-                OS_REPORT_1(OS_ERROR, "u_waitsetNew", 0,
-                            "Create kernel entity failed. "
-                            "For Participant (0x%x)", p);
-            }
-            result = u_entityRelease(u_entity(p));
-        } else {
-            OS_REPORT_1(OS_WARNING, "u_waitsetNew", 0,
-                        "Claim Participant (0x%x) failed.", p);
-        }
+    assert(_this != NULL);
+
+    length = c_iterLength(_this->entries);
+    if (length == 1) {
+        /* Single Domain Mode. */
+        result = u_waitsetEntryTrigger(c_iterObject(_this->entries,0), eventArg);
     } else {
-        OS_REPORT(OS_ERROR,"u_waitsetNew",0,
-                  "No Participant specified.");
-    }
-    return _this;
-}
-
-u_result
-u_waitsetInit(
-    u_waitset _this)
-{
-    u_result result;
-
-    if (_this != NULL) {
-        u_entity(_this)->flags |= U_ECREATE_INITIALISED;
+        /* Multi Domain Mode (or no Domain). */
+        os_condSignal(&_this->cv);
         result = U_RESULT_OK;
-    } else {
-        OS_REPORT(OS_ERROR,"u_waitsetInit",0, "Illegal parameter.");
-        result = U_RESULT_ILL_PARAM;
     }
     return result;
 }
 
 u_result
-u_waitsetFree(
-    u_waitset _this)
+u_waitsetTrigger(
+    const u_waitset _this)
 {
-    u_result result;
-    c_bool destroy;
+    assert(_this != NULL);
+    os_condSignal(&_this->cv);
+    return U_RESULT_OK;
+}
 
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        destroy = u_entityDereference(u_entity(_this));
-        /* if refCount becomes zero then this call
-         * returns true and destruction can take place
-         */
-        if (destroy) {
-            if (u_entityOwner(u_entity(_this))) {
-                result = u_waitsetDeinit(_this);
-            } else {
-                /* This user entity is a proxy, meaning that it is not fully
-                 * initialized, therefore only the entity part of the object
-                 * can be deinitialized.
-                 * It would be better to either introduce a separate proxy
-                 * entity for clarity or fully initialize entities and make
-                 * them robust against missing information.
-                 */
-                result = u_entityDeinit(u_entity(_this));
-            }
-            if (result == U_RESULT_OK) {
-                u_entityDealloc(u_entity(_this));
-            } else {
-                OS_REPORT_2(OS_WARNING,
-                            "u_waitsetFree",0,
-                            "Operation u_waitsetDeinit failed: "
-                            "Waitset = 0x%x, result = %s.",
-                            _this, u_resultImage(result));
-                u_entityUnlock(u_entity(_this));
-            }
-        } else {
-            u_entityUnlock(u_entity(_this));
+static u_result
+u__waitsetDeinitW(
+    void *_vthis)
+{
+    u_waitset _this;
+    u_waitsetEntry entry;
+    u_result result = U_RESULT_OK;
+
+    _this = u_waitset(_vthis);
+    os_mutexLock(&_this->mutex);
+
+    _this->alive = FALSE;
+    while (_this->waitBusy) {
+        waitset_notify(_this, NULL);
+        os_condWait(&_this->waitCv, &_this->mutex);
+    }
+    entry = c_iterTakeFirst(_this->entries);
+    while (entry != NULL) {
+        u_domain domain = u_observableDomain(u_observable(entry));
+        result = u_domainRemoveWaitset(domain, _this);
+        if (result != U_RESULT_OK) {
+            OS_REPORT(OS_ERROR,
+                      "u__waitsetDeinitW", result,
+                      "Operation u_domainRemoveWaitset failed: "
+                      "Waitset = 0x%"PA_PRIxADDR", result = %s",
+                      (os_address)_this, u_resultImage(result));
+            assert(FALSE);
         }
-    } else {
-        OS_REPORT_2(OS_WARNING,
-                    "u_waitsetFree",0,
-                    "Operation u_entityLock failed: "
-                    "Waitset = 0x%x, result = %s.",
-                    _this, u_resultImage(result));
+        result = u_objectFree_s(entry);
+        if (result == U_RESULT_ALREADY_DELETED) {
+            result = U_RESULT_OK;
+        } else if (result != U_RESULT_OK) {
+            OS_REPORT(OS_ERROR,
+                      "u__waitsetDeinitW", result,
+                      "Operation u_waitsetEntryFree failed: "
+                      "Waitset = 0x%"PA_PRIxADDR", result = %s",
+                      (os_address)_this, u_resultImage(result));
+            result = U_RESULT_OK;
+            (void)result;
+            assert(FALSE);
+        }
+        entry = c_iterTakeFirst(_this->entries);
     }
-    return result;
-}
+    c_iterFree(_this->entries);
+    _this->entries = NULL;
 
-u_result
-u_waitsetDeinit(
-    u_waitset _this)
-{
-    u_result result;
-
-    if (_this != NULL) {
-        result = u_entityDeinit(u_entity(_this));
-    } else {
-        OS_REPORT(OS_ERROR,"u_waitsetDeinit",0, "Illegal parameter.");
-        result = U_RESULT_ILL_PARAM;
-    }
+    os_mutexUnlock(&_this->mutex);
+    u__objectDeinitW(_this);
     return result;
 }
 
 static void
-collectEntities(
-    v_waitsetEvent e,
-    c_voidp arg)
+u__waitsetFreeW(
+    void *_this)
 {
-    c_iter *list;
+    u_waitset w;
+    w = u_waitset(_this);
 
-    list = (c_iter *)arg;
-    *list = c_iterInsert(*list, e->userData);
+    while (pa_ld32(&w->useCount) > 0) {
+        os_duration t = OS_DURATION_INIT(0, 100000000);
+        os_sleep(t);
+    }
+
+    (void) os_condDestroy(&w->waitCv);
+    (void) os_condDestroy(&w->cv);
+    (void) os_mutexDestroy(&w->mutex);
+    u__objectFreeW(_this);
+}
+
+u_waitset
+u_waitsetNew2(void)
+{
+    u_waitset _this = u_waitsetNew();
+    _this->eventsEnabled = OS_FALSE;
+    return _this;
+}
+
+u_waitset
+u_waitsetNew(void)
+{
+    u_waitset _this = NULL;
+    u_result result;
+
+    result = u_userInitialise();
+    if (result == U_RESULT_OK) {
+        _this = u_objectAlloc(sizeof(*_this), U_WAITSET, u__waitsetDeinitW, u__waitsetFreeW);
+
+        _this->entries = NULL;
+        _this->eventMask = V_EVENTMASK_ALL;
+        _this->alive = TRUE;
+        _this->waitBusy = FALSE;
+        _this->detachCnt = 0;
+        _this->multi_mode = OS_TRUE;
+        _this->eventsEnabled = OS_TRUE;
+        _this->notifyDetached = OS_FALSE;
+        pa_st32(&_this->useCount, 0);
+
+        os_mutexInit(&_this->mutex, NULL);
+        os_condInit(&_this->cv, &_this->mutex, NULL);
+        os_condInit(&_this->waitCv, &_this->mutex, NULL);
+    } else {
+        OS_REPORT(OS_ERROR, "u_waitsetNew", result,
+                  "Initialization failed. ");
+    }
+
+    return _this;
+}
+
+void
+u_waitsetIncUseCount(
+    _Inout_ u_waitset _this)
+{
+    pa_inc32(&_this->useCount);
+}
+
+void
+u_waitsetDecUseCount(
+    _Inout_ u_waitset _this)
+{
+    pa_dec32(&_this->useCount);
 }
 
 u_result
 u_waitsetNotify(
-    u_waitset w,
-    c_voidp eventArg)
+    const u_waitset _this,
+    void *eventArg)
 {
-    u_result r = U_RESULT_OK;
-    v_waitset kw;
+    u_result result = U_RESULT_OK;
+    os_result osr;
 
-    if (w != NULL) {
-        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
-        if (r == U_RESULT_OK) {
-            assert(kw);
-            v_waitsetTrigger(kw, eventArg);
-            r = u_entityRelease(u_entity(w));
-        }
+    assert(_this != NULL);
+
+    osr = os_mutexLock_s(&_this->mutex);
+    if (osr == os_resultSuccess) {
+        result = waitset_notify(_this, eventArg);
+        os_mutexUnlock(&_this->mutex);
+    } else {
+        result = U_RESULT_INTERNAL_ERROR;
     }
-    return r;
+    return result;
+}
+
+struct checkArg {
+    os_boolean (*action)(c_voidp, c_voidp);
+    void *arg;
+    os_int32 count;
+};
+
+void
+u_waitsetAnnounceDestruction(
+    const u_waitset _this)
+{
+    os_result osr;
+
+    assert(_this != NULL);
+    osr = os_mutexLock_s(&_this->mutex);
+    if (osr == os_resultSuccess) {
+        _this->alive = FALSE;
+        os_mutexUnlock(&_this->mutex);
+    }
+}
+
+static os_boolean
+wait_action(
+    void *userData,
+    void *arg)
+{
+    struct checkArg *a = (struct checkArg *)arg;
+    if (userData) {
+        if (!a->action(userData,a->arg)) a->count++;
+    }
+    return OS_TRUE;
+}
+
+static c_bool
+check_entry_conditions(
+    void *entry,
+    c_iterResolveCompareArg arg)
+{
+    (void)u_waitsetEntryWait2(entry, wait_action, arg, OS_DURATION_ZERO);
+    return TRUE;
 }
 
 u_result
-u_waitsetWait(
-    u_waitset w,
-    c_iter *list)
+u_waitsetWaitAction2 (
+    const u_waitset _this,
+    u_waitsetAction2 action,
+    void *arg,
+    const os_duration timeout)
 {
-    u_result r;
-    v_waitset kw;
+    u_result result = U_RESULT_OK;
+    os_result osr;
+    c_ulong length;
+    struct checkArg a;
+    a.action = action;
+    a.arg = arg;
+    a.count = 0;
 
-    if ((w != NULL) && (list != NULL)) {
-        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
-        if (r == U_RESULT_OK) {
-            assert(kw);
-            *list = NULL;
-            r = u_resultFromKernel(v_waitsetWait(kw,collectEntities,list));
-            u_entityRelease(u_entity(w));
+    assert(_this != NULL);
+    assert(action != NULL);
+    assert(OS_DURATION_ISPOSITIVE(timeout));
+
+    osr = os_mutexLock_s(&_this->mutex);
+    if (osr == os_resultSuccess) {
+        if (!_this->alive) {
+            result = U_RESULT_ALREADY_DELETED;
+            OS_REPORT(OS_ERROR, "u_waitsetWaitAction2", result,
+                      "Precondition not met: Waitset is already deleted");
+        }
+        if (_this->waitBusy) {
+            result = U_RESULT_PRECONDITION_NOT_MET;
+            OS_REPORT(OS_ERROR, "u_waitsetWaitAction2", result,
+                      "Precondition not met: A Wait call is already active on this Waitset");
+        }
+        if (result == U_RESULT_OK) {
+            /* Wait for possible detach to complete.
+             * If you don't do that, it's possible that this wait call sets
+             * the waitBusy flag before the detach can wake up of its waitBusy
+             * loop, meaning that the detach will block at least until the
+             * waitset is triggered again. */
+            while (_this->detachCnt > 0) {
+                os_condWait(&_this->waitCv, &_this->mutex);
+            }
+
+            length = c_iterLength(_this->entries);
+            if (length == 1) {
+                /* Single Domain Mode. */
+                u_waitsetEntry entry = c_iterObject(_this->entries,0);
+                _this->waitBusy = TRUE;
+                os_mutexUnlock(&_this->mutex);
+
+                result = u_waitsetEntryWait2(entry, action, arg, timeout);
+
+                os_mutexLock(&_this->mutex);
+                _this->waitBusy = FALSE;
+
+                if (_this->notifyDetached) {
+                    result = U_RESULT_DETACHING;
+                    _this->notifyDetached = OS_FALSE;
+                }
+
+                os_condBroadcast(&_this->waitCv);
+                os_mutexUnlock(&_this->mutex);
+
+                if ((result == U_RESULT_OK) && (_this->alive == FALSE)) {
+                    result = U_RESULT_ALREADY_DELETED;
+                    OS_REPORT(OS_ERROR, "u_waitsetWaitAction2", result,
+                              "Precondition not met: Waitset is already deleted");
+                }
+            } else {
+                /* Multi Domain Mode (or no Domain). */
+                a.count = 0;
+                /* For each Domain test Conditions. */
+                (void)c_iterWalkUntil(_this->entries, check_entry_conditions, &a);
+                /* Test Guard Conditions */
+                if ((a.count == 0) && (!action(NULL,arg))) {
+                    a.count++;
+                }
+                /* If No Conditions are true then wait. */
+                if (a.count == 0) {
+                    _this->waitBusy = TRUE;
+                    if (OS_DURATION_ISINFINITE(timeout)) {
+                        os_condWait(&_this->cv, &_this->mutex);
+                        osr = os_resultSuccess;
+                    } else {
+                        osr = os_condTimedWait(&_this->cv, &_this->mutex, timeout);
+                    }
+                    _this->waitBusy = FALSE;
+                    os_condBroadcast(&_this->waitCv);
+                    switch (osr) {
+                    case os_resultSuccess:
+                        if (_this->alive == TRUE) {
+                            if (_this->notifyDetached) {
+                                result = U_RESULT_DETACHING;
+                                _this->notifyDetached = OS_FALSE;
+                            } else {
+                                result = U_RESULT_OK;
+                            }
+                        } else {
+                            result = U_RESULT_ALREADY_DELETED;
+                            OS_REPORT(OS_ERROR, "u_waitsetWaitAction2", result,
+                                      "Precondition not met: Waitset is already deleted");
+                        }
+                    break;
+                    case os_resultTimeout:
+                        result = U_RESULT_TIMEOUT;
+                    break;
+                    default:
+                        result = U_RESULT_INTERNAL_ERROR;
+                        OS_REPORT(OS_ERROR, "u_waitsetWaitAction2", result,
+                                    "os_condWait failed for waitset 0x" PA_ADDRFMT,
+                                    (PA_ADDRCAST)_this);
+                    break;
+                    }
+                }
+                os_mutexUnlock(&_this->mutex);
+            }
+        } else {
+            os_mutexUnlock(&_this->mutex);
         }
     } else {
-        OS_REPORT_2(OS_ERROR, "u_waitsetWait", 0,
-                    "Illegal parameter specified (ws=0x"
-                    PA_ADDRFMT
-                    ",list=0x"
-                    PA_ADDRFMT
-                    ")",
-                    (PA_ADDRCAST)w, (PA_ADDRCAST)list);
-        r = U_RESULT_ILL_PARAM;
+        result = U_RESULT_INTERNAL_ERROR;
+        OS_REPORT(OS_ERROR, "u_waitsetWaitAction2", result,
+                    "os_mutexLock failed for waitset 0x" PA_ADDRFMT,
+                    (PA_ADDRCAST)_this);
     }
-
-    return r;
-}
-
-u_result
-u_waitsetTimedWait(
-    u_waitset w,
-    const c_time t,
-    c_iter *list)
-{
-    u_result r;
-    v_waitset kw;
-
-    if ((w != NULL) && (list != NULL)) {
-        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
-        if (r == U_RESULT_OK) {
-            assert(kw);
-            *list = NULL;
-            r = u_resultFromKernel(v_waitsetTimedWait(kw,collectEntities,list,t));
-            u_entityRelease(u_entity(w));
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR, "u_waitsetTimedWait", 0,
-                    "Illegal parameter specified (ws=0x"
-                    PA_ADDRFMT
-                    ",list=0x"
-                    PA_ADDRFMT
-                    ")",
-                    (PA_ADDRCAST)w, (PA_ADDRCAST)list);
-        r = U_RESULT_ILL_PARAM;
-    }
-
-    return r;
+    return result;
 }
 
 u_result
 u_waitsetWaitAction (
-    u_waitset w,
+    const u_waitset _this,
     u_waitsetAction action,
-    c_voidp arg)
+    void *arg,
+    const os_duration timeout)
 {
-    u_result r;
-    v_waitset kw;
+    u_result result = U_RESULT_OK;
+    os_result osr;
+    c_ulong length;
 
-    if (w != NULL) {
-        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
-        if (r == U_RESULT_OK) {
-            assert(kw);
-            r = u_resultFromKernel(v_waitsetWait(kw,action,arg));
-            u_entityRelease(u_entity(w));
+    assert(_this != NULL);
+    assert(action != NULL);
+    assert(OS_DURATION_ISPOSITIVE(timeout));
+
+    osr = os_mutexLock_s(&_this->mutex);
+    if (osr == os_resultSuccess) {
+        if (!_this->alive) {
+            result = U_RESULT_ALREADY_DELETED;
         }
-    }else    {
-        OS_REPORT(OS_ERROR, "u_waitsetWaitAction", 0,
-                  "Illegal parameter specified.");
-        r = U_RESULT_ILL_PARAM;
+        if (result == U_RESULT_OK) {
+            if (!_this->waitBusy) {
+                /* Wait for possible detach to complete.
+                 * If you don't do that, it's possible that this wait call sets
+                 * the waitBusy flag before the detach can wake up of its waitBusy
+                 * loop, meaning that the detach will block at least until the
+                 * waitset is triggered again. */
+                while (_this->detachCnt > 0) {
+                    os_condWait(&_this->waitCv, &_this->mutex);
+                }
+
+                _this->waitBusy = TRUE;
+                length = c_iterLength(_this->entries);
+                if (length == 1) {
+                    /* Single Domain Mode. */
+                    u_waitsetEntry entry = c_iterObject(_this->entries,0);
+                    os_mutexUnlock(&_this->mutex);
+                    result = u_waitsetEntryWait(entry, action, arg, timeout);
+
+                    os_mutexLock(&_this->mutex);
+                    _this->waitBusy = FALSE;
+                    os_condBroadcast(&_this->waitCv);
+                    os_mutexUnlock(&_this->mutex);
+
+                    if ((result == U_RESULT_OK) && (_this->alive == FALSE)) {
+                        result = U_RESULT_ALREADY_DELETED;
+                    }
+                } else {
+                    /* Multi Domain Mode (or no Domain). */
+                    if (OS_DURATION_ISINFINITE(timeout)) {
+                        os_condWait(&_this->cv, &_this->mutex);
+                        osr = os_resultSuccess;
+                    } else {
+                        osr = os_condTimedWait(&_this->cv, &_this->mutex, timeout);
+                    }
+                    _this->waitBusy = FALSE;
+                    os_condBroadcast(&_this->waitCv);
+                    switch (osr) {
+                    case os_resultSuccess:
+                        if (_this->alive == TRUE) {
+                            result = U_RESULT_OK;
+                        } else {
+                            result = U_RESULT_ALREADY_DELETED;
+                        }
+                    break;
+                    case os_resultTimeout:
+                        result = U_RESULT_TIMEOUT;
+                    break;
+                    default:
+                        result = U_RESULT_INTERNAL_ERROR;
+                        OS_REPORT(OS_ERROR, "u_waitsetWaitAction", result,
+                                    "os_condWait failed for waitset 0x" PA_ADDRFMT,
+                                    (PA_ADDRCAST)_this);
+                    break;
+                    }
+                    os_mutexUnlock(&_this->mutex);
+                }
+            } else {
+                os_mutexUnlock(&_this->mutex);
+                result = U_RESULT_PRECONDITION_NOT_MET;
+            }
+        } else {
+            os_mutexUnlock(&_this->mutex);
+        }
+    } else {
+        result = U_RESULT_INTERNAL_ERROR;
+        OS_REPORT(OS_ERROR, "u_waitsetWaitAction", result,
+                    "os_mutexLock failed for waitset 0x" PA_ADDRFMT,
+                    (PA_ADDRCAST)_this);
     }
-    return r;
+    return result;
 }
 
-u_result
-u_waitsetTimedWaitAction (
-    u_waitset w,
-    u_waitsetAction action,
-    c_voidp arg,
-    const c_time t)
+static c_equality
+compare_domain(
+    void *o,
+    c_iterResolveCompareArg arg)
 {
-    u_result r;
-    v_waitset kw;
+    c_equality result;
+    u_waitsetEntry entry;
+    u_domain domain;
 
-    if (w != NULL) {
-        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
-        if (r == U_RESULT_OK) {
-            assert(kw);
-            r = u_resultFromKernel(v_waitsetTimedWait(kw,action,arg,t));
-            u_entityRelease(u_entity(w));
-        }
-    } else    {
-        OS_REPORT(OS_ERROR, "u_waitsetTimedWaitAction", 0,
-                  "Illegal parameter specified.");
-        r = U_RESULT_ILL_PARAM;
+    entry = u_waitsetEntry(o);
+    domain = u_domain(arg);
+
+    if ((entry != NULL) &&
+        (domain != NULL) &&
+        (domain == u_observableDomain(u_observable(entry))))
+    {
+        result = C_EQ;
+    } else {
+        result = C_NE;
     }
-    return r;
+    return result;
 }
 
 static void
-collectEvents(
-    v_waitsetEvent e,
+set_multi_mode (
+    c_object o,
     c_voidp arg)
 {
-    c_iter *list;
-    u_waitsetEvent ev;
-    v_waitsetEventHistoryDelete evd;
-    v_waitsetEventHistoryRequest evr;
-    v_waitsetEventPersistentSnapshot evps;
-    v_waitsetEventConnectWriter ecw;
-    list = (c_iter *)arg;
+    u_waitsetEntry entry = (u_waitsetEntry)o;
 
-    if(e->kind == V_EVENT_HISTORY_DELETE){
-        evd = (v_waitsetEventHistoryDelete)e;
-        ev  = u_waitsetHistoryDeleteEventNew(u_entity(e->userData),
-                                             e->kind,
-                                             evd->partitionExpr,
-                                             evd->topicExpr,
-                                             evd->deleteTime);
-    } else if(e->kind == V_EVENT_HISTORY_REQUEST){
-        evr = (v_waitsetEventHistoryRequest)e;
-        ev = u_waitsetHistoryRequestEventNew(
-                    u_entity(e->userData), e->kind, e->source,
-                    evr->request->filter,
-                    evr->request->filterParams,
-                    evr->request->resourceLimits,
-                    evr->request->minSourceTimestamp,
-                    evr->request->maxSourceTimestamp);
-    } else if(e->kind == V_EVENT_PERSISTENT_SNAPSHOT){
-        evps = (v_waitsetEventPersistentSnapshot)e;
-        ev = u_waitsetPersistentSnapshotEventNew(
-            u_entity(e->userData),
-             e->kind,
-             e->source,
-             evps->request->partitionExpr,
-             evps->request->topicExpr,
-             evps->request->uri);
-    }else if(e->kind == V_EVENT_CONNECT_WRITER) {
-        ecw = (v_waitsetEventConnectWriter)e;
-        ev = u_waitsetConnectWriterEventNew(
-             u_entity(e->userData),
-             e->kind,
-             e->source,
-             ecw->group);
-    } else {
-        ev = u_waitsetEventNew(u_entity(e->userData), e->kind);
-    }
-    if (ev) {
-        *list = c_iterInsert(*list,ev);
-    }
-}
-
-u_result
-u_waitsetWaitEvents(
-    u_waitset w,
-    c_iter *list)
-{
-    u_result r;
-    v_waitset kw;
-
-    if ((w != NULL) && (list != NULL)) {
-        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
-        if (r == U_RESULT_OK) {
-            assert(kw);
-            *list = NULL;
-            r = u_resultFromKernel(v_waitsetWait(kw,collectEvents,list));
-            u_entityRelease(u_entity(w));
-        }
-    }else    {
-        OS_REPORT_2(OS_ERROR, "u_waitsetTimedWait", 0,
-                    "Illegal parameter specified (ws=0x"
-                    PA_ADDRFMT
-                    ",list=0x"
-                    PA_ADDRFMT
-                    ")",
-                    (PA_ADDRCAST)w, (PA_ADDRCAST)list);
-        r = U_RESULT_ILL_PARAM;
-    }
-    return r;
-}
-
-u_result
-u_waitsetTimedWaitEvents(
-    u_waitset w,
-    const c_time t,
-    c_iter *list)
-{
-    u_result r;
-    v_waitset kw;
-
-    if ((w != NULL) && (list != NULL)) {
-        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
-        if (r == U_RESULT_OK) {
-            assert(kw);
-            *list = NULL;
-            r = u_resultFromKernel(v_waitsetTimedWait(kw,collectEvents,list,t));
-            u_entityRelease(u_entity(w));
-        }
-    }else    {
-        OS_REPORT_2(OS_ERROR, "u_waitsetTimedWait", 0,
-                    "Illegal parameter specified (ws=0x"
-                    PA_ADDRFMT
-                    ",list=0x"
-                    PA_ADDRFMT
-                    ")",
-                    (PA_ADDRCAST)w, (PA_ADDRCAST)list);
-        r = U_RESULT_ILL_PARAM;
-    }
-    return r;
+    u_waitsetEntrySetMode(entry, *(os_boolean *)arg);
 }
 
 u_result
 u_waitsetAttach(
-    u_waitset w,
-    u_entity e,
-    c_voidp context)
+    const u_waitset _this,
+    const u_observable observable,
+    void *context)
 {
-    u_result r;
-    v_waitset kw;
-    v_entity ke;
+    u_waitsetEntry entry;
+    u_domain domain;
+    u_result result;
+    c_ulong length;
+    u_bool changed = FALSE;
+    os_result osr;
 
-    if ((w != NULL) && (e != NULL)) {
-        r = u_entityWriteClaim(u_entity(w), (v_entity*)(&kw));
-        if (r == U_RESULT_OK) {
-            assert(kw);
-            r = u_entityReadClaim(e, &ke);
-            if (r == U_RESULT_OK) {
-                v_waitsetAttach(kw,v_observable(ke),context);
-                u_entityRelease(e);
-            }
-            u_entityRelease(u_entity(w));
+    assert(_this != NULL);
+    assert(observable != NULL);
+
+    osr = os_mutexLock_s(&_this->mutex);
+    if (osr == os_resultSuccess) {
+        length = c_iterLength(_this->entries);
+        domain = u_observableDomain(observable);
+        if (domain != NULL) {
+            entry = c_iterResolve(_this->entries, compare_domain, domain);
         } else {
-            OS_REPORT(OS_ERROR, "u_waitSetAttach", 0,
-                      "Could not claim supplied entity.");
+            entry = NULL;
         }
+        if ((entry == NULL)&&(domain != NULL)) {
+            result = u_domainAddWaitset(domain, _this);
+            if (result == U_RESULT_OK) {
+                entry = u_waitsetEntryNew(_this, domain, _this->eventMask);
+                if (entry != NULL) {
+                    _this->entries = c_iterInsert(_this->entries, entry);
+                    changed = TRUE;
+                }
+            } else {
+                result = U_RESULT_INTERNAL_ERROR;
+                OS_REPORT(OS_ERROR, "u_waitSetAttach", result, "Failed to add waitset to domain.");
+            }
+        }
+        if (entry != NULL) {
+            result = u_waitsetEntryAttach(entry, observable, context);
+        } else {
+            result = U_RESULT_INTERNAL_ERROR;
+            OS_REPORT(OS_ERROR, "u_waitSetAttach", result, "Failed to connect to domain.");
+        }
+        if (changed == TRUE) {
+            if (length == 0) {
+                /* Wakeup waitset because its no longer in zero domain mode */
+                _this->multi_mode = OS_FALSE;
+                os_condSignal(&_this->cv);
+                result = U_RESULT_OK;
+            } else if (length == 1) {
+                _this->multi_mode = OS_TRUE;
+                c_iterWalk(_this->entries, set_multi_mode, (c_voidp)&_this->multi_mode);
+            }
+        }
+        os_mutexUnlock(&_this->mutex);
     } else {
-        OS_REPORT(OS_ERROR, "u_waitSetAttach", 0,
-                  "Illegal parameter specified.");
-        r = U_RESULT_ILL_PARAM;
+        result = U_RESULT_INTERNAL_ERROR;
+        OS_REPORT(OS_ERROR, "u_waitSetAttach", result, "Could not lock the waitset.");
     }
-    return r;
+    return result;
 }
 
 u_result
-u_waitsetDetach(
-    u_waitset w,
-    u_entity e)
+u_waitsetDetach_s(
+    const u_waitset _this,
+    const u_observable observable)
 {
-    u_result r;
-    v_waitset kw;
-    v_entity ke;
+    u_waitsetEntry entry;
+    u_domain domain;
+    u_result result;
+    os_result osr;
 
-    if ((w != NULL) && (e != NULL)) {
-        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
-        if (r == U_RESULT_OK) {
-            assert(kw);
-            r = u_entityReadClaim(e, &ke);
-            if (r == U_RESULT_OK) {
-                v_waitsetDetach(kw,v_observable(ke));
-                u_entityRelease(e);
+    assert(_this != NULL);
+    assert(observable != NULL);
+
+    osr = os_mutexLock_s(&_this->mutex);
+    if (osr == os_resultSuccess) {
+        domain = u_observableDomain(observable);
+        if (domain != NULL) {
+            entry = c_iterResolve(_this->entries, compare_domain, domain);
+            if (entry != NULL) {
+                /* The following detach will wakeup any blocking wait call on this entry. */
+                result = u_waitsetEntryDetach(entry, observable);
+                if (result == U_RESULT_UNSUPPORTED) {
+                    _this->detachCnt++;
+                    /* removed last observable for this entry so can detach from domain. */
+                    entry = c_iterTake(_this->entries, entry); /* use overwrite entry */
+                    result = u_domainRemoveWaitset(domain, _this);
+                    if (c_iterLength(_this->entries) == 1) {
+                        _this->multi_mode = OS_FALSE;
+                    } else {
+                        _this->multi_mode = OS_TRUE;
+                    }
+                    while (_this->waitBusy) {
+                        os_condWait(&_this->waitCv, &_this->mutex);
+                    }
+
+                    _this->detachCnt--;
+                    /* Broadcast the detachCnt update. */
+                    os_condBroadcast(&_this->waitCv);
+
+                    os_mutexUnlock(&_this->mutex);
+                    u_objectFree(entry);
+                } else {
+                    os_mutexUnlock(&_this->mutex);
+                }
+            } else {
+                /* Check if the condition is already deleted */
+                v_public ko;
+                result = u_observableReadClaim(observable, &ko, C_MM_RESERVATION_NO_CHECK);
+                if (result == U_RESULT_OK) {
+                    u_observableRelease(observable, C_MM_RESERVATION_NO_CHECK);
+                    result = U_RESULT_PRECONDITION_NOT_MET;
+                    OS_REPORT(OS_ERROR, "u_waitSetDetach_s", result, "Condition is not attached to Waitset");
+                }
+                os_mutexUnlock(&_this->mutex);
             }
-            u_entityRelease(u_entity(w));
         } else {
-            OS_REPORT(OS_ERROR, "u_waitSetDetach", 0,
-                  "Could not claim supplied entity.");
+            os_mutexUnlock(&_this->mutex);
+            result = U_RESULT_INTERNAL_ERROR;
+            OS_REPORT(OS_ERROR, "u_waitsetDetach_s", result,
+                      "Failed to connect to domain.");
         }
     } else {
-        OS_REPORT(OS_ERROR, "u_waitSetDetach", 0,
-                  "Illegal parameter specified.");
-        r = U_RESULT_ILL_PARAM;
+        result = U_RESULT_INTERNAL_ERROR;
+        OS_REPORT(OS_ERROR, "u_waitSetDetach_s", result, "Could not lock the waitset.");
     }
-    return r;
+    return result;
+}
+
+void
+u_waitsetDetach(
+    const u_waitset _this,
+    const u_observable observable)
+{
+    /* u_waitsetDetach_s already reports errors */
+    (void) u_waitsetDetach_s (_this, observable);
 }
 
 u_result
 u_waitsetGetEventMask(
-    u_waitset w,
-    c_ulong *eventMask)
+    const u_waitset _this,
+    u_eventMask *eventMask)
 {
-    v_waitset kw;
-    u_result r;
+    u_result result;
+    os_result osr;
 
-    if ((w != NULL) && (eventMask != NULL)) {
-        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
-        if (r == U_RESULT_OK) {
-            assert(kw);
-            if (C_TYPECHECK(kw,v_waitset)) {
-                *eventMask = v_observerGetEventMask(v_observer(kw));
-            } else {
-                OS_REPORT(OS_ERROR, "u_waitGetEventMask", 0,
-                          "Class mismatch.");
-                r = U_RESULT_CLASS_MISMATCH;
-            }
-            u_entityRelease(u_entity(w));
-        } else {
-            OS_REPORT(OS_WARNING, "u_waitGetEventMask", 0,
-                      "Could not claim waitset.");
-        }
+    assert(_this != NULL);
+    assert(eventMask != NULL);
+
+    osr = os_mutexLock_s(&_this->mutex);
+    if (osr == os_resultSuccess) {
+        result = U_RESULT_OK;
+        *eventMask = _this->eventMask;
+        os_mutexUnlock(&_this->mutex);
     } else {
-        OS_REPORT(OS_ERROR, "u_waitGetEventMask", 0,
-                  "Illegal parameter specified.");
-        r = U_RESULT_ILL_PARAM;
+        result = U_RESULT_INTERNAL_ERROR;
+        OS_REPORT(OS_WARNING, "u_waitGetEventMask", result,
+                  "Could not claim waitset.");
     }
-    return r;
+    return result;
+}
+
+static void
+set_event_mask(
+    void *o,
+    c_iterResolveCompareArg arg)
+{
+    u_waitsetEntry entry;
+    u_eventMask eventMask;
+    u_result result;
+
+    entry = u_waitsetEntry(o);
+    eventMask = *(c_ulong *)arg;
+
+    if (entry != NULL)
+    {
+        result = u_waitsetEntrySetEventMask(entry, eventMask);
+    } else {
+        result = U_RESULT_ILL_PARAM;
+    }
+    assert(result == U_RESULT_OK);
+    OS_UNUSED_ARG(result);
 }
 
 u_result
 u_waitsetSetEventMask(
-    u_waitset w,
-    c_ulong eventMask)
+    const u_waitset _this,
+    u_eventMask eventMask)
 {
-    v_waitset kw;
-    u_result r;
+    u_result result;
+    os_result osr;
 
-    if (w != NULL) {
-        r = u_entityReadClaim(u_entity(w), (v_entity*)(&kw));
-        if (r == U_RESULT_OK) {
-            assert(kw);
-            if (C_TYPECHECK(kw,v_waitset)) {
-                v_observerSetEventMask(v_observer(kw), eventMask);
-            } else {
-                OS_REPORT(OS_ERROR, "u_waitSetEventMask", 0,
-                          "Class mismatch.");
-                r = U_RESULT_CLASS_MISMATCH;
-            }
-            u_entityRelease(u_entity(w));
-        } else {
-            OS_REPORT(OS_WARNING, "u_waitsetSetEventMask", 0,
-                      "Could not claim waitset.");
-        }
+    assert(_this != NULL);
+
+    osr = os_mutexLock_s(&_this->mutex);
+    if (osr == os_resultSuccess) {
+        _this->eventMask = eventMask;
+        c_iterWalk(_this->entries, set_event_mask, &eventMask);
+        os_mutexUnlock(&_this->mutex);
+        result = U_RESULT_OK;
     } else {
-        OS_REPORT(OS_ERROR, "u_waitGetEventMask", 0,
-                  "Illegal parameter specified.");
-        r = U_RESULT_ILL_PARAM;
+        result = U_RESULT_INTERNAL_ERROR;
+        OS_REPORT(OS_WARNING, "u_waitSetEventMask", result,
+                  "Could not claim waitset.");
     }
-    return r;
+    return result;
 }
 
+u_result
+u_waitsetDetachFromDomain(
+    _Inout_ u_waitset _this,
+    _Inout_ u_domain domain)
+{
+    u_result result;
+    os_result osr;
+    u_waitsetEntry entry;
+
+    assert(_this != NULL);
+    assert(domain != NULL);
+
+    osr = os_mutexLock_s(&_this->mutex);
+    if (osr == os_resultSuccess) {
+        entry = c_iterResolve(_this->entries, compare_domain, domain);
+        if (entry != NULL) {
+            _this->notifyDetached = OS_TRUE;
+            result = u_objectClose(entry);
+            if (result == U_RESULT_ALREADY_DELETED) {
+                result = U_RESULT_OK;
+            }
+            if (result == U_RESULT_OK) {
+                /* The entry is already freed but the address value can still
+                 * be used to update the administration because it only removes
+                 * the address value from the list.
+                 */
+                c_iterTake(_this->entries, entry);
+            } else {
+                result = U_RESULT_INTERNAL_ERROR;
+                OS_REPORT(OS_ERROR,
+                            "u_waitsetDetachFromDomain", result,
+                            "Operation u_waitsetEntryFree failed: "
+                            "Waitset = 0x%"PA_PRIxADDR", result = %s",
+                             (os_address)_this, u_resultImage(result));
+                assert(FALSE);
+            }
+        } else {
+            result = U_RESULT_PRECONDITION_NOT_MET;
+        }
+        (void)u_domainRemoveWaitset(domain, _this);
+        os_mutexUnlock(&_this->mutex);
+    } else {
+        result = U_RESULT_INTERNAL_ERROR;
+        OS_REPORT(OS_WARNING, "u_waitsetDetachFromDomain", result,
+                  "Could not claim waitset.");
+    }
+
+    return result;
+}
+
+u_domainId_t
+u_waitsetGetDomainId(
+    u_waitset _this)
+{
+    os_result osr;
+    u_domainId_t domainId = -1;
+    u_waitsetEntry entry;
+
+    osr = os_mutexLock_s(&_this->mutex);
+    if (osr == os_resultSuccess) {
+        if (c_iterLength(_this->entries) == 1) {
+            entry = c_iterObject(_this->entries, 0);
+            domainId = u_observableGetDomainId(u_observable(entry));
+        }
+        os_mutexUnlock(&_this->mutex);
+    }
+
+    return domainId;
+}

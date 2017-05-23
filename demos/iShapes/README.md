@@ -11,10 +11,40 @@ DDS vendors while being able to show something "moving on the screen".
 
 The demo is about shapes that bounce within a rectangular region.
 
-See the [code documention](@ref demos_iShapes) for more details, and
-the source.
+The demo is pre-built but the source code can be found in the demos/ishapes folder of your OpenSplice
+installation.
 
-Building on Linux with make                                                     {#ishapeslinuxbuild}
+Running iShapes                                                                 {#ishapesrunning}
+===============
+
+The iShapes demo allows you to publish and subscribe instances of
+various shapes. The demo is nicer if you run it as at least two
+instances, thus from a shell do one of the below then have one of
+the applications publish some shapes and press the subscribe button
+on the other application to receive them.
+
+Linux:
+------
+
+Assuming Qt libs are already available on the library load path:
+
+    $ . ./release.com
+    $ demo_ishapes &
+    $ demo_ishapes &
+
+Windows:
+--------
+
+The `Qt .dll`s must be available on the `PATH` for the demo to run.
+Assuming, for example, that steps 1 & 2 have been followed from
+[Building on Windows](#ishapeswinbuild), then from the **OpenSplice
+command prompt** you might do:
+
+    C:\> set PATH=C:\Qt\4.8.4_vs2010_32bit\bin;%PATH%
+    C:\> start demo_ishapes
+    C:\> start demo_ishapes
+
+Rebuilding on Linux with make                                                     {#ishapeslinuxbuild}
 ===========================
 
 To build the demo you need to have installed a QT4 development
@@ -24,7 +54,7 @@ simply do the following:
     $ cd $OSPL_HOME/demos/iShapes
     $ make
 
-Building on Windows with Visual Studio                                          {#ishapeswinbuild}
+Rebuilding on Windows with Visual Studio                                          {#ishapeswinbuild}
 ======================================
 
 To build the demo you need to have installed a QT4 development
@@ -54,32 +84,8 @@ installed somehow before launching Visual Studio. e.g.:
 4. Open the `iShapes.sln` file in `%%OSPL_HOME%\demos\iShapes` and
 build it.
 
-Running iShapes                                                                 {#ishapesrunning}
-===============
+Note that the VS2010 QT binary distribution available on the 
+opensplice.org can can only be used with a VS2010 version of OpenSplice, 
+as the VS version used to build OpenSplice should be the same as used for
+building QT. 
 
-The iShapes demo allows you to publish and subscribe instances of
-various shapes. The demo is nicer if you run it as at least two
-instances, thus from a shell do one of the below then have one of
-the applications publish some shapes and press the subscribe button
-on the other application to receive them.
-
-Linux:
-------
-
-Assuming Qt libs are already available on the library load path:
-
-    $ ./release.com
-    $ demo_ishapes &
-    $ demo_ishapes &
-
-Windows:
---------
-
-The `Qt .dll`s must be available on the `PATH` for the demo to run.
-Assuming, for example, that steps 1 & 2 have been followed from
-[Building on Windows](#ishapeswinbuild), then from the **OpenSplice
-command prompt** you might do:
-
-    C:\> set PATH=C:\Qt\4.8.4_vs2010_32bit\bin;%PATH%
-    C:\> start demo_ishapes
-    C:\> start demo_ishapes

@@ -10,7 +10,7 @@ include	$(OSPL_HOME)/setup/makefiles/target.mak
 #CINCS += -I$(OSPL_HOME)/src/kernel/include
 
 
-#-l$(DDS_KERNEL)
+LDLIBS += -l$(DDS_KERNEL)
 #LDLIBS += -lmptestcommon
 
 -include $(DEPENDENCIES)

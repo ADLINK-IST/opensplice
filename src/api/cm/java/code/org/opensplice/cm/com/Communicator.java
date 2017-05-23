@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**
@@ -39,6 +47,7 @@ import org.opensplice.cm.Waitset;
 import org.opensplice.cm.Writer;
 import org.opensplice.cm.WriterSnapshot;
 import org.opensplice.cm.data.GID;
+import org.opensplice.cm.data.Mask;
 import org.opensplice.cm.data.Sample;
 import org.opensplice.cm.data.UserData;
 import org.opensplice.cm.meta.MetaType;
@@ -60,18 +69,6 @@ import org.opensplice.cm.status.Status;
  * All communication handlers must implement this interface.
  */
 public interface Communicator {
-
-    /**
-     * Initialises the Communicator to be able to communicate with the node the
-     * Java C&M API has to get its information from.
-     * 
-     * @param The
-     *            URL of the node to initialise.
-     * @throws CommunicationException
-     *             Thrown when initialization failed.
-     */
-    public void initialise(String url) throws CommunicationException;
-
     /**
      * Detaches the Control & Monitoring API.
      * 
@@ -108,6 +105,27 @@ public interface Communicator {
      */
     public Entity[] entityOwnedEntities(Entity entity, EntityFilter filter) throws CommunicationException;
 
+    /**
+     * Resolves all the entity hierarchy below the specified entity
+     * (participant), ending in the entity denoted by the childIndex and childSerial.
+     * 
+     * @param entity
+     *            The entity, which owned entities must be resolved.
+     * @param childIndex
+     *            The entity id, which must be matched one of the children of
+     *            the entity.
+     * @param childSerial
+     *            The entity serial, which must be matched one of the children of
+     *            the entity.
+     * @return An array of all entities in hierarchical order from top to bottom
+     *         that are owned by the supplied entity to the child entity denoted 
+     *         by the childIndex and childSerial. When the supplied entity
+     *         is not available, null is returned.
+     * @throws CommunicationException
+     *             Thrown when resolve failed.
+     */
+    public Entity[] entityGetEntityTree(Entity entity, long childIndex, long childSerial) throws CommunicationException;
+    
     /**
      * Resolves all entities that the supplied entity depends on and match the
      * supplied filter.
@@ -183,8 +201,8 @@ public interface Communicator {
      *             Thrown when: - The Entities are not available. - The
      *             communication with SPLICE failed.
      */
-	public Statistics[] entityGetStatistics(Entity[] entities)	throws CommunicationException;
-	
+    public Statistics[] entityGetStatistics(Entity[] entities)    throws CommunicationException;
+    
     /**
      * Resets (a part of) the statistics of the supplied entity.
      * 
@@ -261,6 +279,20 @@ public interface Communicator {
     public Topic[] participantAllTopics(Participant p) throws CommunicationException;
 
     /**
+     * Returns the domain id of the Domain the Participant is participating in.
+     *
+     * @param p
+     *            The Participant to to retrieve the domain id for.
+     *
+     * @return The id of the Domain associated with the Participant
+     *
+     * @throws CommunicationException
+     *             thrown when: Participant is not available or communication
+     *             with SPLICE failed.
+     */
+    public int participantGetDomainId(Participant p) throws CommunicationException;
+
+    /**
      * Resolves all domains in the kernel the supplied participant is
      * participating in.
      * 
@@ -326,24 +358,8 @@ public interface Communicator {
      *             Thrown when creation failed.
      */
     public Publisher publisherNew(Participant p, String name, PublisherQoS qos) throws CommunicationException;
-
+    
     /**
-     * Makes the supplied Publisher publish its data in the Partitions that
-     * match the supplied expression. The Partitions concerned must be created
-     * prior to calling the function or else calling this function has no
-     * effect.
-     * 
-     * @param p
-     *            The Publisher that needs to publish data.
-     * @param expression
-     *            The Partition expression.
-     * @throws CommunicationException
-     *             Thrown when publication failed.
-     */
-    public void publisherPublish(Publisher p, String expression) throws CommunicationException;
-
-    /**
-     * Creates a new Subscriber in the supplied Participant.
      * 
      * @param p
      *            The Participant where to create the Subscriber in.
@@ -352,26 +368,25 @@ public interface Communicator {
      * @param qos
      *            The quality of service for the Subscriber.
      * 
-     * @return The newly created Subscriber.
+     * @return The newly created Subscriber, or null if creation failed.
      * @throws CommunicationException
      *             Thrown when creation failed.
      */
     public Subscriber subscriberNew(Participant p, String name, SubscriberQoS qos) throws CommunicationException;
 
     /**
-     * Makes the supplied Subscriber read its data from the Partitions that
-     * match the supplied expression. The Partitions concerned must be created
-     * prior to calling the function or else calling this function has no
-     * effect.
      * 
-     * @param p
-     *            The Subscribers that needs to read data.
-     * @param expression
-     *            The Partition expression.
+     * @param s
+     *            The Subscriber to resolve DataReaders from
+     * @param mask
+     *            The sample, view and instance states masks to filter on.
+     * 
+     * @return The DataReaders that match the mask
      * @throws CommunicationException
-     *             Thrown when subscription failed.
+     *             Thrown when creation failed.
      */
-    public void subscriberSubscribe(Subscriber p, String expression) throws CommunicationException;
+    public DataReader[] subscriberGetDataReaders(Subscriber s, Mask mask)
+            throws CommunicationException;
 
     /**
      * Creates a new Partition in the supplied Participant.
@@ -698,4 +713,16 @@ public interface Communicator {
     public Result storageAppend(Object storage, UserData data) throws CommunicationException;
     public UserData storageRead(Object storage) throws CommunicationException;
     public MetaType storageGetType(Object storage, String typeName) throws CommunicationException;
+
+    public void beginCoherentChanges(Publisher publisher)
+            throws CommunicationException;
+
+    public void endCoherentChanges(Publisher publisher)
+            throws CommunicationException;
+
+    public void beginAccess(Subscriber subscriber)
+            throws CommunicationException;
+
+    public void endAccess(Subscriber subscriber)
+            throws CommunicationException;
 }

@@ -82,7 +82,6 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 #include "cppgen_iostream.h"
 #include "idl_fwd.h"
 #include "idl_narrow.h"
-#include "idl_bool.h"
 #include "utl_scoped_name.h"
 #include "utl_string.h"
 #include "utl_pragmas.h"
@@ -95,7 +94,6 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 class COMMON_Base
 {
-
 public:
 
    virtual ~COMMON_Base()
@@ -107,7 +105,6 @@ public:
 
 class AST_Decl : public virtual COMMON_Base
 {
-
 public:
 
    // Enum defining the different kinds of AST nodes
@@ -124,7 +121,7 @@ public:
       , NT_argument    // Denotes an op. argument
       , NT_union    // Denotes a union
       , NT_union_branch    // Denotes a union branch
-      , NT_struct    // Denotes a structure
+      , NT_struct    // Denotes a struct
       , NT_field    // Denotes a field in structure
       , NT_enum     // Denotes an enumeration
       , NT_enum_val    // Denotes an enum. value
@@ -141,20 +138,19 @@ public:
       , NT_state_member  // Denotes a value state member
    };
 
-   // Operations
+   // Constructors
 
-   // Constructor(s)
-   AST_Decl();
-   AST_Decl(NodeType type, UTL_ScopedName *n);
-   AST_Decl(NodeType type, UTL_ScopedName *n, const UTL_Pragmas &p);
-   virtual ~AST_Decl()
-   {}
+   AST_Decl ();
+   AST_Decl (NodeType type, UTL_ScopedName *n);
+   AST_Decl (NodeType type, UTL_ScopedName *n, const UTL_Pragmas &p);
+   virtual ~AST_Decl () {}
 
    // Data Accessors
-   idl_bool imported();
-   void set_imported(idl_bool is_it);
-   idl_bool in_main_file();
-   void set_in_main_file(idl_bool is_it);
+
+   bool imported();
+   void set_imported(bool is_it);
+   bool in_main_file();
+   void set_in_main_file(bool is_it);
    UTL_Scope *defined_in();
    void set_defined_in(UTL_Scope *);
    NodeType node_type();
@@ -166,49 +162,57 @@ public:
    void set_name(UTL_ScopedName *n);
    Identifier *local_name();
 
+   void set_gen_any (void);
+   bool get_gen_any (void);
+
+   static bool some_gen_any;
+   static bool all_gen_any;
+
    UTL_Pragmas &get_decl_pragmas()
    {
       return pd_pragmas;
    }
 
-   void set_decl_pragmas(const UTL_Pragmas &pragmas)
+   void set_decl_pragmas (const UTL_Pragmas &pragmas)
    {
       pd_pragmas = pragmas;
    }
 
-   idl_bool added();
-   void set_added(idl_bool is_it);
+   bool added ();
+   void set_added (bool is_it);
 
-   // Narrowing
-   DEF_NARROW_METHODS0(AST_Decl);
-   DEF_NARROW_FROM_DECL(AST_Decl);
+   DEF_NARROW_METHODS0 (AST_Decl);
+   DEF_NARROW_FROM_DECL (AST_Decl);
 
-   // AST Dumping
    virtual void dump(ostream &o);
 
-   // Other operations
-
    // Return TRUE if "this" has "s" as an ancestor
-   idl_bool has_ancestor(AST_Decl *s);
+
+   bool has_ancestor (AST_Decl * s);
+
+protected:
+
+   virtual void virt_set_gen_any (void);
 
 private:
+
    // Data
-   idl_bool pd_imported;    // Imported?
-   idl_bool pd_in_main_file; // Defined in main file?
+
+   bool pd_imported;    // Imported?
+   bool pd_in_main_file; // Defined in main file?
    UTL_Scope *pd_defined_in; // Scope
    NodeType pd_node_type; // What kind of node
    long pd_line; // Line defined in
    UTL_String *pd_file_name; // What file defined in
    UTL_ScopedName *pd_name; // As given
    Identifier *pd_local_name; // Name in scope
-   idl_bool pd_added; // already added
-
+   bool pd_added; // already added
+   bool pd_gen_any; // Generate any support code
    UTL_Pragmas pd_pragmas;
 
-   // Operations
-
    // Compute the full name of an AST node
-   void compute_full_name(UTL_ScopedName *n);
+
+   void compute_full_name (UTL_ScopedName * n);
 };
 
-#endif           // _AST_DECL_AST_DECL_HH
+#endif

@@ -15,4 +15,24 @@ project {
   specific (! prop:windows) {
       requires += dummy_label
   }
+  specific {
+        // to avoid "Load of property 'ReferencePath' failed.  Cannot
+        // add '.' as a reference path as it is relative. Please specify
+        // an absolute path." on C# project load into the IDE
+        libpaths -= .
+    }
+}
+// force platform to 32 bit when compiling for a 32 bit platform
+// default AnyCPU gives problems when compiled on a 64 bit architecture see OSPL-6171
+feature(!ospl_64_bit) {
+    specific(prop:windows) {
+        platform = x86
+        PlatformTarget = x86
+    }
+}
+feature(ospl_64_bit) {
+    specific(prop:windows) {
+        platform = x64
+        PlatformTarget = x64
+    }
 }

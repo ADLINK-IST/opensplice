@@ -1,20 +1,30 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.com;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -86,21 +96,44 @@ public class SOAPConnection {
     public synchronized SOAPMessage call(SOAPMessage message, String url) throws SOAPException {
         SOAPResponse response = null;
         int status = 0;
+
         try {
             URL u = new URL(url);
             connection = (HttpURLConnection) u.openConnection();
             connection.setDoOutput(true);
+
+            int connectionTimeout = 5000;
+            int readTimeout = 10000;
+
+            try {
+                connectionTimeout = Integer.parseInt(System.getProperty(
+                                "org.opensplice.cm.com.soap.connectionTimeout",
+                                "5000"));
+            } catch (NumberFormatException nfe) {
+            }
+            try {
+                readTimeout = Integer.parseInt(System.getProperty(
+                        "org.opensplice.cm.com.soap.readTimeout", "10000"));
+            } catch (NumberFormatException nfe) {
+            }
+
+            connection.setConnectTimeout(connectionTimeout);
+            connection.setReadTimeout(readTimeout);
             connection.connect();
 
             writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
             writer.write(((SOAPRequest) message).getString());
             writer.flush();
+
             try {
                 Document document = builder.parse(connection.getInputStream());
                 response = new SOAPResponse(document);
             } catch (SAXException e) {
                 throw new SOAPException(e.getMessage());
             }
+        } catch (SocketTimeoutException ste) {
+            throw new SOAPException("Opening connection timed-out: "
+                    + ste.getMessage());
         } catch (MalformedURLException me) {
             throw new SOAPException("Malformed URL: " + me.getMessage());
         } catch (IOException ie) {
@@ -112,7 +145,13 @@ public class SOAPConnection {
             if (status == HttpURLConnection.HTTP_INTERNAL_ERROR) {
                 Document doc;
                 try {
-                    doc = builder.parse(connection.getErrorStream());
+                    InputStream errorIs = connection.getErrorStream();
+
+                    if (errorIs == null) {
+                        throw new SOAPException(
+                                "Connection failed (no further error information available).");
+                    }
+                    doc = builder.parse(errorIs);
                 } catch (SAXException e) {
                     throw new SOAPException(e.getMessage());
                 } catch (IOException e) {
@@ -138,9 +177,8 @@ public class SOAPConnection {
                     }
                 }
                 throw new SOAPException("IOException: " + ie.getMessage(), faultCode, faultString);
-            } else {
-                throw new SOAPException("IOException: " + ie.getMessage());
             }
+            throw new SOAPException("IOException: " + ie.getMessage());
         } catch(ClassCastException ce){
             throw new SOAPException("Malformed URL.");
         }

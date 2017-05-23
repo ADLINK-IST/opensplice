@@ -1,0 +1,34 @@
+parseconditions:
+    desc: Listener LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+
+        - name: msg_lifecycle
+          type: line
+          inst: All
+          required: yes
+          line: "Message : *Lifecycle_*"
+
+        - name: ls_userid_1
+          type: line
+          inst: All
+          required: yes
+          line: "userID  : 1"
+
+        - name: sample_sent
+          type: line
+          inst: All
+          required: yes
+          line: "writerStates : *SAMPLE_SENT *"
+
+        - name: stopping_subscriber
+          type: line
+          inst: All
+          required: yes
+          line: "writerStates : *STOPPING_SUBSCRIBER*"

@@ -1,0 +1,52 @@
+import "google/protobuf/descriptor.proto";
+
+package omg.dds;
+
+option java_package = "org.omg.dds.protobuf";
+option java_outer_classname = "DescriptorProtos";
+
+/* These options are required for any .proto message that needs to be available
+ * in DDS.
+ *
+ * - name: An optional scoped name to allow overriding the name of the type in
+ *   DDS. The dot('.') can be used as a scoping separator. In case the name
+ *   starts with a dot, the name will be interpreted as an absolute scope name.
+ *   If not, the name will be considered relative to the scope of the message
+ *   including its 'package'.
+ */
+message MessageOptions {
+    optional string name = 1 [default = ""];
+}
+ 
+extend google.protobuf.MessageOptions {
+  optional omg.dds.MessageOptions type  = 1016;
+}
+
+/* These options are provided to assign specific behaviour to a member of a
+ * DDS-enabled .proto message in DDS. These options will only be applied in case
+ * the omg.dds.MessageOptions.type has been applied to the message in which the
+ * member is modeled.
+ *
+ * - key: Make the member part of the key of the type in DDS. Each unique
+ *   key-value will become a separate instance with its own history in DDS. Only
+ *   'required' members can be made part of the key and key-definitions cannot
+ *   be modified in future versions of the message. Members that are part of the
+ *   key are automatically filterable as well.
+ *
+ * - filterable: Ensure the member is filterable in DDS using a so-called
+ *   ContentFilteredTopic or QueryCondition. Only 'required' members can be made
+ *   filterable and filterable definitions cannot be modified in future versions
+ *   of the message.
+ *
+ * - name: Override the name of the member in DDS. This only applies to members
+ *   that are marked as key and/or filterable.
+ */
+message FieldOptions {
+    optional bool key = 1 [default = false];
+    optional bool filterable = 2 [default = false];
+    optional string name = 3 [default = ""];
+}
+
+extend google.protobuf.FieldOptions {
+  optional omg.dds.FieldOptions member = 1016;
+}

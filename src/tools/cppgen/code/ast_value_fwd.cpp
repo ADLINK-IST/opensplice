@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -22,7 +30,7 @@ AST_ValueFwd::AST_ValueFwd()
 
 AST_ValueFwd::AST_ValueFwd
 (
-   idl_bool abstract,
+   bool abstract,
    UTL_ScopedName *n,
    const UTL_Pragmas &p
 )
@@ -34,7 +42,7 @@ AST_ValueFwd::AST_ValueFwd
     * value node is not yet defined (n_inherits < 0), so some operations
     * will fail
     */
-   pd_full_definition = idl_global->gen()->create_valuetype(abstract, I_FALSE, I_FALSE, n, NULL, -1, NULL, -1, p);
+   pd_full_definition = idl_global->gen()->create_valuetype(abstract, false, false, n, NULL, -1, NULL, -1, p);
    /*
     * Record the node in a list to be checked after the entire AST has been
     * parsed. All nodes in the list must have n_inherits >= 0, else this

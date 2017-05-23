@@ -1,0 +1,243 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. Evolving data models &mdash; OpenSplice GPB Tutorial</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice GPB Tutorial" href="index.html" />
+    <link rel="next" title="7. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="5. Using the generated API in applications" href="using-generated-api.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="7. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="using-generated-api.html" title="5. Using the generated API in applications"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="evolving-data-models">
+<span id="id1"></span><h1>6. Evolving data models<a class="headerlink" href="#evolving-data-models" title="Permalink to this headline">¶</a></h1>
+<p>It is likely that over time a data model will change; for example,
+new fields with extra information are often added to an existing
+data model.</p>
+<p>Normally all applications using that data model need to be
+recompiled against the new (changed) data model in order to be aware of the
+extra fields. However, when using a data model based on the GPB system,
+it is possible to add extra fields to the data model and use
+applications based on the original data model <em>and</em> applications based on
+the new data model in a mixed environment.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>It is only possible to combine old and new applications
+with different data models as long as the required fields are the same.
+Remember, a key field or a filterable field is always required,
+so these fields can not be changed or added if it is necessary
+to combine old and new data models.</dd>
+</dl>
+<p>In our example we will make a new data model with some extra fields:</p>
+<blockquote>
+<div><ul class="simple">
+<li>new phonetype: <em>SKYPE</em></li>
+<li>new phoneNumber property: <em>secret</em></li>
+<li>new string for an alias: <em>facebookname</em></li>
+</ul>
+</div></blockquote>
+<p>Proto file with new options:</p>
+<div class="highlight-python"><div class="highlight"><pre>import &quot;omg/dds/descriptor.proto&quot;;
+package address;
+message Person {
+   option (.omg.dds.type); // default type-name will be &#39;Person&#39;
+   required string name = 1 [(.omg.dds.member).key = true];
+   required int32 age = 2   [(.omg.dds.member).filterable = true];
+   optional string email = 3;
+
+     enum PhoneType {
+       UNDEFINED = 0;
+       MOBILE = 1;
+       HOME = 2;
+       WORK = 3;
+       SKYPE = 4; // **** added SKYPE phonetype enum-value ****
+     }
+     message PhoneNumber {
+       required string number = 1;
+       optional PhoneType type = 2 [default = UNDEFINED];
+       optional bool secret = 3 [default = false];
+        // **** added a new phoneNumber property ****
+     }
+  repeated PhoneNumber phone = 4;
+  repeated Person friend = 5;
+  optional string facebookname = 6 [default = &quot;NONE&quot;];
+   // **** added alias facebook name ****
+}
+</pre></div>
+</div>
+<div class="section" id="old-publisher-and-old-subscriber">
+<h2>6.1. Old publisher and old subscriber<a class="headerlink" href="#old-publisher-and-old-subscriber" title="Permalink to this headline">¶</a></h2>
+<p>Data printed by subscriber program:</p>
+<div class="highlight-python"><div class="highlight"><pre>Name  = Jane Doe
+Age   = 23
+Email = jane.doe@somedomain.com
+Phone = 0123456789 (HOME)
+Friend:
+   Name  = John Doe
+   Age   = 35
+   Email = john.doe@somedomain.com
+</pre></div>
+</div>
+</div>
+<div class="section" id="new-publisher-and-new-subscriber">
+<h2>6.2. New publisher and new subscriber<a class="headerlink" href="#new-publisher-and-new-subscriber" title="Permalink to this headline">¶</a></h2>
+<p>Data printed by subscriber program:</p>
+<div class="highlight-python"><div class="highlight"><pre>Name     = Jane Doe
+Facebook = Jane123
+Age      = 23
+Email    = jane.doe@somedomain.com
+Phone    = 0123456789 (HOME) secret=false
+Phone    = 0612345678 (MOBILE) secret=true
+Phone    = splicer (SKYPE) secret=false
+Friend:
+   Name     = John Doe
+   Facebook = NONE
+   Age      = 35
+   Email    = john.doe@somedomain.com
+</pre></div>
+</div>
+</div>
+<div class="section" id="old-publisher-and-new-subscriber">
+<h2>6.3. Old publisher and new subscriber<a class="headerlink" href="#old-publisher-and-new-subscriber" title="Permalink to this headline">¶</a></h2>
+<p>New subscriber gets default values for absent fields:</p>
+<div class="highlight-python"><div class="highlight"><pre>Name     = Jane Doe
+Facebook = NONE
+Age      = 23
+Email    = jane.doe@somedomain.com
+Phone    = 0123456789 (HOME) secret=false
+Friend:
+   Name     = John Doe
+   Facebook = NONE
+   Age      = 35
+   Email    = john.doe@somedomain.com
+</pre></div>
+</div>
+</div>
+<div class="section" id="new-publisher-and-old-subscriber">
+<h2>6.4. New publisher and old subscriber<a class="headerlink" href="#new-publisher-and-old-subscriber" title="Permalink to this headline">¶</a></h2>
+<p>Old subscriber doesn&#8217;t understand the <tt class="docutils literal"><span class="pre">SKYPE</span></tt> phonetype
+so reverts to the default <tt class="docutils literal"><span class="pre">UNDEFINED</span></tt> phonetype.</p>
+<p>Read data in old subscriber:</p>
+<div class="highlight-python"><div class="highlight"><pre>Name  = Jane Doe
+Age   = 23
+Email = jane.doe@somedomain.com
+Phone = 0123456789 (HOME)
+Phone = 0612345678 (MOBILE)
+Phone = splicer (UNDEFINED)
+Friend:
+   Name  = John Doe
+   Age   = 35
+   Email = john.doe@somedomain.com
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">6. Evolving data models</a><ul>
+<li><a class="reference internal" href="#old-publisher-and-old-subscriber">6.1. Old publisher and old subscriber</a></li>
+<li><a class="reference internal" href="#new-publisher-and-new-subscriber">6.2. New publisher and new subscriber</a></li>
+<li><a class="reference internal" href="#old-publisher-and-new-subscriber">6.3. Old publisher and new subscriber</a></li>
+<li><a class="reference internal" href="#new-publisher-and-old-subscriber">6.4. New publisher and old subscriber</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="using-generated-api.html"
+                        title="previous chapter">5. Using the generated API in applications</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">7. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/evolving-data-models.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="7. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="using-generated-api.html" title="5. Using the generated API in applications"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

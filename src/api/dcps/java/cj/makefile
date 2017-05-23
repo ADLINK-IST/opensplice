@@ -1,9 +1,11 @@
+.NOTPARALLEL:
+
 JAR_MODULE      = dcpscj.jar
 JAR_LOCATION    = $(OSPL_HOME)
 
 JCODE_DIR       = ../common/java/code
 CJ_CODE_DIR     = code
-IDL_CODE_DIR    = bld/code/$(SPLICE_TARGET)
+IDL_CODE_DIR    = bld/code/$(SPLICE_TARGET)/DDS
 JPACKAGES       = DDS org/opensplice/dds/dcps
 
 # Input IDL files.
@@ -26,7 +28,9 @@ JTIMESTAMP      = $(IDL_CODE_DIR)/.java_idl.timestamp
 JCODE_PATH      = $(CJ_CODE_DIR):$(IDL_CODE_DIR):$(JCODE_DIR)
 IDLPP           = idlpp
 
-all link: idlpp $(JTIMESTAMP) jar
+MANIFEST_TEMPLATE = meta-inf/manifest-osgi-bundle.tmpl
+
+all link: $(JTIMESTAMP) jar
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
@@ -40,14 +44,6 @@ $(JTIMESTAMP): $(TOPICIDL)
 	$(JCC) $(JCC_ARGS) $(EXTRA_SOURCE)
 	@touch $(JTIMESTAMP)
 
-idlpp:
-	cd $(OSPL_HOME)/src/cpp; make
-	cd $(OSPL_HOME)/src/tools/cppgen; make
-	cd $(OSPL_HOME)/src/tools/idlpp; make
-
-analyse:
-	@$(ANALYSE) bld/$(SPLICE_TARGET) code
-
 clean:
-	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) $(IDL_CODE_DIR) manifest/$(SPLICE_TARGET)
+	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) $(IDL_CODE_DIR)
 

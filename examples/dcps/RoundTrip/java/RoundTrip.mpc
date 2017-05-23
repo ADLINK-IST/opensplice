@@ -1,0 +1,63 @@
+
+project (saj*types) : saj_typesupport, java_only, java_example, java_ospl_dcpssaj {
+
+    TypeSupport_Files {
+        ../idl/RoundTrip.idl >> ./RoundTripModule/*.java
+    }
+
+}
+
+project (saj*Ping) : java_only, java_example, java_ospl_dcpssaj {
+    after += saj*types
+    libs += saj*types.jar
+
+    specific {
+        obj_dir_flat = 1
+    }
+    Source_Files {
+       ping.java
+       Ping_impl.java
+       Entities.java
+       ExampleUtilities.java
+       ExampleError.java
+    }
+    verbatim (ospljavamake, macros) {
+        CLASSES       += classes/Ping_impl*.class
+        JARCLASSES    += Ping_impl*.class
+        JARCLASSES    += ExampleUtilities*.class
+    }
+    specific (javabat) {
+        extra_jar_classes = Ping_impl*.class
+        extra_jar_classes += ExampleUtilities*.class
+        postclean = <%rm%> classes<%slash%>Ping_impl*.class
+        postclean += <%rm%> classes<%slash%>ExampleUtilities*.class
+    }
+}
+
+project (saj*Pong) : java_only, java_example, java_ospl_dcpssaj {
+    after += saj*types
+    libs += saj*types.jar
+
+    specific {
+        obj_dir_flat = 1
+    }
+    Source_Files {
+        pong.java
+        Pong_impl.java
+        Entities.java
+        ExampleUtilities.java
+        ExampleError.java
+    }
+    verbatim (ospljavamake, macros) {
+        CLASSES       += classes/Pong_impl*.class
+        JARCLASSES    += Pong_impl*.class
+        JARCLASSES    += ExampleUtilities*.class
+    }
+    specific (javabat) {
+        extra_jar_classes = Pong_impl*.class
+        extra_jar_classes += ExampleUtilities*.class
+        postclean = <%rm%> classes<%slash%>Pong_impl*.class
+        postclean += <%rm%> classes<%slash%>ExampleUtilities*.class
+    }
+
+}

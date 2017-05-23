@@ -1,4 +1,4 @@
-.PHONY: all compile link gcov qac analyse clean
+.PHONY: all link clean
 
-all compile link gcov qac analyse clean:
+all link clean:
 	@$(MAKE) -C $(OSPL_HOME)/src/osplcore $@

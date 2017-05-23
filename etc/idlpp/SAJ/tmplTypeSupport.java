@@ -1,12 +1,8 @@
-public class $(type-name)TypeSupportImpl extends org.opensplice.dds.dcps.FooTypeSupportImpl
+public class $(type-name)TypeSupportImpl extends org.opensplice.dds.dcps.TypeSupportImpl
 {
     private static java.lang.String idl_type_name = "$(scoped-meta-type-name)";
     private static java.lang.String idl_key_list = "$(key-list)";
-    private static java.lang.String dataReaderClass = "$(java-class-name)DataReader";
-    private static java.lang.String dataReaderViewClass = "$(java-class-name)DataReaderView";
-    private static java.lang.String dataWriterClass = "$(java-class-name)DataWriter";
     private static java.lang.String type_description = "$(type-description)";
-
     private long copyCache;
 
     public void $(type-name)TypeSupport()
@@ -18,7 +14,7 @@ public class $(type-name)TypeSupportImpl extends org.opensplice.dds.dcps.FooType
                 type_description);
     }
 
-    public int register_type(
+    synchronized public int register_type(
             DDS.DomainParticipant participant,
             java.lang.String type_name)
     {

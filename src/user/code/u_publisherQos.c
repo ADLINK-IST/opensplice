@@ -1,118 +1,67 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "u_publisherQos.h"
 #include "os_stdlib.h"
 
-/**************************************************************
- * Private functions
- **************************************************************/
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
-v_publisherQos
+u_publisherQos
 u_publisherQosNew(
-    v_publisherQos tmpl)
+    const u_publisherQos _template)
 {
-    u_result result;
-    v_publisherQos q;
+    u_publisherQos _this;
 
-    q = os_malloc(sizeof(C_STRUCT(v_publisherQos)));
-    if (q != NULL) {
-        if (tmpl != NULL) {
-            *q = *tmpl;
-            q->groupData.size = tmpl->groupData.size;
-            if (tmpl->groupData.size > 0) {
-                q->groupData.value = os_malloc(tmpl->groupData.size);
-                memcpy(q->groupData.value,tmpl->groupData.value,tmpl->groupData.size);                
-            } else {
-                q->groupData.value = NULL;
-            }
-            if (tmpl->partition != NULL) {
-                q->partition = os_strdup(tmpl->partition);
-            } else {
-                q->partition = NULL;
-            }
-        } else {
-            result = u_publisherQosInit(q);
-            if (result != U_RESULT_OK) {
-                u_publisherQosFree(q);
-                q = NULL;
-            }
+    assert(!_template || ((v_qos)_template)->kind == V_PUBLISHER_QOS);
+
+    _this = os_malloc(sizeof(C_STRUCT(v_publisherQos)));
+    if (_template != NULL) {
+        *_this = *_template;
+
+        _this->groupData.v.value = NULL;
+        _this->partition.v = NULL;
+        if (_template->groupData.v.size > 0) {
+            assert(_template->groupData.v.value != NULL);
+            _this->groupData.v.value = os_malloc((c_ulong) _template->groupData.v.size);
+            _this->groupData.v.size = _template->groupData.v.size;
+            memcpy(_this->groupData.v.value, _template->groupData.v.value, (c_ulong) _template->groupData.v.size);
         }
-    }
-
-    return q;
-}
-
-u_result
-u_publisherQosInit(
-    v_publisherQos q)
-{
-    u_result result;
-
-    result = U_RESULT_OK;
-    if (q != NULL) {
-        ((v_qos)q)->kind                             = V_PUBLISHER_QOS;
-        q->groupData.value                           = NULL;
-        q->groupData.size                            = 0;
-        q->presentation.access_scope                 = V_PRESENTATION_INSTANCE;
-        q->presentation.coherent_access              = FALSE;
-        q->presentation.ordered_access               = FALSE;
-#if 1
-        q->partition                                 = NULL;
-#else
-/* Obsolete */
-        q->partition                                 = os_malloc(1);
-        if (q->partition != NULL) {
-            q->partition[0]                              = '\0';
-	} else {
-            result = U_RESULT_OUT_OF_MEMORY;
-	}
-#endif
-        q->entityFactory.autoenable_created_entities = TRUE;
+        if (_template->partition.v != NULL) {
+            _this->partition.v = os_strdup(_template->partition.v);
+        }
     } else {
-        result = U_RESULT_ILL_PARAM;
+        ((v_qos)_this)->kind                               = V_PUBLISHER_QOS;
+        _this->groupData.v.value                           = NULL;
+        _this->groupData.v.size                            = 0;
+        _this->presentation.v.access_scope                 = V_PRESENTATION_INSTANCE;
+        _this->presentation.v.coherent_access              = FALSE;
+        _this->presentation.v.ordered_access               = FALSE;
+        _this->partition.v                                 = NULL;
+        _this->entityFactory.v.autoenable_created_entities = TRUE;
     }
-
-    return result;
-}
-
-void
-u_publisherQosDeinit(
-    v_publisherQos q)
-{
-    if (q != NULL) {
-        os_free(q->groupData.value);
-        q->groupData.value = NULL;
-        os_free(q->partition);
-        q->partition = NULL;
-    }
+    return _this;
 }
 
 void
 u_publisherQosFree(
-    v_publisherQos q)
+    u_publisherQos _this)
 {
-    if ( q!= NULL) {
-        u_publisherQosDeinit(q);
-        os_free(q);
-    }
+    assert(_this && ((v_qos)_this)->kind == V_PUBLISHER_QOS);
+    os_free(_this->groupData.v.value);
+    os_free(_this->partition.v);
+    os_free(_this);
 }
-
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/

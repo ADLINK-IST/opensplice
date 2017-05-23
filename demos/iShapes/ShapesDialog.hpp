@@ -57,7 +57,25 @@ public:
     virtual ~ShapesDialog();
     void setDomainID(int DomainID);
     void setPartition(dds::core::StringSeq Partition);
-
+    bool eventFilter(QObject* object, QEvent* event)
+    {
+        QString objname(object->objectName());
+        QEvent ev = event->type();
+        if(event->type() == QEvent::MouseButtonPress && object->objectName() == QString("renderFrame"))
+        {
+            if(!shapesWidget->paused())
+            {
+                shapesWidget->paused(true);
+                mainWidget.PausedLabel->setVisible(true);
+            }
+            else
+            {
+                shapesWidget->paused(false);
+                mainWidget.PausedLabel->setVisible(false);
+            }
+        }
+        return QObject::eventFilter(object,event);
+    }
 public slots:
     virtual void onPublishButtonClicked();
     virtual void onSubscribeButtonClicked();

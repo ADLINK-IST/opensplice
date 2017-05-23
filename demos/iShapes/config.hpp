@@ -7,9 +7,8 @@
 /** @{*/
 /** @file */
 /** @}*/
-
 #define ISHAPES_IOP_DEMO  1
-#define ISHAPES_WIDE_FORMAT 0
+#define ISHAPES_WIDE_FORMAT 1
 #define REFRESH_PERIOD 40 //ms
 
 // Durability Settings
@@ -28,7 +27,7 @@
 #  define IS_HEIGHT 361
 #  define BRAND_LOGO_X 125
 #  define BRAND_LOGO_Y 10
-#  define ISOCPP_LOGO_X 120
+#  define ISOCPP_LOGO_X 177
 #  define ISOCPP_LOGO_Y 295
 #else
 #  define IS_WIDTH  321

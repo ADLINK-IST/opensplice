@@ -1,0 +1,16 @@
+SETUP_TYPE=x86.win32-release
+BUILD_DIST=yes
+BUILD_EXAMPLES=no
+KEEP_DIST=yes
+BUILD_DBT=yes
+BUILD_RBT=yes
+RUN_DBT=no
+RUN_RBT_SP=no
+RUN_RBT_SHM=no
+RUN_EXAMPLES_SHM=no
+RUN_EXAMPLES_SP=no
+
+. configs/`hostname`/common_32bit
+
+unset TAO_ROOT
+export OVERRIDE_STRICT_CHECKS=no

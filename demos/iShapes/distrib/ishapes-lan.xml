@@ -1,0 +1,28 @@
+<OpenSplice>
+    <Domain>
+        <Name>prismtech_ishapes_demo</Name>
+        <Id>0</Id>
+        <SingleProcess>true</SingleProcess>
+        <Service name="ddsi2">
+            <Command>ddsi2</Command>
+        </Service>
+        <DurablePolicies>
+            <Policy obtain="*.*"/>
+        </DurablePolicies>
+    </Domain>
+    <DDSI2Service name="ddsi2">
+        <General>
+            <NetworkInterfaceAddress>AUTO</NetworkInterfaceAddress>
+            <AllowMulticast>true</AllowMulticast>
+            <EnableMulticastLoopback>true</EnableMulticastLoopback>
+            <CoexistWithNativeNetworking>false</CoexistWithNativeNetworking>
+        </General>
+        <Compatibility>
+            <!-- see the release notes and/or the OpenSplice configurator on DDSI interoperability -->
+            <StandardsConformance>lax</StandardsConformance>
+            <!-- the following one is necessary only for TwinOaks CoreDX DDS compatibility
+         <ExplicitlyPublishQosSetToDefault>true</ExplicitlyPublishQosSetToDefault>
+-->
+        </Compatibility>
+    </DDSI2Service>
+</OpenSplice>

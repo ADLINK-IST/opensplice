@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <os.h>
+#include <vortex_os.h>
 
 #include "dds_dcps.h"
 #include "dds2734.h"

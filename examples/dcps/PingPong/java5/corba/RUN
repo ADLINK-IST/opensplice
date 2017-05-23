@@ -1,0 +1,40 @@
+if [ -z "$JAVA_HOME" ]; then
+    echo "WARNING: JAVA_HOME not defined. Cannot find libjsig.so and set LD_PRELOAD"
+    echo "         This could prevent cleanup of Java application at exit"
+else
+   OSPL_JSIG=`find $JAVA_HOME -follow -name libjsig.so | grep -v server/libjsig.so | grep -v client/libjsig.so`
+   export LD_PRELOAD
+   if [ -z "$LD_PRELOAD" ]; then
+      echo "WARNING: Unable to find libjsig.so in JAVA_HOME: $JAVA_HOME"
+      echo "         This could prevent cleanup of Java application at exit"
+   fi
+fi
+
+BLOKSIZE=100
+BLOKCOUNT=100
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -Djava.endorsed.dirs="$JACORB_HOME/lib/endorsed" -classpath "classes:$CLASSPATH:$OSPL_HOME/jar/dcpscj5.jar" pong PongRead PongWrite&
+
+sleep 2
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -Djava.endorsed.dirs="$JACORB_HOME/lib/endorsed" -classpath "classes:$CLASSPATH:$OSPL_HOME/jar/dcpscj5.jar:$SPLICE_EXTRA_CP" ping $BLOKCOUNT $BLOKSIZE m PongRead PongWrite
+
+sleep 2
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -Djava.endorsed.dirs="$JACORB_HOME/lib/endorsed" -classpath "classes:$CLASSPATH:$OSPL_HOME/jar/dcpscj5.jar:$SPLICE_EXTRA_CP" ping $BLOKCOUNT $BLOKSIZE q PongRead PongWrite
+
+sleep 2
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -Djava.endorsed.dirs="$JACORB_HOME/lib/endorsed" -classpath "classes:$CLASSPATH:$OSPL_HOME/jar/dcpscj5.jar:$SPLICE_EXTRA_CP" ping $BLOKCOUNT $BLOKSIZE s PongRead PongWrite
+
+sleep 2
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -Djava.endorsed.dirs="$JACORB_HOME/lib/endorsed" -classpath "classes:$CLASSPATH:$OSPL_HOME/jar/dcpscj5.jar:$SPLICE_EXTRA_CP" ping $BLOKCOUNT $BLOKSIZE f PongRead PongWrite
+
+sleep 2
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -Djava.endorsed.dirs="$JACORB_HOME/lib/endorsed" -classpath "classes:$CLASSPATH:$OSPL_HOME/jar/dcpscj5.jar:$SPLICE_EXTRA_CP" ping $BLOKCOUNT $BLOKSIZE a PongRead PongWrite
+
+sleep 2
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -Djava.endorsed.dirs="$JACORB_HOME/lib/endorsed" -classpath "classes:$CLASSPATH:$OSPL_HOME/jar/dcpscj5.jar:$SPLICE_EXTRA_CP" ping 1 10 t PongRead PongWrite

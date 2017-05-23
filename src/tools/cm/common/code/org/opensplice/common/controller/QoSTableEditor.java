@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.controller;
@@ -270,7 +278,7 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             if(curEditor instanceof JTextField){
                 value = ((JTextField)curEditor).getText();
             } else if(curEditor instanceof JComboBox){
-                value = ((JComboBox)curEditor).getSelectedItem();
+                value = ((JComboBox) curEditor).getSelectedItem();
             }
             QoS qos = model.getQoS();
             name = (String)model.getValueAt(editRow, editColumn-2);
@@ -408,7 +416,7 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             boolean prevComma = true;
             String val = value.substring(1, value.length()-1);
             StringTokenizer tokenizer = new StringTokenizer(val, ",", true);
-            ArrayList list = new ArrayList();
+            ArrayList<String> list = new ArrayList<String>();
             
             
             while(tokenizer.hasMoreTokens()){
@@ -432,7 +440,7 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             result = new byte[list.size()];
             
             for(int i=0; i<result.length; i++){
-                result[i] = Byte.parseByte((String)list.get(i));
+                result[i] = Byte.parseByte(list.get(i));
             }
         }
         return result;
@@ -783,6 +791,16 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             } else if("autopurge_disposed_samples_delay".equals(field)){
                 result = this.getTime((String)value);
                 qos.getLifecycle().autopurge_disposed_samples_delay = (Time)result;
+            } else if("autopurge_dispose_all".equals(field)){
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getLifecycle().autopurge_dispose_all = true;
+                        result = Boolean.TRUE;
+                    } else {
+                        qos.getLifecycle().autopurge_dispose_all = false;
+                        result = Boolean.FALSE;
+                    }
+                }
             } else if("enable_invalid_samples".equals(field)){
                 if (value != null) {
                     if (value.equals(Boolean.TRUE)) {

@@ -13,18 +13,29 @@ ifdef DYNAMIC_LIB_ONLY
 endif
 endif
 
-FILTERED_LDLIBS = $(filter-out $(REQUIRED_SHARED_LIBS_BASE:%=-l%), $(LDLIBS))
+FILTERED_LDLIBS_TMP = $(filter-out $(REQUIRED_SHARED_LIBS_BASE:%=-l%), $(LDLIBS))
+ifeq ($(OSPL_SPLIT_CORE),$(SPLICE_TARGET))
+FILTERED_LDLIBS=$(subst -l$(DDS_CORE),-l$(DDS_CORE) -l$(DDS_CORE)2, $(FILTERED_LDLIBS_TMP))
+else
+FILTERED_LDLIBS=$(FILTERED_LDLIBS_TMP)
+endif
 
 ### MAKE_DLIB ###
 ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
   define make_dlib
-	$(LD_SO) $(LDFLAGS) $^ $(FILTERED_LDLIBS) -o $@
+	$(LD_SO) $(SHLDFLAGS) $(LDFLAGS) $^ $(FILTERED_LDLIBS) -o $@
 	ospl_wincmd mt -manifest $(addsuffix .manifest, $@) "-outputresource:$@;#2"
   endef
 else
-  define make_dlib
-	$(LD_SO) $(LDFLAGS) $^ $(FILTERED_LDLIBS) -o $@
-  endef
+  ifneq "$(findstring darwin10, $(SPLICE_TARGET))" ""
+    define make_dlib
+	$(LD_SO) $(SHLDFLAGS) $(LDFLAGS) $^ $(FILTERED_LDLIBS) $(patsubst -L%, -Wl$(just_a_comma)-rpath %, $(filter -L%, $(LDFLAGS))) -Wl,-install_name,@rpath/$(strip $@) -o $@
+    endef
+  else
+    define make_dlib
+	$(LD_SO) $(SHLDFLAGS) $(LDFLAGS) $^ $(FILTERED_LDLIBS) -o $@
+    endef
+  endif
 endif
 ### MAKE_DLIB ###
 
@@ -75,9 +86,16 @@ else
 	ospl_wincmd mt -manifest $(addsuffix .manifest, $@) "-outputresource:$@;#1"
       endef
     else
-      define make_exec
-	$(LD_EXE) $(LDFLAGS_EXE) $(LDFLAGS) $^ $(FILTERED_LDLIBS) $(LDLIBS_SYS) -o $@
-      endef
+      ifneq "$(findstring darwin10, $(SPLICE_TARGET))" ""
+just_a_comma=,
+        define make_exec
+		$(LD_EXE) $(LDFLAGS_EXE) $(LDFLAGS) $^ $(FILTERED_LDLIBS) $(LDLIBS_SYS) $(patsubst -L%, -Wl$(just_a_comma)-rpath %, $(filter -L%, $(LDFLAGS))) -o $@
+        endef
+      else
+        define make_exec
+		$(LD_EXE) $(LDFLAGS_EXE) $(LDFLAGS) $^ $(FILTERED_LDLIBS) $(LDLIBS_SYS) -o $@
+        endef
+      endif
     endif
   endif
 endif
@@ -154,7 +172,7 @@ endif
 ifneq ($(EXEC_POSTFIX),'.a')
 ifdef STATIC_LIB_ONLY
 ifdef TARGET_EXEC
-TARGET_LIB_DEPS=$(addsuffix .a,$(subst -l,lib,$(LDLIBS)))
+TARGET_LIB_DEPS=$(addsuffix .a,$(subst -l,lib,$(FILTERED_LDLIBS)))
 TARGET_DEP=$(addsuffix .d,$(TARGET_LINK_FILE))
 DEPENDENCIES+=$(TARGET_DEP)
 $(TARGET): | $(TARGET_DEP)
@@ -306,12 +324,7 @@ endif # TARGET_CSMOD
 endif # TARGET_LINK_DIR
 PROC_CORE?=$(PROC)
 
-.PHONY: all compile link clean metre splint qac gcov analyse complexity correctness
+.PHONY: all link
 
 all:		link
-compile:	$(DEPENDENCIES) $(OBJECTS)
-link:		compile $(TARGET) $(TARGET_LINK_DIR) $(TARGET_LINK_FILE) $(CS_LIB_LINKS)
-metre:		$(METRE_FILES)
-splint:		$(SPLINT_FILES)
-qac:		$(QAC_FILES)
-gcov:		$(GCOV_RESULT)
+link:		$(DEPENDENCIES) $(OBJECTS) $(TARGET) $(TARGET_LINK_DIR) $(TARGET_LINK_FILE) $(CS_LIB_LINKS)

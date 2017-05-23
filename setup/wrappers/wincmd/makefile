@@ -1,3 +1,5 @@
+all link: $(OSPL_HOME)/bin/ospl_wincmd
+
 $(OSPL_HOME)/bin/ospl_wincmd: ospl_wincmd
 	cp `pwd`/ospl_wincmd $(OSPL_HOME)/bin/ospl_wincmd
 

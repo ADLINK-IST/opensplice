@@ -1,0 +1,1608 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Using the Record and Replay Manager &mdash; RnR Manager User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RnR Manager User Guide" href="index.html" />
+    <link rel="next" title="5. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="3. Installation" href="installation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="5. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="3. Installation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RnR Manager Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="using-the-record-and-replay-manager">
+<span id="id1"></span><h1>4. Using the Record and Replay Manager<a class="headerlink" href="#using-the-record-and-replay-manager" title="Permalink to this headline">¶</a></h1>
+<p><em>RnR Manager does not need to be installed on a system with Vortex OpenSplice;
+it just needs to connect to a computer running Vortex OpenSplice with
+RnR Services configured.</em></p>
+<div class="section" id="rnr-manager-overview">
+<h2>4.1. RnR Manager Overview<a class="headerlink" href="#rnr-manager-overview" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="starting-rnr-manager">
+<h3>4.1.1. Starting RnR Manager<a class="headerlink" href="#starting-rnr-manager" title="Permalink to this headline">¶</a></h3>
+<p>RnR Manager is started by executing the <tt class="docutils literal"><span class="pre">startRnRManager</span></tt> script, located in the
+eclipse directory of the RnR Manager install directory. The script&#8217;s purpose is to ensure
+the proper setting of the Vortex OpenSplice environment variables prior to application
+launch.</p>
+<p>The script allows for command line options to be passed to the application. Any command
+line options accepted by an Eclipse application are also accepted by RnR Manager. A
+particularly useful option is <tt class="docutils literal"><span class="pre">-data</span> <span class="pre">&lt;directory&gt;</span></tt>, which allows a user to specify a
+custom directory use as the RnR Manager workspace, in case the default directory is shared
+or write protected.</p>
+<p>Example of starting RnR Manager with a non default workspace location:</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;path-to-RnRManager&gt;/startRnRManager.sh -data /home/user/rnrworkspace
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre>&lt;path-to-RnRManager&gt;\startRnRManager.bat -data C:\Users\user\rnrworkspace
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>Path arguments to the start script must be absolute paths.</dd>
+</dl>
+</div>
+<div class="section" id="views">
+<h3>4.1.2. Views<a class="headerlink" href="#views" title="Permalink to this headline">¶</a></h3>
+<p>The RnR Manager supports various views to monitor the state of a
+connected domain. It also provides two editors.</p>
+<p>These views and editors provide users with the ability to manage OSPL
+record and replay functionality. Additionally, record and replay data
+can be queried, and edited.</p>
+<p>The views are:</p>
+<ul class="simple">
+<li>Domain Browser</li>
+<li>Service Status</li>
+<li>Storage Status</li>
+<li>Scenario Status</li>
+<li>Imported Storages</li>
+</ul>
+<p>The editors are:</p>
+<ul class="simple">
+<li>Scenario Editor</li>
+<li>Storage Editor</li>
+</ul>
+<p>Each view and editor has a detailed section to describe its features and
+intended usage.</p>
+<p class="centered" id="id2">
+<strong><strong>RnR Manager Overview</strong></strong></p><a class="reference internal image-reference" href="_images/004_RnRM_overview.png"><img alt="RnR Manager Overview" class="align-center" src="_images/004_RnRM_overview.png" style="width: 140mm;" /></a>
+</div>
+<div class="section" id="preferences">
+<h3>4.1.3. Preferences<a class="headerlink" href="#preferences" title="Permalink to this headline">¶</a></h3>
+<p>RnR Manager preferences can be set using the main Window/Preferences
+menu.</p>
+<div class="section" id="opensplice">
+<h4>4.1.3.1. OpenSplice<a class="headerlink" href="#opensplice" title="Permalink to this headline">¶</a></h4>
+<p>This preference page enables you to set the <tt class="docutils literal"><span class="pre">OSPL_HOME</span></tt> path for the
+RnR Manager if one is not set for the environment.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>RnR Manager must be restarted for this preference to come into effect.</dd>
+</dl>
+<p class="centered" id="opensplice-preferences-page">
+<strong><strong>OpenSplice Preferences page</strong></strong></p><a class="reference internal image-reference" href="_images/005_OpenSplice_prefs.png"><img alt="OpenSplice Preferences page" class="align-center" src="_images/005_OpenSplice_prefs.png" style="width: 140mm;" /></a>
+</div>
+<div class="section" id="partition-topic-filters">
+<h4>4.1.3.2. Partition/Topic Filters<a class="headerlink" href="#partition-topic-filters" title="Permalink to this headline">¶</a></h4>
+<p>The <em>Partition/Topic Filters</em> page enables you to specify which partitions
+and topics you would like to filter out in the general UI display. For
+example, any topics that are filtered out would not be seen in the in
+dropdowns used to list topics or in the Topics view.</p>
+<p class="centered" id="partition-topic-filters-preferences-page">
+<strong><strong>Partition/Topic Filters Preferences page</strong></strong></p><a class="reference internal image-reference" href="_images/006_filters_prefs.png"><img alt="Partition/Topic Filters Preferences page" class="align-center" src="_images/006_filters_prefs.png" style="width: 140mm;" /></a>
+</div>
+<div class="section" id="partition-topic-strings">
+<h4>4.1.3.3. Partition/Topic Strings<a class="headerlink" href="#partition-topic-strings" title="Permalink to this headline">¶</a></h4>
+<p>The <em>Partition/Topic Strings</em> page enables you to specify partition and
+topic strings that are displayed in the general UI. For example, any
+topic strings that are added here are displayed in drop-down topic lists.</p>
+<p class="centered" id="id3">
+<strong><strong>Partition/Topic Strings</strong></strong></p><a class="reference internal image-reference" href="_images/007_PartitionTopic_strings.png"><img alt="Partition/Topic Strings" class="align-center" src="_images/007_PartitionTopic_strings.png" style="width: 120mm;" /></a>
+</div>
+</div>
+<div class="section" id="help">
+<h3>4.1.4. Help<a class="headerlink" href="#help" title="Permalink to this headline">¶</a></h3>
+<p>Various help actions are available from the main <em>Help</em> menu. These
+include actions for managing licenses, checking for updates, and product
+<em>About...</em> information.</p>
+<p class="centered" id="help-menu">
+<strong><strong>Help menu</strong></strong></p><a class="reference internal image-reference" href="_images/008_HelpMenu.png"><img alt="Help menu" class="align-center" src="_images/008_HelpMenu.png" style="width: 100mm;" /></a>
+</div>
+</div>
+<div class="section" id="domain-browser">
+<h2>4.2. Domain Browser<a class="headerlink" href="#domain-browser" title="Permalink to this headline">¶</a></h2>
+<p>The Domain Browser is used to define and connect to a domain. It also
+provides information about domain nodes, and the services the nodes
+support.</p>
+<p class="centered" id="id4">
+<strong><strong>Domain Browser</strong></strong></p><a class="reference internal image-reference" href="_images/009_DomainBrowser.png"><img alt="Domain Browser" class="align-center" src="_images/009_DomainBrowser.png" style="width: 100mm;" /></a>
+<div class="section" id="defining-a-domain">
+<h3>4.2.1. Defining a domain<a class="headerlink" href="#defining-a-domain" title="Permalink to this headline">¶</a></h3>
+<p>To define an OSPL domain, click on the button in the top right corner of
+the Domain Browser.</p>
+<p class="centered" id="add-domain-button">
+<strong><strong>Add Domain button</strong></strong></p><a class="reference internal image-reference" href="_images/010_AddDomain_button.png"><img alt="Add Domain button" class="align-center" src="_images/010_AddDomain_button.png" style="width: 18mm;" /></a>
+<p>The RnR Wizard dialog will open. Multiple domain connection options are
+provided:</p>
+<ul class="simple">
+<li>A <em>local</em> domain can be connected to using an xml file or by
+specifying a domain id.</li>
+<li>A <em>remote</em> domain can be connected to using the node URL.</li>
+</ul>
+<p class="centered" id="rnr-domain-wizard">
+<strong><strong>RnR Domain Wizard</strong></strong></p><a class="reference internal image-reference" href="_images/011_Domain_Wizard.png"><img alt="RnR Domain Wizard" class="align-center" src="_images/011_Domain_Wizard.png" style="width: 140mm;" /></a>
+</div>
+<div class="section" id="domain-connect">
+<h3>4.2.2. Domain Connect<a class="headerlink" href="#domain-connect" title="Permalink to this headline">¶</a></h3>
+<p>Once a domain has been defined, an entry will appear in the Domain
+Browser.</p>
+<p>To connect, double-click on the entry, or right-click to display the
+domain menu and choose <em>Connect</em>.</p>
+<p class="centered" id="connect-to-domain">
+<strong><strong>Connect to Domain</strong></strong></p><a class="reference internal image-reference" href="_images/012_ConnectToDomain.png"><img alt="Connect to Domain" class="align-center" src="_images/012_ConnectToDomain.png" style="width: 80mm;" /></a>
+<p>When <em>Connect</em> is clicked, an attempt is made to connect to the RnR
+Services of the selected domain. If successful, the domain icon will
+change to <a class="reference internal" href="_images/013_DomainConnected_button.png"><img alt="connectedbutton" src="_images/013_DomainConnected_button.png" style="height: 4mm;" /></a> and you will be able to expand the domain
+to browse the nodes.</p>
+<p>RnR Manager needs to be connected to the RnR Services of a domain in
+order to manage the recording and/or replaying of sample data.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>RnR Manager can only connect to one domain at a time.</dd>
+</dl>
+</div>
+<div class="section" id="domain-disconnect-and-delete">
+<h3>4.2.3. Domain Disconnect and Delete<a class="headerlink" href="#domain-disconnect-and-delete" title="Permalink to this headline">¶</a></h3>
+<p>To disconnect or delete a domain, right-click on the domain to display
+the <em>Domain</em> menu.</p>
+</div>
+</div>
+<div class="section" id="service-status">
+<h2>4.3. Service Status<a class="headerlink" href="#service-status" title="Permalink to this headline">¶</a></h2>
+<p>The service status view lists the current state of the OSPL RnR services
+available to the currently connected domain.</p>
+<p>The list can be sorted by <em>Key</em> or <em>State</em> by clicking on the column header.</p>
+<p class="centered" id="service-status-view">
+<strong><strong>Service Status view</strong></strong></p><a class="reference internal image-reference" href="_images/014_ServiceStatus.png"><img alt="Service Status view" class="align-center" src="_images/014_ServiceStatus.png" style="width: 80mm;" /></a>
+</div>
+<div class="section" id="storage-status">
+<h2>4.4. Storage Status<a class="headerlink" href="#storage-status" title="Permalink to this headline">¶</a></h2>
+<p>The storage status view lists the current state of the OSPL RnR storages
+available to the currently-connected domain.</p>
+<p>The list can be sorted by <em>Key</em> or <em>State</em> by clicking on the column header.</p>
+<p class="centered" id="storage-status-view">
+<strong><strong>Storage Status view</strong></strong></p><a class="reference internal image-reference" href="_images/015_StorageStatus.png"><img alt="Storage Status view" class="align-center" src="_images/015_StorageStatus.png" style="width: 80mm;" /></a>
+<div class="section" id="creating-a-new-storage">
+<h3>4.4.1. Creating a new storage<a class="headerlink" href="#creating-a-new-storage" title="Permalink to this headline">¶</a></h3>
+<p>To create a new storage, click on the Add new storage button in the top
+right corner of the view to open the <em>Create Storage</em> dialog.</p>
+<p class="centered" id="add-new-storage-button">
+<strong><strong>Add new storage button</strong></strong></p><a class="reference internal image-reference" href="_images/016_AddNewStorage_button.png"><img alt="Add new storage button" class="align-center" src="_images/016_AddNewStorage_button.png" style="width: 18mm;" /></a>
+<p class="centered" id="create-storage-dialog">
+<strong><strong>Create Storage dialog</strong></strong></p><a class="reference internal image-reference" href="_images/017_CreateStorage.png"><img alt="Create Storage dialog" class="align-center" src="_images/017_CreateStorage.png" style="width: 100mm;" /></a>
+<p>A wizard runs, with the input fields required for creating and configuring
+a new RnR storage.</p>
+<p>The <em>RnR Service ID</em> field specifies for which service the storage will
+be created.</p>
+<p>The <em>Storage name</em> field specifies what name the RnR service
+will recognize the storage by.</p>
+<p>(See also <a class="reference internal" href="#storage-attributes">Storage Attributes</a> below.)</p>
+<p>Clicking on <em>Finish</em> will create the storage. The <em>Storage status</em> view
+should be updated with a new entry for the newly-created storage.</p>
+<div class="section" id="storage-attributes">
+<h4>4.4.1.1. Storage Attributes<a class="headerlink" href="#storage-attributes" title="Permalink to this headline">¶</a></h4>
+<p>When creating new storages or reconfiguring existing storages, such as
+when using the <em>Create Storage</em> wizard, the following attributes can be set:</p>
+<dl class="docutils">
+<dt><em>File name</em> -</dt>
+<dd>The file name and path on the RnR service&#8217;s local filesystem in which
+it will keep the storage data. Relative paths are relative to the
+RnR service&#8217;s process working directory. File names have no rules
+or restrictions for file extensions; file names can have any extension,
+or no extension if required.</dd>
+<dt><em>Storage type</em> -</dt>
+<dd>The encoding format for the storage. The file formats available are
+<tt class="docutils literal"><span class="pre">CDR</span></tt> (binary) and <tt class="docutils literal"><span class="pre">XML</span></tt>.
+The <tt class="docutils literal"><span class="pre">CDR</span></tt> format is more efficient (compact) than <tt class="docutils literal"><span class="pre">XML</span></tt>.</dd>
+<dt><em>Max file size</em> -</dt>
+<dd><p class="first">The maximum size <em>per</em> storage file. When approaching the maximum size
+while recording, a new storage file is automatically created with a
+sequence number appended to the filename. The active file is also
+switched transparently while replaying from a storage that contains
+multiple data files (<em>eg.</em> if file name is <tt class="docutils literal"><span class="pre">&quot;file&quot;</span></tt>, the name sequence
+is <tt class="docutils literal"><span class="pre">file</span></tt>, <tt class="docutils literal"><span class="pre">file0</span></tt>, <tt class="docutils literal"><span class="pre">file1</span></tt>, <em>etc.</em>).</p>
+<p class="last">Valid <em>max size</em> is any positive integer in denominations of bytes,
+kilobytes, megabytes, or gigabytes, up to a maximum value
+of <tt class="docutils literal"><span class="pre">2^64</span> <span class="pre">-</span> <span class="pre">1</span></tt> total bytes. Leaving the field empty, or inputting
+the value <tt class="docutils literal"><span class="pre">0</span></tt>, is considered to be unlimited file size.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="section" id="scenario-status">
+<h2>4.5. Scenario Status<a class="headerlink" href="#scenario-status" title="Permalink to this headline">¶</a></h2>
+<p>Record and Replay is based on <em>Scenarios</em>. Scenarios are used to logically
+discriminate between different recording and replaying command sequences.
+A scenario is an instance of the scenario topic, a group of commands
+sharing the same <tt class="docutils literal"><span class="pre">scenarioName</span></tt>.</p>
+<p>The <em>Scenario status</em> view lists the current state of the OSPL RnR
+scenarios available to the currently-connected domain.</p>
+<p>The list can be sorted by <em>Key</em> or <em>State</em> by clicking on the column header.</p>
+<p class="centered" id="scenario-status-view">
+<strong><strong>Scenario Status view</strong></strong></p><a class="reference internal image-reference" href="_images/018_ScenarioStatus.png"><img alt="Scenario Status view" class="align-center" src="_images/018_ScenarioStatus.png" style="width: 80mm;" /></a>
+<div class="section" id="open-scenario-editor">
+<h3>4.5.1. Open Scenario Editor<a class="headerlink" href="#open-scenario-editor" title="Permalink to this headline">¶</a></h3>
+<p>To open an empty scenario editor, click on the <em>Create scenario</em> button in
+top right corner of the scenario status view.</p>
+<p>Please refer to <a class="reference internal" href="#scenario-editors">Scenario Editors</a> for more information on the
+Scenario Editor.</p>
+<p class="centered" id="create-scenario-button">
+<strong><strong>Create scenario button</strong></strong></p><a class="reference internal image-reference" href="_images/019_CreateScenario_button.png"><img alt="Create scenario button" class="align-center" src="_images/019_CreateScenario_button.png" style="width: 18mm;" /></a>
+</div>
+<div class="section" id="starting-scenario-s">
+<h3>4.5.2. Starting Scenario(s)<a class="headerlink" href="#starting-scenario-s" title="Permalink to this headline">¶</a></h3>
+<p>To start a scenario or set of scenarios, click on the <em>Start scenario(s)</em>
+button to open the <em>Start Scenario(s)</em> dialog.</p>
+<p class="centered" id="start-scenario-button">
+<strong><strong>Start scenario button</strong></strong></p><a class="reference internal image-reference" href="_images/020_ScenarioStart_button.png"><img alt="Start scenario button" class="align-center" src="_images/020_ScenarioStart_button.png" style="width: 18mm;" /></a>
+<p>The wildcard character <tt class="docutils literal"><span class="pre">‘*’</span></tt> (asterisk) is supported.</p>
+<p class="centered" id="start-scenario-s-dialog">
+<strong><strong>Start Scenario(s) dialog</strong></strong></p><a class="reference internal image-reference" href="_images/022_StartScenarios.png"><img alt="Start Scenario(s) dialog" class="align-center" src="_images/022_StartScenarios.png" style="width: 80mm;" /></a>
+<p>A <tt class="docutils literal"><span class="pre">start</span> <span class="pre">scenario</span></tt> command is executed using the parameters specified in
+the dialog.</p>
+</div>
+<div class="section" id="stopping-scenario-s">
+<h3>4.5.3. Stopping Scenario(s)<a class="headerlink" href="#stopping-scenario-s" title="Permalink to this headline">¶</a></h3>
+<p>To stop a scenario or set of scenarios, click on the <em>Stop scenario(s)</em>
+button to open the <em>Stop Scenario(s)</em> dialog.</p>
+<p class="centered" id="stop-scenario-button">
+<strong><strong>Stop scenario button</strong></strong></p><a class="reference internal image-reference" href="_images/021_ScenarioStop_button.png"><img alt="Stop scenario button" class="align-center" src="_images/021_ScenarioStop_button.png" style="width: 18mm;" /></a>
+<p>The wildcard character <tt class="docutils literal"><span class="pre">‘*’</span></tt> (asterisk) is supported.</p>
+<p class="centered" id="stop-scenario-s-dialog">
+<strong><strong>Stop Scenario(s) dialog</strong></strong></p><a class="reference internal image-reference" href="_images/023_StopScenarios.png"><img alt="Stop Scenario(s) dialog" class="align-center" src="_images/023_StopScenarios.png" style="width: 80mm;" /></a>
+<p>A <tt class="docutils literal"><span class="pre">stop</span> <span class="pre">scenario</span></tt> command is executed using the parameters specified in
+the dialog.</p>
+</div>
+<div class="section" id="scenario-menu">
+<h3>4.5.4. Scenario Menu<a class="headerlink" href="#scenario-menu" title="Permalink to this headline">¶</a></h3>
+<p>Actions are available for a scenario with a specific scenario name
+and <tt class="docutils literal"><span class="pre">rnrID</span></tt>.</p>
+<p>To access the scenario menu, right-click on a scenario name in the
+scenario status table.</p>
+<p class="centered" id="id5">
+<strong><strong>Scenario Menu</strong></strong></p><a class="reference internal image-reference" href="_images/024_ScenariosMenu.png"><img alt="Scenario Menu" class="align-center" src="_images/024_ScenariosMenu.png" style="width: 80mm;" /></a>
+<p>The scenario menu has the following options:</p>
+<dl class="docutils">
+<dt><em>Open</em> –</dt>
+<dd>Opens a scenario editor on the selected scenario and RnR
+service. Please refer to <a class="reference internal" href="#scenario-editors">Scenario Editors</a> for more
+information on the Scenario Editor.</dd>
+<dt><em>Start</em> –</dt>
+<dd>Start the selected scenario. This menu item is disabled if the
+scenario is already in the <tt class="docutils literal"><span class="pre">RUNNING</span></tt> state.</dd>
+<dt><em>Stop</em> –</dt>
+<dd>Stop the selected scenario. This menu item is disabled if the
+scenario is not in the <tt class="docutils literal"><span class="pre">RUNNING</span></tt> state.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="topics-one-click-record">
+<h2>4.6. Topics – One Click Record<a class="headerlink" href="#topics-one-click-record" title="Permalink to this headline">¶</a></h2>
+<p>The <em>Topics</em> view displays all of the DDS system topics that are available
+for recording. This view enables the user to start recording quickly
+using the <em>Record Topic(s)</em> dialog. Default parameters for the recording
+are provided for the selected topics.</p>
+<p>To verify the status of the recording, the storage and scenario views
+can be viewed.  The scenario editor can also be opened for the scenario.</p>
+<p class="centered" id="the-topics-list">
+<strong><strong>The Topics list</strong></strong></p><a class="reference internal image-reference" href="_images/025_TopicsList.png"><img alt="The Topics list" class="align-center" src="_images/025_TopicsList.png" style="width: 70mm;" /></a>
+<div class="section" id="to-record-a-topic">
+<h3>4.6.1. To Record a Topic<a class="headerlink" href="#to-record-a-topic" title="Permalink to this headline">¶</a></h3>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Select one or more topics to record in the topic list.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Right-click and choose <em>Record... to</em> open the <em>Record Topic(s)</em>
+dialog.</div></blockquote>
+<p class="centered" id="topics-selected-for-recording">
+<strong><strong>Topics selected for recording</strong></strong></p><a class="reference internal image-reference" href="_images/026_TopicsSelected.png"><img alt="Topics selected for recording" class="align-center" src="_images/026_TopicsSelected.png" style="width: 70mm;" /></a>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Modify the default parameters if required and click on <em>OK</em>.</div></blockquote>
+<p class="centered" id="record-topic-s-dialog-parameters">
+<strong><strong>Record Topic(s) dialog parameters</strong></strong></p><a class="reference internal image-reference" href="_images/027_TopicsRecordParameters.png"><img alt="Record Topic(s) dialog parameters" class="align-center" src="_images/027_TopicsRecordParameters.png" style="width: 140mm;" /></a>
+</div>
+<div class="section" id="the-record-topic-s-dialog">
+<h3>4.6.2. The Record Topic(s) Dialog<a class="headerlink" href="#the-record-topic-s-dialog" title="Permalink to this headline">¶</a></h3>
+<p>Default parameters are provided in the dialog in order to provide ‘one
+click’ functionality. These default parameters can be edited if
+required.</p>
+<p><strong>Partition/Topic pairs</strong></p>
+<p>The partition/topic pairs listed in the dialog reflect the selection in
+the <em>Topics</em> view when the dialog is opened.</p>
+<p>The partitions can be modified by selecting from a drop-down list. The
+topics are not editable.</p>
+<p class="centered" id="record-topic-s-dialog-partition-parameter">
+<strong><strong>Record Topic(s) dialog Partition parameter</strong></strong></p><a class="reference internal image-reference" href="_images/028_TopicsRecordPartition.png"><img alt="Record Topic(s) dialog Partition parameter" class="align-center" src="_images/028_TopicsRecordPartition.png" style="width: 140mm;" /></a>
+<p>The fields are:</p>
+<dl class="docutils">
+<dt><em>RNR Service ID</em> –</dt>
+<dd>Specify the RNR Service ID parameter.</dd>
+<dt><em>Scenario Name</em> –</dt>
+<dd><p class="first">Specify the scenario name. By default if one topic is chosen,
+a name that reflects the topic is used. Otherwise a generic
+record name is provided.</p>
+<p class="last">The currently-known scenarios in the DDS system are checked,
+and a scenario name is provided where no current scenarios
+of that name are known.</p>
+</dd>
+<dt><em>Storage Name</em> –</dt>
+<dd><p class="first">A default storage name is provided that matches the scenario name.
+If that storage is already known to the DDS system, a warning message
+is provided at the top of the dialog.</p>
+<p class="last">The storage name can be modified to be any string; a drop-down list
+is provided to allow for the selection of existing storages.</p>
+</dd>
+<dt><em>Truncate existing storage</em> –</dt>
+<dd>If this option is checked, a <tt class="docutils literal"><span class="pre">truncate</span></tt> command will be added for
+the specified storage. Otherwise, no <tt class="docutils literal"><span class="pre">truncate</span></tt> command is submitted.</dd>
+<dt><em>Create new storage</em> –</dt>
+<dd>If this option is checked, the storage specified by the <em>Storage name</em>
+field will be created/configured with the specified storage
+attributes. See <a class="reference internal" href="#storage-attributes">Storage Attributes</a> for more information.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="scenario-editors">
+<span id="id6"></span><h2>4.7. Scenario Editors<a class="headerlink" href="#scenario-editors" title="Permalink to this headline">¶</a></h2>
+<p>The actions of a Record and Replay service are organized in <em>scenarios</em>.</p>
+<p>A scenario is an instance of the scenario topic, a group of commands
+sharing the same <tt class="docutils literal"><span class="pre">scenarioName</span></tt>. Each service subscribes to the command
+topic and uses a content filter to only process commands with an <tt class="docutils literal"><span class="pre">rnrId</span></tt>
+matching the service name (or <tt class="docutils literal"><span class="pre">‘*’</span></tt>).</p>
+<p>It is possible to create an intricate nesting of scenarios by defining a
+scenario that includes control commands targeting other scenarios.</p>
+<p>RnR Manager has two editors related to scenarios. These editors are used
+to view and edit the commands of a scenario.</p>
+<dl class="docutils">
+<dt><strong>Scenario Editor</strong> –</dt>
+<dd>Enables viewing, adding, and editing scenarios in the DDS system.</dd>
+<dt><strong>Scenario File Editor</strong> –</dt>
+<dd>Enables viewing and editing of scenario data that is persisted using
+an xml file. The scenarios are saved as xml, and can be loaded into
+the DDS system as required.</dd>
+</dl>
+<div class="section" id="overview-of-the-scenario-editor">
+<h3>4.7.1. Overview of the Scenario Editor<a class="headerlink" href="#overview-of-the-scenario-editor" title="Permalink to this headline">¶</a></h3>
+<p>The scenario editor is used to view and edit the commands of a scenario
+within the DDS system.</p>
+<p>The scenario editor can be opened from the <em>Scenario Status</em> view by any
+of the following actions:</p>
+<ul class="simple">
+<li>double-clicking on a selected scenario in the table</li>
+<li>right-clicking on a selected scenario in the table and
+then choosing <em>Open</em></li>
+<li>clicking on the <em>Create Scenario</em> button</li>
+</ul>
+<p class="centered" id="the-scenario-editor">
+<strong><strong>The Scenario Editor</strong></strong></p><a class="reference internal image-reference" href="_images/030_ScenarioEditor.png"><img alt="The Scenario Editor" class="align-center" src="_images/030_ScenarioEditor.png" style="width: 140mm;" /></a>
+<p>Scenario Editor elements:</p>
+<p><em>Start</em> and <em>Stop</em> buttons</p>
+<blockquote>
+<div>The <em>Start</em> and <em>Stop</em> buttons, when clicked, submit the
+<tt class="docutils literal"><span class="pre">Start</span></tt> and <tt class="docutils literal"><span class="pre">Stop</span></tt> commands for the specified scenario
+and RnR service ID. These commands are published with a
+durability setting of <tt class="docutils literal"><span class="pre">VOLATILE</span></tt>.</div></blockquote>
+<p><em>Scenario name</em> and <em>RnR service ID</em></p>
+<blockquote>
+<div><p>A new scenario name can be entered, or an existing scenario
+can be selected from the drop-down list.</p>
+<p>Scenarios with the same scenario name can exist on multiple
+<tt class="docutils literal"><span class="pre">rnr</span></tt> services. The RnR service ID is also specified to identify
+the appropriate scenario. The wildcard character <tt class="docutils literal"><span class="pre">‘*’</span></tt> (asterisk)
+can be used to denote all <tt class="docutils literal"><span class="pre">rnr</span></tt> services.</p>
+</div></blockquote>
+<p><em>Scenario Commands</em></p>
+<blockquote>
+<div>The scenario commands table displays all commands for a scenario
+with the specified RnR service ID.</div></blockquote>
+<p><em>Command Parameters</em></p>
+<blockquote>
+<div>The command parameters section displays the values associated
+with the selected command in the scenario commands table.</div></blockquote>
+</div>
+<div class="section" id="overview-of-the-scenario-file-editor">
+<h3>4.7.2. Overview of the Scenario File Editor<a class="headerlink" href="#overview-of-the-scenario-file-editor" title="Permalink to this headline">¶</a></h3>
+<p>The scenario file editor can be used to edit the commands of a scenario
+and save them to an xml file. This xml file can later be loaded and
+submitted to a DDS scenario.</p>
+<p>The scenario file editor can be opened from the <em>Workspaces</em> view by any
+of the following actions:</p>
+<ul class="simple">
+<li>double-clicking on a scenario file (under the <em>Saved Scenarios</em> folder)</li>
+<li>right-clicking on a selected scenario file and then choosing <em>Open</em></li>
+</ul>
+<p class="centered" id="workspace-saved-scenarios">
+<strong><strong>Workspace Saved Scenarios</strong></strong></p><a class="reference internal image-reference" href="_images/031_WorkspaceScenarios.png"><img alt="Workspace Saved Scenarios" class="align-center" src="_images/031_WorkspaceScenarios.png" style="width: 60mm;" /></a>
+<p class="centered" id="the-scenario-file-editor">
+<strong><strong>The Scenario File Editor</strong></strong></p><a class="reference internal image-reference" href="_images/032_ScenarioFileEditor.png"><img alt="The Scenario File Editor" class="align-center" src="_images/032_ScenarioFileEditor.png" style="width: 140mm;" /></a>
+<p>Scenario File Editor elements:</p>
+<p><em>Save</em> and <em>Save As...</em> buttons</p>
+<blockquote>
+<div><p>The <em>Save</em> button saves the current xml file.</p>
+<p>The <em>Save As...</em> button saves the scenario to a new file and
+opens a new scenario file editor.</p>
+</div></blockquote>
+<p><em>Scenario name</em> and <em>RnR service ID</em></p>
+<blockquote>
+<div><p>A new scenario name can be entered, or an existing scenario
+can be selected from the drop-down list.</p>
+<p>Scenarios with the same scenario name can exist on multiple
+<tt class="docutils literal"><span class="pre">rnr</span></tt> services. The RnR service ID is also specified to
+identify the appropriate scenario. The wildcard character
+<tt class="docutils literal"><span class="pre">‘*’</span></tt> (asterisk) can be used to denote all <tt class="docutils literal"><span class="pre">rnr</span></tt> services.</p>
+</div></blockquote>
+<p><em>Scenario Commands</em></p>
+<blockquote>
+<div>The scenario commands table displays all commands for a scenario
+with the specified RnR service ID.</div></blockquote>
+<p><em>Command Parameters</em></p>
+<blockquote>
+<div>The command parameters section displays the values associated
+with the selected command in the scenario commands table.</div></blockquote>
+</div>
+<div class="section" id="re-sizing-the-editors">
+<h3>4.7.3. Re-sizing the Editors<a class="headerlink" href="#re-sizing-the-editors" title="Permalink to this headline">¶</a></h3>
+<p><strong>Full View</strong></p>
+<p>In order to maximize the view of an editor, double-click on the editor
+tab.</p>
+<p class="centered" id="scenario-editor-tab">
+<strong><strong>Scenario Editor tab</strong></strong></p><a class="reference internal image-reference" href="_images/033_ScenarioEditor_tab.png"><img alt="Scenario Editor tab" class="align-center" src="_images/033_ScenarioEditor_tab.png" style="width: 50mm;" /></a>
+<p>To restore the regular view, click on the ‘restore’ button, or
+double-click again on the editor tab.</p>
+<p class="centered" id="resizing-an-editor">
+<strong><strong>Resizing an Editor</strong></strong></p><a class="reference internal image-reference" href="_images/034_ResizeAnEditor.png"><img alt="Resizing an Editor" class="align-center" src="_images/034_ResizeAnEditor.png" style="width: 140mm;" /></a>
+<p><strong>Resize Editor groups</strong></p>
+<p>The widths of the Scenario Commands and Command Parameters groups can be
+changed by dragging the border with the mouse.</p>
+<p class="centered" id="resizing-editor-groups">
+<strong><strong>Resizing Editor groups</strong></strong></p><a class="reference internal image-reference" href="_images/035_ResizeEditorGroups.png"><img alt="Resizing Editor groups" class="align-center" src="_images/035_ResizeEditorGroups.png" style="width: 140mm;" /></a>
+</div>
+<div class="section" id="scenario-editor-features">
+<h3>4.7.4. Scenario Editor Features<a class="headerlink" href="#scenario-editor-features" title="Permalink to this headline">¶</a></h3>
+<p class="centered" id="a-scenario-editor">
+<strong><strong>A Scenario Editor</strong></strong></p><a class="reference internal image-reference" href="_images/030_ScenarioEditor.png"><img alt="A Scenario Editor" class="align-center" src="_images/030_ScenarioEditor.png" style="width: 140mm;" /></a>
+<p>The scenario editor displays the current state and the existing commands
+of a scenario in the DDS system.</p>
+<ul class="simple">
+<li>Existing commands for a specific scenario are displayed
+and are not editable.</li>
+<li>New commands can be added and submitted.</li>
+</ul>
+<p>The functionality provided by the editor changes depending on the state
+of the scenario.</p>
+<p>The state of a scenario can also be determined by viewing the scenario
+in the <em>Scenario Status</em> view.</p>
+<div class="section" id="running-vs-stopped-scenarios">
+<h4>4.7.4.1. Running <em>vs.</em> Stopped Scenarios<a class="headerlink" href="#running-vs-stopped-scenarios" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="for-running-scenarios">
+<h5>4.7.4.1.1. For <tt class="docutils literal"><span class="pre">RUNNING</span></tt> scenarios:<a class="headerlink" href="#for-running-scenarios" title="Permalink to this headline">¶</a></h5>
+<p>The <em>Start</em> button is disabled, the <em>Stop</em> button is enabled.</p>
+<p>The <em>Submit</em> button is enabled.</p>
+<p>Previously-submitted commands are displayed in the scenario commands
+table, but are ‘view only’. A visual indicator of this is that the
+font color is light gray. These commands can not be removed or edited.</p>
+<p class="centered" id="editable-and-non-editable-commands">
+<strong><strong>Editable and non-editable commands</strong></strong></p><a class="reference internal image-reference" href="_images/037_EditableAndUneditable.png"><img alt="Editable and non-editable commands" class="align-center" src="_images/037_EditableAndUneditable.png" style="width: 60mm;" /></a>
+</div>
+<div class="section" id="for-stopped-scenarios">
+<h5>4.7.4.1.2. For <tt class="docutils literal"><span class="pre">STOPPED</span></tt> scenarios:<a class="headerlink" href="#for-stopped-scenarios" title="Permalink to this headline">¶</a></h5>
+<p>The <em>Start</em> button is enabled, the <em>Stop</em> button is disabled.</p>
+<p>The <em>Submit</em> button is disabled, as it is not necessary. All commands are
+submitted if the <em>Start</em> button is clicked.</p>
+<p>Previously-submitted commands displayed in the scenario commands table
+that were uneditable while the scenario was in the <tt class="docutils literal"><span class="pre">RUNNING</span></tt> state
+become editable again when in the <tt class="docutils literal"><span class="pre">STOPPED</span></tt> state.</p>
+</div>
+</div>
+<div class="section" id="adding-new-commands">
+<h4>4.7.4.2. Adding new commands<a class="headerlink" href="#adding-new-commands" title="Permalink to this headline">¶</a></h4>
+<p>To add a new command, click on the <em>Add</em> button in the
+<em>Scenario Commands</em> section.</p>
+<p>Specify the appropriate parameters for this new command in
+the <em>Command Parameters</em> section.</p>
+<ul class="simple">
+<li>If a scenario is already in the <tt class="docutils literal"><span class="pre">RUNNING</span></tt> state, click on
+the <em>Submit</em> button to submit the command or commands.</li>
+<li>If a scenario is in the <tt class="docutils literal"><span class="pre">STOPPED</span></tt> state, click on the
+<em>Start</em> button at the top of the editor to submit all
+the new commands and start the scenario.</li>
+</ul>
+<p class="centered" id="a-running-scenario">
+<strong><strong>A Running Scenario</strong></strong></p><a class="reference internal image-reference" href="_images/038_RunningScenario.png"><img alt="A Running Scenario" class="align-center" src="_images/038_RunningScenario.png" style="width: 140mm;" /></a>
+</div>
+<div class="section" id="existing-commands">
+<h4>4.7.4.3. Existing commands<a class="headerlink" href="#existing-commands" title="Permalink to this headline">¶</a></h4>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Once a command has been submitted for a scenario, it
+cannot be deleted or edited.</dd>
+</dl>
+</div>
+<div class="section" id="removing-commands">
+<h4>4.7.4.4. Removing commands<a class="headerlink" href="#removing-commands" title="Permalink to this headline">¶</a></h4>
+<p>The <em>Remove</em> button is only enabled if a command is editable.</p>
+<p>Only newly-added commands are editable.</p>
+</div>
+<div class="section" id="ordering-commands">
+<h4>4.7.4.5. Ordering commands<a class="headerlink" href="#ordering-commands" title="Permalink to this headline">¶</a></h4>
+<p>The <em>Up</em> and <em>Down</em> buttons allow for the commands to be re-ordered, if the selected command is editable.</p>
+<p>Alternatively, the editable selected command can be moved by dragging and dropping it in the commands table.</p>
+<p>Only newly-added commands are editable in running Scenarios. If a scenario is stopped, then all commands can be re-ordered.</p>
+</div>
+<div class="section" id="duplicating-commands">
+<h4>4.7.4.6. Duplicating commands<a class="headerlink" href="#duplicating-commands" title="Permalink to this headline">¶</a></h4>
+<p>Scenario commands can be duplicated using <em>Copy</em> and <em>Paste</em> buttons available by right-clicking them to bring up the context menu.</p>
+<p>Users can copy any command, which will copy all of the settings included in that command and place it on RnRManager&#8217;s clipboard.</p>
+<p>Users can only paste a copied command where the &#8220;Paste&#8221; context menu entry is enabled. Pasting a command will insert it after a selected
+command, however users cannot insert commands after already submitted commands in a running scenario; they will have to stop the scenario
+to do that similar to the re-ordering of the commands in the previous section.</p>
+<p>To paste a command:</p>
+<ol class="arabic simple">
+<li>Select the command after which you want to insert it</li>
+<li>Right click on that command</li>
+<li>Press the &#8220;Paste&#8221; button</li>
+</ol>
+<p>All scenario commands can be duplicated, whether they have been submitted or not in both Live and Offline mode in the Scenario Editor.</p>
+</div>
+<div class="section" id="validation">
+<h4>4.7.4.7. Validation<a class="headerlink" href="#validation" title="Permalink to this headline">¶</a></h4>
+<p>Commands that have invalid parameters are highlighted with red text in
+the scenario commands table. Individual invalid command parameters also
+have their labels highlighted with red text.</p>
+<p>If the command is edited to correct the parameters, the entry in the
+scenario commands table will no longer be highlighted with red.</p>
+<p>The <em>Submit</em> and <em>Start</em> buttons will do nothing if there are validation
+errors.</p>
+<p class="centered" id="invalid-command-parameters">
+<strong><strong>Invalid command parameters</strong></strong></p><a class="reference internal image-reference" href="_images/039_InvalidParameters.png"><img alt="Invalid command parameters" class="align-center" src="_images/039_InvalidParameters.png" style="width: 140mm;" /></a>
+</div>
+<div class="section" id="save-as">
+<h4>4.7.4.8. <em>Save As...</em><a class="headerlink" href="#save-as" title="Permalink to this headline">¶</a></h4>
+<p>The scenario editor has a <em>Save As...</em> button in the
+top-right corner.</p>
+<p class="centered" id="scenario-editor-save-as-button">
+<strong><strong>Scenario Editor</strong> <em>Save As...</em> <strong>button</strong></strong></p><a class="reference internal image-reference" href="_images/040_SaveAs_button.png"><img alt="Scenario Editor Save As... button" class="align-center" src="_images/040_SaveAs_button.png" style="width: 18mm;" /></a>
+<p>The <em>Save As...</em> functionality enables the saving of a scenario’s
+commands and command parameters as an xml file that is not known
+to the DDS system.</p>
+<p>Please refer to the next section, <a class="reference internal" href="#scenario-file-editor-features">Scenario File Editor Features</a>,
+for more information on saving scenarios to files.</p>
+</div>
+</div>
+<div class="section" id="scenario-file-editor-features">
+<h3>4.7.5. Scenario File Editor Features<a class="headerlink" href="#scenario-file-editor-features" title="Permalink to this headline">¶</a></h3>
+<p class="centered" id="id7">
+<strong><strong>The Scenario File Editor</strong></strong></p><a class="reference internal image-reference" href="_images/032_ScenarioFileEditor.png"><img alt="The Scenario File Editor" class="align-center" src="_images/032_ScenarioFileEditor.png" style="width: 140mm;" /></a>
+<div class="section" id="creating-new-files">
+<h4>4.7.5.1. Creating New Files<a class="headerlink" href="#creating-new-files" title="Permalink to this headline">¶</a></h4>
+<p><strong>Scenario Editor Save As</strong></p>
+<p>A new scenario file can be created by clicking on the
+<em>Save As...</em> button in the top right corner of the scenario
+editor. This will save the commands specified in the scenario
+editor to an xml file.</p>
+<p>This allows for the saving of a specific DDS system scenario
+to be loaded at a later date.</p>
+<p><strong>New Scenario File</strong></p>
+<p>A new file can be created by right-clicking on a folder under
+the <em>Saved Scenarios</em> directory structure in the <em>Workspace</em>
+view and choosing <em>New Scenario File...</em>.</p>
+<p class="centered" id="new-scenario-file">
+<strong><strong>New Scenario File</strong></strong></p><a class="reference internal image-reference" href="_images/042_NewScenarioFile.png"><img alt="New Scenario File" class="align-center" src="_images/042_NewScenarioFile.png" style="width: 70mm;" /></a>
+</div>
+<div class="section" id="editing-commands">
+<h4>4.7.5.2. Editing Commands<a class="headerlink" href="#editing-commands" title="Permalink to this headline">¶</a></h4>
+<ul>
+<li><p class="first">To add a new command, click on the <em>Add</em> button in the
+<em>Scenario Commands</em> section.</p>
+<p>Specify the appropriate parameters for this new command
+in the <em>Command Parameters</em> section.</p>
+</li>
+<li><p class="first">To remove a command, click on the <em>Remove</em> button in the
+<em>Scenario Commands</em> section.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="load-scenario">
+<h4>4.7.5.3. Load Scenario<a class="headerlink" href="#load-scenario" title="Permalink to this headline">¶</a></h4>
+<p>A scenario file can be quickly loaded and submitted into
+the DDS system.</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Select the xml file, right-click and choose <em>Load Scenario</em>.</div></blockquote>
+<p class="centered" id="id8">
+<strong><strong>Load Scenario</strong></strong></p><a class="reference internal image-reference" href="_images/031_WorkspaceScenarios.png"><img alt="Load Scenario" class="align-center" src="_images/031_WorkspaceScenarios.png" style="width: 70mm;" /></a>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div><p>Specify merge options in the <em>Load Scenario</em> wizard.</p>
+<p class="centered" id="load-scenario-wizard">
+<strong><strong>Load Scenario wizard</strong></strong></p><a class="reference internal image-reference" href="_images/044_LoadScenarioWizard.png"><img alt="Load Scenario wizard" class="align-center" src="_images/044_LoadScenarioWizard.png" style="width: 100mm;" /></a>
+<p>If a senario with the same name already exists, the wizard
+offers these merge options:</p>
+<dl class="docutils">
+<dt><em>Overwrite existing scenario</em> –</dt>
+<dd>The existing scenario with the same name
+will be stopped (if not already stopped) and disposed.</dd>
+<dt><em>Rename scenario in file</em> –</dt>
+<dd>The scenario name in the file will be
+changed, and that scenario name will be loaded.</dd>
+<dt><em>Automatically create referenced storages</em> –</dt>
+<dd>Create any storages referenced in the file if they do
+not already exist in the DDS system.</dd>
+</dl>
+<p>A new scenario editor opens and the commands from the file are displayed.</p>
+</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Click on <em>Play</em> to submit the scenario commands to the DDS system.</div></blockquote>
+</div>
+<div class="section" id="id9">
+<h4>4.7.5.4. Validation<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h4>
+<p>Commands that have invalid parameters are highlighted with red text in
+the scenario commands table. Individual invalid command parameters also
+have their labels highlighted with red text.</p>
+<p>If the command is edited to correct the parameters, the entry in the
+scenario commands table will no longer be highlighted with red.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>A scenario file <em>can</em> be saved with invalid parameters.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="command-parameters">
+<h3>4.7.6. Command Parameters<a class="headerlink" href="#command-parameters" title="Permalink to this headline">¶</a></h3>
+<p>To view or edit the command parameters of a scenario command, choose the
+command in the <em>Scenario Commands</em> table. The values associated with that
+command will populate the scenario editor’s <em>Command Parameters</em>
+section. If the command is editable, the parameters can be modified.</p>
+<p><strong>Common Parameters</strong></p>
+<p>Various command types are supported. To specify the command type, use
+the dropdown box entitled <em>Kind</em>.</p>
+<p>The RnR service ID is also a common parameter for all command kinds.</p>
+<p><strong>Kind Parameters</strong></p>
+<p>The <em>Kind Parameters</em> section is where all the command kind-specific
+parameters are edited or viewed.</p>
+<p>The command kinds supported are:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Add Record</div>
+<div class="line">Add Replay</div>
+<div class="line">Remove Record</div>
+<div class="line">Remove Replay</div>
+<div class="line">Set Replay Speed</div>
+<div class="line">Truncate</div>
+<div class="line">Start</div>
+<div class="line">Stop</div>
+<div class="line">Suspend</div>
+<div class="line">Config</div>
+</div>
+</div></blockquote>
+<div class="section" id="add-record">
+<h4>4.7.6.1. Add Record<a class="headerlink" href="#add-record" title="Permalink to this headline">¶</a></h4>
+<p>The add record command is used to specify an interest to record data to
+a storage.</p>
+<p class="centered" id="add-record-parameters">
+<strong><strong>Add Record parameters</strong></strong></p><a class="reference internal image-reference" href="_images/045_AddRecordParameters.png"><img alt="Add Record parameters" class="align-center" src="_images/045_AddRecordParameters.png" style="width: 100mm;" /></a>
+<p>The parameters are:</p>
+<dl class="docutils">
+<dt><em>Storage name</em> –</dt>
+<dd>The name of the storage in which the data is to be stored.
+If the storage cannot be resolved, the command is ignored.
+To assist you, a dropdown list of recognized storages is provided.</dd>
+<dt><em>Partition/Topic Sets</em> –</dt>
+<dd>One or more partition/topic sets can be added to define the
+record interest.</dd>
+</dl>
+<p>Wildcards are supported: <tt class="docutils literal"><span class="pre">‘?’</span></tt> will match a single character and
+<tt class="docutils literal"><span class="pre">‘*’</span></tt> will match any number of characters. If expressions (partially)
+overlap, data will only be recorded once.</p>
+</div>
+<div class="section" id="add-replay">
+<h4>4.7.6.2. Add Replay<a class="headerlink" href="#add-replay" title="Permalink to this headline">¶</a></h4>
+<p>The add replay command is used to specify an interest to replay data
+from a storage.</p>
+<p class="centered" id="add-replay-parameters">
+<strong><strong>Add Replay parameters</strong></strong></p><a class="reference internal image-reference" href="_images/046_AddReplayParameters.png"><img alt="Add Replay parameters" class="align-center" src="_images/046_AddReplayParameters.png" style="width: 100mm;" /></a>
+<p class="centered" id="add-replay-time-ranges">
+<strong><strong>Add Replay time ranges</strong></strong></p><a class="reference internal image-reference" href="_images/046a_AddReplayTimeRanges.png"><img alt="Add Replay time ranges" class="align-center" src="_images/046a_AddReplayTimeRanges.png" style="width: 100mm;" /></a>
+<p class="centered" id="add-replay-qos-transformations">
+<strong><strong>Add Replay QoS transformations</strong></strong></p><a class="reference internal image-reference" href="_images/046b_AddReplayQoStransforms.png"><img alt="Add Replay QoS transformations" class="align-center" src="_images/046b_AddReplayQoStransforms.png" style="width: 100mm;" /></a>
+<p>The parameters are:</p>
+<dl class="docutils">
+<dt><em>Storage name</em> –</dt>
+<dd>The name of the storage from which the data will be
+replayed. If the storage cannot be resolved the command
+is ignored.</dd>
+<dt><em>Use original timestamps</em> –</dt>
+<dd>With the default value of <tt class="docutils literal"><span class="pre">true</span></tt>, when a sample is recorded,
+its original write and allocation timestamps are preserved.
+When this sample is replayed, it will be delivered to readers
+with these original timestamps. Depending on resource limits and
+QoS settings, readers may discard the replayed data if data with
+more recent timestamps is available. By setting
+<tt class="docutils literal"><span class="pre">useOriginalTimestamps</span></tt> to <tt class="docutils literal"><span class="pre">false</span></tt>, the timestamps will be
+updated with the current time upon replay.</dd>
+<dt><em>Skip to first sample</em> –</dt>
+<dd>By default this value is false and when a sample matches interest
+expressions but doesn’t match any of the supplied time-ranges,
+the Record and Replay service tries to mimic original timing behaviour
+by sleeping until the next sample is evaluated based on record
+timestamps. Sometimes this is not the required behavior and the
+service should simply skip all non-matching samples and start
+replaying immediately the first sample that matches an interest
+expression and time-range. This behaviour can be enabled by setting
+<tt class="docutils literal"><span class="pre">skipToFirstSample</span></tt> to <tt class="docutils literal"><span class="pre">true</span></tt>.</dd>
+<dt><em>Partition/Topic Sets</em> –</dt>
+<dd><p class="first">One or more partition/topic sets can be added to define the
+replay interest.</p>
+<p class="last">Wildcards are supported: <tt class="docutils literal"><span class="pre">‘?’</span></tt> will match a single character and
+<tt class="docutils literal"><span class="pre">‘*’</span></tt> will match any number of characters. If expressions (partially)
+overlap, data will only be published into DDS once.</p>
+</dd>
+<dt><em>Time Ranges</em> –</dt>
+<dd><p class="first">Specifying time ranges is optional.</p>
+<p class="last">Time ranges are used in combination with partition/topic sets to select
+a subset of data available in a storage for replay. Each time range is
+applied to each partition/topic set. A sample read from a storage is
+only replayed if its partition/topic can be matched against the
+partition/topic sets and its record-time can be matched against the
+time-ranges. The time ranges are optional; when omitted, a sample is
+replayed when a partition/topic set matches.</p>
+</dd>
+<dt><em>QoS Transformations</em> -</dt>
+<dd><p class="first">Specifying QoS transformations is optional.</p>
+<p>A series of transformations to apply to each sample&#8217;s QoS upon replay.
+Transformations are only applied for replay samples that have matched
+the partition/topic set <em>AND</em> the time ranges (if specified). The supported
+transformations types and their valid values are described in the tables
+below.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">QoS Type</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Partition</td>
+<td>Partition in which the sample is replayed</td>
+</tr>
+<tr class="row-odd"><td>Deadline</td>
+<td>Deadline QoS policy</td>
+</tr>
+<tr class="row-even"><td>Latency</td>
+<td>Latency budget QoS policy</td>
+</tr>
+<tr class="row-odd"><td>Ownership
+strength</td>
+<td>Ownership strength QoS policy (applies only to samples
+written with exclusive ownership-kind QoS policy)</td>
+</tr>
+<tr class="row-even"><td>Transport
+priority</td>
+<td>Transport priority QoS policy</td>
+</tr>
+<tr class="row-odd"><td>Lifespan</td>
+<td>Lifespan QoS policy</td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">QoS Type</th>
+<th class="head">Valid Values</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Partition</td>
+<td>Partition transformations are supported for non-empty
+partition names consisting of alphanumeric and
+special characters <tt class="docutils literal"><span class="pre">‘-’</span></tt>, <tt class="docutils literal"><span class="pre">‘/’</span></tt> and <tt class="docutils literal"><span class="pre">‘_’</span></tt>.</td>
+</tr>
+<tr class="row-odd"><td><p class="first">Ownership
+strength</p>
+<p class="last">Transport
+priority</p>
+</td>
+<td>Any positive 32 bit integer.</td>
+</tr>
+<tr class="row-even"><td><p class="first">Deadline</p>
+<p>Latency</p>
+<p class="last">Lifespan</p>
+</td>
+<td>A floating point value for seconds and nanoseconds.
+<em>eg.</em> inputting <tt class="docutils literal"><span class="pre">10.5</span></tt> is 10 seconds and 500000000
+nanoseconds.
+Additionally, the string <tt class="docutils literal"><span class="pre">&quot;Infinite&quot;</span></tt> is also valid
+input, signifying the &#8216;infinite&#8217; time period
+(2147483647.2147483647)</td>
+</tr>
+</tbody>
+</table>
+<p>The string value written to the <em>Replacement Value</em> column will be the new
+value of the QoS policy. Optionally, values in the <em>Original Value</em> column
+are taken as the filter to conditionally apply the transformation;
+<em>e.g.</em> for a Partition transformation with <em>Replacement Value</em> <tt class="docutils literal"><span class="pre">&quot;p2&quot;</span></tt>
+and <em>Original Value</em> <tt class="docutils literal"><span class="pre">&quot;p1&quot;</span></tt>, all samples with partition <tt class="docutils literal"><span class="pre">&quot;p1&quot;</span></tt> will be
+transformed to partition <tt class="docutils literal"><span class="pre">&quot;p2&quot;</span></tt>.</p>
+<p class="last"><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> Note that the original value needs to be an <em>exact</em> match;
+wildcards and expressions are <em>not</em> supported.</p>
+</dd>
+</dl>
+<p><strong>Time Range Copy and Paste</strong></p>
+<p>The time range record values can be copied from the storage editor and
+pasted into the scenario editor. Please refer to
+<a class="reference internal" href="#selected-row-s-menu">Selected Row(s) Menu</a> for details of how to copy a time range.</p>
+<p>To paste the record time range, Add a new time range. Select the time
+range in the Time Ranges table, and right-click and then choose Paste
+Record Time Range.</p>
+<p class="centered" id="paste-record-time-range">
+<strong><strong>Paste Record Time Range</strong></strong></p><a class="reference internal image-reference" href="_images/047_PasteRecordTimeRange.png"><img alt="Paste Record Time Range" class="align-center" src="_images/047_PasteRecordTimeRange.png" style="width: 100mm;" /></a>
+</div>
+<div class="section" id="remove-record">
+<h4>4.7.6.3. Remove Record<a class="headerlink" href="#remove-record" title="Permalink to this headline">¶</a></h4>
+<p>The remove record command is used to remove a record interest from a
+storage.</p>
+<p class="centered" id="remove-record-parameters">
+<strong><strong>Remove Record parameters</strong></strong></p><a class="reference internal image-reference" href="_images/048_RemoveRecordParameters.png"><img alt="Remove Record parameters" class="align-center" src="_images/048_RemoveRecordParameters.png" style="width: 100mm;" /></a>
+<p>The parameters are:</p>
+<dl class="docutils">
+<dt><em>Storage name</em> –</dt>
+<dd>The name of the storage of which record-interest is
+removed.</dd>
+<dt><em>Partition/Topic Sets</em> –</dt>
+<dd><p class="first">One or more partition/topic sets can be added to define
+the record interest(s) to be removed.</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that the partition/topic sets need to match those used
+previously in an add record command.</dd>
+</dl>
+</dd>
+</dl>
+</div>
+<div class="section" id="remove-replay">
+<h4>4.7.6.4. Remove Replay<a class="headerlink" href="#remove-replay" title="Permalink to this headline">¶</a></h4>
+<p>The remove replay command is used to remove a replay interest from a
+storage.</p>
+<p class="centered" id="remove-replay-parameters">
+<strong><strong>Remove Replay parameters</strong></strong></p><a class="reference internal image-reference" href="_images/049_RemoveReplayParameters.png"><img alt="Remove Replay parameters" class="align-center" src="_images/049_RemoveReplayParameters.png" style="width: 100mm;" /></a>
+<p>The parameters are:</p>
+<dl class="docutils">
+<dt><em>Storage name</em> –</dt>
+<dd>The name of the storage of which replay-interest is
+removed.</dd>
+<dt><em>Partition/Topic Sets</em> –</dt>
+<dd><p class="first">One or more partition/topic sets can be added to define
+the replay interest(s) to be removed.</p>
+<p class="last"><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> Note that the partition/topic sets need to match those
+used previously in an add replay command.</p>
+</dd>
+<dt><em>QoS Transformations</em> -</dt>
+<dd><p class="first">Specifying QoS transformations is optional.</p>
+<p>The QoS transformations to remove from the replay interest. If
+specified, a replay interest will no longer apply the transformation.</p>
+<p class="last"><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> If any replay interest is to be removed completely,
+the set of transformations should match <em>exactly</em> the set included in
+add_replay command(s) responsible for adding the interest.</p>
+</dd>
+<dt><em>Time Ranges</em> –</dt>
+<dd><p class="first">Specifying time ranges is optional.</p>
+<p class="last">The time ranges to remove. Similar to the add replay command, this
+parameter is optional. If this parameter is specified, only the interest
+that exactly matches the time ranges is removed. As a shortcut, if no
+time ranges are specified, any interest that matches the interest
+expressions in the remove replay command is removed regardless of the
+time ranges attached to that interest.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="set-replay-speed">
+<h4>4.7.6.5. Set Replay Speed<a class="headerlink" href="#set-replay-speed" title="Permalink to this headline">¶</a></h4>
+<p>The set replay speed command is used to change the replay speed of a
+storage.</p>
+<p class="centered" id="replay-speed-parameters">
+<strong><strong>Replay Speed parameters</strong></strong></p><a class="reference internal image-reference" href="_images/050_ReplaySpeedParameters.png"><img alt="Replay Speed parameters" class="align-center" src="_images/050_ReplaySpeedParameters.png" style="width: 90mm;" /></a>
+<p>The parameters are:</p>
+<dl class="docutils">
+<dt><em>Storage name</em> –</dt>
+<dd>The name of the storage of which to change the replay
+speed. If the storage cannot be resolved the command is ignored.</dd>
+<dt><em>Replay speed</em> –</dt>
+<dd><p class="first">Floating-point value containing the new replay-speed.
+The following values have a special meaning:</p>
+<p><tt class="docutils literal"><span class="pre">-1</span></tt> : <em>Maximum speed</em></p>
+<blockquote>
+<div>Delays between samples are skipped and the samples
+from the storage are inserted into DDS as fast
+as possible.</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">1</span></tt>  : <em>Same speed</em></p>
+<blockquote>
+<div>Replays samples with the same timing characteristics
+as when originally recorded.</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">0</span></tt>  : <em>Pause the storage</em></p>
+<blockquote>
+<div>No samples are replayed until the speed is increased.</div></blockquote>
+<p class="last">The default replay speed is <tt class="docutils literal"><span class="pre">1</span></tt> (samples are replayed with the
+same timing characteristics as when originally recorded).</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="truncate">
+<h4>4.7.6.6. Truncate<a class="headerlink" href="#truncate" title="Permalink to this headline">¶</a></h4>
+<p>This command can be used to clear a storage.</p>
+<p>When recording samples to an existing storage, the data is <em>appended</em>.
+If instead the required behaviour is to <em>overwrite</em> the storage, the
+truncate command can be used to remove the data recorded to the
+storage during previous sessions.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that the truncate command can only be executed if the storage
+isn’t busy recording and/or replaying data. Thus is may be neccessary
+to first publish remove record/replay commands, in order to remove all
+interest from a storage so that it gets closed by the RnR service,
+before the truncate command can be successfully processed. The <em>Storage
+Status</em> view can be used to verify the state of the storage.</dd>
+</dl>
+<p class="centered" id="truncate-parameter">
+<strong><strong>Truncate parameter</strong></strong></p><a class="reference internal image-reference" href="_images/051_TruncateParameter.png"><img alt="Truncate parameter" class="align-center" src="_images/051_TruncateParameter.png" style="width: 90mm;" /></a>
+<p>The parameter is:</p>
+<dl class="docutils">
+<dt><em>Storage name</em> –</dt>
+<dd>The name of the storage to clear.</dd>
+</dl>
+</div>
+<div class="section" id="start">
+<h4>4.7.6.7. Start<a class="headerlink" href="#start" title="Permalink to this headline">¶</a></h4>
+<p>The start command instructs the service to start processing <tt class="docutils literal"><span class="pre">&quot;scenario</span>
+<span class="pre">name&quot;</span></tt>. The service will publish a status update that changes the state
+of the scenario to <tt class="docutils literal"><span class="pre">RUNNING</span></tt>. If the target scenario is already known to
+the service, and is in the suspended state, a start command causes the
+scenario to resume processing commands, changing the scenario status
+from <tt class="docutils literal"><span class="pre">SUSPENDED</span></tt> to <tt class="docutils literal"><span class="pre">RUNNING</span></tt>.</p>
+<p class="centered" id="start-parameter">
+<strong><strong>Start parameter</strong></strong></p><a class="reference internal image-reference" href="_images/052_StartParameter.png"><img alt="Start parameter" class="align-center" src="_images/052_StartParameter.png" style="width: 90mm;" /></a>
+<p>The parameter is:</p>
+<dl class="docutils">
+<dt><em>Scenario name</em> –</dt>
+<dd>The name of the scenario to start.</dd>
+</dl>
+</div>
+<div class="section" id="stop">
+<h4>4.7.6.8. Stop<a class="headerlink" href="#stop" title="Permalink to this headline">¶</a></h4>
+<p>The stop command stops the execution of a scenario, including any
+recording and/or replaying that was defined as part of that scenario.</p>
+<p class="centered" id="stop-parameter">
+<strong><strong>Stop parameter</strong></strong></p><a class="reference internal image-reference" href="_images/053_StopParameter.png"><img alt="Stop parameter" class="align-center" src="_images/053_StopParameter.png" style="width: 90mm;" /></a>
+<p>The parameter is:</p>
+<dl class="docutils">
+<dt><em>Scenario name</em> –</dt>
+<dd>The name of the scenario to stop.</dd>
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><p class="first">It is important to understand that a scenario, once stopped, cannot
+be started again.</p>
+<p class="last">However, it is possible to start a new scenario with the same name as
+the stopped scenario. If any commands of the original scenario were
+published as transient data they will be delivered to and processed by
+the new scenario, giving the impression that the scenario has been
+re-started.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="suspend">
+<h4>4.7.6.9. Suspend<a class="headerlink" href="#suspend" title="Permalink to this headline">¶</a></h4>
+<p>The suspend command suspends the processing of commands by the scenario.
+This enables applications to submit a number of commands to a scenario,
+without any immediate effects. When the scenario is resumed all new
+commands are processed as if they were published in a batch although in
+reality they may have been published with varying intervals.</p>
+<p class="centered" id="suspend-parameter">
+<strong><strong>Suspend parameter</strong></strong></p><a class="reference internal image-reference" href="_images/054_SuspendParameter.png"><img alt="Suspend parameter" class="align-center" src="_images/054_SuspendParameter.png" style="width: 90mm;" /></a>
+<p>The parameter is:</p>
+<dl class="docutils">
+<dt><em>Scenario name</em> –</dt>
+<dd>The name of the scenario to suspend.</dd>
+</dl>
+</div>
+<div class="section" id="config">
+<h4>4.7.6.10. CONFIG<a class="headerlink" href="#config" title="Permalink to this headline">¶</a></h4>
+<p>The config command is used to modify the runtime configuration of an RnR
+service.</p>
+<blockquote>
+<div><strong>config</strong> : Sequence of <tt class="docutils literal"><span class="pre">KeyValue</span></tt> objects.</div></blockquote>
+<p>A config command can be used to add a storage to the service or modify
+properties of an existing storage. Storages can also be configured in
+the OpenSplice configuration file, but config commands provide the
+opportunity to create and configure storages dynamically.</p>
+<p>A single config command can apply to multiple storages, if the config
+sequence consists of multiple elements. The key of the <tt class="docutils literal"><span class="pre">KeyValue</span></tt> object
+should always be <tt class="docutils literal"><span class="pre">‘Storage’</span></tt>.</p>
+<p class="centered" id="config-command">
+<strong><strong>CONFIG command</strong></strong></p><a class="reference internal image-reference" href="_images/055_CONFIGcommand.png"><img alt="CONFIG command" class="align-center" src="_images/055_CONFIGcommand.png" style="width: 90mm;" /></a>
+<p>One or more storage configurations can be specified in the CONFIG
+command.</p>
+<dl class="docutils">
+<dt><em>Name</em> –</dt>
+<dd>The name used to identify the storage in Record and Replay
+commands.</dd>
+<dt><em>Filename</em> –</dt>
+<dd>The file used to store XML data. The filename may include a
+relative or absolute path. If a path is omitted, the storage file
+is created in the current working directory.</dd>
+<dt><em>Kind</em> –</dt>
+<dd><p class="first">This attribute sets the format of the storage file. The data
+can either be stored in XML or CDR format.</p>
+<dl class="last docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that when changing the Kind of an existing storage
+it is recommended that a <tt class="docutils literal"><span class="pre">TRUNCATE</span></tt> command be issued first so
+that the storage file does not contain data of both formats.</dd>
+</dl>
+</dd>
+<dt><em>Max file size</em> -</dt>
+<dd>This optional attribute specifies a maximum storage size for
+individual files. Exceeding a single file size rolls the storage
+over to a new numbered index file. No value or <tt class="docutils literal"><span class="pre">0</span></tt> indicates
+unlimited file size. Valid input is any positive integer not greater
+than <tt class="docutils literal"><span class="pre">2^64</span> <span class="pre">-1</span></tt> (in bytes). The value can have a suffix to indicate
+magnitude: <tt class="docutils literal"><span class="pre">K``(ilobyte),</span> <span class="pre">``M``(egabyte)</span> <span class="pre">or</span> <span class="pre">``G``(igabtye);</span> <span class="pre">for</span>
+<span class="pre">example,</span> <span class="pre">``10M</span></tt> results in <tt class="docutils literal"><span class="pre">10485760</span></tt> bytes. The suffix is
+not case sensitive.</dd>
+<dt><em>Statistics</em> –</dt>
+<dd>This optional attribute specifies whether statistics
+should be maintained for this storage.</dd>
+<dt><em>Interval</em> –</dt>
+<dd>This attribute specifies the publication interval of the
+statistics belonging to this storage, in a Record and Replay storage
+statistics topic. The publish interval is a value in seconds but may
+also be set to <tt class="docutils literal"><span class="pre">-1</span></tt>, which means that the statistics are published when
+the storage is closed. Note that a value of <tt class="docutils literal"><span class="pre">0</span></tt> means that statistics
+are never published for this storage.</dd>
+<dt><em>Reset</em> –</dt>
+<dd>This attribute enables you to reset the current values of
+statistics belonging to the storage. Note that this only makes sense in
+a configuration command for an existing storage, since new storages
+created from the OpenSplice configuration file always start out with
+empty statistics.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="builtinscenario">
+<h3>4.7.7. BuiltinScenario<a class="headerlink" href="#builtinscenario" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="opensplice-builtinscenario">
+<h4>4.7.7.1. OpenSplice BuiltInScenario<a class="headerlink" href="#opensplice-builtinscenario" title="Permalink to this headline">¶</a></h4>
+<p>Since commands are targeted at a service and a scenario, the service
+must start an initial scenario. If it did not, there wouldn’t be
+anything to address commands to.</p>
+<p>During startup, the service starts this initial scenario, called the
+<tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt>. This is a special scenario that is always running while
+the service is operational. It serves as the starting hook for any new
+scenarios. To run a new scenario, a start command must be published for
+the <tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt>. Like any scenario, the <tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt> can also
+process other commands like record and/or replay commands.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that the <tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt> cannot be stopped.</dd>
+</dl>
+<p>Since one can assume that the <tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt> is always available and
+running, it is a safe choice to address config and control commands to
+the BuiltinScenario. Especially in a dynamic and distributed
+environment, in which DDS is regularly used, this can be helpful when
+interacting with the service through scripts or perhaps when injecting
+commands stored in a persistent store.</p>
+</div>
+<div class="section" id="builtinscenario-in-rnr-manager">
+<h4>4.7.7.2. BuiltinScenario in RnR Manager<a class="headerlink" href="#builtinscenario-in-rnr-manager" title="Permalink to this headline">¶</a></h4>
+<p>The scenario editor disables the start and stop functionality for the
+<tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt>.</p>
+<p><em>Start</em> and <em>Stop</em> actions are also disabled in the <em>Scenario Status</em> view.</p>
+</div>
+</div>
+</div>
+<div class="section" id="storage-data">
+<h2>4.8. Storage Data<a class="headerlink" href="#storage-data" title="Permalink to this headline">¶</a></h2>
+<p>The OpenSplice Record and Replay service enables the recording and
+replaying of data. The service records the data to storage xml files.
+These xml files can get quite large, and can be difficult to query and
+read.</p>
+<p>RnR Manager provides a Storage Editor that makes it easier to query,
+view and update this storage data.</p>
+<p>On import, the xml storage files are converted to a database file. The
+database can then be queried and updated. Updated data can be exported
+back into the OpenSplice Record and Replay service storage xml format if
+required.</p>
+<div class="section" id="workspace-imported-storages">
+<h3>4.8.1. Workspace - Imported Storages<a class="headerlink" href="#workspace-imported-storages" title="Permalink to this headline">¶</a></h3>
+<p>The starting point for viewing storage data is the <em>Workspace</em> view.</p>
+<p>To import storage data, navigate to the <em>Workspace</em> view and select the
+<em>Imported Storages</em> folder. Right-click to display a menu with options for
+manipulating storage database files.</p>
+<p class="centered" id="imported-storages-view">
+<strong><strong>Imported Storages view</strong></strong></p><a class="reference internal image-reference" href="_images/056_ImportedStoragesView.png"><img alt="Imported Storages view" class="align-center" src="_images/056_ImportedStoragesView.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="database-file-management">
+<h3>4.8.2. Database File Management<a class="headerlink" href="#database-file-management" title="Permalink to this headline">¶</a></h3>
+<p>The <em>Imported Storages</em> folder displays the database files that have been
+imported. The files can be managed by using the menu options provided in
+the view. These menu options are accessible by right-clicking on the
+items in the view.</p>
+<p class="centered" id="imported-storages-menu">
+<strong><strong>Imported Storages menu</strong></strong></p><a class="reference internal image-reference" href="_images/057_ImportedStoragesMenu.png"><img alt="Imported Storages menu" class="align-center" src="_images/057_ImportedStoragesMenu.png" style="width: 90mm;" /></a>
+<p>These database files are created in a workspace project maintained by
+the RnR Manager, which provides facilities to open, copy, paste, delete,
+and create new folders within this workspace.</p>
+</div>
+<div class="section" id="import-storage">
+<h3>4.8.3. Import Storage<a class="headerlink" href="#import-storage" title="Permalink to this headline">¶</a></h3>
+<p>To import OpenSplice record and replay storage data, open the <em>Import
+Storage</em> dialog by choosing the <em>Import Storage...</em> option from the
+right-click menu. (A folder must be selected in the view.)</p>
+<p class="centered" id="id10">
+<strong><strong>Import Storage</strong></strong></p><a class="reference internal image-reference" href="_images/058_ImportStorage.png"><img alt="Import Storage" class="align-center" src="_images/058_ImportStorage.png" style="width: 100mm;" /></a>
+<p>To import:</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><p>Browse to and select your local storage file.</p>
+<p>If storage file names were configured with a relative path, the
+RnR service creates the storage files relative to its process working
+directory.</p>
+<p>Using the file chooser, select the <tt class="docutils literal"><span class="pre">.meta</span></tt> file associated with
+the storage. The storage data file is automatically resolved.</p>
+</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Specify the database file name. The file will be created in the
+selected folder.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div><p>If necessary, decrease the batch size. The default batch size
+is <tt class="docutils literal"><span class="pre">5000</span></tt>.</p>
+<p>A batch counter is used to limit the number of samples loaded into
+memory. If the import is unsuccessful, and/or ‘out of memory’
+exceptions are occurring, reduce the batch size number.</p>
+</div></blockquote>
+</div>
+<div class="section" id="export">
+<h3>4.8.4. Export<a class="headerlink" href="#export" title="Permalink to this headline">¶</a></h3>
+<p>To export OpenSplice record and replay storage data, open the <em>Export
+Storage</em> dialog by choosing the <em>Export Storage...</em> option from the
+right-click menu. (A database file must be selected in the view.)</p>
+<p>On export a new OpenSplice storage is created and the sample data
+contained in the imported database file will be written to this storage.</p>
+<div class="section" id="storage-parameters">
+<h4>4.8.4.1. Storage Parameters<a class="headerlink" href="#storage-parameters" title="Permalink to this headline">¶</a></h4>
+<p>The storage parameters are specified on the first page of the Export
+Storage wizard.</p>
+<p class="centered" id="export-storage-create-storage">
+<strong><strong>Export Storage - Create Storage</strong></strong></p><a class="reference internal image-reference" href="_images/060_Export_CreateStorage.png"><img alt="Export Storage - Create Storage" class="align-center" src="_images/060_Export_CreateStorage.png" style="width: 100mm;" /></a>
+<p>If RnR Manager is currently connected to a DDS domain, the storage
+attributes are editable, and clicking on the <em>Finish</em> button configures
+a new storage with the specified storage attributes. If RnR Manager is
+not connected, only the file name attribute is editable, and clicking
+<em>Finish</em> only does the data export to file. See <a class="reference internal" href="#storage-attributes">Storage Attributes</a>
+for further information.</p>
+<p>If necessary, decrease the batch size. The default batch size
+is <tt class="docutils literal"><span class="pre">10000</span></tt>.</p>
+<p>A batch counter is used to limit the number of samples loaded into
+memory. If the export is unsuccessful, and/or ‘out of memory’
+exceptions are occurring, reduce the batch size number.</p>
+</div>
+<div class="section" id="sample-set-parameters">
+<h4>4.8.4.2. Sample Set Parameters<a class="headerlink" href="#sample-set-parameters" title="Permalink to this headline">¶</a></h4>
+<p>The second page of the wizard enables you to export a subset of the
+sample data contained in the database. You can also edit the actual
+database file to contain the appropriate subset using the storage
+editor. The ability to specify subset parameters is an additional
+feature of export.</p>
+<p>All unique partition/topic sets of the database file are displayed. You
+can choose to exclude any of these sets by unchecking it the list.</p>
+<p>Additionally you can define a time range for the export. Any data
+samples that do not fall within the time range are excluded.</p>
+<p class="centered" id="export-storage-samples">
+<strong><strong>Export Storage Samples</strong></strong></p><a class="reference internal image-reference" href="_images/061_Export_StorageSamples.png"><img alt="Export Storage Samples" class="align-center" src="_images/061_Export_StorageSamples.png" style="width: 100mm;" /></a>
+</div>
+</div>
+</div>
+<div class="section" id="storage-editor">
+<h2>4.9. Storage Editor<a class="headerlink" href="#storage-editor" title="Permalink to this headline">¶</a></h2>
+<p>Once a storage has been imported, the database file can be queried and
+updated using the <em>Storage Editor</em>.</p>
+<p>The storage editor is opened by double-clicking on the database file in
+the <em>Imported Storages</em> folder in the <em>Workspace</em> view. It can also be
+opened automatically on import.</p>
+<p>The editor is comprised of two pages. The first page is used to define
+the query parameters. You can specify query parameters to view subsets
+of the sample data. The second page displays the sample data that meet
+the query parameter criteria.</p>
+<p class="centered" id="id11">
+<strong><strong>Storage Editor</strong></strong></p><a class="reference internal image-reference" href="_images/062_StorageEditor.png"><img alt="Storage Editor" class="align-center" src="_images/062_StorageEditor.png" style="width: 140mm;" /></a>
+<div class="section" id="query-parameters">
+<h3>4.9.1. Query Parameters<a class="headerlink" href="#query-parameters" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="field-selection">
+<h4>4.9.1.1. Field Selection<a class="headerlink" href="#field-selection" title="Permalink to this headline">¶</a></h4>
+<p>This section is used to select the data fields (columns) that you would
+like to see displayed in the data page table.</p>
+<p>The <em>Record and Replay</em> node lists the fields that are written to each
+record and replay sample.</p>
+<p>The <em>Message</em> node lists the fields that are written with each sample.</p>
+<p>The other nodes contain the fields that are specific to each MetaType or
+topic.</p>
+</div>
+<div class="section" id="where-clause">
+<h4>4.9.1.2. Where Clause<a class="headerlink" href="#where-clause" title="Permalink to this headline">¶</a></h4>
+<p>The <em>where</em> section can be used to defined SQL-like <tt class="docutils literal"><span class="pre">where</span></tt> conditions.</p>
+<p>This section is optional. If no entries are added, no additional
+conditions are added when running the query and populating the data page.</p>
+<p><strong>Operator</strong></p>
+<p>To define a <em>where</em> condition an operator must be added. The operator can
+be an <tt class="docutils literal"><span class="pre">AND</span></tt> or an <tt class="docutils literal"><span class="pre">OR</span></tt>.</p>
+<p>To add an operator, click on the <em>Add Operator</em> button. By default,
+<tt class="docutils literal"><span class="pre">AND</span></tt> is selected. To add <tt class="docutils literal"><span class="pre">OR</span></tt>, select the cell, then choose the
+<tt class="docutils literal"><span class="pre">OR</span></tt> item in the dropdown menu.</p>
+<p class="centered" id="add-operator">
+<strong><strong>Add Operator</strong></strong></p><a class="reference internal image-reference" href="_images/063_WHEREoperator.png"><img alt="Add Operator" class="align-center" src="_images/063_WHEREoperator.png" style="width: 90mm;" /></a>
+<p>Each operator must have at least one child clause for the query to be
+valid. If this condition is not met, a red icon is displayed to indicate
+a problem. The <em>Run Query</em> button will not be enabled unless all
+validation problems on the query page are resolved.</p>
+<p class="centered" id="invalid-and">
+<strong><strong>Invalid AND</strong></strong></p><a class="reference internal image-reference" href="_images/064_InvalidAND.png"><img alt="Invalid AND" class="align-center" src="_images/064_InvalidAND.png" style="width: 60mm;" /></a>
+<p><strong>Clause</strong></p>
+<p>To add <em>where</em> selection criteria, add one or more clauses to your
+operator. Each clause contains a field, an operator and a value.</p>
+<dl class="docutils">
+<dt><em>Field</em> –</dt>
+<dd><p class="first">A database field or metaType field. Available fields are
+provided in a dropdown list.</p>
+<p class="centered" id="clause-field">
+<strong><strong>Clause field</strong></strong></p><a class="last reference internal image-reference" href="_images/065_WhereClauseField.png"><img alt="Clause field" class="align-center" src="_images/065_WhereClauseField.png" style="width: 70mm;" /></a>
+</dd>
+<dt><em>Clause Operator</em> –</dt>
+<dd><p class="first">Various comparison operators are available for selection in a
+dropdown list.</p>
+<p class="centered" id="clause-operator">
+<strong><strong>Clause Operator</strong></strong></p><a class="last reference internal image-reference" href="_images/066_WhereClauseOperator.png"><img alt="Clause Operator" class="align-center" src="_images/066_WhereClauseOperator.png" style="width: 70mm;" /></a>
+</dd>
+<dt><em>Value</em> –</dt>
+<dd>The expected value of the database field.</dd>
+</dl>
+<p>Each clause must have a defined field and value. If this condition is
+not met, a red icon is displayed to indicate a problem. The <em>Run Query</em>
+button will not be enabled unless all validation problems on the query
+page are resolved.</p>
+<p class="centered" id="invalid-clause">
+<strong><strong>Invalid Clause</strong></strong></p><a class="reference internal image-reference" href="_images/067_InvalidClause.png"><img alt="Invalid Clause" class="align-center" src="_images/067_InvalidClause.png" style="width: 90mm;" /></a>
+<p class="centered" id="valid-condition">
+<strong><strong>Valid Condition</strong></strong></p><a class="reference internal image-reference" href="_images/068_ValidWHERE.png"><img alt="Valid Condition" class="align-center" src="_images/068_ValidWHERE.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="time-range-message-writetime">
+<h4>4.9.1.3. Time Range (message.writeTime)<a class="headerlink" href="#time-range-message-writetime" title="Permalink to this headline">¶</a></h4>
+<p>By default the time range is set to all times. A start and/or end time
+can be defined to query samples within a specific time range.</p>
+</div>
+<div class="section" id="load">
+<h4>4.9.1.4. Load<a class="headerlink" href="#load" title="Permalink to this headline">¶</a></h4>
+<p>Many of the storage files have a large amount of data. For larger files,
+it is not always possible to load all of the data into memory. For these
+cases, samples can be incrementally loaded into memory.</p>
+<p>The number of samples to load at a time is specified in the <tt class="docutils literal"><span class="pre">Load</span> <span class="pre">#</span></tt> field.</p>
+<p>You can then use the <em>Next</em> and <em>Previous</em> buttons on the data page to view
+the samples incrementally.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><strong>Note</strong>: Any edits made to loaded data will <strong>not</strong> be retained
+when the <em>Next</em> and <em>Previous</em> buttons are clicked. Such edits must
+be saved explicitly prior to loading next or previous samples.</dd>
+</dl>
+</div>
+<div class="section" id="order-by">
+<h4>4.9.1.5. Order By<a class="headerlink" href="#order-by" title="Permalink to this headline">¶</a></h4>
+<p>The data display can be ordered by data fields. By default, the order is
+done using the <tt class="docutils literal"><span class="pre">message.writeTime</span></tt> fields. You can add any data field to
+the order by criteria.</p>
+</div>
+<div class="section" id="data">
+<h4>4.9.1.6. Data<a class="headerlink" href="#data" title="Permalink to this headline">¶</a></h4>
+<p>The data page contains one table that displays the samples that meet the
+query criteria. Each row is one sample.</p>
+<p>The columns are resizable. The columns can also be re-ordered by
+dragging them in the table.</p>
+<p>To get the full name of the column, hover on the column header with the
+mouse.</p>
+<p>Values can be edited in the table on a <em>per cell</em> basis.</p>
+<p>To change the data that is displayed, specify different query parameters
+on the query page, and click on the <em>Run Query</em> button.</p>
+<p class="centered" id="data-page">
+<strong><strong>Data page</strong></strong></p><a class="reference internal image-reference" href="_images/069_DataPage.png"><img alt="Data page" class="align-center" src="_images/069_DataPage.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="selected-row-s-menu">
+<h4>4.9.1.7. Selected Row(s) Menu<a class="headerlink" href="#selected-row-s-menu" title="Permalink to this headline">¶</a></h4>
+<p>Actions are available for the table’s selected row(s). These actions
+are accessed by using right-click.</p>
+<p class="centered" id="data-table-actions">
+<strong><strong>Data table actions</strong></strong></p><a class="reference internal image-reference" href="_images/070_DataTableActions.png"><img alt="Data table actions" class="align-center" src="_images/070_DataTableActions.png" style="width: 100mm;" /></a>
+<p><strong>Multi Edit...</strong></p>
+<p>The table supports editing a selected row’s field value.</p>
+<p>However, if a batch change is required, it is not possible to do it in
+the table itself. The <em>Multi Edit</em> dialog provides support for batch
+changes.</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Select the rows you would like to edit in the table.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Right-click and choose the <em>Multi Edit...</em> action.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Check the field(s) you would like to batch update.</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div>Specify the value(s) to be applied to all the selected rows.</div></blockquote>
+<p class="centered" id="multi-edit-dialog">
+<strong><strong>Multi Edit dialog</strong></strong></p><a class="reference internal image-reference" href="_images/071_MultiEditDialog.png"><img alt="Multi Edit dialog" class="align-center" src="_images/071_MultiEditDialog.png" style="width: 100mm;" /></a>
+<p><strong>Copy Record Time Range</strong></p>
+<p>This action is enabled when more than one row is selected. It is used in
+conjunction with the scenario editor.</p>
+<p>The record time of the first and last selected row are saved. These
+values can be pasted into the scenario editor for a replay command.
+Please refer to <a class="reference internal" href="#add-replay">Add Replay</a> for details of how to paste the values
+into the scenario editor.</p>
+<p><strong>Delete</strong></p>
+<p>The delete action deletes all selected rows.</p>
+</div>
+<div class="section" id="next-and-previous">
+<h4>4.9.1.8. Next and Previous<a class="headerlink" href="#next-and-previous" title="Permalink to this headline">¶</a></h4>
+<p>The <em>Next</em> and <em>Previous</em> buttons are enabled when the samples are being
+loaded incrementally.</p>
+<p>Please see <a class="reference internal" href="#load">Load</a> for details of load functionality.</p>
+<p class="centered" id="next-and-previous-buttons">
+<strong><strong>Next and Previous buttons</strong></strong></p><a class="reference internal image-reference" href="_images/072_Next_Previous_buttons.png"><img alt="Next and Previous buttons" class="align-center" src="_images/072_Next_Previous_buttons.png" style="width: 20mm;" /></a>
+</div>
+<div class="section" id="undo-save-and-save-as">
+<h4>4.9.1.9. Undo, Save and Save As...<a class="headerlink" href="#undo-save-and-save-as" title="Permalink to this headline">¶</a></h4>
+<p class="centered" id="undo-save-and-save-as-buttons">
+<strong><strong>Undo, Save, and Save As... buttons</strong></strong></p><a class="reference internal image-reference" href="_images/073_Undo_etc_buttons.png"><img alt="Undo, Save, and Save As... buttons" class="align-center" src="_images/073_Undo_etc_buttons.png" style="width: 35mm;" /></a>
+<p>The buttons are:</p>
+<dl class="docutils">
+<dt><em>Undo</em> —</dt>
+<dd>Undo all changes to the database file since the last save.</dd>
+<dt><em>Save</em> —</dt>
+<dd>Save all changes to the database file.</dd>
+<dt><em>Save As...</em> —</dt>
+<dd>Save the currently loaded samples into a new database file.</dd>
+</dl>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Using the Record and Replay Manager</a><ul>
+<li><a class="reference internal" href="#rnr-manager-overview">4.1. RnR Manager Overview</a><ul>
+<li><a class="reference internal" href="#starting-rnr-manager">4.1.1. Starting RnR Manager</a></li>
+<li><a class="reference internal" href="#views">4.1.2. Views</a></li>
+<li><a class="reference internal" href="#preferences">4.1.3. Preferences</a><ul>
+<li><a class="reference internal" href="#opensplice">4.1.3.1. OpenSplice</a></li>
+<li><a class="reference internal" href="#partition-topic-filters">4.1.3.2. Partition/Topic Filters</a></li>
+<li><a class="reference internal" href="#partition-topic-strings">4.1.3.3. Partition/Topic Strings</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#help">4.1.4. Help</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#domain-browser">4.2. Domain Browser</a><ul>
+<li><a class="reference internal" href="#defining-a-domain">4.2.1. Defining a domain</a></li>
+<li><a class="reference internal" href="#domain-connect">4.2.2. Domain Connect</a></li>
+<li><a class="reference internal" href="#domain-disconnect-and-delete">4.2.3. Domain Disconnect and Delete</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#service-status">4.3. Service Status</a></li>
+<li><a class="reference internal" href="#storage-status">4.4. Storage Status</a><ul>
+<li><a class="reference internal" href="#creating-a-new-storage">4.4.1. Creating a new storage</a><ul>
+<li><a class="reference internal" href="#storage-attributes">4.4.1.1. Storage Attributes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scenario-status">4.5. Scenario Status</a><ul>
+<li><a class="reference internal" href="#open-scenario-editor">4.5.1. Open Scenario Editor</a></li>
+<li><a class="reference internal" href="#starting-scenario-s">4.5.2. Starting Scenario(s)</a></li>
+<li><a class="reference internal" href="#stopping-scenario-s">4.5.3. Stopping Scenario(s)</a></li>
+<li><a class="reference internal" href="#scenario-menu">4.5.4. Scenario Menu</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#topics-one-click-record">4.6. Topics – One Click Record</a><ul>
+<li><a class="reference internal" href="#to-record-a-topic">4.6.1. To Record a Topic</a></li>
+<li><a class="reference internal" href="#the-record-topic-s-dialog">4.6.2. The Record Topic(s) Dialog</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scenario-editors">4.7. Scenario Editors</a><ul>
+<li><a class="reference internal" href="#overview-of-the-scenario-editor">4.7.1. Overview of the Scenario Editor</a></li>
+<li><a class="reference internal" href="#overview-of-the-scenario-file-editor">4.7.2. Overview of the Scenario File Editor</a></li>
+<li><a class="reference internal" href="#re-sizing-the-editors">4.7.3. Re-sizing the Editors</a></li>
+<li><a class="reference internal" href="#scenario-editor-features">4.7.4. Scenario Editor Features</a><ul>
+<li><a class="reference internal" href="#running-vs-stopped-scenarios">4.7.4.1. Running <em>vs.</em> Stopped Scenarios</a><ul>
+<li><a class="reference internal" href="#for-running-scenarios">4.7.4.1.1. For <tt class="docutils literal"><span class="pre">RUNNING</span></tt> scenarios:</a></li>
+<li><a class="reference internal" href="#for-stopped-scenarios">4.7.4.1.2. For <tt class="docutils literal"><span class="pre">STOPPED</span></tt> scenarios:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#adding-new-commands">4.7.4.2. Adding new commands</a></li>
+<li><a class="reference internal" href="#existing-commands">4.7.4.3. Existing commands</a></li>
+<li><a class="reference internal" href="#removing-commands">4.7.4.4. Removing commands</a></li>
+<li><a class="reference internal" href="#ordering-commands">4.7.4.5. Ordering commands</a></li>
+<li><a class="reference internal" href="#duplicating-commands">4.7.4.6. Duplicating commands</a></li>
+<li><a class="reference internal" href="#validation">4.7.4.7. Validation</a></li>
+<li><a class="reference internal" href="#save-as">4.7.4.8. <em>Save As...</em></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scenario-file-editor-features">4.7.5. Scenario File Editor Features</a><ul>
+<li><a class="reference internal" href="#creating-new-files">4.7.5.1. Creating New Files</a></li>
+<li><a class="reference internal" href="#editing-commands">4.7.5.2. Editing Commands</a></li>
+<li><a class="reference internal" href="#load-scenario">4.7.5.3. Load Scenario</a></li>
+<li><a class="reference internal" href="#id9">4.7.5.4. Validation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#command-parameters">4.7.6. Command Parameters</a><ul>
+<li><a class="reference internal" href="#add-record">4.7.6.1. Add Record</a></li>
+<li><a class="reference internal" href="#add-replay">4.7.6.2. Add Replay</a></li>
+<li><a class="reference internal" href="#remove-record">4.7.6.3. Remove Record</a></li>
+<li><a class="reference internal" href="#remove-replay">4.7.6.4. Remove Replay</a></li>
+<li><a class="reference internal" href="#set-replay-speed">4.7.6.5. Set Replay Speed</a></li>
+<li><a class="reference internal" href="#truncate">4.7.6.6. Truncate</a></li>
+<li><a class="reference internal" href="#start">4.7.6.7. Start</a></li>
+<li><a class="reference internal" href="#stop">4.7.6.8. Stop</a></li>
+<li><a class="reference internal" href="#suspend">4.7.6.9. Suspend</a></li>
+<li><a class="reference internal" href="#config">4.7.6.10. CONFIG</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#builtinscenario">4.7.7. BuiltinScenario</a><ul>
+<li><a class="reference internal" href="#opensplice-builtinscenario">4.7.7.1. OpenSplice BuiltInScenario</a></li>
+<li><a class="reference internal" href="#builtinscenario-in-rnr-manager">4.7.7.2. BuiltinScenario in RnR Manager</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#storage-data">4.8. Storage Data</a><ul>
+<li><a class="reference internal" href="#workspace-imported-storages">4.8.1. Workspace - Imported Storages</a></li>
+<li><a class="reference internal" href="#database-file-management">4.8.2. Database File Management</a></li>
+<li><a class="reference internal" href="#import-storage">4.8.3. Import Storage</a></li>
+<li><a class="reference internal" href="#export">4.8.4. Export</a><ul>
+<li><a class="reference internal" href="#storage-parameters">4.8.4.1. Storage Parameters</a></li>
+<li><a class="reference internal" href="#sample-set-parameters">4.8.4.2. Sample Set Parameters</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#storage-editor">4.9. Storage Editor</a><ul>
+<li><a class="reference internal" href="#query-parameters">4.9.1. Query Parameters</a><ul>
+<li><a class="reference internal" href="#field-selection">4.9.1.1. Field Selection</a></li>
+<li><a class="reference internal" href="#where-clause">4.9.1.2. Where Clause</a></li>
+<li><a class="reference internal" href="#time-range-message-writetime">4.9.1.3. Time Range (message.writeTime)</a></li>
+<li><a class="reference internal" href="#load">4.9.1.4. Load</a></li>
+<li><a class="reference internal" href="#order-by">4.9.1.5. Order By</a></li>
+<li><a class="reference internal" href="#data">4.9.1.6. Data</a></li>
+<li><a class="reference internal" href="#selected-row-s-menu">4.9.1.7. Selected Row(s) Menu</a></li>
+<li><a class="reference internal" href="#next-and-previous">4.9.1.8. Next and Previous</a></li>
+<li><a class="reference internal" href="#undo-save-and-save-as">4.9.1.9. Undo, Save and Save As...</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">3. Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">5. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/using01.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="5. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="3. Installation"
+             >previous</a> |</li>
+        <li><a href="index.html">RnR Manager Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

@@ -78,9 +78,8 @@ namespace test.sacs
             participant.GetCurrentTime(out tHolder);
             maxSourceTime = tHolder;
 
-            // TODO: JLS, WaitForHistoricalDataWithCondition is missing
-            //            ddsReturnCode = reader.WaitForHistoricalDataWithCondition(null, null, minSourceTime
-            //				, maxSourceTime, resource, maxWait);
+            ddsReturnCode = reader.WaitForHistoricalDataWithCondition(
+                    null, null, minSourceTime, maxSourceTime, resource, maxWait);
             if (ddsReturnCode != DDS.ReturnCode.Ok)
             {
                 result.Result = "wait_for_historical_data_w_condition failed";

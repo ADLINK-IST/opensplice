@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #ifndef SYSDEPS_H
 #define SYSDEPS_H
 
@@ -24,22 +43,22 @@
 #endif
 #endif
 
-#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (INTEGRITY) || defined (AIX) || defined (OS_RTEMS_DEFS_H) || defined (VXWORKS_RTP) || defined (__Lynx__) || defined (_WRS_KERNEL) || defined (__linux__)
+#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (INTEGRITY) || defined (AIX) || defined (OS_RTEMS_DEFS_H) || defined (VXWORKS_RTP) || defined (__Lynx__) || defined (_WRS_KERNEL) || defined (__linux__) || defined (OS_QNX_DEFS_H)
 #define SYSDEPS_HAVE_MSGHDR 1
 #define SYSDEPS_HAVE_RECVMSG 1
 #define SYSDEPS_HAVE_SENDMSG 1
 #endif
 
-#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (INTEGRITY) || defined (AIX) || defined (OS_RTEMS_DEFS_H) || defined (VXWORKS_RTP) || defined (_WRS_KERNEL) || defined (__linux__)
+#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (INTEGRITY) || defined (AIX) || defined (OS_RTEMS_DEFS_H) || defined (VXWORKS_RTP) || defined (_WRS_KERNEL) || defined (__linux__) || defined (OS_QNX_DEFS_H)
 #define SYSDEPS_HAVE_IOVEC 1
 #endif
 
-#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (AIX) || defined (__Lynx__)
+#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (AIX) || defined (__Lynx__) || defined (OS_QNX_DEFS_H)
 #define SYSDEPS_HAVE_RANDOM 1
 #include <unistd.h>
 #endif
 
-#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (AIX)
+#if defined (__linux) || defined (__sun) || defined (__APPLE__) || defined (AIX) || defined (OS_QNX_DEFS_H)
 #define SYSDEPS_HAVE_GETRUSAGE 1
 #include <sys/time.h> /* needed for Linux, exists on all four */
 #include <sys/times.h> /* needed for AIX, exists on all four */
@@ -69,6 +88,38 @@ typedef int os_handle;
 #define Q_INVALID_SOCKET -1
 #endif
 
+/* From MSDN: from Vista & 2k3 onwards, a macro named MemoryBarrier is
+   defined, XP needs inline assembly.  Unfortunately, MemoryBarrier()
+   is a function on x86 ...
+
+   Definition below is taken from the MSDN page on MemoryBarrier() */
+#ifndef MemoryBarrier
+#if NTDDI_VERSION >= NTDDI_WS03 && defined _M_IX86
+#define MemoryBarrier() do {                    \
+    LONG Barrier;                               \
+    __asm {                                     \
+      xchg Barrier, eax                         \
+    }                                           \
+  } while (0)
+#endif /* x86 */
+
+/* Don't try interworking with thumb - one thing at a time. Do a DMB
+   SY if supported, else no need for a memory barrier. (I think.) */
+#if defined _M_ARM && ! defined _M_ARMT
+#define MemoryBarrierARM __emit (0xf57ff05f) /* 0xf57ff05f or 0x5ff07ff5 */
+#if _M_ARM > 7
+/* if targetting ARMv7 the dmb instruction is available */
+#define MemoryBarrier() MemoryBarrierARM
+#else
+/* else conditional on actual hardware platform */
+extern void (*q_maybe_membar) (void);
+#define MemoryBarrier() q_maybe_membar ()
+#define NEED_ARM_MEMBAR_SUPPORT 1
+#endif /* ARM version */
+#endif /* ARM */
+
+#endif /* !def MemoryBarrier */
+
 #if defined (__sun) && !defined (_XPG4_2)
 #define SYSDEPS_MSGHDR_ACCRIGHTS 1
 #else
@@ -80,26 +131,8 @@ typedef int os_handle;
 #define SYSDEPS_MSGHDR_FLAGS 1
 #endif
 
-#if NN_HAVE_C99_INLINE && !defined SUPPRESS_SYSDEPS_INLINES
-#include "sysdeps_template.c"
-#else
-#if defined (__cplusplus)
-extern "C" {
-#endif
-os_uint32 atomic_inc_u32_nv (volatile os_uint32 *value);
-os_uint32 atomic_dec_u32_nv (volatile os_uint32 *value);
-void atomic_add_u32_noret (volatile os_uint32 *value, os_uint32 addend);
-os_uint32 atomic_sub_u32_nv (volatile os_uint32 *value, os_uint32 subtrahend);
-os_uint32 atomic_read_u32 (volatile const os_uint32 *loc);
-void atomic_store_u32 (volatile os_uint32 *loc, os_uint32 new);
-
-void pa_membar_enter (void);
-void pa_membar_exit (void);
-void pa_membar_producer (void);
-void pa_membar_consumer (void);
 #if defined (__cplusplus)
 }
-#endif
 #endif
 
 #if defined (__cplusplus)
@@ -148,10 +181,7 @@ long random (void);
 os_int64 get_thread_cputime (void);
 
 int os_threadEqual (os_threadId a, os_threadId b);
-
-#if defined (__cplusplus)
-}
-#endif
+void log_stacktrace (const char *name, os_threadId tid);
 
 #if !(defined __APPLE__ && defined __OPTIMIZE__ && NN_HAVE_C99_INLINE)
 #define HAVE_ATOMIC_LIFO 0
@@ -168,6 +198,10 @@ NN_C99_INLINE void os_atomic_lifo_push (os_atomic_lifo_t *head, void *elem, os_s
 }
 NN_C99_INLINE void *os_atomic_lifo_pop (os_atomic_lifo_t *head, os_size_t linkoff) {
   return OSAtomicDequeue (head, linkoff);
+}
+#endif
+
+#if defined (__cplusplus)
 }
 #endif
 

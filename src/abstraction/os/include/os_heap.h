@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /****************************************************************
@@ -24,16 +32,14 @@
 #ifndef OS_HEAP_H
 #define OS_HEAP_H
 
+#include "os_defs.h"
+#include "os_alloca.h"
+
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
 /* Define all types used in this interface                      */
-#include "os_defs.h"
-
-/* include OS specific header file              */
-#include "include/os_alloca.h"
-#include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -44,36 +50,38 @@ extern "C" {
 
 /** \brief Allocate memory from heap
  *
- * Allocate memory from heap with the identified size, when
- * no memory is available, return NULL
+ * Allocate memory from heap with the identified size.
  *
  * Possible Results:
- * - assertion failure: size <= 0
- * - returns pointer to allocated memory if
- *     memory with required size could be allocated
- * - returns NULL if
- *     memory with required size could not be allocated
+ * - assertion failure: size == 0
+ * - abort() if memory exhaustion is detected
+ * - returns pointer to allocated memory
  */
 OS_API void *
 os_malloc(
-    os_size_t size);
+    os_size_t size) __attribute_malloc__
+                    __attribute_returns_nonnull__
+                    __attribute_warn_unused_result__
+                    __attribute_alloc_size__((1));
 
 /** \brief Reallocate memory from heap
  *
  * Reallocate memory from heap. If memblk is NULL
- * the function returns malloc(size). When the size
- * is 0 (zero) the memory pointed at by memblk is
- * freed and NULL is returned. All other cases the
- * the memory block pointed at by memblk is re-sized
- * to size.
+ * the function returns malloc(size). In contrast to
+ * normal realloc, it is NOT supported to free memory
+ * by passing 0. This way os_realloc() can be guaranteed
+ * to never return NULL.
  * Possible Results:
- * - returns NULL: if out of memory, or size == 0
+ * - assertion failure: size == 0
+ * - abort() if memory exhaustion is detected
  * - return pointer to reallocated memory otherwise.
  */
 OS_API void *
 os_realloc(
     void *memblk,
-    os_size_t size);
+    os_size_t size) __attribute_returns_nonnull__
+                    __attribute_warn_unused_result__
+                    __attribute_alloc_size__((1));
 
 /** \brief Free allocated memory and return it to heap
  *
@@ -91,7 +99,7 @@ os_free(
  * To reset the functions to their default, supply NULL.
  *
  * Possible Results:
- * - assertion failure: 
+ * - assertion failure:
  *   (pmalloc != NULL && prealloc != NULL && pfree != NULL) ||
  *   (pmalloc = NULL && prealloc = NULL && pfree = NULL)
  */
@@ -100,31 +108,6 @@ os_heapSetService(
     void *(* pmalloc)(os_size_t),
     void *(* prealloc)(void *, os_size_t),
     void (* pfree)(void *));
-
-/** \brief Return amount of cummulative allocated memory
- */
-OS_API os_uint64
-os_heapAllocCum(void);
-
-/** \brief Return amount of allocated memory since previous query
- */
-OS_API os_uint64
-os_heapAlloc(void);
-
-/** \brief Reset counters for allocation interval statistics
- */
-OS_API void
-os_heapReset(void);
-
-/** \brief Return count of allocated memory segments
- */
-OS_API os_uint64
-os_heapAllocCount(void);
-
-/** \brief Return count of deallocated memory segments
- */
-OS_API os_uint64
-os_heapDeallocCount(void);
 
 #undef OS_API
 

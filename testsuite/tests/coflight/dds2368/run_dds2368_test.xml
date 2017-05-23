@@ -17,75 +17,75 @@
 
     <function-list-args>
       <function-required-arg name="host_name1">
-        The host name of the machine 1 you wish test on in double or single quotes, use the following format: "name"
+        The host name of the node 1 you wish test on in double or single quotes, use the following format: "name"
       </function-required-arg>
       <function-optional-arg name="ospl_start" default="'HDE'">
         Location of stax root on master machine in double or single quotes and backslash, use the following format: "dir1/dir2" with following file separator
       </function-optional-arg>
-      <function-optional-arg name="test_root1" default="'/home/user/log'">
-        Location of test case build on machine 1 in double or single quotes and backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="test_root1" default="'/home/dds/FrameworkTests/log'">
+        Location of test case build on node 1 in double or single quotes and backslash, use the following format: "dir1/dir2"
       </function-optional-arg>
-      <function-optional-arg name="osplo_home1" default="'/home/user/osplo'">
-        Location of OSPLO root on machine 1 in double or single quotes and backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="osplo_home1" default="'/home/dds/FrameworkTests/osplo'">
+        Location of OSPLO root on node 1 in double or single quotes and backslash, use the following format: "dir1/dir2"
       </function-optional-arg>
-      <function-optional-arg name="ospli_home1" default="'/home/user/ospli'">
-        Location of OSPLI root on machine 1 in double or single quotes and backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="ospli_home1" default="'/home/dds/FrameworkTests/ospli'">
+        Location of OSPLI root on node 1 in double or single quotes and backslash, use the following format: "dir1/dir2"
       </function-optional-arg>
       <function-optional-arg name="ospl_release_name1" default="'x86.linux-release'">
-        Name of ospl release script (for example, x86.linux-dev or x86.linux-release ) on machine 1
+        ospl target e.g. x86_64.linux-release on node 1
       </function-optional-arg>
-      <function-optional-arg name="ospl_inst_home1" default="'/home/user/PrismTech/OpenSpliceDDS/V5.4.1/HDE/x86.linux'">
-        Location of OSPL root on machine 1 in double or single quotes and backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="ospl_inst_home1" default="'/home/dds/PrismTech/OpenSpliceDDS/V6.4.0/HDE/x86.linux'">
+        Location of OSPL root on node 1 in double or single quotes and backslash, use the following format: "dir1/dir2"
       </function-optional-arg>
       
-      <function-optional-arg name="host_name2" default="'glasgow'">
-        The host name of the machine 2 you wish to test on in double or single quotes, use the following format: "name"
+      <function-optional-arg name="host_name2" default="'rhel60a'">
+        The host name of the node 2 you wish to test on in double or single quotes, use the following format: "name"
       </function-optional-arg>
-      <function-optional-arg name="test_root2" default="'/home/user/log'">
-        Location of test case build on machine 2 in double or single quotes and  backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="test_root2" default="'/home/dds/FrameworkTests/log'">
+        Location of test case build on node 2 in double or single quotes and  backslash, use the following format: "dir1/dir2"
       </function-optional-arg>
-      <function-optional-arg name="osplo_home2" default="'/home/user/osplo'">
-        Location of OSPLO root on machine 2 in double or single quotes and backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="osplo_home2" default="'/home/dds/FrameworkTests/osplo'">
+        Location of osplo root on node 2
       </function-optional-arg>
-      <function-optional-arg name="ospli_home2" default="'/home/user/ospli'">
-        Location of OSPLO root on machine 2 in double or single quotes and backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="ospli_home2" default="'/home/dds/FrameworkTests/ospli'">
+        Location of ospli root on node 2 
       </function-optional-arg>
       <function-optional-arg name="ospl_release_name2" default="'x86.linux-release'">
-        Name of ospl release script (for example, x86.linux-dev or x86.linux-release ) on machine 2
+        ospl target e.g. x86_64.linux-release on node 2
       </function-optional-arg>
-      <function-optional-arg name="ospl_inst_home2" default="'/home/user/PrismTech/OpenSpliceDDS/V5.4.1/HDE/x86.linux'">
-        Location of OSPL root on machine 2 in double or single quotes and backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="ospl_inst_home2" default="'/home/dds/PrismTech/OpenSpliceDDS/V6.4.0/HDE/x86.linux'">
+        Location of OpenSplice installation on node 2
       </function-optional-arg>
       
-      <function-optional-arg name="host_name3" default="'vm-dds-rhel53x64'">
-        The host name of the machine 3 you wish to test on in double or single quotes, use the following format: "name"
+      <function-optional-arg name="host_name3" default="'rhel62a'">
+        The host name of the node 3
       </function-optional-arg>
-      <function-optional-arg name="test_root3" default="'/home/user/log'">
-        Location of test case build on machine 3 in double or single quotes and backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="test_root3" default="'/home/dds/FrameworkTests/log'">
+        Location of log directory on node 3 - where output logs will go
       </function-optional-arg>
-      <function-optional-arg name="osplo_home3" default="'/home/user/osplo'">
-        Location of OSPLO root on machine 3 in double or single quotes and backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="osplo_home3" default="'/home/dds/FrameworkTests/osplo'">
+        Location of osplo root on node 3
       </function-optional-arg>
-      <function-optional-arg name="ospli_home3" default="'/home/user/ospli'">
-        Location of OSPLO root on machine 3 in double or single quotes and backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="ospli_home3" default="'/home/dds/FrameworkTests/ospli'">
+        Location of ospli root on node 3
       </function-optional-arg>
       <function-optional-arg name="ospl_release_name3" default="'x86_64.linux-release'">
-        Name of ospl release script (for example, x86.linux-dev or x86.linux-release ) on machine 3
+        ospl target e.g. x86_64.linux-release on node 3
       </function-optional-arg>
-      <function-optional-arg name="ospl_inst_home3" default="'/home/user/PrismTech/OpenSpliceDDS/V5.4.1/HDE/x86_64.linux'">
-        Location of OSPL root on machine 3 in double or single quotes and backslash, use the following format: "dir1/dir2"
+      <function-optional-arg name="ospl_inst_home3" default="'/home/dds/PrismTech/OpenSpliceDDS/V6.4.0/HDE/x86.linux'">
+        Location of OpenSplice installation on node 3
       </function-optional-arg>
 
       
       
-      <function-optional-arg name="staf_port_1" default="'6508'">
-        Staf port on the machine 1 in double or single quotes
+      <function-optional-arg name="staf_port_1" default="'6500'">
+        Staf port on the node 1 in double or single quotes
       </function-optional-arg>
-      <function-optional-arg name="staf_port_2" default="'6507'">
-        Staf port on the machine 2 in double or single quotes
+      <function-optional-arg name="staf_port_2" default="'6500'">
+        Staf port on the node 2 in double or single quotes
       </function-optional-arg>
-      <function-optional-arg name="staf_port_3" default="'6502'">
-        Staf port on the machine 3 in double or single quotes
+      <function-optional-arg name="staf_port_3" default="'6500'">
+        Staf port on the node 3 in double or single quotes
       </function-optional-arg>
     </function-list-args>
     

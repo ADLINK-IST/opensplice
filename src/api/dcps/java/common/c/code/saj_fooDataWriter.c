@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -15,75 +23,77 @@
 #include "saj_copyOut.h"
 #include "saj_copyCache.h"
 #include "saj_utilities.h"
-
-#include "gapi.h"
+#include "u_writer.h"
+#include "saj__report.h"
 
 /* Defines the package of the java implementation classes */
 #define SAJ_PACKAGENAME "org/opensplice/dds/dcps/"
 #define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_FooDataWriterImpl_##name
 
-/*
- * Class:     org_opensplice_dds_dcps_FooDataWriterImpl
- * Method:    jniRegisterInstance
- * Signature: (Ljava/lang/Object;Ljava/lang/Object;)I
- */
-/*
-    private native static long jniRegisterInstance (
-        Object DataWriter,
-	long copyCache,
-        Object instance_data);
-*/
-JNIEXPORT jlong JNICALL
-SAJ_FUNCTION(jniRegisterInstance) (
-    JNIEnv *env,
-    jclass object,
-    jobject DataWriter,
-    jlong copyCache,
-    jobject instance_data)
+static v_copyin_result
+copyAction(
+    c_type type,
+    const void *data,
+    void *to)
 {
-    C_STRUCT(saj_srcInfo) srcInfo;
-    const gapi_foo *src = NULL;
+    v_copyin_result result = V_COPYIN_RESULT_OK;
+    saj_srcInfo srcInfo = (saj_srcInfo)data;
 
-    OS_UNUSED_ARG(object);
-
-    if (instance_data != NULL) {
-	srcInfo.javaEnv = env;
-        srcInfo.javaObject = instance_data;
-        srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-	src = (const gapi_foo *)&srcInfo;
+    if (srcInfo->javaObject != NULL) {
+        os_int32 copyResult = saj_copyInStruct(c_getBase(type), data, to);
+        switch (copyResult) {
+        case OS_RETCODE_OK:
+            result = V_COPYIN_RESULT_OK;
+            break;
+        case OS_RETCODE_BAD_PARAMETER:
+            result = V_COPYIN_RESULT_INVALID;
+            break;
+        case OS_RETCODE_OUT_OF_RESOURCES:
+            result = V_COPYIN_RESULT_OUT_OF_MEMORY;
+            break;
+        default:
+            break;
+        }
     }
+    /* Compiler expects a return when building release. */
+    return result;
+}
 
-    return (jlong)
-	gapi_fooDataWriter_register_instance (
-	    (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-	    src);
+static u_bool
+copyKeyAction(
+    void *data,
+    void *to)
+{
+    saj_copyOutStruct(data, to);
+    return TRUE;
 }
 
 /*
  * Class:     org_opensplice_dds_dcps_FooDataWriterImpl
- * Method:    jniRegisterInstanceWTimestamp
+ * Method:    jniRegisterInstance
  * Signature: (Ljava/lang/Object;Ljava/lang/Object;LDDS/Time_t;)I
  */
 /*
-    private native static long jniRegisterInstanceWTimestamp (
+    private native static long jniRegisterInstance (
         Object DataWriter,
 	long copyCache,
         Object instance_data,
         DDS.Time_t source_timestamp);
 */
 JNIEXPORT jlong JNICALL
-SAJ_FUNCTION(jniRegisterInstanceWTimestamp) (
+SAJ_FUNCTION(jniRegisterInstance) (
     JNIEnv *env,
     jclass object,
-    jobject DataWriter,
+    jlong uWriter,
     jlong copyCache,
     jobject instance_data,
     jobject source_timestamp)
 {
+    int result = SAJ_RETCODE_OK;
+    os_timeW timestamp;
+    u_result uResult;
+    u_instanceHandle uHandle = 0;
     C_STRUCT(saj_srcInfo) srcInfo;
-    gapi_time_t timestamp;
-    const gapi_time_t *ts = NULL;
-    const gapi_foo *src = NULL;
 
     OS_UNUSED_ARG(object);
 
@@ -91,68 +101,26 @@ SAJ_FUNCTION(jniRegisterInstanceWTimestamp) (
         srcInfo.javaEnv = env;
         srcInfo.javaObject = instance_data;
         srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        src = (const gapi_foo *)&srcInfo;
-    }
-    if (source_timestamp != NULL) {
         if (saj_timeCopyIn (env, source_timestamp, &timestamp) == SAJ_RETCODE_OK) {
-            ts = (const gapi_time_t *)&timestamp;
-	}
+            uResult = u_writerRegisterInstance(SAJ_VOIDP(uWriter), copyAction, &srcInfo,
+                                               timestamp, &uHandle);
+            result = saj_retcode_from_user_result(uResult);
+        }
+    } else {
+        result = SAJ_RETCODE_BAD_PARAMETER;
+        SAJ_REPORT(result, "instance_data 'null' is invalid.");
     }
 
-    return (jlong)
-	gapi_fooDataWriter_register_instance_w_timestamp (
-	    (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-	    src,
-	    ts);
+    return (jlong)uHandle;
 }
 
 /*
  * Class:     org_opensplice_dds_dcps_FooDataWriterImpl
  * Method:    jniUnregisterInstance
- * Signature: (Ljava/lang/Object;Ljava/lang/Object;I)I
- */
-/*
-    private native static int jniUnregisterInstance (
-        Object DataWriter,
-	long copyCache,
-        Object instance_data,
-        long handle);
-*/
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniUnregisterInstance) (
-    JNIEnv *env,
-    jclass object,
-    jobject DataWriter,
-    jlong copyCache,
-    jobject instance_data,
-    jlong handle)
-{
-    C_STRUCT(saj_srcInfo) srcInfo;
-    const gapi_foo *src = NULL;
-
-    OS_UNUSED_ARG(object);
-
-    if (instance_data != NULL) {
-        srcInfo.javaEnv = env;
-        srcInfo.javaObject = instance_data;
-        srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-	src = (const gapi_foo *)&srcInfo;
-    }
-
-    return (jint)
-	gapi_fooDataWriter_unregister_instance (
-	    (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-	    src,
-	    (const gapi_instanceHandle_t)handle);
-}
-
-/*
- * Class:     org_opensplice_dds_dcps_FooDataWriterImpl
- * Method:    jniUnregisterInstanceWTimestamp
  * Signature: (Ljava/lang/Object;Ljava/lang/Object;ILDDS/Time_t;)I
  */
 /*
-    private native static int jniUnregisterInstanceWTimestamp (
+    private native static int jniUnregisterInstance (
         Object DataWriter,
 	long copyCache,
         Object instance_data,
@@ -160,40 +128,38 @@ SAJ_FUNCTION(jniUnregisterInstance) (
         DDS.Time_t source_timestamp);
 */
 JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniUnregisterInstanceWTimestamp) (
+SAJ_FUNCTION(jniUnregisterInstance) (
     JNIEnv *env,
     jclass object,
-    jobject DataWriter,
+    jlong uWriter,
     jlong copyCache,
     jobject instance_data,
     jlong handle,
     jobject source_timestamp)
 {
+    saj_returnCode retcode;
+    u_result uResult;
+    os_timeW timestamp;
     C_STRUCT(saj_srcInfo) srcInfo;
-    gapi_time_t timestamp;
-    const gapi_time_t *ts = NULL;
-    const gapi_foo *src = NULL;
 
     OS_UNUSED_ARG(object);
 
-    srcInfo.javaEnv = env;
-    if (instance_data != NULL) {
-        srcInfo.javaObject = instance_data;
-        srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-	src = (const gapi_foo *)&srcInfo;
-    }
-    if (source_timestamp != NULL) {
-        if (saj_timeCopyIn (env, source_timestamp, &timestamp) == SAJ_RETCODE_OK) {
-	    ts = (const gapi_time_t *)&timestamp;
-	}
+    retcode = saj_timeCopyIn (env, source_timestamp, &timestamp);
+    if (retcode == SAJ_RETCODE_OK) {
+        if (instance_data != NULL) {
+            srcInfo.javaEnv = env;
+            srcInfo.javaObject = instance_data;
+            srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
+            uResult = u_writerUnregisterInstance(SAJ_VOIDP(uWriter), copyAction, &srcInfo,
+                                                 timestamp, handle);
+        } else {
+            uResult = u_writerUnregisterInstance(SAJ_VOIDP(uWriter), copyAction, NULL,
+                                                 timestamp, handle);
+        }
+        retcode = saj_retcode_from_user_result(uResult);
     }
 
-    return (jint)
-	gapi_fooDataWriter_unregister_instance_w_timestamp (
-	    (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-	    src,
-	    (gapi_instanceHandle_t)handle,
-	    ts);
+    return (jint)retcode;
 }
 
 /*
@@ -206,131 +172,52 @@ SAJ_FUNCTION(jniUnregisterInstanceWTimestamp) (
         Object DataWriter,
 	long copyCache,
         Object instance_data,
-        long handle);
+        long handle,
+        DDS.Time_t source_timestamp);
 */
 JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniWrite) (
     JNIEnv *env,
     jclass object,
-    jobject DataWriter,
-    jlong copyCache,
-    jobject instance_data,
-    jlong handle)
-{
-    C_STRUCT(saj_srcInfo) srcInfo;
-    const gapi_foo *src = NULL;
-
-    OS_UNUSED_ARG(object);
-
-    if (instance_data != NULL) {
-        srcInfo.javaEnv = env;
-        srcInfo.javaObject = instance_data;
-        srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-	src = (const gapi_foo *)&srcInfo;
-    }
-
-    return (jint)
-	gapi_fooDataWriter_write (
-	    (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-	    src,
-	    (gapi_instanceHandle_t)handle);
-}
-
-/*
- * Class:     org_opensplice_dds_dcps_FooDataWriterImpl
- * Method:    jniWriteWTimestamp
- * Signature: (Ljava/lang/Object;Ljava/lang/Object;ILDDS/Time_t;)I
- */
-/*
-    private native static int jniWriteWTimestamp (
-        Object DataWriter,
-	long copyCache,
-        Object instance_data,
-        long handle,
-        DDS.Time_t source_timestamp);
-*/
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniWriteWTimestamp) (
-    JNIEnv *env,
-    jclass object,
-    jobject DataWriter,
+    jlong uWriter,
     jlong copyCache,
     jobject instance_data,
     jlong handle,
     jobject source_timestamp)
 {
+    u_result uResult;
+    saj_returnCode retcode = SAJ_RETCODE_OK;
+    os_timeW timestamp;
     C_STRUCT(saj_srcInfo) srcInfo;
-    gapi_time_t timestamp;
-    const gapi_time_t *ts = NULL;
-    const gapi_foo *src = NULL;
 
-    OS_UNUSED_ARG(object);
-
-    if (instance_data != NULL && source_timestamp != NULL) {
-        srcInfo.javaEnv = env;
-        srcInfo.javaObject = instance_data;
-        srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        if (saj_timeCopyIn (env, source_timestamp, &timestamp) == SAJ_RETCODE_OK) {
-	    src = (const gapi_foo *)&srcInfo;
-	    ts = (const gapi_time_t *)&timestamp;
-	}
-    }
-
-    return (jint)
-	gapi_fooDataWriter_write_w_timestamp (
-	    (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-	    src,
-	    (gapi_instanceHandle_t)handle,
-	    ts);
-}
-
-/*
- * Class:     org_opensplice_dds_dcps_FooDataWriterImpl
- * Method:    jniDispose
- * Signature: (Ljava/lang/Object;Ljava/lang/Object;I)I
- */
-/*
-    private native static int jniDispose (
-        Object DataWriter,
-	long copyCache,
-        Object instance_data,
-        long instance_handle);
-*/
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniDispose) (
-    JNIEnv *env,
-    jclass object,
-    jobject DataWriter,
-    jlong copyCache,
-    jobject instance_data,
-    jlong instance_handle)
-{
-    C_STRUCT(saj_srcInfo) srcInfo;
-    const gapi_foo *src = NULL;
-
+    assert (copyCache != 0);
     OS_UNUSED_ARG(object);
 
     if (instance_data != NULL) {
         srcInfo.javaEnv = env;
         srcInfo.javaObject = instance_data;
         srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-	src = (const gapi_foo *)&srcInfo;
+        retcode = saj_timeCopyIn (env, source_timestamp, &timestamp);
+        if (retcode == SAJ_RETCODE_OK) {
+            uResult = u_writerWrite(SAJ_VOIDP(uWriter), copyAction, &srcInfo,
+                                    timestamp, (u_instanceHandle)handle);
+            retcode = saj_retcode_from_user_result(uResult);
+        }
+    } else {
+        retcode = SAJ_RETCODE_BAD_PARAMETER;
+        SAJ_REPORT(retcode, "instance_data 'null' is invalid.");
     }
 
-    return (jint)
-	gapi_fooDataWriter_dispose (
-	    (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-	    src,
-	    (gapi_instanceHandle_t)instance_handle);
+    return (jint)retcode;
 }
 
 /*
  * Class:     org_opensplice_dds_dcps_FooDataWriterImpl
- * Method:    jniDisposeWTimestamp
+ * Method:    jniDispose
  * Signature: (Ljava/lang/Object;Ljava/lang/Object;ILDDS/Time_t;)I
  */
 /*
-    private native static int jniDisposeWTimestamp (
+    private native static int jniDispose (
         Object DataWriter,
 	long copyCache,
         Object instance_data,
@@ -338,86 +225,48 @@ SAJ_FUNCTION(jniDispose) (
         DDS.Time_t source_timestamp);
 */
 JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniDisposeWTimestamp) (
+SAJ_FUNCTION(jniDispose) (
     JNIEnv *env,
     jclass object,
-    jobject DataWriter,
+    jlong uWriter,
     jlong copyCache,
     jobject instance_data,
     jlong instance_handle,
     jobject source_timestamp)
 {
+    saj_returnCode retcode = SAJ_RETCODE_OK;
+    u_result uResult;
+    os_timeW timestamp;
     C_STRUCT(saj_srcInfo) srcInfo;
-    gapi_time_t timestamp;
-    const gapi_time_t *ts = NULL;
-    const gapi_foo *src = NULL;
 
+    assert (copyCache != 0);
     OS_UNUSED_ARG(object);
 
-    if (instance_data != NULL && source_timestamp != NULL) {
-        srcInfo.javaEnv = env;
-        srcInfo.javaObject = instance_data;
-        srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        if (saj_timeCopyIn (env, source_timestamp, &timestamp) == SAJ_RETCODE_OK) {
-	    src = (const gapi_foo *)&srcInfo;
-	    ts = (const gapi_time_t *)&timestamp;
-	}
+    retcode = saj_timeCopyIn (env, source_timestamp, &timestamp);
+
+    if (retcode == SAJ_RETCODE_OK) {
+        if(instance_data != NULL){
+            srcInfo.javaEnv = env;
+            srcInfo.javaObject = instance_data;
+            srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
+            uResult = u_writerDispose(SAJ_VOIDP(uWriter), copyAction, &srcInfo,
+                              timestamp, (u_instanceHandle)instance_handle);
+        } else {
+            uResult = u_writerDispose(SAJ_VOIDP(uWriter), copyAction, NULL,
+                              timestamp, (u_instanceHandle)instance_handle);
+        }
+        retcode = saj_retcode_from_user_result(uResult);
     }
-    return (jint)
-	gapi_fooDataWriter_dispose_w_timestamp (
-	    (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-	    src,
-	    (gapi_instanceHandle_t)instance_handle,
-	    ts);
+    return (jint)retcode;
 }
 
 /*
  * Class:     org_opensplice_dds_dcps_FooDataWriterImpl
  * Method:    jniWritedispose
- * Signature: (Ljava/lang/Object;Ljava/lang/Object;I)I
- */
-/*
-    private native static int jniWritedispose (
-        Object DataWriter,
-        long copyCache,
-        Object instance_data,
-        long handle);
-*/
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniWritedispose) (
-    JNIEnv *env,
-    jclass object,
-    jobject DataWriter,
-    jlong copyCache,
-    jobject instance_data,
-    jlong handle)
-{
-    C_STRUCT(saj_srcInfo) srcInfo;
-    const gapi_foo *src = NULL;
-
-    OS_UNUSED_ARG(object);
-
-    if (instance_data != NULL) {
-        srcInfo.javaEnv = env;
-        srcInfo.javaObject = instance_data;
-        srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        src = (const gapi_foo *)&srcInfo;
-    }
-
-    return (jint)
-        gapi_fooDataWriter_writedispose(
-            (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-            src,
-            (gapi_instanceHandle_t)handle);
-}
-
-/*
- * Class:     org_opensplice_dds_dcps_FooDataWriterImpl
- * Method:    jniWritedisposeWTimestamp
  * Signature: (Ljava/lang/Object;Ljava/lang/Object;ILDDS/Time_t;)I
  */
 /*
-    private native static int jniWritedisposeWTimestamp (
+    private native static int jniWritedispose (
         Object DataWriter,
         long copyCache,
         Object instance_data,
@@ -425,37 +274,39 @@ SAJ_FUNCTION(jniWritedispose) (
         DDS.Time_t source_timestamp);
 */
 JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniWritedisposeWTimestamp) (
+SAJ_FUNCTION(jniWritedispose) (
     JNIEnv *env,
     jclass object,
-    jobject DataWriter,
+    jlong uWriter,
     jlong copyCache,
     jobject instance_data,
     jlong handle,
     jobject source_timestamp)
 {
+    saj_returnCode retcode = SAJ_RETCODE_BAD_PARAMETER;
+    u_result uResult;
+    os_timeW timestamp;
     C_STRUCT(saj_srcInfo) srcInfo;
-    gapi_time_t timestamp;
-    const gapi_time_t *ts = NULL;
-    const gapi_foo *src = NULL;
 
+    assert (copyCache != 0);
     OS_UNUSED_ARG(object);
 
-    if (instance_data != NULL && source_timestamp != NULL) {
+    if (instance_data != NULL) {
         srcInfo.javaEnv = env;
         srcInfo.javaObject = instance_data;
         srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        if (saj_timeCopyIn (env, source_timestamp, &timestamp) == SAJ_RETCODE_OK) {
-            src = (const gapi_foo *)&srcInfo;
-            ts = (const gapi_time_t *)&timestamp;
+        retcode = saj_timeCopyIn (env, source_timestamp, &timestamp);
+        if (retcode == SAJ_RETCODE_OK) {
+            uResult = u_writerWriteDispose(SAJ_VOIDP(uWriter), copyAction, &srcInfo,
+                                           timestamp, (u_instanceHandle)handle);
+            retcode = saj_retcode_from_user_result(uResult);
         }
+    } else {
+        retcode = SAJ_RETCODE_BAD_PARAMETER;
+        SAJ_REPORT(retcode, "instance_data 'null' is invalid.");
     }
 
-    return (jint)gapi_fooDataWriter_writedispose_w_timestamp(
-            (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-            src,
-            (gapi_instanceHandle_t)handle,
-            ts);
+    return (jint)retcode;
 }
 
 /*
@@ -474,36 +325,42 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetKeyValue) (
     JNIEnv *env,
     jclass object,
-    jobject DataWriter,
+    jlong uWriter,
     jlong copyCache,
     jobject key_holder,
     jlong handle)
 {
+    saj_returnCode retcode = SAJ_RETCODE_BAD_PARAMETER;
     C_STRUCT(saj_dstInfo) dstInfo;
-    gapi_foo *dst = NULL;
-    jint result;
-    jobject element = NULL;
+    void *dst = NULL;
+    u_result uResult;
+    jobject element;
     sajReaderCopyCache *rc = saj_copyCacheReaderCache ((saj_copyCache)(PA_ADDRCAST)copyCache);
 
     OS_UNUSED_ARG(object);
 
     if (key_holder != NULL) {
-        element = (*env)->GetObjectField (env, key_holder, rc->dataHolder_value_fid);
+        element = (*env)->GetObjectField(env, key_holder, rc->dataHolder_value_fid);
+        CHECK_EXCEPTION(env);
         dstInfo.javaEnv = env;
         dstInfo.javaObject = element;
         dstInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        dst = (gapi_foo *)&dstInfo;
+        dst = (void *)&dstInfo;
     }
 
-    result = gapi_fooDataWriter_get_key_value (
-            (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-            (gapi_foo *)dst,
-            (gapi_instanceHandle_t)handle);
-
+    uResult = u_writerCopyKeysFromInstanceHandle(SAJ_VOIDP(uWriter),
+                                                (u_instanceHandle)handle,
+                                                (u_writerCopyKeyAction)copyKeyAction, dst);
+    retcode = saj_retcode_from_user_result(uResult);
     if ((key_holder != NULL) && (dstInfo.javaObject != element)) {
-        (*env)->SetObjectField (env, key_holder, rc->dataHolder_value_fid, dstInfo.javaObject);
+        (*env)->SetObjectField(env, key_holder, rc->dataHolder_value_fid, dstInfo.javaObject);
+        CHECK_EXCEPTION(env);
     }
-    return result;
+
+    return retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
 }
 
 /*
@@ -511,16 +368,16 @@ SAJ_FUNCTION(jniGetKeyValue) (
  * Method:    jniLookupInstance
  * Signature: (Ljava/lang/Object;JLjava/lang/Object;)J
  */
-JNIEXPORT jlong JNICALL 
+JNIEXPORT jlong JNICALL
 SAJ_FUNCTION(jniLookupInstance)(
-    JNIEnv *env, 
-    jclass object, 
-    jobject jwriter, 
-    jlong copyCache, 
+    JNIEnv *env,
+    jclass object,
+    jlong uWriter,
+    jlong copyCache,
     jobject instanceData)
 {
+    u_instanceHandle uHandle = U_INSTANCEHANDLE_NIL;
     C_STRUCT(saj_srcInfo) srcInfo;
-    const gapi_foo *src = NULL;
 
     OS_UNUSED_ARG(object);
 
@@ -528,10 +385,8 @@ SAJ_FUNCTION(jniLookupInstance)(
         srcInfo.javaEnv = env;
         srcInfo.javaObject = instanceData;
         srcInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-        src = (const gapi_foo *)&srcInfo;
+        (void)u_writerLookupInstance(SAJ_VOIDP(uWriter), copyAction, &srcInfo, &uHandle);
     }
 
-    return (jlong)gapi_fooDataWriter_lookup_instance (
-        (gapi_fooDataWriter)saj_read_gapi_address (env, jwriter),
-            src);
+    return (jlong)uHandle;
 }

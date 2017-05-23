@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_program.h"
@@ -46,10 +54,10 @@ idl_genSajXMLMeta(
 {
     char *meta;
     char *newMeta;
-    int pcs;
-    int len;
+    os_size_t pcs;
+    os_size_t len;
     char *ptr;
-    int i;
+    os_size_t i;
     
     meta = idl_genXMLmeta(type);
     len = strlen(meta);
@@ -66,24 +74,22 @@ idl_genSajXMLMeta(
      */
     len += 4*pcs;
     newMeta = os_malloc(len + 1);
-    if (newMeta) {
-        ptr = meta;
-        newMeta[0] = 0;
-        while (pcs > 1) {
-            os_strcat(newMeta, "\"");
-	    i = 1;
-	    while (ptr[IDL_MAX_JSTRING_META_SIZE-i] == '\\') {
-		i++;
-	    }
-            os_strncat(newMeta, ptr, IDL_MAX_JSTRING_META_SIZE-i+1);
-            ptr += (IDL_MAX_JSTRING_META_SIZE-i+1);
-            os_strcat(newMeta, "\",\n");
-            pcs--;   
+    ptr = meta;
+    newMeta[0] = 0;
+    while (pcs > 1) {
+        os_strcat(newMeta, "\"");
+        i = 1;
+        while (ptr[IDL_MAX_JSTRING_META_SIZE-i] == '\\') {
+            i++;
         }
-        os_strcat(newMeta, "\"");
-        os_strcat(newMeta, ptr);
-        os_strcat(newMeta, "\"");
+        os_strncat(newMeta, ptr, IDL_MAX_JSTRING_META_SIZE-i+1);
+        ptr += (IDL_MAX_JSTRING_META_SIZE-i+1);
+        os_strcat(newMeta, "\",\n");
+        pcs--;
     }
+    os_strcat(newMeta, "\"");
+    os_strcat(newMeta, ptr);
+    os_strcat(newMeta, "\"");
     os_free(meta);
     return newMeta;
 }
@@ -130,12 +136,8 @@ idl_genMeta (
     if (idl_fileCur() == NULL) {
         return -1;
     }
-    if (idl_scopeStackSize(meta->scope) > 0) {
-        idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava (meta->scope, ".", NULL));
-        idl_fileOutPrintf(idl_fileCur(), "\n");
-    }
     /* Prepare typeSupport class */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmplMetaHolder.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
+    snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ctmplMetaHolder.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
     /* QAC EXPECT 3416; No side effects here */
     if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -143,10 +145,10 @@ idl_genMeta (
         return -1;
     }
     /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+    idlpp_template = os_malloc(tmplStat.stat_size+1);
     tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+    nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+    memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
     close(tmplFile);
     idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
@@ -169,16 +171,14 @@ newMeta(
     idl_meta meta;
 
     meta = os_malloc(C_SIZEOF(idl_meta));
-    if (meta) {
-        meta->scope = idl_scopeDup(scope);
-        meta->name = os_strdup(name);
-        if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
-            meta->actual_name = idl_typeSpecName(idl_typeDefActual(idl_typeDef(typeSpec)));
-        } else {
-            meta->actual_name = idl_typeSpecName(typeSpec);
-        }
-        meta->type = idl_typeSpecDef(typeSpec);
+    meta->scope = idl_scopeDup(scope);
+    meta->name = os_strdup(name);
+    if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
+        meta->actual_name = idl_typeSpecName(idl_typeDefActual(idl_typeDef(typeSpec)));
+    } else {
+        meta->actual_name = idl_typeSpecName(typeSpec);
     }
+    meta->type = idl_typeSpecDef(typeSpec);
     idlpp_metaList = os_iterAppend(idlpp_metaList, meta);
 }
 
@@ -188,6 +188,10 @@ idl_fileOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -196,6 +200,9 @@ idl_fileClose(
     void *userData)
 {
     idl_meta meta;
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(userData);
 
     meta = os_iterTakeFirst(idlpp_metaList);
     while (meta) {
@@ -213,6 +220,10 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -223,6 +234,8 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
         newMeta(scope, name, idl_typeSpec(structSpec));
     }
@@ -236,6 +249,8 @@ idl_unionOpen(
     idl_typeUnion unionSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
         newMeta(scope, name, idl_typeSpec(unionSpec));
     }
@@ -249,6 +264,8 @@ idl_typedefOpenClose(
     idl_typeDef defSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     if ((idl_typeSpecType(idl_typeDefActual (defSpec)) == idl_tstruct) ||
         (idl_typeSpecType(idl_typeDefActual (defSpec)) == idl_tunion)) {
         if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -114,6 +122,7 @@ DDS_Publisher createPublisher(DDS_DomainParticipant domainParticipant)
    checkStatus(g_status, "DDS_DomainParticipant_get_default_publisher_qos");
    publisherQos->partition.name._length = 1;
    publisherQos->partition.name._maximum = 1;
+   publisherQos->partition.name._release = TRUE;
    publisherQos->partition.name._buffer = DDS_StringSeq_allocbuf(1);
    checkHandle(publisherQos->partition.name._buffer, "DDS_StringSeq_allocbuf");
    publisherQos->partition.name._buffer[0] = DDS_string_dup(g_partitionName);
@@ -149,6 +158,9 @@ DDS_DataWriter createDataWriter(DDS_Publisher publisher, DDS_Topic topic)
    dataWriter = DDS_Publisher_create_datawriter(publisher, topic, dataWriterQos, NULL, DDS_STATUS_MASK_NONE);
    checkHandle(dataWriter, "DDS_Publisher_create_datawriter");
 
+   DDS_free(dataWriterQos);
+   DDS_free(topicQos);
+
    return dataWriter;
 }
 
@@ -168,6 +180,7 @@ DDS_Subscriber createSubscriber(DDS_DomainParticipant domainParticipant)
    checkStatus(g_status, "DDS_DomainParticipant_get_default_subscriber_qos");
    subscriberQos->partition.name._length = 1;
    subscriberQos->partition.name._maximum = 1;
+   subscriberQos->partition.name._release = TRUE;
    subscriberQos->partition.name._buffer = DDS_StringSeq_allocbuf(1);
    checkHandle(subscriberQos->partition.name._buffer, "DDS_StringSeq_allocbuf");
    subscriberQos->partition.name._buffer[0] = DDS_string_dup(g_partitionName);
@@ -212,6 +225,9 @@ DDS_DataReader createDataReader(DDS_Subscriber subscriber, DDS_Topic topic)
 
    dataReader = DDS_Subscriber_create_datareader(subscriber, topic, dataReaderQos, NULL, DDS_STATUS_MASK_NONE);
    checkHandle(dataReader, "DDS_Subscriber_create_datareader");
+
+   DDS_free(dataReaderQos);
+   DDS_free(topicQos);
 
    return dataReader;
 }

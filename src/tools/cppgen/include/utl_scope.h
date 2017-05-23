@@ -88,14 +88,14 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 ** USE: Included from ast.hh
 */
 
-#include "idl_fwd.h"
-#include "idl_narrow.h"
-#include "ast_decl.h"
-#include "ast_expression.h"
-#include "utl_scoped_name.h"
-#include "utl_pragmas.h"
-#include "utl_hash.h"
-#include "utl_identifier.h"
+#include <idl_fwd.h>
+#include <idl_narrow.h>
+#include <ast_decl.h>
+#include <ast_expression.h>
+#include <utl_scoped_name.h>
+#include <utl_pragmas.h>
+#include <utl_hash.h>
+#include <utl_identifier.h>
 
 // Forward declaration of active iterator for UTL_Scope
 
@@ -111,7 +111,8 @@ public:
    typedef UtlMap <Identifier, AST_Decl*> AST_Decl_Map;
 
    // Enum to denote the kind of iteration desired
-   enum ScopeIterationKind {
+   enum ScopeIterationKind 
+   {
       IK_both  // Iterate through both decls and local types
       , IK_decls  // Iterate only through decls
       , IK_localtypes // Iterate only through local types
@@ -120,10 +121,10 @@ public:
    // Operations
 
    // Constructor(s)
-   UTL_Scope();
-   UTL_Scope(AST_Decl::NodeType nt, UTL_ScopedName *n, const UTL_Pragmas &p);
-   virtual ~UTL_Scope()
-   {}
+
+   UTL_Scope ();
+   UTL_Scope (AST_Decl::NodeType nt, UTL_ScopedName *n, const UTL_Pragmas &p);
+   virtual ~UTL_Scope ();
 
    // Scope Management Protocol
    virtual AST_PredefinedType *add_predefined_type(AST_PredefinedType *t);
@@ -157,6 +158,8 @@ public:
    // Call back end add_XXX functions for this scope
    virtual AST_Decl *call_add();
 
+   void reorder (AST_Decl * d);
+
    // Data Accessors
 
    AST_Decl::NodeType scope_node_type()
@@ -178,8 +181,8 @@ public:
 
    // Name Lookup Mechanism
    virtual AST_Decl *lookup_by_name(UTL_ScopedName *,
-                                    idl_bool treat_as_ref,
-                                    idl_bool in_parent = 0);
+                                    bool treat_as_ref,
+                                    bool in_parent = 0);
 
    // Look up the Identifier * specified only in the local scope
    virtual AST_Decl *lookup_by_name_local (Identifier *);
@@ -192,6 +195,7 @@ public:
    virtual unsigned long nmembers();
 
 protected:
+
    // UTL_Scope protected addition protocol. This protocol is
    // used from sub-classes of UTL_Scope to insert nodes directly
    // into the specified node table (either decls or local_types)
@@ -206,26 +210,26 @@ protected:
 
    // Add to referenced nodes set.
    void add_to_referenced(AST_Decl *e,
-                          idl_bool recursive);
+                          bool recursive);
 
    // Has this node been referenced here already?
-   idl_bool referenced(AST_Decl *e);
+   bool referenced(AST_Decl *e);
 
    // Look up a scoped name in the inherited interfaces of an
    // interface
    virtual AST_Decl *look_in_inherited(UTL_ScopedName *,
-                                       idl_bool treat_as_ref);
-
-protected:
-   // Operations
+                                       bool treat_as_ref);
 
    // Lookup based on the local name
    virtual AST_Decl *lookup_for_add (AST_Decl *d);
 
-   idl_bool identifiers_equal(Identifier* one, Identifier* another);
+   bool identifiers_equal(Identifier* one, Identifier* another);
+
+   // Set any generation flag for everything in scope
+
+   void set_scoped_gen_any (void);
 
 private:
-   // Data
 
    // What type is this node? This is a cache of the information
    // in AST_Decl
@@ -262,15 +266,12 @@ private:
    // UTL_Scope. Definition follows below.
 
    friend class UTL_ScopeActiveIterator;
-
    friend class UTL_ScopeListIterator;
-
-private:
    friend int yyparse();
-
    friend class AST_Enum;
 
    // Scope Management Protocol
+
    virtual AST_PredefinedType *fe_add_predefined_type(AST_PredefinedType *t);
    virtual AST_Module *fe_add_module(AST_Module *m);
    virtual AST_Interface *fe_add_interface(AST_Interface *i);
@@ -321,7 +322,7 @@ public:
    virtual AST_Decl *item();
 
    // Have we iterated over entire scope?
-   virtual idl_bool is_done();
+   virtual bool is_done();
 
    // What kind of iterator is this?
    virtual UTL_Scope::ScopeIterationKind iteration_kind();
@@ -360,7 +361,7 @@ public:
    virtual UTL_Scope *item();
 
    // Have we iterated over entire list of scopes?
-   virtual idl_bool is_done();
+   virtual bool is_done();
 
 private:
 

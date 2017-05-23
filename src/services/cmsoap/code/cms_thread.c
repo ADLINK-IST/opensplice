@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -22,14 +30,9 @@ cms_threadNew(
     os_threadAttr * attr)
 {
     cms_thread thread;
-
-    thread = cms_thread(os_malloc(C_SIZEOF(cms_thread)));
-    if (thread != NULL) {
-        cms_object(thread)->kind = CMS_THREAD;
-    }
-
+    thread = os_malloc(sizeof *thread);
+    cms_object(thread)->kind = CMS_THREAD;
     cms_threadInit(thread, name, attr);
-
     return thread;
 }
 
@@ -39,25 +42,19 @@ cms_threadInit(
     const c_char* name,
     os_threadAttr * attr)
 {
-    os_result osr;
-
     if(thread != NULL){
         if(name != NULL){
             thread->ready = TRUE;
             thread->terminate = FALSE;
             thread->results = NULL;
             thread->name = name;
+            thread->did.id[0] = '\0';
             thread->uri = NULL;
 
             if (attr != NULL) {
                 thread->attr = *attr;
             } else {
-                osr = os_threadAttrInit(&thread->attr);
-                if(osr != os_resultSuccess){
-                    OS_REPORT(OS_ERROR, CMS_CONTEXT, 0, "cms_threadInit failed.");
-                    os_free(thread);
-                    thread = NULL;
-                }
+                os_threadAttrInit(&thread->attr);
             }
         } else {
             os_free(thread);
@@ -88,7 +85,7 @@ cms_threadDeinit(
             osr = os_threadWaitExit(thread->id, NULL);
 
             if(osr != os_resultSuccess){
-                OS_REPORT_1(OS_ERROR, CMS_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
                             "Thread '%s' waitExit failed.", thread->name);
             }
         }
@@ -105,7 +102,7 @@ cms_threadStart(
     c_bool success;
 
     success = TRUE;
-    osr = os_threadCreate(&thread->id, thread->name, &thread->attr, start_routine, arg);
+    osr = u_serviceThreadCreate(&thread->id, thread->name, &thread->attr, start_routine, arg);
 
     if(osr != os_resultSuccess){
         OS_REPORT(OS_ERROR, CMS_CONTEXT, 0, "cms_threadStart failed.");
@@ -120,10 +117,11 @@ cms_threadFree(
     cms_thread thread)
 {
     if(thread != NULL){
+        cms_threadDeinit(thread);
+
         if (thread->uri != NULL) {
             os_free(thread->uri);
         }
-        cms_threadDeinit(thread);
         os_free(thread);
         thread = NULL;
     }

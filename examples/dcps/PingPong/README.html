@@ -4,7 +4,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<title>OpenSplice DDS examples - PingPong</title>
+<title>OpenSplice examples - PingPong</title>
 <link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
 </head>
 
@@ -20,7 +20,6 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
   <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
   <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
-  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -28,7 +27,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../Throughput/README.html">Throughput</a></li>
 </ul>
 <h2> PingPong </h2>
-
+<span class="ex-lifecycle" data-timeout="10" style="display:none"></span>
 <ul>
   <li><a href ="#STANDALONE">Running of examples in Standalone Mode</a></li>
   <li><a href ="#CORBA">Running of examples in CORBA Cohabitation Mode</a></li>
@@ -40,8 +39,8 @@ back a single message.</p>
 
 <h3>2) Design</h3>
 <p>It consists of 2 units :</p>
- <ul><li> pong : Waits for messages from ping and sends the same message back</li>
-     <li> ping : Sends a message to pong and waits for it's return</li></ul>
+ <ul><li class="ex-unit"> <span class="ex-unit-key" data-langc="pong" data-langcpp="pong" data-langjava="pong" data-langcs="sacs_pingpong_pong" data-langjava5="pong">pong</span> : <span class="ex-unit-desc">Waits for messages from ping and sends the same message back</span></li>
+     <li class="ex-unit"> <span class="ex-unit-key" data-langc="ping" data-langcpp="ping" data-langjava="ping" data-langcs="sacs_pingpong_ping" data-langjava5="ping">ping</span> : <span class="ex-unit-desc">Sends a message to pong and waits for it's return</span></li></ul>
 
 <h3>3) Scenario</h3>
 
@@ -60,19 +59,21 @@ back a single message.</p>
 
    <p>Configurable:</p>
       <ul>
-         <li>blocks:     number of roundtrips in each statistics calculation</li>
-         <li>nof_cycles: how many times such a statistics calculation is run</li>
-         <li>topic_id:   for the topic, there's a choice between several preconfigured topics.</li>
+         <li class="ex-param"><span class="ex-param-name" data-ptype="Integer" data-pcategory="ping">blocks</span>:     <span class="ex-param-desc">number of roundtrips in each statistics calculation</span></li>
+         <li class="ex-param"><span class="ex-param-name" data-ptype="Integer" data-pcategory="ping">nof_cycles</span>: <span  class="ex-param-desc">how many times such a statistics calculation is run</span></li>
+         <li class="ex-param"><span class="ex-param-name" data-ptype="Enum" data-pcategory="ping">topic_id</span>:   <span  class="ex-param-desc">for the topic, there's a choice between several preconfigured topics</span>.</li>
+         <li class="ex-param"><span class="ex-param-name" data-ptype="String">write_partition</span>:   <span  class="ex-param-desc">the partition for writing</span>.</li>
+         <li class="ex-param"><span class="ex-param-name" data-ptype="String">read_partition</span>:   <span  class="ex-param-desc">the partition that all samples are read from</span>.</li>
       </ul>
       <p>topic_id allows selection of topic used for the test, among those defined by pragma keylist in pinpong.idl, and may be one of : </p>
       <ul>
-         <li>'m' (PP_min_msg)</li>
-         <li>'q' (PP_seq_msg)</li>
-         <li>'s' (PP_string_msg)</li>
-         <li>'f' (PP_fixed_msg)</li>
-         <li>'a' (PP_array_msg)</li>
-         <li>'t' (PP_quit_msg)</li>
-         <li>'b' (PP_bounded_seq_msg) is also available when running the C++ version of PingPong on posix platforms</li>
+         <li class="ex-param-option" data-paramkey="topic_id">'<span class="ex-value">m</span>' (PP_min_msg)</li>
+         <li class="ex-param-option" data-paramkey="topic_id">'<span class="ex-value">q</span>' (PP_seq_msg)</li>
+         <li class="ex-param-option" data-paramkey="topic_id">'<span class="ex-value">s</span>' (PP_string_msg)</li>
+         <li class="ex-param-option" data-paramkey="topic_id">'<span class="ex-value">f</span>' (PP_fixed_msg)</li>
+         <li class="ex-param-option" data-paramkey="topic_id">'<span class="ex-value">a</span>' (PP_array_msg)</li>
+         <li class="ex-param-option" data-paramkey="topic_id">'<span class="ex-value">t</span>' (PP_quit_msg)</li>
+         <li class="ex-param-option" data-paramkey="topic_id">'<span class="ex-value">b</span>' (PP_bounded_seq_msg) is also available when running the C++ version of PingPong on posix platforms</li>
       </ul>
    <p>PING and PONG partition: this enables to use several PING-PONG pairs
      simultaneous with them interfering with each other. It also enables
@@ -88,7 +89,7 @@ back a single message.</p>
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
-<p>The OpenSpliceDDS environment variables must be set in order for the examples to build/run correctly.
+<p>The OpenSplice environment variables must be set in order for the examples to build/run correctly.
 To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.com</i>" script supplied with the distribution.</p>
 
 <ul>
@@ -113,29 +114,35 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
 
 <h4><balise id = "Java">Java executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a>
-<p>Two jars are generated in the <b>standalone</b> directory when the example is built:</p>
+<p>Three jars are generated in the <b>java/standalone</b> directory when the example is built:</p>
+<p>For Java</p>
+                <ul><li>saj_pingpong_ping.jar </li>
+                        <li>saj_pingpong_pong.jar </li>
+                        <li>saj_pingpong_types.jar </li>
+                </ul>
 
-                <ul><li>saj_pingpong_app.jar </li>
-                        <li>saj_pingpong.jar </li>
+<p>For Java5</p>
+                <ul><li>saj5_pingpong_ping.jar </li>
+                        <li>saj5_pingpong_pong.jar </li>
+                        <li>saj5_pingpong_types.jar </li>
                 </ul>
 
 <h4>Running the example</h4>
- <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new terminal used.  If running the C or C++ examples, ensure that
-    . is added to the LD_LIBRARY_PATH.</p>
+ <p>Ensure that the environment for OpenSplice is set up correctly as described above for each new terminal used.</p>
  <p>It is recommended that you run the subscriber and publisher in separate terminals to avoid mixing the output</p>
 
-   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSplice middleware</b></p>
    <ul>
-     <li>OpenSpliceDDS is deployed in this mode by default.</li>
-     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
-     <li>Open 2 terminals. Set up the environment and go to directory <b>standalone</b> as described above</li>
+     <li>OpenSplice is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSplice middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 terminals. Set up the environment and go to the example directory as described above</li>
    </ul>
 
    <p><b>Running in multiple process shared memory configuration</b></p>
-   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>
+   <p>To enable deployment in this mode, an OpenSplice configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>
     <ul>
           <li>Open 2 terminals.  In each terminal:</li>
-          <li>Setup the environment and go to directory <b>standalone</b> as described above</li>
+          <li>Setup the environment and go to the example directory as described above</li>
           <li>Set the required configuraton file e.g. <i>OSPL_URI=file://$OSPL_HOME/etc/config/ospl_shmem_ddsi.xml</i></li>
           <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
     </ul>
@@ -146,25 +153,27 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
      <li> In the first terminal start pong by running either
         <ul>
           <li><b><i>pong PongRead PongWrite </i></b> for C/C++  </li>
-          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes pong PongRead PongWrite</i></b> for Java </li>
+          <li><b><i>java -jar saj_pingpong_pong.jar PongRead PongWrite</i></b> for Java </li>
+          <li><b><i>java -jar saj5_pingpong_pong.jar PongRead PongWrite</i></b> for Java5 </li>
         </ul>
      </li>
     </ul>
 
     <pre>
-    pong usage:  pong [write partition] [read partition]
+    pong usage:  <span class="ex-unit-detail" data-unitkey="pong">pong [<span class="ex-unit-param">write_partition</span>] [<span class="ex-unit-param">read_partition</span>]</span>
     </pre>
 
    <ul>
      <li> In the second terminal start ping by running either
        <ul>
           <li><b><i>ping 100 100 f PongRead PongWrite</i></b> for C/C++  </li>
-          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes ping </i></b> for Java </li></ul>
+          <li><b><i>java -jar saj_pingpong_ping.jar 100 100 f PongRead PongWrite</i></b> for Java </li>
+          <li><b><i>java -jar saj5_pingpong_ping.jar 100 100 f PongRead PongWrite</i></b> for Java5 </li>
            </ul>
     </ul>
 
     <pre>ping usage:
-      ping [blocks][number of cycles] [topic_id] [write partition] [read partition]
+      <span class="ex-unit-detail" data-unitkey="ping">ping [<span class="ex-unit-param">blocks</span>][<span class="ex-unit-param">nof_cycles</span>] [<span class="ex-unit-param">topic_id</span>] [<span class="ex-unit-param">write_partition</span>] [<span class="ex-unit-param">read_partition</span>]</span>
       topic_id is from 'm', 'q', 's', 'f', 'a' or 't' where 't' is to quit
     </pre>
 
@@ -172,8 +181,8 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
-<p>The OpenSpliceDDS environment variables must be set in order for the examples to run correctly.
-To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the environment variables for OpenSpliceDDS automatically.  The <i>OpenSpliceDDS Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
+<p>The OpenSplice environment variables must be set in order for the examples to run correctly.
+To do this open an <i>OpenSplice Command Prompt</i> which will set up the environment variables for OpenSplice automatically.  The <i>OpenSplice Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
 
 <ul>
   <li><a href ="#C_C++_CS_Win">C/C++/C# Examples </a></li>
@@ -183,36 +192,48 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
 <h4><balise id="C_C++_CS_Win">C/C++/C# Executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
 <p>Two executables are generated in the <b>standalone</b> directory when the example is built:
-<p>For C, C++ and C#</p>
+<p>For C and  C++</p>
                 <ul><li>ping</li>
                         <li>pong</li>
                 </ul>
 
+<p>For C#</p>
+                <ul><li>sacs_pingpong_ping</li>
+                        <li>sacs_pingpong_pong</li>
+                </ul>
+
 <h4><balise id="Java_Win">Java Executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
-<p>The ping and pong classes are generated in the <b>standalone</b> directory when the example is built:</p>
+<p>Three jars are generated in the <b>java/standalone</b> directory when the example is built:</p>
+<p>For Java</p>
+                <ul><li>saj_pingpong_ping.jar </li>
+                        <li>saj_pingpong_pong.jar </li>
+                        <li>saj_pingpong_types.jar </li>
+                </ul>
 
-                <ul><li>ping.class</li>
-                        <li>pong.class </li>
+<p>For Java5</p>
+                <ul><li>saj5_pingpong_ping.jar </li>
+                        <li>saj5_pingpong_pong.jar </li>
+                        <li>saj5_pingpong_types.jar </li>
                 </ul>
 
 <h4><balise id="C_C++_CS_Java_Win">Running the C/C++/C#/Java Examples</balise></h4>
-   <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new command prompt used.</p>
+   <p>Ensure that the environment for OpenSplice is set up correctly as described above for each new command prompt used.</p>
    <p>The following steps describe how to run the examples:</p>
 
-   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSplice middleware</b></p>
    <ul>
-     <li>OpenSpliceDDS is deployed in this mode by default.</li>
-     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
-     <li>Open 2 OpenSpliceDDS Command Prompts and go to directory <b>standalone</b> as described above</li>
+     <li>OpenSplice is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSplice middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 OpenSplice Command Prompts and go to the example directory as described above</li>
    </ul>
 
    <p><b>Running in multiple process shared memory configuration</b></p>
-   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>
+   <p>To enable deployment in this mode, an OpenSplice configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>
     <ul>
-          <li>Open 2 OpenSpliceDDS Command Prompts.  In each window:</li>
-          <li>Go to directory <b>standalone</b> as described above</li>
-          <li>Set the required configuration file e.g. <i>set OSPL_URI="file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml"</i></li>
+          <li>Open 2 OpenSplice Command Prompts.  In each window:</li>
+          <li>Go to the example directory as described above</li>
+          <li>Set the required configuration file e.g. <i>set OSPL_URI=file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml</i></li>
           <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
     </ul>
 
@@ -221,7 +242,9 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
      <li> In the first terminal start pong by running either
         <ul>
           <li><b><i>pong PongRead PongWrite </i></b> for C/C++  </li>
-          <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes pong PongRead PongWrite</i></b> for Java </li>
+          <li><b><i>sacs_pingpong_pong PongRead PongWrite </i></b> for C# </li>
+          <li><b><i>java -jar saj_pingpong_pong.jar PongRead PongWrite</i></b> for Java </li>
+          <li><b><i>java -jar saj5_pingpong_pong.jar PongRead PongWrite</i></b> for Java5 </li>
         </ul>
     </li>
    </ul>
@@ -231,7 +254,9 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
      <li> In the second terminal start ping by running either
        <ul>
           <li><b><i>ping 100 100 f PongRead PongWrite</i></b> for C/C++  </li>
-          <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes ping </i></b> for Java </li></ul>
+          <li><b><i>sacs_pingpong_ping 100 100 f PongRead PongWrite</i></b> for C# </li>
+          <li><b><i>java -jar saj_pingpong_ping.jar 100 100 f PongRead PongWrite</i></b> for Java </li>
+          <li><b><i>java -jar saj5_pingpong_ping.jar 100 100 f PongRead PongWrite</i></b> for Java5 </li>
            </ul>
     </ul>
     <pre>ping usage:

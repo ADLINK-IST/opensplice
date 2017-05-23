@@ -1,0 +1,237 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Introduction &mdash; Streams API Reference Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Streams API Reference Guide" href="index.html" />
+    <link rel="next" title="3. API Reference" href="API-ref.html" />
+    <link rel="prev" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="API-ref.html" title="3. API Reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Streams API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="introduction">
+<span id="id1"></span><h1>2. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="features">
+<h2>2.1. Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
+<p><em>Vortex OpenSplice Streams API</em> supports a common data-distribution pattern
+where continuous flows or <em>streams</em> of data have to be transported with
+minimal overhead and therefore maximal achievable throughput.</p>
+<p>Vortex OpenSplice Streams API implements this <em>streams pattern</em> by transparent
+packing and queuing of data samples using auto-generated <em>containers</em>,
+thus minimizing the overhead normally associated with the management and
+distribution of individual DDS samples.</p>
+</div>
+<div class="section" id="getting-started">
+<h2>2.2. Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice Streams API is divided in two main components:</p>
+<ul class="simple">
+<li>type-specific code that can be generated using the OpenSplice
+IDL Pre-Processor</li>
+<li>a Streams library.</li>
+</ul>
+<p>Applications that wish to use the Streams API are required to do two things:</p>
+<ol class="arabic simple">
+<li>Link against <em>one</em> of the OpenSplice Streams libraries available
+within the Vortex OpenSplice distribution. There are separate libraries for
+either <em>CORBA-Cohabitation</em> mode or <em>Standalone C++</em> mode.</li>
+<li>Annotate the data-model IDL file with <tt class="docutils literal"><span class="pre">#pragma</span></tt> stream directives for
+each data type for which a Stream needs to be created.</li>
+</ol>
+<p>The Vortex OpenSplice Streams API is built on the DCPS API. Since the C++
+bindings of Vortex OpenSplice are available in two flavours, so is the Streams
+API. In the following paragraphs the steps will be discussed to build a
+simple application that uses the following data-model:</p>
+<div class="highlight-python"><div class="highlight"><pre>Space.idl:
+
+module Space {
+    struct Foo {
+        long long_1;
+        long long_2;
+    };
+#pragma stream Foo
+
+    struct Type2 {
+      long long_1;
+      long long_2;
+      long long_3;
+    };
+#pragma stream Type2
+#pragma keylist Type2 long_1
+
+};
+</pre></div>
+</div>
+<p>Using this model, both <tt class="docutils literal"><span class="pre">Foo</span></tt> and <tt class="docutils literal"><span class="pre">Type2</span></tt> can be used with the
+Streams API. In addition <tt class="docutils literal"><span class="pre">Type2</span></tt> can also be used as a regular
+DDS topic, with <tt class="docutils literal"><span class="pre">long_1</span></tt> as key.</p>
+<p>The following relevant Streams API classes are generated based on this
+model for <tt class="docutils literal"><span class="pre">Foo</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre>Space::FooStreamDataWriter
+Space::FooStreamDataReader
+Space::FooStreamBuf
+</pre></div>
+</div>
+<p>It is recommended to use smart references to the <tt class="docutils literal"><span class="pre">StreamDataWriter</span></tt> and
+<tt class="docutils literal"><span class="pre">StreamDataReader</span></tt> classes in applications. The regular Vortex OpenSplice C++
+smart-pointer <tt class="docutils literal"><span class="pre">&lt;class&gt;_var</span></tt> types are available for this purpose. See
+the section on <em>Memory Management</em> in the Vortex OpenSplice DDS <em>C++ Reference
+Guide</em> for more information.</p>
+<div class="section" id="corba-cohabitation-mode">
+<h3>2.2.1. CORBA Cohabitation Mode<a class="headerlink" href="#corba-cohabitation-mode" title="Permalink to this headline">¶</a></h3>
+<p>In <em>CORBA Co-habitation</em> mode, <tt class="docutils literal"><span class="pre">idlpp</span></tt> generates code that can be processed
+with any of the supported ORB compilers (OpenFusion TAO, Mico, <em>etc.</em>).</p>
+<p>First <tt class="docutils literal"><span class="pre">idlpp</span></tt> is executed on the <tt class="docutils literal"><span class="pre">Space.idl</span></tt> file:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ idlpp -I$OSPL_HOME/etc/idl -l cpp -C Space.idl
+</pre></div>
+</div>
+<p>The standard Vortex OpenSplice DDS IDL directory is referenced as <tt class="docutils literal"><span class="pre">include-path</span></tt>,
+since it contains definitions of some basic data-types and interfaces
+that are required if DDS Topics are created for any of the types in the
+IDL file. The other parameters are used to put <tt class="docutils literal"><span class="pre">idlpp</span></tt> in C++
+CORBA-Cohabitation mode.</p>
+<p>As usual when DDS topics are created, the above command generates, among
+other files, a file called <tt class="docutils literal"><span class="pre">SpaceDcps.idl</span></tt>. The file <tt class="docutils literal"><span class="pre">SpaceStreams.idl</span></tt>
+is also generated.</p>
+<p>To proceed, <tt class="docutils literal"><span class="pre">idlpp</span></tt> should be executed on the <tt class="docutils literal"><span class="pre">ExampleStreams.idl</span></tt> file:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ idlpp -I$OSPL_HOME/etc/idl -l cpp -C SpaceStreams.idl
+</pre></div>
+</div>
+<p>This creates the descriptions of the DCPS entities that are required to
+manage the DDS topics that will be used for the Streams types, just like
+with the original IDL file, in a file called <tt class="docutils literal"><span class="pre">SpaceStreamsDcps.idl</span></tt>.</p>
+<p>Now all four IDL files should be processed with the appropriate (ORB-specific)
+CORBA IDL processor. After this step all code and header files are generated
+to start using the Streams API in application code.</p>
+</div>
+<div class="section" id="standalone-mode">
+<h3>2.2.2. Standalone Mode<a class="headerlink" href="#standalone-mode" title="Permalink to this headline">¶</a></h3>
+<p>In <em>Standalone C++</em> mode, the generated interfaces are <em>not</em> required to be
+processed by an IDL compiler. Instead, <tt class="docutils literal"><span class="pre">idlpp</span></tt> will use the <tt class="docutils literal"><span class="pre">cppgen</span></tt>
+code-generator that is part of the Vortex OpenSplice DDS distribution. <tt class="docutils literal"><span class="pre">idlpp</span></tt>
+will automatically call <tt class="docutils literal"><span class="pre">cppgen</span></tt> to process certain files; the user is
+only required to execute <tt class="docutils literal"><span class="pre">idlpp</span></tt>, first on the original IDL file:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ idlpp -I$OSPL_HOME/etc/idl -l cpp -S Space.idl
+</pre></div>
+</div>
+<p>This creates <tt class="docutils literal"><span class="pre">SpaceStreams.idl</span></tt>, which in turn also needs to be
+processed by <tt class="docutils literal"><span class="pre">idlpp</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ idlpp -I$OSPL_HOME/etc/idl -l cpp -S -i SpaceStreams.idl
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">-i</span></tt> parameter is required because normally no code is generated for
+interfaces (for DDS topics, only datatypes are generated). In the case of
+streams, interfaces should not be ignored.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Introduction</a><ul>
+<li><a class="reference internal" href="#features">2.1. Features</a></li>
+<li><a class="reference internal" href="#getting-started">2.2. Getting Started</a><ul>
+<li><a class="reference internal" href="#corba-cohabitation-mode">2.2.1. CORBA Cohabitation Mode</a></li>
+<li><a class="reference internal" href="#standalone-mode">2.2.2. Standalone Mode</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="previous chapter">1. Preface</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="API-ref.html"
+                        title="next chapter">3. API Reference</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/introduction.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="API-ref.html" title="3. API Reference"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >previous</a> |</li>
+        <li><a href="index.html">Streams API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

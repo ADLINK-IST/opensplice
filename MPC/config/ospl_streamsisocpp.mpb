@@ -1,0 +1,15 @@
+// -*- MPC -*-
+// $Id:$
+
+project : ospl_dcpsisocpp {
+  libs += streamsisocpp
+  requires += ospl_streamsisocpp
+}
+
+feature(!src_co) {
+    includes += $(OSPL_HOME)/include/streams/isocpp
+}
+
+feature(src_co) {
+    includes += $(OSPL_HOME_NORMALIZED)/src/api/streams/isocpp/include
+}

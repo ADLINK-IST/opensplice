@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**
@@ -19,6 +27,7 @@
 #include "idl_program.h"
 #include "idl_scope.h"
 #include "idl_genCorbaCxxCopyin.h"
+#include "idl_genCorbaCxxHelper.h"
 #include "idl_genCxxHelper.h"
 #include "idl_genSplHelper.h"
 #include "idl_genLanguageHelper.h"
@@ -29,9 +38,11 @@
 #include "c_typebase.h"
 #include "os_heap.h"
 #include "os_stdlib.h"
+#include "os_abstract.h"
 
 #define BOUNDSCHECK ("OSPL_BOUNDS_CHECK")
-    /** Text indentation level (4 spaces per indent) */
+
+/** Text indentation level (4 spaces per indent) */
 static c_long loopIndent;
     /** Index for array loop variables, incremented for each array dimension */
 static c_long varIndex;
@@ -70,36 +81,36 @@ idl_valueFromLabelVal (
 
     /* QAC EXPECT 3416; No side effect here */
     if (idl_labelValType(idl_labelVal(labelVal)) == idl_lenum) {
-        snprintf (labelName, (size_t)sizeof(labelName), "_%s", idl_labelEnumVal(idl_labelEnum(labelVal)));
+        snprintf (labelName, sizeof(labelName), "_%s", idl_labelEnumVal(idl_labelEnum(labelVal)));
     } else {
         switch (idl_labelValueVal(idl_labelValue(labelVal)).kind) {
             case V_CHAR:
-                snprintf (labelName, (size_t)sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal)).is.Char);
+                snprintf (labelName, sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal)).is.Char);
                 break;
             case V_SHORT:
-                snprintf (labelName, (size_t)sizeof(labelName), "%d", idl_labelValueVal(idl_labelValue(labelVal)).is.Short);
+                snprintf (labelName, sizeof(labelName), "%d", idl_labelValueVal(idl_labelValue(labelVal)).is.Short);
                 break;
             case V_USHORT:
-                snprintf(labelName, (size_t) sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal) ).is.UShort);
+                snprintf(labelName, sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal) ).is.UShort);
                 break;
             case V_LONG:
-                snprintf(labelName, (size_t) sizeof(labelName), "%d", idl_labelValueVal(idl_labelValue(labelVal) ).is.Long);
+                snprintf(labelName, sizeof(labelName), "%d", idl_labelValueVal(idl_labelValue(labelVal) ).is.Long);
                 break;
             case V_ULONG:
-                snprintf(labelName, (size_t) sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal) ).is.ULong);
+                snprintf(labelName, sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal) ).is.ULong);
                 break;
             case V_LONGLONG:
-                snprintf(labelName, (size_t) sizeof(labelName), "%lld", idl_labelValueVal(idl_labelValue(labelVal) ).is.LongLong);
+                snprintf(labelName, sizeof(labelName), "%"PA_PRId64, idl_labelValueVal(idl_labelValue(labelVal) ).is.LongLong);
                 break;
             case V_ULONGLONG:
-                snprintf(labelName, (size_t) sizeof(labelName), "%llu", idl_labelValueVal(idl_labelValue(labelVal) ).is.ULongLong);
+                snprintf(labelName, sizeof(labelName), "%"PA_PRIu64, idl_labelValueVal(idl_labelValue(labelVal) ).is.ULongLong);
                 break;
             case V_BOOLEAN:
                 /* QAC EXPECT 3416; No side effect here */
                 if ((int) idl_labelValueVal(idl_labelValue(labelVal) ).is.Boolean == OS_C_TRUE) {
-                    snprintf(labelName, (size_t) sizeof(labelName), "OS_C_TRUE");
+                    snprintf(labelName, sizeof(labelName), "OS_C_TRUE");
                 } else {
-                    snprintf(labelName, (size_t) sizeof(labelName), "OS_C_FALSE");
+                    snprintf(labelName, sizeof(labelName), "OS_C_FALSE");
                 }
                 break;
             default:
@@ -129,15 +140,15 @@ idl_fileOpen (
     const char *name,
     void *userData)
 {
-    idl_fileOutPrintf (idl_fileCur(), "#include <v_kernel.h>\n");
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
+    idl_fileOutPrintf (idl_fileCur(), "#include <v_copyIn.h>\n");
     idl_fileOutPrintf (idl_fileCur(), "#include <v_topic.h>\n");
     idl_fileOutPrintf (idl_fileCur(), "#include <os_stdlib.h>\n");
     idl_fileOutPrintf (idl_fileCur(), "#include <string.h>\n");
     idl_fileOutPrintf (idl_fileCur(), "#include <os_report.h>\n");
-    if(idl_getIsISOCpp())
-    {
-      idl_fileOutPrintf (idl_fileCur(), "#include <org/opensplice/core/EntityRegistry.hpp>\n");
-    }
     idl_fileOutPrintf (idl_fileCur(), "\n");
 
     return idl_explore;
@@ -164,6 +175,10 @@ idl_moduleOpen (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -182,7 +197,7 @@ idl_moduleOpen (
  * will be prepared. The signature of this copyIn routine is:
  * @verbatim
     void copyIn (c_base base,
-        <scope-elements>::<structure-name> *from,
+        const <scope-elements>::<structure-name> *from,
         struct _<scope-elements>_<structure-name> *to);
     @endverbatim
  *
@@ -201,27 +216,27 @@ idl_structureOpen (
     idl_typeStruct structSpec,
     void *userData)
 {
-    const char * suffix = (char *) userData;
+    OS_UNUSED_ARG(structSpec);
+    OS_UNUSED_ARG(userData);
 
-    idl_fileOutPrintf (idl_fileCur(), "c_bool\n");
-    idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn%s(\n",
-            idl_scopeStack (scope, "_", name),
-            suffix);
+    idl_fileOutPrintf (idl_fileCur(), "v_copyin_result\n");
+    idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn(\n",
+            idl_scopeStack (scope, "_", name));
     idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
     if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
     {
-      idl_fileOutPrintf (idl_fileCur(), "    class %s *from,\n",
+      idl_fileOutPrintf (idl_fileCur(), "    const class %s *from,\n",
                          idl_scopeStackCxx (scope, "::", name));
     }
     else
     {
-      idl_fileOutPrintf (idl_fileCur(), "    struct %s *from,\n",
+      idl_fileOutPrintf (idl_fileCur(), "    const struct %s *from,\n",
                          idl_scopeStackCxx (scope, "::", name));
     }
     idl_fileOutPrintf (idl_fileCur(), "    struct _%s *to)\n",
     idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf (idl_fileCur(), "{\n");
-    idl_fileOutPrintf (idl_fileCur(), "    c_bool result = OS_C_TRUE;\n");
+    idl_fileOutPrintf (idl_fileCur(), "    v_copyin_result result = V_COPYIN_RESULT_OK;\n");
     idl_fileOutPrintf (idl_fileCur(), "    (void) base;\n\n");
 
     return idl_explore;
@@ -248,6 +263,9 @@ idl_structureClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     idl_fileOutPrintf (idl_fileCur(), "    return result;\n");
     idl_fileOutPrintf (idl_fileCur(), "}\n");
     idl_fileOutPrintf (idl_fileCur(), "\n");
@@ -277,8 +295,10 @@ idl_basicMemberType (
     const char *to_id,
     os_boolean stacRequested)
 {
-    c_long maxlen;
+    c_ulong maxlen;
     c_char* cid;
+
+    OS_UNUSED_ARG(stacRequested);
 
     cid = idl_cxxId(name);
 
@@ -324,24 +344,32 @@ idl_basicMemberType (
                           (maxlen+1));
               } else
               {
-                  idl_fileOutPrintf(idl_fileCur(), "            %s%s = c_stringNew(base, %s%s_.c_str());\n",
+                  idl_fileOutPrintf(idl_fileCur(), "            %s%s = c_stringNew_s(base, %s%s_.c_str());\n",
                           to_id,
                           cid,
                           from_id,
                           cid);
+                  idl_fileOutPrintf(idl_fileCur(), "            if(%s%s == NULL) {\n", to_id, cid);
+                  idl_memoryAllocFailed(scope, (idl_typeSpec)typeBasic, name, 4);
+                  idl_fileOutPrintf(idl_fileCur(), "                result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                  idl_fileOutPrintf(idl_fileCur(), "            }\n");
               }
               idl_fileOutPrintf (idl_fileCur(),"        } else {\n");
               idl_fileOutPrintf (idl_fileCur(),"            ");
               idl_boundsCheckFail(MEMBER, scope, (idl_typeSpec)typeBasic, name);
-              idl_fileOutPrintf (idl_fileCur(),"            result = OS_C_FALSE;\n");
+              idl_fileOutPrintf (idl_fileCur(),"            result = V_COPYIN_RESULT_INVALID;\n");
               idl_fileOutPrintf (idl_fileCur(),"        }\n");
             }
             else {
-                idl_fileOutPrintf (idl_fileCur(), "        %s%s = c_stringNew(base, %s%s_.c_str());\n",
+                idl_fileOutPrintf (idl_fileCur(), "        %s%s = c_stringNew_s(base, %s%s_.c_str());\n",
                         to_id,
                         cid,
                         from_id,
                         cid);
+                idl_fileOutPrintf (idl_fileCur(), "        if(%s%s == NULL) {\n", to_id, cid);
+                idl_memoryAllocFailed(scope, (idl_typeSpec)typeBasic, name, 3);
+                idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                idl_fileOutPrintf (idl_fileCur(), "        }\n");
             }
         }
         else
@@ -363,7 +391,7 @@ idl_basicMemberType (
                 if(stacRequested)
                 {
                     idl_fileOutPrintf (idl_fileCur(),"            /* The strncpy takes a size of the maximum string bounds plus 1, as the database size accomodates this */\n");
-                    idl_fileOutPrintf(idl_fileCur(), "            strncpy((%s%s), %s%s, %d);\n",
+                    idl_fileOutPrintf (idl_fileCur(),"            strncpy((%s%s), %s%s, %d);\n",
                             to_id,
                             cid,
                             from_id,
@@ -371,29 +399,37 @@ idl_basicMemberType (
                             (maxlen+1));
                 } else
                 {
-                    idl_fileOutPrintf(idl_fileCur(), "            %s%s = c_stringNew(base, %s%s);\n",
+                    idl_fileOutPrintf(idl_fileCur(), "            %s%s = c_stringNew_s(base, %s%s);\n",
                             to_id,
                             cid,
                             from_id,
                             cid);
+                    idl_fileOutPrintf(idl_fileCur(), "            if(%s%s == NULL) {\n", to_id, cid);
+                    idl_memoryAllocFailed(scope, (idl_typeSpec)typeBasic, name, 4);
+                    idl_fileOutPrintf(idl_fileCur(), "                result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                    idl_fileOutPrintf(idl_fileCur(), "            }\n");
                 }
                 idl_fileOutPrintf (idl_fileCur(),"        } else {\n");
                 idl_fileOutPrintf (idl_fileCur(),"            ");
                 idl_boundsCheckFail(MEMBER, scope, (idl_typeSpec)typeBasic, name);
-                idl_fileOutPrintf (idl_fileCur(),"            result = OS_C_FALSE;\n");
+                idl_fileOutPrintf (idl_fileCur(),"            result = V_COPYIN_RESULT_INVALID;\n");
                 idl_fileOutPrintf (idl_fileCur(),"        }\n");
             } else {
-                idl_fileOutPrintf (idl_fileCur(), "        %s%s = c_stringNew(base, %s%s);\n",
+                idl_fileOutPrintf (idl_fileCur(), "        %s%s = c_stringNew_s(base, %s%s);\n",
                         to_id,
                         cid,
                         from_id,
                         cid);
+                idl_fileOutPrintf (idl_fileCur(), "        if(%s%s == NULL) {\n", to_id, cid);
+                idl_memoryAllocFailed(scope, (idl_typeSpec)typeBasic, name, 3);
+                idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                idl_fileOutPrintf (idl_fileCur(), "        }\n");
             }
 
             idl_fileOutPrintf (idl_fileCur(),"    } else {\n");
             idl_fileOutPrintf (idl_fileCur(),"        ");
             idl_boundsCheckFailNull(MEMBER, scope, (idl_typeSpec)typeBasic, name);
-            idl_fileOutPrintf (idl_fileCur(),"        result = OS_C_FALSE;\n");
+            idl_fileOutPrintf (idl_fileCur(),"        result = V_COPYIN_RESULT_INVALID;\n");
             idl_fileOutPrintf (idl_fileCur(),"    }\n");
         }
         idl_fileOutPrintf (idl_fileCur(),"#else\n");
@@ -401,8 +437,8 @@ idl_basicMemberType (
         {
           if(stacRequested)
           {
-              idl_fileOutPrintf (idl_fileCur(),"            /* The strncpy takes a size of the maximum string bounds plus 1, as the database size accomodates this */\n");
-              idl_fileOutPrintf(idl_fileCur(), "            strncpy((%s%s), %s%s_.c_str(), %d);\n",
+              idl_fileOutPrintf (idl_fileCur(), "            /* The strncpy takes a size of the maximum string bounds plus 1, as the database size accomodates this */\n");
+              idl_fileOutPrintf (idl_fileCur(), "            strncpy((%s%s), %s%s_.c_str(), %d);\n",
                       to_id,
                       cid,
                       from_id,
@@ -410,17 +446,21 @@ idl_basicMemberType (
                       (maxlen+1));
           } else
           {
-              idl_fileOutPrintf(idl_fileCur(), "            %s%s = c_stringNew(base, %s%s_.c_str());\n",
+              idl_fileOutPrintf (idl_fileCur(), "            %s%s = c_stringNew_s(base, %s%s_.c_str());\n",
                       to_id,
                       cid,
                       from_id,
                       cid);
+              idl_fileOutPrintf (idl_fileCur(), "            if(%s%s == NULL) {\n", to_id, cid);
+              idl_memoryAllocFailed(scope, (idl_typeSpec)typeBasic, name, 4);
+              idl_fileOutPrintf (idl_fileCur(), "                result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+              idl_fileOutPrintf (idl_fileCur(), "            }\n");
           }
         } else {
           if(stacRequested)
           {
               idl_fileOutPrintf (idl_fileCur(),"            /* The strncpy takes a size of the maximum string bounds plus 1, as the database size accomodates this */\n");
-              idl_fileOutPrintf(idl_fileCur(), "            strncpy((%s%s), %s%s, %d);\n",
+              idl_fileOutPrintf (idl_fileCur(),"            strncpy((%s%s), %s%s, %d);\n",
                       to_id,
                       cid,
                       from_id,
@@ -428,11 +468,15 @@ idl_basicMemberType (
                       (maxlen+1));
           } else
           {
-              idl_fileOutPrintf (idl_fileCur(), "    %s%s = c_stringNew(base, %s%s);\n",
+              idl_fileOutPrintf (idl_fileCur(), "    %s%s = c_stringNew_s(base, %s%s);\n",
                       to_id,
                       cid,
                       from_id,
                       cid);
+              idl_fileOutPrintf (idl_fileCur(), "    if(%s%s == NULL) {\n", to_id, cid);
+              idl_memoryAllocFailed(scope, (idl_typeSpec)typeBasic, name, 2);
+              idl_fileOutPrintf (idl_fileCur(), "        result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+              idl_fileOutPrintf (idl_fileCur(), "    }\n");
           }
         }
         idl_fileOutPrintf (idl_fileCur(),"#endif\n");
@@ -468,7 +512,7 @@ idl_basicCaseType (
     const char *from_id,
     const char *to_id)
 {
-    c_long maxlen;
+    c_ulong maxlen;
     c_char* cid;
 
     cid = idl_cxxId(name);
@@ -495,44 +539,56 @@ idl_basicCaseType (
     case idl_string:
         maxlen = idl_typeBasicMaxlen(typeBasic);
 
-        idl_fileOutPrintf (idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
-        idl_fileOutPrintf (idl_fileCur(),    "    if(%s%s){\n",
+        idl_fileOutPrintf (idl_fileCur(), "#ifdef %s\n", BOUNDSCHECK);
+        idl_fileOutPrintf (idl_fileCur(), "    if(%s%s){\n",
                 from_id,
                 cid);
 
         if(maxlen != 0){
-            idl_fileOutPrintf (idl_fileCur(),"        if(((unsigned int)strlen(%s%s)) <= %d){\n",
+            idl_fileOutPrintf (idl_fileCur(), "        if(strlen(%s%s) <= %u){\n",
                     from_id,
                     cid,
                     maxlen);
-            idl_fileOutPrintf(idl_fileCur(), "            %s%s = c_stringNew(base, %s%s);\n",
+            idl_fileOutPrintf (idl_fileCur(), "            %s%s = c_stringNew_s(base, %s%s);\n",
                     to_id,
                     cid,
                     from_id,
                     cid);
-            idl_fileOutPrintf (idl_fileCur(),"        } else {\n");
-            idl_fileOutPrintf (idl_fileCur(),"            ");
+            idl_fileOutPrintf (idl_fileCur(), "            if(%s%s == NULL) {\n", to_id, cid);
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeBasic, name, 4);
+            idl_fileOutPrintf (idl_fileCur(), "                result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_fileOutPrintf (idl_fileCur(), "            }\n");
+            idl_fileOutPrintf (idl_fileCur(), "        } else {\n");
+            idl_fileOutPrintf (idl_fileCur(), "            ");
             idl_boundsCheckFail(MEMBER, scope, (idl_typeSpec)typeBasic, name);
-            idl_fileOutPrintf (idl_fileCur(),"            result = OS_C_FALSE;\n");
-            idl_fileOutPrintf (idl_fileCur(),"        }\n");
+            idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_INVALID;\n");
+            idl_fileOutPrintf (idl_fileCur(), "        }\n");
         } else {
-            idl_fileOutPrintf (idl_fileCur(), "        %s%s = c_stringNew(base, %s%s());\n",
+            idl_fileOutPrintf (idl_fileCur(), "        %s%s = c_stringNew_s(base, %s%s());\n",
                     to_id,
                     cid,
                     from_id,
                     cid);
+            idl_fileOutPrintf (idl_fileCur(), "        if(%s%s == NULL) {\n", to_id, cid);
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeBasic, name, 3);
+            idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_fileOutPrintf (idl_fileCur(), "        }\n");
         }
-        idl_fileOutPrintf (idl_fileCur(),    "    } else {\n");
-        idl_fileOutPrintf (idl_fileCur(),    "        ");
+        idl_fileOutPrintf (idl_fileCur(),     "    } else {\n");
+        idl_fileOutPrintf (idl_fileCur(),     "        ");
         idl_boundsCheckFailNull(MEMBER, scope, (idl_typeSpec)typeBasic, name);
-        idl_fileOutPrintf (idl_fileCur(),    "        result = OS_C_FALSE;\n");
-        idl_fileOutPrintf (idl_fileCur(),    "    }\n");
-        idl_fileOutPrintf (idl_fileCur(),"#else\n");
-        idl_fileOutPrintf (idl_fileCur(), "    %s%s = c_stringNew(base, %s%s());\n",
+        idl_fileOutPrintf (idl_fileCur(),     "        result = V_COPYIN_RESULT_INVALID;\n");
+        idl_fileOutPrintf (idl_fileCur(),     "    }\n");
+        idl_fileOutPrintf (idl_fileCur(), "#else\n");
+        idl_fileOutPrintf (idl_fileCur(), "    %s%s = c_stringNew_s(base, %s%s());\n",
                 to_id,
                 cid,
                 from_id,
                 cid);
+        idl_fileOutPrintf (idl_fileCur(), "    if(%s%s == NULL) {\n", to_id, cid);
+        idl_memoryAllocFailed(scope, (idl_typeSpec)typeBasic, name, 2);
+        idl_fileOutPrintf (idl_fileCur(), "        result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+        idl_fileOutPrintf (idl_fileCur(), "    }\n");
         idl_fileOutPrintf (idl_fileCur(),"#endif\n");
         break;
     default:
@@ -580,11 +636,11 @@ idl_structureMemberOpenClose (
     idl_typeSpec typeSpec,
     void *userData)
 {
-    c_long maxlen;
+    c_ulong maxlen;
     c_char *typeName;
     c_char *scopedName;
     c_char* cid;
-    const char * suffix = (char *)userData;
+    os_boolean noTypeCaching = ((CxxTypeUserData *)userData)->no_type_caching;
 
     cid = idl_cxxId(name);
 
@@ -631,15 +687,13 @@ idl_structureMemberOpenClose (
                 (idl_typeSpecType(idl_typeDefActual(idl_typeDef(typeSpec))) == idl_tarray) ||
                 (idl_typeSpecType(idl_typeDefActual(idl_typeDef(typeSpec))) == idl_tseq)) {
 
-                idl_fileOutPrintf (idl_fileCur(), "    if(result){\n");
-                idl_fileOutPrintf (idl_fileCur(), "        extern c_bool __%s__copyIn%s(c_base, %s *, _%s *);\n",
+                idl_fileOutPrintf (idl_fileCur(), "    if(V_COPYIN_RESULT_IS_OK(result)){\n");
+                idl_fileOutPrintf (idl_fileCur(), "        extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
                     idl_scopedTypeName (typeSpec),
-                    suffix,
                     idl_corbaCxxTypeFromTypeSpec(typeSpec),
                     idl_scopedTypeName (typeSpec));
-                idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn%s(base, &from->%s%s, &to->%s);\n",
+                idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn(base, &from->%s%s, &to->%s);\n",
                     idl_scopedTypeName (typeSpec),
-                    suffix,
                     cid,
                     idl_isocppCxxStructMemberSuffix(),
                     cid);
@@ -673,7 +727,7 @@ idl_structureMemberOpenClose (
         idl_fileOutPrintf (idl_fileCur(), "    } else {\n");
         idl_fileOutPrintf (idl_fileCur(),"        ");
         idl_boundsCheckFail(MEMBER, scope, (idl_typeSpec)typeSpec, name);
-        idl_fileOutPrintf (idl_fileCur(), "        result = OS_C_FALSE;\n");
+        idl_fileOutPrintf (idl_fileCur(), "        result = V_COPYIN_RESULT_INVALID;\n");
         idl_fileOutPrintf (idl_fileCur(), "    }\n");
 
         idl_fileOutPrintf (idl_fileCur(),"#else\n");
@@ -686,15 +740,13 @@ idl_structureMemberOpenClose (
         /* QAC EXPECT 3416; No side effect here */
     } else if ((idl_typeSpecType(typeSpec) == idl_tstruct) ||
                (idl_typeSpecType(typeSpec) == idl_tunion)) {
-        idl_fileOutPrintf (idl_fileCur(), "    if(result){\n");
-        idl_fileOutPrintf (idl_fileCur(), "        extern c_bool __%s__copyIn%s(c_base, %s *, _%s *);\n",
+        idl_fileOutPrintf (idl_fileCur(), "    if(V_COPYIN_RESULT_IS_OK(result)){\n");
+        idl_fileOutPrintf (idl_fileCur(), "        extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
             idl_scopedTypeName (typeSpec),
-            suffix,
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             idl_scopedTypeName (typeSpec));
-        idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn%s(base, &from->%s%s, &to->%s);\n",
+        idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn(base, &from->%s%s, &to->%s);\n",
             idl_scopedTypeName (typeSpec),
-            suffix,
             cid,
             idl_isocppCxxStructMemberSuffix(),
             cid);
@@ -703,7 +755,7 @@ idl_structureMemberOpenClose (
     } else if (idl_typeSpecType(typeSpec) == idl_tarray)
     {
         c_char source[256];
-        snprintf(source, (size_t)sizeof(source), "from->%s%s", name, idl_isocppCxxStructMemberSuffix());
+        snprintf(source, sizeof(source), "from->%s%s", name, idl_isocppCxxStructMemberSuffix());
         {
             os_boolean catsRequested = OS_FALSE;
             os_boolean stacRequested = OS_FALSE;
@@ -730,7 +782,7 @@ idl_structureMemberOpenClose (
                 idl_fileOutPrintf (idl_fileCur(),"    {\n");
                 idl_fileOutPrintf (idl_fileCur(),"        typedef c_char _DestType");
                 idl_arrayDimensions(idl_typeArray(typeSpec), OS_TRUE);
-                idl_fileOutPrintf (idl_fileCur(),"[%d]", idl_typeBasicMaxlen(idl_typeBasic(baseTypeDereffered))+1);
+                idl_fileOutPrintf (idl_fileCur(),"[%u]", idl_typeBasicMaxlen(idl_typeBasic(baseTypeDereffered))+1);
                 idl_fileOutPrintf (idl_fileCur(),";\n");
                 idl_fileOutPrintf (idl_fileCur(),"        _DestType *dest = &to->%s;\n", cid);
                 idl_arrayElements (scope, idl_typeArray(typeSpec), source, "dest", 1, stacRequested, catsRequested, userData);
@@ -757,7 +809,7 @@ idl_structureMemberOpenClose (
         nextType = idl_typeSeqType(idl_typeSeq(typeSpec));
         scopedName = idl_scopedSplTypeName(nextType);
 
-        snprintf (type_name, (size_t)sizeof(type_name), "_%s_seq", name);
+        snprintf (type_name, sizeof(type_name), "_%s_seq", name);
         maxlen = idl_typeSeqMaxSize(idl_typeSeq(typeSpec));
 
         if (idl_typeSpecType(nextType) == idl_tbasic) {
@@ -772,16 +824,16 @@ idl_structureMemberOpenClose (
 
         idl_fileOutPrintf (idl_fileCur(), "    {\n");
         idl_fileOutPrintf (idl_fileCur(), "/* Code generated by %s at line %d */\n\n",__FILE__,__LINE__);
-        idl_fileOutPrintf (idl_fileCur(), "        %sc_type type0 = NULL;\n", *suffix == '\0' ? "static " : "");
+        idl_fileOutPrintf (idl_fileCur(), "        %sc_type type0 = NULL;\n", (!noTypeCaching) ? "static " : "");
         idl_fileOutPrintf (idl_fileCur(), "        c_type subtype0;\n");
-        idl_fileOutPrintf (idl_fileCur(), "        c_long length0;\n");
+        idl_fileOutPrintf (idl_fileCur(), "        c_ulong length0;\n");
         idl_fileOutPrintf (idl_fileCur(), "        %s *dest0;\n", scopedName);
-        idl_fileOutPrintf (idl_fileCur(), "        %s *src = &from->%s%s;\n\n", idl_scopeStackCxx (scope, "::", type_name), cid, idl_isocppCxxStructMemberSuffix());
+        idl_fileOutPrintf (idl_fileCur(), "        const %s *src = &from->%s%s;\n\n", idl_scopeStackCxx (scope, "::", type_name), cid, idl_isocppCxxStructMemberSuffix());
         /* QAC EXPECT 5001; Bypass qactools bug */
         idl_fileOutPrintf (idl_fileCur(), "        if (type0 == NULL) {\n");
         idl_fileOutPrintf (idl_fileCur(), "            subtype0 = c_type(c_metaResolve (c_metaObject(base), \"%s\"));\n", typeName);
         if(maxlen > 0){
-            idl_fileOutPrintf (idl_fileCur(), "            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%d>\",subtype0,%d);\n", typeName, maxlen, maxlen);
+            idl_fileOutPrintf (idl_fileCur(), "            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%u>\",subtype0,%u);\n", typeName, maxlen, maxlen);
         } else {
             idl_fileOutPrintf (idl_fileCur(), "            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype0,0);\n", typeName);
         }
@@ -789,46 +841,70 @@ idl_structureMemberOpenClose (
         idl_fileOutPrintf (idl_fileCur(), "        }\n");
         if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
         {
-            idl_fileOutPrintf (idl_fileCur(), "        length0 = (c_long)(*src).size();\n");
+            idl_fileOutPrintf (idl_fileCur(), "        length0 = (c_ulong)(*src).size();\n");
         }
         else
         {
-            idl_fileOutPrintf (idl_fileCur(), "        length0 = (c_long)(*src).length();\n");
+            idl_fileOutPrintf (idl_fileCur(), "        length0 = (c_ulong)(*src).length();\n");
         }
         idl_fileOutPrintf (idl_fileCur(), "#ifdef %s\n", BOUNDSCHECK);
 
         if(maxlen){
             idl_printIndent(1);
-            idl_fileOutPrintf(idl_fileCur(), "    if(length0 > %d){\n", maxlen);
+            idl_fileOutPrintf(idl_fileCur(), "    if(length0 > %u){\n", maxlen);
             idl_printIndent(1);
             idl_fileOutPrintf (idl_fileCur(),"        ");
             idl_boundsCheckFail(MEMBER, scope, (idl_typeSpec)typeSpec, name);
             idl_printIndent(1);
-            idl_fileOutPrintf(idl_fileCur(), "        result = OS_C_FALSE;\n");
+            idl_fileOutPrintf(idl_fileCur(), "        result = V_COPYIN_RESULT_INVALID;\n");
             idl_printIndent(1);
             idl_fileOutPrintf(idl_fileCur(), "    } else {\n");
             idl_printIndent(1);
-            idl_fileOutPrintf(idl_fileCur(), "        dest0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
+            idl_fileOutPrintf(idl_fileCur(), "        dest0 = (%s *)c_newSequence_s(c_collectionType(type0),length0);\n", scopedName);
+            idl_printIndent(1);
+            idl_fileOutPrintf(idl_fileCur(), "        if(dest0 != NULL) {\n");
             idl_seqLoopCopy(scope, nextType, "*src", "dest0", 1, 3, userData);
+            idl_printIndent(1);
             idl_fileOutPrintf(idl_fileCur(), "            to->%s = (c_sequence)dest0;\n", cid);
+            idl_printIndent(1);
+            idl_fileOutPrintf(idl_fileCur(), "        }\n");
+            idl_printIndent(1);
+            idl_fileOutPrintf(idl_fileCur(), "        } else {\n");
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, name, 4);
+            idl_printIndent(1);
+            idl_fileOutPrintf(idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_printIndent(1);
             idl_fileOutPrintf(idl_fileCur(), "        }\n");
         } else {
             idl_printIndent(1);
-            idl_fileOutPrintf(idl_fileCur(), "     dest0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
+            idl_fileOutPrintf(idl_fileCur(), "     dest0 = (%s *)c_newSequence_s(c_collectionType(type0),length0);\n", scopedName);
+            idl_printIndent(1);
+            idl_fileOutPrintf(idl_fileCur(), "     if(dest0 != NULL) {\n");
             idl_seqLoopCopy (scope, nextType, "*src", "dest0", 1, 2, userData);
             idl_printIndent(1);
-            idl_fileOutPrintf (idl_fileCur(), "    to->%s = (c_sequence)dest0;\n",
-                    idl_cxxId(name));
+            idl_fileOutPrintf (idl_fileCur(), "        to->%s = (c_sequence)dest0;\n", idl_cxxId(name));
+            idl_printIndent(1);
+            idl_fileOutPrintf(idl_fileCur(), "     } else {\n");
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, name, 4);
+            idl_printIndent(1);
+            idl_fileOutPrintf(idl_fileCur(), "         result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_printIndent(1);
+            idl_fileOutPrintf(idl_fileCur(), "      }\n");
         }
         idl_fileOutPrintf(idl_fileCur(), "#else\n");
-        idl_fileOutPrintf(idl_fileCur(), "        dest0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
+        idl_fileOutPrintf(idl_fileCur(), "        dest0 = (%s *)c_newSequence_s(c_collectionType(type0),length0);\n", scopedName);
+        idl_fileOutPrintf(idl_fileCur(), "        if(dest0 != NULL) {\n");
         idl_seqLoopCopy (scope, nextType, "*src", "dest0", 1, 2, userData);
-        idl_fileOutPrintf(idl_fileCur(), "        to->%s = (c_sequence)dest0;\n", cid);
+        idl_fileOutPrintf(idl_fileCur(), "            to->%s = (c_sequence)dest0;\n", cid);
+        idl_fileOutPrintf(idl_fileCur(), "        } else {\n");
+        idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, name, 3);
+        idl_fileOutPrintf(idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+        idl_fileOutPrintf(idl_fileCur(), "        }\n");
         idl_fileOutPrintf(idl_fileCur(), "#endif\n");
-        idl_fileOutPrintf(idl_fileCur(), "    }\n");
-        if(*suffix != '\0'){
-            idl_fileOutPrintf(idl_fileCur(), "    c_free(type0);\n");
+        if(noTypeCaching){
+            idl_fileOutPrintf(idl_fileCur(), "        c_free(type0);\n");
         }
+        idl_fileOutPrintf(idl_fileCur(), "    }\n");
     } else {
         /* Do nothing, only to prevent dangling else-ifs QAC reports */
     }
@@ -855,7 +931,7 @@ idl_arrayDimensions (
 {
     idl_typeSpec subType;
 
-    idl_fileOutPrintf (idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
+    idl_fileOutPrintf (idl_fileCur(), "[%u]", idl_typeArraySize(typeArray));
     subType = idl_typeArrayType(typeArray);
     while(resolveTypedefs && idl_typeSpecType(subType) == idl_ttypedef)
     {
@@ -927,7 +1003,7 @@ idl_arrayLoopCopyOpen (
 {
     loopIndent++;
     idl_printIndent(loopIndent + indent);
-    idl_fileOutPrintf(idl_fileCur(), "for (i%d = 0; (i%d < %d) && result; i%d++) {\n",
+    idl_fileOutPrintf(idl_fileCur(), "for (i%d = 0; (i%d < %d) && V_COPYIN_RESULT_IS_OK(result); i%d++) {\n",
     loopIndent,
     loopIndent,
     idl_typeArraySize(typeArray),
@@ -985,8 +1061,8 @@ idl_arrayLoopCopyIndexString (
     c_char arrIndex[16];
 
     varIndex++;
-    snprintf(arrIndex, (size_t)sizeof(arrIndex), "[i%d]", varIndex);
-    os_strncat(indexString, arrIndex, (size_t)sizeof(arrIndex));
+    snprintf(arrIndex, sizeof(arrIndex), "[i%d]", varIndex);
+    os_strncat(indexString, arrIndex, sizeof(arrIndex));
     /* QAC EXPECT 3416; No side effect here */
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
         /* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
@@ -1057,8 +1133,9 @@ idl_arrayLoopCopyBody(
     c_char destin[256];
     c_char *typeName;
     c_char *scopedName;
-    c_long total_indent, maxlen;
-    const c_char* suffix = (c_char *)userData;
+    c_long total_indent;
+    c_ulong maxlen;
+    os_boolean noTypeCaching = ((CxxTypeUserData*)userData)->no_type_caching;
 
     loopIndent++;
     switch (idl_typeSpecType(typeSpec)) {
@@ -1066,21 +1143,19 @@ idl_arrayLoopCopyBody(
     case idl_tunion:
         idl_printIndent(loopIndent + indent);
         varIndex = 0;
-        idl_fileOutPrintf(idl_fileCur(), "extern c_bool __%s__copyIn%s(c_base base,\n",
-            idl_scopedTypeName(typeSpec),
-            suffix);
+        idl_fileOutPrintf(idl_fileCur(), "extern v_copyin_result __%s__copyIn(c_base base,\n",
+            idl_scopedTypeName(typeSpec));
         idl_printIndent(indent);
-        idl_fileOutPrintf(idl_fileCur(), "%s *From,\n",
+        idl_fileOutPrintf(idl_fileCur(), "const %s *From,\n",
             idl_scopeStack(idl_typeUserScope(idl_typeUser(typeSpec)), "::", idl_typeSpecName(typeSpec)));
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "%s *To);\n\n",
             idl_scopedSplTypeIdent(typeSpec));
-        idl_fileOutPrintf(idl_fileCur(), "if(result){\n");
+        idl_fileOutPrintf(idl_fileCur(), "if(V_COPYIN_RESULT_IS_OK(result)){\n");
         indent++;
         idl_printIndent (loopIndent + indent);
-        idl_fileOutPrintf (idl_fileCur(),"result = __%s__copyIn%s(base, (%s *)&(%s)",
+        idl_fileOutPrintf (idl_fileCur(),"result = __%s__copyIn(base, (%s *)&(%s)",
             idl_scopedTypeName(typeSpec),
-            suffix,
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             from);
         idl_arrayLoopCopyIndex(typeArray);
@@ -1132,14 +1207,14 @@ idl_arrayLoopCopyBody(
             case idl_tarray:
             case idl_tseq:
                 idl_printIndent (loopIndent + indent);
-                idl_fileOutPrintf(idl_fileCur(), "extern c_bool __%s__copyIn(c_base base,",
+                idl_fileOutPrintf(idl_fileCur(), "extern v_copyin_result __%s__copyIn(c_base base,",
                     idl_scopedTypeName(typeSpec));
-                idl_fileOutPrintf(idl_fileCur(), "%s *From,",
+                idl_fileOutPrintf(idl_fileCur(), "const %s *From,",
                     idl_scopeStack(idl_typeUserScope(idl_typeUser(typeSpec)), "::", idl_typeSpecName(typeSpec)));
                 idl_fileOutPrintf(idl_fileCur(), "%s *To);\n\n",
                     idl_scopedSplTypeIdent(typeSpec));
                 idl_printIndent(loopIndent + indent);
-                idl_fileOutPrintf(idl_fileCur(), "if(result){\n");
+                idl_fileOutPrintf(idl_fileCur(), "if(V_COPYIN_RESULT_IS_OK(result)){\n");
                 indent++;
                 idl_printIndent (loopIndent + indent);
                 idl_fileOutPrintf (idl_fileCur(),"result = __%s__copyIn(base, (%s *)&(%s)",
@@ -1159,22 +1234,24 @@ idl_arrayLoopCopyBody(
             case idl_tbasic:
                 /* QAC EXPECT 3416; No side effect here */
                 if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(typeSpec)))) == idl_string) {
+                    const char *sprefix = ((idl_getIsISOCpp() && idl_getIsISOCppTypes()) ? ".c_str()": "");
+
                     maxlen = idl_typeBasicMaxlen(idl_typeBasic(idl_typeDefActual(idl_typeDef(typeSpec))));
 
                     idl_fileOutPrintf (idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
                     idl_printIndent (loopIndent + indent);
-                    idl_fileOutPrintf (idl_fileCur(), "if(result){\n");
+                    idl_fileOutPrintf (idl_fileCur(), "if(V_COPYIN_RESULT_IS_OK(result)){\n");
                     indent++;
                     idl_printIndent (loopIndent + indent);
                     idl_fileOutPrintf (idl_fileCur(), "if((%s)", from);
                     idl_arrayLoopCopyIndex(typeArray);
-                    idl_fileOutPrintf (idl_fileCur(), "){\n", from);
+                    idl_fileOutPrintf (idl_fileCur(), "){\n");
                     indent++;
                     if(maxlen != 0){
                         idl_printIndent(loopIndent + indent);
                         idl_fileOutPrintf (idl_fileCur(),"if(((unsigned int)strlen((%s)", from);
                         idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf (idl_fileCur(),")) <= %d){\n", maxlen);
+                        idl_fileOutPrintf (idl_fileCur(),")) <= %u){\n", maxlen);
                         indent++;
                         idl_printIndent(loopIndent + indent);
                         if(stacRequested)
@@ -1183,14 +1260,23 @@ idl_arrayLoopCopyBody(
                             idl_arrayLoopCopyIndex(typeArray);
                             idl_fileOutPrintf (idl_fileCur(),"), (%s", from);
                             idl_arrayLoopCopyIndex(typeArray);
-                            idl_fileOutPrintf (idl_fileCur(),"), %d);\n", (maxlen+1));
+                            idl_fileOutPrintf (idl_fileCur(),"), %u);\n", (maxlen+1));
                         } else
                         {
                             idl_fileOutPrintf(idl_fileCur(), "%s", to);
                             idl_arrayLoopCopyIndex(typeArray);
-                            idl_fileOutPrintf(idl_fileCur(), " = c_stringNew(base, (%s)", from);
+                            idl_fileOutPrintf(idl_fileCur(), " = c_stringNew_s(base, (%s)", from);
                             idl_arrayLoopCopyIndex(typeArray);
-                            idl_fileOutPrintf (idl_fileCur(),");\n");
+                            idl_fileOutPrintf (idl_fileCur(),"%s);\n", sprefix);
+                            idl_printIndent(loopIndent + indent);
+                            idl_fileOutPrintf(idl_fileCur(), "if(%s", to);
+                            idl_arrayLoopCopyIndex(typeArray);
+                            idl_fileOutPrintf(idl_fileCur(), " == NULL) {\n");
+                            idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, loopIndent + indent + 1);
+                            idl_printIndent(loopIndent + indent);
+                            idl_fileOutPrintf(idl_fileCur(), "    result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                            idl_printIndent(loopIndent + indent);
+                            idl_fileOutPrintf(idl_fileCur(), "}\n");
                         }
                         indent--;
                         idl_printIndent(loopIndent + indent);
@@ -1199,7 +1285,7 @@ idl_arrayLoopCopyBody(
                         idl_printIndent(loopIndent + indent);
                         idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
                         idl_printIndent(loopIndent + indent);
-                        idl_fileOutPrintf (idl_fileCur(),"result = OS_C_FALSE;\n");
+                        idl_fileOutPrintf (idl_fileCur(),"result = V_COPYIN_RESULT_INVALID;\n");
                         indent--;
                         idl_printIndent(loopIndent + indent);
                         idl_fileOutPrintf (idl_fileCur(),"}\n");
@@ -1207,9 +1293,18 @@ idl_arrayLoopCopyBody(
                         idl_printIndent(loopIndent + indent);
                         idl_fileOutPrintf (idl_fileCur(), "%s", to);
                         idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf (idl_fileCur(), " = c_stringNew(base, (%s)", from);
+                        idl_fileOutPrintf (idl_fileCur(), " = c_stringNew_s(base, (%s)", from);
                         idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf (idl_fileCur(),");\n");
+                        idl_fileOutPrintf (idl_fileCur(),"%s);\n", sprefix);
+                        idl_printIndent(loopIndent + indent);
+                        idl_fileOutPrintf(idl_fileCur(), "if(%s", to);
+                        idl_arrayLoopCopyIndex(typeArray);
+                        idl_fileOutPrintf(idl_fileCur(), " == NULL) {\n");
+                        idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, loopIndent + indent + 1);
+                        idl_printIndent(loopIndent + indent);
+                        idl_fileOutPrintf(idl_fileCur(), "    result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                        idl_printIndent(loopIndent + indent);
+                        idl_fileOutPrintf(idl_fileCur(), "}\n");
                     }
                     indent--;
                     idl_printIndent(loopIndent + indent);
@@ -1218,7 +1313,7 @@ idl_arrayLoopCopyBody(
                     idl_printIndent(loopIndent + indent);
                     idl_boundsCheckFailNull(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
                     idl_printIndent(loopIndent + indent);
-                    idl_fileOutPrintf (idl_fileCur(),"result = OS_C_FALSE;\n");
+                    idl_fileOutPrintf (idl_fileCur(),"result = V_COPYIN_RESULT_INVALID;\n");
                     indent--;
                     idl_printIndent(loopIndent + indent);
                     idl_fileOutPrintf (idl_fileCur(),"}\n");
@@ -1233,14 +1328,23 @@ idl_arrayLoopCopyBody(
                         idl_arrayLoopCopyIndex(typeArray);
                         idl_fileOutPrintf (idl_fileCur(),"), (%s", from);
                         idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf (idl_fileCur(),"), %d);\n", (maxlen+1));
+                        idl_fileOutPrintf (idl_fileCur(),"), %u);\n", (maxlen+1));
                     } else
                     {
                         idl_fileOutPrintf (idl_fileCur(), "%s", to);
                         idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf (idl_fileCur(), " = c_stringNew(base, (%s)", from);
+                        idl_fileOutPrintf (idl_fileCur(), " = c_stringNew_s(base, (%s)", from);
                         idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf (idl_fileCur(),");\n");
+                        idl_fileOutPrintf (idl_fileCur(),"%s);\n", sprefix);
+                        idl_printIndent(loopIndent + indent);
+                        idl_fileOutPrintf(idl_fileCur(), "if(%s", to);
+                        idl_arrayLoopCopyIndex(typeArray);
+                        idl_fileOutPrintf(idl_fileCur(), " == NULL) {\n");
+                        idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, loopIndent + indent + 1);
+                        idl_printIndent(loopIndent + indent);
+                        idl_fileOutPrintf(idl_fileCur(), "    result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                        idl_printIndent(loopIndent + indent);
+                        idl_fileOutPrintf(idl_fileCur(), "}\n");
                     }
                     idl_fileOutPrintf (idl_fileCur(),"#endif\n");
                 } else {
@@ -1256,18 +1360,16 @@ idl_arrayLoopCopyBody(
 
                 idl_fileOutPrintf(idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
                 idl_printIndent(loopIndent + indent);
-                idl_fileOutPrintf(idl_fileCur(), "if( (((c_long)%s", from);
+                idl_fileOutPrintf(idl_fileCur(), "if( (unsigned)%s", from);
                 idl_arrayLoopCopyIndex(typeArray);
-                idl_fileOutPrintf(idl_fileCur(), ") >= 0) && (((c_long)%s", from);
-                idl_arrayLoopCopyIndex(typeArray);
-                idl_fileOutPrintf(idl_fileCur(), ") < %d)){\n", maxlen);
+                idl_fileOutPrintf(idl_fileCur(), " < %u)){\n", maxlen);
                 indent++;
                 idl_printIndent(loopIndent + indent);
                 idl_fileOutPrintf(idl_fileCur(), "%s", to);
                 idl_arrayLoopCopyIndex(typeArray);
                 idl_fileOutPrintf(idl_fileCur(), " = %s", from);
                 idl_arrayLoopCopyIndex(typeArray);
-                idl_fileOutPrintf(idl_fileCur(), ";\n", from);
+                idl_fileOutPrintf(idl_fileCur(), ";\n");
                 indent--;
                 idl_printIndent(loopIndent + indent);
                 idl_fileOutPrintf (idl_fileCur(), "    } else {\n");
@@ -1276,7 +1378,7 @@ idl_arrayLoopCopyBody(
                 idl_fileOutPrintf (idl_fileCur(), "        ");
                 idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
                 idl_printIndent(loopIndent + indent);
-                idl_fileOutPrintf (idl_fileCur(), "        result = OS_C_FALSE;\n");
+                idl_fileOutPrintf (idl_fileCur(), "        result = V_COPYIN_RESULT_INVALID;\n");
                 indent--;
                 idl_printIndent(loopIndent + indent);
                 idl_fileOutPrintf (idl_fileCur(), "    }\n");
@@ -1286,7 +1388,7 @@ idl_arrayLoopCopyBody(
                 idl_arrayLoopCopyIndex(typeArray);
                 idl_fileOutPrintf (idl_fileCur(), " = %s", from);
                 idl_arrayLoopCopyIndex(typeArray);
-                idl_fileOutPrintf (idl_fileCur(), ";\n", from);
+                idl_fileOutPrintf (idl_fileCur(), ";\n");
                 idl_fileOutPrintf (idl_fileCur(),"#endif\n");
                 break;
             default:
@@ -1301,6 +1403,8 @@ idl_arrayLoopCopyBody(
         /* This may only be string */
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeBasicType (idl_typeBasic(typeSpec)) == idl_string) {
+            const char *sprefix = ((idl_getIsISOCpp() && idl_getIsISOCppTypes()) ? ".c_str()": "");
+
             maxlen = idl_typeBasicMaxlen(idl_typeBasic(typeSpec));
 
                 idl_fileOutPrintf (idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
@@ -1311,9 +1415,9 @@ idl_arrayLoopCopyBody(
                 indent++;
                 if(maxlen != 0){
                     idl_printIndent(loopIndent + indent);
-                    idl_fileOutPrintf(idl_fileCur(), "if(((unsigned int)(strlen((%s)", from);
+                    idl_fileOutPrintf(idl_fileCur(), "if(strlen((%s)", from);
                     idl_arrayLoopCopyIndex(typeArray);
-                    idl_fileOutPrintf(idl_fileCur(), "))) <= %d){\n", maxlen);
+                    idl_fileOutPrintf(idl_fileCur(), ") <= %u){\n", maxlen);
                     indent++;
                     if(stacRequested)
                     {
@@ -1321,16 +1425,25 @@ idl_arrayLoopCopyBody(
                         idl_arrayLoopCopyIndex(typeArray);
                         idl_fileOutPrintf (idl_fileCur(),", (%s)", from);
                         idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf (idl_fileCur(),", %d);\n", (maxlen+1));
+                        idl_fileOutPrintf (idl_fileCur(),", %u);\n", (maxlen+1));
                     }
                     else
                     {
                         idl_printIndent (loopIndent + indent);
                         idl_fileOutPrintf(idl_fileCur(), "(*%s)", to);
                         idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf(idl_fileCur(), " = c_stringNew(base, (%s)", from);
+                        idl_fileOutPrintf(idl_fileCur(), " = c_stringNew_s(base, (%s)", from);
                         idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf(idl_fileCur(), ");\n");
+                        idl_fileOutPrintf(idl_fileCur(), "%s);\n", sprefix);
+                        idl_printIndent (loopIndent + indent);
+                        idl_fileOutPrintf(idl_fileCur(), "if((*%s)", to);
+                        idl_arrayLoopCopyIndex(typeArray);
+                        idl_fileOutPrintf(idl_fileCur(), " == NULL) {\n");
+                        idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, loopIndent + indent + 1);
+                        idl_printIndent (loopIndent + indent);
+                        idl_fileOutPrintf(idl_fileCur(), "    result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                        idl_printIndent (loopIndent + indent);
+                        idl_fileOutPrintf(idl_fileCur(), "}\n");
                     }
                     indent--;
                     idl_printIndent (loopIndent + indent);
@@ -1339,7 +1452,7 @@ idl_arrayLoopCopyBody(
                     idl_printIndent (loopIndent + indent);
                     idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
                     idl_printIndent (loopIndent + indent);
-                    idl_fileOutPrintf (idl_fileCur(), "    result = OS_C_FALSE;\n");
+                    idl_fileOutPrintf (idl_fileCur(), "    result = V_COPYIN_RESULT_INVALID;\n");
                     indent--;
                     idl_printIndent (loopIndent + indent);
                     idl_fileOutPrintf (idl_fileCur(), "}\n");
@@ -1347,9 +1460,18 @@ idl_arrayLoopCopyBody(
                     idl_printIndent (loopIndent + indent);
                     idl_fileOutPrintf(idl_fileCur(), "(*%s)", to);
                     idl_arrayLoopCopyIndex(typeArray);
-                    idl_fileOutPrintf(idl_fileCur(), " = c_stringNew(base, (%s)", from);
+                    idl_fileOutPrintf(idl_fileCur(), " = c_stringNew_s(base, (%s)", from);
                     idl_arrayLoopCopyIndex(typeArray);
-                    idl_fileOutPrintf(idl_fileCur(), ");\n");
+                    idl_fileOutPrintf(idl_fileCur(), "%s);\n", sprefix);
+                    idl_printIndent (loopIndent + indent);
+                    idl_fileOutPrintf(idl_fileCur(), "if((*%s)", to);
+                    idl_arrayLoopCopyIndex(typeArray);
+                    idl_fileOutPrintf(idl_fileCur(), " == NULL) {\n");
+                    idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, loopIndent + indent + 1);
+                    idl_printIndent (loopIndent + indent);
+                    idl_fileOutPrintf(idl_fileCur(), "    result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                    idl_printIndent (loopIndent + indent);
+                    idl_fileOutPrintf(idl_fileCur(), "}\n");
                 }
                 indent--;
                 idl_printIndent (loopIndent + indent);
@@ -1358,7 +1480,7 @@ idl_arrayLoopCopyBody(
                 idl_printIndent(loopIndent + indent);
                 idl_boundsCheckFailNull(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
                 idl_printIndent (loopIndent + indent);
-                idl_fileOutPrintf (idl_fileCur(), "result = OS_C_FALSE;\n");
+                idl_fileOutPrintf (idl_fileCur(), "result = V_COPYIN_RESULT_INVALID;\n");
                 indent--;
                 idl_printIndent (loopIndent + indent);
                 idl_fileOutPrintf (idl_fileCur(), "}\n");
@@ -1371,15 +1493,24 @@ idl_arrayLoopCopyBody(
                     idl_arrayLoopCopyIndex(typeArray);
                     idl_fileOutPrintf (idl_fileCur(),", (%s)", from);
                     idl_arrayLoopCopyIndex(typeArray);
-                    idl_fileOutPrintf (idl_fileCur(),", %d);\n", (maxlen+1));
+                    idl_fileOutPrintf (idl_fileCur(),", %u);\n", (maxlen+1));
                 }
                 else
                 {
                     idl_fileOutPrintf(idl_fileCur(), "(*%s)", to);
                     idl_arrayLoopCopyIndex(typeArray);
-                    idl_fileOutPrintf(idl_fileCur(), " = c_stringNew(base, (%s)", from);
+                    idl_fileOutPrintf(idl_fileCur(), " = c_stringNew_s(base, (%s)", from);
                     idl_arrayLoopCopyIndex(typeArray);
-                    idl_fileOutPrintf(idl_fileCur(), ");\n");
+                    idl_fileOutPrintf(idl_fileCur(), "%s);\n", sprefix);
+                    idl_printIndent (loopIndent + indent);
+                    idl_fileOutPrintf(idl_fileCur(), "if((*%s)", to);
+                    idl_arrayLoopCopyIndex(typeArray);
+                    idl_fileOutPrintf(idl_fileCur(), " == NULL) {\n");
+                    idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, loopIndent + indent + 1);
+                    idl_printIndent (loopIndent + indent);
+                    idl_fileOutPrintf(idl_fileCur(), "    result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                    idl_printIndent (loopIndent + indent);
+                    idl_fileOutPrintf(idl_fileCur(), "}\n");
                 }
                 idl_fileOutPrintf (idl_fileCur(),"#endif\n");
         } else {
@@ -1404,8 +1535,8 @@ idl_arrayLoopCopyBody(
         }
         maxlen = idl_typeSeqMaxSize(idl_typeSeq(typeSpec));
 
-        snprintf(source, (size_t)sizeof(source), "(%s)", from);
-        snprintf(destin, (size_t)sizeof(destin), "(*%s)", to);
+        snprintf(source, sizeof(source), "(%s)", from);
+        snprintf(destin, sizeof(destin), "(*%s)", to);
 
         idl_arrayLoopCopyIndexString (source, typeArray);
         idl_arrayLoopCopyIndexString (destin, typeArray);
@@ -1413,25 +1544,25 @@ idl_arrayLoopCopyBody(
         idl_printIndent (total_indent);
         idl_fileOutPrintf (idl_fileCur(), "/* Code generated by %s at line %d */\n\n",__FILE__,__LINE__);
         idl_printIndent (total_indent);
-        idl_fileOutPrintf (idl_fileCur(), "    %sc_type type0 = NULL;\n", *suffix == '\0' ? "static " : "");
+        idl_fileOutPrintf (idl_fileCur(), "    %sc_type type0 = NULL;\n", (!noTypeCaching) ? "static " : "");
         idl_printIndent (total_indent);
         idl_fileOutPrintf (idl_fileCur(), "    c_type subtype0;\n");
         idl_printIndent (total_indent);
-        idl_fileOutPrintf (idl_fileCur(), "    c_long length0;\n");
+        idl_fileOutPrintf (idl_fileCur(), "    c_ulong length0;\n");
         idl_printIndent (total_indent);
         idl_fileOutPrintf (idl_fileCur(), "    %s *dest0;\n\n", scopedName);
         idl_printIndent (total_indent);
         idl_fileOutPrintf (idl_fileCur(), "    if (type0 == NULL) {\n");
         idl_printIndent (total_indent);
-        idl_fileOutPrintf (idl_fileCur(), "            subtype0 = c_type(c_metaResolve (c_metaObject(base), \"%s\"));\n", typeName);
+        idl_fileOutPrintf (idl_fileCur(), "        subtype0 = c_type(c_metaResolve (c_metaObject(base), \"%s\"));\n", typeName);
         idl_printIndent (total_indent);
         if(maxlen > 0){
-            idl_fileOutPrintf (idl_fileCur(), "            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%d>\",subtype0,%d);\n", typeName, maxlen, maxlen);
+            idl_fileOutPrintf (idl_fileCur(), "        type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%u>\",subtype0,%u);\n", typeName, maxlen, maxlen);
         } else {
-            idl_fileOutPrintf (idl_fileCur(), "            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype0,0);\n", typeName);
+            idl_fileOutPrintf (idl_fileCur(), "        type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype0,0);\n", typeName);
         }
         idl_printIndent (total_indent);
-        idl_fileOutPrintf (idl_fileCur(), "            c_free(subtype0);\n");
+        idl_fileOutPrintf (idl_fileCur(), "        c_free(subtype0);\n");
         idl_printIndent (total_indent);
         idl_fileOutPrintf (idl_fileCur(), "    }\n");
 
@@ -1439,49 +1570,75 @@ idl_arrayLoopCopyBody(
         maxlen = idl_typeSeqMaxSize(idl_typeSeq(typeSpec));
         if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
         {
-          idl_fileOutPrintf (idl_fileCur(), "    length0 = (c_long)(%s).size();\n", source);
+          idl_fileOutPrintf (idl_fileCur(), "    length0 = (c_ulong)(%s).size();\n", source);
         }
         else
         {
-          idl_fileOutPrintf (idl_fileCur(), "    length0 = (c_long)(%s).length();\n", source);
+          idl_fileOutPrintf (idl_fileCur(), "    length0 = (c_ulong)(%s).length();\n", source);
         }
 
         idl_fileOutPrintf (idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
 
         if(maxlen){
-            idl_fileOutPrintf(idl_fileCur(), "    if(length0 > %d){\n", maxlen);
+            idl_fileOutPrintf(idl_fileCur(), "    if(length0 > %u){\n", maxlen);
             idl_printIndent(total_indent);
             idl_fileOutPrintf(idl_fileCur(), "        ");
             idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
             idl_printIndent(total_indent);
-            idl_fileOutPrintf(idl_fileCur(), "        result = OS_C_FALSE;\n");
+            idl_fileOutPrintf(idl_fileCur(), "        result = V_COPYIN_RESULT_INVALID;\n");
             idl_printIndent(total_indent);
             idl_fileOutPrintf(idl_fileCur(), "    } else {\n");
             idl_printIndent(total_indent);
-            idl_fileOutPrintf(idl_fileCur(), "        dest0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
-                idl_seqLoopCopy(scope, nextType, source, "dest0", 1, total_indent+2, userData);
-
+            idl_fileOutPrintf(idl_fileCur(), "        dest0 = (%s *)c_newSequence_s(c_collectionType(type0),length0);\n", scopedName);
+            idl_fileOutPrintf(idl_fileCur(), "        if(dest0 != NULL) {\n");
+            idl_seqLoopCopy(scope, nextType, source, "dest0", 1, total_indent+2, userData);
             idl_printIndent(total_indent);
-            idl_fileOutPrintf(idl_fileCur(), "        %s = (c_sequence)dest0;\n",
-                destin);
+            idl_fileOutPrintf(idl_fileCur(), "            %s = (c_sequence)dest0;\n", destin);
+            idl_printIndent(total_indent);
+            idl_fileOutPrintf(idl_fileCur(), "        } else {\n");
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, total_indent + 3);
+            idl_printIndent(total_indent);
+            idl_fileOutPrintf(idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_printIndent(total_indent);
+            idl_fileOutPrintf(idl_fileCur(), "        }\n");
+            idl_printIndent(total_indent);
             idl_fileOutPrintf(idl_fileCur(), "    }\n");
         } else {
             idl_printIndent(total_indent);
-            idl_fileOutPrintf(idl_fileCur(), "    dest0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
-                idl_seqLoopCopy(scope, nextType, source, "dest0", 1, total_indent+1, userData);
-
+            idl_fileOutPrintf(idl_fileCur(), "    dest0 = (%s *)c_newSequence_s(c_collectionType(type0),length0);\n", scopedName);
+            idl_printIndent(total_indent);
+            idl_fileOutPrintf(idl_fileCur(), "    if(dest0 != NULL) {\n");
+            idl_seqLoopCopy(scope, nextType, source, "dest0", 1, total_indent+1, userData);
             idl_printIndent (total_indent);
-            idl_fileOutPrintf (idl_fileCur(), "    %s = (c_sequence)dest0;\n", destin);
+            idl_fileOutPrintf (idl_fileCur(), "        %s = (c_sequence)dest0;\n", destin);
+            idl_printIndent(total_indent);
+            idl_printIndent(total_indent);
+            idl_fileOutPrintf(idl_fileCur(), "    } else {\n");
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, total_indent + 2);
+            idl_printIndent(total_indent);
+            idl_fileOutPrintf(idl_fileCur(), "        result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_printIndent(total_indent);
+            idl_fileOutPrintf(idl_fileCur(), "    }\n");
         }
         idl_fileOutPrintf (idl_fileCur(),"#else\n");
         idl_printIndent (total_indent);
-        idl_fileOutPrintf(idl_fileCur(), "    dest0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
+        idl_fileOutPrintf(idl_fileCur(), "    dest0 = (%s *)c_newSequence_s(c_collectionType(type0),length0);\n", scopedName);
+        idl_printIndent(total_indent);
+        idl_fileOutPrintf(idl_fileCur(), "    if(dest0 != NULL) {\n");
         idl_seqLoopCopy(scope, nextType, source, "dest0", 1, total_indent+1, userData);
-
         idl_printIndent (total_indent);
-        idl_fileOutPrintf (idl_fileCur(), "    %s = (c_sequence)dest0;\n", destin);
+        idl_fileOutPrintf(idl_fileCur(), "        %s = (c_sequence)dest0;\n", destin);
+        idl_printIndent(total_indent);
+        idl_printIndent(total_indent);
+        idl_fileOutPrintf(idl_fileCur(), "    } else {\n");
+        idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, total_indent + 2);
+        idl_printIndent(total_indent);
+        idl_fileOutPrintf(idl_fileCur(), "        result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+        idl_printIndent(total_indent);
+        idl_fileOutPrintf(idl_fileCur(), "    }\n");
         idl_fileOutPrintf (idl_fileCur(),"#endif\n");
-        if(*suffix != '\0'){
+        if(noTypeCaching){
+            idl_printIndent (total_indent);
             idl_fileOutPrintf (idl_fileCur(), "    c_free(type0);\n");
         }
         break;
@@ -1547,7 +1704,7 @@ idl_arrayLoopCopyClose (
            ..
                for (i# = 0; i# < <size-dimension-last>; i#++) {
                     // copy array element
-                    to[i1][i2]..[i#] = c_stringNew (from[i1][i2]..[i#]) // for string
+                    to[i1][i2]..[i#] = c_stringNew_s (from[i1][i2]..[i#]) // for string
                     __<type>__copyIn (&from[i1][i2]..[i#], &to[i1][i2]..[i#]) // for struct, union
                     .. // for sequence, see sequence copy construction
                }
@@ -1626,9 +1783,7 @@ idl_arrayElements (
 {
     idl_typeSpec subType = idl_typeArrayActual(typeArray);
     idl_type idlType;
-    c_long maxLen;
     char *buf;
-    const c_char *suffix = (c_char*)userData;
 
     char* from;
     if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
@@ -1670,12 +1825,12 @@ idl_arrayElements (
                 idl_fileOutPrintf(idl_fileCur(),"        /* Allocate the length of the array (and null terminator) as a database\n");
                 idl_fileOutPrintf(idl_fileCur(),"        * string\n");
                 idl_fileOutPrintf(idl_fileCur(),"        */\n");
-                idl_fileOutPrintf(idl_fileCur(),"        to->%s = c_stringMalloc(base, (%d + 1));\n", to, idl_typeArraySize(typeArray));
+                idl_fileOutPrintf(idl_fileCur(),"        to->%s = c_stringMalloc(base, (%u + 1));\n", to, idl_typeArraySize(typeArray));
                 idl_fileOutPrintf(idl_fileCur(),"        if(to->%s)\n", to);
                 idl_fileOutPrintf(idl_fileCur(),"        {\n");
                 idl_fileOutPrintf(idl_fileCur(),"            /* Copy the value of the array into the database string */\n");
-                idl_fileOutPrintf(idl_fileCur(),"           strncpy(to->%s, %s, %d);\n", to, from, idl_typeArraySize(typeArray));
-                idl_fileOutPrintf(idl_fileCur(),"            to->%s[%d] = '\\0';\n", to, idl_typeArraySize(typeArray));
+                idl_fileOutPrintf(idl_fileCur(),"           strncpy(to->%s, %s, %u);\n", to, from, idl_typeArraySize(typeArray));
+                idl_fileOutPrintf(idl_fileCur(),"            to->%s[%u] = '\\0';\n", to, idl_typeArraySize(typeArray));
                 idl_fileOutPrintf(idl_fileCur(),"        }\n");
             } else
             {
@@ -1685,8 +1840,6 @@ idl_arrayElements (
         }
         break;
     case idl_tenum:
-        maxLen = idl_typeEnumNoElements(idl_typeEnum(subType));
-
         idl_fileOutPrintf (idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
         idl_printIndent (indent);
         idl_fileOutPrintf (idl_fileCur(), "    /* TODO: Validate all enum elements here - Xref issue dds#175 */\n");
@@ -1714,8 +1867,6 @@ idl_arrayElements (
                 idl_fileOutPrintf (idl_fileCur(), "    memcpy (%s, %s, sizeof (*%s));\n", to, from, to);
             }
         } else if (idl_typeSpecType(idl_typeDefActual(idl_typeDef(subType))) == idl_tenum) {
-            maxLen = idl_typeEnumNoElements(idl_typeEnum(idl_typeDefActual(idl_typeDef(subType))));
-
             idl_fileOutPrintf (idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
     /*
             idl_printIndent (indent);
@@ -1774,10 +1925,11 @@ idl_seqIndex (
     c_char is[64];
     c_long i;
 
-    os_strncpy (index, "", sizeof(index));
+    index[0] = 0;
     for (i = 0; i < indent; i++) {
-    snprintf (is, (size_t)sizeof(is), "[i%d]", i);
-    strncat (index, is, (size_t)sizeof(is));
+        snprintf (is, sizeof(is), "[i%d]", i);
+        /* Remaining size is (total size) - (current string size) - (sizeof('\0')). */
+        os_strncat(index, is, sizeof(index) - strlen(index) - 1);
     }
     return os_strdup(index);
 }
@@ -1863,14 +2015,14 @@ idl_seqLoopCopy (
     c_char *typeName;
     c_char *scopedName;
     idl_typeSpec nextType;
-    c_long maxlen;
-    const c_char * suffix = (c_char *)userData;
+    c_ulong maxlen;
+    os_boolean noTypeCaching = ((CxxTypeUserData*)userData)->no_type_caching;
 
     if (idl_isContiguous(idl_typeSpecDef(typeSpec))) {
+//        idl_printIndent (indent);
+//        idl_fileOutPrintf (idl_fileCur(), "{\n");
         idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "{\n");
-        idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "/* Code generated by %s at line %d */\n",__FILE__,__LINE__);
+        idl_fileOutPrintf (idl_fileCur(), "    /* Code generated by %s at line %d */\n",__FILE__,__LINE__);
         idl_printIndent (indent);
         if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
         {
@@ -1878,18 +2030,18 @@ idl_seqLoopCopy (
             idl_printIndent (indent);
             idl_fileOutPrintf (idl_fileCur(), "    {\n");
             indent += 1;
+            idl_printIndent (indent);
         }
-        idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "    %s *buf%d;\n",idl_scopedSplTypeName(typeSpec),loop_index-1);
+        idl_fileOutPrintf (idl_fileCur(), "    const %s *buf%d;\n",idl_scopedSplTypeName(typeSpec),loop_index-1);
         idl_printIndent (indent);
         if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
         {
-            idl_fileOutPrintf (idl_fileCur(), "    buf%d = reinterpret_cast<%s *>(&((%s)%s[0]));\n",
+            idl_fileOutPrintf (idl_fileCur(), "    buf%d = reinterpret_cast<const %s *>(&((%s)%s[0]));\n",
                 loop_index-1, idl_scopedSplTypeName(typeSpec), from, idl_seqIndex (loop_index-1));
         }
         else
         {
-            idl_fileOutPrintf (idl_fileCur(), "    buf%d = (%s *)(%s)%s.get_buffer();\n",
+            idl_fileOutPrintf (idl_fileCur(), "    buf%d = (const %s *)(%s)%s.get_buffer();\n",
                 loop_index-1, idl_scopedSplTypeName(typeSpec), from, idl_seqIndex (loop_index-1));
         }
 
@@ -1917,19 +2069,19 @@ idl_seqLoopCopy (
             idl_printIndent (indent);
             idl_fileOutPrintf (idl_fileCur(), "    }\n");
         }
-        idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "}\n");
+//        idl_printIndent (indent);
+//        idl_fileOutPrintf (idl_fileCur(), "}\n");
         return;
     }
 
+//    idl_printIndent (indent);
+//    idl_fileOutPrintf (idl_fileCur(), "{\n");
     idl_printIndent (indent);
-    idl_fileOutPrintf (idl_fileCur(), "{\n");
-    idl_printIndent (indent);
-    idl_fileOutPrintf (idl_fileCur(), "/* Code generated by %s at line %d */\n",__FILE__,__LINE__);
+    idl_fileOutPrintf (idl_fileCur(), "    /* Code generated by %s at line %d */\n",__FILE__,__LINE__);
     idl_printIndent (indent);
     idl_fileOutPrintf (idl_fileCur(), "    unsigned int i%d;\n", loop_index-1);
     idl_printIndent (indent);
-    idl_fileOutPrintf (idl_fileCur(), "    for (i%d = 0; (i%d < (unsigned int)length%d) && result; i%d++) {\n",
+    idl_fileOutPrintf (idl_fileCur(), "    for (i%d = 0; (i%d < length%d) && V_COPYIN_RESULT_IS_OK(result); i%d++) {\n",
         loop_index-1,
         loop_index-1,
         loop_index-1,
@@ -1941,9 +2093,7 @@ idl_seqLoopCopy (
 
         idl_fileOutPrintf (idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
         idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "    if((((c_long)((%s)%s)) >= 0) && (((c_long)((%s)%s)) < %d)){\n",
-                from,
-                idl_seqIndex(loop_index),
+        idl_fileOutPrintf (idl_fileCur(), "    if((unsigned)((%s)%s) < %u){\n",
                 from,
                 idl_seqIndex(loop_index),
                 maxlen);
@@ -1960,7 +2110,7 @@ idl_seqLoopCopy (
         idl_fileOutPrintf (idl_fileCur(), "        ");
         idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
         idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        result = OS_C_FALSE;\n");
+        idl_fileOutPrintf (idl_fileCur(), "        result = V_COPYIN_RESULT_INVALID;\n");
         idl_printIndent (indent);
         idl_fileOutPrintf (idl_fileCur(), "    }\n");
         idl_fileOutPrintf (idl_fileCur(),"#else\n");
@@ -1976,6 +2126,7 @@ idl_seqLoopCopy (
     case idl_tbasic:
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeBasicType (idl_typeBasic(typeSpec)) == idl_string) {
+            const char *sprefix = ((idl_getIsISOCpp() && idl_getIsISOCppTypes()) ? ".c_str()": "");
             maxlen = idl_typeBasicMaxlen(idl_typeBasic(typeSpec));
 
             idl_fileOutPrintf (idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
@@ -1992,26 +2143,42 @@ idl_seqLoopCopy (
                         maxlen);
 
                 idl_printIndent (indent+1);
-                idl_fileOutPrintf(idl_fileCur(), "            %s[i%d] = c_stringNew(base, (%s)%s);\n",
+                idl_fileOutPrintf(idl_fileCur(), "            %s[i%d] = c_stringNew_s(base, (%s)%s%s);\n",
                         to,
                         loop_index-1,
                         from,
-                        idl_seqIndex(loop_index));
+                        idl_seqIndex(loop_index),
+                        sprefix);
+                idl_printIndent (indent + 1);
+                idl_fileOutPrintf(idl_fileCur(), "            if(%s[i%d] == NULL) {\n", to, loop_index-1);
+                idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, indent + 5);
+                idl_printIndent (indent + 1);
+                idl_fileOutPrintf(idl_fileCur(), "                result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                idl_printIndent (indent + 1);
+                idl_fileOutPrintf(idl_fileCur(), "            }\n");
                 idl_printIndent (indent + 1);
                 idl_fileOutPrintf (idl_fileCur(), "        } else {\n");
                 idl_printIndent (indent + 1);
                 idl_fileOutPrintf (idl_fileCur(), "            ");
                 idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
                 idl_printIndent (indent + 1);
-                idl_fileOutPrintf (idl_fileCur(), "            result = OS_C_FALSE;\n");
+                idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_INVALID;\n");
                 idl_printIndent (indent + 1);
                 idl_fileOutPrintf (idl_fileCur(), "        }\n");
             } else {
-                idl_fileOutPrintf (idl_fileCur(), "            %s[i%d] = c_stringNew(base, (%s)%s);\n",
+                idl_fileOutPrintf (idl_fileCur(), "            %s[i%d] = c_stringNew_s(base, (%s)%s%s);\n",
                         to,
                         loop_index-1,
                         from,
-                        idl_seqIndex(loop_index));
+                        idl_seqIndex(loop_index),
+                        sprefix);
+                idl_printIndent (indent);
+                idl_fileOutPrintf (idl_fileCur(), "            if(%s[i%d] == NULL) {\n", to, loop_index-1);
+                idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, indent + 4);
+                idl_printIndent (indent);
+                idl_fileOutPrintf (idl_fileCur(), "                result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                idl_printIndent (indent);
+                idl_fileOutPrintf (idl_fileCur(), "            }\n");
             }
             idl_printIndent (indent);
             idl_fileOutPrintf (idl_fileCur(), "        } else {\n");
@@ -2019,16 +2186,24 @@ idl_seqLoopCopy (
             idl_fileOutPrintf (idl_fileCur(), "            ");
             idl_boundsCheckFailNull(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
             idl_printIndent (indent);
-            idl_fileOutPrintf (idl_fileCur(), "            result = OS_C_FALSE;\n");
+            idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_INVALID;\n");
             idl_printIndent (indent);
             idl_fileOutPrintf (idl_fileCur(), "        }\n");
             idl_fileOutPrintf (idl_fileCur(),"#else\n");
             idl_printIndent (indent);
-            idl_fileOutPrintf (idl_fileCur(), "        %s[i%d] = c_stringNew(base, (%s)%s);\n",
+            idl_fileOutPrintf (idl_fileCur(), "        %s[i%d] = c_stringNew_s(base, (%s)%s%s);\n",
                     to,
                     loop_index-1,
                     from,
-                    idl_seqIndex(loop_index));
+                    idl_seqIndex(loop_index),
+                    sprefix);
+            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "        if(%s[i%d] == NULL) {\n", to, loop_index-1);
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, indent + 3);
+            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "        }\n");
             idl_fileOutPrintf (idl_fileCur(),"#endif\n");
         } else {
             /* This branch is never executed because the first if statement that is added as a copy improvement
@@ -2046,19 +2221,17 @@ idl_seqLoopCopy (
     case idl_tunion:
         varIndex = 0;
         idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        extern c_bool __%s__copyIn%s(c_base base,\n",
-            idl_scopedTypeName(typeSpec),
-            suffix);
+        idl_fileOutPrintf (idl_fileCur(), "        extern v_copyin_result __%s__copyIn(c_base base,\n",
+            idl_scopedTypeName(typeSpec));
         idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "            %s *From,\n",
+        idl_fileOutPrintf (idl_fileCur(), "            const %s *From,\n",
         idl_scopeStack (idl_typeUserScope(idl_typeUser(typeSpec)), "::", idl_typeSpecName(typeSpec)));
         idl_printIndent (indent);
         idl_fileOutPrintf (idl_fileCur(), "            %s *To);\n\n",
         idl_scopedSplTypeIdent(typeSpec));
         idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn%s(base, &(%s)%s, (%s *)&%s[i%d]);\n",
+        idl_fileOutPrintf (idl_fileCur(), "        result = __%s__copyIn(base, &(%s)%s, (%s *)&%s[i%d]);\n",
             idl_scopedTypeName(typeSpec),
-            suffix,
             from,
             idl_seqIndex(loop_index),
             idl_scopedSplTypeIdent(typeSpec),
@@ -2071,25 +2244,28 @@ idl_seqLoopCopy (
         case idl_tstruct:
         case idl_tunion:
         case idl_tarray:
-            idl_fileOutPrintf (idl_fileCur(), "        if(result){\n");
-            idl_fileOutPrintf (idl_fileCur(), "            extern c_bool __%s__copyIn%s(c_base, %s *, _%s *);\n",
+            idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
+            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
                 idl_scopedTypeName (typeSpec),
-                suffix,
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 idl_scopedTypeName (typeSpec));
-            idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn%s(base, &(%s)%s, (%s *)&%s[i%d]);\n",
+            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, &(%s)%s, (%s *)&%s[i%d]);\n",
                 idl_scopedTypeName(typeSpec),
-                suffix,
                 from,
                 idl_seqIndex(loop_index),
                 idl_scopedSplTypeName(typeSpec),
                 to,
                 loop_index-1);
+            idl_printIndent (indent);
             idl_fileOutPrintf (idl_fileCur(), "        }\n");
             break;
         case idl_tbasic:
                 /* QAC EXPECT 3416; No side effect here */
             if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(typeSpec)))) == idl_string) {
+                const char *sprefix = ((idl_getIsISOCpp() && idl_getIsISOCppTypes()) ? ".c_str()": "");
+
                 maxlen = idl_typeBasicMaxlen(idl_typeBasic(idl_typeDefActual(idl_typeDef(typeSpec))));
 
                 idl_fileOutPrintf (idl_fileCur(),"\n#ifdef %s\n", BOUNDSCHECK);
@@ -2105,26 +2281,42 @@ idl_seqLoopCopy (
                             idl_seqIndex(loop_index),
                             maxlen);
                     idl_printIndent (indent + 1);
-                    idl_fileOutPrintf(idl_fileCur(), "            %s[i%d] = c_stringNew(base, (%s)%s);\n",
+                    idl_fileOutPrintf(idl_fileCur(), "            %s[i%d] = c_stringNew_s(base, (%s)%s%s);\n",
                             to,
                             loop_index-1,
                             from,
-                            idl_seqIndex(loop_index));
+                            idl_seqIndex(loop_index),
+                            sprefix);
+                    idl_printIndent (indent + 1);
+                    idl_fileOutPrintf(idl_fileCur(), "            if(%s[i%d] == NULL) {\n", to, loop_index-1);
+                    idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, indent + 5);
+                    idl_printIndent (indent + 1);
+                    idl_fileOutPrintf(idl_fileCur(), "                result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                    idl_printIndent (indent + 1);
+                    idl_fileOutPrintf(idl_fileCur(), "            }\n");
                     idl_printIndent (indent + 1);
                     idl_fileOutPrintf (idl_fileCur(), "        } else {\n");
                     idl_printIndent (indent + 1);
                     idl_fileOutPrintf (idl_fileCur(), "            ");
                     idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
                     idl_printIndent (indent + 1);
-                    idl_fileOutPrintf (idl_fileCur(), "            result = OS_C_FALSE;\n");
+                    idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_INVALID;\n");
                     idl_printIndent (indent + 1);
                     idl_fileOutPrintf (idl_fileCur(), "        }\n");
                 } else {
-                    idl_fileOutPrintf (idl_fileCur(), "            %s[i%d] = c_stringNew(base, (%s)%s);\n",
+                    idl_fileOutPrintf (idl_fileCur(), "            %s[i%d] = c_stringNew_s(base, (%s)%s%s);\n",
                                 to,
                                 loop_index-1,
                                 from,
-                                idl_seqIndex(loop_index));
+                                idl_seqIndex(loop_index),
+                                sprefix);
+                    idl_printIndent (indent);
+                    idl_fileOutPrintf (idl_fileCur(), "            if(%s[i%d] == NULL) {\n", to, loop_index-1);
+                    idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, indent + 4);
+                    idl_printIndent (indent);
+                    idl_fileOutPrintf (idl_fileCur(), "                result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                    idl_printIndent (indent);
+                    idl_fileOutPrintf (idl_fileCur(), "            }\n");
                 }
                 idl_printIndent (indent);
                 idl_fileOutPrintf (idl_fileCur(), "        } else {\n");
@@ -2132,17 +2324,25 @@ idl_seqLoopCopy (
                 idl_fileOutPrintf (idl_fileCur(), "            ");
                 idl_boundsCheckFailNull(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
                 idl_printIndent (indent);
-                idl_fileOutPrintf (idl_fileCur(), "            result = OS_C_FALSE;\n");
+                idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_INVALID;\n");
                 idl_printIndent (indent);
                 idl_fileOutPrintf (idl_fileCur(), "        }\n");
 
                 idl_fileOutPrintf (idl_fileCur(),"#else\n");
                 idl_printIndent (indent);
-                idl_fileOutPrintf (idl_fileCur(), "        %s[i%d] = c_stringNew(base, (%s)%s);\n",
+                idl_fileOutPrintf (idl_fileCur(), "        %s[i%d] = c_stringNew_s(base, (%s)%s%s);\n",
                     to,
                     loop_index-1,
                     from,
-                    idl_seqIndex(loop_index));
+                    idl_seqIndex(loop_index),
+                    sprefix);
+                idl_printIndent (indent);
+                idl_fileOutPrintf (idl_fileCur(), "        if(%s[i%d] == NULL) {\n", to, loop_index-1);
+                idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, indent + 3);
+                idl_printIndent (indent);
+                idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                idl_printIndent (indent);
+                idl_fileOutPrintf (idl_fileCur(), "        }\n");
                 idl_fileOutPrintf (idl_fileCur(),"#endif\n");
             } else {
                 idl_fileOutPrintf (idl_fileCur(), "        %s[i%d] = (%s)(%s)%s;\n",
@@ -2176,7 +2376,7 @@ idl_seqLoopCopy (
             idl_fileOutPrintf (idl_fileCur(), "        ");
             idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
             idl_printIndent (indent);
-            idl_fileOutPrintf (idl_fileCur(), "        result = OS_C_FALSE;\n");
+            idl_fileOutPrintf (idl_fileCur(), "        result = V_COPYIN_RESULT_INVALID;\n");
             idl_printIndent (indent);
             idl_fileOutPrintf (idl_fileCur(), "    }\n");
             idl_fileOutPrintf (idl_fileCur(),"#else\n");
@@ -2204,16 +2404,15 @@ idl_seqLoopCopy (
                 typeName = idl_scopeStack (idl_typeUserScope(idl_typeUser(nextType)), "::", idl_typeSpecName(nextType));
             }
 
-            snprintf (destin, (size_t)sizeof(destin), "dest%d", loop_index);
+            snprintf (destin, sizeof(destin), "dest%d", loop_index);
 
             idl_printIndent (indent);
             idl_fileOutPrintf (idl_fileCur(), "/* Code generated by %s at line %d */\n\n",__FILE__,__LINE__);
             idl_printIndent (indent);
-            idl_fileOutPrintf (idl_fileCur(), "        %sc_type type%d = NULL;\n", *suffix == '\0' ? "static ": "", loop_index);
-            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "        %sc_type type%d = NULL;\n", (!noTypeCaching) ? "static ": "", loop_index);
             idl_fileOutPrintf (idl_fileCur(), "        c_type subtype%d;\n", loop_index);
             idl_printIndent (indent);
-            idl_fileOutPrintf (idl_fileCur(), "        c_long length%d;\n", loop_index);
+            idl_fileOutPrintf (idl_fileCur(), "        c_ulong length%d;\n", loop_index);
             idl_printIndent (indent);
             idl_fileOutPrintf (idl_fileCur(), "        %s *dest%d;\n\n", scopedName, loop_index);
             idl_printIndent (indent);
@@ -2222,7 +2421,7 @@ idl_seqLoopCopy (
             idl_fileOutPrintf (idl_fileCur(), "            subtype%d = c_type(c_metaResolve(c_metaObject(base), \"%s\"));\n", loop_index, typeName);
             idl_printIndent (indent);
             if(maxlen>0){
-                idl_fileOutPrintf (idl_fileCur(), "            type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%d>\",subtype%d,%d);\n", loop_index, typeName, maxlen, loop_index, maxlen);
+                idl_fileOutPrintf (idl_fileCur(), "            type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%u>\",subtype%d,%u);\n", loop_index, typeName, maxlen, loop_index, maxlen);
             } else {
                 idl_fileOutPrintf (idl_fileCur(), "            type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype%d,0);\n", loop_index, typeName, loop_index);
             }
@@ -2230,61 +2429,88 @@ idl_seqLoopCopy (
             idl_fileOutPrintf (idl_fileCur(), "            c_free(subtype%d);\n", loop_index);
             idl_printIndent (indent);
             idl_fileOutPrintf (idl_fileCur(), "        }\n");
-
             idl_printIndent (indent);
             if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
             {
 
-                idl_fileOutPrintf (idl_fileCur(), "        length%d = (c_long)(%s)%s.size();\n", loop_index, from, idl_seqIndex(loop_index));
+                idl_fileOutPrintf (idl_fileCur(), "        length%d = (%s)%s.size();\n", loop_index, from, idl_seqIndex(loop_index));
             }
             else
             {
 
-                idl_fileOutPrintf (idl_fileCur(), "        length%d = (c_long)(%s)%s.length();\n", loop_index, from, idl_seqIndex(loop_index));
+                idl_fileOutPrintf (idl_fileCur(), "        length%d = (%s)%s.length();\n", loop_index, from, idl_seqIndex(loop_index));
             }
 
             idl_fileOutPrintf (idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
             idl_printIndent (indent);
 
             if(maxlen > 0){
-                idl_fileOutPrintf(idl_fileCur(), "        if(length%d > %d){\n", loop_index, maxlen);
+                idl_fileOutPrintf(idl_fileCur(), "        if(length%d > %u){\n", loop_index, maxlen);
                 idl_printIndent (indent);
                 idl_fileOutPrintf(idl_fileCur(), "            ");
                 idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, from);
                 idl_printIndent(indent);
-                idl_fileOutPrintf(idl_fileCur(), "            result = OS_C_FALSE;");
+                idl_fileOutPrintf(idl_fileCur(), "            result = V_COPYIN_RESULT_INVALID;");
                 idl_printIndent(indent);
                 idl_fileOutPrintf(idl_fileCur(), "        } else {");
                 idl_printIndent(indent);
-                idl_fileOutPrintf (idl_fileCur(), "            dest%d = (%s *)c_newSequence(c_collectionType(type%d), length%d);\n",
+                idl_fileOutPrintf(idl_fileCur(), "            dest%d = (%s *)c_newSequence_s(c_collectionType(type%d), length%d);\n",
                     loop_index, scopedName, loop_index, loop_index);
+                idl_printIndent(indent);
+                idl_fileOutPrintf(idl_fileCur(), "            if(dest%d != NULL) {\n", loop_index);
                 idl_seqLoopCopy (scope, nextType, from, destin, loop_index+1, indent+2, userData);
                 idl_printIndent (indent);
-                idl_fileOutPrintf (idl_fileCur(), "            dest%d[i%d] = (c_sequence)dest%d;\n",
+                idl_fileOutPrintf(idl_fileCur(), "                dest%d[i%d] = (c_sequence)dest%d;\n",
                     loop_index-1, loop_index-1, loop_index);
+                idl_printIndent(indent);
+                idl_fileOutPrintf(idl_fileCur(), "            } else {\n");
+                idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, indent + 5);
+                idl_printIndent(indent);
+                idl_fileOutPrintf(idl_fileCur(), "                 result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                idl_printIndent(indent);
+                idl_fileOutPrintf(idl_fileCur(), "            }\n");
                 idl_printIndent(indent);
                 idl_fileOutPrintf(idl_fileCur(), "        }\n");
             } else {
-                idl_fileOutPrintf (idl_fileCur(), "        dest%d = (%s *)c_newSequence(c_collectionType(type%d), length%d);\n",
+                idl_fileOutPrintf(idl_fileCur(), "        dest%d = (%s *)c_newSequence_s(c_collectionType(type%d), length%d);\n",
                     loop_index, scopedName, loop_index, loop_index);
+                idl_printIndent(indent);
+                idl_fileOutPrintf(idl_fileCur(), "        if(dest%d != NULL) {\n", loop_index);
                 idl_seqLoopCopy (scope, nextType, from, destin, loop_index+1, indent+1, userData);
                 idl_printIndent (indent);
-                idl_fileOutPrintf (idl_fileCur(), "        dest%d[i%d] = (c_sequence)dest%d;\n",
+                idl_fileOutPrintf(idl_fileCur(), "            dest%d[i%d] = (c_sequence)dest%d;\n",
                     loop_index-1, loop_index-1, loop_index);
+                idl_printIndent(indent);
+                idl_fileOutPrintf(idl_fileCur(), "        } else {\n");
+                idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, indent + 4);
+                idl_printIndent(indent);
+                idl_fileOutPrintf(idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                idl_printIndent(indent);
+                idl_fileOutPrintf(idl_fileCur(), "        }\n");
             }
             idl_fileOutPrintf (idl_fileCur(),"#else\n");
             idl_printIndent (indent);
-            idl_fileOutPrintf (idl_fileCur(), "        dest%d = (%s *)c_newSequence(c_collectionType(type%d), length%d);\n",
+            idl_fileOutPrintf(idl_fileCur(), "        dest%d = (%s *)c_newSequence_s(c_collectionType(type%d), length%d);\n",
                 loop_index, scopedName, loop_index, loop_index);
+            idl_printIndent(indent);
+            idl_fileOutPrintf(idl_fileCur(), "        if(dest%d != NULL) {\n", loop_index);
             idl_seqLoopCopy (scope, nextType, from, destin, loop_index+1, indent+1, userData);
             idl_printIndent (indent);
-            idl_fileOutPrintf (idl_fileCur(), "        dest%d[i%d] = (c_sequence)dest%d;\n",
+            idl_fileOutPrintf(idl_fileCur(), "             dest%d[i%d] = (c_sequence)dest%d;\n",
                 loop_index-1, loop_index-1, loop_index);
+            idl_printIndent(indent);
+            idl_fileOutPrintf(idl_fileCur(), "        } else {\n");
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, indent + 3);
+            idl_printIndent(indent);
+            idl_fileOutPrintf(idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_printIndent(indent);
+            idl_fileOutPrintf(idl_fileCur(), "        }\n");
             idl_fileOutPrintf (idl_fileCur(),"#endif\n");
-            if(*suffix != '\0'){
+            if(noTypeCaching){
                 idl_printIndent (indent);
                 idl_fileOutPrintf (idl_fileCur(), "        c_free(type%d);\n", loop_index);
             }
+            os_free(scopedName);
             break;
         default:
             printf ("idl_seqLoopCopy: Unexpected type\n");
@@ -2307,16 +2533,16 @@ idl_seqLoopCopy (
             typeName = idl_scopeStack (idl_typeUserScope(idl_typeUser(nextType)), "::", idl_typeSpecName(nextType));
         }
 
-        snprintf (destin, (size_t)sizeof(destin), "dest%d", loop_index);
+        snprintf (destin, sizeof(destin), "dest%d", loop_index);
 
         idl_printIndent (indent);
         idl_fileOutPrintf (idl_fileCur(), "/* Code generated by %s at line %d */\n\n",__FILE__,__LINE__);
         idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        %sc_type type%d = NULL;\n", *suffix == '\0' ? "static " : "", loop_index);
+        idl_fileOutPrintf (idl_fileCur(), "        %sc_type type%d = NULL;\n", (!noTypeCaching) ? "static " : "", loop_index);
         idl_printIndent (indent);
         idl_fileOutPrintf (idl_fileCur(), "        c_type subtype%d;\n", loop_index);
         idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        c_long length%d;\n", loop_index);
+        idl_fileOutPrintf (idl_fileCur(), "        c_ulong length%d;\n", loop_index);
         idl_printIndent (indent);
         idl_fileOutPrintf (idl_fileCur(), "        %s *dest%d;\n\n", scopedName, loop_index);
         idl_printIndent (indent);
@@ -2325,7 +2551,7 @@ idl_seqLoopCopy (
         idl_fileOutPrintf (idl_fileCur(), "            subtype%d = c_type(c_metaResolve (c_metaObject(base), \"%s\"));\n", loop_index, typeName);
         idl_printIndent (indent);
         if(maxlen > 0){
-            idl_fileOutPrintf (idl_fileCur(), "            type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%d>\",subtype%d,%d);\n", loop_index, typeName, maxlen, loop_index, maxlen);
+            idl_fileOutPrintf (idl_fileCur(), "            type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%u>\",subtype%d,%u);\n", loop_index, typeName, maxlen, loop_index, maxlen);
         } else {
             idl_fileOutPrintf (idl_fileCur(), "            type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype%d,0);\n", loop_index, typeName, loop_index);
         }
@@ -2336,21 +2562,29 @@ idl_seqLoopCopy (
         idl_printIndent (indent);
         if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
         {
-          idl_fileOutPrintf (idl_fileCur(), "        length%d = (c_long)(%s)%s.size();\n", loop_index, from, idl_seqIndex(loop_index));
+          idl_fileOutPrintf (idl_fileCur(), "        length%d = (%s)%s.size();\n", loop_index, from, idl_seqIndex(loop_index));
         }
         else
         {
-          idl_fileOutPrintf (idl_fileCur(), "        length%d = (c_long)(%s)%s.length();\n", loop_index, from, idl_seqIndex(loop_index));
+          idl_fileOutPrintf (idl_fileCur(), "        length%d = (%s)%s.length();\n", loop_index, from, idl_seqIndex(loop_index));
         }
         idl_printIndent (indent);
-
-        idl_fileOutPrintf (idl_fileCur(), "        dest%d = (%s *)c_newSequence(c_collectionType(type%d), length%d);\n",
+        idl_fileOutPrintf (idl_fileCur(), "        dest%d = (%s *)c_newSequence_s(c_collectionType(type%d), length%d);\n",
                 loop_index, scopedName, loop_index, loop_index);
+        idl_printIndent(indent);
+        idl_fileOutPrintf (idl_fileCur(), "        if(dest%d != NULL) {\n", loop_index);
         idl_seqLoopCopy (scope, nextType, from, destin, loop_index+1, indent+2, userData);
         idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        dest%d[i%d] = (c_sequence)dest%d;\n",
-                loop_index-1, loop_index-1, loop_index);
-        if(*suffix != '\0'){
+        idl_fileOutPrintf (idl_fileCur(), "            dest%d[i%d] = (c_sequence)dest%d;\n",
+            loop_index-1, loop_index-1, loop_index);
+        idl_printIndent (indent);
+        idl_fileOutPrintf (idl_fileCur(), "        } else {\n");
+        idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, from, indent + 3);
+        idl_printIndent (indent);
+        idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+        idl_printIndent (indent);
+        idl_fileOutPrintf (idl_fileCur(), "        }\n");
+        if(noTypeCaching){
             idl_printIndent (indent);
             idl_fileOutPrintf (idl_fileCur(), "        c_free(type%d);\n", loop_index);
         }
@@ -2361,8 +2595,8 @@ idl_seqLoopCopy (
     }
     idl_printIndent (indent);
     idl_fileOutPrintf (idl_fileCur(), "    }\n");
-    idl_printIndent (indent);
-    idl_fileOutPrintf (idl_fileCur(), "}\n");
+//    idl_printIndent (indent);
+//    idl_fileOutPrintf (idl_fileCur(), "}\n");
 }
 
 /** @brief Function that set up the sequence copy context for a typedef.
@@ -2387,11 +2621,11 @@ idl_seqElements (
     void *userData)
 {
     c_char destin[32];
-    c_long maxlen;
+    c_ulong maxlen;
     c_char *typeName;
     c_char *scopedName;
     idl_typeSpec nextType;
-    const c_char * suffix = (c_char *)userData;
+    os_boolean noTypeCaching = ((CxxTypeUserData*)userData)->no_type_caching;
 
     nextType = idl_typeSeqType(typeSeq);
 
@@ -2405,18 +2639,18 @@ idl_seqElements (
         typeName = idl_scopeStack(idl_typeUserScope(idl_typeUser(nextType)), "::", idl_typeSpecName(nextType));
     }
     scopedName = idl_scopedSplTypeName(nextType);
-    snprintf(destin, (size_t)sizeof(destin), "dest%d", indent);
+    snprintf(destin, sizeof(destin), "dest%d", indent);
     maxlen = idl_typeSeqMaxSize(typeSeq);
 
     idl_fileOutPrintf(idl_fileCur(), "/* Code generated by %s at line %d */\n\n",__FILE__,__LINE__);
-    idl_fileOutPrintf(idl_fileCur(), "    %sc_type type%d = NULL;\n", *suffix == '\0' ? "static " : "", indent);
+    idl_fileOutPrintf(idl_fileCur(), "    %sc_type type%d = NULL;\n", (!noTypeCaching) ? "static " : "", indent);
     idl_fileOutPrintf(idl_fileCur(), "    c_type subtype%d = NULL;\n", indent);
-    idl_fileOutPrintf(idl_fileCur(), "    c_long length%d;\n", indent);
+    idl_fileOutPrintf(idl_fileCur(), "    c_ulong length%d;\n", indent);
     idl_fileOutPrintf(idl_fileCur(), "    %s *dest%d;\n\n", idl_scopedSplTypeName(nextType), indent);
     idl_fileOutPrintf(idl_fileCur(), "    if (type%d == NULL) {\n", indent);
     idl_fileOutPrintf(idl_fileCur(), "        subtype%d = c_type(c_metaResolve (c_metaObject(base), \"%s\"));\n", indent, typeName);
     if(maxlen > 0){
-        idl_fileOutPrintf(idl_fileCur(), "        type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%d>\",subtype%d,%d);\n", indent, typeName, maxlen, indent,maxlen);
+        idl_fileOutPrintf(idl_fileCur(), "        type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%u>\",subtype%d,%u);\n", indent, typeName, maxlen, indent,maxlen);
     } else {
         idl_fileOutPrintf(idl_fileCur(), "        type%d = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype%d,0);\n", indent, typeName, indent);
     }
@@ -2424,37 +2658,54 @@ idl_seqElements (
     idl_fileOutPrintf(idl_fileCur(), "    }\n");
     if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
     {
-        idl_fileOutPrintf(idl_fileCur(), "    length%d = (c_long)(*from).size();\n", indent);
+        idl_fileOutPrintf(idl_fileCur(), "    length%d = (*from).size();\n", indent);
     }
     else
     {
-        idl_fileOutPrintf(idl_fileCur(), "    length%d = (c_long)(*from).length();\n", indent);
+        idl_fileOutPrintf(idl_fileCur(), "    length%d = (*from).length();\n", indent);
     }
 
     idl_fileOutPrintf(idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
 
     if(maxlen != 0){
-        idl_fileOutPrintf(idl_fileCur(), "    if(length%d > %d){\n", indent, maxlen);
+        idl_fileOutPrintf(idl_fileCur(), "    if(length%d > %u){\n", indent, maxlen);
         idl_fileOutPrintf(idl_fileCur(), "        ");
         idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSeq, name);
-        idl_fileOutPrintf(idl_fileCur(), "        result = OS_C_FALSE;\n");
+        idl_fileOutPrintf(idl_fileCur(), "        result = V_COPYIN_RESULT_INVALID;\n");
         idl_fileOutPrintf(idl_fileCur(), "    } else {\n");
-
-        idl_fileOutPrintf(idl_fileCur(), "        dest%d = (%s *)c_newSequence(c_collectionType(type%d), length%d);\n", indent, scopedName, indent, indent);
-            idl_seqLoopCopy(scope, nextType, "*from", destin, 1, indent+2, userData);
-        idl_fileOutPrintf(idl_fileCur(), "        *to = (_%s)dest%d;\n", idl_scopeStack(scope, "_", name), indent);
+        idl_fileOutPrintf(idl_fileCur(), "        dest%d = (%s *)c_newSequence_s(c_collectionType(type%d), length%d);\n",
+                indent, scopedName, indent, indent);
+        idl_fileOutPrintf(idl_fileCur(), "        if(dest%d != NULL) {\n", indent);
+        idl_seqLoopCopy(scope, nextType, "*from", destin, 1, indent+2, userData);
+        idl_fileOutPrintf(idl_fileCur(), "            *to = (_%s)dest%d;\n", idl_scopeStack(scope, "_", name), indent);
+        idl_fileOutPrintf(idl_fileCur(), "        } else {\n");
+        idl_memoryAllocFailed(scope, (idl_typeSpec)typeSeq, name, 3);
+        idl_fileOutPrintf(idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+        idl_fileOutPrintf(idl_fileCur(), "        }\n");
         idl_fileOutPrintf(idl_fileCur(), "    }\n");
     } else {
-        idl_fileOutPrintf(idl_fileCur(), "    dest%d = (%s *)c_newSequence(c_collectionType(type%d), length%d);\n", indent, scopedName, indent, indent);
-            idl_seqLoopCopy (scope, nextType, "*from", destin, 1, indent+1, userData);
-        idl_fileOutPrintf(idl_fileCur(), "    *to = (_%s)dest%d;\n", idl_scopeStack(scope, "_", name), indent);
+        idl_fileOutPrintf(idl_fileCur(), "    dest%d = (%s *)c_newSequence_s(c_collectionType(type%d), length%d);\n",
+                indent, scopedName, indent, indent);
+        idl_fileOutPrintf(idl_fileCur(), "    if(dest%d != NULL) {\n", indent);
+        idl_seqLoopCopy (scope, nextType, "*from", destin, 1, indent+1, userData);
+        idl_fileOutPrintf(idl_fileCur(), "        *to = (_%s)dest%d;\n", idl_scopeStack(scope, "_", name), indent);
+        idl_fileOutPrintf(idl_fileCur(), "    } else {\n");
+        idl_memoryAllocFailed(scope, (idl_typeSpec)typeSeq, name, 2);
+        idl_fileOutPrintf(idl_fileCur(), "        result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+        idl_fileOutPrintf(idl_fileCur(), "    }\n");
     }
     idl_fileOutPrintf(idl_fileCur(), "#else\n");
-    idl_fileOutPrintf(idl_fileCur(), "    dest%d = (%s *)c_newSequence(c_collectionType(type%d), length%d);\n", indent, scopedName, indent, indent);
-        idl_seqLoopCopy (scope, nextType, "*from", destin, 1, indent+1, userData);
-    idl_fileOutPrintf(idl_fileCur(), "    *to = (_%s)dest%d;\n", idl_scopeStack(scope, "_", name), indent);
+    idl_fileOutPrintf(idl_fileCur(), "    dest%d = (%s *)c_newSequence_s(c_collectionType(type%d), length%d);\n",
+            indent, scopedName, indent, indent);
+    idl_fileOutPrintf(idl_fileCur(), "    if(dest%d != NULL) {\n", indent);
+    idl_seqLoopCopy (scope, nextType, "*from", destin, 1, indent+1, userData);
+    idl_fileOutPrintf(idl_fileCur(), "        *to = (_%s)dest%d;\n", idl_scopeStack(scope, "_", name), indent);
+    idl_fileOutPrintf(idl_fileCur(), "    } else {\n");
+    idl_memoryAllocFailed(scope, (idl_typeSpec)typeSeq, name, 2);
+    idl_fileOutPrintf(idl_fileCur(), "        result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+    idl_fileOutPrintf(idl_fileCur(), "    }\n");
     idl_fileOutPrintf(idl_fileCur(), "#endif\n");
-    if(*suffix != '\0'){
+    if(noTypeCaching){
         idl_fileOutPrintf(idl_fileCur(), "    c_free(type%d);\n", indent);
     }
 }
@@ -2488,30 +2739,25 @@ idl_typedefOpenClose (
     idl_typeDef defSpec,
     void *userData)
 {
-    const c_char * suffix = (c_char *) userData;
-
     switch (idl_typeSpecType(idl_typeDefActual(defSpec))) {
     case idl_tstruct:
     case idl_tunion:
-        idl_fileOutPrintf (idl_fileCur(), "c_bool\n");
-        idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn%s(\n",
-                idl_scopeStack (scope, "_", name),
-                suffix);
+        idl_fileOutPrintf (idl_fileCur(), "v_copyin_result\n");
+        idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn(\n",
+                idl_scopeStack (scope, "_", name));
         idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
-        idl_fileOutPrintf (idl_fileCur(), "    %s *from,\n",
+        idl_fileOutPrintf (idl_fileCur(), "    const %s *from,\n",
         idl_scopeStackCxx (scope, "::", name));
         idl_fileOutPrintf (idl_fileCur(), "    _%s *to)\n",
         idl_scopeStack(scope, "_", name));
         idl_fileOutPrintf (idl_fileCur(), "{\n");
-        idl_fileOutPrintf (idl_fileCur(), "    c_bool result = OS_C_TRUE;\n\n");
-        idl_fileOutPrintf (idl_fileCur(), "    extern c_bool __%s__copyIn%s(c_base, %s *, _%s *);\n",
+        idl_fileOutPrintf (idl_fileCur(), "    v_copyin_result result = V_COPYIN_RESULT_OK;\n\n");
+        idl_fileOutPrintf (idl_fileCur(), "    extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
             idl_scopedTypeName (idl_typeDefActual(defSpec)),
-            suffix,
             idl_corbaCxxTypeFromTypeSpec(idl_typeDefActual(defSpec)),
             idl_scopedTypeName (idl_typeDefActual(defSpec)));
-        idl_fileOutPrintf (idl_fileCur(), "    result = __%s__copyIn%s(base, (%s *)from, (%s *)to);\n",
+        idl_fileOutPrintf (idl_fileCur(), "    result = __%s__copyIn(base, (%s *)from, (%s *)to);\n",
             idl_scopedTypeName(idl_typeDefActual(defSpec)),
-            suffix,
             idl_corbaCxxTypeFromTypeSpec(idl_typeDefActual(defSpec)),
             idl_scopedSplTypeName(idl_typeDefActual(defSpec)));
         idl_fileOutPrintf (idl_fileCur(), "    return result;\n");
@@ -2519,17 +2765,16 @@ idl_typedefOpenClose (
         idl_fileOutPrintf (idl_fileCur(), "\n");
         break;
     case idl_tarray:
-        idl_fileOutPrintf (idl_fileCur(), "c_bool\n");
-        idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn%s(\n",
-                idl_scopeStack (scope, "_", name),
-                suffix);
+        idl_fileOutPrintf (idl_fileCur(), "v_copyin_result\n");
+        idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn(\n",
+                idl_scopeStack (scope, "_", name));
         idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
-        idl_fileOutPrintf (idl_fileCur(), "    %s *from,\n",
+        idl_fileOutPrintf (idl_fileCur(), "    const %s *from,\n",
         idl_scopeStackCxx (scope, "::", name));
         idl_fileOutPrintf (idl_fileCur(), "    _%s *to)\n",
         idl_scopeStack(scope, "_", name));
         idl_fileOutPrintf (idl_fileCur(), "{\n");
-        idl_fileOutPrintf (idl_fileCur(), "    c_bool result = OS_C_TRUE;\n");
+        idl_fileOutPrintf (idl_fileCur(), "    v_copyin_result result = V_COPYIN_RESULT_OK;\n");
         idl_fileOutPrintf (idl_fileCur(), "    (void) base;\n\n");
         idl_arrayElements (scope, idl_typeArray(idl_typeDefActual(defSpec)), "*from", "to", 0, OS_FALSE, OS_FALSE, userData);
         idl_fileOutPrintf (idl_fileCur(), "    return result;\n");
@@ -2537,17 +2782,16 @@ idl_typedefOpenClose (
         idl_fileOutPrintf (idl_fileCur(), "\n");
         break;
     case idl_tseq:
-        idl_fileOutPrintf (idl_fileCur(), "c_bool\n");
-        idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn%s(\n",
-                idl_scopeStack (scope, "_", name),
-                suffix);
+        idl_fileOutPrintf (idl_fileCur(), "v_copyin_result\n");
+        idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn(\n",
+                idl_scopeStack (scope, "_", name));
         idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
-        idl_fileOutPrintf (idl_fileCur(), "    %s *from,\n",
+        idl_fileOutPrintf (idl_fileCur(), "    const %s *from,\n",
         idl_scopeStackCxx (scope, "::", name));
         idl_fileOutPrintf (idl_fileCur(), "    _%s *to)\n",
         idl_scopeStack(scope, "_", name));
         idl_fileOutPrintf (idl_fileCur(), "{\n");
-        idl_fileOutPrintf (idl_fileCur(), "    c_bool result = OS_C_TRUE;\n");
+        idl_fileOutPrintf (idl_fileCur(), "    v_copyin_result result = V_COPYIN_RESULT_OK;\n");
         idl_fileOutPrintf (idl_fileCur(), "    (void) base;\n\n");
         idl_seqElements (scope, name, idl_typeSeq(idl_typeDefActual(defSpec)), 0, userData);
         idl_fileOutPrintf (idl_fileCur(), "    return result;\n");
@@ -2618,20 +2862,21 @@ idl_unionOpen (
     idl_typeUnion unionSpec,
     void *userData)
 {
-    c_long maxlen;
-    const char * suffix = (char *) userData;
+    c_ulong maxlen;
+    OS_UNUSED_ARG(userData);
 
-    idl_fileOutPrintf (idl_fileCur(), "c_bool\n");
-    idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn%s(\n",
-            idl_scopeStack (scope, "_", name),
-            suffix);
+    OS_UNUSED_ARG(userData);
+
+    idl_fileOutPrintf (idl_fileCur(), "v_copyin_result\n");
+    idl_fileOutPrintf (idl_fileCur(), "__%s__copyIn(\n",
+            idl_scopeStack (scope, "_", name));
     idl_fileOutPrintf (idl_fileCur(), "    c_base base,\n");
-    idl_fileOutPrintf (idl_fileCur(), "    %s *from,\n",
+    idl_fileOutPrintf (idl_fileCur(), "    const %s *from,\n",
     idl_scopeStackCxx (scope, "::", name));
     idl_fileOutPrintf (idl_fileCur(), "    struct _%s *to)\n",
     idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf (idl_fileCur(), "{\n");
-    idl_fileOutPrintf (idl_fileCur(), "    c_bool result = OS_C_TRUE;\n");
+    idl_fileOutPrintf (idl_fileCur(), "    v_copyin_result result = V_COPYIN_RESULT_OK;\n");
     idl_fileOutPrintf (idl_fileCur(), "    (void) base;\n\n");
     /* QAC EXPECT 3416; No side effect here */
     if (idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) == idl_tbasic) {
@@ -2648,7 +2893,7 @@ idl_unionOpen (
         idl_fileOutPrintf (idl_fileCur(), "    } else {\n");
         idl_fileOutPrintf (idl_fileCur(), "        ");
         idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)unionSpec, name);
-        idl_fileOutPrintf (idl_fileCur(), "        result = OS_C_FALSE;\n");
+        idl_fileOutPrintf (idl_fileCur(), "        result = V_COPYIN_RESULT_INVALID;\n");
         idl_fileOutPrintf (idl_fileCur(), "    }\n");
         idl_fileOutPrintf (idl_fileCur(),"#else\n");
         idl_fileOutPrintf (idl_fileCur(), "    to->_d = (%s)from->_d();\n",
@@ -2671,7 +2916,7 @@ idl_unionOpen (
         idl_fileOutPrintf (idl_fileCur(), "    } else {\n");
         idl_fileOutPrintf (idl_fileCur(), "        ");
         idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)unionSpec, name);
-        idl_fileOutPrintf (idl_fileCur(), "        result = OS_C_FALSE;\n");
+        idl_fileOutPrintf (idl_fileCur(), "        result = V_COPYIN_RESULT_INVALID;\n");
         idl_fileOutPrintf (idl_fileCur(), "    }\n");
         idl_fileOutPrintf (idl_fileCur(),"#else\n");
         idl_fileOutPrintf (idl_fileCur(), "    to->_d = (%s)from->_d();\n",
@@ -2709,6 +2954,9 @@ idl_unionClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     idl_fileOutPrintf (idl_fileCur(), "    }\n");
     idl_fileOutPrintf (idl_fileCur(), "    return result;\n");
     idl_fileOutPrintf (idl_fileCur(), "}\n");
@@ -2757,11 +3005,11 @@ idl_unionCaseOpenClose (
     idl_typeSpec typeSpec,
     void *userData)
 {
-    c_long maxlen;
+    c_ulong maxlen;
     c_char *typeName;
     c_char *scopedName;
     c_char* cid;
-    const c_char * suffix = (c_char *)userData;
+    os_boolean noTypeCaching = ((CxxTypeUserData*)userData)->no_type_caching;
 
     cid = idl_cxxId(name);
 
@@ -2769,6 +3017,8 @@ idl_unionCaseOpenClose (
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
+            const char *sprefix = ((idl_getIsISOCpp() && idl_getIsISOCppTypes()) ? ".c_str()": "");
+
             maxlen = idl_typeBasicMaxlen(idl_typeBasic(typeSpec));
 
             idl_fileOutPrintf (idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
@@ -2776,31 +3026,46 @@ idl_unionCaseOpenClose (
                     cid);
 
             if(maxlen > 0){
-                idl_fileOutPrintf(idl_fileCur(),  "            if(((unsigned int)(strlen(from->%s()))) <= %d){\n",
+                idl_fileOutPrintf(idl_fileCur(),  "            if(strlen(from->%s()) <= %u){\n",
                     cid,
                     maxlen);
-                idl_fileOutPrintf (idl_fileCur(), "                to->_u.%s = c_stringNew(base, from->%s());\n",
+                idl_fileOutPrintf (idl_fileCur(), "                to->_u.%s = c_stringNew_s(base, from->%s()%s);\n",
                     cid,
-                    cid);
+                    cid,
+                    sprefix);
+                idl_fileOutPrintf (idl_fileCur(), "                if(to->_u.%s == NULL) {\n", cid);
+                idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, name, 5);
+                idl_fileOutPrintf (idl_fileCur(), "                    result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                idl_fileOutPrintf (idl_fileCur(), "                }\n");
                 idl_fileOutPrintf (idl_fileCur(), "            } else {\n");
                 idl_fileOutPrintf (idl_fileCur(), "                ");
                 idl_boundsCheckFail(CASE, scope, (idl_typeSpec)typeSpec, name);
-                idl_fileOutPrintf (idl_fileCur(), "                result = OS_C_FALSE;\n");
+                idl_fileOutPrintf (idl_fileCur(), "                result = V_COPYIN_RESULT_INVALID;\n");
                 idl_fileOutPrintf (idl_fileCur(), "            }\n");
             } else {
-                idl_fileOutPrintf (idl_fileCur(), "        to->_u.%s = c_stringNew(base, from->%s());\n",
+                idl_fileOutPrintf (idl_fileCur(), "        to->_u.%s = c_stringNew_s(base, from->%s()%s);\n",
                         cid,
-                        cid);
+                        cid,
+                        sprefix);
+                idl_fileOutPrintf(idl_fileCur(), "             if(to->_u.%s == NULL) {\n", cid);
+                idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, name, 4);
+                idl_fileOutPrintf(idl_fileCur(), "                 result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+                idl_fileOutPrintf(idl_fileCur(), "             }\n");
             }
             idl_fileOutPrintf (idl_fileCur(),     "        } else {\n");
             idl_fileOutPrintf (idl_fileCur(),     "            ");
             idl_boundsCheckFailNull(CASE, scope, (idl_typeSpec)typeSpec, name);
-            idl_fileOutPrintf (idl_fileCur(),     "            result = OS_C_FALSE;\n");
+            idl_fileOutPrintf (idl_fileCur(),     "            result = V_COPYIN_RESULT_INVALID;\n");
             idl_fileOutPrintf (idl_fileCur(),     "        }\n");
             idl_fileOutPrintf (idl_fileCur(),"#else\n");
-            idl_fileOutPrintf (idl_fileCur(), "    to->_u.%s = c_stringNew(base, from->%s());\n",
+            idl_fileOutPrintf (idl_fileCur(), "    to->_u.%s = c_stringNew_s(base, from->%s()%s);\n",
                 cid,
-                cid);
+                cid,
+                sprefix);
+            idl_fileOutPrintf(idl_fileCur(), "     if(to->_u.%s == NULL) {\n", cid);
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, name, 3);
+            idl_fileOutPrintf(idl_fileCur(), "         result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_fileOutPrintf(idl_fileCur(), "     }\n");
             idl_fileOutPrintf (idl_fileCur(),"#endif\n");
         } else {
             idl_basicCaseType (scope, name, idl_typeBasic(typeSpec), "from->", "to->_u.");
@@ -2809,12 +3074,12 @@ idl_unionCaseOpenClose (
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
         if (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tarray && idl_getIsISOCpp() && idl_getIsISOCppTypes()) {
-                idl_fileOutPrintf (idl_fileCur(), "        if(result){\n");
-                idl_fileOutPrintf (idl_fileCur(), "            extern c_bool __%s__copyIn(c_base, %s *, _%s *);\n",
+                idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
+                idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
                 idl_scopedTypeName (typeSpec),
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 idl_scopedTypeName (typeSpec));
-                idl_fileOutPrintf (idl_fileCur(), "            %s &x = from->%s();\n",
+                idl_fileOutPrintf (idl_fileCur(), "            const %s &x = from->%s();\n",
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 cid);
                 idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, &x, &to->_u.%s);\n",
@@ -2825,36 +3090,32 @@ idl_unionCaseOpenClose (
         }
         /* QAC EXPECT 3416; No side effect here */
         else if (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tarray) {
-                idl_fileOutPrintf (idl_fileCur(), "        if(result){\n");
-            idl_fileOutPrintf (idl_fileCur(), "            extern c_bool __%s__copyIn%s(c_base, %s *, _%s *);\n",
+                idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
+            idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
                 idl_scopedTypeName (typeSpec),
-                suffix,
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 idl_scopedTypeName (typeSpec));
-                idl_fileOutPrintf (idl_fileCur(), "            %s *x = (%s *)from->%s();\n",
+                idl_fileOutPrintf (idl_fileCur(), "            const %s *x = (const %s *)from->%s();\n",
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 cid);
-            idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn%s(base, x, &to->_u.%s);\n",
+            idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, x, &to->_u.%s);\n",
                 idl_scopedTypeName (typeSpec),
-                suffix,
                 cid);
                 idl_fileOutPrintf (idl_fileCur(), "        }\n");
                 idl_fileOutPrintf (idl_fileCur(), "        break;\n");
                 /* QAC EXPECT 3416; No side effect here */
         } else if (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tseq) {
-                idl_fileOutPrintf (idl_fileCur(), "        if(result){\n");
-                idl_fileOutPrintf (idl_fileCur(), "            extern c_bool __%s__copyIn%s(c_base, %s *, _%s *);\n",
+                idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
+                idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
                     idl_scopedTypeName (typeSpec),
-                    suffix,
                     idl_corbaCxxTypeFromTypeSpec(typeSpec),
                     idl_scopedTypeName (typeSpec));
-                idl_fileOutPrintf (idl_fileCur(), "            %s &x = from->%s();\n",
+                idl_fileOutPrintf (idl_fileCur(), "            const %s &x = from->%s();\n",
                 idl_corbaCxxTypeFromTypeSpec(typeSpec),
                 cid);
-                idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn%s(base, &x, &to->_u.%s);\n",
+                idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, &x, &to->_u.%s);\n",
                     idl_scopedTypeName (typeSpec),
-                    suffix,
                     cid);
                 idl_fileOutPrintf (idl_fileCur(), "        }\n");
                 idl_fileOutPrintf (idl_fileCur(), "        break;\n");
@@ -2883,7 +3144,7 @@ idl_unionCaseOpenClose (
         idl_fileOutPrintf (idl_fileCur(), "        } else {\n");
         idl_fileOutPrintf (idl_fileCur(), "            ");
         idl_boundsCheckFail(CASE, scope, (idl_typeSpec)typeSpec, name);
-        idl_fileOutPrintf (idl_fileCur(), "            result = OS_C_FALSE;\n");
+        idl_fileOutPrintf (idl_fileCur(), "            result = V_COPYIN_RESULT_INVALID;\n");
         idl_fileOutPrintf (idl_fileCur(), "        }\n");
         idl_fileOutPrintf (idl_fileCur(),"#else\n");
         idl_fileOutPrintf (idl_fileCur(), "        to->_u.%s = (%s)from->%s();\n",
@@ -2894,35 +3155,31 @@ idl_unionCaseOpenClose (
         idl_fileOutPrintf (idl_fileCur(), "        break;\n");
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct) {
-        idl_fileOutPrintf (idl_fileCur(), "        if(result){\n");
-        idl_fileOutPrintf (idl_fileCur(), "            extern c_bool __%s__copyIn%s(c_base, %s *, _%s *);\n",
+        idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
+        idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
             idl_scopedTypeName (typeSpec),
-            suffix,
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             idl_scopedTypeName (typeSpec));
-        idl_fileOutPrintf (idl_fileCur(), "            %s &x = from->%s();\n",
+        idl_fileOutPrintf (idl_fileCur(), "            const %s &x = from->%s();\n",
         idl_corbaCxxTypeFromTypeSpec(typeSpec),
         cid);
-        idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn%s(base, &x, &to->_u.%s);\n",
+        idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, &x, &to->_u.%s);\n",
             idl_scopedTypeName (typeSpec),
-            suffix,
             cid);
         idl_fileOutPrintf (idl_fileCur(), "        }\n");
         idl_fileOutPrintf (idl_fileCur(), "        break;\n");
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tunion) {
-        idl_fileOutPrintf (idl_fileCur(), "        if(result){\n");
-        idl_fileOutPrintf (idl_fileCur(), "            extern c_bool __%s__copyIn%s(c_base, %s *, _%s *);\n",
+        idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
+        idl_fileOutPrintf (idl_fileCur(), "            extern v_copyin_result __%s__copyIn(c_base, const %s *, _%s *);\n",
             idl_scopedTypeName (typeSpec),
-            suffix,
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
             idl_scopedTypeName (typeSpec));
-        idl_fileOutPrintf (idl_fileCur(), "            %s &x = from->%s();\n",
+        idl_fileOutPrintf (idl_fileCur(), "            const %s &x = from->%s();\n",
         idl_corbaCxxTypeFromTypeSpec(typeSpec),
         cid);
-        idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn%s(base, &x, &to->_u.%s);\n",
+        idl_fileOutPrintf (idl_fileCur(), "            result = __%s__copyIn(base, &x, &to->_u.%s);\n",
             idl_scopedTypeName (typeSpec),
-            suffix,
             cid);
         idl_fileOutPrintf (idl_fileCur(), "        }\n");
         idl_fileOutPrintf (idl_fileCur(), "        break;\n");
@@ -2930,8 +3187,8 @@ idl_unionCaseOpenClose (
     } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
         c_char source[256];
 
-        snprintf(source, (size_t)sizeof(source), "from->%s()", name);
-        idl_fileOutPrintf (idl_fileCur(), "        if(result){\n");
+        snprintf(source, sizeof(source), "from->%s()", name);
+        idl_fileOutPrintf (idl_fileCur(), "        if(V_COPYIN_RESULT_IS_OK(result)){\n");
         idl_fileOutPrintf (idl_fileCur(), "            typedef %s _DestType",
                 idl_scopedSplTypeIdent (idl_typeArrayActual(idl_typeArray(typeSpec))));
         idl_arrayDimensions (idl_typeArray(typeSpec), OS_FALSE);
@@ -2959,19 +3216,19 @@ idl_unionCaseOpenClose (
         }
 
         maxlen = idl_typeSeqMaxSize(idl_typeSeq(typeSpec));
-        snprintf (type_name, (size_t)sizeof(type_name), "_%s_seq", name);
+        snprintf (type_name, sizeof(type_name), "_%s_seq", name);
 
         idl_fileOutPrintf (idl_fileCur(), "/* Code generated by %s at line %d */\n\n",__FILE__,__LINE__);
-        idl_fileOutPrintf (idl_fileCur(), "    if(result){\n");
-        idl_fileOutPrintf (idl_fileCur(), "        %sc_type type0 = NULL;\n", *suffix == '\0' ? "static " : "");
+        idl_fileOutPrintf (idl_fileCur(), "    if(V_COPYIN_RESULT_IS_OK(result)){\n");
+        idl_fileOutPrintf (idl_fileCur(), "        %sc_type type0 = NULL;\n", (!noTypeCaching) ? "static " : "");
         idl_fileOutPrintf (idl_fileCur(), "        c_type subtype0 = NULL;\n");
-        idl_fileOutPrintf (idl_fileCur(), "        c_long length0;\n");
+        idl_fileOutPrintf (idl_fileCur(), "        c_ulong length0;\n");
         idl_fileOutPrintf (idl_fileCur(), "        %s *dest0;\n", scopedName);
-        idl_fileOutPrintf (idl_fileCur(), "        %s *src = &(from->%s());\n\n", idl_scopeStackCxx (scope, "::", type_name), cid);
+        idl_fileOutPrintf (idl_fileCur(), "        const %s *src = &(from->%s());\n\n", idl_scopeStackCxx (scope, "::", type_name), cid);
         idl_fileOutPrintf (idl_fileCur(), "        if (type0 == NULL) {\n");
         idl_fileOutPrintf (idl_fileCur(), "            subtype0 = c_type(c_metaResolve (c_metaObject(base), \"%s\"));\n", typeName);
         if(maxlen > 0){
-            idl_fileOutPrintf (idl_fileCur(), "            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%d>\",subtype0,%d);\n",typeName,maxlen,maxlen);
+            idl_fileOutPrintf (idl_fileCur(), "            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s,%u>\",subtype0,%u);\n",typeName,maxlen,maxlen);
         } else {
             idl_fileOutPrintf (idl_fileCur(), "            type0 = c_metaSequenceTypeNew(c_metaObject(base),\"C_SEQUENCE<%s>\",subtype0,0);\n",typeName);
         }
@@ -2979,41 +3236,54 @@ idl_unionCaseOpenClose (
         idl_fileOutPrintf (idl_fileCur(), "        }\n");
         if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
         {
-          idl_fileOutPrintf (idl_fileCur(), "        length0 = (c_long)(*src).size();\n");
+          idl_fileOutPrintf (idl_fileCur(), "        length0 = (*src).size();\n");
         }
         else
         {
-          idl_fileOutPrintf (idl_fileCur(), "        length0 = (c_long)(*src).length();\n");
+          idl_fileOutPrintf (idl_fileCur(), "        length0 = (*src).length();\n");
         }
 
         if(maxlen != 0){
             idl_fileOutPrintf (idl_fileCur(),"#ifdef %s\n", BOUNDSCHECK);
-            idl_fileOutPrintf(idl_fileCur(), "        if(length0 > %d){\n", maxlen);
+            idl_fileOutPrintf(idl_fileCur(), "        if(length0 > %u){\n", maxlen);
             idl_fileOutPrintf(idl_fileCur(), "            ");
             idl_boundsCheckFail(CASE, scope, (idl_typeSpec)typeSpec, name);
-            idl_fileOutPrintf(idl_fileCur(), "            result = OS_C_FALSE;\n");
+            idl_fileOutPrintf(idl_fileCur(), "            result = V_COPYIN_RESULT_INVALID;\n");
             idl_fileOutPrintf(idl_fileCur(), "        } else {\n");
-
-            idl_fileOutPrintf (idl_fileCur(), "            dest0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
-                idl_seqLoopCopy (scope, nextType, "*src", "dest0", 1, 3, userData);
-            idl_fileOutPrintf (idl_fileCur(), "            to->_u.%s = (c_sequence)dest0;\n", cid);
-
+            idl_fileOutPrintf(idl_fileCur(), "            dest0 = (%s *)c_newSequence_s(c_collectionType(type0), length0);\n", scopedName);
+            idl_fileOutPrintf(idl_fileCur(), "            if(dest0 != NULL) {\n");
+            idl_seqLoopCopy (scope, nextType, "*src", "dest0", 1, 3, userData);
+            idl_fileOutPrintf(idl_fileCur(), "                to->_u.%s = (c_sequence)dest0;\n", cid);
+            idl_fileOutPrintf(idl_fileCur(), "            } else {\n");
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, name, 4);
+            idl_fileOutPrintf(idl_fileCur(), "                result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_fileOutPrintf(idl_fileCur(), "            }\n");
             idl_fileOutPrintf(idl_fileCur(), "        }\n");
-            idl_fileOutPrintf (idl_fileCur(),"#else\n");
-            idl_fileOutPrintf (idl_fileCur(), "        dest0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
-                idl_seqLoopCopy (scope, nextType, "*src", "dest0", 1, 2, userData);
-            idl_fileOutPrintf (idl_fileCur(), "        to->_u.%s = (c_sequence)dest0;\n", cid);
-            idl_fileOutPrintf (idl_fileCur(),"#endif\n");
+            idl_fileOutPrintf(idl_fileCur(),"#else\n");
+            idl_fileOutPrintf(idl_fileCur(), "        dest0 = (%s *)c_newSequence_s(c_collectionType(type0), length0);\n", scopedName);
+            idl_fileOutPrintf(idl_fileCur(), "        if(dest0 != NULL) {\n");
+            idl_seqLoopCopy (scope, nextType, "*src", "dest0", 1, 2, userData);
+            idl_fileOutPrintf(idl_fileCur(), "            to->_u.%s = (c_sequence)dest0;\n", cid);
+            idl_fileOutPrintf(idl_fileCur(), "        } else {\n");
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, name, 3);
+            idl_fileOutPrintf(idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_fileOutPrintf(idl_fileCur(), "        }\n");
+            idl_fileOutPrintf(idl_fileCur(),"#endif\n");
         } else {
-            idl_fileOutPrintf (idl_fileCur(), "        dest0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
-                idl_seqLoopCopy (scope, nextType, "*src", "dest0", 1, 2, userData);
-            idl_fileOutPrintf (idl_fileCur(), "        to->_u.%s = (c_sequence)dest0;\n", cid);
+            idl_fileOutPrintf(idl_fileCur(), "        dest0 = (%s *)c_newSequence_s(c_collectionType(type0), length0);\n", scopedName);
+            idl_fileOutPrintf(idl_fileCur(), "        if(dest0 != NULL) {\n");
+            idl_seqLoopCopy (scope, nextType, "*src", "dest0", 1, 2, userData);
+            idl_fileOutPrintf(idl_fileCur(), "            to->_u.%s = (c_sequence)dest0;\n", cid);
+            idl_fileOutPrintf(idl_fileCur(), "        } else {\n");
+            idl_memoryAllocFailed(scope, (idl_typeSpec)typeSpec, name, 3);
+            idl_fileOutPrintf(idl_fileCur(), "            result = V_COPYIN_RESULT_OUT_OF_MEMORY;\n");
+            idl_fileOutPrintf(idl_fileCur(), "        }\n");
+        }
+        if(noTypeCaching){
+            idl_fileOutPrintf(idl_fileCur(), "        c_free(type0);\n");
         }
         idl_fileOutPrintf(idl_fileCur(), "    }\n");
         idl_fileOutPrintf(idl_fileCur(), "    break;\n");
-        if(*suffix != '\0'){
-            idl_fileOutPrintf(idl_fileCur(), "    c_free(type0);\n");
-        }
     } else {
         /* Do nothing, only to prevent dangling else-ifs QAC reports */
     }
@@ -3048,6 +3318,9 @@ idl_unionLabelOpenClose (
     idl_labelVal labelVal,
     void *userData)
 {
+    OS_UNUSED_ARG(ownScope);
+    OS_UNUSED_ARG(userData);
+
     /* QAC EXPECT 3416; No side effect here */
     if (idl_labelValType(labelVal) == idl_ldefault) {
         idl_fileOutPrintf (idl_fileCur(), "    default:\n");
@@ -3071,6 +3344,7 @@ static idl_programControl *
 idl_getControl(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     return &idlControl;
 }
 
@@ -3081,6 +3355,11 @@ idl_artificialDefaultLabelOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(labelVal);
+    OS_UNUSED_ARG(typeSpec);
+    OS_UNUSED_ARG(userData);
+
     idl_fileOutPrintf (idl_fileCur(), "    default:\n");
     idl_fileOutPrintf (idl_fileCur(), "    break;\n");
 }
@@ -3118,7 +3397,8 @@ idl_genCorbaCxxCopyin = {
  */
 idl_program
 idl_genCorbaCxxCopyinProgram (
-    void)
+        void *userData)
 {
+    idl_genCorbaCxxCopyin.userData = userData;
     return &idl_genCorbaCxxCopyin;
 }

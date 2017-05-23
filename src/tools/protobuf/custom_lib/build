@@ -1,0 +1,1 @@
+mvn -Pother clean package

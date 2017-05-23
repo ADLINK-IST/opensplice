@@ -1,0 +1,17 @@
+#ifndef $upper($(basename))STREAMSAPI_H
+#define $upper($(basename))STREAMSAPI_H
+
+$(clientheaderdefine)$(basename_upper)
+
+#ifdef CCPP_USE_CUSTOM_SUFFIX_$upper($(basename))
+#include "$(basename)Streams$(clientheader)"
+#include "$(basename)StreamsDcps$(clientheader)"
+#else
+#include "$(basename)StreamsC.h"
+#include "$(basename)StreamsDcpsC.h"
+#endif
+$(clientheaderundef)$(basename_upper)
+#include <orb_abstraction.h>
+#include "$(basename)Streams_impl.h"
+
+#endif /* $upper($(basename))STREAMSAPI_H */

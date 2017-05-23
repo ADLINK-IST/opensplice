@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cms_soapThread.h"
@@ -14,11 +22,12 @@
 #include "cms_thread.h"
 #include "cms_service.h"
 #include "cms_client.h"
+#include "u_observable.h"
 #include "u_entity.h"
+#include "v_cmsoap.h"
 #include "v_participant.h"
-#include "../code/v__statisticsInterface.h"
 #include "v_cmsoapStatistics.h"
-#include "os.h"
+#include "vortex_os.h"
 #include "os_report.h"
 #include <soapH.h>
 
@@ -26,10 +35,16 @@ static void*    cms_soapThreadRun   (void *thr);
 
 void
 cms_soapThreadStatisticsRequestHandledAdd(
-    v_entity entity,
+    v_public entity,
     c_voidp args)
 {
-    v_statisticsULongValueInc(v_cmsoap, requestsHandled, entity);
+    v_cmsoap cmsoap = v_cmsoap(entity);
+
+    OS_UNUSED_ARG(args);
+
+    if (cmsoap->statistics) {
+        cmsoap->statistics->requestsHandled++;
+    }
 }
 
 cms_soapThread
@@ -38,8 +53,6 @@ cms_soapThreadNew(
     cms_client client)
 {
     cms_soapThread thread;
-    os_mutexAttr attr;
-    os_condAttr condAttr;
     os_result osr;
 
     thread = NULL;
@@ -50,27 +63,22 @@ cms_soapThreadNew(
         if (thread != NULL) {
             cms_object(thread)->kind = CMS_SOAPTHREAD;
             cms_threadInit(cms_thread(thread), name, &client->service->configuration->clientScheduling);
-            cms_thread(thread)->uri =  os_strdup(cms_thread(client)->uri);
+            cms_thread(thread)->did = cms_thread(client)->did;
+            cms_thread(thread)->uri = os_strdup(cms_thread(client)->uri);
             thread->client = client;
             thread->soap = NULL;
 
-            osr = os_mutexAttrInit(&attr);
+            osr = os_mutexInit(&thread->soapMutex, NULL);
             if(osr == os_resultSuccess){
-                attr.scopeAttr = OS_SCOPE_PRIVATE;
-                osr = os_mutexInit(&thread->soapMutex, &attr);
-                if(osr == os_resultSuccess){
-                    osr = os_condAttrInit(&condAttr);
-                    if(osr == os_resultSuccess){
-                        condAttr.scopeAttr = OS_SCOPE_PRIVATE;
-                        osr = os_condInit(&thread->condition, &thread->soapMutex, &condAttr );
-                    }
-                }
+                osr = os_condInit(&thread->condition, &thread->soapMutex, NULL);
             }
         }
     }
 
     if (osr != os_resultSuccess) {
-        cms_soapThreadFree(thread);
+        if (thread != NULL) {
+            cms_soapThreadFree(thread);
+        }
         return NULL;
     }
 
@@ -89,7 +97,7 @@ cms_soapThreadFree(
     cms_soapThread thread)
 {
     if(thread->client->service->configuration->verbosity >= 6){
-        OS_REPORT_1(OS_INFO, CMS_CONTEXT, 0,  "Stopping soapThread '%s'...",
+        OS_REPORT(OS_INFO, CMS_CONTEXT, 0,  "Stopping soapThread '%s'...",
                         cms_thread(thread)->name);
     }
     os_mutexLock(&thread->soapMutex);
@@ -100,7 +108,7 @@ cms_soapThreadFree(
     cms_threadDeinit(cms_thread(thread));
 
     if(thread->client->service->configuration->verbosity >= 6){
-        OS_REPORT_1(OS_INFO, CMS_CONTEXT, 0,  "soapThread '%s' stopped.",
+        OS_REPORT(OS_INFO, CMS_CONTEXT, 0,  "soapThread '%s' stopped.",
                             cms_thread(thread)->name);
     }
     os_condDestroy(&thread->condition);
@@ -153,9 +161,9 @@ cms_soapThreadRun(
             soap_end(soap);
             soap_done(soap);
             free(soap);
-            u_entityAction( u_entity(thread->client->service->uservice),
-                            cms_soapThreadStatisticsRequestHandledAdd,
-                            thread->client->service);
+            (void)u_observableAction( u_observable(thread->client->service->uservice),
+                                  cms_soapThreadStatisticsRequestHandledAdd,
+                                  thread->client->service);
 
             if(cms_thread(thread)->results != NULL){
                 result = (c_char*)(c_iterTakeFirst(cms_thread(thread)->results));
@@ -173,19 +181,19 @@ cms_soapThreadRun(
             cms_thread(thread)->ready = TRUE;
 
             if(thread->client->service->configuration->verbosity >= 7){
-                OS_REPORT_1(OS_INFO, CMS_CONTEXT, 0,  "soapThread '%s' ready.", cms_thread(thread)->name);
+                OS_REPORT(OS_INFO, CMS_CONTEXT, 0,  "soapThread '%s' ready.", cms_thread(thread)->name);
             }
             os_condWait(&thread->condition, &thread->soapMutex);
 
             if(thread->client->service->configuration->verbosity >= 7){
-                OS_REPORT_1(OS_INFO, CMS_CONTEXT, 0,  "soapThread '%s' condition triggered.", cms_thread(thread)->name);
+                OS_REPORT(OS_INFO, CMS_CONTEXT, 0,  "soapThread '%s' condition triggered.", cms_thread(thread)->name);
             }
         }
     }
     os_mutexUnlock(&thread->soapMutex);
 
     if(thread->client->service->configuration->verbosity >= 6){
-        OS_REPORT_1(OS_INFO, CMS_CONTEXT, 0,  "soapThread '%s' ends.", cms_thread(thread)->name);
+        OS_REPORT(OS_INFO, CMS_CONTEXT, 0,  "soapThread '%s' ends.", cms_thread(thread)->name);
     }
     return NULL;
 }

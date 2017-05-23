@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -46,21 +54,30 @@ using namespace Chat;
 
 /* entities required by all threads. */
 static DDS::GuardCondition_var          escape;
+volatile static bool                    closed = false;
+volatile static bool                    done = false;
 
-/* Sleeper thread: sleeps 60 seconds and then triggers the WaitSet. */
+/* Sleeper thread: sleeps 90 seconds and then triggers the WaitSet. */
 extern "C" void *
 delayedEscape(
     void *arg)
 {
+#define MAX_WAIT (90)
     DDS::ReturnCode_t status;
+    int cnt = 0;
 
+    while ((!closed) && (cnt++ < MAX_WAIT)) {
 #ifdef _WIN32
-    Sleep(60000);
+        Sleep(1000);
 #else
-    sleep(60);     /* wait for 60 sec. */
+        sleep(1);
 #endif
-    status = escape->set_trigger_value(true);
-    checkStatus(status, "DDS::GuardCondition::set_trigger_value");
+    }
+    if (!closed) {
+        status = escape->set_trigger_value(true);
+        checkStatus(status, "DDS::GuardCondition::set_trigger_value");
+    }
+    done = true;
 
     return NULL;
 }
@@ -132,7 +149,6 @@ OSPL_MAIN (
     char *                          nameServiceTypeName = NULL;
     char                            buf[MAX_MSG_LEN];
 
-    bool                            closed = false;
     DDS::Long                     prevCount = 0;
 #ifndef _WIN32
     pthread_t                       tid;
@@ -400,6 +416,15 @@ OSPL_MAIN (
     checkStatus(status, "DDS::DomainParticipant::delete_contained_entities");
     status = TheParticipantFactory->delete_participant( participant.in() );
     checkStatus(status, "DDS::DomainParticipantFactory::delete_participant");
+
+    /* Wait for thread to finish */
+    while (done == false) {
+#ifdef _WIN32
+        Sleep(100);
+#else
+        sleep(1);
+#endif
+    }
 
     return 0;
 }

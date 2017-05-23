@@ -729,35 +729,35 @@ using MyTopicModule;
     
             tfw.TestFinish();
     
-//            /**
-//             * @addtogroup group_dds1290
-//             *
-//             * \b Test \b ID: \b sacs_invalid_data_007
-//             *
-//             * \b Test \b Objectives:
-//             *
-//             * Check validity of sampleinfo data when invalid samples are caused by a
-//             * call to dispose_all_data.
-//             *
-//             * \b Test \b Procedure:
-//             *
-//             * \e Action
-//             *
-//             * First write sample 2 and 3 with writer W1, then check the invalid samples
-//             * received by the reader, from which writer it came, and its source_timestamp.
-//             *
-//             * \e Result
-//             * It is expected that the publication_handles of the dispose_all samples are NIL,
-//             * and that the timestamp should be the bigger than the current time just before
-//             * the dispose_all_data event was performed.\n
-//             * If a failure occurs, the test fails.
-//             */
-//            /*--------------------------------------------------------------------------*/
-//            tfw.TestStart  ("sacs_invalid_data_007","invalid_data","dispose_all_data");
-//            tfw.TestTitle  ("dispose samples 2 and 3 with dispose_all_data, check publication_handle and source timestamp");
-//            tfw.TestPurpose("The publication_handle be NIL, the timestamp >= current time just before dispose_all");
-//            /*--------------------------------------------------------------------------*/
-//    
+            /**
+             * @addtogroup group_dds1290
+             *
+             * \b Test \b ID: \b sacs_invalid_data_007
+             *
+             * \b Test \b Objectives:
+             *
+             * Check validity of sampleinfo data when invalid samples are caused by a
+             * call to dispose_all_data.
+             *
+             * \b Test \b Procedure:
+             *
+             * \e Action
+             *
+             * First write sample 2 and 3 with writer W1, then check the invalid samples
+             * received by the reader, from which writer it came, and its source_timestamp.
+             *
+             * \e Result
+             * It is expected that the publication_handles of the dispose_all samples are NIL,
+             * and that the timestamp should be the bigger than the current time just before
+             * the dispose_all_data event was performed.\n
+             * If a failure occurs, the test fails.
+             */
+            /*--------------------------------------------------------------------------*/
+            tfw.TestStart  ("sacs_invalid_data_007","invalid_data","dispose_all_data");
+            tfw.TestTitle  ("dispose samples 2 and 3 with dispose_all_data, check publication_handle and source timestamp");
+            tfw.TestPurpose("The publication_handle be NIL, the timestamp >= current time just before dispose_all");
+            /*--------------------------------------------------------------------------*/
+
 //            if(proceed == true){
 //                result = ReturnCode.Ok;
 //                userData = new MyTopic();
@@ -887,9 +887,9 @@ using MyTopicModule;
 //            } else {
 //                tfw.TestResult("OK", "Unresolved", TestVerdict.Pass, TestVerdict.Unresolved);
 //            }
-//    
-//            tfw.TestFinish();
-//    
+            tfw.TestResult("XFAIL not implemepented: OSPL-667", "XFAIL not implemepented: OSPL-667", TestVerdict.Fail, TestVerdict.Fail);
+            tfw.TestFinish();
+
         }
         
         private void deinit()

@@ -14,4 +14,4 @@ endif
 CFLAGS_OPT       = -O3 -fno-math-errno -ffast-math -fno-strict-aliasing
 CFLAGS_OPT_C     = -O3 -OPT:Ofast -OPT:malloc_algorithm=0 -fno-math-errno -ffast-math -fno-strict-aliasing -march=anyx86
 CFLAGS_DEBUG     = -DNDEBUG
-JCFLAGS          = -g:none -nowarn
+JCFLAGS          = -g -nowarn

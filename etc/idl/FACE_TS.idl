@@ -1,0 +1,89 @@
+#include <FACE_TS_common.idl>
+
+module FACE {
+
+  //! The value below is a placeholder for the actual structure definition of
+  //! data. When used in practice, "FACE_SPECIFIED_TYPE" is replaced by
+  //! the actual type name from the data model of the data structure as
+  //! dictated by the connection's configuration.
+  struct FACE_SPECIFIED_TYPE {
+    any structure_placeholder;
+  };
+
+  //! The Read_Callback interface is used to in coordination with the
+  //! TSS register_read_callback function to address periodic ARINC 653
+  //! function calls without having to poll for data.
+  interface Read_Callback {
+    void send_event
+    ( in    TRANSACTION_ID_TYPE transaction_id,
+      inout FACE_SPECIFIED_TYPE message,
+      in    MESSAGE_TYPE_GUID   message_type_id,
+      in    MESSAGE_SIZE_TYPE   message_size,
+      in    WAITSET_TYPE        waitset,
+      out   RETURN_CODE_TYPE    return_code);
+  };
+
+   //! The TS Interface
+  interface TS {
+
+    //! The Initialize(TS) function call allows for the PCS and PSSS
+    //! component to trigger the initialization of the TS Interface.
+    void Initialize
+    ( in  CONFIGURATION_RESOURCE configuration,
+      out RETURN_CODE_TYPE       return_code);
+
+    //! The TSS provides an interface to create a connection. This interface
+    //! allows the use of DDS, CORBA, ARINC 653, and POSIX connections.
+    void Create_Connection
+    ( in  CONNECTION_NAME_TYPE      connection_name,
+      in  MESSAGING_PATTERN_TYPE    pattern,
+      out CONNECTION_ID_TYPE        connection_id,
+      out CONNECTION_DIRECTION_TYPE connection_direction,
+      out MESSAGE_SIZE_TYPE         max_message_size,
+      in  TIMEOUT_TYPE              timeout,
+      out RETURN_CODE_TYPE          return_code);
+
+    void Destroy_Connection
+    ( in  CONNECTION_ID_TYPE connection_id,
+      out RETURN_CODE_TYPE   return_code );
+
+    void Receive_Message
+    ( in    CONNECTION_ID_TYPE  connection_id,
+      in    TIMEOUT_TYPE        timeout,
+      inout TRANSACTION_ID_TYPE transaction_id,
+      inout FACE_SPECIFIED_TYPE message,
+      in    MESSAGE_SIZE_TYPE   message_size,
+      out   RETURN_CODE_TYPE    return_code);
+
+    void Send_Message
+    ( in    CONNECTION_ID_TYPE  connection_id,
+      in    TIMEOUT_TYPE        timeout,
+      inout TRANSACTION_ID_TYPE transaction_id,
+      inout FACE_SPECIFIED_TYPE message,
+      inout MESSAGE_SIZE_TYPE   message_size,
+      out   RETURN_CODE_TYPE    return_code);
+
+    //! The purpose of Register_Callback(TS) is to provide a mechanism
+    //! to read data without polling. This will be used for publish/subscribe
+    //! transportation mechanisms.
+    void Register_Callback
+    ( in    CONNECTION_ID_TYPE connection_id,
+      in    WAITSET_TYPE       waitset,
+      inout Read_Callback      data_callback,
+      in    MESSAGE_SIZE_TYPE  max_message_size,
+      out   RETURN_CODE_TYPE   return_code);
+
+    //! The purpose of Unregister_Callback(TS) is to unregister a callback.
+    void Unregister_Callback
+    ( in  CONNECTION_ID_TYPE connection_id,
+      out RETURN_CODE_TYPE   return_code);
+
+    //! The purpose of Get_Connection_Parameters(TS) is to get the information
+    //! regarding the requested connection.
+    void Get_Connection_Parameters
+    ( inout CONNECTION_NAME_TYPE             connection_name,
+      inout CONNECTION_ID_TYPE               connection_id,
+      out   TRANSPORT_CONNECTION_STATUS_TYPE connection_status,
+      out   RETURN_CODE_TYPE                 return_code);
+  };
+};

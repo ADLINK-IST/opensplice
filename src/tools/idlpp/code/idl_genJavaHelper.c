@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_genJavaHelper.h"
@@ -18,32 +26,12 @@
 #include "os_iterator.h"
 #include "os_heap.h"
 #include "os_stdlib.h"
-#include <errno.h>
+#include "os_string.h"
+#include "os_errno.h"
 
-static c_iter originalPackageList = NULL;
-static c_iter targetPackageList = NULL;
-static const char* orgLastSubstituted = NULL;
-static const char* tarLastSubstituted = NULL;
+static os_equality idl_genJavaHelperComparePackageRedirect (const void *obj1, const void *obj2);
 
-static os_char*
-idl_genJavaHelperApplyPackageSubstitute(
-    os_char* source,
-    const os_char *scopeSepp);
-
-static os_char*
-idl_genJavaHelperSubstitute(
-    const os_char* string,
-    const os_char* searchFor,
-    const os_char* replaceWith,
-    c_long* replaced);
-
-static void
-idl_reportOpenError(
-    char *fname)
-{
-    printf ("Error opening file %s for writing. Reason: %s (%d)\n", fname, strerror( errno ), errno);
-    exit (-1);
-}
+os_iter idl_genJavaHelperPackageRedirects = NULL;
 
 /* Specify a list of all C keywords */
 static const char *java_keywords[61] = {
@@ -70,7 +58,7 @@ c_char *
 idl_javaId(
     const char *identifier)
 {
-    c_long i;
+    size_t i;
     char *javaId;
     char *helperEnding;
     char *holderEnding;
@@ -79,13 +67,13 @@ idl_javaId(
 
     /* search through the Java keyword list */
     /* QAC EXPECT 5003; Bypass qactools error, why is this a violation */
-    for (i = 0; i < (c_long)(sizeof(java_keywords)/sizeof(c_char *)); i++) {
+    for (i = 0; i < sizeof(java_keywords)/sizeof(c_char *); i++) {
 	/* QAC EXPECT 5007, 3416; will not use wrapper, no side effects here */
 	if (strcmp (java_keywords[i], identifier) == 0) {
 	    /* If a keyword matches the specified identifier, prepend _ */
 	    /* QAC EXPECT 5007; will not use wrapper */
-	    javaId = os_malloc((size_t)((int)strlen(identifier)+1+1));
-	    snprintf(javaId, (size_t)((int)strlen(identifier)+1+1), "_%s", identifier);
+	    javaId = os_malloc(strlen(identifier)+1+1);
+	    snprintf(javaId, strlen(identifier)+1+1, "_%s", identifier);
 	    return javaId;
 	}
     }
@@ -103,8 +91,8 @@ idl_javaId(
 	(holderEnding && strcmp(holderEnding, "Holder") == 0) ||
 	(operationsEnding && strcmp(operationsEnding, "Operations") == 0) ||
 	(packageEnding && strcmp(packageEnding, "Package") == 0)) {
-	javaId = os_malloc((size_t)((int)strlen(identifier)+1+1));
-	snprintf(javaId, (size_t)((int)strlen(identifier)+1+1), "_%s", identifier);
+	javaId = os_malloc(strlen(identifier)+1+1);
+	snprintf(javaId, strlen(identifier)+1+1, "_%s", identifier);
     } else  {
         /* No match with a keyword is found, thus return the identifier itself */
         javaId = os_strdup(identifier);
@@ -131,7 +119,7 @@ idl_scopeJavaElementName (
     return scopeJavaName;
 }
 
-/* Build a textual presenation of the provided scope stack taking the
+/* Build a textual presentation of the provided scope stack taking the
    Java keyword identifier translation into account. Further the function
    equals "idl_scopeStack".
 */
@@ -143,119 +131,102 @@ idl_scopeStackJava (
 {
     c_long si;
     c_long sz;
-    c_char *scopeStack;
+    c_char *scopeStack = NULL;
     c_char *Id;
+    os_char *substitute;
+    os_char *module, *package;
+    os_uint32 cnt, rlen;
+    idl_packageRedirect redirect;
 
-    if(orgLastSubstituted) {
-        os_free(orgLastSubstituted);
-        orgLastSubstituted = NULL;
-    }
+    assert (scopeSepp != NULL);
+    scopeStack = os_strdup ("");
 
-    if(tarLastSubstituted) {
-        os_free(tarLastSubstituted);
-        tarLastSubstituted = NULL;
-    }
+    for (si = 0, sz = idl_scopeStackSize(scope); si < sz; si++) {
+        size_t slen;
 
-    si = 0;
-    sz = idl_scopeStackSize(scope);
-    if (si < sz) {
-        /* The scope stack is not empty */
-        /* Copy the first scope element name */
-        scopeStack = os_strdup(idl_javaId(idl_scopeJavaElementName(idl_scopeIndexed(scope, si))));
-        si++;
-        while (si < sz) {
-            /* Translate the scope name to a C identifier */
-            Id = idl_javaId(idl_scopeJavaElementName(idl_scopeIndexed(scope, si)));
-            /* allocate space for the current scope stack + the separator
-               and the next scope name
-             */
-            /* QAC EXPECT 5007; will not use wrapper */
-            scopeStack = os_realloc(scopeStack, (size_t)(
-                             (int)strlen(scopeStack)+
-                             (int)strlen(scopeSepp)+
-                             (int)strlen(Id)+1));
-           /* Concatenate the separator */
-           /* QAC EXPECT 5007; will not use wrapper */
-           os_strcat(scopeStack, scopeSepp);
-           /* Concatenate the scope name */
-           /* QAC EXPECT 5007; will not use wrapper */
-           os_strcat (scopeStack, Id);
-           si++;
+        /* Translate the scope name to a C identifier */
+        Id = idl_javaId(idl_scopeJavaElementName(idl_scopeIndexed(scope, si)));
+        /* allocate space for the current scope stack + the separator
+           and the next scope name */
+        /* QAC EXPECT 5007; will not use wrapper */
+        slen = strlen (scopeStack) + strlen (scopeSepp) + strlen (Id);
+        scopeStack = os_realloc(scopeStack, slen + 1);
+        /* Concatenate the separator */
+        /* QAC EXPECT 5007; will not use wrapper */
+        if (strlen(scopeStack)) {
+            os_strcat(scopeStack, scopeSepp);
         }
-        if(strlen(scopeStack) > 0)
-        {
-            os_char* ptr;
-            os_char* ptr2;
-            os_char* ptr3;
+        /* Concatenate the scope name */
+        /* QAC EXPECT 5007; will not use wrapper */
+        os_strcat (scopeStack, Id);
+    }
 
-            /* es, dds1540: The following code is not pretty, but time limitations
-             * required it's implementation. To ensure
-             * proper substitution of for example package name 'Chat' with
-             * 'org.opensplice.Chat' without substitution class names like
-             * 'ChatMessage' to 'org.opensplice.ChatMessage' we need to take some
-             * special arrangements. We need to allow the user to state he wants to
-             * replace 'Chat.' with ''org.opensplice.Chat.', as this would resolve
-             * the previously stated problem.
-             * However this function for getting the scope stack is called in a
-             * special way if only the package names are required (without the
-             * specific class at the end). In these cases package Chat would become
-             * in string format 'Chat' instead of 'Chat.'. And this would cause
-             * problems when doing the substitution for the directory names and
-             * package directives. So to ensure substitution always goes correctly
-             * we added the scopeSepp to the end of the scopeStack and input that
-             * into the substitution algorithm. After the algorithm we remove the
-             * added scopeSepp again.
-             * So not that nicely solved, but lack of time to do it more nicely
-             * (which would be to support regular expression type things) --> No.
-             */
-            ptr = os_malloc(strlen(scopeStack)+ strlen(scopeSepp) + 1);
-            os_strcpy(ptr, scopeStack);
-            os_strncat(ptr, scopeSepp, strlen(scopeSepp));
-            ptr2 = idl_genJavaHelperApplyPackageSubstitute(ptr, scopeSepp);
-            memset(ptr, 0, strlen(ptr));
-            os_free(ptr);
-            ptr3 = strrchr(ptr2, *scopeSepp);
-            if(ptr3)
-            {
-                *ptr3 = '\0';
+    /* idl_genJavaHelperPackageRedirects must be sorted */
+    substitute = scopeStack;
+    rlen = os_iterLength (idl_genJavaHelperPackageRedirects);
+    for (cnt = 0; cnt < rlen && substitute == scopeStack; cnt++) {
+        redirect = idl_packageRedirect (
+            os_iterObject (idl_genJavaHelperPackageRedirects, cnt));
+        assert (redirect != NULL);
+
+        package = os_str_replace (redirect->package, ".", scopeSepp, 0);
+        if (package != NULL) {
+            if (redirect->module != NULL) {
+                module = os_str_replace (redirect->module, ".", scopeSepp, 0);
+                if (module == NULL) {
+                    substitute = NULL;
+                } else {
+                    substitute = os_str_word_replace (
+                        scopeStack, scopeSepp, module, package, 1);
+
+                    if (module != redirect->module) {
+                        os_free (module);
+                    }
+                }
+            } else {
+                substitute = os_malloc (
+                    strlen (package) +
+                    strlen (scopeSepp) +
+                    strlen (scopeStack) +
+                    1 /* '\0' */);
+                if (substitute != NULL) {
+                    (void)strcpy (substitute, package);
+                    if (strlen (scopeStack)) {
+                        (void)os_strcat (substitute, scopeSepp);
+                        (void)os_strcat (substitute, scopeStack);
+                    }
+                }
             }
-            ptr = os_strdup(ptr2);
-            memset(ptr2, 0, strlen(ptr2));
-            os_free(ptr2);
-            memset(scopeStack, 0, strlen(scopeStack));
-            os_free(scopeStack);
-            scopeStack = ptr;
-        }
 
-        if (name) {
-            /* A user identifier is specified */
-            /* Translate the user identifier to a Java identifier */
-            Id = idl_javaId(name);
-            /* allocate space for the current scope stack + the separator
-               and the user identifier
-             */
-            /* QAC EXPECT 5007; will not use wrapper */
-            scopeStack = os_realloc(scopeStack, (size_t)(
-                             (int)strlen(scopeStack)+
-                             (int)strlen(scopeSepp)+
-                             (int)strlen(Id)+1));
-           /* Concatenate the separator */
-           /* QAC EXPECT 5007; will not use wrapper */
-           os_strcat(scopeStack, scopeSepp);
-           /* Concatenate the user identifier */
-           /* QAC EXPECT 5007; will not use wrapper */
-           os_strcat (scopeStack, Id);
-        }
-     } else {
-        /* The stack is empty */
-        if (name) {
-            /* A user identifier is specified */
-            scopeStack = os_strdup(idl_javaId(name));
-        } else {
-            /* make the stack represenation empty */
-            scopeStack = os_strdup("");
+            if (package != redirect->package) {
+                os_free (package);
+            }
         }
     }
+
+    if (substitute != scopeStack) {
+        os_free (scopeStack);
+        scopeStack = substitute;
+    }
+
+    if (name) {
+        /* A user identifier is specified */
+        /* Translate the user identifier to a Java identifier */
+        Id = idl_javaId(name);
+        /* allocate space for the current scope stack + the separator
+           and the user identifier */
+        /* QAC EXPECT 5007; will not use wrapper */
+        scopeStack = os_realloc(scopeStack, strlen(scopeStack)+strlen(scopeSepp)+strlen(Id)+1);
+        /* Concatenate the separator */
+        /* QAC EXPECT 5007; will not use wrapper */
+        if (strlen(scopeStack)) {
+            os_strcat(scopeStack, scopeSepp);
+        }
+        /* Concatenate the user identifier */
+        /* QAC EXPECT 5007; will not use wrapper */
+        os_strcat (scopeStack, Id);
+    }
+
     /* return the scope stack representation */
     return scopeStack;
 }
@@ -335,6 +306,7 @@ idl_corbaJavaTypeFromTypeSpec (
     /* QAC EXPECT 5101; The switch statement is simple, therefor the total complexity is low */
 }
 
+/* FIXME: replace by os_mkpath once it's merged? */
 static int
 idl_createDir (
     os_char* fname)
@@ -356,17 +328,13 @@ idl_createDir (
     outdir = idl_dirOutCur();
     if(outdir){
         pathName = os_realloc(pathName, strlen(outdir) + strlen(os_fileSep()) + 1);
-        if (pathName == NULL) {
-            printf("Memory allocation failure when creating idl directory\n");
-            return 0;
-        }
         os_sprintf(pathName, "%s%s", outdir, os_fileSep());
     }
     /* make sure that we replace the os file seperator with a simple character
      * like '/', this will allow us to parse easier later.
      */
     osSep = os_fileSep();
-    stackScope = idl_genJavaHelperSubstitute(fname, osSep, "/", NULL);
+    stackScope = os_str_replace (fname, osSep, "/", 0);
 
     if(stackScope[0] != '\0'){ /* strlen(stackScope) > 0 */
         do
@@ -384,11 +352,6 @@ idl_createDir (
                 token++;
                 /* reallocate pathName to include stackScope */
                 pathName = os_realloc(pathName, strlen(pathName) + strlen(stackScope) + 1);
-                if (pathName == NULL) {
-                    printf("Memory allocation failure when trying to create idl directory %s, \
-                            probably the path has grown too long\n", stackScope);
-                    return 0;
-                }
                 os_strcat (pathName, stackScope);
                 stackScope = token;
                 statRes = os_stat (pathName, &statbuf);
@@ -415,11 +378,6 @@ idl_createDir (
                 }
                 /* reallocate pathName to include os_fileSep() */
                 pathName = os_realloc(pathName, strlen(pathName) + strlen(stackScope) + strlen(os_fileSep()) + 1);
-                if (pathName == NULL) {
-                    printf("Memory allocation failure when trying to add the \
-                            file separator to idl directory %s", stackScope);
-                    return 0;
-                }
                 os_strcat (pathName, os_fileSep());
             }
         } while(token);
@@ -434,8 +392,9 @@ idl_openJavaPackage (
     idl_scope scope,
     const char *name)
 {
-    os_char *fname;
-    os_char *package_file;
+    os_char *fname = NULL;
+    os_char *package_file = NULL;
+    os_char *package = NULL;
 
     package_file = idl_scopeStackJava(scope, os_fileSep(), name);
     fname = os_malloc(strlen (package_file) + strlen (".java") + 1);
@@ -444,11 +403,22 @@ idl_openJavaPackage (
     if (idl_createDir(fname)) {
 	    idl_fileSetCur(idl_fileOutNew (fname, "w"));
         if (idl_fileCur() == NULL) {
-            idl_reportOpenError(fname);
+            idl_fileOpenError(fname);
+        }
+        /* Add package header if applicable */
+        package = idl_scopeStackJava(scope, ".", NULL);
+        if (package != NULL && strlen (package) == 0) {
+            os_free (package);
+            package = NULL;
+        }
+        if (package != NULL) {
+            idl_fileOutPrintf(idl_fileCur(), "package %s;\n", package);
+            idl_fileOutPrintf(idl_fileCur(), "\n");
         }
     } else {
 	    idl_fileSetCur(NULL);
     }
+    os_free(package);
     os_free(package_file);
     os_free(fname);
 }
@@ -482,7 +452,7 @@ idl_sequenceIndexString (
     idl_typeSeq typeSeq)
 {
     c_char *sequenceString;
-    int sequenceStringLen;
+    os_size_t sequenceStringLen;
     c_char *sequenceStringPrev;
 
     if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tseq) {
@@ -519,7 +489,7 @@ idl_arrayJavaIndexString (
     idl_typeArray typeArray)
 {
     c_char *arrayString;
-    int arrayStringLen;
+    os_size_t arrayStringLen;
     c_char *arrayStringPrev;
 
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
@@ -557,168 +527,138 @@ idl_genJavaConstantGetter(void)
     return os_strdup(".value");
 }
 
-void
-idl_genJavaHelperInit(
-    c_iter orgPackageList,
-    c_iter tarPackageList)
+static os_equality
+idl_genJavaHelperComparePackageRedirect (
+    const void *obj1,
+    const void *obj2)
 {
-    if(orgPackageList)
-    {
-        originalPackageList = orgPackageList;
-    }
-    if(tarPackageList)
-    {
-        targetPackageList = tarPackageList;
-    }
-}
+    idl_packageRedirect rdr1, rdr2;
+    os_equality eq = OS_EQ;
+    os_int ret;
 
-const os_char*
-idl_genJavaHelperGetOrgLastSubstituted(
-    void)
-{
-    return orgLastSubstituted;
-}
+    assert (obj1 != NULL);
+    assert (obj2 != NULL);
 
-const os_char*
-idl_genJavaHelperGetTgtLastSubstituted(
-    void)
-{
-    return tarLastSubstituted;
-}
+    rdr1 = idl_packageRedirect (obj1);
+    rdr2 = idl_packageRedirect (obj2);
 
-/* Result must be freed with os_free! */
-os_char*
-idl_genJavaHelperApplyPackageSubstitute(
-    os_char* source,
-    const os_char *scopeSepp)
-{
-    os_char* result = NULL;
-    os_char* tarPackageNameTMP;
-    os_char* orgPackageNameTMP;
-    assert(source);
-
-    /* only if 'tarPackageName' is valid should there be any substitution done */
-    if(targetPackageList)
-    {
-        c_iterIter targetIter, originalIter;
-        os_char *tarPackageName, *orgPackageName;
-        c_long replaced = 0;
-
-        targetIter = c_iterIterGet(targetPackageList);
-        originalIter = c_iterIterGet(originalPackageList);
-        while ((tarPackageName = c_iterNext(&targetIter))) {
-            orgPackageName = c_iterNext(&originalIter);
-            /* if 'orgPackageName' is NULL, then we just need to prefix */
-            if(!strlen(orgPackageName))
-            {
-                if(tarLastSubstituted) {
-                    os_free(tarLastSubstituted);
-                }
-                tarLastSubstituted = os_strdup(tarPackageName);
-                tarPackageNameTMP = idl_genJavaHelperSubstitute(tarPackageName, ".", scopeSepp, NULL);
-                if(0 != strcmp(tarPackageNameTMP+(strlen(tarPackageNameTMP)-strlen(scopeSepp)), scopeSepp))
-                {
-                    if(result) {
-                        os_free(result);
-                    }
-                    result = os_malloc(strlen(tarPackageNameTMP) + strlen(scopeSepp) + strlen(source) + 1);
-                    os_strcpy(result, tarPackageNameTMP);
-                    result = os_strncat(result, scopeSepp, strlen(scopeSepp));
-                } else
-                {
-                    result = os_malloc(strlen(tarPackageNameTMP) + strlen(source) + 1);
-                    os_strcpy(result, tarPackageNameTMP);
-                }
-                result = os_strncat(result, source, strlen(source));
-                os_free(tarPackageNameTMP);
-            } else
-            {
-                /* We need to substitute all occurrences of 'orgPackageName' with
-                 * 'tarPackageName'
-                 */
-                char *tmpResult;
-                c_long tmpReplaced;
-                tarPackageNameTMP = idl_genJavaHelperSubstitute(tarPackageName, ".", scopeSepp, NULL);
-                orgPackageNameTMP = idl_genJavaHelperSubstitute(orgPackageName, ".", scopeSepp, NULL);
-                tmpResult = idl_genJavaHelperSubstitute(source, orgPackageNameTMP, tarPackageNameTMP, &tmpReplaced);
-                if(tmpReplaced >= replaced) {
-                    if(result) {
-                        os_free(result);
-                    }
-                    result = tmpResult;
-                    replaced = tmpReplaced;
-
-                    /* Set global variables indicating which was the last substitution that took place. */
-                    if(orgLastSubstituted) {
-                        os_free(orgLastSubstituted);
-                    }
-                    if(tarLastSubstituted) {
-                        os_free(tarLastSubstituted);
-                    }
-                    orgLastSubstituted = os_strdup(orgPackageNameTMP);
-                    tarLastSubstituted = os_strdup(tarPackageNameTMP);
-                }
-                os_free(tarPackageNameTMP);
-                os_free(orgPackageNameTMP);
+    if (rdr1->module != rdr2->module) {
+        if (rdr1->module == NULL) {
+            eq = OS_LT;
+        } else if (rdr2->module == NULL) {
+            eq = OS_GT;
+        } else {
+            ret = strcmp (rdr1->module, rdr2->module);
+            if (ret < 0) {
+                eq = OS_LT;
+            } else if (ret > 0) {
+                eq = OS_GT;
             }
         }
-    } else
-    {
-        /* No substitution to perform, just return the original string */
-        result = os_strdup(source);
     }
+
+    return eq;
+}
+
+os_result
+idl_genJavaHelperAddPackageRedirect (
+    const os_char *optarg)
+{
+    idl_packageRedirect exists, redirect = NULL;
+    os_char *colon;
+    os_char *module = NULL;
+    os_char *package = NULL;
+    os_char *trim = NULL;
+    os_result result = os_resultSuccess;
+
+    assert (optarg != NULL);
+
+    colon = os_index (optarg, ':');
+    if (colon != NULL) {
+        if (colon == optarg) {
+            module = NULL;
+        } else {
+            module = os_strndup (optarg, (size_t) (colon - optarg));
+            if (module != NULL) {
+                if ((trim = os_str_trim (module, "./:")) != module) {
+                    os_free (module);
+                }
+                module = trim;
+            }
+            if (module == NULL) {
+                result = os_resultFail;
+            } else if (strlen (module) == 0) {
+                os_free (module);
+                module = NULL;
+            }
+        }
+
+        package = os_strdup (colon + 1);
+        if ((trim = os_str_trim (package, "./:")) != package) {
+            os_free (package);
+        }
+        package = trim;
+
+        if (strlen (package) == 0) {
+            result = os_resultInvalid;
+        }
+
+        redirect = os_malloc (OS_SIZEOF (idl_packageRedirect));
+        if (result == os_resultSuccess) {
+            redirect->module = module;
+            redirect->package = package;
+
+            exists = os_iterResolve (
+                idl_genJavaHelperPackageRedirects,
+               &idl_genJavaHelperComparePackageRedirect,
+                redirect);
+            if (exists != NULL) {
+                result = os_resultInvalid;
+            } else {
+                idl_genJavaHelperPackageRedirects = os_iterAppend (
+                    idl_genJavaHelperPackageRedirects,
+                    redirect);
+                /* idl_genJavaHelperPackageRedirect must be sorted */
+                os_iterSort (
+                    idl_genJavaHelperPackageRedirects,
+                   &idl_genJavaHelperComparePackageRedirect,
+                    OS_FALSE);
+            }
+        }
+
+        if (result != os_resultSuccess) {
+            os_free (module);
+            os_free (package);
+            os_free (redirect);
+        }
+    } else {
+        result = os_resultInvalid;
+    }
+
     return result;
 }
 
-/* ES, dds1540: This exact operation is copied in the
- * api/dcps/java/common/c/code/saj_copyCache.c file. so any bugs fixed here, should be
- * fixed there as well!!
- */
-os_char*
-idl_genJavaHelperSubstitute(
-    const os_char* string,
-    const os_char* searchFor,
-    const os_char* replaceWith,
-    c_long* replaced)
+void
+idl_genJavaHelperFreePackageRedirects (
+    void)
 {
-    os_char* result;
-    os_char* ptr;
-    os_char* tmp;
-    if(replaced) {
-        *replaced = 0;
-    }
+    idl_packageRedirect redirect;
+    os_iter redirects;
+    void *object;
 
-    tmp = os_strdup(string);
-    ptr = strstr(tmp, searchFor);
-    if(ptr && strcmp(searchFor, replaceWith))
-    {
-        os_char* before;
-        os_char* after;
-        if(replaced) {
-            *replaced = strlen(searchFor); /* Return the length of the replaced string. A calling function can call this function multiple times
-                                            * with multiple replacements and select the one that replaced the most characters */
+    redirects = idl_genJavaHelperPackageRedirects;
+    if (redirects != NULL) {
+        for (object = os_iterTakeFirst (redirects);
+             object != NULL;
+             object = os_iterTakeFirst (redirects))
+        {
+            redirect = idl_packageRedirect (object);
+            os_free (redirect->module);
+            os_free (redirect->package);
+            os_free (redirect);
         }
-
-        before = os_malloc(ptr - tmp+1);
-        *ptr = '\0';
-        os_strncpy(before, tmp, (size_t)(ptr - tmp+1));
-        ptr = ptr+strlen(searchFor);
-        after = idl_genJavaHelperSubstitute(ptr, searchFor, replaceWith, NULL);
-        result = os_malloc(strlen(before) + strlen(replaceWith) + strlen (after) + 1);
-        os_strcpy(result, before);
-        os_strncat(result, replaceWith, strlen(replaceWith));
-        os_strncat(result, after, strlen(after));
-        os_free(before);
-        os_free(after);
-    } else
-    {
-        result = tmp;
-        tmp = NULL;
-    }
-    if(tmp)
-    {
-        os_free(tmp);
+        os_iterFree (redirects);
     }
 
-    return result;
+    idl_genJavaHelperPackageRedirects = NULL;
 }

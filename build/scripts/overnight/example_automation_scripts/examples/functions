@@ -41,6 +41,52 @@ get_libjsig()
    fi
 }
 
+waitForProcessTermination()
+{
+   PROCESS=$1
+   TIMEOUT=$2
+
+   # This will wait for all processes of the given name to
+   # have terminated (so, it's not limited to one process)
+   # or when the timout has been reached
+
+   # Start with expecting the process to be available
+   AVAILABLE="process available"
+
+   PSARGS=""
+   # for testing on WRLinux 7
+   ps -h 2>&1 |  grep 'BusyBox v1.22.1 (2016-02-19 09:26:32 CET) multi-call binary.' > /dev/null
+   if [ $? != 0 ]
+   then
+      # for testing on linux on mpc8313e
+      ps -h 2>&1 |  grep 'BusyBox v1.14.1 (2015-09-23 16:49:28 CEST) multi-call binary'  > /dev/null
+      if [ $? != 0 ]
+      then
+          # for testing on linux on armv7a_vfp_neon
+          ps -h 2>&1 |  grep 'BusyBox v1.22.1 (2015-10-16 20:13:35 BST) multi-call binary.'  > /dev/null
+          if [ $? != 0 ]
+          then
+             PSARGS="-o args"
+          fi
+      fi
+   fi
+
+   # Do as long as the process is available or until timeout
+   while [ ! "x$AVAILABLE" = "x" -a ! "$TIMEOUT" = "0" ]
+   do
+      TIMEOUT=`expr $TIMEOUT - 1`
+      AVAILABLE=`ps $PSARGS | grep $PROCESS | grep -v grep`
+
+      # Also sleep 1 when process was terminated to allow
+      # for any piping to finish
+      sleep 1;
+   done
+
+   if [ ! "x$AVAILABLE" = "x" ] ; then
+         echo "WARNING: Process $PROCESS not terminated within timeout!"
+   fi
+}
+
 runZero()
 {
    NAME=$1
@@ -52,7 +98,7 @@ runZero()
    ./subscriber > subResult.txt $SUB_PARAMS 2>&1 &
    cmd_pid=$!
 
-   sleep 5
+   sleep 7
 
    ./publisher > pubResult.txt $PUB_PARAMS 2>&1
    PUB_RESULT=$?
@@ -79,6 +125,62 @@ runZeroThroughput()
    sleep 5
 }
 
+runZeroStreamsThroughput()
+{
+   echo "=== Launching Throughput "
+
+   ./publisher 1 10 0 15 > pubResult.txt 2>&1 &
+
+   ./subscriber > subResult.txt 10 10 2>&1 &
+   cmd_pid=$!
+
+   wait $cmd_pid &> /dev/null
+   SUB_RESULT=$?
+
+   (sleep 30 ; echo "timeout: kill sub"; kill -9 $cmd_pid) &
+   killerPid=$!
+
+   (kill -0 $killerPid 2>/dev/null && kill $killerPid) || true
+
+   sleep 5
+}
+
+runZeroThroughputJava()
+{
+   get_libjsig
+
+   echo "=== Launching Throughput "
+
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP publisher 1 0 1 15 > pubResult.txt 2>&1 &
+   cmd_pid=$!
+
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP subscriber > subResult.txt 10 2>&1
+   SUB_RESULT=$?
+
+   wait $cmd_pid &> /dev/null
+   PUB_RESULT=$?
+
+   sleep 5
+}
+
+runZeroThroughputJava5()
+{
+   get_libjsig
+
+   echo "=== Launching Throughput "
+
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP publisher 1 0 1 15 > pubResult.txt 2>&1 &
+   cmd_pid=$!
+
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP subscriber > subResult.txt 10 2>&1
+   SUB_RESULT=$?
+
+   wait $cmd_pid &> /dev/null
+   PUB_RESULT=$?
+
+   sleep 5
+}
+
 runZeroRoundTrip()
 {
    echo "=== Launching RoundTrip "
@@ -86,7 +188,7 @@ runZeroRoundTrip()
    ./pong > pongResult.txt 2>&1 &
    cmd_pid=$!
 
-   sleep 10
+   sleep 12
 
    ./ping > pingResult.txt 100 0 10 2>&1
    PUB_RESULT=$?
@@ -100,6 +202,54 @@ runZeroRoundTrip()
 
    sleep 5
 }
+
+runZeroRoundTripJava()
+{
+   get_libjsig
+
+   echo "=== Launching RoundTrip "
+
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP pong > pongResult.txt 2>&1 &
+   cmd_pid=$!
+
+   sleep 10
+
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP ping > pingResult.txt 100 0 10 2>&1
+   PUB_RESULT=$?
+
+   sleep 5
+
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP ping quit >/dev/null
+
+   wait $cmd_pid &> /dev/null
+   SUB_RESULT=$?
+
+   sleep 5
+}
+runZeroRoundTripJava5()
+{
+   get_libjsig
+
+   echo "=== Launching RoundTrip "
+
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP pong > pongResult.txt 2>&1 &
+   cmd_pid=$!
+
+   sleep 10
+
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP ping > pingResult.txt 100 0 10 2>&1
+   PUB_RESULT=$?
+
+   sleep 5
+
+   LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP ping quit >/dev/null
+
+   wait $cmd_pid &> /dev/null
+   SUB_RESULT=$?
+
+   sleep 5
+}
+
 
 checkResultZero()
 {
@@ -120,8 +270,6 @@ checkResultZero()
 
 builtintopicsCheckResult()
 {
-   sleep 10
-
    echo "=== Checking BuiltInTopics Subscriber results"
    NB_HOST=`grep "Hostname for node" subResult.txt | wc -l`;
    echo NB_HOST=$NB_HOST;
@@ -139,7 +287,7 @@ contentfilteredtopicCheckResult()
    echo "=== Checking ContentFilteredTopic Subscriber results"
    NB_GE=`grep GE subResult.txt | wc -l`; echo NB_GE=$NB_GE
    NB_MSFT=`grep MSFT subResult.txt | wc -l`; echo NB_MSFT=$NB_MSFT
-   if [ $NB_GE -gt 0 ] && [ $NB_MSFT -eq 0 ] ;then
+   if [ $NB_GE -gt 1 ] && [ $NB_MSFT -eq 0 ] ;then
       echo OK
    else
       echo NOK
@@ -151,7 +299,7 @@ contentfilteredtopicCheckResult()
 durabilityCheckResult()
 {
    echo "=== Checking Durability Subscriber results Scenario 3.1"
-   tail -10 subResult_3_1.txt > tail_subResult.txt
+   grep "^[0-9]" subResult_3_1.txt > tail_subResult.txt
 
    diff -w tail_subResult.txt ../../expected_result > subdiff.txt
    if [ -s subdiff.txt ] || [ ! -r subResult_3_1.txt ];then
@@ -164,7 +312,7 @@ durabilityCheckResult()
 
    echo "=== Checking Durability second Subscriber results Scenario 3.2"
    # Checking only result of second subscriber
-   tail -10 subResult_3_2_2.txt > tail_subResult.txt
+   grep "^[0-9]" subResult_3_2_2.txt > tail_subResult.txt
 
    diff -w tail_subResult.txt ../../expected_result > subdiff.txt
    if [ -s subdiff.txt ] || [ ! -r subResult_3_2_2.txt ];then
@@ -178,7 +326,7 @@ durabilityCheckResult()
    echo "=== Checking Durability second Subscriber results Scenario 3.3"
    echo "    (not empty after restarting OpenSplice)"
    # Checking only result of second subscriber
-   tail -2 subResult_3_3_2.txt > tail_subResult.txt
+   grep "^[0-9]" subResult_3_3_2.txt > tail_subResult.txt
    if [ -s tail_subResult.txt ];then
       echo OK
    else
@@ -190,7 +338,7 @@ durabilityCheckResult()
 durabilityCheckResultISOCPP()
 {
    echo "=== Checking Durability Subscriber results Scenario 3.1"
-   tail -10 subResult_3_1.txt > tail_subResult.txt
+   grep "^[0-9]" subResult_3_1.txt > tail_subResult.txt
 
    diff -w tail_subResult.txt ../expected_result > subdiff.txt
    if [ -s subdiff.txt ] || [ ! -r subResult_3_1.txt ];then
@@ -203,7 +351,7 @@ durabilityCheckResultISOCPP()
 
    echo "=== Checking Durability second Subscriber results Scenario 3.2"
    # Checking only result of second subscriber
-   tail -10 subResult_3_2_2.txt > tail_subResult.txt
+   grep "^[0-9]" subResult_3_2_2.txt > tail_subResult.txt
 
    diff -w tail_subResult.txt ../expected_result > subdiff.txt
    if [ -s subdiff.txt ] || [ ! -r subResult_3_2_2.txt ];then
@@ -215,14 +363,16 @@ durabilityCheckResultISOCPP()
    fi
 
    echo "=== Checking Durability second Subscriber results Scenario 3.3"
-   echo "    (not empty after restarting OpenSplice)"
    # Checking only result of second subscriber
-   tail -2 subResult_3_3_2.txt > tail_subResult.txt
-   if [ -s tail_subResult.txt ];then
-      echo OK
-   else
+   grep "^[0-9]" subResult_3_3_2.txt > tail_subResult.txt
+
+   diff -w tail_subResult.txt ../expected_result > subdiff.txt
+   if [ -s subdiff.txt ] || [ ! -r subResult_3_3_2.txt ];then
       echo NOK
       echo "*** ERROR : example Durability failed ";
+      cat subdiff.txt;
+   else
+      echo OK
    fi
 }
 
@@ -241,7 +391,7 @@ durabilitySetOSPLURI()
 helloworldCheckResult()
 {
    echo "=== Checking HelloWorld Subscriber results"
-   head -4 subResult.txt > result.txt
+   head -n4 subResult.txt > result.txt
    diff -w result.txt ../../expected_results/subResult.txt > subdiff.txt
 
    if [ -s subdiff.txt ] || [ ! -r subResult.txt ];then
@@ -334,7 +484,7 @@ queryconditionCheckResult()
    echo "=== Checking QueryCondition Subscriber results"
    NB_GE=`grep GE: subResult.txt | wc -l`; echo NB_GE=$NB_GE
    NB_MSFT=`grep MSFT subResult.txt | wc -l`; echo NB_MSFT=$NB_MSFT
-   if [ $NB_GE -eq 0 ] && [ $NB_MSFT -gt 0 ] ;then
+   if [ $NB_GE -eq 0 ] && [ $NB_MSFT -gt 2 ] ;then
       echo OK
    else
       echo NOK
@@ -372,7 +522,7 @@ runPingPong()
 
    $VG_PONG ./pong PongRead PongWrite &
 
-   sleep 2
+   sleep 4
 
    $VG_PING_M ./ping $BLOKCOUNT $BLOKSIZE m PongRead PongWrite
 
@@ -404,7 +554,7 @@ runTutorial()
    echo start MessageBoard
    $VG_MESSAGEBOARD ./MessageBoard&
 
-   sleep 2
+   sleep 7
 
    echo start UserLoad
    $VG_USERLOAD ./UserLoad&

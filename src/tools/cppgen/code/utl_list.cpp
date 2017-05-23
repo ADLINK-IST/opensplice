@@ -179,7 +179,7 @@ UTL_ListActiveIterator::UTL_ListActiveIterator(UTL_List *s)
 long
 UTL_ListActiveIterator::is_done()
 {
-   return (source == NULL) ? I_TRUE : I_FALSE;
+   return (source == NULL) ? true : false;
 }
 
 // Advance to next item

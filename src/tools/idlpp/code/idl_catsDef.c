@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "os_heap.h"
@@ -145,7 +153,7 @@ idl_isCatsDefFor(
 {
     idl_catsDef catsDef = idl_catsDefDefGet();
     idl_catsMap catsMap;
-    c_long catsMapIdx;
+    c_ulong catsMapIdx;
     c_iter catsList;
     os_uint32 catsListSize;
     os_uint32 catsIdx;
@@ -248,7 +256,7 @@ idl_catsListItemIsDefined (
     const char *typeName,
     const char* itemName)
 {
-    c_long li;
+    c_ulong li;
     c_long si;
     idl_catsMap catsMap;
     c_metaObject typeScope;
@@ -419,7 +427,7 @@ idl_catsDefConvertAll(
                 {
                     member = c_member(structure->members[j]);
                     memberType = c_typeActualType(c_type(idl_catsDefResolveTypeDef(c_baseObject(c_specifier(member)->type))));
-                    if((c_baseObject(memberType)->kind == M_COLLECTION))
+                    if(c_baseObject(memberType)->kind == M_COLLECTION)
                     {
                         subType = c_typeActualType(c_collectionType(memberType)->subType);
                         if(c_baseObject(subType)->kind == M_PRIMITIVE &&
@@ -476,12 +484,12 @@ idl_catsDefConvertAll(
                 memberIndex = idl_catsDefFindMemberIndexByName(
                     structure->members,
                     c_specifier(member)->name);
-                assert(memberIndex != -1);
+                assert(memberIndex >= 0);
                 newMember = c_metaDefine(c_metaObject(structure), M_MEMBER);
                 base = c_getBase(member);
                 c_specifier(newMember)->name = c_stringNew(base, c_specifier(member)->name);
                 o = c_metaObject(c_metaDefine(c_metaObject(structure), M_COLLECTION));
-                c_collectionType(o)->kind = C_STRING;
+                c_collectionType(o)->kind = OSPL_C_STRING;
                 c_collectionType(o)->subType = c_type(c_metaResolve(c_metaObject(structure), "c_char"));
                 c_collectionType(o)->maxSize = c_collectionType(idl_catsDefResolveTypeDef(c_baseObject(c_specifier(member)->type)))->maxSize;
                 c_metaObject(o)->definedIn = c_metaObject(structure);
@@ -494,7 +502,7 @@ idl_catsDefConvertAll(
                 structure->members[memberIndex] = newMember;
                 c_iterInsert(replaceData->replacedMembers, member);
                 replacedIndex = os_malloc(sizeof(os_uint32));
-                *replacedIndex = memberIndex;
+                *replacedIndex = (os_uint32) memberIndex;
                 c_iterInsert(replaceData->replacedIndexes, replacedIndex);
             }
             c_iterInsert(replaceInfo, replaceData);
@@ -601,12 +609,13 @@ idl_catsDefFindMemberIndexByName(
     os_uint32 i;
 
     membersSize = c_arraySize(members);
+    assert (membersSize <= (os_uint32) OS_MAX_INTEGER (os_int32));
     for(i = 0; i < membersSize && memberIndex == -1 ; i++)
     {
         member = c_member(members[i]);
         if(0 == strcmp(c_specifier(member)->name, name))
         {
-            memberIndex = i;
+          memberIndex = (os_int32) i;
         }
     }
     return memberIndex;

@@ -1,15 +1,23 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#include "os.h"
+#include "vortex_os.h"
 #include "c__base.h"
 #include "c__metabase.h"
 #include "os_report.h"
@@ -41,7 +49,7 @@
  * the source database, there is a matching object in the destination database.
  */
 struct c_clone_s {
-    ut_collection processed_objects;
+    ut_table processed_objects;
     c_base destination;
     /* If cls is a c_metaObject or a c_type, something special has to be done
      * (which is explained there). Therefore we cache the following variables
@@ -174,7 +182,7 @@ c_cloneResolve(
     C_CLONE_TRACE(printf("%*s==========\n%*s_resolve\n%*s==========\n", indent*2, " ", indent*2, " ", indent*2, " "));
     C_CLONE_TRACE(printf("%*sresolving a %s\n", indent*2, " ", c_metaObject(c_getType(srcObj))->name));
 
-    *dstObj = ut_get(_this->processed_objects, srcObj);
+    *dstObj = ut_get(ut_collection(_this->processed_objects), srcObj);
 
     /*
      * If the object has not been resolved, we check whether it's a type
@@ -193,7 +201,7 @@ c_cloneResolve(
         if(*dstObj) {
             C_CLONE_TRACE(printf("%*sfound by meta resolving\n", indent*2, " "));
             if(c_metaCompare(srcObj, *dstObj) == E_UNEQUAL) {
-                OS_REPORT_1(
+                OS_REPORT(
                         OS_ERROR,
                         "c_cloneResolve",
                         0,
@@ -258,7 +266,7 @@ c_cloneModules(
 
         c_keep(module); /* when put into administration, it will ultimately be freed again */
         c_keep(dstModule);
-        ut_tableInsert(ut_table(_this->processed_objects), module, dstModule);
+        (void) ut_tableInsert(_this->processed_objects, module, dstModule);
     }
 
     return dstModule;
@@ -331,12 +339,12 @@ c_cloneCloneCollection (
        }
 
        if(clonedObj){
-           if(c_collectionTypeKind(c_getType(arg->dstCollection)) == C_SCOPE){
+           if(c_collectionTypeKind(c_getType(arg->dstCollection)) == OSPL_C_SCOPE){
                c_scopeInsert((c_scope)arg->dstCollection, c_metaObject(clonedObj));
            }
            else /* this is any other collection */
            {
-               c_insert((c_collection)arg->dstCollection, clonedObj);
+               ospl_c_insert((c_collection)arg->dstCollection, clonedObj);
            }
 
            c_free(clonedObj);
@@ -444,7 +452,8 @@ c_cloneCloneObject(
      *    then it will not be deleted yet, because the clone object's administration
      *    still contains a reference. This is probably not desirable.
      */
-    _this->processed_objects = ut_tableNew(c_cloneComparePointers, NULL);
+    _this->processed_objects = ut_tableNew(
+            c_cloneComparePointers, NULL, c_clonePointerFree, NULL, c_clonePointerFree, NULL);
 
     if(c_cloneResolve(_this, c_getType(obj), (c_object*)&type)){
         if(!type) {
@@ -464,7 +473,7 @@ c_cloneCloneObject(
 
     o = _c_cloneAction(_this, type, obj, NULL);
 
-    ut_tableFree(ut_table(_this->processed_objects), c_clonePointerFree, NULL, c_clonePointerFree, NULL);
+    ut_tableFree(_this->processed_objects);
     _this->processed_objects = NULL;
 
     if(isType(type, obj))
@@ -539,25 +548,25 @@ _c_cloneAction(
             else if (c_baseObjectKind(type) == M_COLLECTION)
             {
                 switch(c_collectionTypeKind(type)){
-                    case C_ARRAY:
-                    case C_SEQUENCE:
+                    case OSPL_C_ARRAY:
+                    case OSPL_C_SEQUENCE:
                         dstObj = c_newBaseArrayObject(c_collectionType(type), c_arraySize(srcObj));
                         break;
-                    case C_SCOPE:
+                    case OSPL_C_SCOPE:
                         dstObj = c_new(type);
                         break;
-                    case C_STRING:
+                    case OSPL_C_STRING:
                         dstObj = c_stringMalloc(type->base, strlen(srcObj) + 1); /* + 1 for the '\0' character */
                         break;
-                    case C_WSTRING:
+                    case OSPL_C_WSTRING:
                         dstObj = c_wstringMalloc(type->base, strlen(srcObj) + 1); /* + 1 for the '\0' character */
                         break;
-                    case C_LIST:
-                    case C_BAG:
-                    case C_SET:
-                    case C_DICTIONARY:
-                    case C_QUERY:
-                    case C_MAP:
+                    case OSPL_C_LIST:
+                    case OSPL_C_BAG:
+                    case OSPL_C_SET:
+                    case OSPL_C_DICTIONARY:
+                    case OSPL_C_QUERY:
+                    case OSPL_C_MAP:
                         dstObj = c_new(type);
                         break;
                     default:
@@ -579,7 +588,7 @@ _c_cloneAction(
              * so future (recursive ones especially) c_clone calls know it is
              * being cloned or is cloned.
              */
-            ut_tableInsert(ut_table(_this->processed_objects), c_keep(srcObj), c_keep(dstObj));
+            (void) ut_tableInsert(_this->processed_objects, c_keep(srcObj), c_keep(dstObj));
         }
         else
         {
@@ -614,8 +623,8 @@ _c_cloneAction(
             while(cls){
                 C_CLONE_TRACE(printf("%*shandling '%s'\n", indent*2, " ", c_metaObject(cls)->name));
                 if(c_typeHasRef(c_type(cls))){
-                    int i = 0;
-                    c_long size = c_arraySize(c_interface(cls)->references);
+                    c_ulong i = 0;
+                    c_ulong size = c_arraySize(c_interface(cls)->references);
                     for(i=0; i<size; i++)
                     {
                         c_type srcType, dstType = NULL;
@@ -770,8 +779,8 @@ _c_cloneAction(
         case M_EXCEPTION:
             memcpy(dstObj, srcObj, c_type(type)->size);
             if(c_typeHasRef(type)){
-                int i = 0;
-                c_long size = c_arraySize(c_structure(type)->references);
+                c_ulong i = 0;
+                c_ulong size = c_arraySize(c_structure(type)->references);
                 for(i=0; i< size; i++)
                 {
                     if(!c_typeIsRef(c_specifier(c_structure(type)->references[i])->type))
@@ -814,15 +823,15 @@ _c_cloneAction(
         break;
         case M_COLLECTION:
             switch(c_collectionTypeKind(type)){
-                case C_SEQUENCE:
-                case C_ARRAY:
+                case OSPL_C_SEQUENCE:
+                case OSPL_C_ARRAY:
                 {
-                    int i, size = 0;
+                    c_ulong i, size = 0;
                     c_type subtype;
 
                     subtype = c_collectionTypeSubType(type);
 
-                    if(c_collectionTypeKind(type) == C_ARRAY && c_collectionTypeMaxSize(type) > 0) {
+                    if(c_collectionTypeKind(type) == OSPL_C_ARRAY && c_collectionTypeMaxSize(type) > 0) {
                         size = c_collectionTypeMaxSize(type);
                     }
                     else
@@ -877,24 +886,24 @@ _c_cloneAction(
                     }
                 }
                 break;
-                case C_STRING:
+                case OSPL_C_STRING:
                     memcpy(dstObj, srcObj, (strlen(srcObj)+1) * sizeof(c_char)); /* copy the '\0' character also */
                     break;
-                case C_WSTRING:
+                case OSPL_C_WSTRING:
                     memcpy(dstObj, srcObj, (strlen(srcObj)+1) * sizeof(c_wchar)); /* copy the '\0' character also */
                     break;
-                case C_SCOPE:
-                case C_LIST:
-                case C_BAG:
-                case C_SET:
-                case C_DICTIONARY:
-                case C_QUERY:
+                case OSPL_C_SCOPE:
+                case OSPL_C_LIST:
+                case OSPL_C_BAG:
+                case OSPL_C_SET:
+                case OSPL_C_DICTIONARY:
+                case OSPL_C_QUERY:
                 {
                     struct c_cloneCloneCollectionArg_s arg;
                     arg.dstCollection = (c_object)dstObj;
                     arg.c = _this;
 
-                    if(c_collectionTypeKind(type) == C_SCOPE){
+                    if(c_collectionTypeKind(type) == OSPL_C_SCOPE){
                         c_scopeWalk(c_scope(srcObj), c_cloneCloneScopeObject, &arg);
                     }
                     else
@@ -908,7 +917,7 @@ _c_cloneAction(
                     }
                 }
                 break;
-                case C_MAP:
+                case OSPL_C_MAP:
                     /* c_map? */
                     assert(FALSE);
                     break;
@@ -949,21 +958,19 @@ _c_cloneAction(
                 assert(FALSE);
                 C_CLONE_TRACE(indent--);
                 return NULL;
-            break;
             }
 #undef _CASE_
             references = c_union(srcObj)->references;
             if (references != NULL) {
-                int i=0, j=0;
+                c_ulong i=0, j=0;
                 c_bool done = FALSE;
-                c_long nrOfRefs, nrOfLabs;
+                c_ulong nrOfRefs, nrOfLabs;
                 c_array labels;
 
                 nrOfRefs = c_arraySize(references);
                 for (i=0; (i<nrOfRefs) && !done; i++)
                 {
                     labels = c_unionCase(references[i])->labels;
-                    j=0;
                     nrOfLabs = c_arraySize(labels);
                     for (j=0; (j<nrOfLabs) && !done; j++)
                     {
@@ -1002,7 +1009,7 @@ _c_cloneAction(
         }
         break;
         default:
-            OS_REPORT_1(OS_ERROR, "c_clone", 0,
+            OS_REPORT(OS_ERROR, "c_clone", 0,
                         "Could not clone object of type %s",
                         metaKindImage(c_baseObjectKind(type)));
             dstObj = NULL;

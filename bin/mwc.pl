@@ -233,4 +233,5 @@ sub getBasePath {
 }
 
 my($driver) = new Driver($basePath, Driver::workspaces());
+print "Run mpc with: @ARGV\n";
 exit($driver->run(@ARGV));

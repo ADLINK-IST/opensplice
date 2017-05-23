@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.controller;
@@ -107,36 +115,35 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         curValue = value;
         curUnion = null;
         String name = (String) (model.getValueAt(row, column - 1));
+        MetaField editField = type.getField(name);
 
-        if (result == null) {
-            MetaField editField = type.getField(name);
-            
-            if(editField instanceof MetaEnum){
-                if(name.endsWith(".switch")){
-                    potential = type.getField(name.substring(0, name.length()-7));
-                    
-                    if(potential instanceof MetaUnion){
-                        curUnion = (MetaUnion)potential;
-                    }
+        if (editField instanceof MetaEnum) {
+            if (name.endsWith(".switch")) {
+                potential = type.getField(name.substring(0, name.length() - 7));
+
+                if (potential instanceof MetaUnion) {
+                    curUnion = (MetaUnion) potential;
                 }
-                result = this.getEnumEditor(row, column, value, (MetaEnum)editField);
-            } else if (editField instanceof MetaPrimitive) {
-                if(name.endsWith(".switch")){
-                    potential = type.getField(name.substring(0, name.length()-7));
-                    
-                    if(potential instanceof MetaUnion){
-                        curUnion = (MetaUnion)potential;
-                    }
-                }
-                result = this.getPrimitiveEditor(row, column, value);
-            } else if (editField instanceof MetaStruct) {
-                result = this.getPrimitiveEditor(row, column, value);
-            } else if (editField == null) {
-                result = this.getPrimitiveEditor(row, column, value);
-            } else if (editField instanceof MetaCollection) {
-                result = this.getCollectionEditor(row, column, value, (MetaCollection)editField, name);
-            } else {
             }
+            result = this.getEnumEditor(row, column, value,
+                    (MetaEnum) editField);
+        } else if (editField instanceof MetaPrimitive) {
+            if (name.endsWith(".switch")) {
+                potential = type.getField(name.substring(0, name.length() - 7));
+
+                if (potential instanceof MetaUnion) {
+                    curUnion = (MetaUnion) potential;
+                }
+            }
+            result = this.getPrimitiveEditor(row, column, value);
+        } else if (editField instanceof MetaStruct) {
+            result = this.getPrimitiveEditor(row, column, value);
+        } else if (editField == null) {
+            result = this.getPrimitiveEditor(row, column, value);
+        } else if (editField instanceof MetaCollection) {
+            result = this.getCollectionEditor(row, column, value,
+                    (MetaCollection) editField, name);
+        } else {
         }
         curEditor = result;
         curEditor.addKeyListener(this);
@@ -181,9 +188,10 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         
         if("c_bool".equals(primType)){
             String[] items = {"FALSE", "TRUE"};
-            temp = new JComboBox(items);
-            ((JComboBox)temp).setSelectedItem(value);
-            ((JComboBox)temp).addActionListener(this);
+            JComboBox combo = new JComboBox(items);
+            combo.setSelectedItem(value);
+            combo.addActionListener(this);
+            temp = combo;
         }
         else{
             temp = new JTextField(20);
@@ -338,7 +346,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
 
         if(test.isValid()){
             if(curEditor instanceof JComboBox){
-                JComboBox source = (JComboBox)curEditor;
+                JComboBox source = (JComboBox) curEditor;
                 curValue = source.getSelectedItem();
             } else if(curEditor instanceof JTextField){
                 JTextField source = (JTextField)curEditor;
@@ -347,7 +355,10 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
             if(status != null){
                 status.setStatus("Input valid.", false, false);
             }
-            model.setUserDataField( (String)model.getValueAt(editRow, editColumn-1), (String)curValue);
+            String fieldName = (String)model.getValueAt(editRow, editColumn-1);
+            if (!(type.getField(fieldName) instanceof MetaCollection)) {
+                model.setUserDataField(fieldName, (String)curValue);
+            }
             curEditor.removeKeyListener(this);
             curEditor = null;
             fireEditingStopped();
@@ -514,7 +525,8 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
             }
             else if(curEditor instanceof JComboBox){
                 if(curUnion != null){
-                    if(!curUnion.labelExists(((JComboBox)curEditor).getSelectedItem().toString())){
+                    if (!curUnion.labelExists(((JComboBox) curEditor)
+                            .getSelectedItem().toString())) {
                         result = new AssignmentResult(false, "Invalid union switch value");
                         curEditor.setBackground(errorColor);
                     } else {
@@ -559,8 +571,8 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         String result;
         
         if("c_char".equals(typeName)){//TODO: Java char is superset of IDL char
-            if(text.length() != 1){
-                throw new NumberFormatException("Length of char must be 1.");
+            if(text.length() != 1 && !text.matches("\\\\[0-3][0-7][0-7]")){
+                throw new NumberFormatException("Char must be of length 1, or an octal char code \\###.");
             }
             result = text;
         }
@@ -603,16 +615,15 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
             if(text.length() > 20){
                 throw new NumberFormatException("Invalid unsigned long long.");
             }
-            else{
-                for(int i=0; i<text.length(); i++){
-                    temp = text.charAt(i);
-                    if(temp < '0' || temp > '9'){
-                        throw new NumberFormatException("Invalid unsigned long long.");
-                    }
+            for (int i = 0; i < text.length(); i++) {
+                temp = text.charAt(i);
+                if (temp < '0' || temp > '9') {
+                    throw new NumberFormatException(
+                            "Invalid unsigned long long.");
                 }
-                long test = Long.parseLong(text);
-                result = Long.toString(test);
             }
+            long test = Long.parseLong(text);
+            result = Long.toString(test);
         }
         else if("c_float".equals(typeName)){
             float test = Float.parseFloat(text);
@@ -676,7 +687,8 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                 }
             } else if(e.getSource() instanceof JComboBox){
                 if(curUnion != null){
-                    if(!curUnion.labelExists((String)((JComboBox)e.getSource()).getSelectedItem())){
+                    if (!curUnion.labelExists((String) ((JComboBox) e
+                            .getSource()).getSelectedItem())) {
                         curEditor.setBackground(errorColor);
                         
                         if(status != null){

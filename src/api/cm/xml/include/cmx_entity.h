@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**@file api/cm/xml/include/cmx_entity.h
@@ -57,6 +65,7 @@
 #define CMX_ENTITY_H
 
 #include "c_typebase.h"
+#include "c_iterator.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -191,6 +200,21 @@ OS_API c_char*         cmx_entityStatistics            (const c_char* entity);
  *         statistics.
  */
 OS_API c_char*         cmx_entitiesStatistics            (const c_char* entities);
+
+/**
+ * @brief Resolves the hierarchical entity path from the specified entity
+ * to the entity denoted by the childIndex and childSerial.
+ *
+ *
+ * @param entity The XML representation of the entity used as root node to
+ *          find the entity path to the entity with childIndex.
+ * @param childIndex The index of the child used to find (coupled with the childSerial)
+ *          in the directly/indirectly owned entities of the supplied entity
+ * @param childSerial The serial of the child
+ * @return The xml serialized entities in order from top to bottom or empty
+ *         list if and entity denoted by childIndex and childSerial has not been found
+ */
+OS_API c_char*         cmx_entityGetEntityTree            (const c_char* entity, const c_char* childIndex, const c_char* childSerial);
 
 /**
  * @brief Resets (a part of) the statistics of the supplied entity.

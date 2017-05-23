@@ -8,6 +8,7 @@ set SLEEP2=@C:\WINDOWS\system32\ping.exe -n 2 localhost
 set SLEEP4=@C:\WINDOWS\system32\ping.exe -n 4 localhost
 set SLEEP5=@C:\WINDOWS\system32\ping.exe -n 5 localhost
 set SLEEP10=@C:\WINDOWS\system32\ping.exe -n 10 localhost
+set SLEEP15=@C:\WINDOWS\system32\ping.exe -n 15 localhost
 set SLEEP30=@C:\WINDOWS\system32\ping.exe -n 30 localhost
 
 ECHO Set required environment variables
@@ -66,7 +67,7 @@ FOR %%e in (%EXAMPLES%) DO (
    SET EXAMPLE=%%e
    ECHO #####  %%e  #####
    echo Changing directory to %OSPL_HOME%/examples/%%e
-   cd "%OSPL_HOME%/examples/%%e" 
+   cd "%OSPL_HOME%/examples/%%e"
    ECHO Starting %%e >> %LOGFILE%
    %SLEEP4% >NUL
    call RUN.bat
@@ -86,8 +87,8 @@ echo Changing directory to %LOGDIR%\examples\run_%EXRUNTYPE%
 cd %LOGDIR%\examples\run_%EXRUNTYPE%
 
 echo Examples run = %SUM% > %TOTALS_LOG%
-echo Examples passed = %PASS% >> %TOTALS_LOG%
-echo Examples failed = %FAILURES% >> %TOTALS_LOG%
+echo Examples Passed = %PASS% >> %TOTALS_LOG%
+echo Examples Failed = %FAILURES% >> %TOTALS_LOG%
 
 if NOT %FAILURES% EQU 0 EXIT 1
 EXIT 0

@@ -1,0 +1,136 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Known Issues &mdash; Vortex OpenSplice Record and Replay API Reference</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Vortex OpenSplice Record and Replay API Reference" href="index.html" />
+    <link rel="next" title="6. Impact on DDS Domain" href="impact.html" />
+    <link rel="prev" title="4. Topic API Overview" href="topic-api-overview.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="impact.html" title="6. Impact on DDS Domain"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="topic-api-overview.html" title="4. Topic API Overview"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="known-issues">
+<span id="id1"></span><h1>5. Known Issues<a class="headerlink" href="#known-issues" title="Permalink to this headline">¶</a></h1>
+<p><em>This section summarizes known issues and limitations of the
+current release of the Record and Replay Service. Please see the</em>
+Release Notes <em>supplied with the product for additional information.</em></p>
+<div class="section" id="ability-to-create-topics">
+<h2>5.1. Ability to create topics<a class="headerlink" href="#ability-to-create-topics" title="Permalink to this headline">¶</a></h2>
+<p>The service does not yet have the ability to implicitly create topics
+for the data it replays. To bypass this limitation, the <tt class="docutils literal"><span class="pre">DCPSTopic</span></tt>
+built-in topic can be included in the recording (and replaying) of data.</p>
+<p>The following interest-expression should be used:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">__BUILT-IN</span> <span class="pre">PARTITION__.DCPSTopic</span></tt></div></blockquote>
+<p>To ensure that a topic is re-created at replay before any data belonging
+to that topic gets replayed, the <tt class="docutils literal"><span class="pre">DCPSTopic</span></tt> expression should be the
+<em>first</em> interest-expression that is added to a particular storage using
+the add record/replay commands.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Known Issues</a><ul>
+<li><a class="reference internal" href="#ability-to-create-topics">5.1. Ability to create topics</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="topic-api-overview.html"
+                        title="previous chapter">4. Topic API Overview</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="impact.html"
+                        title="next chapter">6. Impact on DDS Domain</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/issues.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="impact.html" title="6. Impact on DDS Domain"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="topic-api-overview.html" title="4. Topic API Overview"
+             >previous</a> |</li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

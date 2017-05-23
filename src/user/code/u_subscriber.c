@@ -1,496 +1,315 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
-#include "u__types.h"
-#include "u__entity.h"
-#include "u__dataReader.h"
+#include "u_subscriber.h"
+#include "u_dataReader.h"
 #include "u_networkReader.h"
-#include "u__dataView.h"
 #include "u_groupQueue.h"
-#include "u__subscriber.h"
+#include "u_dataView.h"
+#include "u__types.h"
+#include "u__user.h"
+#include "u__object.h"
+#include "u__observable.h"
+#include "u__entity.h"
 #include "u__participant.h"
-#include "u_user.h"
 #include "v_participant.h"
 #include "v_subscriber.h"
-#include "u__dispatcher.h"
 #include "v_group.h"
 #include "os_report.h"
 
+#define u_subscriberReadClaim(_this, sub, claim) \
+        u_observableReadClaim(u_observable(_this), (v_public *)(sub), claim)
+
+#define u_subscriberWriteClaim(_this, sub, claim) \
+        u_observableWriteClaim(u_observable(_this), (v_public *)(sub), claim)
+
+#define u_subscriberRelease(_this, claim) \
+        u_observableRelease(u_observable(_this), claim)
+
+static u_result
+u__subscriberDeinitW(
+    void *_this)
+{
+    return u__entityDeinitW(_this);
+}
+
+static void
+u__subscriberFreeW(
+    void *_this)
+{
+    u__entityFreeW(_this);
+}
+
+static u_result
+u_subscriberInit(
+    u_subscriber _this,
+    v_subscriber ks,
+    const u_participant participant)
+{
+    assert(_this);
+    return u_entityInit(u_entity(_this), v_entity(ks), u_observableDomain(u_observable(participant)));
+}
+
 u_subscriber
 u_subscriberNew(
-    u_participant p,
-    const c_char *name,
-    v_subscriberQos qos,
-    c_bool enable)
+    const u_participant participant,
+    const os_char *name,
+    const u_subscriberQos qos,
+    u_bool enable)
 {
     u_subscriber _this = NULL;
     v_subscriber ks;
     v_participant kp = NULL;
     u_result result;
 
+    assert(participant);
+
     if (name == NULL) {
         name = "No name specified";
     }
-    if (p != NULL) {
-        result = u_entityWriteClaim(u_entity(p),(v_entity*)(&kp));
-        if (result == U_RESULT_OK) {
-            assert(kp);
-            ks = v_subscriberNew(kp,name,qos,enable);
-            if (ks != NULL) {
-                _this = u_entityAlloc(p,u_subscriber,ks,TRUE);
-                if (_this != NULL) {
-                    result = u_subscriberInit(_this,p);
-                    if (result != U_RESULT_OK) {
-                        OS_REPORT_1(OS_ERROR, "u_subscriberNew", 0,
-                                    "Initialisation failed. "
-                                    "For DataReader: <%s>.", name);
-                        (void)u_subscriberFree(_this);
-                        _this = NULL;
-                    }
-                } else {
-                    OS_REPORT_1(OS_ERROR, "u_subscriberNew", 0,
-                                "Create user proxy failed. "
-                                "For Subscriber: <%s>.", name);
+
+    result = u_observableWriteClaim(u_observable(participant),(v_public*)(&kp), C_MM_RESERVATION_LOW);
+    if (result == U_RESULT_OK) {
+        assert(kp);
+        ks = v_subscriberNew(kp, name, qos, enable);
+        if (ks != NULL) {
+            _this = u_objectAlloc(sizeof(*_this), U_SUBSCRIBER, u__subscriberDeinitW, u__subscriberFreeW);
+            if (_this != NULL) {
+                result = u_subscriberInit(_this, ks, participant);
+                if (result != U_RESULT_OK) {
+                    OS_REPORT(OS_ERROR, "u_subscriberNew", result,
+                                "Initialisation failed. "
+                                "For DataReader: <%s>.", name);
+                    u_objectFree (u_object (_this));
+                    _this = NULL;
                 }
-                c_free(ks);
             } else {
-                OS_REPORT_1(OS_ERROR, "u_subscriberNew", 0,
-                            "Create kernel entity failed. "
+                OS_REPORT(OS_ERROR, "u_subscriberNew", result,
+                            "Create user proxy failed. "
                             "For Subscriber: <%s>.", name);
             }
-            result = u_entityRelease(u_entity(p));
-            if (result != U_RESULT_OK) {
-                OS_REPORT_1(OS_WARNING, "u_subscriberNew", 0,
-                            "Could not release participant."
-                            "However subscriber <%s> is created.", name);
-            }
+            c_free(ks);
         } else {
-            OS_REPORT_1(OS_WARNING, "u_subscriberNew", 0,
-                        "Claim Participant failed. "
+            OS_REPORT(OS_ERROR, "u_subscriberNew", U_RESULT_OUT_OF_MEMORY,
+                        "Create kernel entity failed. "
                         "For Subscriber: <%s>.", name);
         }
+        u_observableRelease(u_observable(participant), C_MM_RESERVATION_LOW);
+        if (result != U_RESULT_OK) {
+            OS_REPORT(OS_WARNING, "u_subscriberNew", result,
+                        "Could not release participant."
+                        "However subscriber <%s> is created.", name);
+        }
     } else {
-        OS_REPORT_1(OS_ERROR,"u_subscriberNew",0,
-                    "No Participant specified. "
-                    "For Subscriber: <%s>", name);
+        OS_REPORT(OS_WARNING, "u_subscriberNew", result,
+                    "Claim Participant failed. "
+                    "For Subscriber: <%s>.", name);
     }
     return _this;
 }
 
 u_result
-u_subscriberInit(
-    u_subscriber _this,
-    u_participant p)
+u_subscriberGetQos (
+    const u_subscriber _this,
+    u_subscriberQos *qos)
 {
     u_result result;
+    v_subscriber vSubscriber;
+    v_subscriberQos vQos;
 
-    if (_this != NULL) {
-        result = u_dispatcherInit(u_dispatcher(_this));
-        if (result == U_RESULT_OK) {
-            _this->readers = NULL;
-            _this->participant = p;
-            result = u_participantAddSubscriber(p,_this);
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,
-                    "u_subscriberInit",0,
-                    "Illegal parameter: _this = 0x%x, participant = 0x%x.",
-                    _this,p);
-        result = U_RESULT_ILL_PARAM;
+    assert(_this);
+
+    result = u_subscriberReadClaim(_this, &vSubscriber, C_MM_RESERVATION_ZERO);
+    if (result == U_RESULT_OK) {
+        vQos = v_subscriberGetQos(vSubscriber);
+        *qos = u_subscriberQosNew(vQos);
+        c_free(vQos);
+        u_subscriberRelease(_this, C_MM_RESERVATION_ZERO);
     }
     return result;
 }
 
 u_result
-u_subscriberFree(
-    u_subscriber _this)
+u_subscriberSetQos (
+    const u_subscriber _this,
+    const u_subscriberQos qos)
 {
     u_result result;
-    c_bool destroy;
+    v_subscriber vSubscriber;
 
-    result = u_entityLock(u_entity(_this));
+    assert(_this);
+    assert(qos);
+
+    result = u_subscriberReadClaim(_this, &vSubscriber, C_MM_RESERVATION_LOW);
     if (result == U_RESULT_OK) {
-        destroy = u_entityDereference(u_entity(_this));
-        /* if refCount becomes zero then this call
-         * returns true and destruction can take place
-         */
-        if (destroy) {
-            if (u_entityOwner(u_entity(_this))) {
-                result = u_subscriberDeinit(_this);
-            } else {
-                /* This user entity is a proxy, meaning that it is not fully
-                 * initialized, therefore only the entity part of the object
-                 * can be deinitialized.
-                 * It would be better to either introduce a separate proxy
-                 * entity for clarity or fully initialize entities and make
-                 * them robust against missing information.
-                 */
-                result = u_entityDeinit(u_entity(_this));
-            }
-            if (result == U_RESULT_OK) {
-                u_entityDealloc(u_entity(_this));
-            } else {
-                OS_REPORT_2(OS_WARNING,
-                            "u_subscriberFree",0,
-                            "Operation u_subscriberDeinit failed: "
-                            "Subscriber = 0x%x, result = %s.",
-                            _this, u_resultImage(result));
-                u_entityUnlock(u_entity(_this));
-            }
-        } else {
-            u_entityUnlock(u_entity(_this));
-        }
-    } else {
-        OS_REPORT_2(OS_WARNING,
-                    "u_subscriberFree",0,
-                    "Operation u_entityLock failed: "
-                    "Subscriber = 0x%x, result = %s.",
-                    _this, u_resultImage(result));
+        result = u_resultFromKernel(v_subscriberSetQos(vSubscriber, qos));
+        u_subscriberRelease(_this, C_MM_RESERVATION_LOW);
     }
     return result;
 }
 
 u_result
-u_subscriberDeleteContainedEntities (
-    u_subscriber _this)
+u_subscriberBeginAccess(
+    const u_subscriber _this)
 {
     u_result result;
-    u_reader reader;
-    c_iter list;
+    v_subscriber vSubscriber;
 
-    if (_this != NULL) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            list = _this->readers;
-            _this->readers = NULL;
-            /* Unlock here because following code will take this lock. */
-            u_entityUnlock(u_entity(_this));
-            reader = c_iterTakeFirst(list);
-            while (reader) {
-                switch (u_entityKind(u_entity(reader))) {
-                case U_READER:
-                    result = u_dataReaderDeleteContainedEntities(u_dataReader(reader));
-                    result = u_dataReaderFree(u_dataReader(reader));
-                break;
-                case U_GROUPQUEUE:
-                    result = u_groupQueueFree(u_groupQueue(reader));
-                break;
-                case U_DATAVIEW:
-                    result = u_dataViewFree(u_dataView(reader));
-                break;
-                case U_NETWORKREADER:
-                    result = u_networkReaderFree(u_networkReader(reader));
-                break;
-                default:
-                    OS_REPORT_2(OS_WARNING,
-                                "u_subscriberDeleteContainedEntities",0,
-                                "invalid object type: "
-                                "For Subscriber = 0x%x, found Reader type = %s.",
-                                _this, u_kindImage(u_entityKind(u_entity(reader))));
-                    assert(0);
-                break;
-                }
-                u_entityDereference(u_entity(_this));
-                reader = c_iterTakeFirst(list);
-            }
-            c_iterFree(list);
-        } else {
-            OS_REPORT_2(OS_WARNING,
-                        "u_subscriberDeleteContainedEntities",0,
-                        "Operation u_entityLock failed: "
-                        "Subscriber = 0x%x, result = %s.",
-                        _this, u_resultImage(result));
-        }
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_subscriberDeleteContainedEntities",0,
-                  "Invalid Subscriber <NULL>.");
-        result = U_RESULT_ILL_PARAM;
+    assert(_this);
+    result = u_subscriberReadClaim(_this, &vSubscriber, C_MM_RESERVATION_LOW);
+    if (result == U_RESULT_OK) {
+        result = v_subscriberBeginAccess(vSubscriber);
+        u_subscriberRelease(_this, C_MM_RESERVATION_LOW);
     }
     return result;
 }
 
 u_result
-u_subscriberDeinit(
-    u_subscriber _this)
+u_subscriberEndAccess(
+    const u_subscriber _this)
 {
     u_result result;
-    u_dataReader reader;
-    c_iter list;
+    v_subscriber vSubscriber;
 
-    if (_this != NULL) {
-        result = u_participantRemoveSubscriber(_this->participant,_this);
-        if (result == U_RESULT_OK) {
-            _this->participant = NULL;
-            if (_this->readers) {
-                list = _this->readers;
-                _this->readers = NULL;
-                u_entityUnlock(u_entity(_this));
-                reader = c_iterTakeFirst(list);
-                while (reader) {
-                    /* Readers should not exist at this point!
-                     * This loop corrects this erronous state.
-                     */
-                    result = u_dataReaderFree(reader);
-                    u_entityDereference(u_entity(_this));
-                    reader = c_iterTakeFirst(list);
-                }
-                c_iterFree(list);
-                result = u_entityLock(u_entity(_this));
-            }
-            result = u_dispatcherDeinit(u_dispatcher(_this));
-        }
-    } else {
-        OS_REPORT_1(OS_ERROR,
-                    "u_subscriberDeinit",0,
-                    "Illegal parameter: _this = 0x%x.",
-                    _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_subscriberSubscribe(
-    u_subscriber _this,
-    const c_char *partitionExpr)
-{
-    v_subscriber ks = NULL;
-    u_result result;
-
-    result= u_entityWriteClaim(u_entity(_this),(v_entity*)(&ks));
+    assert(_this);
+    result = u_subscriberReadClaim(_this, &vSubscriber, C_MM_RESERVATION_LOW);
     if (result == U_RESULT_OK) {
-        assert(ks);
-        v_subscriberSubscribe(ks,partitionExpr);
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING, "u_subscriberSubscribe", 0,
-                  "Could not claim subscriber.");
-    }
-    return result;
-}
-
-u_result
-u_subscriberUnSubscribe(
-    u_subscriber _this,
-    const c_char *partitionExpr)
-{
-    v_subscriber ks = NULL;
-    u_result result;
-
-    result= u_entityReadClaim(u_entity(_this),(v_entity*)(&ks));
-    if (result == U_RESULT_OK) {
-        assert(ks);
-        v_subscriberUnSubscribe(ks,partitionExpr);
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING, "u_subscriberUnSubscribe", 0,
-                  "Could not claim subscriber.");
-    }
-    return result;
-}
-
-u_result
-u_subscriberAddReader(
-    u_subscriber _this,
-    u_reader reader)
-{
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        _this->readers = c_iterInsert(_this->readers, reader);
-        u_entityKeep(u_entity(_this));
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_subscriberAddReader",0,
-                  "Failed to lock Subscriber.");
-    }
-    return result;
-}
-
-u_result
-u_subscriberRemoveReader(
-    u_subscriber _this,
-    u_reader reader)
-{
-    u_reader found;
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        found = c_iterTake(_this->readers,reader);
-        if (found) {
-            u_entityDereference(u_entity(_this));
-        }
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_subscriberRemoveReader",0,
-                  "Failed to lock Subscriber.");
-    }
-    return result;
-}
-
-c_bool
-u_subscriberContainsReader(
-    u_subscriber _this,
-    u_reader reader)
-{
-    c_bool found = FALSE;
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        found = c_iterContains(_this->readers,reader);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_subscriberContainsReader",0,
-                  "Failed to lock Subscriber.");
-    }
-    return found;
-}
-
-c_long
-u_subscriberReaderCount(
-    u_subscriber _this)
-{
-    c_long length = -1;
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        length = c_iterLength(_this->readers);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_subscriberRemoveReader",0,
-                  "Failed to lock Subscriber.");
-    }
-    return length;
-}
-
-struct collect_readers_arg {
-    const c_char *topic_name;
-    c_iter readers;
-};
-
-static void
-collect_readers(
-    c_voidp object,
-    c_voidp arg)
-{
-    struct collect_readers_arg *a = (struct collect_readers_arg *)arg;
-    u_reader r = (u_reader)object;
-    c_char *name;
-
-    if (a->topic_name == NULL) {
-        a->readers = c_iterInsert(a->readers, r);
-    } else {
-        name = NULL;
-        u_dataReaderTopicName(u_dataReader(r),&name);
-        if (name) {
-            if (strcmp(name, a->topic_name) == 0)
-            {
-                /* Expect to have a u_entityKeep(r); at this point as
-                 * soon as GAPI redesign is finished.
-                */
-                a->readers = c_iterInsert(a->readers, r);
-            }
-            os_free(name);
-        }
-    }
-}
-
-c_iter
-u_subscriberLookupReaders(
-    u_subscriber _this,
-    const c_char *topic_name)
-{
-    struct collect_readers_arg arg;
-    u_result result;
-
-    /* topic_name == NULL is treated as wildcard '*' */
-    arg.topic_name = topic_name;
-    arg.readers = NULL;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        c_iterWalk(_this->readers, collect_readers, &arg);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_subscriberLookupReaders",0,
-                  "Failed to lock Subscriber.");
-    }
-    return arg.readers;
-}
-
-u_result
-u_subscriberWalkReaders(
-    u_subscriber _this,
-    u_readerAction action,
-    c_voidp actionArg)
-{
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        c_iterWalkUntil(_this->readers, (c_iterAction)action, actionArg);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_subscriberWalkReaders",0,
-                  "Failed to lock Subscriber.");
+        result = v_subscriberEndAccess(vSubscriber);
+        u_subscriberRelease(_this, C_MM_RESERVATION_LOW);
     }
     return result;
 }
 
 u_dataReader
 u_subscriberCreateDataReader (
-    u_subscriber _this,
-    const c_char *name,
-    const c_char *expression,
-    c_value params[],
-    v_readerQos qos,
-    c_bool enable)
+    const u_subscriber _this,
+    const os_char *name,
+    const os_char *expression,
+    const c_value params[],
+    const u_readerQos qos,
+    u_bool enable)
 {
-    u_dataReader reader;
-    q_expr expr;
-
-    if (_this) {
-        if (expression) {
-            expr = q_parse(expression);
-            if (!expr) {
-                OS_REPORT_1(OS_WARNING,
-                            "u_subscriberCreateDataReader",0,
-                            "Invalid filter expression: '%s'.",
-                            expression);
-            }
-        } else {
-            expr = NULL;
-        }
-        reader = u_dataReaderNew(_this, name, expr, params, qos, enable);
-        if (expr) {
-            q_dispose(expr);
-        }
-    } else {
-        reader = NULL;
-        OS_REPORT(OS_WARNING,
-                  "u_subscriberCreateDataReader",0,
-                  "Bad parameter: Subscriber = NULL.");
-    }
-    return reader;
+    assert(_this);
+    return u_dataReaderNew(_this, name, expression, params, qos, enable);
 }
 
+static c_bool
+getDataReadersAction (
+    v_dataReader reader,
+    c_voidp arg)
+{
+    u_dataReader r;
+    c_iter list = (c_iter)arg;
+
+    assert(reader);
+    assert(list);
+
+    r = u_dataReader(v_entityGetUserData(v_entity(reader)));
+    c_iterAppend(list, r);
+
+    return TRUE;
+}
+
+u_result
+u_subscriberGetDataReaders (
+    const u_subscriber _this,
+    u_sampleMask mask,
+    c_iter *readers)
+{
+    u_result result;
+    v_subscriber subscriber;
+    c_iter list;
+
+    assert(_this);
+    assert(readers);
+
+    result = u_subscriberReadClaim(_this, &subscriber, C_MM_RESERVATION_ZERO);
+    if (result == U_RESULT_OK) {
+        list = c_iterNew(NULL);
+        result = u_resultFromKernel(v_subscriberGetDataReaders(subscriber, mask, getDataReadersAction, list));
+        if (result != U_RESULT_OK) {
+            c_iterFree(list);
+            list = NULL;
+        }
+        *readers = list;
+        u_subscriberRelease(_this, C_MM_RESERVATION_ZERO);
+    }
+
+    return result;
+}
+
+typedef struct createDataReadersActionArg {
+    c_iter list;
+    u_domain domain;
+} *createDataReadersActionArg;
+
+static c_bool
+createDataReadersAction (
+    v_dataReader reader,
+    c_voidp arg)
+{
+    u_observable o;
+    createDataReadersActionArg a = (createDataReadersActionArg)arg;
+    u_result result;
+
+    assert(reader);
+    assert(arg);
+
+    o = u_objectAlloc(sizeof(struct u_reader_s), U_READER, u__observableProxyDeinitW, u__observableProxyFreeW);
+    if (o) {
+        result = u_observableInit(o, v_public(reader), a->domain);
+        if (result != U_RESULT_OK) {
+            u_objectFree(o);
+            o = NULL;
+        }
+    }
+    c_iterAppend(a->list, o);
+
+    return TRUE;
+}
+
+u_result
+u_subscriberGetDataReaderProxies (
+    const u_subscriber _this,
+    u_sampleMask mask,
+    c_iter *readers)
+{
+    u_result result;
+    v_subscriber subscriber;
+    struct createDataReadersActionArg arg;
+
+    assert(_this);
+    assert(readers);
+
+    result = u_subscriberReadClaim(_this, &subscriber, C_MM_RESERVATION_ZERO);
+    if (result == U_RESULT_OK) {
+        arg.list = c_iterNew(NULL);
+        arg.domain = u_observableDomain(u_observable(_this));
+        result = u_resultFromKernel(v_subscriberGetDataReaders(subscriber, mask, createDataReadersAction, &arg));
+        if (result != U_RESULT_OK) {
+            c_iterFree(arg.list);
+            arg.list = NULL;
+        }
+        *readers = arg.list;
+        u_subscriberRelease(_this, C_MM_RESERVATION_ZERO);
+    }
+
+    return result;
+}

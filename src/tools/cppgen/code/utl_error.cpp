@@ -183,6 +183,9 @@ error_string(UTL_Error::ErrorCode c)
          case UTL_Error::EIDL_ILLEGAL_ID:
          return GTDEVEL("identifier differs from IDL keyword only in case: ");
 
+         case UTL_Error::EIDL_WIDE_TYPE:
+         return GTDEVEL("unsupported wide type: ");
+
          default:
          return NULL;
    }

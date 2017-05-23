@@ -1,21 +1,21 @@
-// The OpenSplice DDS Community Edition project.
-//
-// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
-// Copyright (C) 2009  L-3 Communications / IS
-// 
-//  This library is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License Version 3 dated 29 June 2007, as published by the
-//  Free Software Foundation.
-// 
-//  This library is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-// 
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
 // Csharp backend
 // PTF C# mapping for IDL
 // File /Users/Jcm/Documents/Ecllipse_WS/CSharpDDS/generated/dds_dcps.cs
@@ -31,120 +31,163 @@ namespace DDS
     // Conditions
     // ----------------------------------------------------------------------
     /// <summary>
-    /// Base class for all Conditions that maybe attached to a WaitSet.
+    /// Base class for all Conditions that maybe attached to an IWaitSet.
     /// </summary>
     /// <remarks>
-    /// This class is the base class for all the conditions that may be attached to a WaitSet.
+    /// This class is the base class for all the conditions that may be attached to an IWaitSet.
     /// This base class is specialized in three classes by the Data Distribution Service:
-    /// GuardCondition, StatusCondition and ReadCondition (also there is a
-    /// QueryCondition which is a specialized ReadCondition).
-    /// Each Condition has a trigger_value that can be TRUE or FALSE and is set by
-    /// the Data Distribution Service (except a GuardCondition) depending on the
+    /// IGuardCondition, IStatusCondition and IReadCondition (also there is a
+    /// IQueryCondition which is a specialized IReadCondition).
+    /// Each Condition has a TriggerValue that can be true or false and is set by
+    /// the Data Distribution Service (except an IGuardCondition) depending on the
     /// evaluation of the Condition.
+    /// @see @ref DCPS_Modules_Infrastructure_Waitset
     /// </remarks>
     public interface ICondition
     {
         /// <summary>
-        /// Each Condition has a trigger_value that can be TRUE or FALSE and is set
-        /// by the DDS depending on the evaluation of the Condition.
+        /// Each ICondition has a TriggerValue that can be true or false and is set
+        /// by the DDS depending on the evaluation of the ICondition.
         /// </summary>
-        /// <returns>the trigger_value (true|false)</returns>
+        /// <returns>The TriggerValue (true|false)</returns>
         bool GetTriggerValue();
     }
 
     /// <summary>
-    /// A WaitSet object allows an application to wait until one or more of the attached 
-    /// Condition objects evaluates to TRUE or until the timeout expires. 
-    /// The WaitSet has no factory and must be created by the application. It is directly 
-    /// created as an object by using WaitSet constructors.
+    /// An IWaitSet object allows an application to wait until one or more of the attached
+    /// ICondition objects evaluates to true or until the timeout expires.
     /// </summary>
+    /// <remarks>
+    /// The IWaitSet has no factory and must be created by the application. It is directly
+    /// created as an object by using the WaitSet constructor.
+    /// @see @ref DCPS_Modules_Infrastructure_Waitset
+    ///
+    /// <code>
+    /// /* Simplified example of the use of an WaitSet
+    ///  * Defaults are used and possible errors are ignored. */
+    ///
+    /// /* Prepare Domain. */
+    /// DDS.DomainParticipantFactory factory = DDS.DomainParticipantFactory.Instance;
+    /// DDS.IDomainParticipant participant = factory.CreateParticipant(DDS.DomainId.Default);
+    ///
+    /// /* Create waitset */
+    /// IWaitSet waitset = new WaitSet();
+    ///
+    /// /* Add topic data type to the system. */
+    /// DDS.ITypeSupport typesupport = new Space.FooTypeSupport();
+    /// DDS.ReturnCode retcode = typesupport.RegisterType(participant, "Space.Foo");
+    ///
+    /// DDS.ITopic topic = participant.CreateTopic("SpaceFooTopic", "Space.Foo");
+    ///
+    /// /* Create typed datareader. */
+    /// DDS.ISubscriber subscriber = participant.CreateSubscriber();
+    /// Space.FooDataReader reader = (Space.FooDataReader)publisher.CreateDataReader(topic);
+    ///
+    /// /* Create querycondition */
+    /// string[] params = new string[1];
+    /// params[0] = "1";
+    /// IQueryCondition condition = reader.CreateQueryCondition("field = %0", params);
+    ///
+    /// /* Attach condition to waitset */
+    /// retcode = waitset.AttachCondition(condition);
+    ///
+    /// /* Wait for the condition to be triggered or a timeout occurs */
+    /// Space.Foo[] samples = null;
+    /// DDS.SampleInfo[] infos = null;
+    ///
+    /// DDS.ICondition[] conditions = new DDS.ICondition[1];
+    ///
+    /// retcode = waitset.Wait(ref conditions, new DDS.Duration(3, 0));
+    /// if (retcode == DDS.ReturnCode.Ok) {
+    ///     retcode = reader.ReadWithCondition(ref samples, ref infos, DDS.Length.Unlimited, condition);
+    ///     ...
+    /// }
+    /// ...
+    /// </code>
+    /// </remarks>
     public interface IWaitSet
     {
         /// <summary>
-        /// This operation allows an application thread to wait for the occurrence of at least one 
-        /// of the conditions that is attached to the WaitSet.
+        /// This operation allows an application thread to wait for the occurrence of at least one
+        /// of the conditions that is attached to the IWaitSet.
         /// </summary>
-        /// <remarks>This operation allows an application thread to wait for the occurrence of at least one
-        /// of the conditions to evaluate to TRUE that is attached to the WaitSet. If all of the
-        /// conditions attached to the WaitSet have a trigger_value of FALSE, the wait
-        /// operation will block the calling thread. The result of the operation is the
-        /// continuation of the application thread after which the result is left in
-        /// activeConditions. This is a reference to a sequence, which will contain the list
-        /// of all the attached conditions that have a trigger_value of TRUE. The
-        /// activeConditions sequence and its buffer may be pre-allocated by the
-        /// application and therefore must either be re-used in a subsequent invocation of the
-        /// wait operation or be released by invoking its destructor either implicitly or
-        /// explicitly. If the pre-allocated sequence is not big enough to hold the number of
-        /// triggered Conditions, the sequence will automatically be (re-)allocated to fit the
-        /// required size. The parameter timeout specifies the maximum duration for the
-        /// wait to block the calling application thread (when none of the attached conditions
-        /// has a trigger_value of TRUE) . In that case the return value is
-        /// Timeout and the activeConditions sequence is left empty. Since it
-        /// is not allowed for more than one application thread to be waiting on the same
-        /// WaitSet, the operation returns immediately with the value
-        /// PreconditionNotMet when the wait operation is invoked on a
-        /// WaitSet which already has an application thread blocking on it.
+        /// <remarks>
+        /// <para>
+        /// This operation allows an application thread to wait for the occurrence of at least one
+        /// of the conditions to evaluate to true that is attached to the WaitSet. If all of the
+        /// conditions attached to the WaitSet have a TriggerValue of false, the wait operation will
+        /// block the calling thread. The result of the operation is the continuation of the application
+        /// thread after which the result is left in activeConditions. This is a reference to a sequence,
+        /// which will contain the list of all the attached conditions that have a TriggerValue of true.
+        /// </para><para>
+        /// The parameter timeout specifies the maximum duration for the wait to block the calling
+        /// application thread (when none of the attached conditions has a TriggerValue of true).
+        /// In that case the return value is Timeout and the activeConditions sequence is left empty.
+        /// Since it is not allowed for more than one application thread to be waiting on the same
+        /// WaitSet, the operation returns immediately with the value PreconditionNotMet when the wait
+        /// operation is invoked on a WaitSet which already has an application thread blocking on it.
+        /// </para>
         /// </remarks>
-        /// <param name="activeConditions">a sequence which is used to pass the list of all the attached 
-        /// conditions that have a trigger_value of true.</param>
-        /// <param name="timeout">the maximum duration to block for the wait, after which the application thread 
-        /// is unblocked. The special constant Infinite can be used when the maximum waiting time does not 
+        /// <param name="activeConditions">A sequence which is used to pass the list of all the attached
+        /// conditions that have a TriggerValue of true.</param>
+        /// <param name="timeout">The maximum duration to block for the wait, after which the application thread
+        /// is unblocked. The special constant Infinite can be used when the maximum waiting time does not
         /// need to be bounded.</param>
-        /// <returns>Possible return codes for the operation are: 
+        /// <returns>Possible return codes for the operation are:
         /// <list type="bullet">
-        /// <item>Ok - at least one of the attached conditions has a trigger_value of TRUE.</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of 
+        /// <item>DDS.ReturnCode Ok - At least one of the attached conditions has a TriggerValue of true.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The Data Distribution Service ran out of
         /// resources to complete this operation.</item>
-        /// <item>Timeout - the timeout has elapsed without any of the attached conditions
-        /// becoming TRUE.</item>
-        /// <item>PreconditionNotMet - the WaitSet already has an application 
+        /// <item>DDS.ReturnCode Timeout - The timeout has elapsed without any of the attached conditions
+        /// becoming true.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - the WaitSet already has an application
         /// thread blocking on it.</item>
-        /// </list> 
+        /// </list>
         /// </returns>
         ReturnCode Wait(ref ICondition[] activeConditions, Duration timeout);
         /// <summary>
         /// This operation attaches a condition to the WaitSet.
         /// </summary>
         /// <remarks>
-        /// This operation attaches a Condition to the WaitSet. The parameter cond must be
-        /// either a ReadCondition, QueryCondition, StatusCondition or GuardCondition. 
+        /// This operation attaches an ICondition to the WaitSet. The parameter condition must be
+        /// either an IReadCondition, IQueryCondition, IStatusCondition or IGuardCondition.
         /// To get this parameter see:
         /// <list type="bullet">
-        /// <item>ReadCondition created by create_readcondition.</item>
-        /// <item>QueryCondition created by create_querycondition.</item>
-        /// <item>StatusCondition retrieved by get_statuscondition on an Entity.</item>
-        /// <item>GuardCondition created by the C# operation new.</item>
+        /// <item>IReadCondition created by IDataReader.CreateReadCondition.</item>
+        /// <item>IQueryCondition created by IDataReader.CreateQueryCondition.</item>
+        /// <item>IStatusCondition retrieved by IEntity.StatusCondition on an IEntity.</item>
+        /// <item>IGuardCondition created by the C# operation new.</item>
         /// </list>
-        /// When a GuardCondition is initially created, the trigger_value is FALSE.
-        /// When a Condition, whose trigger_value evaluates to TRUE, is attached to a
-        /// WaitSet that is currently being waited on (using the wait operation), the WaitSet
+        /// When an IGuardCondition is initially created, the TriggerValue is false.
+        /// When an ICondition, whose TriggerValue evaluates to true, is attached to an
+        /// IWaitSet that is currently being waited on (using the Wait operation), the IWaitSet
         /// will unblock immediately.
         /// </remarks>
-        /// <param name="condition">The condition to be attached to the WaitSet. 
-        /// The parameter must be either a ReadCondition, QueryCondition, StatusCondition or GuardCondition</param>
+        /// <param name="condition">The condition to be attached to the IWaitSet.
+        /// The parameter must be either an IReadCondition, IQueryCondition, IStatusCondition or IGuardCondition</param>
         /// <returns>Possible return codes are:
         /// <list type="bullet">
-        /// <item>Ok - the Condition is attached to the WaitSet.</item>
-        /// <item>Error - an internal error has occured.</item>
-        /// <item>BadParameter - the parameter condition is not a valid ICondition.</item>
-        /// <item>OutOfResources - the DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The Condition is attached to the IWaitSet.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter condition is not a valid ICondition.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode AttachCondition(ICondition condition);
-        /// <summary>This operation detaches a Condition from the WaitSet.</summary>
+        /// <summary>
+        /// This operation detaches an ICondition from the IWaitSet.</summary>
         /// <remarks>
-        /// This operation detaches a Condition from the WaitSet. If the Condition was
-        /// not attached to this WaitSet, the operation returns PreconditionNotMet.
+        /// If the ICondition was not attached to this IWaitSet, the operation returns PreconditionNotMet.
         /// </remarks>
-        /// <param name="condition">The attached condition in the WaitSet which is to be detached.</param>
-        /// <returns>Possible return codes are: 
+        /// <param name="condition">The attached condition in the IWaitSet which is to be detached.</param>
+        /// <returns>Possible return codes are:
         /// <list type="bullet">
-        /// <item>Ok - the Condition is detached from the WaitSet.</item>
-        /// <item>Error - an internal error has occured.</item>
-        /// <item>BadParameter - the parameter condition is not a valid ICondition.</item>
-        /// <item>OutOfResources - the DDS ran out of resources to complete this operation.</item>
-        /// <item>PreconditionNotMet - the Condition was not attached to this WaitSet.</item>
+        /// <item>DDS.ReturnCode Ok - The ICondition is detached from the IWaitSet.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter condition is not a valid ICondition.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - The ICondition was not attached to this IWaitSet.</item>
         /// </list>
         /// </returns>
         ReturnCode DetachCondition(ICondition condition);
@@ -152,270 +195,436 @@ namespace DDS
         /// This operation retrieves the list of attached conditions.
         /// </summary>
         /// <remarks>
-        /// This operation retrieves the list of attached conditions in the WaitSet. The
-        /// parameter attached_conditions is a reference to a sequence which afterwards
-        /// will refer to the sequence of attached conditions. The attached_conditions
-        /// sequence and its buffer may be pre-allocated by the application and therefore must
-        /// either be re-used in a subsequent invocation of the get_conditions operation or
-        /// be released by invoking its destructor either implicitly or explicitly. If the
-        /// pre-allocated sequence is not big enough to hold the number of triggered
-        /// Conditions, the sequence will automatically be (re-)allocated to fit the required
-        /// size. The resulting sequence will either be an empty sequence, meaning there were
-        /// no conditions attached, or will contain a list of ReadCondition,
-        /// QueryCondition, StatusCondition and GuardCondition. These conditions
-        /// previously have been attached by attach_condition and were created by there
+        /// This operation retrieves the list of attached conditions in the IWaitSet. The
+        /// parameter attachedConditions is a reference to a sequence which afterwards
+        /// will refer to the sequence of attached conditions.
+        /// The resulting sequence will either be an empty sequence, meaning there were
+        /// no conditions attached, or will contain a list of IReadCondition,
+        /// IQueryCondition, IStatusCondition and IGuardCondition. These conditions
+        /// previously have been attached by AttachCondition and were created by there
         /// respective create operation:
         /// <list type="bullet">
-        /// <item>ReadCondition created by create_readcondition.</item>
-        /// <item>QueryCondition created by create_querycondition.</item>
-        /// <item>StatusCondition retrieved by get_statuscondition on an Entity.</item>
-        /// <item>GuardCondition created by the C# operation new.</item>
+        /// <item>IReadCondition created by IDataReader.CreateReadCondition.</item>
+        /// <item>IQueryCondition created by IDataReader.CreateQueryCondition.</item>
+        /// <item>IStatusCondition retrieved by IEntity.StatusCondition on an IEntity.</item>
+        /// <item>IGuardCondition created by the C# operation new.</item>
         /// </list>
         /// </remarks>
         /// <param name="attachedConditions">A reference to a sequence that will hold all the attached conditions
-        /// on the WaitSet</param>
-        /// <returns>Possible return codes are: 
+        /// on the IWaitSet</param>
+        /// <returns>Possible return codes are:
         /// <list type="bullet">
-        /// <item>Ok - the list of attached conditions is returned.</item>
-        /// <item>Error - an internal error has occured.</item>
-        /// <item>OutOfResources - the DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The list of attached conditions is returned.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetConditions(ref ICondition[] attachedConditions);
     }
 
     /// <summary>
-    /// A GuardCondition object is a specific Condition whose trigger_value is
-    /// completely under the control of the application. The GuardCondition has no
-    /// factory and must be created by the application. The GuardCondition is directly
+    /// An IGuardCondition object is a specific ICondition whose TriggerValue is
+    /// completely under the control of the application. The IGuardCondition has no
+    /// factory and must be created by the application. The IGuardCondition is directly
     /// created as an object by using the GuardCondition constructor. When a
-    /// GuardCondition is initially created, the trigger_value is FALSE. The purpose
-    /// of the GuardCondition is to provide the means for an application to manually
-    /// wake up a WaitSet. This is accomplished by attaching the GuardCondition to
-    /// the Waitset and setting the trigger_value by means of the
-    /// set_trigger_value operation.
+    /// IGuardCondition is initially created, the TriggerValue is false. The purpose
+    /// of the IGuardCondition is to provide the means for an application to manually
+    /// wake up an IWaitSet. This is accomplished by attaching the IGuardCondition to
+    /// the IWaitset and setting the TriggerValue by means of the
+    /// IGuardCondition.SetTriggerValue operation.
+    /// @see @ref DCPS_Modules_Infrastructure_Waitset
     /// </summary>
     public interface IGuardCondition : ICondition
     {
         /// <summary>
-        /// his operation sets the trigger_value of the GuardCondition.
+        /// This operation sets the TriggerValue of the IGuardCondition.
         /// </summary>
-        /// <remarks>A GuardCondition object is a specific Condition which trigger_value is
+        /// <remarks>
+        /// An IGuardCondition object is a specific ICondition which TriggerValue is
         /// completely under the control of the application. This operation must be used by the
-        /// application to manually wake-up a WaitSet. This operation sets the
-        /// trigger_value of the GuardCondition to the parameter value. The
-        /// GuardCondition is directly created using the GuardCondition constructor.
-        /// When a GuardCondition is initially created, the trigger_value is FALSE.</remarks>
-        /// <param name="value">the Boolean value to which the GuardCondition is set.</param>
+        /// application to manually wake-up an IWaitSet. This operation sets the
+        /// TriggerValue of the IGuardCondition to the parameter value.
+        /// When an IGuardCondition is initially created, the TriggerValue is false.
+        /// </remarks>
+        /// <param name="value">The boolean value to which the IGuardCondition is set.</param>
         /// <returns>Possible return codes of the operation are:
         /// <list type="bullet">
-        /// <item>Ok - the specified trigger_value has successfully been applied.</item>
-        /// <item>Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode Ok - The specified TriggerValue has successfully been applied.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
         /// </list>
         /// </returns>
         ReturnCode SetTriggerValue(bool value);
     }
 
     /// <summary>
-    /// Specialized class of Condition, and indicates the condition that may be attached to
-    /// a WaitSet.
+    /// Specialized class of ICondition, which allows accesss and to be triggered on the related
+    /// communication statuses of an IEntity
     /// </summary>
     /// <remarks>
-    /// Entity objects that have status attributes also have a StatusCondition, access is 
+    /// IEntity objects that have status attributes also have a StatusCondition, access is
     /// provided to the application by the GetStatusCondition operation.
-    /// The communication statuses whose changes can be communicated to the application 
-    /// depend on the Entity.
-    /// The trigger_value of the StatusCondition depends on the communication
-    /// statuses of that Entity (e.g., missed deadline) and also depends on the value of the
-    /// StatusCondition attribute mask (enabled_statuses mask). A
-    /// StatusCondition can be attached to a WaitSet in order to allow an application
-    /// to suspend until the trigger_value has become TRUE.
-    /// The trigger_value of a StatusCondition will be TRUE if one of the enabled
-    /// StatusChangedFlags is set. That is, trigger_value==FALSE only if all the
-    /// values of the StatusChangedFlags are FALSE.
-    /// The sensitivity of the StatusCondition to a particular communication status is
-    /// controlled by the list of enabled_statuses set on the condition by means of the
-    /// set_enabled_statuses operation.
-    /// When the enabled_statuses are not changed by the SetEnabledStatuses
+    /// The communication statuses whose changes can be communicated to the application
+    /// depend on the IEntity.
+    /// <list type="table">
+    /// <listheader><term>Entity</term><term>Status Kind</term><term>Status Name</term></listheader>
+    /// <item><term rowspan="2">ITopic</term><term>DDS.StatusKind InconsistentTopic</term><term>InconsistentTopicStatus</term></item>
+    /// <item><term>DDS.StatusKind AllDataDisposed</term></item>
+    /// <item><term>ISubscriber</term><term>DDS.StatusKind DataOnReaders</term></item>
+    /// <item><term rowspan="7">IDataReader</term><term>DDS.StatusKind SampleRejected</term><term>SampleRejectedStatus</term></item>
+    /// <item><term>DDS.StatusKind LivelinessChanged</term><term>LivelinessChangedStatus</term></item>
+    /// <item><term>DDS.StatusKind RequestedDeadlineMissed</term><term>RequestedDeadlineMissedStatus</term></item>
+    /// <item><term>DDS.StatusKind RequestedIncompatibleQos</term><term>RequestedIncompatibleQosStatus</term></item>
+    /// <item><term>DDS.StatusKind DataAvailable</term></item>
+    /// <item><term>DDS.StatusKind SampleLost</term><term>SampleLostStatus</term></item>
+    /// <item><term>DDS.StatusKind SubscriptionMatched</term><term>SubscriptionMatchedStatus</term></item>
+    /// <item><term rowspan="4">IDataWriter</term><term>DDS.StatusKind LivelinessLost</term><term>LivelinessLostStatus</term></item>
+    /// <item><term>DDS.StatusKind OfferedDeadlineMissed</term><term>OfferedDeadlineMissedStatus</term></item>
+    /// <item><term>DDS.StatusKind OfferedIncompatibleQos</term><term>OfferedIncompatibleQosStatus</term></item>
+    /// <item><term>DDS.StatusKind PublicationMatched</term><term>PublicationMatchedStatus</term></item>
+    /// </list>
+    /// <para>
+    /// The TriggerValue of the IStatusCondition depends on the communication
+    /// statuses of that IEntity (e.g., missed deadline) and also depends on the value of the
+    /// IStatusCondition attribute mask (enabled statuses mask). An
+    /// IStatusCondition can be attached to an IWaitSet in order to allow an application
+    /// to suspend until the TriggerValue has become true.
+    /// </para><para>
+    /// The TriggerValue of an IStatusCondition will be true if one of the enabled
+    /// StatusChangedFlags is set. That is, the TriggerValue is false only if all the
+    /// values of the StatusChangedFlags are false.
+    /// The sensitivity of the IStatusCondition to a particular communication status is
+    /// controlled by the list of enabled statuses set on the condition by means of the
+    /// IStatusCondition.SetEnabledStatuses operation.
+    /// </para><para>
+    /// When the enabled statuses are not changed by the IStatusCondition.SetEnabledStatuses
     /// operation, all statuses are enabled by default.
+    /// </para>
     /// </remarks>
     public interface IStatusCondition : ICondition
     {
         /// <summary>
-        /// This operation returns the list of enabled communication statuses of the StatusCondition.
+        /// This operation returns the list of enabled communication statuses of the IStatusCondition.
         /// </summary>
-        /// <returns>StatusKind - a bit mask in which each bit shows which status is taken into account 
-        /// for the StatusCondition</returns>
-        StatusKind GetEnabledStatuses();
-        /// <summary>
-        /// This operation sets the list of communication statuses that are taken into account to 
-        /// determine the trigger_value of the StatusCondition.
-        /// </summary>
-        /// <param name="mask">A bit mask in which each bit sets the status which is taken into
-        /// account to determine the trigger_value of the StatusCondition</param>
-        /// <returns>Possible return codes of the operation are: 
+        /// <remarks>
+        /// <para>
+        /// The TriggerValue of the IStatusCondition depends on the communication
+        /// status of that IEntity (e.g., missed deadline, loss of information, etc.), ‘filtered’ by
+        /// the set of EnabledStatuses on the IStatusCondition.
+        /// </para><para>
+        /// This operation returns the list of communication statuses that are taken into account
+        /// to determine the TriggerValue of the IStatusCondition. This operation
+        /// returns the statuses that were explicitly set on the last cal l to
+        /// IStatusCondition.SetEnabledStatuses or, if IStatusCondition.SetEnabledStatuses was never called, the
+        /// default list.
+        /// </para><para>
+        /// The result value is a bit mask in which each bit shows which status is taken into
+        /// account for the IStatusCondition. The relevant bits represents one of the
+        /// following statuses:
         /// <list type="bullet">
-        /// <item>Ok - the list of communication statuses is set.</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>AlreadyDeleted - the StatusCondition has already been deleted.</item>
+        /// <item>DDS.StatusKind InconsitentTopic</item>
+        /// <item>DDS.StatusKind AllDataDisposed</item>
+        /// <item>DDS.StatusKind OfferedDeadlineMissed</item>
+        /// <item>DDS.StatusKind RequestedDeadlineMissed</item>
+        /// <item>DDS.StatusKind OfferedIncompatibleQos</item>
+        /// <item>DDS.StatusKind RequestedIncompatibleQos</item>
+        /// <item>DDS.StatusKind SampleLost</item>
+        /// <item>DDS.StatusKind SampleRejected</item>
+        /// <item>DDS.StatusKind DataOnReaders</item>
+        /// <item>DDS.StatusKind DataAvailable</item>
+        /// <item>DDS.StatusKind LivelinessLost</item>
+        /// <item>DDS.StatusKind LivelinessChanged</item>
+        /// <item>DDS.StatusKind PublicationMatched</item>
+        /// <item>DDS.StatusKind SubscriptionMatched</item>
+        /// </list>
+        /// Each status bit is declared as a constant and can be used in an AND operation to
+        /// check the status bit against the result of type int.
+        /// Not all statuses are relevant to all IEntity objects. See the respective Listener
+        /// objects for each IEntity for more information.
+        /// </remarks>
+        /// <returns>DDS.StatusKind - A bit mask in which each bit shows which status is taken into account
+        /// for the IStatusCondition</returns>
+        StatusKind GetEnabledStatuses();
+
+        /// <summary>
+        /// This operation sets the list of communication statuses that are taken into account to
+        /// determine the TriggerValue of the IStatusCondition.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The TriggerValue of the IStatusCondition depends on the communication
+        /// status of that IEntity (e.g., missed deadline, loss of information, etc.), ‘filtered’ by
+        /// the set of enabled statuses on the IStatusCondition.
+        /// This operation sets the list of communication statuses that are taken into account to
+        /// determine the TriggerValue of the IStatusCondition. This operation may
+        /// change the TriggerValue of the IStatusCondition.
+        /// </para><para>
+        /// IWaitSet objects behaviour depend on the changes of the TriggerValue of their
+        /// attached IConditions. Therefore, any IWaitSet to which the IStatusCondition
+        /// is attached is potentially affected by this operation.
+        /// If this function is not invoked, the default list of enabled statuses includes all
+        /// the statuses.
+        /// </para><para>
+        /// The parameter mask is a bit mask in which each bit shows which status is taken into
+        /// account for the IStatusCondition. The relevant bits represents one of the
+        /// following statuses:
+        /// <list type="bullet">
+        /// <item>DDS.StatusKind InconsitentTopic</item>
+        /// <item>DDS.StatusKind AllDataDisposed</item>
+        /// <item>DDS.StatusKind OfferedDeadlineMissed</item>
+        /// <item>DDS.StatusKind RequestedDeadlineMissed</item>
+        /// <item>DDS.StatusKind OfferedIncompatibleQos</item>
+        /// <item>DDS.StatusKind RequestedIncompatibleQos</item>
+        /// <item>DDS.StatusKind SampleLost</item>
+        /// <item>DDS.StatusKind SampleRejected</item>
+        /// <item>DDS.StatusKind DataOnReaders</item>
+        /// <item>DDS.StatusKind DataAvailable</item>
+        /// <item>DDS.StatusKind LivelinessLost</item>
+        /// <item>DDS.StatusKind LivelinessChanged</item>
+        /// <item>DDS.StatusKind PublicationMatched</item>
+        /// <item>DDS.StatusKind SubscriptionMatched</item>
+        /// </list>
+        /// Each status bit is declared as a constant and can be used in an OR operation to set
+        /// the status bit in the parameter mask of type int.
+        /// Not all statuses are relevant to all IEntity objects. See the respective Listener
+        /// objects for each IEntity for more information.
+        /// </remarks>
+        /// <param name="mask">A bit mask in which each bit sets the status which is taken into
+        /// account to determine the TriggerValue of the IStatusCondition</param>
+        /// <returns>Possible return codes of the operation are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - The list of communication statuses is set.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IStatusCondition has already been deleted.</item>
         /// </list>
         /// </returns>
         ReturnCode SetEnabledStatuses(StatusKind mask);
+
         /// <summary>
-        /// This operation returns the Entity associated with the StatusCondition or a
-        /// null Entity.
+        /// This operation returns the IEntity associated with the IStatusCondition or a
+        /// null reference.
         /// </summary>
-        /// <remarks>This operation returns the Entity associated with the StatusCondition. Note
-        /// that there is exactly one Entity associated with each StatusCondition. When
-        /// the Entity was already deleted (there is no associated Entity any more), the
-        /// NULL value IEntity is returned.</remarks>
-        /// <returns>IEntity - The Entity associated with the StatusCondition.</returns>
+        /// <remarks>
+        /// This operation returns the IEntity associated with the IStatusCondition. Note
+        /// that there is exactly one IEntity associated with each IStatusCondition. When
+        /// the IEntity was already deleted (there is no associated IEntity any more), the
+        /// value null is returned.</remarks>
+        /// <returns>IEntity - The IEntity associated with the IStatusCondition.</returns>
         IEntity GetEntity();
     }
 
+    /// <summary>
+    /// IReadCondition objects allow an IDataReader to specify the data samples it is
+    /// interested in
+    /// </summary>
     /// <remarks>
-    /// The DataReader objects can create a set of ReadCondition (and
-    /// StatusCondition) objects which provide support (in conjunction with WaitSet
+    /// The IDataReader objects can create a set of IReadCondition (and
+    /// IStatusCondition) objects which provide support (in conjunction with IWaitSet
     /// objects) for an alternative communication style between the Data Distribution
     /// Service and the application (i.e., state-based rather than event-based).
-    /// ReadCondition objects allow an DataReader to specify the data samples it is
+    /// IReadCondition objects allow an IDataReader to specify the data samples it is
     /// interested in (by specifying the desired sample-states, view-states, and
-    /// instance-states); see the parameter definitions for DataReader's
-    /// create_readcondition operation. This allows the Data Distribution Service to
-    /// trigger the condition only when suitable information is available. ReadCondition
-    /// objects are to be used in conjunction with a WaitSet. More than one
-    /// ReadCondition may be attached to the same DataReader.
+    /// instance-states); see the parameter definitions for IDataReader.CreateReadCondition
+    /// operation. This allows the Data Distribution Service to trigger the condition
+    /// only when suitable information is available. IReadCondition objects are to be
+    /// used in conjunction with an IWaitSet. More than one IReadCondition may be attached
+    /// to the same IDataReader.
+    /// @see @ref DCPS_Modules_Infrastructure_Waitset
+    ///
+    /// <code>
+    /// /* Simplified example of the creation of an ReadCondition
+    ///  * Defaults are used and possible errors are ignored. */
+    ///
+    /// /* Prepare Domain. */
+    /// DDS.DomainParticipantFactory factory = DDS.DomainParticipantFactory.Instance;
+    /// DDS.IDomainParticipant participant = factory.CreateParticipant(DDS.DomainId.Default);
+    ///
+    /// /* Create waitset */
+    /// IWaitSet waitset = new WaitSet();
+    ///
+    /// /* Add topic data type to the system. */
+    /// DDS.ITypeSupport typesupport = new Space.FooTypeSupport();
+    /// DDS.ReturnCode retcode = typesupport.RegisterType(participant, "Space.Foo");
+    ///
+    /// DDS.ITopic topic = participant.CreateTopic("SpaceFooTopic", "Space.Foo");
+    ///
+    /// /* Create typed datareader. */
+    /// DDS.ISubscriber subscriber = participant.CreateSubscriber();
+    /// Space.FooDataReader reader = (Space.FooDataReader)publisher.CreateDataReader(topic);
+    ///
+    /// /* Create readcondition */
+    /// IReadCondition condition = reader.CreateReadCondition(DDS.SampleStateKind.Read, DDS.ViewStateKind.New, DDS.InstanceStateKind.Alive);
+    ///
+    /// /* Attach condition to waitset */
+    /// retcode = waitset.AttachCondition(condition);
+    /// </code>
     /// </remarks>
     public interface IReadCondition : ICondition
     {
         /// <summary>
-        /// This operation returns the set of sample_states that are taken into account to
-        /// determine the trigger_value of the ReadCondition.
+        /// This operation returns the set of SampleStates that are taken into account to
+        /// determine the TriggerValue of the IReadCondition.
         /// </summary>
         /// <remarks>
-        /// This operation returns the set of sample_states that are taken into account to
-        /// determine the trigger_value of the ReadCondition.
-        /// The sample_states returned are the sample_states specified when the
-        /// ReadCondition was created. sample_states can be Read,
-        /// NotRead or both.
+        /// The SampleStates returned are the SampleStates specified when the
+        /// IReadCondition was created. The SampleStates can be Read,
+        /// NotRead or both (<see cref="DDS.SampleStateKind"/>).
         /// </remarks>
-        /// <returns>The sample_states specified when the ReadCondition was created.</returns>
+        /// <returns>The SampleStates specified when the IReadCondition was created.</returns>
         SampleStateKind GetSampleStateMask();
+
         /// <summary>
-        /// This operation returns the set of view_states that are taken into account to
-        /// determine the trigger_value of the ReadCondition.
+        /// This operation returns the set of ViewStates that are taken into account to
+        /// determine the TriggerValue of the IReadCondition.
         /// </summary>
         /// <remarks>
-        /// This operation returns the set of view_states that are taken into account to
-        /// determine the trigger_value of the ReadCondition.
-        /// The view_states returned are the view_states specified when the
-        /// ReadCondition was created. view_states can be New, NotNew or both.
+        /// The ViewStates returned are the ViewStates specified when the
+        /// IReadCondition was created. ViewStates can be New, NotNew or both (<see cref="DDS.ViewStateKind"/>).
         /// </remarks>
-        /// <returns>The view_states specified when the ReadCondition was created.</returns>
+        /// <returns>The ViewStates specified when the IReadCondition was created.</returns>
         ViewStateKind GetViewStateMask();
+
         /// <summary>
-        /// This operation returns the set of instance_states that are taken into account to
-        /// determine the trigger_value of the ReadCondition.
+        /// This operation returns the set of InstanceStates that are taken into account to
+        /// determine the TriggerValue of the IReadCondition.
         /// </summary>
         /// <remarks>
-        /// This operation returns the set of instance_states that are taken into account to
-        /// determine the trigger_value of the ReadCondition.
-        /// The instance_states returned are the instance_states specified when the
-        /// ReadCondition was created. instance_states can be
-        /// Alive,NotAlivedDisposed,NotAliveNoWriters or a combination of these.
+        /// The InstanceStates returned are the InstanceStates specified when the
+        /// IReadCondition was created. InstanceStates can be Alive NotAlivedDisposed
+        /// NotAliveNoWriters or a combination of these (<see cref="DDS.InstanceStateKind"/>).
         /// </remarks>
-        /// <returns>The instance_states specified when the ReadCondition was created.</returns>
+        /// <returns>The InstanceStates specified when the IReadCondition was created.</returns>
         InstanceStateKind GetInstanceStateMask();
+
         /// <summary>
-        /// This operation returns the DataReader associated with the ReadCondition.
+        /// This operation returns the IDataReader associated with the IReadCondition.
         /// </summary>
-        /// <remarks>This operation returns the DataReader associated with the ReadCondition. Note
-        /// that there is exactly one DataReader associated with each ReadCondition (i.e.
-        /// the DataReader that created the ReadCondition object).
+        /// <remarks>
+        /// Note that there is exactly one IDataReader associated with each IReadCondition (i.e.
+        /// the IDataReader that created the IReadCondition object).
         /// </remarks>
-        /// <returns>The DataReader associated with the ReadCondition.</returns>
+        /// <returns>The IDataReader associated with the IReadCondition.</returns>
         IDataReader GetDataReader();
     }
+
     /// <summary>
-    /// QueryCondition objects are specialized ReadCondition objects that allow the
-    /// application to specify a filter on the locally available data. 
+    /// IQueryCondition objects are specialized IReadCondition objects that allow the
+    /// application to specify a filter on the locally available data.
     /// </summary>
-    /// <remarks>The DataReader objects accept a set of QueryCondition objects for the DataReader and provide support
-    /// (in conjunction with WaitSet objects) for an alternative communication style
-    /// between the Data Distribution Service and the application (i.e., state-based rather
+    /// <remarks>
+    /// <para>
+    /// The IDataReader objects accept a set of IQueryCondition objects for the IDataReader
+    /// and provide support (in conjunction with IWaitSet objects) for an alternative communication
+    /// style between the Data Distribution Service and the application (i.e., state-based rather
     /// than event-based).
-    /// QueryCondition objects allow an application to specify the data samples it is
+    /// </para>
+    /// <para><b><i>Query Function</i></b>
+    /// <para>
+    /// IQueryCondition objects allow an application to specify the data samples it is
     /// interested in (by specifying the desired sample-states, view-states, instance-states
-    /// and query expression); see the parameter definitions for DataReader's
-    /// read/take operations. This allows the Data Distribution Service to trigger the
-    /// condition only when suitable information is available. QueryCondition objects
-    /// are to be used in conjunction with a WaitSet. More than one QueryCondition
-    /// may be attached to the same DataReader.
-    /// The query (query_expression) is similar to an SQL WHERE clause and can be
+    /// and query expression); see the parameter definitions for IDataReader's
+    /// Read/Take operations. This allows the Data Distribution Service to trigger the
+    /// condition only when suitable information is available. IQueryCondition objects
+    /// are to be used in conjunction with an IWaitSet. More than one IQueryCondition
+    /// may be attached to the same IDataReader.
+    /// </para><para>
+    /// The query (queryExpression) is similar to an SQL WHERE clause and can be
     /// parameterized by arguments that are dynamically changeable with the
-    /// SetQueryParameters operation.
+    /// IQueryCondition.SetQueryParameters operation.
+    /// @see @ref DCPS_Modules_Infrastructure_Waitset
+    /// </para>
+    ///
+    /// <code>
+    /// /* Simplified example of the creation of an QueryCondition
+    ///  * Defaults are used and possible errors are ignored. */
+    ///
+    /// /* Prepare Domain. */
+    /// DDS.DomainParticipantFactory factory = DDS.DomainParticipantFactory.Instance;
+    /// DDS.IDomainParticipant participant = factory.CreateParticipant(DDS.DomainId.Default);
+    ///
+    /// /* Create waitset */
+    /// IWaitSet waitset = new WaitSet();
+    ///
+    /// /* Add topic data type to the system. */
+    /// DDS.ITypeSupport typesupport = new Space.FooTypeSupport();
+    /// DDS.ReturnCode retcode = typesupport.RegisterType(participant, "Space.Foo");
+    ///
+    /// DDS.ITopic topic = participant.CreateTopic("SpaceFooTopic", "Space.Foo");
+    ///
+    /// /* Create typed datareader. */
+    /// DDS.ISubscriber subscriber = participant.CreateSubscriber();
+    /// Space.FooDataReader reader = (Space.FooDataReader)publisher.CreateDataReader(topic);
+    ///
+    /// /* Create querycondition */
+    /// string[] params = new string[1];
+    /// params[0] = "1";
+    /// IQueryCondition condition = reader.CreateQueryCondition("field = %0", params);
+    ///
+    /// /* Attach condition to waitset */
+    /// retcode = waitset.AttachCondition(condition);
+    /// </code>
     /// </remarks>
     public interface IQueryCondition : IReadCondition
     {
         /// <summary>
-        /// This operation returns the query expression associated with the QueryCondition.
+        /// This operation returns the query expression associated with the IQueryCondition.
         /// </summary>
         /// <remarks>
-        /// This operation returns the query expression associated with the QueryCondition.
-        /// That is, the expression specified when the QueryCondition was created. The
-        /// operation will return NULL when there was an internal error or when the
-        /// QueryCondition was already deleted. If there were no parameters, an empty
-        /// sequence is returned.
+        /// That is, the expression specified when the IQueryCondition was created. The
+        /// operation will return null when there was an internal error or when the
+        /// IQueryCondition was already deleted.
         /// </remarks>
-        /// <returns>The query expression associated with the QueryCondition.</returns>
+        /// <returns>The query expression associated with the IQueryCondition.</returns>
         string GetQueryExpression();
+
         /// <summary>
-        /// This operation obtains the queryParameters associated with the QueryCondition
+        /// This operation obtains the query parameters associated with the IQueryCondition
         /// </summary>
         /// <remarks>
-        /// This operation obtains the query_parameters associated with the
-        /// QueryCondition. That is, the parameters specified on the last successful call to
-        /// set_query_arguments or, if set_query_arguments was never called, the
-        /// arguments specified when the QueryCondition were created.
-        /// The resulting handle contains a sequence of strings with the parameters used in the
-        /// SQL expression (i.e., the %n tokens in the expression). The number of parameters in
-        /// the result sequence will exactly match the number of %n tokens in the query
-        /// expression associated with the QueryCondition.
+        /// <para>
+        /// That is, the parameters specified on the last successful call to
+        /// IQueryCondition.SetQueryArguments or, if SetQueryArguments was never called,
+        /// the arguments specified when the IQueryCondition were created.
+        /// </para><para>
+        /// The queryParameters parameter will contain a sequence of strings with the parameters
+        /// used in the SQL expression (i.e., the %n tokens in the expression). The number of
+        /// parameters in the result sequence will exactly match the number of %n tokens in
+        /// the query expression associated with the IQueryCondition.
+        /// </para>
         /// </remarks>
-        /// <param name="queryParameters">A reference to a sequence of strings that will be 
+        /// <param name="queryParameters">A reference to a sequence of strings that will be
         /// used to store the parameters used in the SQL expression</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - the existing set of query parameters applied to this QueryCondition 
+        /// <item>DDS.ReturnCode Ok - The existing set of query parameters applied to this IQueryCondition
         /// has successfully been copied into the specified queryParameters parameter.</item>
-        /// <item>Error - an internal error has occured.</item>
-        /// <item>AlreadyDeleted - the QueryCondition has already been deleted.</item>
-        /// <item>OutOfResources - the DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IQueryCondition has already been deleted.</item>
         /// </list>
         /// </returns>
         ReturnCode GetQueryParameters(ref string[] queryParameters);
+
         /// <summary>
-        /// This operation changes the query parameters associated with the QueryCondition.
+        /// This operation changes the query parameters associated with the IQueryCondition.
         /// </summary>
         /// <remarks>
-        /// This operation changes the query paramet e r s associated with the QueryCondition. 
+        /// This operation changes the query parameters associated with the IQueryCondition.
         /// The parameter queryParameters is a sequence of strings which are the parameter values
-        /// used in the SQL query string (i.e., the %n tokens in the expression). 
-        /// The number of values in queryParameters must be equal or greater than the highest 
-        /// referenced %n token in the query_expression (e.g. if %1 and %8 are used as parameter 
-        /// in the query_expression, the queryParameters should at least contain n+1 = 9 values).
+        /// used in the SQL query string (i.e., the %n tokens in the expression).
+        /// The number of values in queryParameters must be equal or greater than the highest
+        /// referenced %n token in the queryExpression (e.g. if %1 and %8 are used as parameter
+        /// in the queryExpression, the queryParameters should at least contain n+1 = 9 values).
         /// </remarks>
         /// <param name="queryParameters">A sequence of strings which are the parameters used in the SQL query string
         /// (i.e., the %n tokens in the expression).</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - the query parameters associated with the QueryCondition are changed.</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>BadParameter - the number of parameters in queryParameters does not match 
-        /// the number of %n tokens in the expression for this QueryCondition or one of 
+        /// <item>DDS.ReturnCode Ok - The query parameters associated with the IQueryCondition are changed.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode BadParameter - The number of parameters in queryParameters does not match
+        /// the number of %n tokens in the expression for this IQueryCondition or one of
         /// the parameters is an illegal parameter.</item>
-        /// <item>AlreadyDeleted - the QueryCondition has already been deleted.</item>
-        /// <item>OutOfResources - the DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IQueryCondition has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode SetQueryParameters(params string[] queryParameters);
@@ -424,1011 +633,1386 @@ namespace DDS
     // ----------------------------------------------------------------------
     // Factory
     // ----------------------------------------------------------------------
-
-    /// <summary>
-    /// The purpose of this class is to allow the creation and destruction of 
-    /// DomainParticipant objects. DomainParticipantFactory itself has no 
-    /// factory. It is a pre-existing singleton object that can be accessed by means of the 
-    /// Instance property on the DomainParticipantFactory class. 
-    /// The pre-defined value TheParticipantFactory can also be used as an alias for the singleton
-    /// factory returned by the operation get_instance.
-    /// </summary>
+    /// @cond
+    /// The interface IDomainParticipantFactory is not very interesting for
+    /// the documentation. Instead of that, the DomainParticipantFactory class
+    /// itself has been documented.
+    ///
     public interface IDomainParticipantFactory
     {
-        /// <summary>
-        /// This operation creates a DomainParticipant using the specified ID.
-        /// </summary>
-        /// <remarks>This operation behaves similarly to the spec operation but substitutes default values
-        /// for the missing parameters. These are: default Qos for Qos parameters and null listeners with 0
-        /// mask for listener parameters.
-        /// </remarks>
-        /// <param name="domainId">The specified ID used to create the DomainParticipant</param>
-        /// <returns>The newly created DomainParticipant. In case of an error a null is returned.</returns>
         IDomainParticipant CreateParticipant(DomainId domainId);
-        /// <summary>
-        /// This operation creates a DomainParticipant using the specified ID, listener and mask for listener parameter.
-        /// </summary>
-        /// <remarks>This operation behaves similarly to the spec operation but substitutes default values
-        /// for the missing parameters. These are: default Qos for Qos parameters and null listeners with 0
-        /// mask for listener parameters.
-        /// <param name="domainId"></param>
-        /// <param name="listener"></param>
-        /// <param name="mask"></param>
-        /// <returns>The newly created DomainParticipant. In case of an error a null is returned.</returns>
         IDomainParticipant CreateParticipant(DomainId domainId,
             IDomainParticipantListener listener, StatusKind mask);
         IDomainParticipant CreateParticipant(DomainId domainId, DomainParticipantQos qos);
-        /// <summary>
-        /// This operation creates a new DomainParticipant which will join the domain 
-        /// identified by domainId, and attaches the optionally specified 
-        /// DomainParticipantListener to it.
-        /// </summary>
-        /// <param name="domainId">The ID of the Domain to which the 
-        /// DomainParticipant is joined.</param>
-        /// <param name="listener">The DomainParticipantListener instance which will be attached to the new 
-        /// DomainParticipant. It is permitted to use null as the value of the listener: 
-        /// this behaves as a DomainParticipantListener whose operations perform no action.</param>
-        /// <param name="qos">a DomainParticipantQos for the new DomainParticipant. 
-        /// When this set of QosPolicy settings is inconsistent, no DomainParticipant is created.</param>
-        /// <param name="mask">a bit-mask in which each bit enables the invocation of the 
-        /// DomainParticipantListener for a certain status.</param>
-        /// <returns>The newly created DomainParticipant. In case of an error a null is returned.</returns>
         IDomainParticipant CreateParticipant(DomainId domainId, DomainParticipantQos qos,
             IDomainParticipantListener listener, StatusKind mask);
-        /// <summary>
-        /// This operation deletes the specified DomainParticipant.
-        /// </summary>
-        /// <remarks>
-        /// This operation deletes a DomainParticipant. A DomainParticipant cannot
-        /// be deleted when it has any attached Entity objects. When the operation is called
-        /// on a DomainParticipant with existing Entity objects, the operation returns
-        /// PreconditionNotMet.
-        /// </remarks>
-        /// <param name="participant"> The DomainParticipant which is to be deleted.</param>
-        /// <returns>Return codes are:
-        /// <list type="bullet">
-        /// <item>Ok - The DomainParticipant is deleted.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>BadParameter - The parameter participant is not a valid IDomainParticipant.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>PreconditionNotMet - The DomainParticipant contains one or more Entity objects.</item>
-        /// </list>
-        /// </returns>
+
         ReturnCode DeleteParticipant(IDomainParticipant participant);
-        /// <summary>
-        /// This operation looks up an existing DomainParticipant based on its domainId.
-        /// </summary>
-        /// <remarks>
-        /// This operation retrieves a previously created DomainParticipant belonging to
-        /// the specified domainId. If no such DomainParticipant exists, the operation will
-        /// return NULL.
-        /// If multiple DomainParticipant entities belonging to the specified domainId
-        /// exist, then the operation will return one of them. It is not specified which one.
-        /// </remarks>
-        /// <param name="domainId">the ID of the Domain for which a joining DomainParticipant 
-        /// should be retrieved.</param>
-        /// <returns>The retrieved DomainParticipant. If no such DomainParticipant is found 
-        /// a null is returned.</returns>
+
         IDomainParticipant LookupParticipant(DomainId domainId);
-        /// <summary>
-        /// This operation sets the default DomainParticipantQos of the DomainParticipantFactory.
-        /// </summary>
-        /// <remarks>
-        /// This operation sets the default DomainParticipantQos of the DomainParticipantFactory 
-        /// (that is the struct with the QosPolicy settings) which is used for newly created 
-        /// DomainParticipant objects, in case the constant PARTICIPANT_QOS_DEFAULT is used. 
-        /// The default DomainParticipantQos is only used when the constant is supplied as parameter 
-        /// qos to specify the DomainParticipantQos in the CreateParticipant operation. The 
-        /// DomainParticipantQos is always self consistent, because its policies do not 
-        /// depend on each other. This means this operation never returns the ReturnCode InconsistentPolicy.
-        /// The values set by this operation are returned by GetDefaultParticipantQos.
-        /// </remarks>
-        /// <param name="qos">The DomainParticipantQos which contains the new default 
-        /// DomainParticipantQos for the newly created DomainParticipants</param>
-        /// <returns>Possible return codes are: 
-        /// <list type="bullet">
-        /// <item>Ok - The new default DomainParticipantQos is set.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// </list>
-        /// </returns>
+
         ReturnCode SetDefaultParticipantQos(DomainParticipantQos qos);
-        /// <summary>
-        /// This operation gets the default DomainParticipantQos of the DomainParticipantFactory
-        /// </summary>
-        /// <remarks>
-        /// This operation gets the default DomainParticipantQos of the
-        /// DomainParticipantFactory (that is the struct with the QosPolicy settings)
-        /// which is used for newly created DomainParticipant objects, in case the constant
-        /// PARTICIPANT_QOS_DEFAULT is used. The default DomainParticipantQos is
-        /// only used when the constant is supplied as parameter qos to specify the
-        /// DomainParticipantQos in the CreateParticipant operation. The
-        /// application must provide the DomainParticipantQos struct in which the
-        /// QosPolicy settings can be stored and provide a reference to the struct. The
-        /// operation writes the default QosPolicy settings to the struct referenced to by qos.
-        /// Any settings in the struct are overwritten.
-        /// The values retrieved by this operation match the set of values specified on the last
-        /// successful call to SetDefaultParticipantQos, or, if the call was never
-        /// made, the default values as specified for each QosPolicy setting.
-        /// </remarks>
-        /// <param name="qos">A reference to the DomainParticipantQos in which the default DomainParticipantQos
-        /// for the DomainParticipant is written.</param>
-        /// <returns>Possible return codes are:
-        /// <list type="bullet">
-        /// <item>Ok - The the default DomainParticipant QosPolicy settings of this DomainParticipantFactory 
-        /// have successfully been copied into the specified DomainParticipantQos parameter.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// </list>
-        /// </returns>
         ReturnCode GetDefaultParticipantQos(ref DomainParticipantQos qos);
-        /// <summary>
-        /// This operation replaces the existing set of QoS settings for the DomainParticipantFactory.
-        /// </summary>
-        /// <remarks>
-        /// This operation replaces the existing set of QosPolicy settings for a
-        /// DomainParticipantFactory. The parameter qos must contain the struct with
-        /// the QosPolicy settings.
-        /// The set of QosPolicy settings specified by the qos parameter are applied on top of
-        /// the existing QoS, replacing the values of any policies previously set (provided, the
-        /// operation returned Ok).
-        /// </remarks>
-        /// <param name="qos">The new set of Qos policy settings for the DomainParticipantFactory.</param>
-        /// <returns>Possible return codes are: 
-        /// <list type="bullet">
-        /// <item>Ok - The new DomainParticipantFactoryQos is set.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// </list>
-        /// </returns>
+
         ReturnCode SetQos(DomainParticipantFactoryQos qos);
-        /// <summary>
-        /// This operation obtains the QoS settings for the DomainParticipantFactory.
-        /// </summary>
-        /// <remarks>
-        /// This operation allows access to the existing set of QoS policies of a
-        /// DomainParticipantFactory on which this operation is used. This
-        /// DomainparticipantFactoryQos is stored at the location pointed to by the qos
-        /// parameter.
-        /// </remarks>
-        /// <param name="qos">A reference to the destination DomainParticipantFactoryQos, 
-        /// in which the Qos policies will be copied.</param>
-        /// <returns>Possible return values are: 
-        /// <list type="bullet">
-        /// <item>Ok - the existing set of QoS policy values applied to this DomainParticipantFactory 
-        /// has successfully been copied into the specified DomainParticipantFactoryQos parameter.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>OutOfResources - the DDS ran out of resources to complete this operation.</item>
-        /// </list>
-        /// </returns>
         ReturnCode GetQos(ref DomainParticipantFactoryQos qos);
+
+        ReturnCode DetachAllDomains(bool blockOperations, bool deleteEntities);
     }
+    /// @endcond
 
     // ----------------------------------------------------------------------
     // Entities
-    // ----------------------------------------------------------------------    
+    // ----------------------------------------------------------------------
     /// <summary>
-    /// This class is the abstract base class for all the DCPS objects. It acts as a generic class 
-    /// for Entity objects.
+    /// This class is the abstract base class for all the DCPS objects. It acts as a generic class
+    /// for IEntity objects.
     /// </summary>
     public interface IEntity
     {
         /// <summary>
-        /// This operation enables the Entity on which it is being called when the Entity was created 
-        /// with the EntityFactoryQosPolicy set to FALSE.
+        /// This operation enables the IEntity on which it is being called when the IEntity was created
+        /// with the EntityFactoryQosPolicy set to false.
         /// </summary>
         /// <remarks>
-        /// This operation enables the Entity. Created Entity objects can start in either an
+        /// This operation enables the IEntity. Created IEntity objects can start in either an
         /// enabled or disabled state. This is controlled by the value of the
-        /// EntityFactoryQosPolicy on the corresponding factory for the Entity.
+        /// EntityFactoryQosPolicy on the corresponding factory for the IEntity.
         /// Enabled entities are immediately activated at creation time meaning all their
         /// immutable QoS settings can no longer be changed. Disabled Entities are not yet
         /// activated, so it is still possible to change there immutable QoS settings. However,
         /// once activated the immutable QoS settings can no longer be changed.
-        /// Creating disabled entities can make sense when the creator of the Entity does not
+        ///
+        /// Creating disabled entities can make sense when the creator of the IEntity does not
         /// yet know which QoS settings to apply, thus allowing another piece of code to set the
         /// QoS later on. This is for example the case in the DLRL, where the ObjectHomes
         /// create all underlying DCPS entities but do not know which QoS settings to apply.
         /// The user can then apply the required QoS settings afterwards.
+        ///
         /// The default setting of EntityFactoryQosPolicy is such that, by default, entities
         /// are created in an enabled state so that it is not necessary to explicitly call enable on
         /// newly created entities.
+        ///
         /// The enable operation is idempotent. Calling enable on an already enabled
-        /// Entity returns OK and has no effect.
-        /// If an Entity has not yet been enabled, the only operations that can be invoked on it
+        /// IEntity returns OK and has no effect.
+        ///
+        /// If an IEntity has not yet been enabled, the only operations that can be invoked on it
         /// are: the ones to set, get or copy the QosPolicy settings, the ones that set (or get) the
-        /// listener, the ones that get the StatusCondition, the GetStatusChanges
+        /// listener, the ones that get the IStatusCondition, the GetStatusChanges
         /// operation (although the status of a disabled entity never changes), and the factory
-        /// operations that create, delete or lookup(This includes the LookupTopicDescription but not FindTopic)
+        /// operations that create, delete or lookup(This includes the LookupTopicDescription() but not FindTopic())
         /// other Entities. Other operations will return the error NotEnabled.
+        ///
         /// Entities created from a factory that is disabled, are created disabled regardless of
         /// the setting of the EntityFactoryQosPolicy.
-        /// Calling enable on an Entity whose factory is not enabled will fail and return
+        /// Calling enable on an IEntity whose factory is not enabled will fail and return
         /// PreconditionNotMet.
-        /// If the EntityFactoryQosPolicy has autoenable_created_entities set to
-        /// TRUE, the enable operation on the factory will automatically enable all Entities
+        ///
+        /// If the EntityFactoryQosPolicy has AutoenableCreatedEntities set to
+        /// true, the enable operation on the factory will automatically enable all Entities
         /// created from the factory.
-        /// The Listeners associated with an Entity are not called until the Entity is
-        /// enabled. Conditions associated with an Entity that is not enabled are "inactive",
-        /// that is, have a trigger_value which is FALSE.
+        ///
+        /// The Listeners associated with an IEntity are not called until the IEntity is
+        /// enabled. Conditions associated with an IEntity that is not enabled are "inactive",
+        /// that is, have a TriggerValue which is false.
         /// </remarks>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The Application enabled the Entity (or it was already enabled)</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>OutOfResources - the DDS ran out of resources to complete this operation.</item>
-        /// <item>PreconditionNotMet - The factory of the Entity is not enabled.</item>
+        /// <item>DDS.ReturnCode Ok - The Application enabled the IEntity (or it was already enabled)</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - The factory of the IEntity is not enabled.</item>
         /// </list>
         /// </returns>
         ReturnCode Enable();
+
         /// <summary>
-        /// This property allows access to the StatusCondition associated with the Entity.
+        /// This property allows access to the IStatusCondition associated with the IEntity.
         /// </summary>
         /// <remarks>
-        /// Each Entity has a StatusCondition associated with it. This operation allows
-        /// access to the StatusCondition associated with the Entity. The returned
+        /// Each IEntity has a IStatusCondition associated with it. This operation allows
+        /// access to the IStatusCondition associated with the IEntity. The returned
         /// condition can then be added to a WaitSet so that the application can wait for
-        /// specific status changes that affect the Entity.
+        /// specific status changes that affect the IEntity.
         /// </remarks>
         IStatusCondition StatusCondition { get; }
+
         /// <summary>
-        /// This operation returns a mask with the communication statuses in the Entity that are triggered.
+        /// This operation returns a mask with the communication statuses in the IEntity that are triggered.
         /// </summary>
         /// <remarks>
-        /// This operation returns a mask with the communication statuses in the Entity that
+        /// This operation returns a mask with the communication statuses in the IEntity that
         /// are triggered. That is the set of communication statuses whose value have changed
         /// since the last time the application called this operation. This operation shows
         /// whether a change has occurred even when the status seems unchanged because the
         /// status changed back to the original status.
-        /// When the Entity is first created or if the Entity is not enabled, all
+        ///
+        /// When the IEntity is first created or if the IEntity is not enabled, all
         /// communication statuses are in the un-triggered state so the mask returned by the
         /// operation is empty.
+        ///
         /// The result value is a bit mask in which each bit shows which value has changed.
+        /// - DDS.StatusKind InconsistentTopic
+        /// - DDS.StatusKind OfferedDeadlineMissed
+        /// - DDS.StatusKind RequestedDeadlineMissed
+        /// - DDS.StatusKind OfferedIncompatibleQos
+        /// - DDS.StatusKind RequestedIncompatibleQos
+        /// - DDS.StatusKind SampleLost
+        /// - DDS.StatusKind SampleRejected
+        /// - DDS.StatusKind DataOnReaders
+        /// - DDS.StatusKind DataAvailable
+        /// - DDS.StatusKind LivelinessLost
+        /// - DDS.StatusKind LivelinessChanged
+        /// - DDS.StatusKind PublicationMatched
+        /// - DDS.StatusKind SubscriptionMatched
+        ///
         /// Each status bit is declared as a constant and can be used in an AND operation to
         /// check the status bit against the result of type StatusMask. Not all statuses are
-        /// relevant to all Entity objects. See the respective Listener interfaces for each
-        /// Entity for more information.
+        /// relevant to all IEntity objects. See the respective Listener interfaces for each
+        /// IEntity for more information.
         /// </remarks>
         StatusKind StatusChanges { get; }
+
         /// <summary>
-        /// This operation returns the InstanceHandle of the builtin topic sample that represents the specified Entity.
+        /// This operation returns the InstanceHandle of the builtin topic sample that represents the specified IEntity.
         /// </summary>
         /// <remarks>
-        /// The relevant state of some Entity objects are distributed using builtin topics. Each
-        /// builtin topic sample represents the state of a specific Entity and has a unique
-        /// instance_handle. This operation returns the instance_handle of the builtin
-        /// topic sample that represents the specified Entity.
-        /// Some Entities (Publisher and Subscriber) do not have a corresponding
-        /// builtin topic sample, but they still have an instance_handle that uniquely
-        /// identifies the Entity. The instance_handles obtained this way can also be used
-        /// to check whether a specific Entity is located in a specific DomainParticipant.
+        /// The relevant state of some IEntity objects are distributed using builtin topics. Each
+        /// builtin topic sample represents the state of a specific IEntity and has a unique
+        /// instanceHandle. This operation returns the instanceHandle of the builtin
+        /// topic sample that represents the specified IEntity.
+        ///
+        /// Some Entities (IPublisher and ISubscriber) do not have a corresponding
+        /// builtin topic sample, but they still have an instanceHandle that uniquely
+        /// identifies the IEntity. The instanceHandles obtained this way can also be used
+        /// to check whether a specific IEntity is located in a specific IDomainParticipant.
         /// </remarks>
         InstanceHandle InstanceHandle { get; }
     }
 
     /// <summary>
-    /// All the DCPS Entity objects are attached to a DomainParticipant. A DomainParticipant 
+    /// All the DCPS IEntity objects are attached to a IDomainParticipant. A IDomainParticipant
     /// represents the local membership of the application in a Domain.
     /// </summary>
-    /// <remarks>A Domain is a distributed concept that links all the applications that must be able to 
-    /// communicate with each other. It represents a communication plane: only the 
-    /// Publishers and the Subscribers attached to the same Domain can interact. 
+    /// <remarks>A Domain is a distributed concept that links all the applications that must be able to
+    /// communicate with each other. It represents a communication plane: only the
+    /// Publishers and the Subscribers attached to the same Domain can interact.
     /// This class implements several functions:
     /// <list type="bullet">
-    /// <item>it acts as a container for all other Entity objects</item>
-    /// <item>it acts as a factory for the Publisher, Subscriber, Topic,ContentFilteredTopic 
-    /// and MultiTopic objects</item>
-    /// <item>it provides access to the built-in Topic objects</item>
-    /// <item>it provides information about Topic objects</item>
-    /// <item>It isolates applications within the same Domain (sharing the same domainId) 
-    /// from other applications in a different Domain on the same set of computers. In this way, 
-    /// several independent distributed applications can coexist in the same physical network without interfering, 
+    /// <item>it acts as a container for all other IEntity objects</item>
+    /// <item>it acts as a factory for the IPublisher, ISubscriber, ITopic,IContentFilteredTopic
+    /// and IMultiTopic objects</item>
+    /// <item>it provides access to the built-in ITopic objects</item>
+    /// <item>it provides information about ITopic objects</item>
+    /// <item>It isolates applications within the same Domain (sharing the same domainId)
+    /// from other applications in a different Domain on the same set of computers. In this way,
+    /// several independent distributed applications can coexist in the same physical network without interfering,
     /// or even being aware of each other.</item>
-    /// <item>It provides administration services in the Domain, offering operations, which allow the application 
+    /// <item>It provides administration services in the Domain, offering operations, which allow the application
     /// to ignore locally any information about a given Participant, Publication, Subscription or Topic.</item>
     /// </list>
     /// </remarks>
     public interface IDomainParticipant : IEntity
     {
         /// <summary>
-        /// This method creates a Publisher. It behaves similarly to the most complete operation, but it 
-        /// uses default values for the ommitted parameters. These are the default Qos for Qos parameters, null
-        /// for listeners with 0 mask for listener parameters.
-        /// </summary>
-        /// <returns>The created Publisher.</returns>
-        IPublisher CreatePublisher();
-        /// <summary>
-        /// This method creates a Publisher. It behaves similarly to the most complete operation, but it 
-        /// uses default values for the ommitted parameters. These are the default Qos for Qos parameters, null
-        /// for listeners with 0 mask for listener parameters.
-        /// </summary>
-        /// <param name="listener"></param>
-        /// <param name="mask"></param>
-        /// <returns>The created Publisher.</returns>
-        IPublisher CreatePublisher(
-                IPublisherListener listener, 
-                StatusKind mask);
-        /// <summary>
-        /// This method creates a Publisher. It behaves similarly to the most complete operation, but it 
-        /// uses default values for the ommitted parameters. These are the default Qos for Qos parameters, null
-        /// for listeners with 0 mask for listener parameters.
-        /// </summary>
-        /// <param name="qos"></param>
-        /// <returns>The created Publisher.</returns>
-        IPublisher CreatePublisher(PublisherQos qos);
-        /// <summary>
-        /// This operation creates a Publisher with the desired QosPolicy settings and if applicable, 
-        /// attaches the optionally specified PublisherListener to it.
-        /// </summary>
-        /// <param name="qos">A collection of QosPolicy settings for the new Publisher.
-        /// In case these settings are not self consistent, no Publisher is created.</param>
-        /// <param name="listener">The PublisherListener instance which will be attached to the new Publisher.
-        /// It is permitted to use null as the value of the listener: this behaves as a PublisherListener 
-        /// whose operations perform no action.</param>
-        /// <param name="mask">A bit-mask in which each bit enables the invocation of the PublisherListener 
-        /// for a certain status.</param>
-        /// <returns>The newly created Publisher. In case of an error, a null Publisher is returned.</returns>
-        IPublisher CreatePublisher(
-                PublisherQos qos,
-                IPublisherListener listener, 
-                StatusKind mask);
-        /// <summary>
-        /// This operation deletes a Publisher.
+        /// This method creates a IPublisher with default values.
         /// </summary>
         /// <remarks>
-        /// This operation deletes a Publisher. A Publisher cannot be deleted when it has
-        /// any attached DataWriter objects. When the operation is called on a Publisher
-        /// with DataWriter objects, the operation returns PreconditionNotMet. 
-        /// When the operation is called on a different DomainParticipant, as used when the Publisher 
+        /// This operation creates a IPublisher with the default PublisherQos, a null IPublisherListener
+        /// and 0 StatusKind mask.
+        ///
+        /// If the SetDefaultPublisherQos() method is called, then the default PublisherQos will be the
+        /// QoS given to that method. Otherwise it will equal a new PublisherQos.
+        ///
+        /// To delete the IPublisher the operation DeletePublisher() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref DDS.IDomainParticipant.CreatePublisher(PublisherQos qos, IPublisherListener listener, StatusKind mask) "CreatePublisher"
+        /// for:<br>
+        /// - Communication Status
+        /// - Status Propagation
+        /// </remarks>
+        /// <returns>The newly created IPublisher. In case of an error, a null IPublisher is returned.</returns>
+        IPublisher CreatePublisher();
+
+        /// <summary>
+        /// This method creates a IPublisher and if applicable, attaches the optionally specified IPublisherListener to it.
+        /// </summary>
+        /// <remarks>
+        /// This operation creates a IPublisher with the default PublisherQos, the given IPublisherListener
+        /// and StatusKind mask. The IPublisherListener may be null and the mask may be 0.
+        ///
+        /// If the SetDefaultPublisherQos() method is called, then the default PublisherQos will be the
+        /// QoS given to that method. Otherwise it will equal a new PublisherQos.
+        ///
+        /// To delete the IPublisher the operation DeletePublisher() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref DDS.IDomainParticipant.CreatePublisher(PublisherQos qos, IPublisherListener listener, StatusKind mask) "CreatePublisher"
+        /// for:<br>
+        /// - Communication Status
+        /// - Status Propagation
+        /// </remarks>
+        /// <param name="listener">The IPublisherListener instance which will be attached to the new IPublisher.
+        /// It is permitted to use null as the value of the listener: this behaves as a PublisherListener
+        /// whose operations perform no action.</param>
+        /// <param name="mask">A bit-mask in which each bit enables the invocation of the PublisherListener
+        /// for a certain status.</param>
+        /// <returns>The newly created IPublisher. In case of an error, a null IPublisher is returned.</returns>
+        IPublisher CreatePublisher(
+                IPublisherListener listener,
+                StatusKind mask);
+
+        /// <summary>
+        /// This method creates a IPublisher with the desired QosPolicy settings, but without an IPublisherListener.
+        /// </summary>
+        /// <remarks>
+        /// This operation creates a IPublisher with the given PublisherQos, a null IPublisherListener
+        /// and 0 StatusKind mask.
+        ///
+        /// In case the specified QosPolicy settings are not consistent, no IPublisher is
+        /// created and null is returned. Null can also be returned
+        /// when insufficient access rights exist for the partition(s) listed in the provided QoS
+        ///
+        /// To delete the IPublisher the operation DeletePublisher() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref DDS.IDomainParticipant.CreatePublisher(PublisherQos qos, IPublisherListener listener, StatusKind mask) "CreatePublisher"
+        /// for:<br>
+        /// - Communication Status
+        /// - Status Propagation
+        /// </remarks>
+        /// <param name="qos">A collection of QosPolicy settings for the new IPublisher.
+        /// In case these settings are not self consistent, no IPublisher is created.</param>
+        /// <returns>The newly created IPublisher. In case of an error, a null IPublisher is returned.</returns>
+        IPublisher CreatePublisher(PublisherQos qos);
+
+        /// <summary>
+        /// This operation creates a IPublisher with the desired QosPolicy settings and if applicable,
+        /// attaches the optionally specified IPublisherListener to it.
+        /// </summary>
+        /// <remarks>
+        /// This operation creates a IPublisher with the desired QosPolicy settings and if
+        /// applicable, attaches the optionally specified IPublisherListener to it. When the
+        /// PublisherListener is not applicable, null must be supplied instead.
+        ///
+        /// In case the specified QosPolicy settings are not consistent, no IPublisher is
+        /// created and null is returned. Null can also be returned
+        /// when insufficient access rights exist for the partition(s) listed in the provided QoS
+        ///
+        /// To delete the IPublisher the operation DeletePublisher() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// <i><b>Communication Status</b></i><br>
+        /// For each communication status, the StatusChangedFlag flag is initially set to
+        /// false. It becomes true whenever that communication status changes. For each
+        /// communication status activated in the mask, the associated
+        /// IPublisherListener operation is invoked and the communication
+        /// status is reset to false, as the listener implicitly accesses the status which is passed
+        /// as a parameter to that operation. The fact that the status is reset prior to calling the
+        /// listener means that if the application calls the Get<status_name>Status from
+        /// inside the listener it will see the status already reset.
+        ///
+        /// The following statuses are applicable to the IPublisher
+        /// - DDS.StatusKind OfferedDeadlineMissed (propagated)
+        /// - DDS.StatusKind OfferedIncompatibleQos (propagated)
+        /// - DDS.StatusKind LivelinessLost (propagated)
+        /// - DDS.StatusKind PublicationMatched (propagated)
+        ///
+        /// Be aware that the PublicationMatched
+        /// status are not applicable when the infrastructure does not have the
+        /// information available to determine connectivity. This is the case when OpenSplice
+        /// is configured not to maintain discovery information in the Networking Service. (See
+        /// the description for the NetworkingService/Discovery/enabled property in
+        /// the Deployment Manual for more information about this subject.) In this case the
+        /// operation will return null.
+        ///
+        /// Status bits are declared as a constant and can be used by the application in an OR
+        /// operation to create a tailored mask. The special constant 0 can
+        /// be used to indicate that the created entity should not respond to any of its available
+        /// statuses. The DDS will therefore attempt to propagate these statuses to its factory.
+        ///
+        /// <i><b>Status Propagation</b></i><br>
+        /// The Data Distribution Service will trigger the most specific and relevant Listener.<br>
+        /// In other words, in case a communication status is also activated on the
+        /// IDataWriterListener of a contained IDataWriter, the IDataWriterListener
+        /// on that contained IDataWriter is invoked instead of the IPublisherListener.
+        /// This means that a status change on a contained IDataWriter only invokes the
+        /// IPublisherListener if the contained IDataWriter itself does not handle the
+        /// trigger event generated by the status change.
+        ///
+        /// In case a communication status is not activated in the mask of the
+        /// IPublisherListener, the IDomainParticipantListener of the containing
+        /// IDomainParticipant is invoked (if attached and activated for the status that
+        /// occurred). This allows the application to set a default behaviour in the
+        /// IDomainParticipantListener of the containing IDomainParticipant and a
+        /// IPublisher specific behaviour when needed. In case the
+        /// IDomainParticipantListener is also not attached or the communication status
+        /// is not activated in its mask, the application is not notified of the change.
+        /// </remarks>
+        /// <param name="qos">A collection of QosPolicy settings for the new IPublisher.
+        /// In case these settings are not self consistent, no IPublisher is created.</param>
+        /// <param name="listener">The IPublisherListener instance which will be attached to the new IPublisher.
+        /// It is permitted to use null as the value of the listener: this behaves as a PublisherListener
+        /// whose operations perform no action.</param>
+        /// <param name="mask">A bit-mask in which each bit enables the invocation of the PublisherListener
+        /// for a certain status.</param>
+        /// <returns>The newly created IPublisher. In case of an error, a null IPublisher is returned.</returns>
+        IPublisher CreatePublisher(
+                PublisherQos qos,
+                IPublisherListener listener,
+                StatusKind mask);
+
+        /// <summary>
+        /// This operation deletes a IPublisher.
+        /// </summary>
+        /// <remarks>
+        /// This operation deletes a IPublisher. A IPublisher cannot be deleted when it has
+        /// any attached IDataWriter objects. When the operation is called on a IPublisher
+        /// with IDataWriter objects, the operation returns PreconditionNotMet.
+        /// When the operation is called on a different IDomainParticipant, as used when the IPublisher
         /// was created, the operation has no effect and returns PreconditionNotMet.
         /// </remarks>
-        /// <param name="p">The Publisher to be deleted.</param>
-        /// <returns>Rerurn values are:
+        /// <param name="p">The IPublisher to be deleted.</param>
+        /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The Publisher is deleted.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>BadParameter - The parameter p is not a valid IPublisher.</item>
-        /// <item>AlreadyDeleted - The DomainParticipant has already been deleted.</item>
-        /// <item>OutOfResources - the DDS has ran out of resources to complete this operation. </item>
-        /// <item>PreconditionNotMet - the operation is called on a different DomainParticipant, 
-        /// as used when the Publisher was created, or the Publisher contains one or more DataWriter objects.</item>
+        /// <item>DDS.ReturnCode Ok - The IPublisher is deleted.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter p is not a valid IPublisher.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the DDS has ran out of resources to complete this operation. </item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - the operation is called on a different IDomainParticipant,
+        /// as used when the IPublisher was created, or the IPublisher contains one or more IDataWriter objects.</item>
         /// </list>
         /// </returns>
         ReturnCode DeletePublisher(IPublisher p);
+
         /// <summary>
-        /// This method creates a Subscriber. It behaves similarly to the most complete operation, but it 
-        /// uses default values for the ommitted parameters. These are the default Qos for Qos parameters, null
-        /// for listeners with 0 mask for listener parameters.
-        /// </summary>
-        /// <returns>The created Subscriber.</returns>
-        ISubscriber CreateSubscriber();
-        /// <summary>
-        /// This method creates a Subscriber. It behaves similarly to the most complete operation, but it 
-        /// uses default values for the ommitted parameters. These are the default Qos for Qos parameters, null
-        /// for listeners with 0 mask for listener parameters.
-        /// </summary>
-        /// <param name="listener"></param>
-        /// <param name="mask"></param>
-        /// <returns>The created Subscriber.</returns>
-        ISubscriber CreateSubscriber(
-                ISubscriberListener listener, 
-                StatusKind mask);
-        /// <summary>
-        /// This method creates a Subscriber. It behaves similarly to the most complete operation, but it 
-        /// uses default values for the ommitted parameters. These are the default Qos for Qos parameters, null
-        /// for listeners with 0 mask for listener parameters.
-        /// </summary>
-        /// <param name="qos"></param>
-        /// <returns>The created Subscriber.</returns>
-        ISubscriber CreateSubscriber(SubscriberQos qos);
-        /// <summary>
-        /// This operation creates a Subscriber with the desired QosPolicy settings and if
-        /// applicable, attaches the optionally specified SubscriberListener to it.
+        /// This method creates a ISubscriber with default values.
         /// </summary>
         /// <remarks>
-        /// This operation creates a Subscriber with the desired QosPolicy settings and if
-        /// applicable, attaches the optionally specified SubscriberListener to it. When the
-        /// SubscriberListener is not applicable, a null SubscriberListener must be supplied
-        /// instead. To delete the Subscriber the operation DeleteSubscriber or
-        /// DeleteContainedEntities must be used.
-        /// In case the specified QosPolicy settings are not consistent, no Subscriber is
-        /// created and a null Subscriber is returned.
+        /// This operation creates a ISubscriber with the default SubscriberQos, a null ISubscriberListener
+        /// and 0 StatusKind mask.
+        ///
+        /// If the SetDefaultSubscriberQos() method is called, then the default SubscriberQos will be the
+        /// QoS given to that method. Otherwise it will equal a new SubscriberQos.
+        ///
+        /// To delete the ISubscriber the operation DeleteSubscriber() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref DDS.IDomainParticipant.CreateSubscriber(SubscriberQos qos, ISubscriberListener listener, StatusKind mask) "CreateSubscriber"
+        /// for:<br>
+        /// - Communication Status
+        /// - Status Propagation
         /// </remarks>
-        /// <param name="qos">a collection of QosPolicy settings for the new Subscriber. 
-        /// In case these settings are not self consistent, no Subscriber is created.</param>
-        /// <param name="listener">a pointer to the SubscriberListener instance which will be attached 
-        /// to the new Subscriber. It is permitted to use null as the value of the listener: this
-        /// behaves as a SubscriberListener whose operations perform no action.</param>
-        /// <param name="mask">a bit-mask in which each bit enables the invocation of the SubscriberListener 
+        /// <returns>The newly created ISubscriber. In case of an error, a null ISubscriber is returned.</returns>
+        ISubscriber CreateSubscriber();
+
+        /// <summary>
+        /// This method creates a ISubscriber and if applicable, attaches the optionally specified ISubscriberListener to it.
+        /// </summary>
+        /// <remarks>
+        /// This operation creates a ISubscriber with the default SubscriberQos, the given ISubscriberListener
+        /// and StatusKind mask. The ISubscriberListener may be null and the mask may be 0.
+        ///
+        /// If the SetDefaultSubscriberQos() method is called, then the default SubscriberQos will be the
+        /// QoS given to that method. Otherwise it will equal a new SubscriberQos.
+        ///
+        /// To delete the ISubscriber the operation DeleteSubscriber() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref DDS.IDomainParticipant.CreateSubscriber(SubscriberQos qos, ISubscriberListener listener, StatusKind mask) "CreateSubscriber"
+        /// for:<br>
+        /// - Communication Status
+        /// - Status Propagation
+        /// </remarks>
+        /// <param name="listener">The ISubscriberListener instance which will be attached to the new ISubscriber.
+        /// It is permitted to use null as the value of the listener: this behaves as a ISubscriberListener
+        /// whose operations perform no action.</param>
+        /// <param name="mask">A bit-mask in which each bit enables the invocation of the ISubscriberListener
         /// for a certain status.</param>
-        /// <returns>The newly created Subscriber.In case of an error a null Subscriber is returned.</returns>
+        /// <returns>The newly created ISubscriber. In case of an error, a null ISubscriber is returned.</returns>
+        ISubscriber CreateSubscriber(
+                ISubscriberListener listener,
+                StatusKind mask);
+
+        /// <summary>
+        /// This method creates a ISubscriber with the desired QosPolicy settings, but without an ISubscriberListener.
+        /// </summary>
+        /// <remarks>
+        /// This operation creates a ISubscriber with the given SubscriberQos, a null ISubscriberListener
+        /// and 0 StatusKind mask.
+        ///
+        /// In case the specified QosPolicy settings are not consistent, no ISubscriber is
+        /// created and null is returned. Null can also be returned
+        /// when insufficient access rights exist for the partition(s) listed in the provided QoS
+        ///
+        /// To delete the ISubscriber the operation DeleteSubscriber() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref DDS.IDomainParticipant.CreateSubscriber(SubscriberQos qos, ISubscriberListener listener, StatusKind mask) "CreateSubscriber"
+        /// for:<br>
+        /// - Communication Status
+        /// - Status Propagation
+        /// </remarks>
+        /// <param name="qos">A collection of QosPolicy settings for the new ISubscriber.
+        /// In case these settings are not self consistent, no ISubscriber is created.</param>
+        /// <returns>The newly created ISubscriber. In case of an error, a null ISubscriber is returned.</returns>
+        ISubscriber CreateSubscriber(SubscriberQos qos);
+
+        /// <summary>
+        /// This operation creates a ISubscriber with the desired QosPolicy settings and if
+        /// applicable, attaches the optionally specified ISubscriberListener to it.
+        /// </summary>
+        /// <remarks>
+        /// This operation creates a ISubscriber with the desired QosPolicy settings and if
+        /// applicable, attaches the optionally specified ISubscriberListener to it. When the
+        /// ISubscriberListener is not applicable, null must be supplied instead.
+        ///
+        /// In case the specified QosPolicy settings are not consistent, no ISubscriber is
+        /// created and null is returned. Null can also be returned
+        /// when insufficient access rights exist for the partition(s) listed in the provided QoS
+        ///
+        /// To delete the ISubscriber the operation DeleteSubscriber() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// <i><b>Communication Status</b></i><br>
+        /// For each communication status, the StatusChangedFlag flag is initially set to
+        /// false. It becomes true whenever that communication status changes. For each
+        /// communication status activated in the mask, the associated
+        /// ISubscriberListener operation is invoked and the communication
+        /// status is reset to false, as the listener implicitly accesses the status which is passed
+        /// as a parameter to that operation. The fact that the status is reset prior to calling the
+        /// listener means that if the application calls the Get<status_name>Status from
+        /// inside the listener it will see the status already reset.
+        ///
+        /// The following statuses are applicable to the ISubscriber
+        /// - DDS.StatusKind RequestedDeadlineMissed (propagated)
+        /// - DDS.StatusKind RequestedIncompatibleQos (propagated)
+        /// - DDS.StatusKind SampleLost (propagated)
+        /// - DDS.StatusKind SampleRejected (propagated)
+        /// - DDS.StatusKind DataAvailable (propagated)
+        /// - DDS.StatusKind LivelinessChanged (propagated)
+        /// - DDS.StatusKind SubscriptionMatched (propagated)
+        /// - DDS.StatusKind DataOnReaders
+        ///
+        /// Be aware that the SubscriptionMatched
+        /// status are not applicable when the infrastructure does not have the
+        /// information available to determine connectivity. This is the case when OpenSplice
+        /// is configured not to maintain discovery information in the Networking Service. (See
+        /// the description for the NetworkingService/Discovery/enabled property in
+        /// the Deployment Manual for more information about this subject.) In this case the
+        /// operation will return null.
+        ///
+        /// Status bits are declared as a constant and can be used by the application in an OR
+        /// operation to create a tailored mask. The special constant 0 can
+        /// be used to indicate that the created entity should not respond to any of its available
+        /// statuses. The DDS will therefore attempt to propagate these statuses to its factory.
+        ///
+        /// <i><b>Status Propagation</b></i><br>
+        /// The Data Distribution Service will trigger the most specific and relevant Listener.<br>
+        /// In other words, in case a communication status is also activated on the
+        /// IDataWriterListener of a contained IDataWriter, the IDataWriterListener
+        /// on that contained IDataWriter is invoked instead of the ISubscriberListener.
+        /// This means that a status change on a contained IDataWriter only invokes the
+        /// ISubscriberListener if the contained IDataWriter itself does not handle the
+        /// trigger event generated by the status change.
+        ///
+        /// In case a communication status is not activated in the mask of the
+        /// ISubscriberListener, the IDomainParticipantListener of the containing
+        /// IDomainParticipant is invoked (if attached and activated for the status that
+        /// occurred). This allows the application to set a default behaviour in the
+        /// IDomainParticipantListener of the containing IDomainParticipant and a
+        /// ISubscriber specific behaviour when needed. In case the
+        /// IDomainParticipantListener is also not attached or the communication status
+        /// is not activated in its mask, the application is not notified of the change.
+        /// </remarks>
+        /// <remarks>
+        /// This operation creates a ISubscriber with the desired QosPolicy settings and if
+        /// applicable, attaches the optionally specified ISubscriberListener to it. When the
+        /// ISubscriberListener is not applicable, a null ISubscriberListener must be supplied
+        /// instead. To delete the ISubscriber the operation DeleteSubscriber() or
+        /// DeleteContainedEntities() must be used.
+        /// In case the specified QosPolicy settings are not consistent, no ISubscriber is
+        /// created and a null ISubscriber is returned.
+        /// </remarks>
+        /// <param name="qos">a collection of QosPolicy settings for the new ISubscriber.
+        /// In case these settings are not self consistent, no ISubscriber is created.</param>
+        /// <param name="listener">a pointer to the ISubscriberListener instance which will be attached
+        /// to the new ISubscriber. It is permitted to use null as the value of the listener: this
+        /// behaves as a ISubscriberListener whose operations perform no action.</param>
+        /// <param name="mask">a bit-mask in which each bit enables the invocation of the ISubscriberListener
+        /// for a certain status.</param>
+        /// <returns>The newly created ISubscriber. In case of an error a null ISubscriber is returned.</returns>
         ISubscriber CreateSubscriber(
                 SubscriberQos qos,
-                ISubscriberListener listener, 
+                ISubscriberListener listener,
                 StatusKind mask);
+
         /// <summary>
-        /// This operation deletes a Subscriber.
+        /// This operation deletes a ISubscriber.
         /// </summary>
         /// <remarks>
-        /// This operation deletes a Subscriber. A Subscriber cannot be deleted when it
-        /// has any attached DataReader objects. When the operation is called on a
-        /// Subscriber with DataReader objects, the operation returns
+        /// This operation deletes a ISubscriber. A ISubscriber cannot be deleted when it
+        /// has any attached IDataReader objects. When the operation is called on a
+        /// ISubscriber with IDataReader objects, the operation returns
         /// PreconditionNotMet. When the operation is called on a different
-        /// DomainParticipant, as used when the Subscriber was created, the operation
+        /// IDomainParticipant, as used when the ISubscriber was created, the operation
         /// has no effect and returns PreconditionNotMet.
         /// </remarks>
         /// <param name="s"> The subscriber to be deleted.</param>
-        /// <returns>Rerurn values are:
+        /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The Subscriber is deleted.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>BadParameter - The parameter p is not a valid ISubscriber.</item>
-        /// <item>AlreadyDeleted - The DomainParticipant has already been deleted.</item>
-        /// <item>OutOfResources - the DDS has ran out of resources to complete this operation. </item>
-        /// <item>PreconditionNotMet - the operation is called on a different DomainParticipant, 
-        /// as used when the Subscriber was created, or the Publisher contains one or more DataReader objects.</item>
+        /// <item>DDS.ReturnCode Ok - The ISubscriber is deleted.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter p is not a valid ISubscriber.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the DDS has ran out of resources to complete this operation. </item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - the operation is called on a different IDomainParticipant,
+        /// as used when the ISubscriber was created, or the ISubscriber contains one or more IDataReader objects.</item>
         /// </list>
         /// </returns>
         ReturnCode DeleteSubscriber(ISubscriber s);
+
         /// <summary>
-        /// This property returns the built-in Subscriber associated with the DomainParticipant.
+        /// This property returns the built-in ISubscriber associated with the IDomainParticipant.
         /// </summary>
         /// <remarks>
-        /// This operation returns the built-in Subscriber associated with the
-        /// DomainParticipant. Each DomainParticipant contains several built-in
-        /// Topic objects. The built-in Subscriber contains the corresponding DataReader
-        /// objects to access them. All these DataReader objects belong to a single built-in
-        /// Subscriber. Note that there is exactly one built-in Subscriber associated with
-        /// each DomainParticipant.
+        /// This operation returns the built-in ISubscriber associated with the
+        /// IDomainParticipant. Each IDomainParticipant contains several built-in
+        /// ITopic objects. The built-in ISubscriber contains the corresponding IDataReader
+        /// objects to access them. All these IDataReader objects belong to a single built-in
+        /// ISubscriber. Note that there is exactly one built-in ISubscriber associated with
+        /// each IDomainParticipant.
         /// </remarks>
-        /// <returns>The built-in Subscriber associated with the DomainParticipant.</returns>
+        /// <returns>The built-in ISubscriber associated with the IDomainParticipant.</returns>
         ISubscriber BuiltInSubscriber { get; }
+
         /// <summary>
-        /// This operation returns a new or existing ITopic for the given name for a specific type, 
-        /// with the desired QosPolicy settings and if applicable, attaches the optionally specified 
-        /// TopicListener to it. It behaves very similarly to the most complete operation but it uses default 
-        /// values for the omitted parameters. For QosPolicy parameters the default QosPolicy settings, null for listeners
-        /// and 0 as mask for listener parameters.
+        /// This operation creates a reference to a new or existing ITopic under the given name,
+        /// for a specific type and uses default values for QoS and Listener.
         /// </summary>
-        /// <param name="topicName"></param>
-        /// <param name="typeName"></param>
-        /// <returns>The new or existing ITopic.</returns>
+        /// <remarks>
+        /// This operation creates a ITopic with the default TopicQos, a null ITopicListener
+        /// and 0 StatusKind mask.
+        ///
+        /// If the SetDefaultTopicQos() method is called, then the default TopicQos will be the
+        /// QoS given to that method. Otherwise it will equal a new TopicQos.
+        ///
+        /// To delete the ITopic the operation DeleteTopic() or DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref DDS.IDomainParticipant.CreateTopic(string topicName, string typeName, TopicQos qos, ITopicListener listener, StatusKind mask) "CreateTopic"
+        /// for:<br>
+        /// - Type Support
+        /// - Existing ITopic Name
+        /// - Local Proxy
+        /// - Communication Status
+        /// - Status Propagation
+        /// </remarks>
+        /// <param name="topicName">the name of the ITopic to be created. A new ITopic will only be created,
+        /// when no ITopic, with the same name, is found within the IDomainParticipant.</param>
+        /// <param name="typeName">a local alias of the data type, which must have been registered
+        /// before creating the ITopic.</param>
+        /// <returns>The new or existing ITopic. In case of an error, null is returned.</returns>
         ITopic CreateTopic(string topicName, string typeName);
+
         /// <summary>
-        /// This operation returns a new or existing ITopic for the given name for a specific type, 
-        /// with the desired QosPolicy settings and if applicable, attaches the optionally specified 
-        /// TopicListener to it. It behaves very similarly to the most complete operation but it uses default 
-        /// values for the omitted parameters. For QosPolicy parameters the default QosPolicy settings, null for listeners
-        /// and 0 as mask for listener parameters.
-        /// </summary>
-        /// <param name="topicName"></param>
-        /// <param name="typeName"></param>
-        /// <param name="listener"></param>
-        /// <param name="mask"></param>
-        /// <returns>The new or existing ITopic.</returns>
-        ITopic CreateTopic(
-                string topicName, 
-                string typeName,
-                ITopicListener listener, 
-                StatusKind mask);
-        /// <summary>
-        /// This operation returns a new or existing ITopic for the given name for a specific type, 
-        /// with the desired QosPolicy settings and if applicable, attaches the optionally specified 
-        /// TopicListener to it. It behaves very similarly to the most complete operation but it uses default 
-        /// values for the omitted parameters. For QosPolicy parameters the default QosPolicy settings, null for listeners
-        /// and 0 as mask for listener parameters.
-        /// </summary>
-        /// <param name="topicName"></param>
-        /// <param name="typeName"></param>
-        /// <param name="qos"></param>
-        /// <returns>The new or existing ITopic.</returns>
-        ITopic CreateTopic(string topicName, string typeName, TopicQos qos);
-        /// <summary>
-        /// This operation returns a new or existing ITopic for the given name for a specific type, 
-        /// with the desired QosPolicy settings and if applicable, attaches the optionally specified 
+        /// This operation returns a new or existing ITopic for the given name for a specific type,
+        /// with the default QosPolicy settings and if applicable, attaches the optionally specified
         /// TopicListener to it.
         /// </summary>
         /// <remarks>
-        /// This operation creates a reference to a new or existing Topic under the given name,
+        /// This operation creates a ITopic with the default TopicQos, the given ITopicListener
+        /// and StatusKind mask. The ITopicListener may be null and the mask may be 0.
+        ///
+        /// If the SetDefaultTopicQos() method is called, then the default TopicQos will be the
+        /// QoS given to that method. Otherwise it will equal a new TopicQos.
+        ///
+        /// To delete the ITopic the operation DeleteTopic() or DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref DDS.IDomainParticipant.CreateTopic(string topicName, string typeName, TopicQos qos, ITopicListener listener, StatusKind mask) "CreateTopic"
+        /// for:<br>
+        /// - Type Support
+        /// - Existing ITopic Name
+        /// - Local Proxy
+        /// - Communication Status
+        /// - Status Propagation
+        /// </remarks>
+        /// <param name="topicName">the name of the ITopic to be created. A new ITopic will only be created,
+        /// when no ITopic, with the same name, is found within the IDomainParticipant.</param>
+        /// <param name="typeName">a local alias of the data type, which must have been registered
+        /// before creating the ITopic.</param>
+        /// <param name="listener">the TopicListener instance which will be attached to the new ITopic.
+        /// It is permitted to use null as the value of the listener: this behaves as a TopicListener
+        /// whose operations perform no action.</param>
+        /// <param name="mask">a bit-mask in which each bit enables the invocation of
+        /// the TopicListener for a certain status.</param>
+        /// <returns>The new or existing ITopic. In case of an error, null is returned.</returns>
+        ITopic CreateTopic(
+                string topicName,
+                string typeName,
+                ITopicListener listener,
+                StatusKind mask);
+
+        /// <summary>
+        /// This operation returns a new or existing ITopic for the given name for a specific type,
+        /// with the desired QosPolicy settings and no Listener.
+        /// </summary>
+        /// <remarks>
+        /// This operation creates a ITopic with the given TopicQos, a null ITopicListener
+        /// and 0 StatusKind mask.
+        ///
+        /// To delete the ITopic the operation DeleteTopic() or DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref DDS.IDomainParticipant.CreateTopic(string topicName, string typeName, TopicQos qos, ITopicListener listener, StatusKind mask) "CreateTopic"
+        /// for:<br>
+        /// - Type Support
+        /// - Existing ITopic Name
+        /// - Local Proxy
+        /// - Communication Status
+        /// - Status Propagation
+        /// </remarks>
+        /// <param name="topicName">the name of the ITopic to be created. A new ITopic will only be created,
+        /// when no ITopic, with the same name, is found within the IDomainParticipant.</param>
+        /// <param name="typeName">a local alias of the data type, which must have been registered
+        /// before creating the ITopic.</param>
+        /// <param name="qos">a collection of QosPolicy settings for the new ITopic.
+        /// In case these settings are not self consistent, no ITopic is created.</param>
+        /// <returns>The new or existing ITopic. In case of an error, null is returned.</returns>
+        ITopic CreateTopic(string topicName, string typeName, TopicQos qos);
+
+        /// <summary>
+        /// This operation returns a new or existing ITopic for the given name for a specific type,
+        /// with the desired QosPolicy settings and if applicable, attaches the optionally specified
+        /// TopicListener to it.
+        /// </summary>
+        /// <remarks>
+        /// This operation creates a reference to a new or existing ITopic under the given name,
         /// for a specific type, with the desired QosPolicy settings and if applicable, attaches
         /// the optionally specified TopicListener to it. When the TopicListener is not
         /// applicable, a null listener must be supplied instead. In case the specified
-        /// QosPolicy settings are not consistent, no Topic is created and a null ITopic is
-        /// returned. To delete the Topic the operation DeleteTopic or DeleteContainedEntities must be used.
+        /// QosPolicy settings are not consistent, no ITopic is created and a null ITopic is
+        /// returned.
+        ///
+        /// To delete the ITopic the operation DeleteTopic() or DeleteContainedEntities() must be used.
+        ///
+        /// <i><b>Type Support</b></i><br>
+        /// The ITopic is bound to the type typeName. Prior to creating the ITopic, the
+        /// typeName must have been registered with the Data Distribution Service.
+        /// Registering the typeName is done using the data type specific RegisterType
+        /// operation (the simplest ITopic creation is used in this example).
+        /// <code>
+        /// DDS.DomainParticipantFactory factory     = DDS.DomainParticipantFactory.Instance;
+        /// DDS.IDomainParticipant       participant = factory.CreateParticipant(DDS.DomainId.Default);
+        /// Space.FooTypeSupport           typesupport = new Space.FooTypeSupport();
+        /// DDS.ReturnCode retcode = typesupport.RegisterType(participant, "Space.Foo");
+        ///
+        /// DDS.ITopic topic = participant.CreateTopic("FoFoo", "Space.Foo");
+        /// </code>
+        ///
+        /// <i><b>Existing ITopic Name</b></i><br>
+        /// Before creating a new ITopic, this operation performs a
+        /// LookupTopicDescription() for the specified topicName. When a ITopic is
+        /// found with the same name in the current domain, the QoS and typeName of the
+        /// found ITopic are matched against the parameters qos and typeName. When they
+        /// are the same, no ITopic is created but a new proxy of the existing ITopic is returned.<br>
+        /// When they are not exactly the same, no ITopic is created and null is
+        /// returned.
+        ///
+        /// When a ITopic is obtained multiple times, it must also be deleted that same number
+        /// of times using DeleteTopic() or calling DeleteContainedEntities() once to
+        /// delete all the proxies.
+        ///
+        /// <i><b>Local Proxy</b></i><br>
+        /// Since a Topic is a global concept in the system, access is provided through a local
+        /// proxy. In other words, the reference returned is actually not a reference to a ITopic
+        /// but to a locally created proxy. The Data Distribution Service propagates Topics
+        /// and makes remotely created Topics locally available through this proxy. For each
+        /// create, a new proxy is created. Therefore the Topic must be deleted the same
+        /// number of times, as the Topic was created with the same topicName per
+        /// Domain. In other words, each reference (local proxy) must be deleted separately.
+        ///
+        /// <i><b>Communication Status</b></i><br>
+        /// For each communication status, the StatusChangedFlag flag is initially set to
+        /// false. It becomes true whenever that communication status changes. For each
+        /// communication status activated in the mask, the associated
+        /// ITopicListener operation is invoked and the communication
+        /// status is reset to false, as the listener implicitly accesses the status which is passed
+        /// as a parameter to that operation. The fact that the status is reset prior to calling the
+        /// listener means that if the application calls the Get<status_name>Status from
+        /// inside the listener it will see the status already reset.
+        ///
+        /// The following statuses are applicable to the ITopic
+        /// - DDS.StatusKind InconsistentTopic
+        ///
+        /// Status bits are declared as a constant and can be used by the application in an OR
+        /// operation to create a tailored mask. The special constant 0 can
+        /// be used to indicate that the created entity should not respond to any of its available
+        /// statuses. The DDS will therefore attempt to propagate these statuses to its factory.
+        ///
+        /// <i><b>Status Propagation</b></i><br>
+        /// In case a communication status is not activated in the mask of the
+        /// ITopicListener, the IDomainParticipantListener of the containing
+        /// IDomainParticipant is invoked (if attached and activated for the status that
+        /// occurred). This allows the application to set a default behaviour in the
+        /// IDomainParticipantListener of the containing IDomainParticipant and a
+        /// ITopic specific behaviour when needed. In case the
+        /// IDomainParticipantListener is also not attached or the communication status
+        /// is not activated in its mask, the application is not notified of the change.
         /// </remarks>
-        /// <param name="topicName">the name of the Topic to be created. A new Topic will only be created, 
-        /// when no Topic, with the same name, is found within the DomainParticipant.</param>
-        /// <param name="typeName">a local alias of the data type, which must have been registered 
-        /// before creating the Topic.</param>
-        /// <param name="qos">a collection of QosPolicy settings for the new Topic. 
-        /// In case these settings are not self consistent, no Topic is created.</param>
-        /// <param name="listener">the TopicListener instance which will be attached to the new Topic. 
+        /// <param name="topicName">the name of the ITopic to be created. A new ITopic will only be created,
+        /// when no ITopic, with the same name, is found within the IDomainParticipant.</param>
+        /// <param name="typeName">a local alias of the data type, which must have been registered
+        /// before creating the ITopic.</param>
+        /// <param name="qos">a collection of QosPolicy settings for the new ITopic.
+        /// In case these settings are not self consistent, no ITopic is created.</param>
+        /// <param name="listener">the TopicListener instance which will be attached to the new ITopic.
         /// It is permitted to use null as the value of the listener: this behaves as a TopicListener
         /// whose operations perform no action.</param>
-        /// <param name="mask"></param>
-        /// <returns></returns>
+        /// <param name="mask">a bit-mask in which each bit enables the invocation of
+        /// the TopicListener for a certain status.</param>
+        /// <returns>The new or existing ITopic. In case of an error, null is returned.</returns>
         ITopic CreateTopic(
-                string topicName, 
-                string typeName, 
+                string topicName,
+                string typeName,
                 TopicQos qos,
-                ITopicListener listener, 
+                ITopicListener listener,
                 StatusKind mask);
+
         /// <summary>
-        /// This operation deletes a Topic
+        /// This operation deletes a ITopic
         /// </summary>
         /// <remarks>
-        /// This operation deletes a Topic. A Topic cannot be deleted when there are any
-        /// DataReader, DataWriter, ContentFilteredTopic or MultiTopic objects,
-        /// which are using the Topic. When the operation is called on a Topic referenced by
+        /// This operation deletes a ITopic. A ITopic cannot be deleted when there are any
+        /// IDataReader, IDataWriter, IContentFilteredTopic or IMultiTopic objects,
+        /// which are using the ITopic. When the operation is called on a ITopic referenced by
         /// any of these objects, the operation returns PreconditionNotMet.
-        /// When the operation is called on a different DomainParticipant, as used when
-        /// the Topic was created, the operation has no effect and returns PreconditionNotMet.
+        /// When the operation is called on a different IDomainParticipant, as used when
+        /// the ITopic was created, the operation has no effect and returns PreconditionNotMet.
+        ///
+        /// <i><b>Local proxy</b></i><br>
+        /// Since a Topic is a global concept in the system, access is provided through a local
+        /// proxy. In other words, the reference is actually not a reference to a Topic but to the
+        /// local proxy. The Data Distribution Service propagates Topics and makes remotely
+        /// created Topics locally available through this proxy. Such a proxy is created by the
+        /// CreateTopic or FindTopic operation. This operation will delete the local
+        /// proxy. When a reference to the same Topic was created multiple times (either by
+        /// CreateTopic or FindTopic), each reference (local proxy) must be deleted
+        /// separately. When this proxy is the last proxy for this Topic, the Topic itself is also
+        /// removed from the system. As mentioned, a proxy may only be deleted when there
+        /// are no other entities attached to it. However, it is possible to delete a proxy while
+        /// there are entities attached to a different proxy.
         /// </remarks>
-        /// <param name="topic">The Topic which is to be deleted.</param>
+        /// <param name="topic">The ITopic which is to be deleted.</param>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The Topic is deleted.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>BadParameter - The parameter topic is not a valid ITopic.</item>
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>PreconditionNotMet - The operation is called on a different DomainParticipant, as used when the 
-        /// Topic was created, or the Topic is still referenced by other objects.</item>
+        /// <item>DDS.ReturnCode Ok - The ITopic is deleted.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter topic is not a valid ITopic.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - The operation is called on a different IDomainParticipant, as used when the
+        /// ITopic was created, or the ITopic is still referenced by other objects.</item>
         /// </list>
         /// </returns>
         ReturnCode DeleteTopic(ITopic topic);
+
         /// <summary>
-        /// This operation gives access to an existing (or ready to exist) enabled Topic, based on its topicName.
+        /// This operation gives access to an existing (or ready to exist) enabled ITopic, based on its topicName.
         /// </summary>
         /// <remarks>
-        /// This operation gives access to an existing Topic, based on its topic_name. The
-        /// operation takes as arguments the topic_name of the Topic and a timeout.
-        /// If a Topic of the same topic_name already exists, it gives access to this Topic.
+        /// This operation gives access to an existing ITopic, based on its topicName. The
+        /// operation takes as arguments the topicName of the ITopic and a timeout.
+        ///
+        /// If a ITopic of the same topicName already exists, it gives access to this ITopic.
         /// Otherwise it waits (blocks the caller) until another mechanism creates it. This other
         /// mechanism can be another thread, a configuration tool, or some other Data
-        /// Distribution Service utility. If after the specified timeout the Topic can still not be
-        /// found, the caller gets unblocked and the NULL pointer is returned.
-        /// A Topic obtained by means of find_topic, must also be deleted by means of
-        /// delete_topic so that the local resources can be released. If a Topic is obtained
+        /// Distribution Service utility. If after the specified timeout the ITopic can still not be
+        /// found, the caller gets unblocked and null is returned.
+        ///
+        /// A ITopic obtained by means of FindTopic, must also be deleted by means of
+        /// DeleteTopic so that the local resources can be released. If a ITopic is obtained
         /// multiple times it must also be deleted that same number of times using
-        /// delete_topic or calling delete_contained_entities once to delete all the proxies.
-        /// A Topic that is obtained by means of find_topic in a specific DomainParticipant 
-        /// can only be used to create DataReaders and DataWriters in that DomainParticipant if its 
-        /// corresponding TypeSupport has been registered to that same DomainParticipant.
+        /// DeleteTopic or calling DeleteContainedEntities once to delete all the proxies.
+        ///
+        /// A ITopic that is obtained by means of FindTopic in a specific IDomainParticipant
+        /// can only be used to create DataReaders and DataWriters in that IDomainParticipant if its
+        /// corresponding TypeSupport has been registered to that same IDomainParticipant.
+        ///
+        /// <i><b>Local Proxy</b></i><br>
+        /// Since a Topic is a global concept in the system, access is provided through a local
+        /// proxy. In other words, the reference returned is actually not a reference to a Topic
+        /// but to a locally created proxy. The Data Distribution Service propagates Topics
+        /// and makes remotely created Topics locally available through this proxy. For each
+        /// create, a new proxy is created. Therefore the Topic must be deleted the same
+        /// number of times, as the ITopic was created with the same topicName per
+        /// Domain. In other words, each reference (local proxy) must be deleted separately.
         /// </remarks>
-        /// <param name="topicName">The name of te Topic that the application wants access to.</param>
-        /// <param name="timeout">The maximum duration to block for the DomainParticipant FindTopic, 
-        /// after which the application thread is unblocked. The special constant Duration Infinite can be used 
+        /// <param name="topicName">The name of te ITopic that the application wants access to.</param>
+        /// <param name="timeout">The maximum duration to block for the IDomainParticipant FindTopic,
+        /// after which the application thread is unblocked. The special constant Duration Infinite can be used
         /// when the maximum waiting time does not need to be bounded.</param>
-        /// <returns>The Topic that has been found. If an error occurs the operation returns a Topic with a null value. </returns>
+        /// <returns>The ITopic that has been found. If an error occurs the operation returns a ITopic with a null value. </returns>
         ITopic FindTopic(string topicName, Duration timeout);
+
         /// <summary>
-        /// This operation gives access to a locally-created TopicDescription, with a matching name.
+        /// This operation gives access to a locally-created ITopicDescription, with a matching name.
         /// </summary>
         /// <remarks>
-        /// The operation lookup_topicdescription gives access to a locally-created
-        /// TopicDescription, based on its name. The operation takes as argument the name
-        /// of the TopicDescription.
-        /// If one or more local TopicDescription proxies of the same name already exist, 
-        /// a pointer to one of the already existing local proxies is returned: LookupTopicDescription 
-        /// will never create a new local proxy. That means that the proxy that is returned does not need 
-        /// to be deleted separately from its original. When no local proxy exists, it returns null. 
+        /// The operation LookupTopicDescription gives access to a locally-created
+        /// ITopicDescription, based on its name. The operation takes as argument the name
+        /// of the ITopicDescription.
+        ///
+        /// If one or more local ITopicDescription proxies of the same name already exist,
+        /// a pointer to one of the already existing local proxies is returned: LookupTopicDescription
+        /// will never create a new local proxy. That means that the proxy that is returned does not need
+        /// to be deleted separately from its original. When no local proxy exists, it returns null.
+        ///
         /// The operation never blocks. The operation LookupTopicDescription may be used to locate any
-        /// locally-created Topic, ContentFilteredTopic and MultiTopic object.
+        /// locally-created ITopic, IContentFilteredTopic and IMultiTopic object.
         /// </remarks>
-        /// <param name="name">The name of the TopicDescription to look for.</param>
-        /// <returns>The TopicDescription it has found.If an error occurs the operation 
-        /// returns a TopicDescription with a null value. </returns>
+        /// <param name="name">The name of the ITopicDescription to look for.</param>
+        /// <returns>The ITopicDescription it has found.If an error occurs the operation
+        /// returns a ITopicDescription with a null value. </returns>
         ITopicDescription LookupTopicDescription(string name);
+
         /// <summary>
-        /// This operation creates a ContentFilteredTopic for a DomainParticipant in order to allow 
+        /// This operation creates a IContentFilteredTopic for a IDomainParticipant in order to allow
         /// DataReaders to subscribe to a subset of the topic content.
         /// </summary>
         /// <remarks>
-        /// This operation creates a ContentFilteredTopic for a DomainParticipant in
+        /// This operation creates a IContentFilteredTopic for a IDomainParticipant in
         /// order to allow DataReaders to subscribe to a subset of the topic content. The base
         /// topic, which is being filtered is defined by the parameter relatedTopic. The
-        /// resulting ContentFilteredTopic only relates to the samples published under the
+        /// resulting IContentFilteredTopic only relates to the samples published under the
         /// relatedTopic, which have been filtered according to their content. The resulting
-        /// ContentFilteredTopic only exists at the DataReader side and will never be
-        /// published. The samples of the related_topic are filtered according to the SQL
+        /// IContentFilteredTopic only exists at the IDataReader side and will never be
+        /// published. The samples of the related topic are filtered according to the SQL
         /// expression (which is a subset of SQL) as defined in the parameter
-        /// filterExpression .The filter_expression may also contain parameters, which appear as
+        /// filterExpression.
+        ///
+        /// The filterExpression may also contain parameters, which appear as
         /// %n tokens in the expression which must be set by the sequence of strings defined by the
         /// parameter expressionParameters. The number of values in
         /// expressionParameters must be equal or greater than the highest referenced
-        /// %n token in the filter_expression (e.g. if %1 and %8 are used as parameter in
-        /// the filter_expression, the expression_parameters should at least contain
+        /// %n token in the filterExpression (e.g. if %1 and %8 are used as parameter in
+        /// the filterExpression, the expressionParameters should at least contain
         /// n+1 = 9 values).
+        ///
         /// The filterExpression is a string that specifies the criteria to select the data
         /// samples of interest. In other words, it identifies the selection of data from the
         /// associated Topics. It is an SQL expression where the WHERE clause gives the
         /// content filter.
         /// </remarks>
-        /// <param name="name">The name of the ContentFilteredTopic.</param>
-        /// <param name="relatedTopic">The base topic on which the filtering will be applied. Therefore, 
-        /// a filtered topic is based onn an existing Topic.</param>
+        /// <param name="name">The name of the IContentFilteredTopic.</param>
+        /// <param name="relatedTopic">The base topic on which the filtering will be applied. Therefore,
+        /// a filtered topic is based onn an existing ITopic.</param>
         /// <param name="filterExpression">The SQL expression (subset of SQL), which defines the filtering.</param>
         /// <param name="expressionParameters">A sequence of strings with the parameter value used in the SQL expression
-        /// (i.e., the number of %n tokens in the expression).The number of values in expressionParameters 
-        /// must be equal or greater than the highest referenced %n token in the filterExpression 
+        /// (i.e., the number of %n tokens in the expression).The number of values in expressionParameters
+        /// must be equal or greater than the highest referenced %n token in the filterExpression
         /// (e.g. if %1 and %8 are used as parameter in the filterExpression, the expressionParameters should at least
         /// contain n+1 = 9 values)</param>
-        /// <returns>The newly created ContentFilteredTopic. In case of an error a ContentFilteredTopic with a null
+        /// <returns>The newly created IContentFilteredTopic. In case of an error a IContentFilteredTopic with a null
         /// value is returned.</returns>
         IContentFilteredTopic CreateContentFilteredTopic(
                 string name,
                 ITopic relatedTopic,
                 string filterExpression,
                 params string[] expressionParameters);
+
         /// <summary>
-        /// This operation deletes a ContentFilteredTopic.
+        /// This operation deletes a IContentFilteredTopic.
         /// </summary>
         /// <remarks>
-        /// This operation deletes a ContentFilteredTopic.
-        /// The deletion of a ContentFilteredTopic is not allowed if there are any existing
-        /// DataReader objects that are using the ContentFilteredTopic. If the
+        /// This operation deletes a IContentFilteredTopic.
+        /// The deletion of a IContentFilteredTopic is not allowed if there are any existing
+        /// IDataReader objects that are using the IContentFilteredTopic. If the
         /// DeleteContentFilteredTopic operation is called on a
-        /// ContentFilteredTopic with existing DataReader objects attached to it, it will
+        /// IContentFilteredTopic with existing IDataReader objects attached to it, it will
         /// return PreconditionNotMet.
+        ///
         /// The DeleteContentFilteredTopic operation must be called on the same
-        /// DomainParticipant object used to create the ContentFilteredTopic. If
-        /// DeleteContentFilteredTopic is called on a different DomainParticipant
+        /// IDomainParticipant object used to create the IContentFilteredTopic. If
+        /// DeleteContentFilteredTopic is called on a different IDomainParticipant
         /// the operation will have no effect and it will return PreconditionNotMet.
         /// </remarks>
-        /// <param name="aContentFilteredTopic">The ContentFilteredTopic to be deleted.</param>
+        /// <param name="aContentFilteredTopic">The IContentFilteredTopic to be deleted.</param>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The ContentFilteredTopic is deleted.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>BadParameter - The parameter aContentFilteredTopictopic is not a valid IContentFilteredTopic.</item>
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>PreconditionNotMet - The operation is called on a different DomainParticipant, as used when the 
-        /// ContentFilteredTopic is being used by one or more DataReader objects.</item>
+        /// <item>DDS.ReturnCode Ok - The IContentFilteredTopic is deleted.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter aContentFilteredTopictopic is not a valid IContentFilteredTopic.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - The operation is called on a different IDomainParticipant, as used when the
+        /// IContentFilteredTopic is being used by one or more IDataReader objects.</item>
         /// </list>
         /// </returns>
         ReturnCode DeleteContentFilteredTopic(IContentFilteredTopic aContentFilteredTopic);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// This operation creates a IMultiTopic for a IDomainParticipant in order to allow
+        /// DataReaders to subscribe to a filtered/re-arranged combination and/or subset of
+        /// the content of several topics.
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="typeName"></param>
-        /// <param name="subscriptionExpression"></param>
-        /// <param name="expressionParameters"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
+        ///
+        /// This operation creates a IMultiTopic for a IDomainParticipant in order to allow
+        /// DataReaders to subscribe to a filtered/re-arranged combination and/or subset of
+        /// the content of several topics. Before the IMultiTopic can be created, the
+        /// typeName of the IMultiTopic must have been registered prior to calling this
+        /// operation. Registering is done, using the register_type operation from
+        /// TypeSupport. The list of topics and the logic, which defines the selection,
+        /// filtering, combining and re-arranging of the sample data, is defined by the SQL
+        /// expression (subset of SQL) defined in subscription_expression. The
+        /// subscription_expression may also contain parameters, which appear as %n
+        /// tokens in the expression. These parameters are defined in
+        /// expressionParameters. The number of values in expressionParameters
+        /// must be equal or greater than the highest referenced %n token in the
+        /// subscription_expression (e.g. if %1 and %8 are used as parameter in the
+        /// subscription_expression, the expressionParameters should at least
+        /// contain n+1 = 9 values).
+        ///
+        /// The subscription_expression is a string that specifies the criteria to select the
+        /// data samples of interest. In other words, it identifies the selection and rearrangement
+        /// of data from the associated Topics. It is an SQL expression where the SELECT
+        /// clause provides the fields to be kept, the FROM part provides the names of the
+        /// Topics that are searched for those fields, and the WHERE clause gives the content
+        /// filter. The Topics combined may have different types but they are restricted in that
+        /// the type of the fields used for the NATURAL JOIN operation must be the same.
+        ///
+        /// The IDataReader, which is associated with a IMultiTopic only accesses
+        /// information which exist locally in the IDataReader, based on the Topics used in
+        /// the subscription_expression. The actual IMultiTopic will never be
+        /// produced, only the individual Topics.
+        /// </remarks>
+        /// <param name="name">the name of the multi topic.</param>
+        /// <param name="typeName">the name of the type of the IMultiTopic. This
+        ///	       typeName must have been registered using register_type prior to calling
+        ///	       this operation.</param>
+        /// <param name="subscriptionExpression">the SQL expression (subset of
+        ///	       SQL), which defines the selection, filtering, combining and re-arranging of the
+        ///	       sample data.</param>
+        /// <param name="expressionParameters">the handle to a sequence
+        ///	       of strings with the parameter value used in the SQL expression (i.e., the number
+        ///	       of %n tokens in the expression). The number of values in
+        ///	       expressionParameters must be equal or greater than the highest
+        ///	       referenced %n token in the subscription_expression (e.g. if %1 and %8 are used
+        ///	       as parameter in the subscription_expression, the
+        ///	       expressionParameters should at least contain n+1 = 9 values).</param>
+        /// <returns>The newly created IMultiTopic. In case of an error, null is returned.</returns>
         IMultiTopic CreateMultiTopic(
                 string name,
                 string typeName,
                 string subscriptionExpression,
                 params string[] expressionParameters);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <param name="multiTopic"></param>
-        /// <returns></returns>
-        ReturnCode DeleteMultiTopic(IMultiTopic multiTopic);
-        /// <summary>
-        /// This operation deletes all the Entity objects that were created on the DomainParticipant.
+        /// This operation deletes a IMultiTopic.
         /// </summary>
         /// <remarks>
-        /// This operation deletes all the Entity objects that were created on the
-        /// DomainParticipant. In other words, it deletes all Publisher, Subscriber,
-        /// Topic, ContentFilteredTopic and MultiTopic objects. Prior to deleting each
-        /// contained Entity, this operation regressively calls the corresponding
-        /// delete_contained_entities operation on each Entity (if applicable). In
-        /// other words, all Entity objects in the Publisher and Subscriber are deleted,
-        /// including the DataWriter and DataReader. Also the QueryCondition and
-        /// ReadCondition objects contained by the DataReader are deleted.
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
+        ///
+        /// The deletion of a IMultiTopic is not allowed if there are any existing IDataReader
+        /// objects that are using the IMultiTopic. If the DeleteMultiTopic operation is
+        /// called on a IMultiTopic with existing IDataReader objects attached to it, it will
+        /// return PreconditionNotMet.
+        ///
+        /// The DeleteMultiTopic operation must be called on the same
+        /// IDomainParticipant object used to create the IMultiTopic. If
+        /// DeleteMultiTopic is called on a different IDomainParticipant the operation
+        /// will have no effect and it will return PreconditionNotMet.
+        /// </remarks>
+        /// <param name="multiTopic">The IMultiTopic, which is to be deleted.</param>
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - The IMultiTopic is deleted.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - The operation is called on a different
+        ///     IDomainParticipant, as used when the IMultiTopic was created, or the
+        ///     IMultiTopic is being used by one or more IDataReader objects.</item>
+        /// </returns>
+        ReturnCode DeleteMultiTopic(IMultiTopic multiTopic);
+
+        /// <summary>
+        /// This operation deletes all the IEntity objects that were created on the IDomainParticipant.
+        /// </summary>
+        /// <remarks>
+        /// This operation deletes all the IEntity objects that were created on the
+        /// IDomainParticipant. In other words, it deletes all IPublisher, ISubscriber,
+        /// ITopic, IContentFilteredTopic and IMultiTopic objects. Prior to deleting each
+        /// contained IEntity, this operation regressively calls the corresponding
+        /// DeleteContainedEntities operation on each IEntity (if applicable). In
+        /// other words, all IEntity objects in the IPublisher and ISubscriber are deleted,
+        /// including the IDataWriter and IDataReader. Also the IQueryCondition and
+        /// IReadCondition objects contained by the IDataReader are deleted.
+        ///
+        /// @note The operation will return PreconditionNotMet if the any of the
+        /// contained entities is in a state where it cannot be deleted. This will occur, for
+        /// example, if a contained IDataReader cannot be deleted because the application has
+        /// called a read or take operation and has not called the corresponding
+        /// ReturnLoan operation to return the loaned samples. In such cases, the operation
+        /// does not roll back any entity deletions performed prior to the detection of the
+        /// problem.
+        ///
+        /// <i><b>Topic</b></i><br>
+        /// Since a Topic is a global concept in the system, access is provided through a local
+        /// proxy. The Data Distribution Service propagates Topics and makes remotely
+        /// created Topics locally available through this proxy. Such a proxy is created by the
+        /// create_topic or FindTopic operation. When a reference to the same Topic
+        /// was created multiple times (either by CreateTopic or FindTopic), all
+        /// references (local proxies) are deleted. With the last proxy, the Topic itself is also
+        /// removed from the system.
         /// </remarks>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The contained Entity objects are deleted and the application may delete the DomainParticipant.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The contained IEntity objects are deleted and the application may delete the IDomainParticipant.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IIDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - One or more of the contained entities are
+        /// 	        in a state where they cannot be deleted.</item>
         /// </returns>
         ReturnCode DeleteContainedEntities();
+
         /// <summary>
-        /// This operation replaces the existing set of QosPolicy settings for a DomainParticipant.
+        /// This operation replaces the existing set of QosPolicy settings for a IDomainParticipant.
         /// </summary>
         /// <remarks>
         /// This operation replaces the existing set of QosPolicy settings for a
-        /// DomainParticipant. The parameter qos contains the QosPolicy settings which
+        /// IDomainParticipant. The parameter qos contains the QosPolicy settings which
         /// is checked for self-consistency.
         /// The set of QosPolicy settings specified by the qos parameter are applied on top of
         /// the existing QoS, replacing the values of any policies previously set (provided, the
         /// operation returned Ok).
         /// </remarks>
-        /// <param name="qos">New set of QosPolicy settings for the DomainParticipant.</param>
+        /// <param name="qos">New set of QosPolicy settings for the IDomainParticipant.</param>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The new DomainParticipantQos is set.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The new DomainParticipantQos is set.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </returns>
         ReturnCode SetQos(DomainParticipantQos qos);
+
         /// <summary>
-        /// This operation allows access to the existing set of QoS policies for a DomainParticipant.
+        /// This operation allows access to the existing set of QoS policies for a IDomainParticipant.
         /// </summary>
         /// <remarks>
         /// This operation allows access to the existing set of QoS policies of a
-        /// DomainParticipant on which this operation is used. This
+        /// IDomainParticipant on which this operation is used. This
         /// DomainparticipantQos is stored at the location pointed to by the qos parameter.
         /// </remarks>
-        /// <param name="qos">A reference to the destination DomainParticipantQos struct in which the 
+        /// <param name="qos">A reference to the destination DomainParticipantQos struct in which the
         /// QosPolicy settings will be copied.</param>
         /// <returns>
         /// <list type="bullet">
-        /// <item>Ok - The existing set of QoS policy values applied to this DomainParticipant 
+        /// <item>DDS.ReturnCode Ok - The existing set of QoS policy values applied to this IDomainParticipant
         /// has successfully been copied into the specified DomainParticipantQos parameter.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </returns>
         ReturnCode GetQos(ref DomainParticipantQos qos);
+
         /// <summary>
-        /// This operation attaches a DomainParticipantListener to the DomainParticipant.
+        /// This property returns the IDomainParticipantListener currently attached to the IDomainParticipant.
         /// </summary>
         /// <remarks>
-        /// This operation attaches a DomainParticipantListener to the
-        /// DomainParticipant. Only one DomainParticipantListener can be
-        /// attached to each DomainParticipant. If a DomainParticipantListener was
+        /// Only one listener can be attached to the IDomainParticipant at any particular time. This property
+        /// returns the listener that is currently attached to the IDomainParticipant. When no Listener was
+        /// attached, null is returned.
+        /// </remarks>
+        /// <returns>returns the IDomainParticipantListener currently attached to the IDomainParticipant.</returns>
+        IDomainParticipantListener Listener { get; }
+
+        /// <summary>
+        /// This operation attaches a IDomainParticipantListener to the IDomainParticipant.
+        /// </summary>
+        /// <remarks>
+        /// This operation attaches a IDomainParticipantListener to the
+        /// IDomainParticipant. Only one IDomainParticipantListener can be
+        /// attached to each IDomainParticipant. If a IDomainParticipantListener was
         /// already attached, the operation will replace it with the new one. When a_listener
-        /// is the NULL pointer, it represents a listener that is treated as a NOOP1 for all statuses
+        /// is null, it represents a listener that is treated as a NOOP1 for all statuses
         /// activated in the bit mask.
         /// </remarks>
-        /// <param name="listener">The DomainParticipantListener instance, which will be attached to the 
-        /// DomainParticipant.</param>
-        /// <param name="mask">a bit mask in which each bit enables the invocation of the DomainParticipantListener 
+        /// <param name="listener">The IDomainParticipantListener instance, which will be attached to the
+        /// IDomainParticipant.</param>
+        /// <param name="mask">a bit mask in which each bit enables the invocation of the IDomainParticipantListener
         /// for a certain status.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The DomainParticipantListener is attached.</item>
-        /// <item>Error - An internal error has occured.</item>
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The IDomainParticipantListener is attached.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode SetListener(IDomainParticipantListener listener, StatusKind mask);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
         /// </summary>
-        /// <param name="handle"></param>
-        /// <returns></returns>
         ReturnCode IgnoreParticipant(InstanceHandle handle);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
         /// </summary>
-        /// <param name="handle"></param>
-        /// <returns></returns>
         ReturnCode IgnoreTopic(InstanceHandle handle);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
         /// </summary>
-        /// <param name="handle"></param>
-        /// <returns></returns>
         ReturnCode IgnorePublication(InstanceHandle handle);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
         /// </summary>
-        /// <param name="handle"></param>
-        /// <returns></returns>
         ReturnCode IgnoreSubscription(InstanceHandle handle);
+
         /// <summary>
-        /// This property returns the DomainId of the Domain to which this DomainParticipant is attached.
+        /// This property returns the DomainId of the Domain to which this IDomainParticipant is attached.
         /// </summary>
         DomainId DomainId { get; }
+
         /// <summary>
-        /// This operation asserts the liveliness for the DomainParticipant.
+        /// This operation asserts the liveliness for the IDomainParticipant.
         /// </summary>
         /// <remarks>
-        /// This operation will manually assert the liveliness for the DomainParticipant.
-        /// This way, the Data Distribution Service is informed that the DomainParticipant
-        /// is still alive. This operation only needs to be used when the DomainParticipant
+        /// This operation will manually assert the liveliness for the IDomainParticipant.
+        /// This way, the Data Distribution Service is informed that the IDomainParticipant
+        /// is still alive. This operation only needs to be used when the IDomainParticipant
         /// contains DataWriters with the LivelinessQosPolicy set to
         /// MANUAL_BY_PARTICIPANT_LIVELINESS_QOS, and it will only affect the
         /// liveliness of those DataWriters.
-        /// Writing data via the write operation of a DataWriter will assert the liveliness on
-        /// the DataWriter itself and its DomainParticipant. Therefore,
+        ///
+        /// Writing data via the write operation of a IDataWriter will assert the liveliness on
+        /// the IDataWriter itself and its IDomainParticipant. Therefore,
         /// AssertLiveliness is only needed when not writing regularly.
+        ///
         /// The liveliness should be asserted by the application, depending on the
         /// LivelinessQosPolicy.
         /// </remarks>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The liveliness of this DomainParticipant has successfully been asserted.</item>
-        /// <item>Error - An internal error has occured.</item>       
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>NotEnabled - The DomainParticipant is not enabled.</item>
+        /// <item>DDS.ReturnCode Ok - The liveliness of this IDomainParticipant has successfully been asserted.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled - The IDomainParticipant is not enabled.</item>
         /// </list>
         /// </returns>
         ReturnCode AssertLiveliness();
+
         /// <summary>
-        /// This operation sets the default PublisherQos of the DomainParticipant.
+        /// This operation sets the default PublisherQos of the IDomainParticipant.
         /// </summary>
         /// <remarks>
-        /// This operation sets the default PublisherQos of the DomainParticipant (that is the struct with 
-        /// the QosPolicy settings) which is used for newly created Publisher objects, in case the constant 
-        /// PUBLISHER_QOS_DEFAULT is used. The default PublisherQos is only used when the constant is supplied 
+        /// This operation sets the default PublisherQos of the IDomainParticipant (that is the struct with
+        /// the QosPolicy settings) which is used for newly created IPublisher objects, in case no QoS is
+        /// provided. The default PublisherQos is only used when the constant is supplied
         /// as parameter qos to specify the PublisherQos in the CreatePublisher operation. The
         /// PublisherQos is always self consistent, because its policies do not depend on
-        /// each other. This means this operation never returns the InconsistentPolicy. 
-        /// The values set by this operation are returned by GetGefaultPublisherQos.
+        /// each other. This means this operation never returns the InconsistentPolicy.
+        /// The values set by this operation are returned by GetDefaultPublisherQos().
         /// </remarks>
-        /// <param name="qos">A collection of QosPolicy settings, which contains the new default QosPolicy 
+        /// <param name="qos">A collection of QosPolicy settings, which contains the new default QosPolicy
         /// settings for the newly created Publishers.</param>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The new default PublisherQos is set.</item>
-        /// <item>Error - An internal error has occured.</item>       
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>BadParameter - The parameter qos is not a valid PublisherQos.</item>
-        /// <item>Unsupported - one or more of the selected QosPolicy values are currently not supported by openSplice.</item>        
+        /// <item>DDS.ReturnCode Ok - The new default PublisherQos is set.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter qos is not a valid PublisherQos.</item>
+        /// <item>DDS.ReturnCode Unsupported - one or more of the selected QosPolicy values are currently not supported by openSplice.</item>
         /// </list>
         /// </returns>
         ReturnCode SetDefaultPublisherQos(PublisherQos qos);
+
         /// <summary>
-        /// This operation gets the struct with the default Publisher QosPolicy settings of the DomainParticipant.
+        /// This operation gets the struct with the default IPublisher QosPolicy settings of the IDomainParticipant.
         /// </summary>
         /// <remarks>
-        /// This operation gets the struct with the default Publisher QosPolicy settings of
-        /// the DomainParticipant (that is the PublisherQos) which is used for newly
-        /// created Publisher objects, in case the constant PUBLISHER_QOS_DEFAULT is
-        /// used. The default PublisherQos is only used when the constant is supplied as
+        /// This operation gets the struct with the default IPublisher QosPolicy settings of
+        /// the IDomainParticipant (that is the PublisherQos) which is used for newly
+        /// created IPublisher objects, in case no QoS is provided.
+        /// The default PublisherQos is only used when the constant is supplied as
         /// parameter qos to specify the PublisherQos in the CreatePublisher
         /// operation. The application must provide the PublisherQos struct in which the
         /// QosPolicy settings can be stored and pass the qos reference to the operation. The
         /// operation writes the default QosPolicy settings to the struct referenced to by qos.
         /// Any settings in the struct are overwritten.
+        ///
         /// The values retrieved by this operation match the set of values specified on the last
         /// successful call to SetDefaultPublisherQos, or, if the call was never made,
-        /// the default values as specified for each QosPolicy setting
+        /// the default values as specified for each QosPolicy setting.
         /// </remarks>
-        /// <param name="qos">A reference to the PublisherQos struct (provided by the application) in which 
-        /// the default QosPolicy settings for the Publisher are written.</param>
-        /// <returns>Return codes are: 
+        /// <param name="qos">A reference to the PublisherQos struct (provided by the application) in which
+        /// the default QosPolicy settings for the IPublisher are written.</param>
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The default Publisher QosPolicy settings of this DomainParticipant have successfully been
+        /// <item>DDS.ReturnCode Ok - The default IPublisher QosPolicy settings of this IDomainParticipant have successfully been
         /// copied into the specified qos parameter.</item>
-        /// <item>Error - An internal error has occured.</item>       
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetDefaultPublisherQos(ref PublisherQos qos);
+
         /// <summary>
-        /// This operation sets the default SubscriberQos of the DomainParticipant.
+        /// This operation sets the default SubscriberQos of the IDomainParticipant.
         /// </summary>
         /// <remarks>
-        /// This operation sets the default SubscriberQos of the DomainParticipant (that
+        /// This operation sets the default SubscriberQos of the IDomainParticipant (that
         /// is the struct with the QosPolicy settings) which is used for newly created
-        /// Subscriber objects, in case the constant SUBSCRIBER_QOS_DEFAULT is used.
+        /// ISubscriber objects, in case no QoS was provided.
         /// The default SubscriberQos is only used when the constant is supplied as
         /// parameter qos to specify the SubscriberQos in the CreateSubscriber
         /// operation. The SubscriberQos is always self consistent, because its policies do
         /// not depend on each other. This means this operation never returns the
         /// InconsistentPolicy. The values set by this operation are returned
-        /// by GetDefaultSubscriberQos.
+        /// by GetDefaultSubscriberQos().
         /// </remarks>
-        /// <param name="qos">A collection of QosPolicy settings, which contains the new default QosPolicy 
+        /// <param name="qos">A collection of QosPolicy settings, which contains the new default QosPolicy
         /// settings for the newly created Subscribers.</param>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The new default SubscriberQos is set.</item>
-        /// <item>Error - An internal error has occured.</item>       
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>BadParameter - The parameter qos is not a valid SubscriberQos.</item>
-        /// <item>Unsupported - one or more of the selected QosPolicy values are currently not supported by openSplice.</item>        
+        /// <item>DDS.ReturnCode Ok - The new default SubscriberQos is set.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter qos is not a valid SubscriberQos.</item>
+        /// <item>DDS.ReturnCode Unsupported - one or more of the selected QosPolicy values are currently not supported by openSplice.</item>
         /// </list>
         /// </returns>
         ReturnCode SetDefaultSubscriberQos(SubscriberQos qos);
+
         /// <summary>
-        /// This operation gets the struct with the default Subscriber QosPolicy settings of the DomainParticipant.
+        /// This operation gets the struct with the default ISubscriber QosPolicy settings of the IDomainParticipant.
         /// </summary>
         /// <remarks>
-        /// This operation gets the struct with the default Subscriber QosPolicy settings of
-        /// the DomainParticipant (that is the SubscriberQos) which is used for newly
-        /// created Subscriber objects, in case the constant SUBSCRIBER_QOS_DEFAULT is
+        /// This operation gets the struct with the default ISubscriber QosPolicy settings of
+        /// the IDomainParticipant (that is the SubscriberQos) which is used for newly
+        /// created ISubscriber objects, in case the constant SUBSCRIBER_QOS_DEFAULT is
         /// used. The default SubscriberQos is only used when the constant is supplied as
         /// parameter qos to specify the SubscriberQos in the create_subscriber
         /// operation. The application must provide the QoS struct in which the policy can be
         /// stored and pass the qos reference to the operation. The operation writes the default
         /// QosPolicy to the struct referenced to by qos. Any settings in the struct are
         /// overwritten.
+        ///
         /// The values retrieved by this operation match the set of values specified on the last
         /// successful call to set_default_subscriber_qos, or, if the call was never made,
         /// the default values as specified for each QosPolicy.
         /// </remarks>
-        /// <param name="qos">a reference to the QosPolicy struct (provided by the application) in which the default 
-        /// QosPolicy settings for the Subscriber is written</param>
+        /// <param name="qos">a reference to the QosPolicy struct (provided by the application) in which the default
+        /// QosPolicy settings for the ISubscriber is written</param>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The default Subscriber QosPolicy settings of this DomainParticipant have successfully 
+        /// <item>DDS.ReturnCode Ok - The default ISubscriber QosPolicy settings of this IDomainParticipant have successfully
         /// been copied into the specified SubscriberQos parameter.</item>
-        /// <item>Error - An internal error has occured.</item>       
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetDefaultSubscriberQos(ref SubscriberQos qos);
+
         /// <summary>
-        /// This operation sets the default TopicQos of the DomainParticipant.
+        /// This operation sets the default TopicQos of the IDomainParticipant.
         /// </summary>
         /// <remarks>
-        /// This operation sets the default TopicQos of the DomainParticipant (that is the
-        /// struct with the QosPolicy settings) which is used for newly created Topic objects,
-        /// in case the constant TOPIC_QOS_DEFAULT is used. The default TopicQos is only
+        /// This operation sets the default TopicQos of the IDomainParticipant (that is the
+        /// struct with the QosPolicy settings) which is used for newly created ITopic objects,
+        /// in case no QoS was provided. The default TopicQos is only
         /// used when the constant is supplied as parameter qos to specify the TopicQos in the
         /// CreateTopic operation. This operation checks if the TopicQos is self
-        /// consistent. If it is not , the operation has no effect and returns
+        /// consistent. If it is not, the operation has no effect and returns
         /// Inconsistentpolicy. The values set by this operation are returned by GetGefaultTopicQos.
         /// </remarks>
-        /// <param name="qos">a collection of QosPolicy settings, which contains the new default QosPolicy settings 
+        /// <param name="qos">a collection of QosPolicy settings, which contains the new default QosPolicy settings
         /// for the newly created Topics.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The new default TopicQos is set.</item>
-        /// <item>Error - An internal error has occured.</item>   
-        /// <item>BadParameter - The parameter qos is not a valid TopicQos.</item>
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>Unsupported - one or more of the supported QosPolicy values are currently not supported
+        /// <item>DDS.ReturnCode Ok - The new default TopicQos is set.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter qos is not a valid TopicQos.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Unsupported - one or more of the supported QosPolicy values are currently not supported
         /// by OpenSplice.</item>
-        /// <item>InconsistentPolicy - the parameter qos contains conflicting QosPolicy settings, e.g a history depth that is 
+        /// <item>DDS.ReturnCode InconsistentPolicy - the parameter qos contains conflicting QosPolicy settings, e.g a history depth that is
         /// higher than the specified resource limits.</item>
         /// </list>
         /// </returns>
         ReturnCode SetDefaultTopicQos(TopicQos qos);
+
         /// <summary>
-        /// This operation gets the struct with the default Topic QosPolicy settings of the DomainParticipant.
+        /// This operation gets the struct with the default ITopic QosPolicy settings of the IDomainParticipant.
         /// </summary>
         /// <remarks>
-        /// This operation gets the struct with the default Topic QosPolicy settings of the
-        /// DomainParticipant (that is the TopicQos) which is used for newly created
-        /// Topic objects, in case the constant TOPIC_QOS_DEFAULT is used. The default
+        /// This operation gets the struct with the default ITopic QosPolicy settings of the
+        /// IDomainParticipant (that is the TopicQos) which is used for newly created
+        /// ITopic objects, in case the constant TOPIC_QOS_DEFAULT is used. The default
         /// TopicQos is only used when the constant is supplied as parameter qos to specify
         /// the TopicQos in the CreateTopic operation. The application must provide the
         /// QoS struct in which the policy can be stored and pass the qos reference to the
         /// operation. The operation writes the default QosPolicy to the struct referenced to
         /// by qos. Any settings in the struct are overwritten.
+        ///
         /// The values retrieved by this operation match the set of values specified on the last
         /// successful call to SetDefaultTopicQos, or, if the call was never made, the
         /// default values as specified for each QosPolicy.
         /// </remarks>
-        /// <param name="qos">A reference to the QosPolicy struct (provided by the application) in which the 
-        /// default QosPolicy settings for the Topic is written.</param>
+        /// <param name="qos">A reference to the QosPolicy struct (provided by the application) in which the
+        /// default QosPolicy settings for the ITopic is written.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The default Topic QosPolicy settings of this DomainParticipant have successfully been copied 
+        /// <item>DDS.ReturnCode Ok - The default ITopic QosPolicy settings of this IDomainParticipant have successfully been copied
         /// into the specified TopicQos parameter.</item>
-        /// <item>Error - An internal error has occured.</item>       
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetDefaultTopicQos(ref TopicQos qos);
+
         /// <summary>
-        /// This operation checks whether or not the given Entity represented by handle is created by the 
-        /// DomainParticipant or any of its contained entities.
+        /// This operation checks whether or not the given IEntity represented by handle is created by the
+        /// IDomainParticipant or any of its contained entities.
         /// </summary>
-        /// <remarks>This operation checks whether or not the given Entity represented by handle
-        /// is created by the DomainParticipant itself (TopicDescription, Publisher
-        /// or Subscriber) or created by any of its contained entities (DataReader,
-        /// ReadCondition, QueryCondition, DataWriter, etc.).
-        /// Return value is TRUE if a_handle represents an Entity that is created by the
-        /// DomainParticipant or any of its contained Entities. Otherwise the return
-        /// value is FALSE</remarks>
-        /// <param name="handle">An Entity in the Data Distribution Service.</param>
-        /// <returns>true if handle represents an Entity that is created by the DomainParticipant or any of its
+        /// <remarks>This operation checks whether or not the given IEntity represented by handle
+        /// is created by the IDomainParticipant itself (ITopicDescription, IPublisher
+        /// or ISubscriber) or created by any of its contained entities (IDataReader,
+        /// IReadCondition, IQueryCondition, IDataWriter, etc.).
+        ///
+        /// Return value is true if a_handle represents an IEntity that is created by the
+        /// IDomainParticipant or any of its contained Entities. Otherwise the return
+        /// value is false</remarks>
+        /// <param name="handle">An IEntity in the Data Distribution Service.</param>
+        /// <returns>true if handle represents an IEntity that is created by the IDomainParticipant or any of its
         /// contained Entities. Otherwise the return value is false.</returns>
         bool ContainsEntity(InstanceHandle handle);
+
         /// <summary>
-        /// This operation returns the value of the current time that the Data Distribution Service 
+        /// This operation returns the value of the current time that the Data Distribution Service
         /// uses to time-stamp written data as well as received data in current_time.
         /// </summary>
         /// <remarks>
@@ -1436,149 +2020,149 @@ namespace DDS
         /// Service uses to time-stamp written data as well as received data in current_time.
         /// The input value of current_time is ignored by the operation.
         /// </remarks>
-        /// <param name="currentTime">stores the value of currentTime as used by the Data Distribution Service. 
+        /// <param name="currentTime">stores the value of currentTime as used by the Data Distribution Service.
         /// The input value of currentTime is ignored.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The value of the current time has been copied into current_time.</item>
-        /// <item>Error - An internal error has occured.</item> 
-        /// <item>BadParameter - The parameter current_time is not a valid reference.</item>      
-        /// <item>AlreadyDeleted - The DomaiParticipant has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>NotEnabled - The DomainParticipant is not enabled.</item>
+        /// <item>DDS.ReturnCode Ok - The value of the current time has been copied into current_time.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter current_time is not a valid reference.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDomainParticipant has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled - The IDomainParticipant is not enabled.</item>
         /// </list>
         /// </returns>
         ReturnCode GetCurrentTime(out Time currentTime);
-        
-        [Obsolete("This is a proprietary OpenSplice DDS function that is not supposed to be used by applications.")]
-        ITypeSupport GetTypeSupport(string registeredName);
-        [Obsolete("This is a proprietary OpenSplice DDS function that is not supposed to be used by applications.")]
-        ITypeSupport LookupTypeSupport(string registeredTypeName);
-        
+
         /// <summary>
-		/// This operation retrieves the list of DomainParticipants that have been discovered in the domain.
-		/// </summary>
-		/// <remarks>
-		///This operation retrieves the list of DomainParticipants that have been discovered in the domain and that the application
-		///has not indicated should be ignored by means of the DomainParticipant ignore_participant operation.
-		///The participant_handles sequence and its buffer may be pre-allocated by the
-		///application and therefore must either be re-used in a subsequent invocation of the
-		///get_discovered_participants operation or be released by
-		///calling free on the returned participant_handles. If the pre-allocated
-		///sequence is not big enough to hold the number of associated participants, the
-		///sequence will automatically be (re-)allocated to fit the required size.
-		///The handles returned in the participant_handles sequence are the ones that
-		///are used by the DDS implementation to locally identify the corresponding matched
-		///Participant entities. You can access more detailed information about a particular
-		///participant by passing its participant_handle to the get_discovered_participant_data operation.
-		/// </remarks>
-		/// <param name="participantHandles"></param>
-		/// <returns>Return values are:
-		/// <list type="bullet">
-		/// <item>Ok - the list of associated participants has successfully been obtained.</item>
-		/// <item>Error - an internal error has occurred.</item>
-		/// <item>AlreadyDeleted - the DomainParticipant has already been deleted</item>
-		/// <item>OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
-		/// <item>Unsupported - OpenSplice is configured not to maintain the information about associated participants</item>
-		/// <item>NotEnabled - the DomainParticipant is not enabled.</item>
-		/// <item>IllegalOperation- the operation is invoked on an inappropriate object.</item>
-		/// </list>
-		/// </returns>
+        /// This operation retrieves the list of DomainParticipants that have been discovered in the domain.
+        /// </summary>
+        /// <remarks>
+        /// This operation retrieves the list of DomainParticipants that have been discovered in the domain and that the application
+        /// has not indicated should be ignored by means of the IDomainParticipant IgnoreParticipant operation.
+        ///
+        /// The participant_handles sequence and its buffer may be pre-allocated by the
+        /// application and therefore must either be re-used in a subsequent invocation of the
+        /// GetDiscoveredParticipants operation or be released by
+        /// calling free on the returned participant_handles. If the pre-allocated
+        /// sequence is not big enough to hold the number of associated participants, the
+        /// sequence will automatically be (re-)allocated to fit the required size.
+        /// The handles returned in the participant_handles sequence are the ones that
+        /// are used by the DDS implementation to locally identify the corresponding matched
+        /// Participant entities. You can access more detailed information about a particular
+        /// participant by passing its participantHandle to the GetDiscoveredParticipantData operation.
+        /// </remarks>
+        /// <param name="participantHandles">An array which is used to pass the list of all associated participants.</param>
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - the list of associated participants has successfully been obtained.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDomainParticipant has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Unsupported - OpenSplice is configured not to maintain the information about associated participants</item>
+        /// <item>DDS.ReturnCode NotEnabled - the IDomainParticipant is not enabled.</item>
+        /// <item>IllegalOperation- the operation is invoked on an inappropriate object.</item>
+        /// </list>
+        /// </returns>
         ReturnCode GetDiscoveredParticipants (ref InstanceHandle[] participantHandles);
-        
+
         /// <summary>
-		/// This operation retrieves information on a DomainParticipant that has been discovered on the network.
-		/// </summary>
-		/// <remarks>
-		///This operation retrieves information on a DomainParticipant that has been discovered on the network. The participant
-		///must be in the same domain as the participant on which this operation is invoked and must not have been ignored by
-		///means of the DomainParticipant ignore_participant operation.
-		///The partition_handle must correspond to a partition currently
-		///associated with the DomainParticipant, otherwise the operation will fail and return
-		///Error. The operation get_discovered_participant_data
-		///can be used to find more detailed information about a particular participant that is found with the 
-		///get_discovered_participants operation.
-		/// </remarks>
-        /// <param name="participantData"></param>
-        /// <param name="participantHandle"></param>
-		/// <returns>Return values are:
-		/// <list type="bullet">
-		/// <item>Ok - the information on the specified participant has been successfully retrieved</item>
-		/// <item>Error - an internal error has occurred.</item>
-		/// <item>AlreadyDeleted - the DomainParticipant has already been deleted</item>
-		/// <item>OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
-		/// <item>Unsupported - OpenSplice is configured not to maintain the information about associated participants</item>
-		/// <item>NotEnabled - the DomainParticipant is not enabled.</item>
-		/// <item>IllegalOperation- the operation is invoked on an inappropriate object.
-		/// </list>
-		/// </returns>
+        /// This operation retrieves information on a IDomainParticipant that has been discovered on the network.
+        /// </summary>
+        /// <remarks>
+        /// This operation retrieves information on a IDomainParticipant that has been discovered on the network. The participant
+        /// must be in the same domain as the participant on which this operation is invoked and must not have been ignored by
+        /// means of the IDomainParticipant IgnoreParticipant operation.
+        ///
+        /// The instance handle must correspond to a partition currently
+        /// associated with the IDomainParticipant, otherwise the operation will fail and return
+        /// Error. The operation GetDiscoveredParticipantData
+        /// can be used to find more detailed information about a particular participant that is found with the
+        /// GetDiscoveredParticipants operation.
+        /// </remarks>
+        /// <param name="data">The sample in which the information about the specified participant is to be stored.</param>
+        /// <param name="handle">The handle to the participant whose information needs to be retrieved.</param>
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - the information on the specified participant has been successfully retrieved</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDomainParticipant has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Unsupported - OpenSplice is configured not to maintain the information about associated participants</item>
+        /// <item>DDS.ReturnCode NotEnabled - the IDomainParticipant is not enabled.</item>
+        /// <item>IllegalOperation- the operation is invoked on an inappropriate object.
+        /// </list>
+        /// </returns>
         ReturnCode GetDiscoveredParticipantData (ref ParticipantBuiltinTopicData data, InstanceHandle handle);
+
         /// <summary>
-		/// This operation retrieves the list of Topics that have been discovered in the domain
-		/// </summary>
-		/// <remarks>
-		///This operation retrieves the list of Topics that have been discovered in the domain and that the application has not
-		///indicated should be ignored by means of the DomainParticipant ignore_topic operation.
-		///The topic_handles sequence and its buffer may be pre-allocated by the
-		///application and therefore must either be re-used in a subsequent invocation of the
-		///get_discovered_topics operation or be released by
-		///calling free on the returned topic_handles. If the pre-allocated
-		///sequence is not big enough to hold the number of associated participants, the
-		///sequence will automatically be (re-)allocated to fit the required size.
-		///The handles returned in the topic_handles sequence are the ones that
-		///are used by the DDS implementation to locally identify the corresponding matched
-		///Topic entities. You can access more detailed information about a particular
-		///topic by passing its topic_handle to the get_discovered_topic_data operation.
-		/// </remarks>
-		/// <param name="topicHandles"></param>
-		/// <returns>Return values are:
-		/// <list type="bullet">
-		/// <item>Ok - the list of associated topic has successfully been obtained.</item>
-		/// <item>Error - an internal error has occurred.</item>
-		/// <item>AlreadyDeleted - the DomainParticipant has already been deleted</item>
-		/// <item>OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
-		/// <item>Unsupported - OpenSplice is configured not to maintain the information about associated topics</item>
-		/// <item>NotEnabled - the DomainParticipant is not enabled.</item>
-		/// <item>IllegalOperation- the operation is invoked on an inappropriate object.
-		/// </list>
-		/// </returns>
+        /// This operation retrieves the list of Topics that have been discovered in the domain
+        /// </summary>
+        /// <remarks>
+        /// This operation retrieves the list of Topics that have been discovered in the domain and that the application has not
+        /// indicated should be ignored by means of the IDomainParticipant ignore_topic operation.
+        ///
+        /// The topic_handles sequence and its buffer may be pre-allocated by the
+        /// application and therefore must either be re-used in a subsequent invocation of the
+        /// GetDiscoveredTopics operation or be released by
+        /// calling free on the returned topic_handles. If the pre-allocated
+        /// sequence is not big enough to hold the number of associated participants, the
+        /// sequence will automatically be (re-)allocated to fit the required size.
+        /// The handles returned in the topic_handles sequence are the ones that
+        /// are used by the DDS implementation to locally identify the corresponding matched
+        /// ITopic entities. You can access more detailed information about a particular
+        /// topic by passing its topic_handle to the GetDiscoveredTopicData operation.
+        /// </remarks>
+        /// <param name="topicHandles">An array which is used to pass the list of all associated topics.</param>
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - the list of associated topic has successfully been obtained.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDomainParticipant has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Unsupported - OpenSplice is configured not to maintain the information about associated topics</item>
+        /// <item>DDS.ReturnCode NotEnabled - the IDomainParticipant is not enabled.</item>
+        /// <item>IllegalOperation- the operation is invoked on an inappropriate object.
+        /// </list>
+        /// </returns>
         ReturnCode GetDiscoveredTopics (ref InstanceHandle[] topicHandles);
-        
+
         /// <summary>
-		/// This operation retrieves information on a Topic that has been discovered on the network.
-		/// </summary>
-		/// <remarks>
-		///This operation retrieves information on a Topic that has been discovered on the network. The topic must have been
-		///created by a participant in the same domain as the participant on which this operation is invoked and must not have been
-		///ignored by means of the DomainParticipant ignore_topic operation.
-		///The topic_handle must correspond to a topic currently
-		///associated with the DomainParticipant, otherwise the operation will fail and return Error. 
-		///The operation get_discovered_topic_data can be used to find more detailed information about a particular topic that is found with the 
-		///get_discovered_topics operation.
-		/// </remarks>
-		/// <param name="topicData"></param>
-		/// <param name="topicHandle"></param>
-		/// <returns>Return values are:
-		/// <list type="bullet">
-		/// <item>Ok - the information on the specified topic has been successfully retrieved</item>
-		/// <item>Error - an internal error has occurred.</item>
-		/// <item>AlreadyDeleted - the DomainParticipant has already been deleted</item>
-		/// <item>OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
-		/// <item>Unsupported - OpenSplice is configured not to maintain the information about associated topics</item>
-		/// <item>NotEnabled - the DomainParticipant is not enabled.</item>
-		/// <item>IllegalOperation- the operation is invoked on an inappropriate object.
-		/// </list>
-		/// </returns>
+        /// This operation retrieves information on a ITopic that has been discovered on the network.
+        /// </summary>
+        /// <remarks>
+        ///This operation retrieves information on a ITopic that has been discovered on the network. The topic must have been
+        ///created by a participant in the same domain as the participant on which this operation is invoked and must not have been
+        ///ignored by means of the IDomainParticipant ignore_topic operation.
+        ///
+        ///The topic_handle must correspond to a topic currently
+        ///associated with the IDomainParticipant, otherwise the operation will fail and return Error.
+        ///The operation GetDiscoveredTopicData can be used to find more detailed information about a particular topic that is found with the
+        ///GetDiscoveredTopics operation.
+        /// </remarks>
+        /// <param name="data">The sample in which the information about the specified topic is to be stored.</param>
+        /// <param name="handle">The handle to the topic whose information needs to be retrieved.</param>
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - the information on the specified topic has been successfully retrieved</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDomainParticipant has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Unsupported - OpenSplice is configured not to maintain the information about associated topics</item>
+        /// <item>DDS.ReturnCode NotEnabled - the IDomainParticipant is not enabled.</item>
+        /// <item>IllegalOperation- the operation is invoked on an inappropriate object.
+        /// </list>
+        /// </returns>
         ReturnCode GetDiscoveredTopicData (ref TopicBuiltinTopicData data, InstanceHandle handle);
-        
-        
+
+
     }
 
     public interface ITypeSupport
     {
         ReturnCode RegisterType(IDomainParticipant domain, string typeName);
         string TypeName { get; }
-        string[] Description { get; }
+        string TypeDescriptor { get; }
         string KeyList { get; }
     }
 
@@ -1586,275 +2170,380 @@ namespace DDS
     // Topics
     // ----------------------------------------------------------------------
     /// <summary>
-    /// This class is an abstract class . It is the base class for Topic,ContentFilteredTopic and MultiTopic.
-    /// The TopicDescription attribute type_name defines an unique data type that is
+    /// This class is an abstract class. It is the base class for ITopic, IContentFilteredTopic and IMultiTopic.
+    /// The ITopicDescription property TypeName defines an unique data type that is
     /// made available to the Data Distribution Service via the TypeSupport.
-    /// TopicDescription has also a name that allows it to be retrieved locally.
+    /// ITopicDescription has also a Name property that allows it to be retrieved locally.
     /// </summary>
     public interface ITopicDescription
     {
         /// <summary>
-        /// This property returns the registered name of the data type associated with the TopicDescription.
+        /// Gets the name of the registered data type that is associated with this ITopicDescription.
         /// </summary>
-        /// <returns>The name of the data type of the TopicDescription.</returns>
+        /// <returns>The name of the data type of the ITopicDescription.</returns>
         string TypeName { get; }
         /// <summary>
-        /// This property returns the name used to create the TopicDescription.
+        /// Gets the name of this ITopicDescription.
         /// </summary>
-        /// <returns>The name of the TopicDescription.</returns>
+        /// <returns>The name of the ITopicDescription.</returns>
         string Name { get; }
         /// <summary>
-        /// This property returns the DomainParticipant associated with the TopicDescription or NULL.
+        /// Gets the IDomainParticipant associated with this ITopicDescription.
         /// </summary>
         /// <remarks>
-        /// This operation returns the DomainParticipant associated with the
-        /// TopicDescription. Note that there is exactly one DomainParticipant
-        /// associated with each TopicDescription. When the TopicDescription was
-        /// already deleted (there is no associated DomainParticipant any more), NULL
+        /// This operation returns the IDomainParticipant associated with this
+        /// TopicDescription. Note that there is exactly one IDomainParticipant
+        /// associated with each ITopicDescription. When the ITopicDescription was
+        /// already deleted (there is no associated IDomainParticipant any more), null
         /// is returned.
         /// </remarks>
-        /// <returns>The DomainParticipant associated with the TopicDescription or NULL.</returns>
+        /// <returns>The IDomainParticipant associated with the ITopicDescription or null.</returns>
         IDomainParticipant Participant { get; }
     }
 
     /// <summary>
-    /// Topic is the most basic description of the data to be published and subscribed.
+    /// ITopic is the most basic description of the data to be published and subscribed.
     /// </summary>
     /// <remarks>
-    /// A Topic is identified by its name, which must be unique in the whole Domain. In
-    /// addition (by virtue of extending TopicDescription) it fully identifies the type of
-    /// data that can be communicated when publishing or subscribing to the Topic.
-    /// Topic is the only TopicDescription that can be used for publications and
-    /// therefore a specialized DataWriter is associated to the Topic.
+    /// A ITopic is identified by its name, which must be unique in the whole Domain. In
+    /// addition (by virtue of extending ITopicDescription) it fully identifies the type of
+    /// data that can be communicated when publishing or subscribing to the ITopic.
+    /// ITopic is the only ITopicDescription that can be used for publications and
+    /// therefore a specialized IDataWriter is associated to the ITopic.
     /// </remarks>
     public interface ITopic : IEntity, ITopicDescription
     {
         /// <summary>
-        /// This operation obtains the InconsistentTopicStatus of the Topic.
+        /// This operation obtains the InconsistentTopicStatus of the ITopic.
         /// </summary>
         /// <remarks>
-        /// This operation obtains the InconsistentTopicStatus of the Topic. The 
-        /// InconsistentTopicStatus can also be monitored using a TopicListener or
-        /// by using the associated StatusCondition.
+        /// The InconsistentTopicStatus indicates that there exists an ITopic with
+        /// the same name but with different characteristics. The InconsistentTopicStatus
+        /// can also be monitored using a TopicListener or by using the associated IStatusCondition.
         /// </remarks>
-        /// <param name="aStatus">the contents of the InconsistentTopicStatus struct of the Topic will be 
-        /// copied into the location specified by status.</param>
+        /// <param name="aStatus">The contents of the InconsistentTopicStatus of the ITopic will be
+        /// copied into the location specified by aStatus.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The current InconsistentTopicStatus of this Topic has successfully been copied 
+        /// <item>DDS.ReturnCode Ok - The current InconsistentTopicStatus of this ITopic has successfully been copied
         /// into the specified aStatus parameter.</item>
-        /// <item>Error - An internal error has occured.</item>         
-        /// <item>AlreadyDeleted - The Topic has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occured.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The ITopic has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetInconsistentTopicStatus(ref InconsistentTopicStatus aStatus);
         /// <summary>
-        /// This operation allows access to the existing set of QoS policies for a Topic.
+        /// This operation obtains the current set of QoS policies associated with the ITopic.
         /// </summary>
         /// <remarks>
-        /// This operation allows access to the existing set of QoS policies of a Topic on which
-        /// this operation is used. This TopicQos is stored at the location pointed to by the qos
-        /// parameter.
+        /// The operation returns the set of QoS policies currently associated with this ITopic in
+        /// the provided qos parameter.
         /// </remarks>
-        /// <param name="qos">A reference to the destination TopicQos struct in which the QosPolicy 
-        /// settings will be copied.</param>
+        /// <param name="qos">A reference to a TopicQos used to return the QoS policies of the ITopic.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The existing set of QoS policy values applied to this Topic has successfully 
+        /// <item>DDS.ReturnCode Ok - The existing set of QoS policy values applied to this ITopic has successfully
         /// been copied into the specified TopicQos parameter.</item>
-        /// <item>Error - An internal error has occured.</item>         
-        /// <item>AlreadyDeleted - The Topic has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occured.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The ITopic has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetQos(ref TopicQos qos);
         /// <summary>
-        /// This operation replaces the existing set of QosPolicy settings for a Topic.
+        /// This operation replaces the existing set of QosPolicy settings for an ITopic.
         /// </summary>
         /// <remarks>
-        /// This operation replaces the existing set of QosPolicy settings for a Topic. The
-        /// parameter qos contains the struct with the QosPolicy settings which is checked
-        /// for self-consistency and mutability. When the application tries to change a
-        /// QosPolicy setting for an enabled Topic, which can only be set before the Topic
-        /// is enabled, the operation will fail and an ImmutablePolicy is returned.
+        /// <para>
+        /// The parameter qos contains the QosPolicy settings which are to be applied to this
+        /// ITopic. The provided QosPolicy settings are checked for self-consistency and mutability.
+        /// When the application tries to change a QosPolicy setting for an enabled ITopic,
+        /// which can only be set before the ITopic is enabled, the operation will fail and an
+        /// ImmutablePolicy is returned.
         /// In other words, the application must provide the currently set QosPolicy settings
         /// in case of the immutable QosPolicy settings. Only the mutable QosPolicy
         /// settings can be changed. When qos contains conflicting QosPolicy settings (not
         /// self-consistent), the operation will fail and an InconsistentPolicy is returned.
+        /// </para>
+        /// <para>
         /// The set of QosPolicy settings specified by the qos parameter are applied on top of
         /// the existing QoS, replacing the values of any policies previously set (provided, the
         /// operation returned OK).
+        /// </para>
         /// </remarks>
-        /// <param name="qos">The new set of QosPolicy settings for a Topic.</param>
+        /// <param name="qos">The new set of QosPolicy settings for a ITopic.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The new TopicQos is set.</item>
-        /// <item>Error - An internal error has occured.</item>         
-        /// <item>AlreadyDeleted - The Topic has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>BadParameter - The parameter qos is not a valid topicQos. It contains a QosPolicy 
+        /// <item>DDS.ReturnCode Ok - The new TopicQos is set.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occured.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The ITopic has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter qos is not a valid topicQos. It contains a QosPolicy
         /// setting with an invalid Duration value or an enum value that is outside its legal boundaries.</item>
-        /// <item>Unsupported - one or more of the selected QosPolicy values are currently not supported by OpenSplice.</item>
-        /// <item>ImmutablePolicy - The parameter qos contains an immutable QosPolicy setting with a different 
-        /// value than set during enabling of the Topic.</item>
-        /// <item>InconsistentPolicy - The parameter qos contains conflicting QosPolicy settings,e.g. a history depth
-        ///  that is higher than the specified resource limits.</item>
+        /// <item>DDS.ReturnCode Unsupported - one or more of the selected QosPolicy values are currently not supported by OpenSplice.</item>
+        /// <item>DDS.ReturnCode ImmutablePolicy - The parameter qos contains an immutable QosPolicy setting with a different
+        /// value than set during enabling of the ITopic.</item>
+        /// <item>DDS.ReturnCode InconsistentPolicy - The parameter qos contains conflicting QosPolicy settings,e.g. a history depth
+        /// that is higher than the specified resource limits.</item>
         /// </list>
         /// </returns>
         ReturnCode SetQos(TopicQos qos);
         /// <summary>
-        /// This operation attaches a TopicListener to the Topic.
+        /// This property returns the TopicListener currently attached to the ITopic.
         /// </summary>
         /// <remarks>
-        /// This operation attaches a TopicListener to the Topic. Only one
-        /// TopicListener can be attached to each Topic. If a TopicListener was already
-        /// attached, the operation will replace it with the new one. When listener is NULL , 
-        /// it represents a listener that is treated as a NOOP for all statuses 
-        /// activated in the bit mask.
+        /// Only one listener can be attached to the ITopic at any particular time. This property
+        /// returns the listener that is currently attached to the ITopic. When no listener is
+        /// attached the null is returned.
         /// </remarks>
-        /// <param name="listener">The listener to be attached to the Topic.</param>
+        /// <returns>returns the TopicListener currently attached to the ITopic.</returns>
+        ITopicListener Listener { get; }
+        /// <summary>
+        /// This operation attaches an ITopicListener to the ITopic.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Only one ITopicListener can be attached to each ITopic. If an ITopicListener was
+        /// already attached, the operation will replace it with the new one. When listener is
+        /// null, it represents a listener that is treated as a No-Operation for all statuses
+        /// activated in the bit mask.
+        /// </para>
+        /// <para>
+        /// <i><b>Communication Status</b></i><br/>
+        /// For each communication status, the StatusChanged flag is initially set to false.
+        /// It becomes true when the communication status changes, and for each communication
+        /// status activated in the provided mask parameter, the associated ITopicListener
+        /// operation is invoked and the communication status is reset to false, as the
+        /// listener implicitly accesses the status which is passed as an parameter to invoked
+        /// listener operation. The status is reset prior to calling the listener operation,
+        /// so if the application calls the get_<status_name> from inside the listener it
+        /// will see that the status is already reset. An exception to this rule it the null
+        /// listener, which does not reset the communication statuses for which it is invoked.
+        /// </para>
+        /// <para></para>
+        /// For the ITopicListener the following statuses are applicable:
+        /// <list type="bullet">
+        /// <item>StatusKind.InconsistentTopic.</item>
+        /// </list>
+        /// <para>
+        /// Status bits are declared as a constant and can be used by the application in an OR
+        /// operation to create a tailored mask. With a mask set to 0 the caller indicates that
+        /// the created entity not respond to any of its available statuses.
+        /// The DDS will therefore attempt to propagate these statuses to its factory.
+        /// </para>
+        /// <para>
+        /// <i><b>Status Propagation</b></i><br/>
+        /// In case a communication status is not activated in the mask of the ITopicListener,
+        /// the IDomainParticipantListener of the containing IDomainParticipant is
+        /// invoked (if attached and activated for the status that occurred). This allows the
+        /// application to set a default behaviour in the IDomainParticipantListener of the
+        /// containing DomainParticipant and a Topic specific behaviour when needed. In
+        /// case the IDomainParticipantListener is also not attached or the
+        /// communication status is not activated in its mask, the application is not notified
+        /// of the change.
+        /// </para>
+        /// </remarks>
+        /// <param name="listener">The listener to be attached to the ITopic.</param>
         /// <param name="mask">A bit mask in which each bit enables the invocation of the TopicListener for a certain status.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The TopicListener is attached.</item>
-        /// <item>Error - An internal error has occured.</item>         
-        /// <item>AlreadyDeleted - The Topic has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The TopicListener is attached.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occured.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The ITopic has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode SetListener(ITopicListener listener, StatusKind mask);
     }
 
     /// <summary>
-    /// ContentFilteredTopic is a specialization of TopicDescription that allows for content based subscriptions. 
+    /// IContentFilteredTopic is a specialization of ITopicDescription that allows for content based subscriptions.
     /// </summary>
     /// <remarks>
-    /// ContentFilteredTopic describes a more sophisticated subscription that indicates the Subscriber 
-    /// does not necessarily want to see all values of each instance published under the Topic. 
-    /// Rather, it only wants to see the values whose contents satisfy certain criteria. 
-    /// Therefore this class must be used to request content-based subscriptions. The selection 
+    /// IContentFilteredTopic describes a more sophisticated subscription that indicates that the ISubscriber
+    /// does not necessarily want to see all values of each instance published under the ITopic.
+    /// Rather, it only wants to see the values whose contents satisfy certain criteria.
+    /// Therefore this class must be used to request content-based subscriptions. The selection
     /// of the content is done using the SQL based filter with parameters to adapt the filter clause.
     /// </remarks>
     public interface IContentFilteredTopic : ITopicDescription
     {
         /// <summary>
-        /// This operation returns the filter_expression associated with the ContentFilteredTopic.
+        /// This operation returns the filterExpression associated with the IContentFilteredTopic.
         /// </summary>
         /// <remarks>
-        /// This operation returns the filter_expression associated with the ContentFilteredTopic. 
-        /// That is, the expression specified when the ContentFilteredTopic was created.
+        /// The return string is the SQL filter expression which was specified when the
+        /// the IContentFilteredTopic was created. The result is a string which specifies
+        /// the criteria used to select the data samples of interest. It is similar to the
+        /// WHERE clause of an SQL expression.
         /// </remarks>
-        /// <returns>The string that specifies the criteria to select the data samples of interest. 
-        /// It is similar to the WHERE clause of an SQL expression.</returns>
+        /// <returns>
+        /// The string that specifies the criteria to select the data samples of interest.
+        /// </returns>
         string GetFilterExpression();
         /// <summary>
-        /// This operation obtains the expression parameters associated with the ContentFilteredTopic.
+        /// This operation obtains the expression parameters associated with the IContentFilteredTopic.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// This operation obtains the expression parameters associated with the
-        /// ContentFilteredTopic. That is, the parameters specified on the last successful
+        /// IContentFilteredTopic. That is, the parameters specified on the last successful
         /// call to SetExpressionParameters, or if SetExpressionParameters
-        /// was never called, the parameters specified when the ContentFilteredTopic was
+        /// was never called, the parameters specified when the IContentFilteredTopic was
         /// created.
+        /// </para>
+        /// <para>
         /// The resulting reference holds a sequence of strings with the parameters used in the
         /// SQL expression (i.e., the %n tokens in the expression). The number of parameters in
         /// the result sequence will exactly match the number of %n tokens in the filter
-        /// expression associated with the ContentFilteredTopic.
+        /// expression associated with the IContentFilteredTopic.
+        /// </para>
         /// </remarks>
-        /// <param name="expressionParameters">A reference to a sequence of strings that will be used 
+        /// <param name="expressionParameters">A reference to a sequence of strings that will be used
         /// to store the parameters used in the SQL expression.</param>
-        /// <returns>Return values are: 
+        /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The existing set of expression parameters applied to this ContentFilteredTopic 
+        /// <item>DDS.ReturnCode Ok - The existing set of expression parameters applied to this IContentFilteredTopic
         /// has successfully been copied into the specified expressionParameters parameter.</item>
-        /// <item>Error - An internal error has occured.</item> 
-        /// <item>AlreadyDeleted - The ContentFilteredTopic has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occured.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IContentFilteredTopic has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetExpressionParameters(ref string[] expressionParameters);
         /// <summary>
-        /// This operation changes the expression parameters associated with the ContentFilteredTopic.
+        /// This operation changes the expression parameters associated with the IContentFilteredTopic.
         /// </summary>
         /// <remarks>
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
+        ///
         /// This operation changes the expression parameters associated with the
-        /// ContentFilteredTopic. The parameter expressionParameters is a handle
-        /// to a sequence of strings with the parameters used in the SQL expression. The
-        /// number of values in expressionParameters must be equal or greater than the
-        /// highest referenced %n token in the filter_expression (for example, if %1 and
-        /// %8 are used as parameter in the filter_expression, the
+        /// IContentFilteredTopic. The parameter expressionParameters is a sequence
+        /// of strings with the parameters used in the SQL expression. The number
+        /// of values in expressionParameters must be equal or greater than the
+        /// highest referenced %n token in the filterExpression (for example, if %1 and
+        /// %8 are used as parameter in the filterExpression, the
         /// expressionParameters should at least contain n+1 = 9 values). This is the
-        /// filter expression specified when the ContentFilteredTopic was created.
+        /// filter expression specified when the IContentFilteredTopic was created.
         /// </remarks>
         /// <param name="expressionParameters">A sequence of strings with the parameters used in the SQL expression.
-        /// The number of values in expressionParameters must be equal or greater than the highest referenced 
+        /// The number of values in expressionParameters must be equal or greater than the highest referenced
         /// %n token in the subscriptionExpression.</param>
-        /// <returns>The possible return codes are: 
+        /// <returns>The possible return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The new expression parameters are set.</item>
-        /// <item>Error - An internal error has occured.</item> 
-        /// <item>AlreadyDeleted - The ContentFilteredTopic has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>BadParameter - The number of parameters in expression_parameters does not match the 
-        /// number of tokens in the expression for this ContentFilteredTopic or one of the parameters
-        /// is an illegal parameter.</item>          
+        /// <item>DDS.ReturnCode Ok - The new expression parameters are set.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occured.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IContentFilteredTopic has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode BadParameter - The number of parameters in expressionParameters does not match the
+        /// number of tokens in the expression for this IContentFilteredTopic or one of the parameters
+        /// is an illegal parameter.</item>
         /// </list>
         /// </returns>
         ReturnCode SetExpressionParameters(params string[] expressionParameters);
         /// <summary>
-        /// This property returns the Topic associated with the ContentFilteredTopic.
+        /// This property returns the ITopic associated with the IContentFilteredTopic.
         /// </summary>
         /// <remarks>
-        /// This operation returns the Topic associated with the ContentFilteredTopic.
-        /// That is, the Topic specified when the ContentFilteredTopic was created. This
-        /// Topic is the base topic on which the filtering will be applied.
+        /// That is, the ITopic specified when the IContentFilteredTopic was created. This
+        /// ITopic is the base topic on which the filtering will be applied.
         /// </remarks>
         ITopic RelatedTopic { get; }
     }
 
     /// <summary>
-    /// MultiTopic is a specialization of TopicDescription that allows subscriptions to combine, filter 
+    /// IMultiTopic is a specialization of ITopicDescription that allows subscriptions to combine, filter
     /// and/or rearrange data coming from several Topics.
     /// </summary>
     /// <remarks>
-    /// MultiTopic allows a more sophisticated subscription that can select and combine
+    /// @note The IMultiTopic is not yet implemented. It is scheduled for a future release.
+    ///
+    /// IMultiTopic allows a more sophisticated subscription that can select and combine
     /// data received from multiple Topics into a single data type (specified by the
-    /// inherited type_name). The data will then be filtered (selection) and possibly
+    /// inherited typeName). The data will then be filtered (selection) and possibly
     /// re-arranged (aggregation and/or projection) according to an SQL expression with
     /// parameters to adapt the filter clause.
     /// </remarks>
     public interface IMultiTopic : ITopicDescription
     {
         /// <summary>
-        /// This property is not yet implemented. It is scheduled for a future release.
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
+        /// This operation returns the subscription expression associated with the IMultiTopic.
         /// </summary>
+        /// <remarks>
+        /// This operation returns the subscription expression associated with the IMultiTopic.
+        /// That is, the expression specified when the IMultiTopic was created.
+        /// The subscription expression result is a string that specifies the criteria to select the
+        /// data samples of interest. In other words, it identifies the selection and rearrangement
+        /// of data from the associated ITopics. It is an SQL expression where the SELECT
+        /// clause provides the fields to be kept, the FROM part provides the names of the
+        /// Topics that are searched for those fields, and the WHERE clause gives the content
+        /// filter. The ITopics combined may have different types but they are restricted in that
+        /// the type of the fields used for the NATURAL JOIN operation must be the same
+        /// </remarks>
         string SubscriptionExpression { get; }
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
+        /// This operation obtains the expression parameters associated with the IMultiTopic.
         /// </summary>
-        /// <param name="expressionParameters"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// This operation obtains the expression parameters associated with the IIMultiTopic.
+        /// That is, the parameters specified on the last successful cal l to
+        /// SetExpressionParameters, or if SetExpressionParameters was
+        /// never called, the parameters specified when the MultiTopic was created.
+        /// The resulting reference holds a sequence of strings with the values of the parameters
+        /// used in the SQL expression (i.e., the %n tokens in the expression). The number of
+        /// parameters in the result sequence will exactly match the number of %n tokens in the
+        /// filter expression associated with the MultiTopic.
+        /// </remarks>
+        /// <param name="expressionParameters">A sequence of strings with the parameter value used in the SQL expression.</param>
+        /// <returns>The possible return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - the existing set of expression parameters applied to this IMultiTopic has
+        /// successfully been copied into the specified expressionParameters parameter.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occured.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IIMultiTopic has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// </list>
         ReturnCode GetExpressionParameters(ref string[] expressionParameters);
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
         /// </summary>
-        /// <param name="expressionParameters"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// This operation changes the expression parameters associated with the IMultiTopic.
+        /// The parameter expressionParameters is a handle to a sequence of strings with
+        /// the parameters used in the SQL expression. The number of parameters in
+        /// expressionParameters must exactly match the number of %n tokens in the
+        /// subscription expression associated with the IMultiTopic. This is the subscription
+        /// expression specified when the IMultiTopic was created.
+        /// </remarks>
+        /// <param name="expressionParameters">A sequence of strings with the parameter value used in the SQL expression.</param>
+        /// <returns>The possible return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - The new expression parameters are set.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occured.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IMultiTopic has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode BadParameter - The number of parameters in expressionParameters does not match the
+        /// number of tokens in the expression for this IMultiTopic or one of the parameters
+        /// is an illegal parameter.</item>
+        /// </list>
+        /// </returns>
         ReturnCode SetExpressionParameters(params string[] expressionParameters);
     }
 
-    // ----------------------------------------------------------------------  
-    // Publisher/Subscriber, DataWriter/DataReader
-    // ---------------------------------------------------------------------- 
+    // ----------------------------------------------------------------------
+    // IPublisher/ISubscriber, IDataWriter/IDataReader
+    // ----------------------------------------------------------------------
     /// <summary>
-    /// The Publisher acts on behalf of one or more DataWriter objects that belong to
+    /// The IPublisher acts on behalf of one or more IDataWriter objects that belong to
     /// it. When it is informed of a change to the data associated with one of its
-    /// DataWriter objects, it decides when it is appropriate to actually process the
+    /// IDataWriter objects, it decides when it is appropriate to actually process the
     /// sample-update message. In making this decision, it considers the PublisherQos
     /// and the DataWriterQos.
     /// </summary>
-    /// 
+    ///
     public interface IPublisher : IEntity
     {
         /// <summary>
@@ -1862,118 +2551,131 @@ namespace DDS
         /// for the missing parameters. Default for QoS for QoS parameters, null for listeners and 0 mask for
         /// listener parameters.
         /// </summary>
-        /// <param name="topic"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// <seealso cref=" CreateDataWriter(ITopic topic, DataWriterQos qos ,IDataWriterListener listener, StatusKind mask)">
+        /// </remarks>
+        /// <param name="topic">The topic for which the IDataWriter is created.</param>
+        /// <returns>The newly created IDataWriter. In case of an error a null value IDataWriter is returned.</returns>
         IDataWriter CreateDataWriter(ITopic topic);
         /// <summary>
         /// This operations behaves similarly to the most complete operation, and it substitutes default values
-        /// for the missing parameters. Default for QoS for QoS parameters, null for listeners and 0 mask for
-        /// listener parameters.
+        /// for the missing parameters. Default for QoS for QoS parameters.
         /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="listener"></param>
-        /// <param name="mask"></param>
-        /// <returns></returns>
+        /// <param name="topic">The topic for which the IDataWriter is created.</param>
+        /// <param name="listener">The IDataWriterListener instance which will be attached to the new
+        /// IDataWriter. It is permitted to use null as the value of the listener: this
+        /// behaves as a IDataWriterListener whose operations perform no action.</param>
+        /// <seealso cref=" CreateDataWriter(ITopic topic, DataWriterQos qos ,IDataWriterListener listener, StatusKind mask)">
+        /// <param name="mask"> bit mask in which each bit enables the invocation of the IDataWriterListener
+        /// for a certain status.</param>
+        /// <returns>The newly created IDataWriter. In case of an error a null value IDataWriter is returned.</returns>
         IDataWriter CreateDataWriter(
                 ITopic topic,
                 IDataWriterListener listener, StatusKind mask);
         /// <summary>
         /// This operations behaves similarly to the most complete operation, and it substitutes default values
-        /// for the missing parameters. Default for QoS for QoS parameters, null for listeners and 0 mask for
-        /// listener parameters.
+        /// for the missing parameters. Default null for listeners and 0 mask for listener parameters.
         /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="qos"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// <seealso cref=" CreateDataWriter(ITopic topic, DataWriterQos qos ,IDataWriterListener listener, StatusKind mask)">
+        /// </remarks>
+        /// <param name="topic">The topic for which the IDataWriter is created.</param>
+        /// <param name="qos">The DataWriterQos for the new IDataWriter.
+        /// In case these settings are not self consistent, no IDataWriter is created.</param>
+        /// <returns>The newly created IDataWriter. In case of an error a null value IDataWriter is returned.</returns>
         IDataWriter CreateDataWriter(ITopic topic, DataWriterQos qos);
         /// <summary>
-        /// This operation creates a DataWriter with the desired DataWriterQos, for the
-        /// desired Topic and attaches the optionally specified DataWriterListener to it.
+        /// This operation creates a IDataWriter with the desired DataWriterQos, for the
+        /// desired ITopic and attaches the optionally specified IDataWriterListener to it.
         /// </summary>
         /// <remarks>
-        /// This operation creates a DataWriter with the desired DataWriterQos, for the
-        /// desired Topic and attaches the optionally specified DataWriterListener to it.
-        /// The returned DataWriter is attached (and belongs) to the Publisher on which
-        /// this operation is being called. To delete the DataWriter the operation
-        /// DeleteDatawriter or DeleteContained_entities must be used.
+        /// <para>
+        /// This operation creates a IDataWriter with the desired DataWriterQos, for the
+        /// desired ITopic and attaches the optionally specified IDataWriterListener to it.
+        /// The returned IDataWriter is attached (and belongs) to the IPublisher on which
+        /// this operation is being called. To delete the IDataWriter the operation
+        /// DeleteDatawriter or DeleteContainedEntities must be used.
+        /// </para><para>
+        /// For an example see <see cref="Space.FooDataWriter"/> detailed description.
+        /// </para>
         /// </remarks>
-        /// <param name="topic">The topic for which the DataWriter is created.</param>
-        /// <param name="qos">The DataWriterQos for the new DataWriter. 
-        /// In case these settings are not self consistent, no DataWriter is created.</param>
-        /// <param name="listener">The DataWriterListener instance which will be attached to the new
-        /// DataWriter. It is permitted to use NULL as the value of the listener: this
-        /// behaves as a DataWriterListener whose operations perform no action.</param>
-        /// <param name="mask">a bit mask in which each bit enables the invocation of the DataWriterListener  
+        /// <param name="topic">The topic for which the IDataWriter is created.</param>
+        /// <param name="qos">The DataWriterQos for the new IDataWriter.
+        /// In case these settings are not self consistent, no IDataWriter is created.</param>
+        /// <param name="listener">The IDataWriterListener instance which will be attached to the new
+        /// IDataWriter. It is permitted to use null as the value of the listener: this
+        /// behaves as a IDataWriterListener whose operations perform no action.</param>
+        /// <param name="mask">a bit mask in which each bit enables the invocation of the IDataWriterListener
         /// for a certain status.</param>
-        /// <returns>The newly created DataWriter. In case of an error a null value DataWriter is returned.</returns>
+        /// <returns>The newly created IDataWriter. In case of an error a null value IDataWriter is returned.</returns>
         IDataWriter CreateDataWriter(
-                ITopic topic, 
+                ITopic topic,
                 DataWriterQos qos,
-                IDataWriterListener listener, 
+                IDataWriterListener listener,
                 StatusKind mask);
         /// <summary>
-        /// This operation deletes a DataWriter that belongs to the Publisher.
+        /// This operation deletes a IDataWriter that belongs to the IPublisher.
         /// </summary>
         /// <remarks>
-        /// This operation deletes a DataWriter that belongs to the Publisher. When the
-        /// operation is called on a different Publisher, as used when the DataWriter was
+        /// This operation deletes a IDataWriter that belongs to the IPublisher. When the
+        /// operation is called on a different IPublisher, as used when the IDataWriter was
         /// created, the operation has no effect and returns
-        /// PreconditionNotMet. The deletion of the DataWriter will automatically unregister all instances. 
-        /// Depending on the settings of WriterDataLifecycleQosPolicy, the deletion of the DataWriter may also
+        /// PreconditionNotMet. The deletion of the IDataWriter will automatically unregister all instances.
+        /// Depending on the settings of WriterDataLifecycleQosPolicy, the deletion of the IDataWriter may also
         /// dispose of all instances.
         /// </remarks>
-        /// <param name="dataWriter">The DataWriter which is to be deleted.</param>
-        /// <returns>Return codes are: 
+        /// <param name="dataWriter">The IDataWriter which is to be deleted.</param>
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The DataWriter is deleted.</item>
-        /// <item>Error - An internal error has occured.</item> 
-        /// <item>AlreadyDeleted - The Publisher has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>BadParameter - The parameter dataWriter is not a valid IDataWriter reference.</item>      
-        /// <item>PreconditionNotMet - The operation is called on a different Publisher, as used when the 
-        /// DataWriter was created.</item>
+        /// <item>DDS.ReturnCode Ok - The IDataWriter is deleted.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IPublisher has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter dataWriter is not a valid IDataWriter reference.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - The operation is called on a different IPublisher, as used when the
+        /// IDataWriter was created.</item>
         /// </list>
         /// </returns>
         ReturnCode DeleteDataWriter(IDataWriter dataWriter);
         /// <summary>
-        /// This operation returns a previously created DataWriter belonging to the Publisher 
-        /// which is attached to a Topic with the matching topicName.
+        /// This operation returns a previously created IDataWriter belonging to the IPublisher
+        /// which is attached to a ITopic with the matching topicName.
         /// </summary>
         /// <remarks>
-        /// This operation returns a previously created DataWriter belonging to the
-        /// Publisher which is attached to a Topic with the matching topicName. When
-        /// multiple DataWriter objects (which satisfy the same condition) exist, this
+        /// This operation returns a previously created IDataWriter belonging to the
+        /// IPublisher which is attached to a ITopic with the matching topicName. When
+        /// multiple IDataWriter objects (which satisfy the same condition) exist, this
         /// operation will return one of them. It is not specified which one.
         /// </remarks>
-        /// <param name="topicName">the name of the Topic, which is attached to the DataWriter to look for.</param>
-        /// <returns>The DataWriter found. When no such DataWriter is found, a DataWriter of null value is returned.</returns>
+        /// <param name="topicName">the name of the ITopic, which is attached to the IDataWriter to look for.</param>
+        /// <returns>The IDataWriter found. When no such IDataWriter is found, a IDataWriter of null value is returned.</returns>
         IDataWriter LookupDataWriter(string topicName);
         /// <summary>
-        /// This operation deletes all the DataWriter objects that were created by means of 
-        /// one of the CreateDataWriter operations on the Publisher.
+        /// This operation deletes all the IDataWriter objects that were created by means of
+        /// one of the CreateDataWriter operations on the IPublisher.
         /// </summary>
         /// <remarks>
-        /// This operation deletes all the DataWriter objects that were created by means of
-        /// one of the CreateDatawriter operations on the Publisher. In other words, it
-        /// deletes all contained DataWriter objects.
+        /// This operation deletes all the IDataWriter objects that were created by means of
+        /// one of the CreateDatawriter operations on the IPublisher. In other words, it
+        /// deletes all contained IDataWriter objects.
         /// </remarks>
-        /// <returns>Return codes are: 
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The contained Entity objects are deleted and the application may delete the Publisher.</item>
-        /// <item>Error - An internal error has occured.</item> 
-        /// <item>AlreadyDeleted - The Publisher has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The contained IEntity objects are deleted and the application may delete the IPublisher.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IPublisher has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode DeleteContainedEntities();
         /// <summary>
-        /// This operation replaces the existing set of QosPolicy settings for a Publisher.
+        /// This operation replaces the existing set of QosPolicy settings for a IPublisher.
         /// </summary>
         /// <remarks>
-        /// This operation replaces the existing set of QosPolicy settings for a Publisher.
+        /// This operation replaces the existing set of QosPolicy settings for a IPublisher.
         /// The parameter qos contains the QosPolicy settings which is checked for
         /// self-consistency and mutability. When the application tries to change a QosPolicy
-        /// setting for an enabled Publisher, which can only be set before the Publisher is
+        /// setting for an enabled IPublisher, which can only be set before the IPublisher is
         /// enabled, the operation will fail and a ImmutablePolicy is returned. In
         /// other words, the application must provide the currently set QosPolicy settings in
         /// case of the immutable QosPolicy settings. Only the mutable QosPolicy settings
@@ -1982,96 +2684,161 @@ namespace DDS
         /// returned.
         /// The set of QosPolicy settings specified by the qos parameter are applied on top of
         /// the existing QoS, replacing the values of any policies previously set (provided, the
-        /// operation returned OK).
+        /// operation returned OK). If one or more of the partitions in the QoS
+        /// structure have insufficient access rights configured then the SetQos function will
+        /// fail with a PreconditionNotMet error code.
         /// </remarks>
-        /// <param name="qos">The new set of QosPolicy settings for the Publisher.</param>
+        /// <param name="qos">The new set of QosPolicy settings for the IPublisher.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The new PublisherQos is set.</item>
-        /// <item>Error - An internal error has occured.</item> 
-        /// <item>AlreadyDeleted - The Publisher has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>BadParameter - The parameter qos is not a valid PublisherQos. It contains a 
-        /// QosPolicy setting with an enum value that is outside its legal boundaries.</item> 
-        /// <item>Unsupported - One ore more of the selected QosPolicy values are currently not 
+        /// <item>DDS.ReturnCode Ok - The new PublisherQos is set.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IPublisher has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter qos is not a valid PublisherQos. It contains a
+        /// QosPolicy setting with an enum value that is outside its legal boundaries.</item>
+        /// <item>DDS.ReturnCode Unsupported - One ore more of the selected QosPolicy values are currently not
         /// supported by OpenSplice.</item>
-        /// <item>ImmutablePolicy - The parameter qos contains an immutable Qospolicy setting with a 
-        /// different value than set during enabling of the Publisher.</item>
+        /// <item>DDS.ReturnCode ImmutablePolicy - The parameter qos contains an immutable Qospolicy setting with a
+        /// different value than set during enabling of the IPublisher.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - Insufficient access rights exist for the partition(s) listed in the QoS structure</item>
         /// </list>
         /// </returns>
         ReturnCode SetQos(PublisherQos qos);
         /// <summary>
-        /// This operation allows access to the existing set of QoS policies for a Publisher.
+        /// This operation allows access to the existing set of QoS policies for a IPublisher.
         /// </summary>
         /// <remarks>
-        /// This operation allows access to the existing set of QoS policies of a Publisher on
+        /// This operation allows access to the existing set of QoS policies of a IPublisher on
         /// which this operation is used. This PublisherQos is stored at the location pointed
         /// to by the qos parameter.
         /// </remarks>
-        /// <param name="qos">A reference to the destination PublisherQos struct in which the 
+        /// <param name="qos">A reference to the destination PublisherQos struct in which the
         /// QosPolicy settings will be copied.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The existing set of QoS policy values applied to this Publisher has successfully
+        /// <item>DDS.ReturnCode Ok - The existing set of QoS policy values applied to this IPublisher has successfully
         /// been copied into the specified PublisherQos parameter.</item>
-        /// <item>Error - An internal error has occured.</item> 
-        /// <item>AlreadyDeleted - The Publisher has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IPublisher has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetQos(ref PublisherQos qos);
         /// <summary>
-        /// This operation attaches a PublisherListener to the Publisher.
+        /// This property returns the PublisherListener currently attached to the IPublisher.
         /// </summary>
         /// <remarks>
-        /// This operation attaches a PublisherListener to the Publisher. Only one
-        /// PublisherListener can be attached to each Publisher. If a PublisherListener 
-        /// was already attached, the operation will replace it with the new one. 
-        /// When listener is NULL , it represents a listener that is
-        /// treated as a NOOP for all statuses activated in the bit mask.
+        /// Only one listener can be attached to the IPublisher at any particular time. This property
+        /// returns the listener that is currently attached to the IPublisher.
+        /// </remarks>
+        /// <returns>returns the PublisherListener currently attached to the IPublisher.</returns>
+       IPublisherListener Listener { get; }
+        /// <summary>
+        /// This operation attaches a PublisherListener to the IPublisher.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This operation attaches a PublisherListener to the IPublisher. Only one
+        /// PublisherListener can be attached to each IPublisher. If a PublisherListener
+        /// was already attached, the operation will replace it with the new one.
+        /// When listener is null, it represents a listener that is
+        /// treated as a No-Operation for all statuses activated in the bit mask.
+        /// </para>
+        /// <para><b><i>Communication Status</i></b></para>
+        /// <para>
+        /// For each communication status, the StatusChangedFlag flag is initially set to
+        /// false. It becomes true whenever that communication status changes. For each
+        /// communication status activated in the mask, the associated
+        /// PublisherListener operation is invoked and the communication status is
+        /// reset to fase, as the listener implicitly accesses the status which is passed as a
+        /// parameter to that operation. The status is reset prior to calling the listener, so if the
+        /// application calls the Get<status_name>Status from inside the listener it will
+        /// see the status already reset. An exception to this rule is the null
+        /// listener, which does not reset the communication statuses for which it is invoked.
+        /// The following statuses are applicable to the PublisherListener:
+        /// <list type="bullet">
+        /// <item>DDS.StatusKind OfferedDeadLineMissedStatus (propagated)</item>
+        /// <item>DDS.StatusKind OfferedIncompatibleQosStatus (propagated)</item>
+        /// <item>DDS.StatusKind LivelinessLostStatus (propagated)</item>
+        /// <item>DDS.StatusKind PublicationMatchStatus (propagated)</item>
+        /// </list>
+        /// Be aware that the DDS.StatusKind.PublicationMatchStatus is not applicable when
+        /// the infrastructure does not have the information available to determine connectivity.
+        /// This is the case when OpenSplice is configured not to maintain discovery
+        /// information in the Networking Service. In this case the operation will return
+        /// DDS.ReturnCode Unsupported.
+        /// </para>
+        /// <para>
+        /// Status bits are declared as a constant and can be used by the application in an OR
+        /// operation to create a tailored mask. The value 0 can be used to indicate that the
+        /// created entity should not respond to any of its available statuses. The DDS will
+        /// therefore attempt to propagate these statuses to its factory.
+        /// </para>
+        /// <para><b><i>Status Propagation</i></b></para>
+        /// <para>
+        /// The Data Distribution Service will trigger the most specific and relevant Listener.
+        /// In other words, in case a communication status is also activated on the
+        /// IDataWriterListener of a contained IDataWriter, the IDataWriterListener on that
+        /// contained IDataWriter is invoked instead of the PublisherListener. This means that
+        /// a status change on a contained IDataWriter only invokes the PublisherListener if the
+        /// contained IDataWriter itself does not handle the trigger event generated by
+        /// the status change.
+        /// </para>
+        /// <para>
+        /// In case a status is not activated in the mask of the PublisherListener, the
+        /// DomainParticipantListener of the containing IDomainParticipant is invoked
+        /// (if attached and activated for the status that occurred). This allows the
+        /// application to set a default behaviour in the DomainParticipantListener of the
+        /// containing IDomainParticipant and an IPublisher specific behaviour when
+        /// needed. In case the DomainParticipantListener is also not attached or
+        /// the communication status is not activated in its mask, the application is not notified
+        /// of the change.
+        /// </para>
         /// </remarks>
         /// <param name="listener">The PublisherListener instance which will be attached to the publisher.</param>
-        /// <param name="mask">a bit mask in which each bit enables the invocation of the PublisherListener 
+        /// <param name="mask">a bit mask in which each bit enables the invocation of the PublisherListener
         /// for a certain status.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The PublisherListener is attached.</item>
-        /// <item>Error - An internal error has occured.</item> 
-        /// <item>AlreadyDeleted - The Publisher has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The PublisherListener is attached.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IPublisher has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode SetListener(IPublisherListener listener, StatusKind mask);
         /// <summary>
-        /// This operation will suspend the dissemination of the publications by all contained DataWriter objects.
+        /// This operation will suspend the dissemination of the publications by all contained IDataWriter objects.
         /// </summary>
         /// <remarks>
-        /// This operation suspends the publication of all DataWriter objects contained by
-        /// this Publisher. The data written, disposed or unregistered by a DataWriter is
-        /// stored in the history buffer of the DataWriter and therefore, depending on its QoS
+        /// This operation suspends the publication of all IDataWriter objects contained by
+        /// this IPublisher. The data written, disposed or unregistered by a IDataWriter is
+        /// stored in the history buffer of the IDataWriter and therefore, depending on its QoS
         /// settings, the following operations may block (see the operation descriptions for
         /// more information):
         /// <list type="bullet">
-        /// <item>DDS.DataWriter.dispose</item>
-        /// <item>DDS.DataWriter.dispose_w_timestamp</item>
-        /// <item>DDS.DataWriter.write</item>
-        /// <item>DDS.DataWriter.write_w_timestamp</item>
-        /// <item>DDS.DataWriter.writedispose</item>
-        /// <item>DDS.DataWriter.writedispose_w_timestamp</item>
-        /// <item>DDS.DataWriter.unregister_instance</item>
-        /// <item>DDS.DataWriter.unregister_instance_w_timestamp</item>
+        /// <item>DDS.IDataWriter.Dispose</item>
+        /// <item>DDS.IDataWriter.DisposeWithTimestamp</item>
+        /// <item>DDS.IDataWriter.Write</item>
+        /// <item>DDS.IDataWriter.WriteWithTimestamp</item>
+        /// <item>DDS.IDataWriter.WriteDispose</item>
+        /// <item>DDS.IDataWriter.WriteDisposeWithTimestamp</item>
+        /// <item>DDS.IDataWriter.UnregisterInstance</item>
+        /// <item>DDS.IDataWriter.UnregisterInstanceWithTimestamp</item>
         /// </list>
-        /// Subsequent calls to this operation have no effect. When the Publisher is deleted
+        /// <seealso cref="Space.FooDataWriter"/>
+        /// Subsequent calls to this operation have no effect. When the IPublisher is deleted
         /// before ResumePublications is called, all suspended updates are discarded.
         /// </remarks>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - the Publisher has been suspended</item>
-        /// <item>Error - an internal error has occurred</item>
-        /// <item>AlreadyDeleted - the Publisher has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources 
+        /// <item>DDS.ReturnCode Ok - the IPublisher has been suspended</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IPublisher has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
         /// to complete this operation.</item>
-        /// <item>NotEnabled- the Publisher is not enabled.</item>
+        /// <item>DDS.ReturnCode NotEnabled - the IPublisher is not enabled.</item>
         /// </list>
         /// </returns>
         ReturnCode SuspendPublications();
@@ -2079,134 +2846,236 @@ namespace DDS
         /// This operation resumes a previously suspended publication.
         /// </summary>
         /// <remarks>
-        /// If the Publisher is suspended, this operation will resume the publication of all
-        /// DataWriter objects contained by this Publisher. All data held in the history
-        /// buffer of the DataWriter's is actively published to the consumers. When the
-        /// operation returns all DataWriter's have resumed the publication of suspended
+        /// If the IPublisher is suspended, this operation will resume the publication of all
+        /// IDataWriter objects contained by this IPublisher. All data held in the history
+        /// buffer of the IDataWriter's is actively published to the consumers. When the
+        /// operation returns all IDataWriter's have resumed the publication of suspended
         /// updates.
         /// </remarks>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - the Publisher has resumed publications</item>
-        /// <item>Error - an internal error has occurred</item>
-        /// <item>AlreadyDeleted - the Publisher has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources 
+        /// <item>DDS.ReturnCode Ok - the IPublisher has resumed publications</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IPublisher has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
         /// to complete this operation.</item>
-        /// <item>NotEnabled- the Publisher is not enabled.</item>
-        /// <item>PreconditionNotMet - The Publisher is not suspended.</item>
+        /// <item>DDS.ReturnCode NotEnabled - the IPublisher is not enabled.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - The IPublisher is not suspended.</item>
         /// </list>
         /// </returns>
         ReturnCode ResumePublications();
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <returns></returns>
-        ReturnCode BeginCoherentChanges();
-        /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <returns></returns>
-        ReturnCode EndCoherentChanges();
-        /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <param name="maxWait"></param>
-        /// <returns></returns>
-        ReturnCode WaitForAcknowledgments(Duration maxWait);
-        /// <summary>
-        /// This operation returns the DomainParticipant associated with the Publisher.
-        /// </summary>
-        /// <returns>The DomainParticipant associated with the Publisher or a Publisher of null value if an error occurs.</returns>
-        IDomainParticipant GetParticipant();
-        /// <summary>
-        /// This operation sets the default DataWriterQos of the Publisher.
+        /// This operation requests that the application will begin a ‘coherent set’ of
+        /// modifications using IDataWriter objects attached to this IPublisher.
+        /// The ‘coherent set’ will be completed by a matching call to IPublisher.EndCoherentChanges.
         /// </summary>
         /// <remarks>
-        /// This operation sets the default DataWriterQos of the Publisher (that is the
-        /// struct with the QosPolicy settings) which is used for newly created DataWriter
-        /// objects, in case the constant DATAWRITER_QOS_DEFAULT is used. The default
-        /// DataWriterQos is only used when the constant is supplied as parameter qos to
-        /// specify the DataWriterQos in the create_datawriter operation. The
-        /// SetDefaultDataWriterQos operation checks if the DataWriterQos is self
+        /// <para>
+        /// A ‘coherent set’ is a set of modifications that must be propagated in such a way that
+        /// they are interpreted at the receivers’ side as a consistent set of modifications; that is,
+        /// the receiver will only be able to access the data after all the modifications in the set
+        /// are available at the receiver end.
+        /// A precondition for making coherent changes is that the PresentationQos of the
+        /// IPublisher has its CoherentAccess attribute set to true. If this is not the
+        /// case, the IPublisher will not accept any coherent start requests and return
+        /// DDS.ReturnCode PreconditionNotMet.
+        /// </para><para>
+        /// A connectivity change may occur in the middle of a set of coherent changes; for
+        /// example, the set of partitions used by the IPublisher or one of its connected
+        /// ISubscribers may change, a late-joining IDataReader may appear on
+        /// the network, or a communication failure may occur. In the event that such a change
+        /// prevents an entity from receiving the entire set of coherent changes, that entity must
+        /// behave as if it had received none of the set.
+        /// These calls can be nested. In that case, the coherent set terminates only with the last
+        /// call to IPublisher.EndCoherentChanges.
+        /// </para><para>
+        /// The support for ‘coherent changes’ enables a publishing application to change the
+        /// value of several data-instances that could belong to the same or different topics and
+        /// have those changes be seen ‘atomically’ by the readers. This is useful in cases where
+        /// the values are inter-related (for example, if there are two data-instances representing
+        /// the ‘altitude’ and ‘velocity vector’ of the same aircraft and both are changed, it may
+        /// be useful to communicate those values in a way the reader can see both together;
+        /// otherwise, it may e.g., erroneously interpret that the aircraft is on a collision course).
+        /// </para>
+        /// </remarks>
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - a new coherent change has successfully been started.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IPublisher has already been deleted</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - the IPublisher is not able to handle
+        /// coherent changes because its PresentationQos has not set CoherentAccess to true.</item>
+        /// </list>
+        /// </returns>
+        ReturnCode BeginCoherentChanges();
+        /// <summary>
+        /// This operation terminates the ‘coherent set’ initiated by the matching call to
+        /// IPublisher.BeginCoherentChanges.
+        /// </summary>
+        /// <remarks>
+        /// If there is no matching call to IPublisher.BeginCoherentChanges, the operation will return the error
+        /// DDS.ReturnCode PreconditionNotMe.
+        /// </remarks>
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - the coherent change has successfully been closed.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IPublisher has already been deleted</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - there is no matching IPublisher.BeginCoherentChanges
+        /// call that can be closed.</item>
+        /// </list>
+        /// </returns>
+        ReturnCode EndCoherentChanges();
+        /// <summary>
+        /// This operation blocks the calling thread until either all data written by all contained
+        /// DataWriters is acknowledged by the local infrastructure, or until the duration
+        /// specified by maxWait parameter elapses, whichever happens first.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This operation blocks the calling thread until either all data written by all contained
+        /// DataWriters is acknowledged by the local infrastructure, or until the duration
+        /// specified by maxWait parameter elapses, whichever happens first.
+        /// Data is acknowledged by the local infrastructure when it does not need to be stored
+        /// in its IDataWriter’s local history. When a locally-connected subscription (including
+        /// the networking service) has no more resources to store incoming samples it will start
+        /// to reject these samples, resulting in their source DataWriters to store them
+        /// temporarily in their own local history to be retransmitted at a later moment in time.
+        /// In such scenarios, the WaitForAcknowledgments operation will block until all
+        /// contained DataWriters have retransmitted their entire history, which is therefore
+        /// effectively empty, or until the maxWait timeout expires, whichever happens first.
+        /// In the first case the operation will return Ok, in the latter it will return
+        /// Timeout.
+        /// </para><para>
+        /// Be aware that in case the operation returns Ok, the data has only been
+        /// acknowledged by the local infrastructure: it does not mean all remote subscriptions
+        /// have already received the data. However, delivering the data to remote nodes is then
+        /// the sole responsibility of the networking service: even when the publishing
+        /// application would terminate, all data that has not yet been received may be
+        /// considered ‘on-route’ and will therefore eventually arrive (unless the networking
+        /// service itself will crash). In contrast, if an IDataWriter would still have data in its local
+        /// history buffer when it terminates, this data is considered ‘lost’.
+        /// This operation is intended to be used only if one or more of the contained
+        /// DataWriters has its ReliabilityQosPolicyKind set to ReliableReliabilityQos
+        /// Otherwise the operation will return immediately
+        /// with Ok, since best-effort DataWriters will never store rejected samples
+        /// in their local history: they will just drop them and continue business as usual.
+        /// </para>
+        /// </remarks>
+        /// <param name="maxWait">the maximum duration to block for tacknowledgments,
+        /// after which the application thread is unblocked. The special constant
+        /// Duration.Infinte can be used when the maximum waiting time does not need to be bounded.</param>
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - the data of all contained DataWriters has been acknowledged by
+        /// the local infrastructure.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IPublisher has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
+        /// to complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled- the IPublisher is not enabled.</item>
+        /// <item>DDS.ReturnCode Timeout - not all data is acknowledged before maxWait elapsed.</item>
+        /// </list>
+        /// </returns>
+        ReturnCode WaitForAcknowledgments(Duration maxWait);
+        /// <summary>
+        /// This operation returns the IDomainParticipant associated with the IPublisher.
+        /// </summary>
+        /// <remarks>
+        /// Note that there is exactly one IDomainParticipant associated with each
+        /// IPublisher. When the IPublisher was already deleted (there is no associated
+        /// IDomainParticipant any more), the null reference is returned.
+        /// </remarks>
+        /// <returns>The IDomainParticipant associated with the IPublisher.</returns>
+        IDomainParticipant GetParticipant();
+        /// <summary>
+        /// This operation sets the default DataWriterQos of the IPublisher.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The default DataWriterQos is used when one of the IPublisher.CreateDataWriter
+        /// operations is used to create the IDataWriter which does not have the DataWriterQos
+        /// as parameter.
+        /// </para><para>
+        /// The SetDefaultDataWriterQos operation checks if the DataWriterQos is self
         /// consistent. If it is not, the operation has no effect and returns
         /// InconsistentPolicy. The values set by this operation are returned by GetDefaultDataWriterQos.
+        /// </para>
         /// </remarks>
-        /// <param name="qos">The DataWriterQos struct, which contains the new default DataWriterQos 
+        /// <param name="qos">The DataWriterQos struct, which contains the new default DataWriterQos
         /// for the newly created DataWriters.</param>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The new default DataWriterQos is set.</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>AlreadyDeleted - the Publisher has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources 
+        /// <item>DDS.ReturnCode Ok - The new default DataWriterQos is set.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IPublisher has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
         /// to complete this operation.</item>
-        /// <item>BadParameter - the parameter qos is not a valid DataWriterQos.
+        /// <item>DDS.ReturnCode BadParameter - the parameter qos is not a valid DataWriterQos.
         /// It contains a QosPolicy setting with an invalid Duration value or an enum
         /// value that is outside its legal boundaries.</item>
-        /// <item>InconsistentPolicy - the parameter qos contains conflicting
+        /// <item>DDS.ReturnCode InconsistentPolicy - the parameter qos contains conflicting
         /// QosPolicy settings, e.g. a history depth that is higher than the specified resource
         /// limits.</item>
         /// </list>
         /// </returns>
         ReturnCode SetDefaultDataWriterQos(DataWriterQos qos);
         /// <summary>
-        /// This operation gets the default DataWriterQos of the Publisher.
+        /// This operation gets the default DataWriterQos of the IPublisher.
         /// </summary>
         /// <remarks>
-        /// This operation gets the default DataWriterQos of the Publisher (that is the
-        /// struct with the QosPolicy settings) which is used for newly created DataWriter
-        /// objects, in case the constant DATAWRITER_QOS_DEFAULT is used. The default
-        /// DataWriterQos is only used when the constant is supplied as parameter qos to
-        /// specify the DataWriterQos in the CreateDataWriter operation. The
-        /// application must provide the DataWriterQos struct in which the QosPolicy
+        /// <para>
+        /// The application must provide the DataWriterQos struct in which the QosPolicy
         /// settings can be stored and pass the qos reference to the operation. The operation
-        /// writes the default DataWriterQos to the struct referenced to by qos. Any settings 
+        /// writes the default DataWriterQos to the struct referenced to by qos. Any settings
         /// in the struct are overwritten.
+        /// </para><para>
         /// The values retrieved by this operation match the set of values specified on the last
         /// successful call to SetDefaultDatawriterQos, or, if the call was never made,
         /// the default values as specified for each QosPolicy setting.
+        /// </para>
         /// </remarks>
         /// <param name="qos">A reference to the DataWriterQos struct (provided by the application) in which
-        /// the default DataWriterQos for the DataWriter is written.</param>
-        /// <returns>Return codes are: 
+        /// the default DataWriterQos for the IDataWriter is written.</param>
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The new default DataWriter QosPolicy settings for the publisher have successfully
+        /// <item>DDS.ReturnCode Ok - The new default IDataWriter QosPolicy settings for the publisher have successfully
         /// been copied into the specified DataWriterQos policy.</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>AlreadyDeleted - the Publisher has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources 
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IPublisher has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
         /// to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetDefaultDataWriterQos(ref DataWriterQos qos);
         /// <summary>
-        /// This operation will copy policies in topicQos to the corresponding policies in dataWriterQos.
+        /// This operation will copy policies in topicQos to the corresponding policies in DataWriterQos.
         /// </summary>
         /// <remarks>
-        /// This operation will copy the QosPolicy settings in a_topic_qos to the
-        /// corresponding QosPolicy settings in a_datawriter_qos (replacing the values
-        /// in dataWriterQos, if present). This will only apply to the common
-        /// QosPolicy settings in each "Entity" Qos.
+        /// This operation will copy the QosPolicy settings in topicQos to the
+        /// corresponding QosPolicy settings in datawriterQos (replacing the values
+        /// in DataWriterQos, if present). This will only apply to the common
+        /// QosPolicy settings in each "IEntity" Qos.
         /// This is a convenience operation, useful in combination with the operations
-        /// GetDefaultDataWriterQos and Topic.GetQos. The operation
-        /// CopyFromTopicQos can be used to merge the DataWriter default
+        /// GetDefaultDataWriterQos and ITopic.GetQos. The operation
+        /// CopyFromTopicQos can be used to merge the IDataWriter default
         /// QosPolicy settings with the corresponding ones on the TopicQos. The resulting
-        /// DataWriterQos can then be used to create a new DataWriter, or set its
+        /// DataWriterQos can then be used to create a new IDataWriter, or set its
         /// DataWriterQos.
         /// This operation does not check the resulting dataWriterQos for consistency.
-        /// This is because the merged datawWriterQos may not be the final one, as the
+        /// This is because the merged DataWriterQos may not be the final one, as the
         /// application can still modify some QosPolicy settings prior to applying the
-        /// DataWriterQos to the DataWriter.
+        /// DataWriterQos to the IDataWriter.
         /// </remarks>
-        /// <param name="dataWriterQos">The destination DataWriterQos struct to which the QosPolicy settings 
+        /// <param name="dataWriterQos">The destination DataWriterQos struct to which the QosPolicy settings
         /// should be copied.</param>
         /// <param name="topicQos">The source TopicQos struct, which should be copied.</param>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The QosPolicy settings are copied from the topic DataWriter.</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>AlreadyDeleted - the Publisher has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources 
+        /// <item>DDS.ReturnCode Ok - The QosPolicy settings are copied from the topic IDataWriter.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IPublisher has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
         /// to complete this operation.</item>
         /// </list>
         /// </returns>
@@ -2214,26 +3083,29 @@ namespace DDS
     }
 
     /// <summary>
-    /// DataWriter allows the application to set the value of the sample to be published
-    /// under a given Topic.
-    /// A DataWriter is attached to exactly one Publisher which acts as a factory for it.
-    /// A DataWriter is bound to exactly one Topic and therefore to exactly one data
-    /// type. The Topic must exist prior to the DataWriter's creation.
-    /// DataWriter is an abstract class. It must be specialized for each particular
-    /// application data type. For a fictional application data type Foo (defined in the
-    /// module SPACE) the specialized class would be SPACE.FooDataWriter.
+    /// IDataWriter allows the application to set the value of the sample to be published
+    /// under a given ITopic.
     /// </summary>
+    /// <remarks>
+    /// A IDataWriter is attached to exactly one IPublisher which acts as a factory for it.
+    /// A IDataWriter is bound to exactly one ITopic and therefore to exactly one data
+    /// type. The ITopic must exist prior to the IDataWriter's creation.
+    /// IDataWriter is an abstract class. It must be specialized for each particular
+    /// application data type. For a fictional application data type Foo (defined in the
+    /// module Space) the specialized class would be Space.FooDataWriter.
+    /// <seealso cref="Space.FooDataWriter"/>
+    /// </remarks>
     public interface IDataWriter : IEntity
     {
         /// <summary>
-        /// This operation replaces the existing set of QosPolicy settings for a DataWriter.
+        /// This operation replaces the existing set of QosPolicy settings for a IDataWriter.
         /// </summary>
         /// <remarks>
-        /// This operation replaces the existing set of QosPolicy settings for a DataWriter.
+        /// This operation replaces the existing set of QosPolicy settings for a IDataWriter.
         /// The parameter qos contains the struct with the QosPolicy settings which is
         /// checked for self-consistency and mutability. When the application tries to change a
-        /// QosPolicy setting for an enabled DataWriter, which can only be set before the
-        /// DataWriter is enabled, the operation will fail and a
+        /// QosPolicy setting for an enabled IDataWriter, which can only be set before the
+        /// IDataWriter is enabled, the operation will fail and a
         /// ImmutablePolicy is returned. In other words, the application must
         /// provide the presently set QosPolicy settings in case of the immutable QosPolicy
         /// settings. Only the mutable QosPolicy settings can be changed. When qos contains
@@ -2243,995 +3115,3173 @@ namespace DDS
         /// the existing QoS, replacing the values of any policies previously set (provided, the
         /// operation returned OK).
         /// </remarks>
-        /// <param name="qos">new set of QosPolicy settings for the DataWriter.</param>
-        /// <returns>Return values are: 
+        /// <param name="qos">new set of QosPolicy settings for the IDataWriter.</param>
+        /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - the new default DataWriterQos is set</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>AlreadyDeleted - the Publisher has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources 
+        /// <item>DDS.ReturnCode Ok - the new default DataWriterQos is set</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IPublisher has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
         /// to complete this operation.</item>
-        /// <item>BadParameter - the parameter qos is not a valid DataWriterQos.
+        /// <item>DDS.ReturnCode BadParameter - the parameter qos is not a valid DataWriterQos.
         /// It contains a QosPolicy setting with an invalid Duration value or an enum
         /// value that is outside its legal boundaries.</item>
-        /// <item>Unsuppported - one or more of the selected QosPolicy values are
+        /// <item>DDS.ReturnCode Unsupported - one or more of the selected QosPolicy values are
         /// currently not supported by OpenSplice.</item>
-        /// <item>ImmutablePolicy - the parameter qos contains an immutable
+        /// <item>DDS.ReturnCode ImmutablePolicy - the parameter qos contains an immutable
         /// QosPolicy setting with a different value than set during enabling of the
-        /// DataWriter.</item>
-        /// <item>InconsistentPolicy - the parameter qos contains an inconsistent QosPolicy settings, 
+        /// IDataWriter.</item>
+        /// <item>DDS.ReturnCode InconsistentPolicy - the parameter qos contains an inconsistent QosPolicy settings,
         /// e.g. a history depth that is higher than the specified resource limits.</item>
         /// </list>
         /// </returns>
         ReturnCode SetQos(DataWriterQos qos);
         /// <summary>
-        /// This operation allows access to the existing list of QosPolicy settings for a DataWriter.
+        /// This operation allows access to the existing list of QosPolicy settings for a IDataWriter.
         /// </summary>
         /// <remarks>
         /// This operation allows access to the existing list of QosPolicy settings of a
-        /// DataWriter on which this operation is used. This DataWriterQos is stored at the
+        /// IDataWriter on which this operation is used. This DataWriterQos is stored at the
         /// location pointed to by the qos parameter.
         /// </remarks>
-        /// <param name="qos">A reference to the destination DataWriterQos struct in which the 
+        /// <param name="qos">A reference to the destination DataWriterQos struct in which the
         /// QosPolicy settings will be copied into.</param>
-        /// <returns>Return values are: 
-        /// 
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - the existing set of QoS policy values applied to this IDataWriter
+        /// has been successfully copied into the specified qos parameter.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IPublisher has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
+        /// to complete this operation.</item>
+        /// </list>
         /// </returns>
         ReturnCode GetQos(ref DataWriterQos qos);
         /// <summary>
-        /// This operation attaches a DataWriterListener to the DataWriter.
+        /// This property returns the IDataWriterListener currently attached to the IDataWriter.
         /// </summary>
         /// <remarks>
-        /// This operation attaches a DataWriterListener to the DataWriter. Only one
-        /// DataWriterListener can be attached to each DataWriter. If a
-        /// DataWriterListener was already attached, the operation will replace it with the
-        /// new one. When listener is NULL , it represents a listener that is
-        /// treated as a NOOP for all statuses activated in the bit mask.
+        /// Only one listener can be attached to the IDataWriter at any particular time. This property
+        /// returns the listener that is currently attached to the IDataWriter.
         /// </remarks>
-        /// <param name="listener"> The DataWriterListener instance that will be attached to the
-        /// DataWriter.</param>
-        /// <param name="mask">a bit mask in which each bit enables the invocation of the DataWriterListener 
+        /// <returns>returns the IDataWriterListener currently attached to the IDataWriter.</returns>
+        IDataWriterListener Listener { get; }
+        /// <summary>
+        /// This operation attaches a IDataWriterListener to the IDataWriter.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Only one IDataWriterListener can be attached to each IDataWriter. If a IDataWriterListener
+        /// was already attached, the operation will replace it with the new one.
+        /// When listener is null, it represents a listener that is
+        /// treated as a No-Operation for all statuses activated in the bit mask.
+        /// </para>
+        /// <para><b><i>Communication Status</i></b></para>
+        /// <para>
+        /// For each communication status, the StatusChangedFlag flag is initially set to
+        /// false. It becomes true whenever that communication status changes. For each
+        /// communication status activated in the mask, the associated
+        /// IDataWriterListener operation is invoked and the communication status is
+        /// reset to fase, as the listener implicitly accesses the status which is passed as a
+        /// parameter to that operation. The status is reset prior to calling the listener, so if the
+        /// application calls the Get<status_name>Status from inside the listener it will
+        /// see the status already reset. An exception to this rule is the null
+        /// listener, which does not reset the communication statuses for which it is invoked.
+        /// The following statuses are applicable to the IDataWriterListener:
+        /// <list type="bullet">
+        /// <item>DDS.StatusKind OfferedDeadLineMissedStatus</item>
+        /// <item>DDS.StatusKind OfferedIncompatibleQosStatus</item>
+        /// <item>DDS.StatusKind LivelinessLostStatus</item>
+        /// <item>DDS.StatusKind PublicationMatchStatus</item>
+        /// </list>
+        /// Be aware that the DDS.StatusKind.PublicationMatchStatus is not applicable when
+        /// the infrastructure does not have the information available to determine connectivity.
+        /// This is the case when OpenSplice is configured not to maintain discovery
+        /// information in the Networking Service. In this case the operation will return
+        /// DDS.ReturnCode Unsupported.
+        /// </para>
+        /// <para>
+        /// Status bits are declared as a constant and can be used by the application in an OR
+        /// operation to create a tailored mask. The value 0 can be used to indicate that the
+        /// created entity should not respond to any of its available statuses. The DDS will
+        /// therefore attempt to propagate these statuses to its factory.
+        /// </para>
+        /// <para><b><i>Status Propagation</i></b></para>
+        /// <para>
+        /// The Data Distribution Service will trigger the most specific and relevant Listener.
+        /// In other words, in case a communication status is also activated on the
+        /// IDataWriterListener of a contained IDataWriter, the IDataWriterListener on that
+        /// contained IDataWriter is invoked instead of the PublisherListener. This means that
+        /// a status change on a contained IDataWriter only invokes the PublisherListener if the
+        /// contained IDataWriter itself does not handle the trigger event generated by
+        /// the status change.
+        /// </para>
+        /// <para>
+        /// In case a status is not activated in the mask of the IDataWriterListener, the
+        /// PublisherListener of the containing IPublisher is invoked
+        /// (if attached and activated for the status that occurred). This allows the
+        /// application to set a default behaviour in the PublisherListener of the
+        /// containing IPublisher and an IDataWriter specific behaviour when
+        /// needed. In case the communication status is not activated in the mask of the
+        /// PublisherListener as well, the communication status will be propagated to the
+        /// DomainParticipantListener of the containing IDomainParticipant. In case the
+        /// DomainParticipantListener is also not attached or the communication status is
+        /// not activated in its mask, the application is not notified of the change.
+        /// </para>
+        /// </remarks>
+        /// <param name="listener">The IDataWriterListener instance which will be attached to the DataWriter.</param>
+        /// <param name="mask">a bit mask in which each bit enables the invocation of the IDataWriterListener
         /// for a certain status.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - the DataWriterListener is attached</item>
-        /// <item>Error - an internal error has occurred</item>
-        /// <item>AlreadyDeleted - the DataWriter has already been deleted.</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources to 
-        /// complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The IDataWriterListener is attached.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataWriter has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode SetListener(IDataWriterListener listener, StatusKind mask);
         /// <summary>
-        /// This property returns the Topic which is associated with the DataWriter.
+        /// This property returns the ITopic which is associated with the IDataWriter.
         /// </summary>
         ITopic Topic { get; }
         /// <summary>
-        /// This property returns the Publisher to which the DataWriter belongs.
+        /// This property returns the IPublisher to which the IDataWriter belongs.
         /// </summary>
         IPublisher Publisher { get; }
         /// <summary>
-        /// This operation is not yet implemented It is scheduled for a future release.
-        /// </summary>
-        /// <param name="maxWait"></param>
-        /// <returns>Return codes are: Unsupported</returns>
-        ReturnCode WaitForAcknowledgments(Duration maxWait);
-        /// <summary>
-        /// This operation obtains the LivelinessLostStatus struct of the DataWriter.
+        /// This operation blocks the calling thread until either all data written by all contained
+        /// IDataWriter is acknowledged by the local infrastructure, or until the duration
+        /// specified by maxWait parameter elapses, whichever happens first.
         /// </summary>
         /// <remarks>
-        /// This operation obtains the LivelinessLostStatus struct of the DataWriter.
-        /// This struct contains the information whether the liveliness (that the DataWriter
-        /// has committed through its LivelinessQosPolicy) was respected.
-        /// This means, that the status represents whether the DataWriter failed to actively
-        /// signal its liveliness within the offered liveliness period. If the liveliness is lost, the
-        /// DataReader objects will consider the DataWriter as no longer alive.
-        /// The LivelinessLostStatus can also be monitored using a
-        /// DataWriterListener or by using the associated StatusCondition.
+        /// <para>
+        /// Data is acknowledged by the local infrastructure when it does not need to be stored
+        /// in its IDataWriter’s local history. When a locally-connected subscription (including
+        /// the networking service) has no more resources to store incoming samples it will start
+        /// to reject these samples, resulting in their source DataWriter to store them
+        /// temporarily in its own local history to be retransmitted at a later moment in time.
+        /// In such scenarios, the WaitForAcknowledgments operation will block until the
+        /// IDataWriter has retransmitted its entire history, which is therefore
+        /// effectively empty, or until the maxWait timeout expires, whichever happens first.
+        /// In the first case the operation will return Ok, in the latter it will return
+        /// Timeout.
+        /// </para><para>
+        /// Be aware that in case the operation returns Ok, the data has only been
+        /// acknowledged by the local infrastructure: it does not mean all remote subscriptions
+        /// have already received the data. However, delivering the data to remote nodes is then
+        /// the sole responsibility of the networking service: even when the publishing
+        /// application would terminate, all data that has not yet been received may be
+        /// considered ‘on-route’ and will therefore eventually arrive (unless the networking
+        /// service itself will crash). In contrast, if an IDataWriter would still have data in its local
+        /// history buffer when it terminates, this data is considered ‘lost’.
+        /// This operation is intended to be used only if the IDataWriter has its ReliabilityQosPolicyKind
+        /// set to ReliableReliabilityQos Otherwise the operation will return immediately
+        /// with Ok, since best-effort DataWriters will never store rejected samples
+        /// in their local history: they will just drop them and continue business as usual.
+        /// </para>
         /// </remarks>
-        /// <param name="status">A reference to LivelinessLostStatus where the contents of the LivelinessLostStatus  
-        /// struct of the DataWriter will be copied into.</param>
-        /// <returns>Return values are: 
+        /// <param name="maxWait">the maximum duration to block for acknowledgments,
+        /// after which the application thread is unblocked. The special constant
+        /// Duration.Infinte can be used when the maximum waiting time does not need to be bounded.</param>
+        /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The current LivelinessLostStatus of this DataWriter has successfully 
+        /// <item>DDS.ReturnCode Ok - the data of the IDataWriter has been acknowledged by
+        /// the local infrastructure.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDataWriter has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
+        /// to complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled- the IDataWriter is not enabled.</item>
+        /// <item>DDS.ReturnCode Timeout - not all data is acknowledged before maxWait elapsed.</item>
+        /// </list>
+        /// </returns>
+        ReturnCode WaitForAcknowledgments(Duration maxWait);
+        /// <summary>
+        /// This operation obtains the LivelinessLostStatus struct of the IDataWriter.
+        /// </summary>
+        /// <remarks>
+        /// This struct contains the information whether the liveliness (that the IDataWriter
+        /// has committed through its LivelinessQosPolicy) was respected.
+        /// This means, that the status represents whether the IDataWriter failed to actively
+        /// signal its liveliness within the offered liveliness period. If the liveliness is lost, the
+        /// IDataReader objects will consider the IDataWriter as no longer alive.
+        /// The LivelinessLostStatus can also be monitored using a
+        /// IDataWriterListener or by using the associated IStatusCondition.
+        /// </remarks>
+        /// <param name="status">A reference to LivelinessLostStatus where the contents of the LivelinessLostStatus
+        /// struct of the IDataWriter will be copied into.</param>
+        /// <returns>Return values are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - The current LivelinessLostStatus of this IDataWriter has successfully
         /// been copied into the specified status parameter.</item>
-        /// <item>Error - an internal error has occurred</item>
-        /// <item>AlreadyDeleted - the DataWriter has already been deleted.</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources to 
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDataWriter has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to
         /// complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetLivelinessLostStatus(ref LivelinessLostStatus status);
         /// <summary>
-        /// This operation obtains the OfferedDeadlineMissedStatus struct of the DataWriter.
+        /// This operation obtains the OfferedDeadlineMissedStatus struct of the IDataWriter.
         /// </summary>
         /// <remarks>
-        /// This operation obtains the OfferedDeadlineMissedStatus struct of the
-        /// DataWriter. This struct contains the information whether the deadline (that the
-        /// DataWriter has committed through its DeadlineQosPolicy) was respected for
+        /// This struct contains the information whether the deadline (that the
+        /// IDataWriter has committed through its DeadlineQosPolicy) was respected for
         /// each instance.
         /// The OfferedDeadlineMissedStatus can also be monitored using a
-        /// DataWriterListener or by using the associated StatusCondition.
+        /// IDataWriterListener or by using the associated IStatusCondition.
         /// </remarks>
-        /// <param name="status">A reference to OfferedDeadlineMissedStatus  where the contents of the   
-        /// OfferedDeadlineMissedStatus struct of the DataWriter will be copied into.</param>
-        /// <returns>Return codes are: 
+        /// <param name="status">A reference to OfferedDeadlineMissedStatus  where the contents of the
+        /// OfferedDeadlineMissedStatus struct of the IDataWriter will be copied into.</param>
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The current OfferedDeadlineMissedStatus of this DataWriter has successfully 
+        /// <item>DDS.ReturnCode Ok - The current OfferedDeadlineMissedStatus of this IDataWriter has successfully
         /// been copied into the specified status parameter.</item>
-        /// <item>Error - an internal error has occurred</item>
-        /// <item>AlreadyDeleted - the DataWriter has already been deleted.</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources to 
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDataWriter has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to
         /// complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetOfferedDeadlineMissedStatus(ref OfferedDeadlineMissedStatus status);
         /// <summary>
-        /// This operation obtains the OfferedIncompatibleQosStatus struct of the DataWriter.
+        /// This operation obtains the OfferedIncompatibleQosStatus struct of the IDataWriter.
         /// </summary>
         /// <remarks>
-        /// This operation obtains the OfferedIncompatibleQosStatus struct of the
-        /// DataWriter. This struct contains the information whether a QosPolicy setting
+        /// This struct contains the information whether a QosPolicy setting
         /// was incompatible with the requested QosPolicy setting.
-        /// This means, that the status represents whether a DataReader object has been
-        /// discovered by the DataWriter with the same Topic and a requested
-        /// DataReaderQos that was incompatible with the one offered by the DataWriter.
+        /// This means, that the status represents whether a IDataReader object has been
+        /// discovered by the IDataWriter with the same ITopic and a requested
+        /// DataReaderQos that was incompatible with the one offered by the IDataWriter.
         /// The OfferedIncompatibleQosStatus can also be monitored using a
-        /// DataWriterListener or by using the associated StatusCondition.
+        /// IDataWriterListener or by using the associated IStatusCondition.
         /// </remarks>
-        /// <param name="status">A reference to  OfferedIncompatibleQosStatus where the contents of the   
-        ///  OfferedIncompatibleQosStatus struct of the DataWriter will be copied into.</param>
-        /// <returns>Return codes are: 
+        /// <param name="status">A reference to  OfferedIncompatibleQosStatus where the contents of the
+        /// OfferedIncompatibleQosStatus struct of the IDataWriter will be copied into.</param>
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The current OfferedIncompatibleQosStatus of this DataWriter has successfully 
+        /// <item>DDS.ReturnCode Ok - The current OfferedIncompatibleQosStatus of this IDataWriter has successfully
         /// been copied into the specified status parameter.</item>
-        /// <item>Error - an internal error has occurred</item>
-        /// <item>AlreadyDeleted - the DataWriter has already been deleted.</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources to 
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDataWriter has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to
         /// complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetOfferedIncompatibleQosStatus(ref OfferedIncompatibleQosStatus status);
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <param name="status"></param>
-        /// <returns></returns>
-        ReturnCode GetPublicationMatchedStatus(ref PublicationMatchedStatus status);
-        /// <summary>
-        /// This operation asserts the liveliness for the DataWriter.
+        /// This operation obtains the PublicationMatchedStatus struct of the IDataWriter.
         /// </summary>
         /// <remarks>
-        /// This operation will manually assert the liveliness for the DataWriter. This way,
-        /// the Data Distribution Service is informed that the corresponding DataWriter is
-        /// still alive. This operation is used in combination with the LivelinessQosPolicy
-        /// set to MANUAL_BY_PARTICIPANT_LIVELINESS_QOS or
-        /// MANUAL_BY_TOPIC_LIVELINESS_QOS. 
-        /// Writing data via the write operation of a DataWriter will assert the liveliness on
-        /// the DataWriter itself and its containing DomainParticipant. Therefore,
-        /// assert_liveliness is only needed when not writing regularly.
-        /// The liveliness should be asserted by the application, depending on the
-        /// LivelinessQosPolicy. Asserting the liveliness for this DataWriter can also
-        /// be achieved by asserting the liveliness to the DomainParticipant.
+        /// <para>
+        /// This object contains the information whether a new match has been discovered
+        /// for the current publication, or whether an existing match has ceased to exist.
+        /// </para><para>
+        /// This means that the status represents that either an IDataReader object has been
+        /// discovered by the IDataWriter with the same ITopic and a compatible Qos, or that a
+        /// previously discovered IDataReader has ceased to be matched to the current
+        /// IDataWriter. An IDataReader may cease to match when it gets deleted, when it
+        /// changes its Qos to a value that is incompatible with the current IDataWriter or
+        /// when either the IDataWriter or the IDataReader has chosen to put its matching
+        /// counterpart on its ignore-list using the IgnoreSubcription or
+        /// IgnorePublication operations on the IDomainParticipant.
+        /// </para><para>
+        /// The operation may fail if the infrastructure does not hold the information necessary
+        /// to fill in the PublicationMatchedStatus. This is the case when OpenSplice is
+        /// configured not to maintain discovery information in the Networking Service. (See
+        /// the description for the NetworkingService/Discovery/enabled property in
+        /// the Deployment Manual for more information about this subject.) In this case the
+        /// operation will return Unsupported.
+        /// </para><para>
+        /// The OfferedIncompatibleQosStatus can also be monitored using a
+        /// IDataWriterListener or by using the associated IStatusCondition.
+        /// </para>
         /// </remarks>
-        /// <returns>Return codes are: 
+        /// <param name="status">A reference to  OfferedIncompatibleQosStatus where the contents of the
+        /// OfferedIncompatibleQosStatus struct of the IDataWriter will be copied into.</param>
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The liveliness of this DataWriter has successfully been asserted.</item>
-        /// <item>Error - an internal error has occurred</item>
-        /// <item>AlreadyDeleted - the DataWriter has already been deleted.</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources to 
+        /// <item>DDS.ReturnCode Ok - The current PublicationMatchedStatus of this IDataWriter has successfully
+        /// been copied into the specified status parameter.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDataWriter has already been deleted.</item>
+        /// <item>DDS.ReturnCode Unsupported - OpenSplice is configured not to maintain the
+        /// information about “associated” subscriptions.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to
         /// complete this operation.</item>
-        /// <item>NotEnabled - The DataWriter is not enabled. </item>
+        /// </list>
+        /// </returns>
+        ReturnCode GetPublicationMatchedStatus(ref PublicationMatchedStatus status);
+        /// <summary>
+        /// This operation asserts the liveliness for the IDataWriter.
+        /// </summary>
+        /// <remarks>
+        /// This operation will manually assert the liveliness for the IDataWriter. This way,
+        /// the Data Distribution Service is informed that the corresponding IDataWriter is
+        /// still alive. This operation is used in combination with the LivelinessQosPolicy
+        /// set to ManualByParticipantLivelinessQos or ManualByTopicLivelinessQos.
+        /// Writing data via the write operation of a IDataWriter will assert the liveliness on
+        /// the IDataWriter itself and its containing IDomainParticipant. Therefore,
+        /// AssertLiveliness is only needed when not writing regularly.
+        /// The liveliness should be asserted by the application, depending on the
+        /// LivelinessQosPolicy. Asserting the liveliness for this IDataWriter can also
+        /// be achieved by asserting the liveliness to the IDomainParticipant.
+        /// </remarks>
+        /// <returns>Return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - The liveliness of this IDataWriter has successfully been asserted.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDataWriter has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to
+        /// complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled - The IDataWriter is not enabled. </item>
         /// </list>
         /// </returns>
         ReturnCode AssertLiveliness();
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// This operation retrieves the list of subscriptions currently "associated" with the IDataWriter.
         /// </summary>
-        /// <param name="subscriptionHandles"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// <para>
+        /// This operation retrieves the list of subscriptions currently "associated" with the
+        /// IDataWriter. That is, subscriptions that have a matching Topic and compatible
+        /// QoS that the application has not indicated should be “ignored” by means of the
+        /// IgnoreSubscription operation on the DomainParticipant class.
+        /// </para><para>
+        /// The handles returned in the subscriptionHandles array are the ones that are
+        /// used by the DDS implementation to locally identify the corresponding matched
+        /// subscription entities. You can access more detailed information about a particular
+        /// subscription by passing its subscriptionHandle to either the
+        /// GetMatchedSubscriptionData operation or to the ReadInstance
+        /// operation on the built-in reader for the “DCPSSubscription” topic.
+        /// </para><para>
+        /// Be aware that since an instance handle is an opaque datatype, it does not necessarily
+        /// mean that the handles obtained from the GetMatchedSubscriptions
+        /// operation have the same value as the ones that appear in the InstanceHandle
+        /// field of the SampleInfo when retrieving the subscription info through
+        /// corresponding "DCPSSubscriptions" built-in reader. You can’t just compare two
+        /// handles to determine whether they represent the same subscription. If you want to
+        /// know whether two handles actually do represent the same subscription, use both
+        /// handles to retrieve their corresponding SubscriptionBuiltinTopicData
+        /// samples and then compare the key field of both samples.
+        /// </para><para>
+        /// The operation may fail if the infrastructure does not locally maintain the
+        /// connectivity information. This is the case when OpenSplice is configured not to
+        /// maintain discovery information in the Networking Service. (See the description for
+        /// the NetworkingService/Discovery/enabled property in the Deployment
+        /// Manual for more information about this subject.) In such cases the operation will
+        /// return ReturnCode Unsupported.
+        /// </para>
+        /// </remarks>
+        /// <param name="subscriptionHandles">Reference to an array to store the list of
+        /// associated subscriptions</param>
+        /// <returns>Return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - The list of associated subscriptions has successfully been obtained.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode Unsupported - OpenSplice is configured not to maintain the
+        /// information about “associated” subscriptions.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDataWriter has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to
+        /// complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled - The IDataWriter is not enabled. </item>
+        /// </list>
+        /// </returns>
         ReturnCode GetMatchedSubscriptions(ref InstanceHandle[] subscriptionHandles);
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// This operation retrieves information on the specified subscription that is currently
+        /// “associated” with the IDataWriter.
         /// </summary>
-        /// <param name="subscriptionData"></param>
-        /// <param name="subscriptionHandle"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// <para>
+        /// This operation retrieves information on the specified subscription that is currently
+        /// “associated” with the IDataWriter. That is, a subscription with a matching ITopic
+        /// and compatible QoS that the application has not indicated should be “ignored” by
+        /// means of the IgnoreSubscription operation on the IDomainParticipant
+        /// class.
+        /// </para><para>
+        /// The subscriptionHandle must correspond to a subscription currently
+        /// associated with the IDataWriter, otherwise the operation will fail and return
+        /// ReturnCode BadParameter. The operation GetMatchedSubscriptions can
+        /// be used to find the subscriptions that are currently matched with the IDataWriter.
+        /// </para><para>
+        /// The operation may also fail if the infrastructure does not hold the information
+        /// necessary to fill in the subscriptionData. This is the case when OpenSplice is
+        /// configured not to maintain discovery information in the Networking Service. (See
+        /// the description for the NetworkingService/Discovery/enabled property in
+        /// the Deployment Manual for more information about this subject.) In such cases the
+        /// operation will return ReturnCode Unsupported.
+        /// </para>
+        /// </remarks>
+        /// <param name="subscriptionData"><Reference to the variable in which the subscription data
+        /// will be returned.</param>
+        /// <param name="subscriptionHandle">A handle to the subscription whose information needs
+        /// to be retrieved.</param>
+        /// <returns>Return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - The information on the specified subscription has successfully
+        /// been retrieved.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode Unsupported - OpenSplice is configured not to maintain the
+        /// information about “associated” subscriptions.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the IDataWriter has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to
+        /// complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled - The IDataWriter is not enabled. </item>
+        /// </list>
+        /// </returns>
         ReturnCode GetMatchedSubscriptionData(
                 ref SubscriptionBuiltinTopicData subscriptionData,
                 InstanceHandle subscriptionHandle);
+
+#if DOXYGEN_FOR_CS
+//
+// The above compile switch is never (and must never) be defined in normal compilation.
+//
+// QoS and Policy related enums are part of the generated code for builtin topics.
+// They are repeated here for easy documentation generation.
+//
+
+        /// <summary>
+        /// This operation informs the Data Distribution Service that the application will be
+        /// modifying a particular instance (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.RegisterInstance(Foo instanceData)"/>
+        /// </remarks>
+        InstanceHandle RegisterInstance(<type> instanceData);
+
+        /// <summary>
+        /// This operation will inform the Data Distribution Service that the application will be
+        /// modifying a particular instance and provides a value for the sourceTimestamp
+        /// explicitly (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.RegisterInstanceWithTimestamp(Foo instanceData,
+        /// Time sourceTimestamp)"/>
+        /// </remarks>
+        InstanceHandle RegisterInstanceWithTimestamp(
+                <type> instanceData,
+                Time sourceTimestamp);
+
+        /// <summary>
+        /// This operation informs the Data Distribution Service that the application will not be
+        /// modifying a particular instance any more (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.UnregisterInstance(Foo instanceData,
+        /// DDS.InstanceHandle instanceHandle)"/>
+        /// </remarks>
+        ReturnCode UnregisterInstance(
+                <type> instanceData,
+                InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation will inform the Data Distribution Service that the application will not
+        /// be modifying a particular instance any more and provides a value for the
+        /// sourceTimestamp explicitly (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.UnregisterInstanceWithTimestamp(Foo instanceData,
+        /// DDS.InstanceHandle instanceHandle, DDS.Time sourceTimestamp)"/>
+        /// </remarks>
+        ReturnCode UnregisterInstanceWithTimestamp(
+                <type> instanceData,
+                InstanceHandle instanceHandle,
+                Time sourceTimestamp);
+
+        /// <summary>
+        /// This operation modifies the value of a data instance (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.Write(Foo instanceData)"/>
+        /// </remarks>
+        ReturnCode Write(<type> instanceData);
+
+        /// <summary>
+        /// This operation modifies the value of a data instance (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.Write(Foo instanceData, DDS.InstanceHandle instanceHandle)"/>
+        /// </remarks>
+        ReturnCode Write(
+                <type> instanceData,
+                InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation modifies the value of a data instance (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.WriteWithTimestamp(Foo instanceData, DDS.Time sourceTimestamp)"/>
+        /// </remarks>
+        ReturnCode WriteWithTimestamp(
+                <type> instanceData,
+                Time sourceTimestamp);
+
+        /// <summary>
+        /// This operation modifies the value of a data instance and provides a value for the
+        /// sourceTimestamp explicitly (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.WriteWithTimestamp(Foo instanceData,
+        /// DDS.InstanceHandle instanceHandle, DDS.Time sourceTimestamp)"/>
+        /// </remarks>
+        ReturnCode WriteWithTimestamp(
+                <type> instanceData,
+                InstanceHandle instanceHandle,
+                Time sourceTimestamp);
+
+        /// <summary>
+        /// This operation requests the Data Distribution Service to mark the instance for deletion (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.Dispose(Foo instanceData, DDS.InstanceHandle instanceHandle)"/>
+        /// </remarks>
+        ReturnCode Dispose(
+                <type> instanceData,
+                InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation requests the Data Distribution Service to mark the instance for deletion
+        /// and provides a value for the sourceTimestamp explicitly (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.DisposeWithTimestamp(Foo instanceData,
+        /// DDS.InstanceHandle instanceHandle, DDS.Time sourceTimestamp)"/>
+        /// </remarks>
+        ReturnCode DisposeWithTimestamp(
+                <type> instanceData,
+                InstanceHandle instanceHandle,
+                Time sourceTimestamp);
+
+        /// <summary>
+        /// This operation requests the Data Distribution Service to modify the instance and
+        /// mark it for deletion (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.WriteDispose(Foo instanceData)"/>
+        /// </remarks>
+        ReturnCode WriteDispose(
+                <type> instanceData);
+
+        /// <summary>
+        /// This operation requests the Data Distribution Service to modify the instance and
+        /// mark it for deletion (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.WriteDispose(Foo instanceData,
+        /// DDS.InstanceHandle instanceHandle)"/>
+        /// </remarks>
+        ReturnCode WriteDispose(
+                <type> instanceData,
+                InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation requests the Data Distribution Service to modify the instance and
+        /// mark it for deletion and provides a value for the sourceTimestamp explicitly (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.WriteDisposeWithTimestamp(Foo instanceData,
+        /// Time sourceTimestamp)"/>
+        /// </remarks>
+        ReturnCode WriteDisposeWithTimestamp(
+                <type> instanceData,
+                Time sourceTimestamp);
+
+        /// <summary>
+        /// This operation requests the Data Distribution Service to modify the instance and
+        /// mark it for deletion and provides a value for the sourceTimestamp explicitly (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.WriteDisposeWithTimestamp(Foo instanceData,
+        /// DDS.InstanceHandle instanceHandle, DDS.Time sourceTimestamp)"/>
+        /// </remarks>
+        ReturnCode WriteDisposeWithTimestamp(
+                <type> instanceData,
+                InstanceHandle instanceHandle,
+                Time sourceTimestamp);
+
+        /// <summary>
+        /// This operation retrieves the key value of a specific instance (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.GetKeyValue(ref Foo key, DDS.InstanceHandle instanceHandle)">
+        /// </remarks>
+        ReturnCode GetKeyValue(
+                ref <type> key,
+                InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation returns the value of the instance handle which corresponds to the
+        /// provided instanceData (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataWriter class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataWriter class.
+        ///
+        /// <seealso cref="Space.FooDataWriter.LookupInstance(Foo instanceData)"/>
+        /// </remarks>
+        InstanceHandle LookupInstance(<type> instanceData);
+
+#endif
+
     }
     /// <summary>
-    /// A Subscriber is the object responsible for the actual reception of the data
+    /// A ISubscriber is the object responsible for the actual reception of the data
     /// resulting from its subscriptions.
-    /// A Subscriber acts on behalf of one or more DataReader objects that are related
-    /// to it. When it receives data (from the other parts of the system), it indicates to the
-    /// application that data is available through its DataReaderListener and by
-    /// enabling related Conditions. The application can access the list of concerned
-    /// DataReader objects through the operation get_datareaders and then access the
-    /// data available through operations on the DataReader.
     /// </summary>
+    /// <remarks>
+    /// A ISubscriber acts on behalf of one or more IDataReader objects that are related
+    /// to it. When it receives data (from the other parts of the system), it indicates to the
+    /// application that data is available through its IDataReaderListener and by
+    /// enabling related Conditions. The application can access the list of concerned
+    /// IDataReader objects through the operation ISubscriber.GetDataReaders and then access the
+    /// data available through operations on the IDataReader.
+    /// </remarks>
     public interface ISubscriber : IEntity
     {
         /// <summary>
-        /// This operations behaves similarly to the most complete operation, and it substitutes default values
-        /// for the missing parameters. Default for QoS for QoS parameters, null for listeners and 0 mask for
-        /// listener parameters.
+        /// This method creates a IDataReader with default values.
         /// </summary>
-        /// <param name="topic"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// This operation creates a IDataReader with the default DataReaderQos, a null IDataReaderListener
+        /// and 0 StatusKind mask.
+        ///
+        /// If the SetDefaultDataReaderQos() method is called, then the default DataReaderQos will be the
+        /// QoS given to that method. Otherwise it will equal a new DataReaderQos.
+        ///
+        /// To delete the IDataReader the operation DeleteDataReader() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref CreateDataReader(ITopicDescription topic, DataReaderQos qos, IDataReaderListener listener, StatusKind mask) "CreateDataReader"
+        /// for:<br>
+        /// - Communication Status
+        /// - Status Propagation
+        /// </remarks>
+        /// <param name="topic">The TopicDescription for which the DataReader is created. This may be a
+        ///                     Topic, MultiTopic or ContentFilteredTopic.</param>
+        /// <returns>The newly created IDataReader. In case of an error, a null IDataReader is returned.</returns>
         IDataReader CreateDataReader(ITopicDescription topic);
+
         /// <summary>
-        /// This operations behaves similarly to the most complete operation, and it substitutes default values
-        /// for the missing parameters. Default for QoS for QoS parameters, null for listeners and 0 mask for
-        /// listener parameters.
+        /// This method creates a IDataReader and if applicable, attaches the optionally specified IDataReaderListener to it.
         /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="listener"></param>
-        /// <param name="mask"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// This operation creates a IDataReader with the default DataReaderQos, a null IDataReaderListener
+        /// and 0 StatusKind mask.
+        ///
+        /// If the SetDefaultDataReaderQos() method is called, then the default DataReaderQos will be the
+        /// QoS given to that method. Otherwise it will equal a new DataReaderQos.
+        ///
+        /// To delete the IDataReader the operation DeleteDataReader() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref CreateDataReader(ITopicDescription topic, DataReaderQos qos, IDataReaderListener listener, StatusKind mask) "CreateDataReader"
+        /// for:<br>
+        /// - Communication Status
+        /// - Status Propagation
+        /// </remarks>
+        /// <param name="topic">The TopicDescription for which the DataReader is created. This may be a
+        ///                     Topic, MultiTopic or ContentFilteredTopic.</param>
+        /// <param name="listener">The IDataReaderListener instance which will be attached to the new IDataReader.
+        ///                     It is permitted to use null as the value of the listener: this behaves as a
+        ///                     IDataReaderListener whose operations perform no action.</param>
+        /// <param name="mask"> A bit-mask in which each bit enables the invocation of the IDataReaderListener.
+        ///                     for a certain status.</param>
+        /// <returns>The newly created IDataReader. In case of an error, a null IDataReader is returned.</returns>
         IDataReader CreateDataReader(
                 ITopicDescription topic,
                 IDataReaderListener listener, StatusKind mask);
+
         /// <summary>
-        /// This operations behaves similarly to the most complete operation, and it substitutes default values
-        /// for the missing parameters. Default for QoS for QoS parameters, null for listeners and 0 mask for
-        /// listener parameters.
-        /// </summary>
-        /// <param name="topic"></param>
-        /// <param name="qos"></param>
-        /// <returns></returns>
-        IDataReader CreateDataReader(ITopicDescription topic, DataReaderQos qos);
-        /// <summary>
-        /// This operation creates a DataReader with the desired QosPolicy settings, for the
-        /// desired TopicDescription and attaches the optionally specified DataWriterListener to it.
+        /// This method creates a IDataReader with the desired QosPolicy settings, but without an IDataReaderListener.
         /// </summary>
         /// <remarks>
-        /// This operation creates a DataReader with the desired QosPolicy settings, for the
-        /// desired TopicDescription and attaches the optionally specified
-        /// DataReaderListener to it. The TopicDescription may be a Topic,
-        /// MultiTopic or ContentFilteredTopic. The returned DataReader is attached
-        /// (and belongs) to the Subscriber. To delete the DataReader the operation
-        /// DeleteDatareader or DeleteContainedEntities must be used.
+        /// This operation creates a IDataReader with the default DataReaderQos, a null IDataReaderListener
+        /// and 0 StatusKind mask.
+        ///
+        /// In case the specified QosPolicy settings are not consistent, no IDataReader is
+        /// created and null is returned.
+        ///
+        /// The function CopyFromTopicQos() is available for convenience. That will provide a DataReaderQos
+        /// that is consistent with the given TopicQos.
+        ///
+        /// To delete the IDataReader the operation DeleteDataReader() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// See
+        /// @ref CreateDataReader(ITopicDescription topic, DataReaderQos qos, IDataReaderListener listener, StatusKind mask) "CreateDataReader"
+        /// for:<br>
+        /// - Communication Status
+        /// - Status Propagation
         /// </remarks>
-        /// <param name="topic">The TopicDescription for which the DataReader is created. 
-        /// This may be a Topic, MultiTopic or ContentFilteredTopic.</param>
-        /// <param name="qos">The struct with the QosPolicy settings for the new DataReader, 
-        /// when these QosPolicy settings are not self consistent, no DataReader is created.</param>
-        /// <param name="listener">The DataReaderListener instance which will be attached to the new
-        /// DataReader. It is permitted to use NULL as the value of the listener: this
-        /// behaves as a DataWriterListener whose operations perform no action.</param>
-        /// <param name="mask">A bit-mask in which each bit enables the invocation of 
-        /// the DataReaderListener for a certain status.</param>
-        /// <returns>The newly created DataReader, or in case of an error a null value one.</returns>
-        IDataReader CreateDataReader(
-                ITopicDescription topic, 
-                DataReaderQos qos,
-                IDataReaderListener listener, 
-                StatusKind mask);
+        /// <param name="topic">The TopicDescription for which the DataReader is created. This may be a
+        ///                     Topic, MultiTopic or ContentFilteredTopic.</param>
+        /// <param name="qos">  The struct with the QosPolicy settings for the new IDataReader, when these
+        ///                     QosPolicy settings are not self consistent, no IDataReader is created.</param>
+        /// <returns>The newly created IDataReader. In case of an error, a null IDataReader is returned.</returns>
+        IDataReader CreateDataReader(ITopicDescription topic, DataReaderQos qos);
+
         /// <summary>
-        /// This operation deletes a DataReader that belongs to the Subscriber.
+        /// This operation creates a IDataReader with the desired QosPolicy settings, for the
+        /// desired ITopicDescription and attaches the optionally specified IDataReaderListener to it.
         /// </summary>
         /// <remarks>
-        /// This operation deletes a DataReader that belongs to the Subscriber. When the
-        /// operation is called on a different Subscriber, as used when the DataReader was
-        /// created, the operation has no effect and returns PreconditionNotMet. 
-        /// The deletion of the DataReader is not allowed if there are any ReadCondition or 
-        /// QueryCondition objects that are attached to the DataReader. In that case the operation returns
+        /// This operation creates a IDataReader with the desired QosPolicy settings, for the
+        /// desired ITopicDescription and attaches the optionally specified
+        /// IDataReaderListener to it. The ITopicDescription may be a ITopic,
+        /// IMultiTopic or IContentFilteredTopic. The returned IDataReader is attached
+        /// (and belongs) to the ISubscriber.
+        ///
+        /// In case the specified QosPolicy settings are not consistent, no IDataReader is
+        /// created and null is returned.
+        ///
+        /// The function CopyFromTopicQos() is available for convenience. That will provide a DataReaderQos
+        /// that is consistent with the given TopicQos.
+        ///
+        /// To delete the IDataReader the operation DeleteDataReader() or
+        /// DeleteContainedEntities() must be used.
+        ///
+        /// <i><b>Communication Status</b></i><br>
+        /// For each communication status, the StatusChangedFlag flag is initially set to
+        /// false. It becomes true whenever that communication status changes. For each
+        /// communication status activated in the mask, the associated
+        /// IPublisherListener operation is invoked and the communication
+        /// status is reset to false, as the listener implicitly accesses the status which is passed
+        /// as a parameter to that operation. The fact that the status is reset prior to calling the
+        /// listener means that if the application calls the Get<status_name>Status from
+        /// inside the listener it will see the status already reset.
+        ///
+        /// The following statuses are applicable to the IDataReader
+        /// - DDS.StatusKind RequestedDeadlineMissed
+        /// - DDS.StatusKind RequestedIncompatibleQos
+        /// - DDS.StatusKind SampleLost
+        /// - DDS.StatusKind SampleRejected
+        /// - DDS.StatusKind DataAvailable
+        /// - DDS.StatusKind LivelinessChanged
+        /// - DDS.StatusKind SubscriptionMatched
+        ///
+        /// Be aware that the PublicationMatched
+        /// status are not applicable when the infrastructure does not have the
+        /// information available to determine connectivity. This is the case when OpenSplice
+        /// is configured not to maintain discovery information in the Networking Service. (See
+        /// the description for the NetworkingService/Discovery/enabled property in
+        /// the Deployment Manual for more information about this subject.) In this case the
+        /// operation will return null.
+        ///
+        /// Status bits are declared as a constant and can be used by the application in an OR
+        /// operation to create a tailored mask. The special constant 0 can
+        /// be used to indicate that the created entity should not respond to any of its available
+        /// statuses. The DDS will therefore attempt to propagate these statuses to its factory.
+        ///
+        /// <i><b>Status Propagation</b></i><br>
+        /// In case a communication status is not activated in the mask of the
+        /// IDataReaderListener, the ISubscriberListener of the containing
+        /// ISubscriber is invoked (if attached and activated for the status that
+        /// occurred). This allows the application to set a default behaviour in the
+        /// ISubscriberListener of the containing ISubscriber and a
+        /// IDataReader specific behaviour when needed.
+        ///
+        /// In case the communication status is not activated in the mask of the
+        /// ISubscriberListener either, the communication status will be propagated to the
+        /// IDomainParticipantListener of the containing IDomainParticipant.
+        ///
+        /// In case the IDomainParticipantListener is also not attached or the communication
+        /// status is not activated in its mask, the application is not notified of the change.
+        /// </remarks>
+        /// <param name="topic">The TopicDescription for which the DataReader is created. This may be a
+        ///                     Topic, MultiTopic or ContentFilteredTopic.</param>
+        /// <param name="qos">  The struct with the QosPolicy settings for the new IDataReader, when these
+        ///                     QosPolicy settings are not self consistent, no IDataReader is created.</param>
+        /// <param name="listener">The IDataReaderListener instance which will be attached to the new IDataReader.
+        ///                     It is permitted to use null as the value of the listener: this behaves as a
+        ///                     IDataReaderListener whose operations perform no action.</param>
+        /// <param name="mask"> A bit-mask in which each bit enables the invocation of the IDataReaderListener.
+        ///                     for a certain status.</param>
+        /// <returns>The newly created IDataReader, or in case of an error a null value one.</returns>
+        IDataReader CreateDataReader(
+                ITopicDescription topic,
+                DataReaderQos qos,
+                IDataReaderListener listener,
+                StatusKind mask);
+
+        /// <summary>
+        /// This operation deletes a IDataReader that belongs to the ISubscriber.
+        /// </summary>
+        /// <remarks>
+        /// This operation deletes a IDataReader that belongs to the ISubscriber. When the
+        /// operation is called on a different ISubscriber, as used when the IDataReader was
+        /// created, the operation has no effect and returns PreconditionNotMet.
+        ///
+        /// The deletion of the IDataReader is not allowed if there are any IReadCondition or
+        /// IQueryCondition objects that are attached to the IDataReader. In that case the operation returns
         /// PreconditionNotMet.
         /// </remarks>
-        /// <param name="dataReader">The DataReader which is to be deleted.</param>
+        /// <param name="dataReader">The IDataReader which is to be deleted.</param>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - the DataReader is deleted</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>AlreadyDeleted - the Subscriber has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
-        /// <item>BadParameter - the parameter a_datareader is not a valid IDataReader</item>
-        /// <item>PreconditionNotMet - the operation is called on a different Subscriber, 
-        /// as used when the DataReader was created, or the DataReader contains one or more 
-        /// ReadCondition or QueryCondition objects.</item>
+        /// <item>DDS.ReturnCode Ok - the IDataReader is deleted</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the ISubscriber has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode BadParameter - the parameter dataReader is not a valid IDataReader</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - the operation is called on a different ISubscriber,
+        /// as used when the IDataReader was created, or the IDataReader contains one or more
+        /// IReadCondition or IQueryCondition objects.</item>
         /// </list>
         /// </returns>
         ReturnCode DeleteDataReader(IDataReader dataReader);
+
         /// <summary>
-        /// This operation deletes all the DataReader objects that were created by means of
-        /// the CreateDatareader operation on the Subscriber.
+        /// This operation deletes all the IDataReader objects that were created by means of
+        /// the CreateDatareader operation on the ISubscriber.
         /// </summary>
         /// <remarks>
-        /// This operation deletes all the DataReader objects that were created by means of
-        /// the CreateDatareader operation on the Subscriber. In other words, it deletes
-        /// all contained DataReader objects. Prior to deleting each DataReader, this
-        /// operation recursively calls the corresponding DeleteContainedEntities
-        /// operation on each DataReader. In other words, all DataReader objects in the
-        /// Subscriber are deleted, including the QueryCondition and ReadCondition
-        /// objects contained by the DataReader.
+        /// This operation deletes all the IDataReader objects that were created by means of
+        /// the CreateDatareader operation on the ISubscriber. In other words, it deletes
+        /// all contained IDataReader objects. Prior to deleting each IDataReader, this
+        /// operation recursively calls the corresponding DeleteContainedEntities()
+        /// operation on each IDataReader. In other words, all IDataReader objects in the
+        /// ISubscriber are deleted, including the IQueryCondition and IReadCondition
+        /// objects contained by the IDataReader.
         /// </remarks>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The contained Entity objects are deleted and the application may delete the Subscriber</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>AlreadyDeleted - the Subscriber has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The contained IEntity objects are deleted and the application may delete the ISubscriber</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the ISubscriber has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
         /// </returns>
         ReturnCode DeleteContainedEntities();
+
         /// <summary>
-        /// This operation returns a previously created DataReader belonging to the
-        /// Subscriber which is attached to a Topic with the matching topic_name.
+        /// This operation returns a previously created IDataReader belonging to the
+        /// ISubscriber which is attached to a ITopic with the matching topicName.
         /// </summary>
         /// <remarks>
-        /// This operation returns a previously created DataReader belonging to the
-        /// Subscriber which is attached to a Topic with the matching topic_name. When
-        /// multiple DataReader objects (which satisfy the same condition) exist, this
+        /// This operation returns a previously created IDataReader belonging to the
+        /// ISubscriber which is attached to a ITopic with the matching topicName. When
+        /// multiple IDataReader objects (which satisfy the same condition) exist, this
         /// operation will return one of them. It is not specified which one.
-        /// This operation may be used on the built-in Subscriber, which returns the built-in
-        /// DataReader objects for the built-in Topics.
+        ///
+        /// This operation may be used on the built-in ISubscriber, which returns the built-in
+        /// IDataReader objects for the built-in Topics.
         /// </remarks>
-        /// <param name="topicName">The name of the Topic, which is attached to the DataReader to look for.</param>
-        /// <returns>A reference to the DataReader found. If no such DataReader is found the a null value one is 
+        /// <param name="topicName">The name of the ITopic, which is attached to the IDataReader to look for.</param>
+        /// <returns>A reference to the IDataReader found. If no such IDataReader is found the a null value one is
         /// returned.</returns>
         IDataReader LookupDataReader(string topicName);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// This operation allows the application to access the DataReader objects that contain samples.
         /// </summary>
-        /// <param name="readers"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// This functionallity of this function is the same as calling
+        /// GetDataReaders(ref IDataReader[] readers, SampleStateKind sampleStates, ViewStateKind viewStates, InstanceStateKind instanceStates)
+        /// with all states set to Any.
+        /// </remarks>
+        /// <param name="readers">An array which is used to pass the list of all DataReaders
+        ///         that contain samples.</param>
+        /// <returns>Return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - All appropriate listeners have been invoked.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The ISubscriber has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The Data Distribution Service ran out of resources to
+        ///         complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled - The ISubscriber is not enabled.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - The operation is not invoked inside a BeginAccess() /
+        //          EndAccess() block as required by its QosPolicy settings.</item>
+        /// </returns>
         ReturnCode GetDataReaders(ref IDataReader[] readers);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// This operation allows the application to access the DataReader objects that contain
+        /// samples with the specified SampleStates, ViewStates, and InstanceStates.
         /// </summary>
-        /// <param name="readers"></param>
-        /// <param name="sampleStates"></param>
-        /// <param name="viewStates"></param>
-        /// <param name="instanceStates"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// If the PresentationQosPolicy of the ISubscriber to which the IDataReader
+        /// belongs has the AccessScope set to ‘GROUP’, this operation should only be
+        /// invoked inside a BeginAccess() / EndAccess() block. Otherwise it will return the
+        /// error DDS.ReturnCode PrecoditionNotMet.
+        ///
+        /// Depending on the setting of the PresentationQoSPolicy, the returned collection of
+        /// IDataReader objects may be:
+        /// - a ‘set’ containing each IDataReader at most once in no specified order,
+        /// - a ‘list’ containing each IDataReader one or more times in a specific order.
+        ///
+        /// This difference is due to the fact that, in the second situation it is required to access
+        /// samples belonging to different IDataReader objects in a particular order. In this case,
+        /// the application should process each IDataReader in the same order it appears in the
+        /// ‘list’ and read or take exactly one sample from each IDataReader.
+        /// </remarks>
+        /// <param name="readers">An array which is used to pass the list of all DataReaders that
+        ///         contain samples of the specified SampleStates, ViewStates, and InstanceStates.</param>
+        /// <param name="sampleStates">A mask, which selects only those readers that have samples with
+        ///         the desired sample states.</param>
+        /// <param name="viewStates">A mask, which selects only those readers that have samples with the
+        ///         desired view states.</param>
+        /// <param name="instanceStates">A mask, which selects only those readers that have samples with
+        ///         the desired instance states.</param>
+        /// <returns>Return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - All appropriate listeners have been invoked.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The ISubscriber has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The Data Distribution Service ran out of resources to
+        ///         complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled - The ISubscriber is not enabled.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - The operation is not invoked inside a BeginAccess() /
+        //          EndAccess() block as required by its QosPolicy settings.</item>
+        /// </returns>
         ReturnCode GetDataReaders(
                 ref IDataReader[] readers,
                 SampleStateKind sampleStates,
                 ViewStateKind viewStates,
                 InstanceStateKind instanceStates);
+
         /// <summary>
-        /// This operation invokes the on_data_available operation on
-        /// DataReaderListener objects which are attached to the contained DataReader
+        /// This operation invokes the OnDataAvailable operation on
+        /// IDataReaderListener objects which are attached to the contained IDataReader
         /// entities having new, available data.
         /// </summary>
         /// <remarks>
-        /// This operation invokes the on_data_available operation on the
-        /// DataReaderListener objects attached to contained DataReader entities that
+        /// This operation invokes the OnDataAvailable operation on the
+        /// IDataReaderListener objects attached to contained IDataReader entities that
         /// have received information, but which have not yet been processed by those
         /// DataReaders.
-        /// The notify_datareaders operation ignores the bit mask value of individual
-        /// DataReaderListener objects, even when the DATA_AVAILABLE_STATUS bit
-        /// has not been set on a DataReader that has new, available data. The
-        /// on_data_available operation will still be invoked, when the
-        /// DATA_AVAILABLE_STATUS bit has not been set on a DataReader, but will not
-        /// propagate to the DomainParticipantListener.
-        /// When the DataReader has attached a NULL listener, the event will be consumed
-        /// and will not propagate to the DomainParticipantListener. (Remember that a
-        /// NULL listener is regarded as a listener that handles all its events as a NOOP).
+        ///
+        /// The NotifyDataReaders operation ignores the bit mask value of individual
+        /// IDataReaderListener objects, even when the DDS.StatusKind DataAvailable bit
+        /// has not been set on a IDataReader that has new, available data. The
+        /// OnDataAvailable operation will still be invoked, when the
+        /// DDS.StatusKind DataAvailable bit has not been set on a IDataReader, but will not
+        /// propagate to the IDomainParticipantListener.
+        ///
+        /// When the IDataReader has attached a null listener, the event will be consumed
+        /// and will not propagate to the IDomainParticipantListener. (Remember that a
+        /// null listener is regarded as a listener that handles all its events as a NOOP).
         /// </remarks>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - All appropriate listeners have been invoked.</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>AlreadyDeleted - the Subscriber has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - All appropriate listeners have been invoked.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the ISubscriber has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
         /// </returns>
         ReturnCode NotifyDataReaders();
+
         /// <summary>
-        /// This operation replaces the existing set of QosPolicy settings for a Subscriber.
+        /// This operation replaces the existing set of QosPolicy settings for a ISubscriber.
         /// </summary>
-        /// <param name="qos">The new set of QosPolicy settings for the Subscriber.</param>
         /// <remarks>
-        /// This operation replaces the existing set of QosPolicy settings for a Subscriber.
         /// The parameter qos contains the QosPolicy settings which is checked for
         /// self-consistency and mutability. When the application tries to change a QosPolicy
-        /// setting for an enabled Subscriber, which can only be set before the Subscriber
-        /// is enabled, the operation will fail and a RETCODE_IMMUTABLE_POLICY is returned.
+        /// setting for an enabled ISubscriber, which can only be set before the ISubscriber
+        /// is enabled, the operation will fail and a DDS.ReturnCode ImmutablePolicy is returned.
         /// In other words, the application must provide the presently set QosPolicy settings
         /// in case of the immutable QosPolicy settings. Only the mutable QosPolicy
         /// settings can be changed. When qos contains conflicting QosPolicy settings (not
-        /// self-consistent), the operation will fail and a RETCODE_INCONSISTENT_POLICY is
-        /// returned.
+        /// self-consistent), the operation will fail and a DDS.ReturnCode InconsistentPolicy
+        /// is returned.
+        ///
         /// The set of QosPolicy settings specified by the qos parameter are applied on top of
         /// the existing QoS, replacing the values of any policies previously set (provided, the
-        /// operation returned RETCODE_OK).
+        /// operation returned DDS.ReturnCode Ok).
         /// </remarks>
+        /// <param name="qos">The new set of QosPolicy settings for the ISubscriber.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The new SubscriberQos is set.</item>
-        /// <item>Error - an internal error has occurred</item>
-        /// <item>AlreadyDeleted - the DataWriter has already been deleted.</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources to 
+        /// <item>DDS.ReturnCode Ok - The new SubscriberQos is set.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the ISubscriber has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to
         /// complete this operation.</item>
-        /// <item>BadParameter - the parameter qos is not a valid SubscriberQos.
+        /// <item>DDS.ReturnCode BadParameter - the parameter qos is not a valid SubscriberQos.
         /// It contains a QosPolicy setting with an enum value that is outside its legal
         /// boundaries.</item>
-        /// <item>Unsupported - one or more of the selected QosPolicy values are
+        /// <item>DDS.ReturnCode Unsupported - one or more of the selected QosPolicy values are
         /// currently not supported by OpenSplice.</item>
-        /// <item>ImmutablePolicy - the parameter qos contains an immutable QosPolicy setting 
+        /// <item>DDS.ReturnCode ImmutablePolicy - the parameter qos contains an immutable QosPolicy setting
         /// with a different value than set during enabling of the Subbscriber.</item>
         /// </returns>
         ReturnCode SetQos(SubscriberQos qos);
+
         /// <summary>
-        /// This operation allows access to the existing set of QoS policies for a Subscriber.
+        /// This operation allows access to the existing set of QoS policies for a ISubscriber.
         /// </summary>
         /// <remarks>
-        /// This operation allows access to the existing set of QoS policies of a Subscriber
+        /// This operation allows access to the existing set of QoS policies of a ISubscriber
         /// on which this operation is used. This SubscriberQos is stored at the location
         /// pointed to by the qos parameter.
         /// </remarks>
-        /// <param name="qos">A reference to the destination SubscriberQos struct in which the QosPolicy 
+        /// <param name="qos">A reference to the destination SubscriberQos struct in which the QosPolicy
         /// settings will be copied.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The existing set of QoS policy values applied to this Subscriber
+        /// <item>DDS.ReturnCode Ok - The existing set of QoS policy values applied to this ISubscriber
         /// has successfully been copied into the specified SubscriberQos parameter.</item>
-        /// <item>Error - an internal error has occurred</item>
-        /// <item>AlreadyDeleted - the DataWriter has already been deleted.</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources to 
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the ISubscriber has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to
         /// complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetQos(ref SubscriberQos qos);
+
         /// <summary>
-        /// This operation attaches a SubscriberListener to the Subscriber.
+        /// This property returns the ISubscriberListener currently attached to the ISubscriber.
         /// </summary>
         /// <remarks>
-        /// This operation attaches a SubscriberListener to the Subscriber. Only one
-        /// SubscriberListener can be attached to each Subscriber. If a SubscriberListener 
-        /// was already attached, the operation will replace it with the new one. 
-        /// When a_listener is NULL , it represents a listener that is treated as a NOOP for all 
-        /// statuses activated in the bit mask.
+        /// Only one listener can be attached to the ISubscriber at any particular time. This property
+        /// returns the listener that is currently attached to the ISubscriber.
         /// </remarks>
-        /// <param name="listener">The SubscriberListener instance, which will be attached to the Subscriber.</param>
-        /// <param name="mask">A bit mask in which each bit enables the invocation of the SubscriberListener 
+        /// <returns>returns the ISubscriberListener currently attached to the ISubscriber.</returns>
+        ISubscriberListener Listener { get; }
+
+        /// <summary>
+        /// This operation attaches a ISubscriberListener to the ISubscriber.
+        /// </summary>
+        /// <remarks>
+        /// This operation attaches a ISubscriberListener to the ISubscriber. Only one
+        /// ISubscriberListener can be attached to each ISubscriber. If a ISubscriberListener
+        /// was already attached, the operation will replace it with the new one.
+        /// When listener is null, it represents a listener that is treated as a NOOP for all
+        /// statuses activated in the bit mask.
+        ///
+        /// See
+        /// @ref DDS.IDomainParticipant.CreateSubscriber(SubscriberQos qos, ISubscriberListener listener, StatusKind mask) "CreateSubscriber"
+        /// for:<br>
+        /// - Subscriber Communication Status
+        /// - Subscriber Status Propagation
+        /// </remarks>
+        /// <param name="listener">The ISubscriberListener instance, which will be attached to the ISubscriber.</param>
+        /// <param name="mask">A bit mask in which each bit enables the invocation of the ISubscriberListener
         /// for a certain status.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The SubscriberListener is attached.</item>
-        /// <item>Error - an internal error has occurred</item>
-        /// <item>AlreadyDeleted - the DataWriter has already been deleted.</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources to 
+        /// <item>DDS.ReturnCode Ok - The ISubscriberListener is attached.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the ISubscriber has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources to
         /// complete this operation.</item>
         /// </returns>
         ReturnCode SetListener(ISubscriberListener listener, StatusKind mask);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <returns></returns>
-        ReturnCode BeginAccess();
-        /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <returns></returns>
-        ReturnCode EndAccess();
-        /// <summary>
-        /// This property allows access to the DomainParticipant associated with the Subscriber.
-        /// </summary>
-        IDomainParticipant Participant { get; }
-        /// <summary>
-        /// This operation sets the default DataReaderQos of the DataReader.
+        /// This operation indicates that the application will begin accessing a coherent and/or
+        /// ordered set of modifications that spans multiple DataReaders attached to this
+        /// Subscriber. The access will be completed by a matching call to EndAccess().
         /// </summary>
         /// <remarks>
-        /// This operation sets the default DataReaderQos of the DataReader (that is the
+        /// This operation indicates that the application is about to access a set of coherent
+        /// and/or ordered samples in any of the IDataReader objects attached to the ISubscriber.
+        /// The operation will effectively lock all of the Subscriber’s DataReader objects for
+        /// any incoming modifications, so that the state of their history remains consistent for
+        /// the duration of the access.
+        ///
+        /// The application is required to use this operation only if the PresentationQosPolicy of
+        /// the Subscriber to which the DataReader belongs has the AccessScope set to
+        /// ‘GROUP’. In the aforementioned case, the operation BeginAccess() must be called
+        /// prior to calling any of the sample-accessing operations, namely:
+        /// GetDatareaders on the Subscriber and Read(), Take(), and all their variants on any
+        /// IDataReader. Otherwise the sample-accessing operations will return the error
+        /// DDS.ReturnCode PreconditionNotMet. Once the application has finished accessing
+        /// the data samples it must call EndAccess().
+        ///
+        /// It is not required for the application to call BeginAccess() / EndAccess() if the
+        /// PresentationQosPolicy has the AccessScope set to something other than
+        /// ‘GROUP’. Calling BeginAccess() / EndAccess() in this case is not considered an
+        /// error and has no effect.
+        ///
+        /// The calls to BeginAccess() / EndAccess() may be nested. In that case, the
+        /// application must call EndAccess() as many times as it called BeginAccess().
+        /// </remarks>
+        /// <returns>Return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - Access to coherent/ordered data has successfully started.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The ISubscriber has already been deleted.</item>
+        /// </returns>
+        ReturnCode BeginAccess();
+
+        /// <summary>
+        /// This operation indicates that the application will stop accessing a coherent and/or
+        /// ordered set of modifications that spans multiple DataReaders attached to this
+        /// ISubscriber. This access must have been started by a matching call to
+        /// BeginAccess().
+        /// </summary>
+        /// <remarks>
+        /// Indicates that the application has finished accessing the data samples in IDataReader
+        /// objects managed by the ISubscriber. This operation must be used to ‘close’ a
+        /// corresponding BeginAccess(). The operation will effectively unlock all of the
+        /// Subscriber’s DataReader objects for incoming modifications, so it is important to
+        /// invoke it as quickly as possible to avoid an ever increasing backlog of
+        /// modifications. After calling EndAccess the application should no longer access
+        /// any of the Data or SampleInfo elements returned from the sample-accessing
+        /// operations.
+        ///
+        /// This call must close a previous call to BeginAccess() otherwise the operation will
+        /// return the error DDS.ReturnCode PreconditionNotMet.
+        /// </remarks>
+        /// <returns>Return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - Access to coherent/ordered data has successfully started.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The ISubscriber has already been deleted.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - No matching call to BeginAccess() has been detected.</item>
+        /// </returns>
+        ReturnCode EndAccess();
+
+        /// <summary>
+        /// This property allows access to the IDomainParticipant associated with the ISubscriber.
+        /// </summary>
+        IDomainParticipant Participant { get; }
+
+        /// <summary>
+        /// This operation sets the default DataReaderQos of the IDataReader.
+        /// </summary>
+        /// <remarks>
+        /// This operation sets the default DataReaderQos of the IDataReader (that is the
         /// struct with the QosPolicy settings). This QosPolicy is used for newly created
-        /// DataReader objects in case the constant DATAREADER_QOS_DEFAULT is used as
+        /// IDataReader objects in case no QoS was provided
         /// parameter qos to specify the DataReaderQos in the CreateDataReader
         /// operation. This operation checks if the DataReaderQos is self consistent. If it is
         /// not, the operation has no effect and returns InconsistentPolicy.
-        /// The values set by this operation are returned by GetDefaultDataReaderQos.
+        /// The values set by this operation are returned by GetDefaultDataReaderQos().
         /// </remarks>
-        /// <param name="qos">The DataReaderQos struct, which containsthe new default QosPolicy 
+        /// <param name="qos">The DataReaderQos struct, which containsthe new default QosPolicy
         /// settings for the newly created DataReaders.</param>
         /// <returns>Return values are:
         /// <list type="bullet">
-        /// <item>Ok - The new default DataReaderQos is set.</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>AlreadyDeleted - the Subscriber has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources 
+        /// <item>DDS.ReturnCode Ok - The new default DataReaderQos is set.</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the ISubscriber has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
         /// to complete this operation.</item>
-        /// <item>BadParameter - the parameter qos is not a valid DataReaderQos.
+        /// <item>DDS.ReturnCode BadParameter - the parameter qos is not a valid DataReaderQos.
         /// It contains a QosPolicy setting with an invalid Duration value or an enum
         /// value that is outside its legal boundaries.</item>
-        /// <item>InconsistentPolicy - the parameter qos contains conflicting
+        /// <item>DDS.ReturnCode InconsistentPolicy - the parameter qos contains conflicting
         /// QosPolicy settings, e.g. a history depth that is higher than the specified resource
         /// limits.</item>
-        /// <item>Unsupported - one or more of the selected QosPolicy values are currently not 
+        /// <item>DDS.ReturnCode Unsupported - one or more of the selected QosPolicy values are currently not
         /// supported by OpenSplice.</item>
         /// </list>
         /// </returns>
         ReturnCode SetDefaultDataReaderQos(DataReaderQos qos);
+
         /// <summary>
-        /// This operation gets the default QosPolicy settings of the DataReader.
+        /// This operation gets the default QosPolicy settings of the IDataReader.
         /// </summary>
         /// <remarks>
-        /// This operation gets the default QosPolicy settings of the DataReader (that is the
-        /// DataReaderQos) which is used for newly created DataReader objects, in case
-        /// the constant DATAREADER_QOS_DEFAULT is used. The default DataReaderQos
+        /// This operation gets the default QosPolicy settings of the IDataReader (that is the
+        /// DataReaderQos) which is used for newly created IDataReader objects, in case
+        /// no QoS was provided. The default DataReaderQos
         /// is only used when the constant is supplied as parameter qos to specify the
         /// DataReaderQos in the CreateDataReader operation. The application must
         /// provide the DataReaderQos struct in which the QosPolicy settings can be stored
         /// and pass the qos reference to the operation. The operation writes the default
         /// QosPolicy settings to the struct referenced to by qos. Any settings in the struct are
         /// overwritten.
+        ///
         /// The values retrieved by this operation match the values specified on the last
         /// successful call to SetDefaultDataReaderQos, or, if the call was never made,
         /// the default values as specified for each QosPolicy setting
         /// </remarks>
-        /// <param name="qos">A reference to the DataReaderQos struct(provided by the application) 
-        /// in which the default QosPolicy settings for the DataReader are written.</param>
+        /// <param name="qos">A reference to the DataReaderQos struct(provided by the application)
+        /// in which the default QosPolicy settings for the IDataReader are written.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The default DataReader QosPolicy settings of this Subscriber 
+        /// <item>DDS.ReturnCode Ok - The default IDataReader QosPolicy settings of this ISubscriber
         /// have successfully been copied into the specified DataReaderQos parameter.</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>AlreadyDeleted - the Subscriber has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources 
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the ISubscriber has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
         /// to complete this operation.</item>
         /// </returns>
         ReturnCode GetDefaultDataReaderQos(ref DataReaderQos qos);
+
         /// <summary>
-        /// This operation will copy the policies in a_topic_qos to the corresponding policies in datareaderQos.
+        /// This operation will copy the policies in topicQos to the corresponding policies in datareaderQos.
         /// </summary>
         /// <remarks>
         /// This operation will copy the QosPolicy settings in topicQos to the
         /// corresponding QosPolicy settings in dataReaderQos (replacing the values
         /// in datareaderQos, if present).
         /// This is a convenience operation, useful in combination with the operations
-        /// GetDefaultDataWriterQos and Topic.get_qos. The operation
-        /// CopyFromTopicQos can be used to merge the DataReader default
-        /// QosPolicy settings with the corresponding ones on the Topic. The resulting
-        /// DataReaderQos can then be used to create a new DataReader, or set its
+        /// GetDefaultDataWriterQos and ITopic.GetQos. The operation
+        /// CopyFromTopicQos can be used to merge the IDataReader default
+        /// QosPolicy settings with the corresponding ones on the ITopic. The resulting
+        /// DataReaderQos can then be used to create a new IDataReader, or set its
         /// DataReaderQos.
+        ///
         /// This operation does not check the resulting dataReaderQos for self
         /// consistency. This is because the merged dataReaderQos may not be the
         /// final one, as the application can still modify some QosPolicy settings prior to
-        /// applying the DataReaderQos to the DataReader.
+        /// applying the DataReaderQos to the IDataReader.
         /// </remarks>
-        /// <param name="dataReaderQos">The destination DataReaderQos struct to which the QosPolicy settings 
+        /// <param name="dataReaderQos">The destination DataReaderQos struct to which the QosPolicy settings
         /// will be copied.</param>
         /// <param name="topicQos">The source TopicQos, which will be copied.</param>
-        /// <returns>Return codes are: 
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The QosPolicy settings have successfully been copied from the TopicQos to DataReaderQos</item>
-        /// <item>Error - an internal error has occurred.</item>
-        /// <item>AlreadyDeleted - the Subscriber has already been deleted</item>
-        /// <item>OutOfResources - the Data Distribution Service ran out of resources 
+        /// <item>DDS.ReturnCode Ok - The QosPolicy settings have successfully been copied from the TopicQos to DataReaderQos</item>
+        /// <item>DDS.ReturnCode Error - an internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - the ISubscriber has already been deleted</item>
+        /// <item>DDS.ReturnCode OutOfResources - the Data Distribution Service ran out of resources
         /// to complete this operation.</item>
         /// </returns>
         ReturnCode CopyFromTopicQos(ref DataReaderQos dataReaderQos, TopicQos topicQos);
+
     }
 
     /// <summary>
-    /// A DataReader allows the application:
+    /// A IDataReader allows the application:
     /// to declare data it wishes to receive (i.e., make a subscription)
-    /// to access data received by the associated Subscriber. 
-    /// A DataReader refers to exactly one TopicDescription (either a Topic, a ContentFilteredTopic or a MultiTopic) 
-    /// that identifies the samples to be read. The DataReader may give access to several instances of the data type, 
-    /// which are distinguished from each other by their key. 
-    /// DataReader is an abstract class. It is specialized for each particular application data type. 
-    /// For a fictional application data type Foo (defined in the module SPACE) 
-    /// the specialized class would be SPACE.FooDataReader.
+    /// to access data received by the associated ISubscriber.
+    /// A IDataReader refers to exactly one ITopicDescription (either a ITopic, a IContentFilteredTopic or a IMultiTopic)
+    /// that identifies the samples to be read. The IDataReader may give access to several instances of the data type,
+    /// which are distinguished from each other by their key.
+    /// IDataReader is an abstract class. It is specialized for each particular application data type.
+    /// For a fictional application data type Space (defined in the module SPACE)
+    /// the specialized class would be SPACE.SpaceDataReader.
     /// </summary>
     public interface IDataReader : IEntity
     {
         /// <summary>
-        /// This operations behaves similarly to the most complete operation, and it substitutes default values
-        /// for the missing parameters. Default for QoS for QoS parameters, null for listeners and 0 mask for
-        /// listener parameters.
-        /// </summary>
-        /// <returns></returns>
-        IReadCondition CreateReadCondition();
-        /// <summary>
-        /// This operation creates a new ReadCondition for the DataReader.
+        /// This operation creates a new IReadCondition for the IDataReader.
         /// </summary>
         /// <remarks>
-        /// This operation creates a new ReadCondition for the DataReader. The returned
-        /// ReadCondition is attached (and belongs) to the DataReader. When the
-        /// operation fails, NULL is returned. To delete the ReadCondition the
-        /// operation delete_readcondition or DeleteContainedEntities must be used.
+        /// The returned IReadCondition is attached (and belongs) to the IDataReader.
+        /// When the operation fails, null is returned. To delete the IReadCondition the
+        /// operation DeleteReadCondition or DeleteContainedEntities must be used.
+        ///
+        /// Samples with Any kind for SampleStates, ViewStates and InstanceStates will be read.
         /// </remarks>
-        /// <param name="sampleStates">a mask, which selects only those samples with the desired sample states.</param>
-        /// <param name="viewStates">a mask, which selects only those samples with the desired view states.</param>
-        /// <param name="instanceStates">a mask, which selects only those samples with the desired instance states.</param>
-        /// <returns>Returns the ReadCondition, it it fails it returns null.</returns>
+        /// <returns>New IReadCondition. When the operation fails, null is returned.</returns>
+        IReadCondition CreateReadCondition();
+
+        /// <summary>
+        /// This operation creates a new IReadCondition for the IDataReader.
+        /// </summary>
+        /// <remarks>
+        /// The returned IReadCondition is attached (and belongs) to the IDataReader.
+        /// When the operation fails, null is returned. To delete the IReadCondition the
+        /// operation DeleteReadCondition or DeleteContainedEntities must be used.
+        ///
+        /// <b><i>State Masks</i></b><br>
+        /// The result of the IReadCondition also depends on the selection of samples
+        /// determined by three masks:
+        /// - SampleStates is the mask, which selects only those samples with the desired
+        /// sample states SampleStateKind Read, NotRead or both
+        /// - ViewStates is the mask, which selects only those samples with the desired
+        /// view states ViewStateKind New, NotNew or both
+        /// - InstanceStates is the mask, which selects only those samples with the
+        /// desired instance states InstanceStateKind Alive, NotAliveDisposed,
+        /// NotAliveNoWriters or a combination of these.
+        /// </remarks>
+        /// <param name="sampleStates">A mask, which selects only those samples with the desired sample states.</param>
+        /// <param name="viewStates">A mask, which selects only those samples with the desired view states.</param>
+        /// <param name="instanceStates">A mask, which selects only those samples with the desired instance states.</param>
+        /// <returns>New IReadCondition. When the operation fails, null is returned.</returns>
         IReadCondition CreateReadCondition(
                 SampleStateKind sampleStates,
                 ViewStateKind viewStates,
                 InstanceStateKind instanceStates);
+
         /// <summary>
-        /// This operations behaves similarly to the most complete operation, and it substitutes default values
-        /// for the missing parameters. Default for QoS for QoS parameters, null for listeners and 0 mask for
-        /// listener parameters.
+        /// This operation creates a new IQueryCondition for the IDataReader.
         /// </summary>
-        /// <param name="queryExpression"></param>
-        /// <param name="queryParameters"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// The returned IQueryCondition is attached (and belongs) to the IDataReader.
+        /// When the operation fails, null is returned. To delete the IQueryCondition the
+        /// operation DeleteReadCondition or DeleteContainedEntities must be used.
+        ///
+        /// Samples with Any kind for SampleStates, ViewStates and InstanceStates will be read.
+        ///
+        /// <b><i>SQL Expression</i></b><br>
+        /// The SQL query string is set by queryExpression which must be a subset of the
+        /// SQL query language. In this query expression, parameters may be used, which must
+        /// be set in the sequence of strings defined by the parameter queryParameters. A
+        /// parameter is a string which can define an integer, float, string or enumeration. The
+        /// number of values in queryParameters must be equal or greater than the highest
+        /// referenced %n token in the queryExpression (e.g. if %1 and %8 are used as
+        /// parameters in the queryExpression , the queryParameters should at least
+        /// contain n+1 = 9 values).
+        /// </remarks>
+        /// <param name="queryExpression">The query string, which must be a subset of the SQL query language.</param>
+        /// <param name="queryParameters">A sequence of strings which are the parameter values used in the
+        /// SQL query string (i.e., the tokens in the expression). The number of values in queryParameters
+        /// must be equal or greater than the highest referenced %n token in the queryExpression
+        /// (e.g.if %1 and %8 are used as parameters in the queryExpression, the queryParameters
+        /// should at least contain n+1 = 9 values).</param>
+        /// <returns>New IQueryCondition. When the operation fails, null is returned.</returns>
         IQueryCondition CreateQueryCondition(
                 string queryExpression,
                 params string[] queryParameters);
+
         /// <summary>
-        /// This operation creates a new QueryCondition for the DataReader.
+        /// This operation creates a new IQueryCondition for the IDataReader.
         /// </summary>
         /// <remarks>
-        /// This operation creates a new QueryCondition for the DataReader. The returned
-        /// QueryCondition is attached (and belongs) to the DataReader. When the
-        /// operation fails, the NULL pointer is returned. To delete the QueryCondition the
-        /// operation delete_readcondition or delete_contained_entities must be
-        /// used.
+        /// The returned IQueryCondition is attached (and belongs) to the IDataReader.
+        /// When the operation fails, null is returned. To delete the IQueryCondition the
+        /// operation DeleteReadCondition or DeleteContainedEntities must be used.
+        ///
+        /// <b><i>State Masks</i></b><br>
+        /// The result of the IQueryCondition also depends on the selection of samples
+        /// determined by three masks:
+        /// - SampleStates is the mask, which selects only those samples with the desired
+        /// sample states SampleStateKind Read, NotRead or both
+        /// - ViewStates is the mask, which selects only those samples with the desired
+        /// view states ViewStateKind New, NotNew or both
+        /// - InstanceStates is the mask, which selects only those samples with the
+        /// desired instance states InstanceStateKind Alive, NotAliveDisposed,
+        /// NotAliveNoWriters or a combination of these.
+        ///
+        /// <b><i>SQL Expression</i></b><br>
+        /// The SQL query string is set by queryExpression which must be a subset of the
+        /// SQL query language. In this query expression, parameters may be used, which must
+        /// be set in the sequence of strings defined by the parameter queryParameters. A
+        /// parameter is a string which can define an integer, float, string or enumeration. The
+        /// number of values in queryParameters must be equal or greater than the highest
+        /// referenced %n token in the queryExpression (e.g. if %1 and %8 are used as
+        /// parameters in the queryExpression , the queryParameters should at least
+        /// contain n+1 = 9 values).
         /// </remarks>
-        /// <param name="sampleStates">a mask, which selects only those samples with the desired sample states.</param>
-        /// <param name="viewStates">a mask, which selects only those samples with the desired view states.</param>
-        /// <param name="instanceStates">a mask, which selects only those samples with the desired instance states.</param>
-        /// <param name="queryExpression">the query string, which must be a subset of the SQL query language.</param>
-        /// <param name="queryParameters">a sequence of strings which are the parameter values used in the 
-        /// SQL query string (i.e., the tokens in the expression). The number of values in queryParameters 
-        /// must be equal or greater than the highest referenced %n token in the queryExpression 
-        /// (e.g.if %1 and %8 are used as parameters in the queryExpression, the queryParameters 
+        /// <param name="sampleStates">A mask, which selects only those samples with the desired sample states.</param>
+        /// <param name="viewStates">A mask, which selects only those samples with the desired view states.</param>
+        /// <param name="instanceStates">A mask, which selects only those samples with the desired instance states.</param>
+        /// <param name="queryExpression">The query string, which must be a subset of the SQL query language.</param>
+        /// <param name="queryParameters">A sequence of strings which are the parameter values used in the
+        /// SQL query string (i.e., the tokens in the expression). The number of values in queryParameters
+        /// must be equal or greater than the highest referenced %n token in the queryExpression
+        /// (e.g.if %1 and %8 are used as parameters in the queryExpression, the queryParameters
         /// should at least contain n+1 = 9 values).</param>
-        /// <returns>Returns the QueryCondition. When it fails it returns a null QueryCondition.</returns>
+        /// <returns>New IQueryCondition. When the operation fails, null is returned.</returns>
         IQueryCondition CreateQueryCondition(
                 SampleStateKind sampleStates,
                 ViewStateKind viewStates,
                 InstanceStateKind instanceStates,
                 string queryExpression,
                 params string[] queryParameters);
+
         /// <summary>
-        /// This operation deletes a ReadCondition or QueryCondition which is attached to the DataReader.
+        /// This operation deletes a IReadCondition or IQueryCondition which is attached to the IDataReader.
         /// </summary>
-        /// This operation deletes a ReadCondition or QueryCondition which is attached
-        /// to the DataReader. Since a QueryCondition is a specialized ReadCondition,
-        /// the operation can also be used to delete a QueryCondition. A ReadCondition
-        /// or QueryCondition cannot be deleted when it is not attached to this DataReader.
-        /// When the operation is called on a ReadCondition or QueryCondition which
-        /// was not at t ached to this DataReader, the operation returns
+        /// This operation deletes a IReadCondition or IQueryCondition which is attached
+        /// to the IDataReader. Since a IQueryCondition is a specialized IReadCondition,
+        /// the operation can also be used to delete a IQueryCondition. A IReadCondition
+        /// or IQueryCondition cannot be deleted when it is not attached to this IDataReader.
+        /// When the operation is called on a IReadCondition or IQueryCondition which
+        /// was not at t ached to this IDataReader, the operation returns
         /// PreconditionNotMet.
-        /// <param name="condition">The ReadCondition or QueryCondition which is to be deleted.
+        /// <param name="condition">The IReadCondition or IQueryCondition which is to be deleted.
         /// </param>
-        /// <returns>Return codes are: 
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The ReadCondition or QueryCondition is deleted.</item>
-        /// <item>Error - An internal error has occured.</item> </item>
-        /// <item>AlreadyDeleted - The DataReader has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>BadParameter - The parameter condition is not a valid IReadCondition reference.</item>
-        /// <item>PreconditionNotMet - The operation is called on a different DataReader, as used when the 
-        ///  ReadCondition or QueryCondition was created.</item>
+        /// <item>DDS.ReturnCode Ok - The IReadCondition or IQueryCondition is deleted.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode BadParameter - The parameter condition is not a valid DDS.IReadCondition reference.</item>
+        /// <item>DDS.ReturnCode PreconditionNotMet - The operation is called on a different IDataReader, as used when the
+        ///  IReadCondition or IQueryCondition was created.</item>
         /// </list>
         /// </returns>
         ReturnCode DeleteReadCondition(IReadCondition condition);
+
         /// <summary>
-        /// This operation deletes all the Entity objects that were created by means of one of the 
-        /// Create operations on the DataReader.
+        /// This operation deletes all the IEntity objects that were created by means of one of the
+        /// Create operations on the IDataReader.
         /// </summary>
         /// <remarks>
-        /// This operation deletes all the Entity objects that were created by means of one of
-        /// the Create operations on the DataReader. In other words, it deletes all
-        /// QueryCondition and ReadCondition objects contained by the DataReader.
+        /// This operation deletes all the IEntity objects that were created by means of one of
+        /// the Create operations on the IDataReader. In other words, it deletes all
+        /// IQueryCondition and IReadCondition objects contained by the IDataReader.
         /// </remarks>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The contained Entity objects are deleted and the application may delete the DataReader</item>
-        /// <item>Error - An internal error has occured.</item> </item>
-        /// <item>AlreadyDeleted - The DataReader has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The contained IEntity objects are deleted and the application may delete the IDataReader</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode DeleteContainedEntities();
+
         /// <summary>
-        /// This operation replaces the existing set of QosPolicy settings for a DataReader.
+        /// This operation replaces the existing set of QosPolicy settings for a IDataReader.
         /// </summary>
         /// <remarks>
-        /// This operation replaces the existing set of QosPolicy settings for a DataReader.
+        /// This operation replaces the existing set of QosPolicy settings for a IDataReader.
         /// The parameter qos contains the QosPolicy settings which is checked for
         /// self-consistency and mutability. When the application tries to change a QosPolicy
-        /// setting for an enabled DataReader, which can only be set before the DataReader
+        /// setting for an enabled IDataReader, which can only be set before the IDataReader
         /// is enabled, the operation will fail and a ImmutablePolicy is returned.
         /// In other words, the application must provide the presently set QosPolicy settings
         /// in case of the immutable QosPolicy settings. Only the mutable QosPolicy
         /// settings can be changed. When qos contains conflicting QosPolicy settings (not
         /// self-consistent), the operation will fail and a InconsistentPolicy is
         /// returned.
+        ///
         /// The set of QosPolicy settings specified by the qos parameter are applied on top of
         /// the existing QoS, replacing the values of any policies previously set (provided, the
         /// operation returned Ok).
         /// </remarks>
-        /// <param name="qos">the new set of QosPolicy settings for the DataReader.</param>
+        /// <param name="qos">the new set of QosPolicy settings for the IDataReader.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The new DataReaderQos is set.</item>
-        /// <item>Error - An internal error has occured.</item> </item>
-        /// <item>AlreadyDeleted - The DataReader has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>BadParameter - the parameter qos is not a valid DataReaderQos.
+        /// <item>DDS.ReturnCode Ok - The new DDS.DataReaderQos is set.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode BadParameter - the parameter qos is not a valid DDS.DataReaderQos.
         /// It contains a QosPolicy setting with an invalid Duration value or an enum
         /// value that is outside its legal boundaries</item>
-        /// <item>Unsupported - one or more of the selected QosPolicy values are currently not
+        /// <item>DDS.ReturnCode Unsupported - one or more of the selected QosPolicy values are currently not
         /// supported by OpenSplice</item>
-        /// <item>ImmutablePolicy - the parameter qos contains an immutable
-        /// QosPolicy setting with a different value than set during enabling of the DataReader</item>
-        /// <item>InconsistentPolicy - the parameter qos contains conflicting
+        /// <item>DDS.ReturnCode ImmutablePolicy - the parameter qos contains an immutable
+        /// QosPolicy setting with a different value than set during enabling of the IDataReader</item>
+        /// <item>DDS.ReturnCode InconsistentPolicy - the parameter qos contains conflicting
         /// QosPolicy settings, e.g. a history depth that is higher than the specified resource limits.</item>
         /// </list>
         /// </returns>
         ReturnCode SetQos(DataReaderQos qos);
+
         /// <summary>
-        /// This operation allows access to the existing set of QoS policies for a DataReader.
+        /// This operation allows access to the existing set of QoS policies for a IDataReader.
         /// </summary>
         /// <remarks>
-        /// This operation allows access to the existing set of QoS policies of a DataReader
-        /// on which this operation is used. This DataReaderQos is stored at the location
+        /// This operation allows access to the existing set of QoS policies of a IDataReader
+        /// on which this operation is used. This DDS.DataReaderQos is stored at the location
         /// pointed to by the qos parameter.
         /// </remarks>
-        /// <param name="qos">a reference to DataReaderQos, where the QosPolicy settings of the DataReader
+        /// <param name="qos">a reference to DDS.DataReaderQos, where the QosPolicy settings of the IDataReader
         /// are to be copied into.</param>
         /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The existing set of QoSPolicy values applied to this DataReader
-        /// has successfully been copied into the specified DataReaderQos parameter.</item>
-        /// <item>Error - An internal error has occured.</item> </item>
-        /// <item>AlreadyDeleted - The DataReader has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Ok - The existing set of QoSPolicy values applied to this IDataReader
+        /// has successfully been copied into the specified DDS.DataReaderQos parameter.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetQos(ref DataReaderQos qos);
+
         /// <summary>
-        /// This operation attaches a DataReaderListener to the DataReader.
+        /// This property returns the IDataReaderListener currently attached to the IDataReader.
         /// </summary>
-        /// <param name="listener">The DataReaderListener which will be attached to the DataReader.</param>
-        /// <param name="mask">A bit mask in which each bit enables the invocation of the DataReaderListener 
+        /// <remarks>
+        /// Only one listener can be attached to the IDataReader at any particular time. This property
+        /// returns the listener that is currently attached to the IDataReader.
+        /// </remarks>
+        /// <returns>returns the IDataReaderListener currently attached to the IDataReader.</returns>
+        IDataReaderListener Listener { get; }
+
+        /// <summary>
+        /// This operation attaches a IDataReaderListener to the IDataReader.
+        /// </summary>
+        /// <param name="listener">The IDataReaderListener which will be attached to the IDataReader.</param>
+        /// <param name="mask">A bit mask in which each bit enables the invocation of the IDataReaderListener
         /// for a certain status.</param>
         /// <returns></returns>
         ReturnCode SetListener(IDataReaderListener listener, StatusKind mask);
+
         /// <summary>
-        /// This operation returns the TopicDescription which is associated with the DataReader.
+        /// This operation returns the DDS.ITopicDescription which is associated with the IDataReader.
         /// </summary>
         /// <remarks>
-        /// This operation returns the TopicDescription which is associated with the
-        /// DataReader, thus the TopicDescription with which the DataReader is
-        /// created. If the DataReader is already deleted, NULL is returned.
+        /// This operation returns the DDS.ITopicDescription which is associated with the
+        /// IDataReader, thus the DDS.ITopicDescription with which the IDataReader is
+        /// created. If the IDataReader is already deleted, null is returned.
         /// </remarks>
-        /// <returns>Returns the TopicDescription associated with the DataReader.</returns>
+        /// <returns>Returns the DDS.ITopicDescription associated with the IDataReader.</returns>
         ITopicDescription GetTopicDescription();
+
         /// <summary>
-        /// This property returns the Subscriber to which the DataReader belongs.
+        /// This property returns the ISubscriber to which the IDataReader belongs.
         /// </summary>
         ISubscriber Subscriber { get; }
+
         /// <summary>
-        /// This operation obtains the SampleRejectedStatus of the DataReader.
+        /// This operation obtains the DDS.SampleRejectedStatus of the IDataReader.
         /// </summary>
         /// <remarks>
-        /// This operation obtains the SampleRejectedStatus struct of the DataReader.
+        /// This operation obtains the DDS.SampleRejectedStatus struct of the IDataReader.
         /// This struct contains the information whether a received sample has been rejected.
-        /// The SampleRejectedStatus can also be monitored using a
-        /// DataReaderListener or by using the associated StatusCondition.
+        /// The DDS.SampleRejectedStatus can also be monitored using a
+        /// IDataReaderListener or by using the associated IStatusCondition.
         /// </remarks>
-        /// <param name="status">A reference to SampleRejectedStatus where the contents of the 
-        /// SampleRejectedStatus of the DataReader will be copied into.</param>
+        /// <param name="status">A reference to DDS.SampleRejectedStatus where the contents of the
+        /// DDS.SampleRejectedStatus of the IDataReader will be copied into.</param>
         /// <returns>
         /// <list type="bullet">
-        /// <item>Ok - The current SampleRejectedStatus of this DataReader has successfully been copied 
+        /// <item>DDS.ReturnCode Ok - The current DDS.SampleRejectedStatus of this IDataReader has successfully been copied
         /// into the specified status parameter.</item>
-        /// <item>Error - An internal error has occured.</item> </item>
-        /// <item>AlreadyDeleted - The DataReader has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetSampleRejectedStatus(ref SampleRejectedStatus status);
+
         /// <summary>
-        /// This operation obtains the LivelinessChangedStatus struct of the DataReader.
+        /// This operation obtains the LivelinessChangedStatus struct of the IDataReader.
         /// </summary>
         /// <remarks>
-        /// This obtains returns the LivelinessChangedStatus struct of the DataReader.
+        /// This obtains returns the LivelinessChangedStatus struct of the IDataReader.
         /// This struct contains the information whether the liveliness of one or more
-        /// DataWriter objects that were writing instances read by the DataReader has
-        /// changed. In other words, some DataWriter have become alive or not alive.
+        /// IDataWriter objects that were writing instances read by the IDataReader has
+        /// changed. In other words, some IDataWriter have become alive or not alive.
         /// The LivelinessChangedStatus can also be monitored using a
-        /// DataReaderListener or by using the associated StatusCondition.
+        /// IDataReaderListener or by using the associated IStatusCondition.
         /// </remarks>
-        /// <param name="status">A reference to LivelinessChangedStatus where the contents of the 
-        ///  LivelinessChangedStatus of the DataReader will be copied into.</param>
-        /// <returns>Return codes are: 
+        /// <param name="status">A reference to LivelinessChangedStatus where the contents of the
+        ///  LivelinessChangedStatus of the IDataReader will be copied into.</param>
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The current  LivelinessChangedStatus of this DataReader has successfully been copied 
+        /// <item>DDS.ReturnCode Ok - The current  LivelinessChangedStatus of this IDataReader has successfully been copied
         /// into the specified status parameter.</item>
-        /// <item>Error - An internal error has occured.</item> </item>
-        /// <item>AlreadyDeleted - The DataReader has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetLivelinessChangedStatus(ref LivelinessChangedStatus status);
+
         /// <summary>
-        /// This operation obtains the RequestedDeadlineMissedStatus struct of the DataReader.        
+        /// This operation obtains the DDS.RequestedDeadlineMissedStatus struct of the IDataReader.
         /// </summary>
         /// <remarks>
-        /// This operation obtains the RequestedDeadlineMissedStatus struct of the
-        /// DataReader. This struct contains the information whether the deadline that the
-        /// DataReader was expecting through its DeadlineQosPolicy was not respected
+        /// This operation obtains the DDS.RequestedDeadlineMissedStatus struct of the
+        /// IDataReader. This struct contains the information whether the deadline that the
+        /// IDataReader was expecting through its DeadlineQosPolicy was not respected
         /// for a specific instance.
-        /// The RequestedDeadlineMissedStatus can also be monitored using a
-        /// DataReaderListener or by using the associated StatusCondition.
+        /// The DDS.RequestedDeadlineMissedStatus can also be monitored using a
+        /// IDataReaderListener or by using the associated IStatusCondition.
         /// </remarks>
-        /// <param name="status">A reference to RequestedDeadlineMissedStatus where the contents of the 
-        /// RequestedDeadlineMissedStatus  of the DataReader will be copied into.</param>
-        /// <returns>Return codes are: 
+        /// <param name="status">A reference to DDS.RequestedDeadlineMissedStatus where the contents of the
+        /// DDS.RequestedDeadlineMissedStatus  of the IDataReader will be copied into.</param>
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The current RequestedDeadlineMissedStatus of this DataReader has successfully been copied 
+        /// <item>DDS.ReturnCode Ok - The current DDS.RequestedDeadlineMissedStatus of this IDataReader has successfully been copied
         /// into the specified status parameter.</item>
-        /// <item>Error - An internal error has occured.</item> </item>
-        /// <item>AlreadyDeleted - The DataReader has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetRequestedDeadlineMissedStatus(ref RequestedDeadlineMissedStatus status);
+
         /// <summary>
-        /// This operation obtains the RequestedIncompatibleQosStatus struct of the DataReader.
+        /// This operation obtains the DDS.RequestedIncompatibleQosStatus struct of the IDataReader.
         /// </summary>
         /// <remarks>
-        /// This operation obtains the RequestedIncompatibleQosStatus struct of the
-        /// DataReader. This struct contains the information whether a QosPolicy setting
+        /// This operation obtains the DDS.RequestedIncompatibleQosStatus struct of the
+        /// IDataReader. This struct contains the information whether a QosPolicy setting
         /// was incompatible with the offered QosPolicy setting.
-        /// The Request/Offering mechanism is applicable between the DataWriter and the
-        /// DataReader. If the QosPolicy settings between DataWriter and DataReader
+        ///
+        /// The Request/Offering mechanism is applicable between the IDataWriter and the
+        /// IDataReader. If the QosPolicy settings between IDataWriter and IDataReader
         /// are inconsistent, no communication between them is established. In addition the
-        /// DataWriter will be informed via a REQUESTED_INCOMPATIBLE_QOS status
-        /// change and the DataReader will be informed via an OFFERED_INCOMPATIBLE_QOS status change.
-        /// The RequestedIncompatibleQosStatus can also be monitored using a
-        /// DataReaderListener or by using the associated StatusCondition.
+        /// IDataWriter will be informed via a RequestedIncompatibleQos DDS.StatusKind change
+        /// and the IDataReader will be informed via an OfferedIncompatibleQos DDS.StatusKind change.
+        /// The DDS.RequestedIncompatibleQosStatus can also be monitored using a
+        /// IDataReaderListener or by using the associated IStatusCondition.
         /// </remarks>
-        /// <param name="status">A reference to RequestedIncompatibleQosStatus where the contents of the 
-        ///  RequestedIncompatibleQosStatus of the DataReader will be copied into.</param>
-        /// <returns>Return codes are: 
+        /// <param name="status">A reference to DDS.RequestedIncompatibleQosStatus where the contents of the
+        ///  DDS.RequestedIncompatibleQosStatus of the IDataReader will be copied into.</param>
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The current RequestedIncompatibleQosStatus of this DataReader has successfully been copied 
+        /// <item>DDS.ReturnCode Ok - The current DDS.RequestedIncompatibleQosStatus of this IDataReader has successfully been copied
         /// into the specified status parameter.</item>
-        /// <item>Error - An internal error has occured.</item> </item>
-        /// <item>AlreadyDeleted - The DataReader has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetRequestedIncompatibleQosStatus(ref RequestedIncompatibleQosStatus status);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
-        /// </summary>
-        /// <param name="status"></param>
-        /// <returns></returns>
-        ReturnCode GetSubscriptionMatchedStatus(ref SubscriptionMatchedStatus status);
-        /// <summary>
-        /// This operation obtains the SampleLostStatus struct of the DataReader.
+        /// This operation obtains the DDS.SubscriptionMatchedStatus struct of the IDataReader.
         /// </summary>
         /// <remarks>
-        /// This operation obtains the SampleLostStatus struct of the DataReader. This
-        /// struct contains information whether samples have been lost. This only applies when
-        /// the ReliabilityQosPolicy is set to RELIABLE. If the
-        /// ReliabilityQosPolicy is set to BEST_EFFORT the Data Distribution Service
-        /// will not report the loss of samples.
-        /// The SampleLostStatus can also be monitored using a DataReaderListener
-        /// or by using the associated StatusCondition.
+        /// This struct contains the information whether a new match has been
+        /// discovered for the current subscription, or whether an existing match has ceased to
+        /// exist.
+        ///
+        /// This means that the status represents that either a IDataWriter object has been
+        /// discovered by the IDataReader with the same Topic and a compatible Qos, or that a
+        /// previously discovered DataWriter has ceased to be matched to the current
+        /// IDataReader. A IDataWriter may cease to match when it gets deleted, when it
+        /// changes its Qos to a value that is incompatible with the current IDataReader or
+        /// when either the IDataReader or the IDataWriter has chosen to put its matching
+        /// counterpart on its ignore-list using the IgnorePublication or
+        /// IgnoreSubcription operations on the IDomainParticipant.
+        ///
+        /// The operation may fail if the infrastructure does not hold the information necessary
+        /// to fill in the SubscriptionMatchedStatus. This is the case when OpenSplice is
+        /// configured not to maintain discovery information in the Networking Service. (See
+        /// the description for the NetworkingService/Discovery/enabled property in
+        /// the Deployment Manual for more information about this subject.) In this case the
+        /// operation will return DDS.ReturnCode Unsupported.
+        ///
+        /// The SubscriptionMatchedStatus can also be monitored using a
+        /// IDataReaderListener or by using the associated StatusCondition.
         /// </remarks>
-        /// <param name="status"> reference to SampleLostStatus where the contents of the 
-        ///  SampleLostStatus of the DataReader will be copied into.</param>
-        /// <returns>Return codes are: 
+        /// <param name="status"> reference to DDS.SubscriptionMatchedStatus where the contents of the
+        ///  DDS.SubscriptionMatchedStatus of the IDataReader will be copied into.</param>
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The current SampleLostStatus of this DataReader has successfully been copied 
+        /// <item>DDS.ReturnCode Ok - The current DDS.SubscriptionMatchedStatus of this IDataReader has
+        /// successfully been copied into the specified status parameter.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode Unsupported - OpenSplice is configured not to maintain the
+        /// information about “associated” publications.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// </list>
+        /// </returns>
+        ReturnCode GetSubscriptionMatchedStatus(ref SubscriptionMatchedStatus status);
+
+        /// <summary>
+        /// This operation obtains the DDS.SampleLostStatus struct of the IDataReader.
+        /// </summary>
+        /// <remarks>
+        /// This struct contains information whether samples have been lost. This only applies when
+        /// the DDS.ReliabilityQosPolicyKind is set to ReliableReliabilityQos. If the
+        /// DDS.ReliabilityQosPolicyKind is set to BestEffortReliabilityQos the Data Distribution Service
+        /// will not report the loss of samples.
+        ///
+        /// The DDS.SampleLostStatus can also be monitored using a IDataReaderListener
+        /// or by using the associated IStatusCondition.
+        /// </remarks>
+        /// <param name="status"> reference to DDS.SampleLostStatus where the contents of the
+        ///  DDS.SampleLostStatus of the IDataReader will be copied into.</param>
+        /// <returns>Return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - The current DDS.SampleLostStatus of this IDataReader has successfully been copied
         /// into the specified status parameter.</item>
-        /// <item>Error - An internal error has occured.</item> </item>
-        /// <item>AlreadyDeleted - The DataReader has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// </list>
         /// </returns>
         ReturnCode GetSampleLostStatus(ref SampleLostStatus status);
+
         /// <summary>
         /// This operation will block the application thread until all historical data is received.
         /// </summary>
         /// <remarks>
-        /// This operation behaves differently for DataReader objects which have a
-        /// non-VOLATILE_DURABILITY_QOS DurabilityQosPolicy and for
-        /// DataReader obj ects which have a VOLATILE_DURABILITY_QOS
+        /// This operation behaves differently for IDataReader objects which have a
+        /// non-VolatileDurabilityQos kind in the DurabilityQosPolicy and for
+        /// IDataReader objects which have a VolatileDurabilityQos kind in the
         /// DurabilityQosPolicy.
-        /// As soon as an application enables a non-VOLATILE_DURABILITY_QOS
-        /// DataReader it will start receiving both historical data, i.e. the data that was
-        /// written prior to the time the DataReader joined the domain, as well as any new
-        /// data written by the DataWriter objects. There are situations where the application
+        ///
+        /// As soon as an application enables a non-VolatileDurabilityQos
+        /// IDataReader it will start receiving both historical data, i.e. the data that was
+        /// written prior to the time the IDataReader joined the domain, as well as any new
+        /// data written by the IDataWriter objects. There are situations where the application
         /// logic may require the application to wait until all historical data is received. This
-        /// is the purpose of the WaitForHistoricalData operation. 
-        /// As soon as an application enables a VOLATILE_DURABILITY_QOS DataReader it
+        /// is the purpose of the WaitForHistoricalData operation.
+        ///
+        /// As soon as an application enables a VolatileDurabilityQos IDataReader it
         /// will not start receiving historical data but only new data written by the
-        /// DataWriter objects. By calling WaitForHistoricalData the DataReader
+        /// IDataWriter objects. By calling WaitForHistoricalData the IDataReader
         /// explicitly requests the Data Distribution Service to start receiving also the
         /// historical data and to wait until either all historical data is received, or the
-        /// duration specified by the max_wait parameter has elapsed, whichever happens
+        /// duration specified by the maxWait parameter has elapsed, whichever happens
         /// first.
+        ///
+        /// <b><i>Thread Blocking</i></b><br>
+        /// The operation wait_for_historical_data blocks the calling thread until either
+        /// all “historical” data is received, or the duration specified by the maxWait
+        /// parameter elapses, whichever happens first. A return value of DDS.ReturnCode Ok
+        /// indicates that all the “historical” data was received a return value of
+        /// DDS.ReturnCode Timeout indicates that maxWait elapsed before all the data was
+        /// received.
         /// </remarks>
-        /// <param name="maxWait">the maximum duration to block for the operation, after which 
-        /// the application thread is unblocked. The special constant Duration Infinite can be used when 
+        /// <param name="maxWait">the maximum duration to block for the operation, after which
+        /// the application thread is unblocked. The special constant Duration Infinite can be used when
         /// the maximum waiting time does not need to be bounded.</param>
-        /// <returns>Return codes are: 
+        /// <returns>Return codes are:
         /// <list type="bullet">
-        /// <item>Ok - The historical data is received </item>
-        /// <item>Error - An internal error has occured.</item> </item>
-        /// <item>AlreadyDeleted - The DataReader has already been deleted.</item>
-        /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
-        /// <item>NotEnabled - the DataReader is not enabled.</item>
-        /// <item>Timeout - Not all data is received before maxWait elapsed.</item>
+        /// <item>DDS.ReturnCode Ok - The historical data is received </item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled - the IDataReader is not enabled.</item>
+        /// <item>DDS.ReturnCode Timeout - Not all data is received before maxWait elapsed.</item>
         /// </list>
         /// </returns>
         ReturnCode WaitForHistoricalData(Duration maxWait);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// This operation retrieves the list of publications currently "associated" with the DataReader.
         /// </summary>
-        /// <param name="publicationHandles"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// That is, publications that have a matching ITopic and compatible
+        /// QoS that the application has not indicated should be “ignored” by means of the
+        /// IgnorePublication operation on the IDomainParticipant.
+        ///
+        /// The handles returned in the publicationHandles array are the ones that are
+        /// used by the DDS implementation to locally identify the corresponding matched
+        /// IDataWriter entities. You can access more detailed information about a particular
+        /// publication by passing its publicationHandle to either the
+        /// GetMatchedPublicationData() operation or to the ReadInstance()
+        /// operation on the built-in reader for the “DCPSPublication” topic.
+        ///
+        /// Be aware that since DDS.InstanceHandle is an opaque datatype, it does not
+        /// necessarily mean that the handles obtained from the
+        /// GetMatchedPublications() operation have the same value as the ones that
+        /// appear in the InstanceHandle field of the SampleInfo when retrieving the
+        /// publication info through corresponding "DCPSPublications" built-in reader. You
+        /// can’t just compare two handles to determine whether they represent the same
+        /// publication. If you want to know whether two handles actually do represent the
+        /// same publication, use both handles to retrieve their corresponding
+        /// PublicationBuiltinTopicData samples and then compare the key field of
+        /// both samples.
+        ///
+        /// The operation may fail if the infrastructure does not locally maintain the
+        /// connectivity information. This is the case when OpenSplice is configured not to
+        /// maintain discovery information in the Networking Service. (See the description for
+        /// the NetworkingService/Discovery/enabled property in the Deployment
+        /// Manual for more information about this subject.) In this case the operation will
+        /// return DDS.ReturnCode Unsupported.
+        /// </remarks>
+        /// <param name="publicationHandles">An array which is used to pass the list of all associated publications.</param>
+        /// <returns>Return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - The list of associated publications has successfully been obtained.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode Unsupported - OpenSplice is configured not to maintain the
+        /// information about “associated” publications.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled - the IDataReader is not enabled.</item>
+        /// </list>
+        /// </returns>
         ReturnCode GetMatchedPublications(ref InstanceHandle[] publicationHandles);
+
         /// <summary>
-        /// This operation is not yet implemented. It is scheduled for a future release.
+        /// This operation retrieves information on the specified publication that is currently
+        /// “associated” with the IDataReader.
         /// </summary>
-        /// <param name="publicationData"></param>
-        /// <param name="publicationHandle"></param>
+        /// <remarks>
+        /// That is, a publication with a matching ITopic
+        /// and compatible QoS that the application has not indicated should be “ignored” by
+        /// means of the IgnorePublication operation on the IDomainParticipant.
+        ///
+        /// The publicationHandle must correspond to a publication currently associated
+        /// with the IDataReader, otherwise the operation will fail and return DDS.ReturnCode
+        /// BadParameter. The operation IDataReader.GetMatchedPublications() can
+        /// be used to find the publications that are currently matched with the DataReader.
+        ///
+        /// The operation may also fail if the infrastructure does not hold the information
+        /// necessary to fill in the publicationData. This is the case when OpenSplice is
+        /// configured not to maintain discovery information in the Networking Service. (See
+        /// the description for the NetworkingService/Discovery/enabled property in
+        /// the Deployment Manual for more information about this subject.) In this case the
+        /// operation will return DDS.ReturnCode Unsupported.
+        /// </remarks>
+        /// <param name="publicationData">The sample in which the information about the specified
+        /// publication is to be stored.</param>
+        /// <param name="publicationHandle">A handle to the publication whose information needs
+        /// to be retrieved.</param>
+        /// <returns>Return codes are:
+        /// <list type="bullet">
+        /// <item>DDS.ReturnCode Ok - The information on the specified publication has successfully
+        /// been retrieved.</item>
+        /// <item>DDS.ReturnCode Error - An internal error has occurred.</item>
+        /// <item>DDS.ReturnCode Unsupported - OpenSplice is configured not to maintain the
+        /// information about “associated” publications.</item>
+        /// <item>DDS.ReturnCode AlreadyDeleted - The IDataReader has already been deleted.</item>
+        /// <item>DDS.ReturnCode OutOfResources - The DDS ran out of resources to complete this operation.</item>
+        /// <item>DDS.ReturnCode NotEnabled - the IDataReader is not enabled.</item>
+        /// </list>
+        /// </returns>
         ReturnCode GetMatchedPublicationData(
                 ref PublicationBuiltinTopicData publicationData,
                 InstanceHandle publicationHandle);
+
+#if DOXYGEN_FOR_CS
+//
+// The above compile switch is never (and must never) be defined in normal compilation.
+//
+// QoS and Policy related enums are part of the generated code for builtin topics.
+// They are repeated here for easy documentation generation.
+//
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.Read(ref Space.Foo[] dataValues, ref DDS.SampleInfo[] sampleInfos)">
+        /// </remarks>
+        ReturnCode Read(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.Read(ref Space.Foo[] dataValues, ref DDS.SampleInfo[] sampleInfos, int maxSamples)">
+        /// </remarks>
+        ReturnCode Read(
+            ref <data> dataValues,
+            ref SampleInfo[] sampleInfos,
+            int maxSamples);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.Read(
+        ///    ref Space.Foo[] dataValues,
+        ///    ref DDS.SampleInfo[] sampleInfos,
+        ///    DDS.SampleStateKind sampleStates,
+        ///    DDS.ViewStateKind viewStates,
+        ///    DDS.InstanceStateKind instanceStates)">
+        /// </remarks>
+        ReturnCode Read(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            SampleStateKind sampleStates,
+            ViewStateKind viewStates,
+            InstanceStateKind instanceStates);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.Read(
+        ///    ref Space.Foo[] dataValues,
+        ///    ref DDS.SampleInfo[] sampleInfos,
+        ///    int maxSamples,
+        ///    DDS.SampleStateKind sampleStates,
+        ///    DDS.ViewStateKind viewStates,
+        ///    DDS.InstanceStateKind instanceStates)">
+        /// </remarks>
+        ReturnCode Read(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                int maxSamples,
+                SampleStateKind sampleStates,
+                ViewStateKind viewStates,
+                InstanceStateKind instanceStates);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.Take(ref Space.Foo[] dataValues, ref DDS.SampleInfo[] sampleInfos)">
+        /// </remarks>
+        ReturnCode Take(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.Take(ref Space.Foo[] dataValues, ref DDS.SampleInfo[] sampleInfos, int maxSamples)">
+        /// </remarks>
+        ReturnCode Take(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            int maxSamples);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.Take(
+        ///     ref Space.Foo[] dataValues,
+        ///     ref DDS.SampleInfo[] sampleInfos,
+        ///     DDS.SampleStateKind sampleStates,
+        ///     DDS.ViewStateKind viewStates,
+        ///     DDS.InstanceStateKind instanceStates)">
+        /// </remarks>
+        ReturnCode Take(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            SampleStateKind sampleStates,
+            ViewStateKind viewStates,
+            InstanceStateKind instanceStates);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.Take(
+        ///         ref Space.Foo[] dataValues,
+        ///         ref DDS.SampleInfo[] sampleInfos,
+        ///         int maxSamples,
+        ///         DDS.SampleStateKind sampleStates,
+        ///         DDS.ViewStateKind viewStates,
+        ///         DDS.InstanceStateKind instanceStates)">
+        /// </remarks>
+        ReturnCode Take(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                int maxSamples,
+                SampleStateKind sampleStates,
+                ViewStateKind viewStates,
+                InstanceStateKind instanceStates);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReadWithCondition(
+        ///            ref Space.Foo[] dataValues,
+        ///            ref DDS.SampleInfo[] sampleInfos,
+        ///            DDS.IReadCondition readCondition)">
+        /// </remarks>
+        ReturnCode ReadWithCondition(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            IReadCondition readCondition);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReadWithCondition(
+        ///                ref Space.Foo[] dataValues,
+        ///                ref DDS.SampleInfo[] sampleInfos,
+        ///                int maxSamples,
+        ///                DDS.IReadCondition readCondition)">
+        /// </remarks>
+        ReturnCode ReadWithCondition(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                int maxSamples,
+                IReadCondition readCondition);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.TakeWithCondition(
+        ///            ref Space.Foo[] dataValues,
+        ///            ref DDS.SampleInfo[] sampleInfos,
+        ///            DDS.IReadCondition readCondition)">
+        /// </remarks>
+        ReturnCode TakeWithCondition(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            IReadCondition readCondition);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.TakeWithCondition(
+        ///                ref Space.Foo[] dataValues,
+        ///                ref DDS.SampleInfo[] sampleInfos,
+        ///                int maxSamples,
+        ///                DDS.IReadCondition readCondition)">
+        /// </remarks>
+        ReturnCode TakeWithCondition(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                int maxSamples,
+                IReadCondition readCondition);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
+        ///
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReadNextSample(
+        ///                ref Space.Foo dataValue,
+        ///                ref DDS.SampleInfo sampleInfo)">
+        /// </remarks>
+        ReturnCode ReadNextSample(
+                ref Space.Foo dataValue,
+                ref SampleInfo sampleInfo);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
+        ///
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.TakeNextSample(
+        ///                ref Space.Foo dataValue,
+        ///                ref DDS.SampleInfo sampleInfo)">
+        /// </remarks>
+        ReturnCode TakeNextSample(
+                ref Space.Foo dataValue,
+                ref SampleInfo sampleInfo);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReadInstance(
+        ///            ref Space.Foo[] dataValues,
+        ///            ref DDS.SampleInfo[] sampleInfos,
+        ///            DDS.InstanceHandle instanceHandle)">
+        /// </remarks>
+        ReturnCode ReadInstance(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReadInstance(
+        ///            ref Space.Foo[] dataValues,
+        ///            ref DDS.SampleInfo[] sampleInfos,
+        ///            int maxSamples,
+        ///            DDS.InstanceHandle instanceHandle)">
+        /// </remarks>
+        ReturnCode ReadInstance(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            int maxSamples,
+            InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReadInstance(
+        ///                ref Space.Foo[] dataValues,
+        ///                ref DDS.SampleInfo[] sampleInfos,
+        ///                int maxSamples,
+        ///                DDS.InstanceHandle instanceHandle,
+        ///                DDS.SampleStateKind sampleStates,
+        ///                DDS.ViewStateKind viewStates,
+        ///                DDS.InstanceStateKind instanceStates)">
+        /// </remarks>
+        ReturnCode ReadInstance(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                int maxSamples,
+                InstanceHandle instanceHandle,
+                SampleStateKind sampleStates,
+                ViewStateKind viewStates,
+                InstanceStateKind instanceStates);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.TakeInstance(
+        ///            ref Space.Foo[] dataValues,
+        ///            ref DDS.SampleInfo[] sampleInfos,
+        ///            DDS.InstanceHandle instanceHandle)">
+        /// </remarks>
+        ReturnCode TakeInstance(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.TakeInstance(
+        ///            ref Space.Foo[] dataValues,
+        ///            ref DDS.SampleInfo[] sampleInfos,
+        ///            int maxSamples,
+        ///            DDS.InstanceHandle instanceHandle)">
+        /// </remarks>
+        ReturnCode TakeInstance(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            int maxSamples,
+            InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.TakeInstance(
+        ///                ref Space.Foo[] dataValues,
+        ///                ref DDS.SampleInfo[] sampleInfos,
+        ///                int maxSamples,
+        ///                DDS.InstanceHandle instanceHandle,
+        ///                DDS.SampleStateKind sampleStates,
+        ///                DDS.ViewStateKind viewStates,
+        ///                DDS.InstanceStateKind instanceStates)">
+        /// </remarks>
+        ReturnCode TakeInstance(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                int maxSamples,
+                InstanceHandle instanceHandle,
+                SampleStateKind sampleStates,
+                ViewStateKind viewStates,
+                InstanceStateKind instanceStates);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReadNextInstance(
+        ///            ref Space.Foo[] dataValues,
+        ///            ref DDS.SampleInfo[] sampleInfos,
+        ///            DDS.InstanceHandle instanceHandle)">
+        /// </remarks>
+        ReturnCode ReadNextInstance(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReadNextInstance(
+        ///            ref Space.Foo[] dataValues,
+        ///            ref DDS.SampleInfo[] sampleInfos,
+        ///            int maxSamples,
+        ///            DDS.InstanceHandle instanceHandle)">
+        /// </remarks>
+        ReturnCode ReadNextInstance(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            int maxSamples,
+            InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReadNextInstance(
+        ///                ref Space.Foo[] dataValues,
+        ///                ref DDS.SampleInfo[] sampleInfos,
+        ///                int maxSamples,
+        ///                DDS.InstanceHandle instanceHandle,
+        ///                DDS.SampleStateKind sampleStates,
+        ///                DDS.ViewStateKind viewStates,
+        ///                DDS.InstanceStateKind instanceStates)">
+        /// </remarks>
+        ReturnCode ReadNextInstance(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                int maxSamples,
+                InstanceHandle instanceHandle,
+                SampleStateKind sampleStates,
+                ViewStateKind viewStates,
+                InstanceStateKind instanceStates);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.TakeNextInstance(
+        ///            ref Space.Foo[] dataValues,
+        ///            ref DDS.SampleInfo[] sampleInfos,
+        ///            DDS.InstanceHandle instanceHandle)">
+        /// </remarks>
+        ReturnCode TakeNextInstance(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.TakeNextInstance(
+        ///            ref Space.Foo[] dataValues,
+        ///            ref DDS.SampleInfo[] sampleInfos,
+        ///            int maxSamples,
+        ///            DDS.InstanceHandle instanceHandle)">
+        /// </remarks>
+        ReturnCode TakeNextInstance(
+            ref <data>[] dataValues,
+            ref SampleInfo[] sampleInfos,
+            int maxSamples,
+            InstanceHandle instanceHandle);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.TakeNextInstance(
+        ///                ref Space.Foo[] dataValues,
+        ///                ref DDS.SampleInfo[] sampleInfos,
+        ///                int maxSamples,
+        ///                DDS.InstanceHandle instanceHandle,
+        ///                DDS.SampleStateKind sampleStates,
+        ///                DDS.ViewStateKind viewStates,
+        ///                DDS.InstanceStateKind instanceStates)">
+        /// </remarks>
+        ReturnCode TakeNextInstance(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                int maxSamples,
+                InstanceHandle instanceHandle,
+                SampleStateKind sampleStates,
+                ViewStateKind viewStates,
+                InstanceStateKind instanceStates);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
+        ///
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReadNextInstanceWithCondition(
+        ///                ref Space.Foo[] dataValues,
+        ///                ref DDS.SampleInfo[] sampleInfos,
+        ///                DDS.InstanceHandle instanceHandle,
+        ///                DDS.IReadCondition readCondition)">
+        /// </remarks>
+        ReturnCode ReadNextInstanceWithCondition(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                InstanceHandle instanceHandle,
+                IReadCondition readCondition);
+
+        /// <summary>
+        /// This operation reads an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
+        ///
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReadNextInstanceWithCondition(
+        ///                ref Space.Foo[] dataValues,
+        ///                ref DDS.SampleInfo[] sampleInfos,
+        ///                int maxSamples,
+        ///                DDS.InstanceHandle instanceHandle,
+        ///                DDS.IReadCondition readCondition)">
+        /// </remarks>
+        ReturnCode ReadNextInstanceWithCondition(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                int maxSamples,
+                InstanceHandle instanceHandle,
+                IReadCondition readCondition);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
+        ///
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.TakeNextInstanceWithCondition(
+        ///                ref Space.Foo[] dataValues,
+        ///                ref DDS.SampleInfo[] sampleInfos,
+        ///                DDS.InstanceHandle instanceHandle,
+        ///                DDS.IReadCondition readCondition)">
+        /// </remarks>
+        ReturnCode TakeNextInstanceWithCondition(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                InstanceHandle instanceHandle,
+                IReadCondition readCondition);
+
+        /// <summary>
+        /// This operation takes an array of typed samples from the DataReader (abstract).
+        /// </summary>
+        /// <remarks>
+        /// @note This operation is not yet implemented. It is scheduled for a future release.
+        ///
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.TakeNextInstanceWithCondition(
+        ///                ref Space.Foo[] dataValues,
+        ///                ref DDS.SampleInfo[] sampleInfos,
+        ///                int maxSamples,
+        ///                DDS.InstanceHandle instanceHandle,
+        ///                DDS.IReadCondition readCondition)">
+        /// </remarks>
+        ReturnCode TakeNextInstanceWithCondition(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos,
+                int maxSamples,
+                InstanceHandle instanceHandle,
+                IReadCondition readCondition);
+
+        /// <summary>
+        /// This operation indicates to the DataReader that the application is done accessing
+        /// the dataValues and sampleInfos arrays (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.ReturnLoan(ref Space.Foo[] dataValues, ref DDS.SampleInfo[] sampleInfos)">
+        /// </remarks>
+        ReturnCode ReturnLoan(
+                ref <data>[] dataValues,
+                ref SampleInfo[] sampleInfos);
+
+        /// <summary>
+        /// This operation retrieves the key value of a specific instance (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.GetKeyValue(ref Space.Foo key, DDS.InstanceHandle handle)">
+        /// </remarks>
+        ReturnCode GetKeyValue(
+                ref <data> key,
+                InstanceHandle handle);
+
+        /// <summary>
+        /// This operation returns the handle which corresponds to the instance data (abstract).
+        /// </summary>
+        /// <remarks>
+        /// This abstract operation is defined as a generic operation, which is implemented by
+        /// the &lt;type&gt;DataReader class. Therefore, to use this operation, the data type
+        /// specific implementation of this operation in its respective derived class must be
+        /// used.
+        ///
+        /// For further explanation see the description for the fictional data type Space.Foo
+        /// derived Space.FooDataReader class.
+        ///
+        /// <seealso cref="Space.FooDataReader.LookupInstance(Space.Foo instance)">
+        /// </remarks>
+        InstanceHandle LookupInstance(
+                <data> instance);
+
+#endif // DOXYGEN_FOR_CS
+
     }
 
     // listener interfaces
 
-    public interface ITopicListener
+    public interface IListener
     {
+        // Just an empty tagging interface.
+    }
+	/// <summary>Since a ITopic is an Entity, it has the ability to have a IListener
+	/// associated with it. In this case, the associated IListener should be of type
+	/// ITopicListener. This interface must be implemented by the
+	/// application. A user-defined class must be provided by the application which must
+	/// extend from the ITopicListener class.All operations for this interface must be implemented
+	/// in the user-defined class, it is up to the application whether an operation is empty or 
+	/// contains some functionality.
+	/// The ITopicListener provides a generic mechanism (actually a callback function) for the Data 
+	/// Distribution Service to notify the application of relevant asynchronous status change events, 
+	/// such as a missed deadline, violation of a QosPolicy setting, etc. The ITopicListener is 
+	/// related to changes in communication status StatusConditions.</summary>
+	/// <example>
+	/// <code>
+	///	public class MyExampleTopicListener : DDS.TopicListener
+	///	{
+	///		public void OnInconsistentTopic(DDS.ITopic the_topic, DDS.InconsistentTopicStatus status)
+	///		{
+	///			Console.WriteLine("On_inconsistent_topic");
+	///		}
+	///	}
+	/// </code>
+	/// </example>
+    public interface ITopicListener : IListener
+    {
+		/// <summary>
+		/// This operation is called by the Data Distribution Service when the
+		/// InconsistentTopicStatus changes.</summary>
+		/// <remarks>
+		/// The implementation may be left empty when this functionality is not needed. 
+		/// This operation will only be called when the relevant ITopicListener is installed and
+		/// enabled with the DDS.StatusKind.InconsistentTopic. The InconsistentTopicStatus will change 
+		/// when another Topic exists with the same topic_name but different characteristics.
+		/// </remarks>
+		/// <param name="entityInterface">contain a pointer to the Topic on which the conflict
+		/// occurred (this is an input to the application).</param>
+		/// <param name="status">contain the InconsistentTopicStatus object (this is
+		/// an input to the application).</param>
         void OnInconsistentTopic(ITopic entityInterface, InconsistentTopicStatus status);
     }
 
-    public interface IDataWriterListener
+	/// <summary>Since a DataWriter is an Entity, it has the ability to have a IListener
+	/// associated with it. In this case, the associated IListener should be of type
+	/// IDataWriterListener. This interface must be implemented by the
+	/// application. A user-defined class must be provided by the application which must
+	/// extend from the DataWriterListener class.</summary>
+	/// <remarks>All operations for this interface must be implemented in the user-defined class, 
+	/// it is up to the application whether an operation is empty or contains some functionality.
+	/// The IDataWriterListener provides a generic mechanism (actually a callback function) 
+	/// for the Data Distribution Service to notify the application of relevant 
+	/// asynchronous status change events, such as a missed deadline, violation of
+	/// a QosPolicy setting, etc. The IDataWriterListener is related to
+	/// changes in communication status IStatusConditions.</remarks>
+	/// <example><code>
+	/// public class MyExampleDataWriterListener : DDS.DataWriterListener
+	/// {
+	/// 	public MyExampleDataWriterListener()
+	/// 	{
+	/// 	}
+	/// 	public void OnOfferedDeadlineMissed(DDS.IDataWriter writer, DDS.OfferedDeadlineMissedStatus status)
+	/// 	{
+	/// 		Console.WriteLine("OnOfferedDeadlineMissed");
+	/// 	}
+	/// 
+	/// 	public void OnOfferedIncompatibleQos(DDS.IDataWriter writer, DDS.OfferedIncompatibleQosStatus status)
+	/// 	{
+	/// 		Console.WriteLine("OnOfferedIncompatibleQos");
+	/// 	}
+	/// 
+	/// 	public void OnLivelinessLost(DDS.IDataWriter writer, DDS.LivelinessLostStatus status)
+	/// 	{
+	/// 		Console.WriteLine("OnLivelinessLost");
+	/// 	}
+	/// 
+	/// 	public void OnPublicationMatched(DDS.IDataWriter writer, DDS.PublicationMatchedStatus status)
+	/// 	{
+	/// 		Console.WriteLine("OnPublicationMatched");
+	/// 	}
+	/// }
+	/// </code>
+	/// </example>
+    public interface IDataWriterListener : IListener
     {
+		/// <summary>This operation is called by the Data Distribution Service when the
+		/// OfferedDeadlineMissedStatus changes.</summary>
+		/// <remarks> This operation will only be called when the relevant 
+		/// IDataWriterListener is installed and enabled for the offered
+		/// deadline missed status (DDS.StatusKind.OfferedDeadlineMissed). The offered deadline
+		/// missed status will change when the deadline that the IDataWriter has 
+		/// committed through its DeadlineQosPolicy was not respected for a 
+		/// specific instance.</remarks>
+		/// <param name="entityInterface">contain a pointer to the IDataWriter on which 
+		/// the OfferedDeadlineMissedStatus has changed (this is an input to the application)</param>
+		/// <param name="status">contain the OfferedDeadlineMissedStatus object (this is
+		/// an input to the application).</param>				
         void OnOfferedDeadlineMissed(IDataWriter entityInterface, OfferedDeadlineMissedStatus status);
+		/// <summary>This operation called by the Data Distribution Service when the
+		/// OfferedIncompatibleQosStatus changes.</summary>
+		/// <remarks>This operation will only be called when the relevant IDataWriterListener 
+		/// is installed and enabled for the DDS.StatusKind.OfferedIncompatibleQos. The incompatible 
+		/// Qos status will change when a IDataReader object has been discovered by the IDataWriter
+		/// with the same ITopic and a requested DataReaderQos that was incompatible with the 
+		/// one offered by the IDataWriter.</remarks>
+		/// <param name="entityInterface">contain a pointer to the IDataWriter on which the 
+		/// OfferedIncompatibleQosStatus has changed (this is an input to the application).</param>
+		/// <param name="status">contain the OfferedIncompatibleQosStatus object (this is 
+		/// an input to the application).</param>
         void OnOfferedIncompatibleQos(IDataWriter entityInterface, OfferedIncompatibleQosStatus status);
+		/// <summary>This operation is called by the Data Distribution Service when the 
+		/// LivelinessLostStatus changes.</summary>
+		/// <remarks>This operation will only be called when the relevant
+		/// IDataWriterListener is installed and enabled for the liveliness lost status
+		/// (LivelinessLostStatus).
+		/// The liveliness lost status will change when the liveliness that the DataWriter has 
+		/// committed through its LivelinessQosPolicy was not respected. In other words,
+		/// the IDataWriter failed to actively signal its liveliness within the offered liveliness
+		/// period. As a result, the IDataReader objects will consider the IDataWriter as no
+		/// longer “alive”.</remarks>
+		/// <param name="entityInterface">contains a pointer to the IDataWriter on which 
+		/// the LivelinessLostStatus has changed (this is an input to
+		/// the application).</param>
+		/// <param name="status">contains the LivelinessLostStatus object (this is an input
+		/// to the application).</param>
         void OnLivelinessLost(IDataWriter entityInterface, LivelinessLostStatus status);
+		/// <summary>
+		/// This operation is called by the Data Distribution Service when a new match has
+		/// been discovered for the current publication, or when an existing match has 
+		/// ceased to exist.</summary>
+		/// <remarks>Usually this means that a new IDataReader that matches the ITopic 
+		/// and that has compatible Qos as the current IDataWriter has either been discovered, 
+		/// or that a previously discovered IDataReader has ceased to be matched to the current 
+		/// IDataWriter. A IDataReader may cease to match when it gets deleted, when it 
+		/// changes its Qos to a value that is incompatible with the current IDataWriter or 
+		/// when either the IDataWriter or the IDataReader has chosen to put its matching 
+		/// counterpart on its ignore-list using the DDS.IDomainParticipant.IgnoreSubscription 
+		/// or DDS.IDomainParticipant.IgnorePublication operations.
+		/// it will only be called when the relevant IDataWriterListener is installed and enabled
+		/// for the PublicationMatchedStatus.</remarks>
+		/// <param name="entityInterface">contains a pointer to the IDataWriter for which a 
+		/// match has been discovered (this is an input to the application provided by the
+		/// Data Distribution Service).</param>
+		/// <param name="status">contains the PublicationMatchedStatus object 
+		/// (this is an input to the application provided by the Data Distribution Service).</param>
+						
         void OnPublicationMatched(IDataWriter entityInterface, PublicationMatchedStatus status);
     }
-
+	/// <summary> Since a Publisher is an Entity, it has the ability to have a Listener
+	/// associated with it. In this case, the associated Listener should be of type
+	/// IPublisherListener. This interface must be implemented by the
+	/// application. A user-defined class must be provided by the application which must
+	/// extend from the IPublisherListener class.
+	/// All operations for this interface must be implemented in the user-defined class, it is
+	/// up to the application whether an operation is empty or contains some functionality.
+	/// The IPublisherListener provides a generic mechanism (actually a 
+	/// callback function) for the Data Distribution Service to notify the application of
+	/// relevant asynchronous status change events, such as a missed deadline, violation of
+	/// a QosPolicy setting, etc. The IPublisherListener is related to
+	/// changes in communication status StatusConditions.
+	/// </summary>
+	/// <example>
+	/// <code>
+	///	public class MyPublisherListener : DDS.IPublisherListener
+	///	{
+	///		public void OnPublicationMatched(DDS.IDataWriter writer, DDS.PublicationMatchedStatus status)
+	///		{
+	///			Console.WriteLine("OnPublicationMatched");
+	///		}
+	///	}
+	/// </code>
+	/// </example>
     public interface IPublisherListener : IDataWriterListener
     {
     }
-
-    public interface IDataReaderListener
+	/// <summary>Since a IDataReader is an Entity, it has the ability to have a IListener
+	/// associated with it. In this case, the associated IListener should be of type
+	/// IDataReaderListener. This interface must be implemented by the
+	/// application. A user-defined class must be provided by the application which must
+	/// extend from the IDataReaderListener class.</summary>
+	/// <remarks>All operations for this interface must be implemented in the user-defined 
+	/// class, it is up to the application whether an operation is empty or contains some 
+	/// functionality. The IDataReaderListener provides a generic mechanism (actually a 
+	/// callback function) for the Data Distribution Service to notify the application of
+	/// relevant asynchronous status change events, such as a missed deadline, violation of
+	/// a QosPolicy setting, etc. The IDataReaderListener is related to
+	/// changes in communication status IStatusConditions.</remarks>
+	/// <example><code>
+	///public class MyExampleDataReaderListener : DDS.IDataReaderListener
+	/// {
+	///	public MyExampleDataReaderListener()
+	/// 	{
+	/// 	} 
+	///	public void OnRequestedDeadlineMissed(DDS.IDataReader reader, DDS.RequestedDeadlineMissedStatus status)
+	/// 	{
+	/// 		Console.WriteLine("OnRequestedDeadlineMissed");
+	/// 	}
+	///
+	/// 	public void OnRequestedIncompatibleQos(DDS.IDataReader reader, DDS.RequestedIncompatibleQosStatus status)
+	/// 	{
+	/// 		Console.WriteLine("OnRequestedIncompatibleQos");
+	/// 	}
+	/// 
+	/// 	public void OnSampleRejected(DDS.IDataReader reader, DDS.SampleRejectedStatus status)
+	/// 	{
+	/// 		Console.WriteLine("OnSampleRejected");
+	/// 	}
+	/// 
+	/// 	public void OnLivelinessChanged(DDS.IDataReader reader, DDS.LivelinessChangedStatus status)
+	/// 	{
+	/// 		Console.WriteLine("OnLivelinessChanged");
+	/// 	}
+	/// 
+	/// 	public void OnDataAvailable(DDS.IDataReader reader)
+	/// 	{
+	/// 		Console.WriteLine("OnDataAvailableCalled");
+	/// 	}
+	/// 
+	/// 	public void OnSubscriptionMatched(DDS.IDataReader reader, DDS.SubscriptionMatchedStatus status)
+	/// 	{
+	/// 		Console.WriteLine("OnSubscriptionMatchCalled");
+	/// 	}
+	/// 
+	/// 	public void OnSampleLost(DDS.IDataReader reader, DDS.SampleLostStatus status)
+	/// 	{
+	/// 		Console.WriteLine("OnSampleLostCalled");
+	/// 	}
+	/// }
+	/// </code>
+	/// </example>
+    public interface IDataReaderListener : IListener
     {
+		
+		/// <summary>
+		/// This operation called by the Data Distribution Service when the deadline
+		/// that the IDataReader was expecting through its DeadlineQosPolicy was not
+		/// respected for a specific instance.
+		/// </summary>
+		/// <remarks>
+		/// The implementation may be left empty when this
+		/// functionality is not needed. This operation will only be called when the relevant
+		/// IDataReaderListener is installed and enabled for the
+		/// DDS.StatusKind.RequestedDeadlineMissed
+		/// </remarks>
+		/// <param name="entityInterface">contain a pointer to the IDataReader for which
+		/// the deadline was missed (this is an input to the application provided by the Data
+		/// Distribution Service). </param>
+		/// <param name="status">contain the RequestedDeadlineMissedStatus object (this is 
+		/// an input to the application  provided by the Data Distribution Service). </param>
         void OnRequestedDeadlineMissed(IDataReader entityInterface, RequestedDeadlineMissedStatus status);
+
+		/// <summary>This operation is called by the Data Distribution Service when the
+		/// DDS.StatusKind.RequestedIncompatibleQos changes. </summary>
+		/// <remarks> The implementation may be left empty when this functionality is not
+		/// needed. This operation will only be called when the relevant IDataReaderListener
+		/// is installed and enabled for the DDS.StatusKind.RequestedIncompatibleQos. The
+		/// Data Distribution Service will provide a reference to the IDataReader in the 
+		/// parameter <paramref name="entityInterface"/> and the RequestedIncompatibleQosStatus object in the 
+		/// parameter <paramref name="status"/> , for use by the application.
+		/// 
+		/// When the IDataReaderListener on the IDataReader is not enabled with the 
+		/// DDS.StatusKind.RequestedIncompatibleQos, the DDS.StatusKind.RequestedIncompatibleQos
+		/// change will propagate to the ISubscriberListener of the ISubscriber 
+		/// (if enabled) or to the IDomainParticipantListener of the 
+		/// IDomainParticipant (if enabled).
+		/// <param name="entityInterface">reader the IDataReader provided by the Data Distribution Service.</param>
+		/// <param name="status">the RequestedIncompatibleQosStatus object provided by the
+		/// Data Distribution Service.</param>
         void OnRequestedIncompatibleQos(IDataReader entityInterface, RequestedIncompatibleQosStatus status);
+
+		/// <summary>This operation called by the Data Distribution Service when a (received) 
+		/// sample has been rejected.</summary>
+		/// <remarks> Samples may be rejected by the IDataReader when it runs out of 
+		/// ResourceLimitsQosPolicy to store incoming samples. Usually this means that old samples need 
+		/// to be ‘consumed’ (for example by ‘taking’ them instead of ‘reading’ them) to make 
+		/// room for newly incoming samples.
+		/// The implementation may be left empty when this functionality is not needed. This
+		/// operation will only be called when the relevant IDataReaderListener is installed
+		/// and enabled with the DDS.StatusKind.SampleLost.</remarks>
+		/// <param name="entityInterface">contains a pointer to the IDataReader for which a sample
+		///  has been rejected (this is an input to the application provided by the 
+		/// Data Distribution Service).</param>
+		/// <param name="status"> contains the SampleRejectedStatus object (this is an 
+		/// input to the application provided by the Data Distribution Service).
         void OnSampleRejected(IDataReader entityInterface, SampleRejectedStatus status);
-        void OnLivelinessChanged(IDataReader entityInterface, LivelinessChangedStatus status);
-        void OnDataAvailable(IDataReader entityInterface);
+
+		/// <summary>
+		/// This operation is called by the Data Distribution Service when the liveliness of
+		/// one or more IDataWriter objects that were writing instances read through this
+		/// IDataReader has changed.
+		/// </summary>
+		/// <remarks>
+		/// In other words, some IDataWriter have become
+		/// “alive” or “not alive”. The implementation may be left empty when this
+		/// functionality is not needed. This operation will only be called when the relevant
+		/// IDataReaderListener is installed and enabled for the
+		/// DDS.StatusKind.LivelinessChanged.
+		/// </remarks>
+		/// <param name="entityInterface">contain a pointer to the IDataReader for which
+		/// the liveliness of one or more IDataWriter objects has changed (this is an input
+		/// to the application provided by the Data Distribution Service).
+		/// </param>
+		/// <param name="status">contain the LivelinessChangedStatus object (this
+		///  is an input to the application provided by the Data Distribution Service).
+		/// </param>
+		void OnLivelinessChanged(IDataReader entityInterface, LivelinessChangedStatus status);
+
+		/// <summary>
+		/// This operation is called by the Data Distribution Service when new data is
+		/// available for this IDataReader.
+		/// </summary>
+		/// <remarks>
+	    /// The implementation may be left empty when this functionality is not 
+		/// needed. This operation will only be called when the relevant IDataReaderListener
+		/// is installed and enabled for the DDS.StatusKind.DataAvailable.
+		/// The Data Distribution Service will provide a reference to the IDataReader in the
+		/// parameter <paramref name="entityInterface"/> for use by the application.
+		/// The statuses DDS.StatusKind.DataOnReaders and DDS.StatusKind.DataAvailable will 
+		/// occur together. In case these status changes occur, the Data Distribution 
+		/// Service will look for an attached and activated ISubscriberListener or
+		/// IDomainParticipantListener (in that order) for the enabled
+		/// DDS.StatusKind.DataOnReaders. In case the DDS.StatusKind.DataOnReaders can not be
+		/// handled, the Data Distribution Service will look for an attached and activated
+		/// IDataReaderListener, ISubscriberListener or IDomainParticipantListener for the enabled
+		/// DDS.StatusKind.DataAvailable (in that order).
+		/// Note that if DataOnReaders is called, then the Data Distribution Service
+		/// will not try to call DataAvailable, however, the application can force a call
+		/// to the IDataReader objects that have data by means of the ISubscriber.NotifyDataReaders
+		/// operation.
+		/// </remarks>
+		/// <param name="entityInterface">contain a pointer to the IDataReader for which
+		/// data is available (this is an input to the application provided by the Data
+		/// Distribution Service).</param>
+		void OnDataAvailable(IDataReader entityInterface);
+
+		/// <summary> This operation is called by the Data Distribution Service
+		///  when a new match has been discovered for the current subscription, or
+		///  when an existing match has ceased to exist. </summary>
+		/// <remarks> Usually this means that a new IDataWriter that matches
+		/// the ITopic and that has compatible Qos as the current IDataReader has 
+		/// either been discovered, or that a previously discovered IDataWriter has
+		/// ceased to be matched to the current IDataReader. A IDataWriter may cease to 
+		/// match when it gets deleted, when it changes its Qos to a value that is incompatible
+		/// with the current IDataReader or when either the IDataReader or the IDataWriter
+		/// has chosen to put its matching counterpart on its ignore-list using the
+		/// DDS.IDomainParticipant.IgnoreSubscription or DDS.IDomainParticipant.IgnorePublication operations.
+		/// 
+		/// The implementation of this IListener operation may be left empty when this
+		/// functionality is not needed: it will only be called when the relevant
+		/// IDataReaderListener is installed and enabled for the DDS.StatusKind.SubscriptionMatched.</remarks>
+		///
+		/// <param name="entityInterface">contains a pointer to the IDataReader for which
+		/// a match has been discovered (this is an input to the application provided by the
+		/// Data Distribution Service). </param>
+		/// <param name="status"> contains the SubscriptionMatchedStatus object (this
+		///  is an input to the application provided by the Data Distribution Service).</param>
+
         void OnSubscriptionMatched(IDataReader entityInterface, SubscriptionMatchedStatus status);
+
+		/// <summary>NOTE: This operation is not yet implemented. It is scheduled for a future release.</summary>
+		/// <param name="entityInterface"> the IDataReader the Listener is applied to</param>
+		/// <param name="status"> the SampleLostStatus status</param>
         void OnSampleLost(IDataReader entityInterface, SampleLostStatus status);
     }
 
+	/// <summary>Since a Subscriber is an Entity, it has the ability to have a Listener
+	/// associated with it. In this case, the associated Listener should be of type
+	/// ISubscriberListener. This interface must be implemented by the 
+	/// application. A user-defined class must be provided by the application which must
+	/// extend from the SubscriberListener class. All operations for this interface must be 
+	/// implemented in the user-defined class, it is up to the application whether an operation is
+	/// empty or contains some functionality.
+	/// The ISubscriberListener provides a generic mechanism (actually a callback function) for
+	/// the Data Distribution Service to notify the application of relevant asynchronous status 
+	/// change events, such as a missed deadline, violation of a QosPolicy setting, etc. The 
+	/// ISubscriberListener is related to changes in communication status StatusConditions.</summary>
+	/// <example><code> 
+	/// public class MySubscriberListener : DDS.ISubscriberListener
+	/// {
+	/// 	public MySubscriberListener()
+	/// 	{
+	/// 	}
+	/// 	public void OnDataOnReaders(DDS.ISubscriber entityInterface)
+	/// 	{
+	/// 		Console.WriteLine("OnDataAvailableCalled");
+	/// 	}
+	/// }
+	/// </code>
+	/// </example>
     public interface ISubscriberListener : IDataReaderListener
     {
+		/// <summary> This operation called by the Data Distribution Service when new data is
+		///  available for this Subscriber.</summary>
+		/// <remarks> The implementation may be left empty when this functionality is not needed. 
+		/// This operation will only be called when the relevant ISubscriberListener 
+		/// is installed and enabled with the DDS.StatusKind.DataOnReaders.
+		/// The statuses OnDataOnReaders() and OnDataAvailable() will occur together. 
+		/// In case these status changes occur, the Data Distribution Service will look for
+		/// an attached and activated ISubscriberListener or IDomainParticipantListener 
+		/// (in that order) for the enabled DDS.StatusKind.DataOnReaders. In case the DDS.StatusKind.DataOnReaders
+		/// can not be handled, the Data Distribution Service will look for an attached and activated
+		/// IDataReaderListener, ISubscriberListener or IDomainParticipantListener for the enabled 
+		/// DDS.StatusKind.DataAvailable (in that order). Note that if OnDataOnReaders is called, then the Data Distribution
+		/// Service will not try to call OnDataAvailable, however, the application can force a call
+		/// to the callback function OnDataAvailable of IDataReaderListener objects that have 
+		/// data by means of the Subscriber.NotifyDatareaders() operation.</remarks>
+		/// <param name="entityInterface">contain a pointer to the ISubscriber for which data is available (this is
+		/// an input to the application provided by the Data Distribution Service).</param>
         void OnDataOnReaders(ISubscriber entityInterface);
     }
-
+	///<summary>Since a DomainParticipant is an Entity, it has the ability to have a Listener
+	/// associated with it. In this case, the associated Listener should be of type
+	/// IDomainParticipantListener. This interface must be implemented by the
+	/// application. A user-defined class must be provided by the application which must
+	/// extend from the IDomainParticipantListener class.
+	/// All operations for this interface must be implemented in the user-defined class, it is
+	/// up to the application whether an operation is empty or contains some functionality.
+	/// The IDomainParticipantListener provides a generic mechanism (actually a callback function) 
+	/// for the Data Distribution Service to notify the application of relevant asynchronous status
+	/// change events, such as a missed deadline, violation of QosPolicy setting, etc. The 
+	/// IDomainParticipantListener is related to changes in communication status StatusConditions.
+	/// </summary>
+	/// <example>
+	/// <code>
+	/// public class MyExampleParticipantListener : DDS.IDomainParticipantListener
+	/// {
+	/// 	public MyExampleParticipantListener()
+	/// 	{
+	/// 	}
+	/// 	public void OnDataAvailable(DDS.IDataReader reader)
+	/// 	{
+	/// 		Console.WriteLine("OnDataAvailable");
+	/// 	}
+	/// 	public void DDS.ITopicListener.OnInconsistentTopic(DDS.ITopic entityInterface, DDS.InconsistentTopicStatus status)
+	/// 	{
+	/// 		Console.WriteLine("OnInconsistentTopic");
+	/// 	}
+	/// }
+	/// </code>
+	/// </example>
     public interface IDomainParticipantListener : ITopicListener, IPublisherListener, ISubscriberListener
     {
     }
-    
-    /// <summary>
-    /// Create a QosProvider fetching QoS configuration from the specified
-    /// URI. For instance, the following code:
-    ///
-    /// <pre><code>
-    /// QosProvider xml_file_provider("file://somewhere/on/disk/qos-config.xml");
-    /// QosProvider json_file_provider("file://somewhere/on/disk/json-config.json");
-    /// QosProvider json_http_provider("http:///somewhere.org/here/json-config.json");
-    /// </code></pre>
-    ///
-    /// The URI determines the how the Qos configuration is fetched and the
-    /// format in which it is represented. This specification requires compliant
-    /// implementations to support at least one file based configuration using
-    /// the XML syntax defined as part of the DDS for CCM specification (formal/12.02.01).
-    ///
-    /// constructor (
-    ///     in string uri,
-    ///     in string name);
-    /// </summary>
+
+    /// @cond
+    /// The interface IQosProvider is not very interesting for
+    /// the documentation. Instead of that, the QosProvider class
+    /// itself has been documented.
     public interface IQosProvider {
 
 
@@ -3273,6 +6323,7 @@ namespace DDS
         // ReturnCode_t
         // publish ();
     }
+    /// @endcond
 
 
 } // end namespace DDS

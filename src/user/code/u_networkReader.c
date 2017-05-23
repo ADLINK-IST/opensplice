@@ -1,20 +1,31 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "u_networkReader.h"
 
 #include "u__types.h"
+#include "u__object.h"
+#include "u__observable.h"
 #include "u__entity.h"
-#include "u__subscriber.h"
-#include "u_user.h"
+#include "u__reader.h"
+#include "u_subscriber.h"
+#include "u__user.h"
 
 #include "v_subscriber.h"
 #include "v_topic.h"
@@ -25,272 +36,188 @@
 
 #include "os_report.h"
 
+#define TIME_CONVERSION_REQUIRED
+
+static u_result
+u_networkReaderInit(
+    const u_networkReader _this,
+    const v_networkReader reader,
+    const u_subscriber subscriber)
+{
+    return u_readerInit(u_reader(_this),v_reader(reader),subscriber);
+}
+
+static u_result
+u__networkReaderDeinitW(
+    void *_this)
+{
+    return u__readerDeinitW(_this);
+}
+
+static void
+u__networkReaderFreeW(
+    void *_this)
+{
+    u__readerFreeW(_this);
+}
+
 u_networkReader
 u_networkReaderNew(
-    u_subscriber s,
-    const c_char *name,
-    v_readerQos qos,
-    c_bool ignoreReliabilityQoS)
+    const u_subscriber s,
+    const os_char *name,
+    const u_readerQos qos,
+    u_bool ignoreReliabilityQoS)
 {
-    u_participant p;
     u_networkReader _this = NULL;
     v_subscriber ks = NULL;
     v_networkReader kn;
     u_result result;
 
+    assert(s);
+
     if (name == NULL) {
         name = "No name specified";
     }
-    if (s != NULL) {
-        result = u_entityWriteClaim(u_entity(s), (v_entity*)(&ks));
-        if(result == U_RESULT_OK)
-        {
-            assert(ks);
-            kn = v_networkReaderNew(ks,name,qos, ignoreReliabilityQoS);
-            if (kn != NULL) {
-                p = u_entityParticipant(u_entity(s));
-                _this = u_entityAlloc(p,u_networkReader,kn,TRUE);
-                if (_this != NULL) {
-                    result = u_networkReaderInit(_this,s);
-                    if (result != U_RESULT_OK) {
-                        OS_REPORT_1(OS_ERROR, "u_networkReaderNew", 0,
-                                    "Initialisation failed. "
-                                    "For NetworkReader: <%s>.", name);
-                        u_networkReaderDeinit(_this);
-                    }
-                } else {
-                    OS_REPORT_1(OS_ERROR, "u_networkReaderNew", 0,
-                                "Create proxy failed. "
-                                "For NetworkReader: <%s>.", name);
+
+    result = u_observableWriteClaim(u_observable(s), (v_public *)(&ks), C_MM_RESERVATION_LOW);
+    if (result == U_RESULT_OK) {
+        assert(ks);
+        kn = v_networkReaderNew(ks, name, qos, ignoreReliabilityQoS);
+        if (kn != NULL) {
+            _this = u_objectAlloc(sizeof(*_this), U_NETWORKREADER, u__networkReaderDeinitW, u__networkReaderFreeW);
+            if (_this != NULL) {
+                result = u_networkReaderInit(_this,kn,s);
+                if (result != U_RESULT_OK) {
+                    OS_REPORT(OS_ERROR, "u_networkReaderNew", result,
+                                "Initialisation failed. "
+                                "For networkReader: <%s>.", name);
+                    u_objectFree(u_object(_this));
+                    _this = NULL;
                 }
-                c_free(kn);
             } else {
-                OS_REPORT_1(OS_ERROR, "u_networkReaderNew", 0,
-                            "Create kernel entity failed. "
-                            "For NetworkReader: <%s>.", name);
+                result = U_RESULT_INTERNAL_ERROR;
+                OS_REPORT(OS_ERROR, "u_networkReaderNew", result,
+                            "Create user proxy fialed. "
+                            "For networkReader: <%s>.", name);
             }
-            result = u_entityRelease(u_entity(s));
+            c_free(kn);
         } else {
-            OS_REPORT_2(OS_WARNING, "u_networkReaderNew", 0,
-                        "Claim Subscriber (0x%x) failed. "
-                        "For NetworkReader: <%s>.", s, name);
+            OS_REPORT(OS_ERROR, "u_networkReaderNew", U_RESULT_INTERNAL_ERROR,
+                        "Create kernel entity failed. "
+                        "For networkReader: <%s>.", name);
         }
+        u_observableRelease(u_observable(s), C_MM_RESERVATION_LOW);
     } else {
-        OS_REPORT_1(OS_ERROR,"u_networkReaderNew",0,
-                    "No Subscriber specified. "
-                    "For NetworkReader: <%s>", name);
+        OS_REPORT(OS_WARNING, "u_networkReaderNew", result,
+                    "Claim Subscriber failed. "
+                    "For networkReader: <%s>.", name);
     }
     return _this;
 }
 
 u_result
-u_networkReaderInit(
-    u_networkReader _this,
-    u_subscriber s)
-{
-    u_result result;
-
-    if (_this != NULL) {
-        result = u_readerInit(u_reader(_this));
-        if (result == U_RESULT_OK) {
-            _this->subscriber = s;
-            result = u_subscriberAddReader(s,u_reader(_this));
-        }
-        if (result == U_RESULT_OK) {
-            u_entity(_this)->flags |= U_ECREATE_INITIALISED;
-        }
-    } else {
-        OS_REPORT(OS_ERROR,"u_networkReaderInit",0, "Illegal parameter.");
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_networkReaderFree(
-    u_networkReader _this)
-{
-    u_result result;
-    c_bool destroy;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        destroy = u_entityDereference(u_entity(_this));
-        /* if refCount becomes zero then this call
-         * returns true and destruction can take place
-         */
-        if (destroy) {
-            if (u_entityOwner(u_entity(_this))) {
-                result = u_networkReaderDeinit(_this);
-            } else {
-                /* This user entity is a proxy, meaning that it is not fully
-                 * initialized, therefore only the entity part of the object
-                 * can be deinitialized.
-                 * It would be better to either introduce a separate proxy
-                 * entity for clarity or fully initialize entities and make
-                 * them robust against missing information.
-                 */
-                result = u_entityDeinit(u_entity(_this));
-            }
-            if (result == U_RESULT_OK) {
-                u_entityDealloc(u_entity(_this));
-            } else {
-                OS_REPORT_2(OS_WARNING,
-                            "u_networkReaderFree",0,
-                            "Operation u_networkReaderDeinit failed: "
-                            "NetworkReader = 0x%x, result = %s.",
-                            _this, u_resultImage(result));
-                u_entityUnlock(u_entity(_this));
-            }
-        } else {
-            u_entityUnlock(u_entity(_this));
-        }
-    } else {
-        OS_REPORT_2(OS_WARNING,
-                    "u_networkReaderFree",0,
-                    "Operation u_entityLock failed: "
-                    "NetworkReader = 0x%x, result = %s.",
-                    _this, u_resultImage(result));
-    }
-    return result;
-}
-
-u_result
-u_networkReaderDeinit(
-    u_networkReader _this)
-{
-    u_result result;
-
-    if (_this != NULL) {
-        result = u_subscriberRemoveReader(_this->subscriber,
-                                          u_reader(_this));
-        if (result == U_RESULT_OK) {
-            _this->subscriber = NULL;
-            result = u_readerDeinit(u_reader(_this));
-        }
-    } else {
-        OS_REPORT_1(OS_ERROR,
-                    "u_networkReaderDeinit",0,
-                    "Illegal parameter: _this = 0x%x.",
-                     _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
 u_networkReaderCreateQueue(
-    u_networkReader _this,
-    c_ulong queueSize,
-    c_ulong priority,
-    c_bool reliable,
-    c_bool P2P,
-    c_time resolution,
-    c_bool useAsDefault,
-    c_ulong *queueId,
-    const c_char *name)
+    const u_networkReader _this,
+    os_uint32 queueSize,
+    os_uint32 priority,
+    u_bool reliable,
+    u_bool P2P,
+    os_duration resolution,
+    u_bool useAsDefault,
+    os_uint32 *queueId,
+    const os_char *name)
 {
     v_networkReader kn;
     u_result result = U_RESULT_OK;
 
-    if ((_this != NULL) && (queueId != NULL)) {
-        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kn));
-        if(result == U_RESULT_OK)
-        {
-            assert(kn);
-            *queueId = v_networkReaderCreateQueue(kn,queueSize, priority,
-                                                  reliable, P2P,
-                                                  resolution, useAsDefault, name);
-            result = u_entityRelease(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING, "u_networkReaderCreateQueue", 0,
-                      "Claim networkReader failed.");
-        }
+    assert(_this);
+    assert(queueId);
+
+    result = u_observableReadClaim(u_observable(_this), (v_public *)(&kn), C_MM_RESERVATION_LOW);
+    if (result == U_RESULT_OK) {
+        assert(kn);
+        *queueId = v_networkReaderCreateQueue(kn,queueSize, priority,
+                                              reliable, P2P,
+                                              resolution, useAsDefault, name);
+        u_observableRelease(u_observable(_this), C_MM_RESERVATION_LOW);
     } else {
-        OS_REPORT(OS_ERROR, "u_networkReaderCreateQueue", 0,
-                  "Illegal parameter.");
-        result = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_WARNING, "u_networkReaderCreateQueue", result,
+                  "Claim networkReader failed.");
     }
     return result;
 }
 
 u_result
 u_networkReaderTrigger(
-    u_networkReader _this,
-    c_ulong queueId)
+    const u_networkReader _this,
+    os_uint32 queueId)
 {
     v_networkReader kn;
     u_result result = U_RESULT_OK;
 
-    if ((_this != NULL) && (queueId != 0)) {
-        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kn));
-        if(result == U_RESULT_OK)
-        {
+    assert(_this);
+
+    if (queueId != 0) {
+        result = u_observableReadClaim(u_observable(_this), (v_public *)(&kn), C_MM_RESERVATION_ZERO);
+        if (result == U_RESULT_OK) {
             assert(kn);
             v_networkReaderTrigger(kn,queueId);
-            result = u_entityRelease(u_entity(_this));
+            u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
         } else {
-            OS_REPORT(OS_WARNING, "u_networkReaderTrigger", 0,
+            OS_REPORT(OS_WARNING, "u_networkReaderTrigger", result,
                       "Claim networkReader failed.");
-         }
+        }
     } else {
-        OS_REPORT(OS_ERROR, "u_networkReaderTrigger", 0,
-                  "Illegal parameter.");
         result = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_ERROR, "u_networkReaderTrigger", result,
+                  "Illegal parameter.");
     }
     return result;
 }
-
 
 u_result
 u_networkReaderRemoteActivityDetected(
-    u_networkReader _this)
+    const u_networkReader _this)
 {
     v_networkReader kn;
     u_result result;
 
-    if (_this != NULL) {
-        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kn));
-        if(result == U_RESULT_OK)
-        {
-            assert(kn);
-            v_networkReaderRemoteActivityDetected(kn);
-	        result = u_entityRelease(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING, "u_networkReaderRemoteActivityDetected", 0,
-                  "Claim networkReader failed.");
-        }
+    assert(_this);
+
+    result = u_observableReadClaim(u_observable(_this), (v_public *)(&kn), C_MM_RESERVATION_ZERO);
+    if (result == U_RESULT_OK) {
+        assert(kn);
+        v_networkReaderRemoteActivityDetected(kn);
+        u_observableRelease(u_observable(_this),C_MM_RESERVATION_ZERO);
     } else {
-	    OS_REPORT(OS_ERROR, "u_networkReaderRemoteActivityDetected", 0,
-		  "Illegal parameter.");
-	    result = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_WARNING, "u_networkReaderRemoteActivityDetected", result,
+                  "Claim networkReader failed.");
     }
     return result;
 }
 
-
 u_result
 u_networkReaderRemoteActivityLost(
-    u_networkReader _this)
+    const u_networkReader _this)
 {
     v_networkReader kn;
     u_result result;
 
     if (_this != NULL) {
-        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kn));
+        result = u_observableReadClaim(u_observable(_this), (v_public *)(&kn), C_MM_RESERVATION_ZERO);
         if(result == U_RESULT_OK)
         {
             assert(kn);
             v_networkReaderRemoteActivityLost(kn);
-	        result = u_entityRelease(u_entity(_this));
+            u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
         } else {
-            OS_REPORT(OS_WARNING, "u_networkReaderRemoteActivityLost", 0,
+            OS_REPORT(OS_WARNING, "u_networkReaderRemoteActivityLost", result,
                   "Claim networkReader failed.");
         }
     } else {
-	    OS_REPORT(OS_ERROR, "u_networkReaderRemoteActivityLost", 0,
-		  "Illegal parameter.");
-	    result = U_RESULT_ILL_PARAM;
+        result = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_ERROR, "u_networkReaderRemoteActivityLost", result,
+          "Illegal parameter.");
     }
     return result;
 }

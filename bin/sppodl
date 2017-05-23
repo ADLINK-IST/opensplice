@@ -5,7 +5,7 @@ for i in $SPATH
 do
     PATHCHECK_FOUND="`echo $i | tr '\177' ' '`/ospl_wincmd"
     if [ -f "$PATHCHECK_FOUND" ]
-    then 
+    then
 	WINCMD=ospl_wincmd
 	break
     fi
@@ -20,6 +20,7 @@ else
   do
     case $1 in
     -m) odlpp_options="$odlpp_options $1";;
+    -l) odlpp_options="$odlpp_options $1 $2"; shift;;
     -*) options="$options $1";;
     *)
        cpp $options $1 $1.$$.odl

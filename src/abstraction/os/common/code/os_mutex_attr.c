@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -18,17 +26,20 @@
  * - scope is OS_SCOPE_SHARED
  */
 
-#include <assert.h>
-
 /** \brief Initialize mutex attribute
  *
- * Set \b mutexAttr->scopeAttr to \b OS_SCOPE_SHARED
+ * Set \b mutexAttr->scopeAttr to \b OS_SCOPE_PRIVATE
+ * Set \b mutexAttr->errorCheckingAttr to \b OS_ERRORCHECKING_DISABLED
  */
-os_result
+_Post_satisfies_(mutexAttr->scopeAttr == OS_SCOPE_PRIVATE)
+_Post_satisfies_(mutexAttr->errorCheckingAttr == OS_ERRORCHECKING_DISABLED)
+void
 os_mutexAttrInit (
-    os_mutexAttr *mutexAttr)
+    _Out_ os_mutexAttr *mutexAttr)
 {
-    assert (mutexAttr != NULL);
-    mutexAttr->scopeAttr = OS_SCOPE_SHARED;
-    return os_resultSuccess;
+    mutexAttr->scopeAttr = OS_SCOPE_PRIVATE;
+    /* By setting errorCheckingAttr to OS_ERRORCHECKING_ENABLED or
+     * OS_ERRORCHECKING_DISABLED, error-checking can easily be enabled/disabled
+     * for all mutexes that don't explicitly set the option themselves. */
+    mutexAttr->errorCheckingAttr = OS_ERRORCHECKING_DISABLED;
 }

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -126,6 +134,19 @@ int cms__participantAllDomains(char* participant, char** result);
 int cms__participantFindTopic(char* participant, char* topicName, char** result);
 
 /**
+ * Resolves the domainId of the domain the supplied participant is participating
+ * in.
+ *
+ * @param participant The XML representation of the participant. This
+ *                    participant must have been resolved or created using this
+ *                    service.
+ * @param result The string representation of the domainId.
+ *
+ * @return SOAP_OK if successfull, any other SOAP returncode if failed.
+ */
+int cms__participantGetDomainId(char* participant, char** result);
+
+/**
  * Tries to register the supplied type in the SPLICE-DDS domain where the
  * supplied participant is participating in.
  *
@@ -222,6 +243,21 @@ int cms__entityResetStatistics(char* entity, char* fieldName, char** result);
  * @return SOAP_OK if successfull, any other SOAP returncode if failed.
  */
 int cms__entityOwnedEntities(char* entity, char* filter, char** result);
+
+/**
+ * Resolves the hierarchical entity path from the specified entity
+ * to the entity denoted by the childIndex and childSerial.
+ *
+ * @param entity The XML representation of the entity used as root node to
+ *          find the entity path to the entity denoted by the childIndex and childSerial.
+ * @param childIndex The index of the child used to find (coupled with the childSerial)
+ *          in the directly/indirectly owned entities of the supplied entity
+ * @param childSerial The serial of the child
+ * @param result The xml serialized entities in order from top to bottom or empty
+ *               list if and entity denoted by the childIndex and childSerial has not been found
+ * @return SOAP_OK if successful, any other SOAP returncode if failed.
+ */
+int cms__entityGetEntityTree(char* entity, char* childIndex, char* childSerial, char** result);
 
 /**
  * Resolves the entities, which depend on the supplied entity and match
@@ -433,6 +469,30 @@ int cms__writerUnregister(char* writer, char* userData, char** result);
  */
 int cms__publisherNew(char* participant, char* name, char* qos, char** result);
 
+
+/**
+ * This operation requests that the application will begin a ‘coherent set’
+ * of modifications using DataWriter objects attached to this Publisher. The
+ * ‘coherent set’ will be completed by a matching call to
+ * cms__publisherEndCoherentChanges
+ *
+ * @param publisher The XML representation of the publisher.
+ * @param result Whether the operation succeeded.
+ * @return SOAP_OK if successfull, any other SOAP returncode if failed.
+ */
+int cms__publisherBeginCoherentChanges(char* publisher, char** result);
+
+/**
+ * This operation terminates the ‘coherent set’ initiated by the matching
+ * call to cms__publisherBeginCoherentChanges
+ *
+ * @param publisher The XML representation of the publisher.
+ * @param result Whether the operation succeeded.
+ * @return SOAP_OK if successfull, any other SOAP returncode if failed.
+ */
+int cms__publisherEndCoherentChanges(char* publisher, char** result);
+
+
 /**
  * Creates a new subscriber and attaches it to the supplied participant.
  *
@@ -445,6 +505,43 @@ int cms__publisherNew(char* participant, char* name, char* qos, char** result);
  * @return SOAP_OK if successfull, any other SOAP returncode if failed.
  */
 int cms__subscriberNew(char* participant, char* name, char* qos, char** result);
+
+
+/**
+ * Creates a new subscriber and attaches it to the supplied participant.
+ *
+ * @param subscriber The XML representation of the subscriber to resolve
+ *                   datareaders from
+ * @param mask The sample, view and instance state mask of the readers.
+ * @param result The XML representation of the list of readers or NULL if
+ *               the operation failed.
+ * @return SOAP_OK if successful, any other SOAP returncode if failed.
+ */
+int cms__subscriberGetDataReaders(char* subscriber, int mask, char** result);
+
+/**
+ * This operation indicates that the application is about to access the data
+ * samples in any of the DataReader objects attached to the Subscriber. The
+ * application is required to use this operation only if PRESENTATION
+ * QosPolicy of the Subscriber to which the DataReader belongs has the
+ * access_scope set to ‘GROUP.’
+ *
+ * @param subscriber The XML representation of the subscriber.
+ * @param result Whether the operation succeeded.
+ * @return SOAP_OK if successfull, any other SOAP returncode if failed.
+ */
+int cms__subscriberBeginAccess(char* subscriber, char** result);
+
+/**
+ * Indicates that the application has finished accessing the data samples in
+ * DataReader objects managed by the Subscriber. This operation must be used
+ * to ‘close’ a corresponding cms__subscriberBeginAccess.
+ *
+ * @param subscriber The XML representation of the subscriber.
+ * @param result Whether the operation succeeded.
+ * @return SOAP_OK if successfull, any other SOAP returncode if failed.
+ */
+int cms__subscriberEndAccess(char* subscriber, char** result);
 
 /**
  * Creates a new partition and attaches it to the supplied participant.
@@ -515,28 +612,6 @@ int cms__queryNew(char* reader, char* name, char* expression, char** result);
  * @return SOAP_OK if successfull, any other SOAP returncode if failed.
  */
 int cms__topicNew(char* participant, char* name, char* typeName, char* keyList, char* qos, char** result);
-
-/**
- * Makes the supplied publisher publish in the partitions that match the
- * supplied expression.
- *
- * @param publisher The XML representation of the publisher.
- * @param expression The partition expression for the publisher.
- * @param result The result of the publish action.
- * @return SOAP_OK if successfull, any other SOAP returncode if failed.
- */
-int cms__publisherPublish(char* publisher, char* expression, char** result);
-
-/**
- * Makes the supplied subscriber subscribe to the partitions that match the
- * supplied expression.
- *
- * @param subscriber The XML representation of the subscriber.
- * @param expression The partition expression for the subscriber.
- * @param result The result of the subscribe action.
- * @return SOAP_OK if successfull, any other SOAP returncode if failed.
- */
-int cms__subscriberSubscribe(char* subscriber, char* expression, char** result);
 
 /**
  * Creates a new waitset in the participant.

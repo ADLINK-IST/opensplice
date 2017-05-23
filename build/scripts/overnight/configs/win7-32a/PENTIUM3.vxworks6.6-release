@@ -1,0 +1,14 @@
+SETUP_TYPE=PENTIUM3.vxworks6.6.win32-release
+BUILD_DIST=yes
+BUILD_EXAMPLES=no
+KEEP_DIST=yes
+BUILD_DBT=no
+BUILD_RBT=no
+RUN_DBT=no
+RUN_RBT_SP=no
+RUN_RBT_SHM=no
+RUN_EXAMPLES_SHM=no
+RUN_EXAMPLES_SP=no
+
+. configs/`hostname`/common
+. configs/`hostname`/vxworks66-common

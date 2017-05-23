@@ -1,25 +1,34 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#include "os.h"
+#include "vortex_os.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
-#include <errno.h>
 #include <signal.h>
 #include <limits.h>
-/* #include <winioctl.h> */
 
+#include "Windows.h"
+
+#include "os_errno.h"
 #include "os_time.h"
 #include "c__base.h"
 #include "u_user.h"
@@ -33,9 +42,9 @@
 #define SLEEP_INTERVAL_SEC 0
 #define SLEEP_INTERVAL_NANO_SEC 100 * 1000 * 1000
 
-static const struct os_time SLEEP_INTERVAL = { SLEEP_INTERVAL_SEC,  SLEEP_INTERVAL_NANO_SEC};
+static const os_duration SLEEP_INTERVAL = OS_DURATION_INIT(SLEEP_INTERVAL_SEC, SLEEP_INTERVAL_NANO_SEC);
 static const char *optflags="i:l:f:s:o:n:hetTmMa";
-u_participant participant;
+static volatile int no_break = TRUE;
 
 typedef enum {
    memoryStats,
@@ -49,8 +58,7 @@ typedef enum {
  */
 static c_bool CtrlHandler(DWORD fdwCtrlType)
 {
-    u_participantFree(participant);
-    u_userDetach();
+    no_break = FALSE;
     return TRUE;
 }
 
@@ -101,7 +109,7 @@ main (int argc, char *argv[])
    char *uri = "";
    u_result ur;
    v_participantQos pqos;
-   int no_break = TRUE;
+   u_participant participant;
    char c;
    int lost;
    const char* sddsURI = NULL;
@@ -125,7 +133,8 @@ main (int argc, char *argv[])
    /* Register handler for Ctrl-C */
    SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
 
-   while (((opt = getopt (argc, argv, optflags)) != -1) && !errno) {
+   os_setErrno (0);
+   while (((opt = getopt (argc, argv, optflags)) != -1) && !os_getErrno()) {
        switch (opt) {
            case 'i':
                if (!(sscanf (optarg, "%d", &interval)) > 0) {
@@ -226,8 +235,8 @@ main (int argc, char *argv[])
                break;
        }
    }
-   if (errno) {
-       fprintf(stderr, strerror(errno));
+   if (os_getErrno()) {
+       fprintf(stderr, os_strError (os_getErrno ()));
        fprintf(stderr, "\n");
        print_usage();
        exit (-1);
@@ -270,9 +279,6 @@ main (int argc, char *argv[])
          sddsURI = uri;
       } else {
          sddsURI = os_getenv ("OSPL_URI");
-         if(!sddsURI) {
-            sddsURI = DOMAIN_NAME;
-         }
       }
       printf("Trying to open connection with the OpenSplice system using URI:\n" \
              "'%s'...\n", sddsURI);
@@ -285,7 +291,7 @@ main (int argc, char *argv[])
    if(ur == U_RESULT_OK)
    {
       pqos = u_participantQosNew(NULL);
-      participant = u_participantNew(sddsURI, 30, "mmstat", (v_qos)pqos, TRUE);
+      participant = u_participantNew(sddsURI, U_DOMAIN_ID_ANY, 30, "mmstat", (const u_participantQos)pqos, TRUE);
       u_participantQosFree(pqos);
 
       if(participant)
@@ -316,13 +322,13 @@ main (int argc, char *argv[])
                switch (selectedAction)
                {
                case memoryStats:
-                  ur = u_entityAction(u_entity(participant), monitor_msAction, msData);
+                  ur = u_observableAction(u_observable(participant), monitor_msAction, msData);
                   break;
                case typeRefCount:
-                  ur = u_entityAction(u_entity(participant), monitor_trcAction, trcData);
+                  ur = u_observableAction(u_observable(participant), monitor_trcAction, trcData);
                   break;
                case objectRefCount:
-                  ur = u_entityAction(u_entity(participant), monitor_orcAction, orcData);
+                  ur = u_observableAction(u_observable(participant), monitor_orcAction, orcData);
                   break;
                }
                fflush (stdout);
@@ -381,7 +387,7 @@ main (int argc, char *argv[])
                if (no_break && interval)
                {
                   delay -= 100;
-                  os_nanoSleep (SLEEP_INTERVAL);
+                  (void)os_sleep (SLEEP_INTERVAL);
                }
             }
             else
@@ -414,7 +420,7 @@ main (int argc, char *argv[])
             printf("\nConnection with domain lost. The OpenSplice system has\n" \
                    "probably been shut down.\n");
          }
-         u_participantFree(participant);
+         u_objectFree (u_object (participant));
       }
       else
       {
@@ -422,7 +428,6 @@ main (int argc, char *argv[])
          printf("Is the OpenSplice system running?\n");
          OS_REPORT(OS_ERROR,"mmstat", 0, "Creation of participant failed.");
       }
-      u_userDetach();
       switch (selectedAction)
       {
       case memoryStats:

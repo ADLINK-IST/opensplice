@@ -68,13 +68,13 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 #include "os_stdlib.h"
 #include "os_heap.h"
+#include "os_errno.h"
 #include "idl.h"
 #include "idl_extern.h"
 #include "drv_private.h"
 #include "drv_link.h"
 #include <stdio.h>
 #include <fcntl.h>
-#include <errno.h>    /// fpm 5/2/95: for error handling
 
 #include "symtbl.h"
 #include "include.h"
@@ -88,7 +88,6 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 # include <sys/types.h>
 # include <sys/stat.h>
 # include "io.h"
-# include <errno.h>
 
 // you must delete the returned char * !
 char * doubleslashes (const char * path)
@@ -249,7 +248,7 @@ void DRV_pre_proc(const char *myfile)
       idl_global->set_stripped_filename(
          (*DRV_FE_new_UTL_String)(""));
       idl_global->set_real_filename((*DRV_FE_new_UTL_String)(""));
-      idl_global->set_read_from_stdin(I_TRUE);
+      idl_global->set_read_from_stdin(true);
    }
    else
    {
@@ -269,7 +268,7 @@ void DRV_pre_proc(const char *myfile)
       FILE *fd = fopen(myfile, "r");
       inf = fd;
       inname = myfile;
-      idl_global->set_read_from_stdin(I_FALSE);
+      idl_global->set_read_from_stdin(false);
       idl_global->set_stripped_filename(
          (*DRV_FE_new_UTL_String)(DRV_stripped_name(myfile)));
    }

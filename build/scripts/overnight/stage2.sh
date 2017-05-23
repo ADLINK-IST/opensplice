@@ -221,7 +221,18 @@ run_examples()
             then
                 echo "RUN_EXAMPLES/${EXRUNTYPE_UPPER}=PASS" >> $RESFILE
             else
-                echo "RUN_EXAMPLES/${EXRUNTYPE_UPPER}=FAIL" >> $RESFILE
+                if [ -f  $LOGDIR/examples/run_$EXRUNTYPE/totals.log ]
+                then
+                    PASS=`grep 'Examples Passed' $LOGDIR/examples/run_$EXRUNTYPE/totals.log | awk -F'= ' '{ print $2 }'`
+                    FAIL=`grep 'Examples Failed' $LOGDIR/examples/run_$EXRUNTYPE/totals.log | awk -F'= ' '{ print $2 }'`
+
+                    EX_TMP_INFO="P:${PASS}_F:${FAIL}"
+                    EX_INFO=`echo $EX_TMP_INFO | tr -d ' '`
+
+                    echo "RUN_EXAMPLES/${EXRUNTYPE_UPPER}=$EX_INFO" >> $RESFILE
+                else
+                    echo "RUN_EXAMPLES/${EXRUNTYPE_UPPER}=FAIL" >> $RESFILE
+                fi
             fi
 
             if [ "$VALGRIND" = "yes" ]
@@ -242,7 +253,20 @@ run_examples()
             fi
             # Remove valgrind generated files
             SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
-            find "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/" \
+
+            #Need to source the RELEASE info in order to get the details required for the 
+            #setting of the VORTEX_INSTALL_DIR
+            . $DEPWORKDIR/release_info/RELEASE
+
+            EDITION=
+
+            if [ -d "$WORKDIR/$EXAMPLE_INSTALL_DIR/Vortex$VORTEX_VERSION/Device/VortexOpenSpliceRTE" ]
+            then
+                EDITION=RTE
+            fi
+
+            VORTEX_INSTALL_DIR=Vortex$VORTEX_VERSION/Device/VortexOpenSplice$EDITION/$PACKAGE_VERSION
+            find "$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/HDE/$SHORTSETUP/" \
                 -type f \( -name 'vg_*.txt' -o -name '*.log' \) -exec rm {} \;
         fi
     else
@@ -255,7 +279,15 @@ run_examples()
 
 $IBSDIR/dcps_build $ARGS > $LOGDIR/build.txt 2>&1
 BUILD_STAGE_WORKED=$?
-if test_build $LOGDIR/build.txt $BUILD_STAGE_WORKED
+
+#For now we will still do this but we will not use it to decide
+#if the build has failed or not.  This is because it parses logs for
+#various expressions but not all expressions are covered and sometimes
+#a build fails for example because the word "error" is in output message
+#but it's not actually an error.
+test_build $LOGDIR/build.txt $BUILD_STAGE_WORKED
+
+if [ $BUILD_STAGE_WORKED = 0 ]
 then
     echo "BUILD=PASS" >> $RESFILE
 else
@@ -471,8 +503,7 @@ then
         $IBSDIR/dcps_build_examples $ARGS > $LOGDIR/examples/build/build_results.txt 2>&1
         BUILD_EXAMPLES_STAGE_WORKED=$?
         test_example_build $LOGDIR/examples/build
-        BUILD_EXAMPLES_LOGS_OK=$?
-        if [ $BUILD_EXAMPLES_STAGE_WORKED = 0 -a $BUILD_EXAMPLES_LOGS_OK = 0 ]
+        if [ $BUILD_EXAMPLES_STAGE_WORKED = 0 ]
         then
             echo "BUILD/EXAMPLES=PASS" >> $RESFILE
         else

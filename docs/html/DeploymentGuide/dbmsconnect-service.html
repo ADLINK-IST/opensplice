@@ -1,0 +1,510 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>10. The DbmsConnect Service &mdash; The OpenSplice Deployment Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The OpenSplice Deployment Guide" href="index.html" />
+    <link rel="next" title="11. Tools" href="tools.html" />
+    <link rel="prev" title="9. The Tuner Service" href="tuner-service.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tools.html" title="11. Tools"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tuner-service.html" title="9. The Tuner Service"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-dbmsconnect-service">
+<span id="id1"></span><h1>10. The DbmsConnect Service<a class="headerlink" href="#the-dbmsconnect-service" title="Permalink to this headline">¶</a></h1>
+<p><em>The OpenSplice DbmsConnect Module is a pluggable service of OpenSplice that
+provides a seamless integration of the real-time DDS and the non-/near-real-time
+enterprise DBMS domains. It complements the advanced distributed information
+storage features of the OpenSplice Persistence Module (and</em> vice versa*).*</p>
+<p>Where (relational) databases play an essential role to maintain and deliver typically
+non- or near-real-time ‘enterprise’ information in mission systems, OpenSplice
+targets the real-time edge of the spectrum of distributing and delivering <em>‘the right
+information at the right place at the right time’</em> by providing a Quality-Of-Service
+(QoS)-aware ‘real-time information backbone’.</p>
+<p>Changing expectations about the accessibility of information from
+remote/non-real-time information-stores and local/real-time sources lead to the
+challenge of lifting the boundaries between both domains. The DbmsConnect
+module of OpenSplice answers this challenge in the following ways:</p>
+<ul class="simple">
+<li>Transparently ‘connects’ the real-time DDS ‘information backbone’ to one
+or more ‘enterprise’ databases</li>
+<li>Allows both enterprise as well as embedded/real-time applications to access
+and share data in the most ‘natural’ way</li>
+<li>Allows OpenSplice to fault-tolerantly replicate enterprise information persisted
+in multiple relational databases in real-time</li>
+<li>Provides a pure ODBC/JDBC SQL interface towards real-time information <em>via</em>
+its transparent DbmsConnection</li>
+<li>Overcomes the lack of communication-control (QoS features controlling real-time
+behavior) of ‘talking’ to a remote DBMS</li>
+<li>Overcomes the lack of traditional 3GL and 4GL tools and features in processing
+information directly from a DDS backbone</li>
+<li>Allows for data-logging and analysis of real-time data persisted in a DBMS</li>
+<li>Aligns multiple and dispersed heterogeneous databases within a distributed
+system using the QoS-enabled data-distribution features of OpenSplice</li>
+</ul>
+<p>The DbmsConnect module is unique in its dynamic configurability to achieve
+maximum performance:</p>
+<ul class="simple">
+<li>Dynamic DDS Partition/Topic selection and configurable content-filters to
+exchange exactly ‘the right’ information critical for performance and
+resource-challenged users</li>
+<li>Dynamic creation and mapping of DBMS database-tables and DDS topics to
+allow seamless data-exchange, even with legacy data models</li>
+<li>Selectable update-triggering per table/topic allowing for both real-time
+responsiveness as well as high-volume ‘batch transfers’</li>
+<li>Works with ANY third-party SQL:1999-compatible DBMS system with an
+ODBC interface</li>
+</ul>
+<p>The DbmsConnect module thus effectively eliminates traditional ‘barriers’ of the
+standalone technologies by facilitating seamless data-exchange between any ODBC
+compliant (SQL)database and the OpenSplice real-time DDS
+‘information-backbone’. Applications in traditionally separated mission-system
+domains can now exploit and leverage each other&#8217;s information in a highly efficient
+(based upon ‘current interest’ as supported by the publish/subscribe paradigm of
+DDS), non-disruptive (obeying the QoS demands as expressed for data-items in
+DDS) and distributed service-oriented paradigm.</p>
+<p>OpenSplice DbmsConnect is based on SQL:1999 and utilizes ODBC 2.x to
+interface with third-party DBMS systems. Interoperability has been verified with
+MySQL 5.0 and Microsoft SQL Server 2008. With limited strict conformance of
+most RDBMS’s to both the SQL as well as the ODBC standard, support for other
+customer-chosen DBMS systems may require a porting activity of the
+DbmsConnect service.</p>
+<p>As SQL tables have no support for unbounded sequences and sequences of complex
+types, mapping such DDS_Types to tables is not supported.</p>
+<div class="section" id="usage">
+<span id="id2"></span><h2>10.1. Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>In order to understand the configuration and working of the DbmsConnect service,
+some basic concepts and use-cases will be covered here.</p>
+</div>
+<div class="section" id="dds-and-dbms-concepts-and-types-mapping">
+<span id="id3"></span><h2>10.2. DDS and DBMS Concepts and Types Mapping<a class="headerlink" href="#dds-and-dbms-concepts-and-types-mapping" title="Permalink to this headline">¶</a></h2>
+<p>The concepts within DDS and DBMS are related to each other
+as listed in the table <a class="reference internal" href="#dds-to-dbms-mapping-concepts">DDS to DBMS mapping: concepts</a>.</p>
+<div class="line-block" id="dds-to-dbms-mapping-concepts">
+<div class="line"><strong>DDS to DBMS mapping: concepts</strong></div>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="57%" />
+<col width="43%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">DDS</th>
+<th class="head">DBMS</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Topic</td>
+<td>Table</td>
+</tr>
+<tr class="row-odd"><td>Type</td>
+<td>Table structure</td>
+</tr>
+<tr class="row-even"><td>Instance</td>
+<td>Primary key</td>
+</tr>
+<tr class="row-odd"><td>Sample</td>
+<td>Row</td>
+</tr>
+<tr class="row-even"><td>DataWriter.write()</td>
+<td>INSERT or UPDATE</td>
+</tr>
+<tr class="row-odd"><td>DataWriter.dispose()</td>
+<td>DELETE</td>
+</tr>
+</tbody>
+</table>
+<p>The primitive types available in both domains map onto each other
+as listed in the table <a class="reference internal" href="#dds-to-dbms-mapping-primitive-types">DDS to DBMS mapping: primitive types</a>.</p>
+<div class="line-block" id="dds-to-dbms-mapping-primitive-types">
+<div class="line"><strong>DDS to DBMS mapping: primitive types</strong></div>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="40%" />
+<col width="60%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">DDS IDL type</th>
+<th class="head">DBMS column type (SQL:1999)</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>boolean</td>
+<td>BOOLEAN/TINYINT</td>
+</tr>
+<tr class="row-odd"><td>short</td>
+<td>SMALLINT</td>
+</tr>
+<tr class="row-even"><td>unsigned short</td>
+<td>SMALLINT</td>
+</tr>
+<tr class="row-odd"><td>long</td>
+<td>INTEGER</td>
+</tr>
+<tr class="row-even"><td>unsigned long</td>
+<td>INTEGER</td>
+</tr>
+<tr class="row-odd"><td>long long</td>
+<td>BIGINT</td>
+</tr>
+<tr class="row-even"><td>unsigned long long</td>
+<td>BIGINT</td>
+</tr>
+<tr class="row-odd"><td>float</td>
+<td>REAL</td>
+</tr>
+<tr class="row-even"><td>double</td>
+<td>DOUBLE</td>
+</tr>
+<tr class="row-odd"><td>octet</td>
+<td>BINARY(1)</td>
+</tr>
+<tr class="row-even"><td>char</td>
+<td>CHAR(1)</td>
+</tr>
+<tr class="row-odd"><td>wchar</td>
+<td>CHAR(1)</td>
+</tr>
+<tr class="row-even"><td>string&lt;length&gt;</td>
+<td>VARCHAR(&lt;length&gt;)</td>
+</tr>
+<tr class="row-odd"><td>wstring&lt;length&gt;</td>
+<td>VARCHAR(&lt;length&gt;)</td>
+</tr>
+</tbody>
+</table>
+<div class="line-block" id="dds-to-dbms-mapping-complex-composite-types">
+<div class="line"><strong>DDS to DBMS mapping: complex (composite) types</strong></div>
+</div>
+<p>The mapping of complex (composite) types is as follows:</p>
+<ul class="simple">
+<li>Struct
+- Flattened out
+- Each member maps to a column with fully scoped name</li>
+<li>Union
+- Flattened out
+- Additional <tt class="docutils literal"><span class="pre">#DISCRIMINATOR#</span></tt> column</li>
+<li>Enumeration
+- An <tt class="docutils literal"><span class="pre">INTEGER</span></tt> typed column with fully scoped name</li>
+<li>Array and bounded sequence
+- Flattened out
+- <tt class="docutils literal"><span class="pre">[index]</span></tt> appended to fully scoped column name</li>
+</ul>
+</div>
+<div class="section" id="general-dbmsconnect-concepts">
+<span id="id4"></span><h2>10.3. General DbmsConnect Concepts<a class="headerlink" href="#general-dbmsconnect-concepts" title="Permalink to this headline">¶</a></h2>
+<p>The DbmsConnect service can bridge data from the DDS domain to the DBMS
+domain and vice versa. In DDS, data is represented by <em>topics</em>, while in DBMS data
+is represented by <em>tables</em>. With DbmsConnect, a mapping between a topic and a table
+can be defined.</p>
+<p>Because not all topic-table mappings have to be defined explicitly (DbmsConnect
+can do matching when the names are the same), <em>namespaces</em> can be defined. A
+namespace specifies or limits the context of interest and allows for easy
+configuration of all mappings falling (or defined in) a namespace. The context of
+interest for bridging data from DDS to DBMS, consists of a partition- and
+topicname expression. When bridging data from DBMS to DDS, the context of
+interest consists of a table-name expression.</p>
+<p>A mapping thus defines the relationship of a table in DBMS with a topic in DDS
+and can be used to explicitly map a topic and table with different names, or define
+settings for a specific mapping only.</p>
+</div>
+<div class="section" id="dds-to-dbms-use-case">
+<span id="id5"></span><h2>10.4. DDS to DBMS Use Case<a class="headerlink" href="#dds-to-dbms-use-case" title="Permalink to this headline">¶</a></h2>
+<p>When data in the DDS domain has to be available in the DBMS domain, the
+DbmsConnect service can be configured to facilitate that functionality.
+A topic in DDS will be mapped to a table in DBMS.</p>
+<div class="section" id="dds-to-dbms-scenario">
+<span id="id6"></span><h3>10.4.1. DDS to DBMS Scenario<a class="headerlink" href="#dds-to-dbms-scenario" title="Permalink to this headline">¶</a></h3>
+<p>In the DDS domain, we have topics <em>DbmsTopic</em> and <em>DbmsDdsTopic</em> that we want
+to make available to a database application. The database application expects the
+data from topic <em>DbmsTopic</em> to be available in an existing table with name
+<em>DbmsTable</em>. Data from the <em>DbmsDdsTopic</em> topic can be just forwarded to a table
+(that does not yet exist) with the same name. This is shown in
+<a class="reference internal" href="#the-dds-to-dbms-scenario">The DDS to DBMS scenario</a>.</p>
+<p class="centered" id="the-dds-to-dbms-scenario">
+<strong><strong>The DDS to DBMS scenario</strong></strong></p><a class="reference internal image-reference" href="_images/DDStoDBMS_scenario.png"><img alt="The DDS to DBMS scenario" class="align-center" src="_images/DDStoDBMS_scenario.png" style="height: 50mm;" /></a>
+</div>
+<div class="section" id="dds-to-dbms-configuration">
+<span id="id7"></span><h3>10.4.2. DDS to DBMS Configuration<a class="headerlink" href="#dds-to-dbms-configuration" title="Permalink to this headline">¶</a></h3>
+<p>The configuration for the DbmsConnect service that fulfils the needs
+of the scenario is given in the listing below.</p>
+<div class="highlight-xml"><div class="highlight"><pre> 1   ...
+ 2   &lt;DbmsConnectService name=&quot;dbmsconnect&quot;&gt;
+ 3      &lt;DdsToDbms&gt;
+ 4         &lt;NameSpace partition=&quot;*&quot; topic=&quot;Dbms*&quot;
+ 5            dsn=&quot;DSN&quot; usr=&quot;USR&quot; pwd=&quot;PWD&quot; odbc=&quot;ODBC&quot;&gt;
+ 6            &lt;Mapping topic=&quot;DbmsTopic&quot; table=&quot;DbmsTable&quot;/&gt;
+ 7         &lt;/NameSpace&gt;
+ 8      &lt;/DdsToDbms&gt;
+ 9   &lt;/DbmsConnectService&gt;
+10   ...
+</pre></div>
+</div>
+<div class="section" id="dds-to-dbms-configuration-explanation">
+<span id="id8"></span><h4>10.4.2.1. DDS to DBMS Configuration Explanation<a class="headerlink" href="#dds-to-dbms-configuration-explanation" title="Permalink to this headline">¶</a></h4>
+<p>On line <em>3</em> a DdsToDbms element is specified in order to configure data bridging
+from DDS to DBMS. On line <em>4</em>, a NameSpace is defined that has interest in all
+topics starting with &#8220;Dbms&#8221; in all partitions. Both the partition- and
+topic-expression make use of the <a href="#id9"><span class="problematic" id="id10">*</span></a>-wildcard (matching any sequence of characters).
+These wildcards match both topics described in the scenario, but will possibly
+match more. If the mapping should be explicitly limited to both topics, the
+topic-expression can be changed to <tt class="docutils literal"><span class="pre">DbmsTopic,DbmsDdsTopic</span></tt>.</p>
+<p>The DbmsConnect service will implicitly map all matching topics to an equally
+named table in the DBMS. While this is exactly what we want for the
+<tt class="docutils literal"><span class="pre">DbmsDdsTopic</span></tt>, the database application expects the data from the <tt class="docutils literal"><span class="pre">DbmsTopic</span></tt>
+topic to be mapped to table DbmsTable. This is explicitly configured in the
+Mapping on line <em>6</em>. If the tables already exist and the table-definition matches
+the topic definition, the service will use that table. If a table does not exist,
+it will be created by the service. If a table exists, but doesn’t match the topic
+definition, the mapping fails.</p>
+</div>
+</div>
+</div>
+<div class="section" id="dbms-to-dds-use-case">
+<span id="id11"></span><h2>10.5. DBMS to DDS Use Case<a class="headerlink" href="#dbms-to-dds-use-case" title="Permalink to this headline">¶</a></h2>
+<p>When data in the DBMS domain has to become available in the DDS domain, this
+can be achieved by configuring the DbmsConnect service to map a table to a topic.</p>
+<div class="section" id="dbms-to-dds-scenario">
+<span id="id12"></span><h3>10.5.1. DBMS to DDS Scenario<a class="headerlink" href="#dbms-to-dds-scenario" title="Permalink to this headline">¶</a></h3>
+<p>In the DBMS, we have tables <tt class="docutils literal"><span class="pre">DbmsTable</span></tt> and <tt class="docutils literal"><span class="pre">DbmsDdsTopic</span></tt> that we want to
+make available in the dbmsPartition partition in DDS. The database
+application writes the data we want available in topic <tt class="docutils literal"><span class="pre">DbmsTopic</span></tt> to the table
+named <tt class="docutils literal"><span class="pre">DbmsTable</span></tt>. Data from the <tt class="docutils literal"><span class="pre">DbmsDdsTopic</span></tt> table can be just forwarded to
+the identically-named topic.</p>
+<p>When the DbmsConnect service is started, mapped tables may already contain data.
+For the <tt class="docutils literal"><span class="pre">DbmsDdsTopic</span></tt> table, we are not interested in that data. For the
+<tt class="docutils literal"><span class="pre">DbmsTable</span></tt> table however, we would like all data available to the database
+application to be available to the DDS applications too. This scenario is
+the <em>reverse</em> (all arrows reversed) situation of the scenario shown in
+<a class="reference internal" href="#the-dds-to-dbms-scenario">The DDS to DBMS scenario</a>.</p>
+</div>
+<div class="section" id="dbms-to-dds-configuration">
+<span id="id13"></span><h3>10.5.2. DBMS to DDS Configuration<a class="headerlink" href="#dbms-to-dds-configuration" title="Permalink to this headline">¶</a></h3>
+<p>The configuration for the DbmsConnect service that fulfils the needs of the scenario
+is given in the listing below.</p>
+<div class="highlight-xml"><div class="highlight"><pre>11   ...
+13   &lt;DbmsConnectService name=&quot;dbmsconnect&quot;&gt;
+14      &lt;DbmsToDds publish_initial_data=&quot;false&quot;&gt;
+15         &lt;NameSpace partition=&quot;dbmsPartition&quot; table=&quot;Dbms*&quot;
+16            dsn=&quot;DSN&quot; usr=&quot;USR&quot; pwd=&quot;PWD&quot; odbc=&quot;ODBC&quot;&gt;
+17            &lt;Mapping topic=&quot;DbmsTopic&quot; table=&quot;DbmsTable&quot;
+18               publish_initial_data=&quot;true&quot;/&gt;
+19         &lt;/NameSpace&gt;
+20      &lt;/DbmsToDds&gt;
+21   &lt;/DbmsConnectService
+22   ...
+</pre></div>
+</div>
+<div class="section" id="dbms-to-dds-configuration-explanation">
+<span id="id14"></span><h4>10.5.2.1. DBMS to DDS Configuration Explanation<a class="headerlink" href="#dbms-to-dds-configuration-explanation" title="Permalink to this headline">¶</a></h4>
+<p>On line <em>13</em> a <tt class="docutils literal"><span class="pre">DdsToDbms</span></tt> element is specified in order to configure data bridging
+from DBMS to DDS. On line <em>14</em>, a <tt class="docutils literal"><span class="pre">NameSpace</span></tt> is defined that has interest in all
+tables starting with &#8220;Dbms&#8221;. The table-expression makes use of the <tt class="docutils literal"><span class="pre">*</span></tt> wildcard
+(matching any sequence of characters). For this scenario, a single target partition is
+specified. If needed, a partition expression containing multiple partitions or
+wildcards can be used. For example when the DDS system is divided in two
+partitions (to support applications running in a ‘simulation’- and a ‘real’-world)
+and applications in both partition need access to the data from the DBMS.</p>
+<p>The default setting for the <tt class="docutils literal"><span class="pre">publish_initial_data</span></tt> attribute is true. Because we
+only want initially available data to be published for the <tt class="docutils literal"><span class="pre">DbmsTable-DbmsTopic</span></tt>
+mapping, we define the default for all namespaces to be <tt class="docutils literal"><span class="pre">false</span></tt> on line <em>13</em>. That
+setting will be inherited by all underlying elements, but can be overridden. The
+explicit Mapping specified on line <em>16</em> maps the table to the differently-named topic.
+On line <em>17</em>, the <tt class="docutils literal"><span class="pre">publish_initial_data</span></tt> attribute is explicitly set to <tt class="docutils literal"><span class="pre">true</span></tt>,
+overriding that set at line <em>13</em>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="replication-use-case">
+<span id="id15"></span><h2>10.6. Replication Use Case<a class="headerlink" href="#replication-use-case" title="Permalink to this headline">¶</a></h2>
+<p>A specific application of data bridging from DDS to DBMS and DBMS to DDS is
+replication of database (tables). Replication requires some specific configuration.
+The basic configuration is covered in this use case.</p>
+<div class="section" id="replication-scenario">
+<span id="id16"></span><h3>10.6.1. Replication Scenario<a class="headerlink" href="#replication-scenario" title="Permalink to this headline">¶</a></h3>
+<p>We have a two database servers running on different hosts. The table <tt class="docutils literal"><span class="pre">DbmsTable</span></tt>
+should be available on both database servers and changes should be sent both ways.
+This scenario is shown in <a class="reference internal" href="#the-replication-scenario">The Replication scenario</a>, where the dashed arrows show
+the transparent role of DDS in this scenario.</p>
+<p class="centered" id="the-replication-scenario">
+<strong><strong>The Replication scenario</strong></strong></p><a class="reference internal image-reference" href="_images/Replication_scenario.png"><img alt="The Replication scenario" class="align-center" src="_images/Replication_scenario.png" style="height: 50mm;" /></a>
+</div>
+<div class="section" id="replication-configuration">
+<span id="id17"></span><h3>10.6.2. Replication Configuration<a class="headerlink" href="#replication-configuration" title="Permalink to this headline">¶</a></h3>
+<p>The configuration for the DbmsConnect service for both hosts, that fulfils the needs
+of the scenario, is given in the listing below.</p>
+<div class="highlight-xml"><div class="highlight"><pre>22   ...
+23   &lt;DbmsConnectService name=&quot;dbmsconnect&quot;&gt;
+24      &lt;DdsToDbms replication_mode=&quot;true&quot;&gt;
+25         &lt;NameSpace partition=&quot;replication&quot; topic=&quot;DbmsTable&quot;
+26            dsn=&quot;DSN&quot; usr=&quot;REPLUSR&quot; pwd=&quot;PWD&quot; odbc=&quot;ODBC&quot;&gt;
+27         &lt;/NameSpace&gt;
+28      &lt;/DdsToDbms&gt;
+29      &lt;DbmsToDds replication_user=&quot;REPLUSR&quot;&gt;
+30         &lt;NameSpace partition=&quot;replication&quot; table=&quot;DbmsTable&quot;
+31            dsn=&quot;DSN&quot; usr=&quot;USR&quot; pwd=&quot;PWD&quot; odbc=&quot;ODBC&quot;&gt;
+32         &lt;/NameSpace&gt;
+33      &lt;/DbmsToDds&gt;
+34   &lt;/DbmsConnectService
+35   ...
+</pre></div>
+</div>
+<div class="section" id="replication-configuration-explanation">
+<span id="id18"></span><h4>10.6.2.1. Replication Configuration Explanation<a class="headerlink" href="#replication-configuration-explanation" title="Permalink to this headline">¶</a></h4>
+<p>The configuration for the replication scenario is symmetric in that it can be the same
+for both hosts. The basic idea is simple: configure a mapping from DDS to DBMS
+and from DBMS to DDS for the same table-topic pair within a partition (analogous to
+both the <a class="reference internal" href="#dds-to-dbms-use-case">DDS to DBMS Use Case</a> and the <a class="reference internal" href="#dbms-to-dds-use-case">DBMS to DDS Use Case</a>).</p>
+<p>While this (intuitive) cyclic definition would work, more configuration is
+needed to support this use case properly. In order to prevent modifications from
+causing (cyclic) updates, the DbmsConnect service needs to be able to
+distinguish between data that is modified as part of a replication scenario and data
+that is changed by other sources.</p>
+<p>For the DDS to DBMS mapping, replication data is identified by identification
+information of the sending node. The <tt class="docutils literal"><span class="pre">DdsToDbms</span></tt> part of the service is put to
+replication mode in line <em>24</em>, which lets the service ignore all data transmitted
+by the node on which the service itself runs.</p>
+<p>For the DBMS to DDS mapping, a special database user has to be used, that is only
+used by the DbmsConnect service, in order to be able to distinguish data from
+different sources. The database user that is used in the <tt class="docutils literal"><span class="pre">DdsToDbms</span></tt> mapping has to
+be excluded from update-cascading. This is specified on line <em>29</em> in the
+<tt class="docutils literal"><span class="pre">replication_user</span></tt> attribute. This means that all data that is inserted in the table
+by the user with the username specified in the <tt class="docutils literal"><span class="pre">replication_user</span></tt> attribute will
+be ignored. So the user specified at line <em>26</em> has to be the same as the user specified
+on line <em>29</em>.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">10. The DbmsConnect Service</a><ul>
+<li><a class="reference internal" href="#usage">10.1. Usage</a></li>
+<li><a class="reference internal" href="#dds-and-dbms-concepts-and-types-mapping">10.2. DDS and DBMS Concepts and Types Mapping</a></li>
+<li><a class="reference internal" href="#general-dbmsconnect-concepts">10.3. General DbmsConnect Concepts</a></li>
+<li><a class="reference internal" href="#dds-to-dbms-use-case">10.4. DDS to DBMS Use Case</a><ul>
+<li><a class="reference internal" href="#dds-to-dbms-scenario">10.4.1. DDS to DBMS Scenario</a></li>
+<li><a class="reference internal" href="#dds-to-dbms-configuration">10.4.2. DDS to DBMS Configuration</a><ul>
+<li><a class="reference internal" href="#dds-to-dbms-configuration-explanation">10.4.2.1. DDS to DBMS Configuration Explanation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dbms-to-dds-use-case">10.5. DBMS to DDS Use Case</a><ul>
+<li><a class="reference internal" href="#dbms-to-dds-scenario">10.5.1. DBMS to DDS Scenario</a></li>
+<li><a class="reference internal" href="#dbms-to-dds-configuration">10.5.2. DBMS to DDS Configuration</a><ul>
+<li><a class="reference internal" href="#dbms-to-dds-configuration-explanation">10.5.2.1. DBMS to DDS Configuration Explanation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#replication-use-case">10.6. Replication Use Case</a><ul>
+<li><a class="reference internal" href="#replication-scenario">10.6.1. Replication Scenario</a></li>
+<li><a class="reference internal" href="#replication-configuration">10.6.2. Replication Configuration</a><ul>
+<li><a class="reference internal" href="#replication-configuration-explanation">10.6.2.1. Replication Configuration Explanation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tuner-service.html"
+                        title="previous chapter">9. The Tuner Service</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tools.html"
+                        title="next chapter">11. Tools</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/dbmsconnect-service.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tools.html" title="11. Tools"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tuner-service.html" title="9. The Tuner Service"
+             >previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

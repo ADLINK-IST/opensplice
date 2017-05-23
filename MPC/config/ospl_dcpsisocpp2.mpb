@@ -1,0 +1,30 @@
+// -*- MPC -*-
+// $Id:$
+
+project : ospl_ddsuser, ospl_base {
+  libs += dcpsisocpp2
+  requires += ospl_dcpsisocpp2
+
+  // BOOST_ROOT always there 'just in case' & for user re-builds
+  // Don't remove the trailing /. It can end in -I""
+  includes += $(BOOST_ROOT)/.
+}
+
+feature(isocpp2_cxx11) {
+  specific (make) {
+    extracppflags += -std=c++0x
+  }
+}
+
+feature(!src_co) {
+   includes += $(OSPL_HOME)/include/dcps/C++/isocpp2
+   includes += $(OSPL_HOME)/include/dcps/C++/SACPP
+}
+
+feature(src_co) {
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/isocpp2/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/common/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/common/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/sacpp/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/sacpp/bld/$(SPLICE_TARGET)
+}

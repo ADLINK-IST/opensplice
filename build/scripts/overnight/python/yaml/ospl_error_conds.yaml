@@ -1,0 +1,16 @@
+parseconditions:
+    desc: OSPL-Error LogParser Conditions
+
+    file: ospl-error.log
+    parsecontents: no
+    type: remote
+    normalisejavalog: no
+    normaliseisocpplog: no
+
+    product: OpenSpliceDDS
+
+    conditions: 
+        - name: Example Line Test
+          type: line
+          inst: 0
+          line: Replace with actual string

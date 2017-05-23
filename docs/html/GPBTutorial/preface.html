@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1. Preface &mdash; OpenSplice GPB Tutorial</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice GPB Tutorial" href="index.html" />
+    <link rel="next" title="2. Introduction" href="introduction.html" />
+    <link rel="prev" title="DDS Java and C++ API Google Protocol Buffers Tutorial" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="DDS Java and C++ API Google Protocol Buffers Tutorial"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="preface">
+<span id="id1"></span><h1>1. Preface<a class="headerlink" href="#preface" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="about-the-vortex-opensplice-google-protocol-buffers-tutorial">
+<h2>1.1. About the Vortex OpenSplice Google Protocol Buffers Tutorial<a class="headerlink" href="#about-the-vortex-opensplice-google-protocol-buffers-tutorial" title="Permalink to this headline">¶</a></h2>
+<p>This <em>OpenSplice GPB Tutorial</em> is included with the OpenSplice DDS
+Documentation Set.</p>
+<p>It describes how to use the Vortex OpenSplice <strong>ISO C++ API</strong> and <strong>Java 5 API</strong> in combination
+with <strong>Google Protocol Buffers</strong> (<em>GPB</em>) data models.</p>
+<p>This Tutorial assumes that the user is already familiar with the
+DDS API as well as the OpenSplice product.</p>
+<p><em>Intended Audience</em></p>
+<p>This Guide is intended for anyone who wants to use
+<strong>Google Protocol Buffers for DDS</strong> in developing and running
+applications with Vortex OpenSplice.</p>
+<p><em>Further Information</em></p>
+<p>Detailed information about Vortex OpenSplice itself
+is provided in the <em>User</em> and <em>Deployment</em> Guides,
+which also give details of where additional information
+can be found, such as the OpenSplice FAQs, Knowledge Base,
+bug reports, <em>etc.</em></p>
+</div>
+<div class="section" id="conventions">
+<h2>1.2. Conventions<a class="headerlink" href="#conventions" title="Permalink to this headline">¶</a></h2>
+<p>The icons shown below are used to help readers
+to quickly identify information relevant to their
+specific use of Vortex OpenSplice.</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><em>Icon</em></th>
+<th class="head"><em>Meaning</em></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></td>
+<td>Item of special significance or where caution needs to be taken.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></td>
+<td>Item contains helpful hint or special information.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></td>
+<td>Information applies to Windows (<em>e.g.</em> XP, 2003, Windows 7) only.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a></td>
+<td>Information applies to Unix-based systems (<em>e.g.</em> Solaris) only.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></td>
+<td>Information applies to Linux-based systems (<em>e.g.</em> Ubuntu) only.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-c.png"><img alt="c" src="_images/icon-c.png" style="height: 6mm;" /></a></td>
+<td>C language specific.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></td>
+<td>C++ language specific.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-csharp.png"><img alt="csharp" src="_images/icon-csharp.png" style="height: 6mm;" /></a></td>
+<td>C# language specific.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></td>
+<td>Java language specific.</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1. Preface</a><ul>
+<li><a class="reference internal" href="#about-the-vortex-opensplice-google-protocol-buffers-tutorial">1.1. About the Vortex OpenSplice Google Protocol Buffers Tutorial</a></li>
+<li><a class="reference internal" href="#conventions">1.2. Conventions</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">DDS Java and C++ API Google Protocol Buffers Tutorial</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="next chapter">2. Introduction</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/preface.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="DDS Java and C++ API Google Protocol Buffers Tutorial"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

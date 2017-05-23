@@ -1,0 +1,48 @@
+parseconditions:
+    desc: OSPL-Info LogParser Conditions
+
+    file: ospl-info.log
+    parsecontents: yes
+    type: remote
+
+    product: OpenSpliceDDS
+
+    conditions:
+        - name: Failed To Set Buffer Size
+          type: line
+          inst: 0
+          line: failed to set requested socket receive buffer size to 1000000
+
+        - name: Reliable Operation
+          type: line
+          inst: 0
+          line: Reliable operation of this channel is no longer guaranteed
+
+        - name: OpenSpliceDDS Warnings
+          type: block
+          threshold: 0
+          inst: 0
+          linecount: 7
+          contiglines: |
+                 'Report      : WARNING'
+                 'Date        : '
+                 'Description : '
+                 'Node        : '
+                 'Process     : '
+                 'Thread      : '
+                 'Internals   : '
+          # Whitelist: the following warnings are tolerated:
+          ignorelines: |
+                 'Description : Missed heartbeat for node '
+                 'Description : No heartbeats received from Node '
+                 'Description : * not responding or no heartbeats received, removing it from the reliable protocol'
+                 'Description : * has not acked message'
+                 'Description : * writer * considering reader * non-responsive'
+                 'Description : thread * failed to make progress'
+                 'Description : thread * once again made progress'
+                 'Description : Detected Unmatching QoS Policy: * for Topic '
+                 'Description : Detected termination of process * that failed to clean up its resources before terminating. Attempting to clean up its resources now'
+                 'Description : Service * did not terminate within serviceTerminatePeriod, sending KILL signal'
+                 'Description : Already tried to resend * message * times'
+                 'Description : using network interface * selected arbitrarily from: *'
+                 'Description : Failed to send * message * '

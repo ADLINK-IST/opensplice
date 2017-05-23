@@ -1,0 +1,28 @@
+#!/bin/bash
+
+#
+# Make STE mirror
+#
+
+. ${OSPL_HOME}/install/make_functions
+
+echo "* Build SPLICE STE"
+
+set_ste_envs "$@"
+remove_ste_mirror
+create_ste_mirror
+
+echo "*   Prepare STE for target ${STE_subdir}"
+install_ste_target
+if [ $? == 0 ]
+then
+    echo "*   STE prepared for target ${STE_subdir} Ready"
+else
+    echo "*   Error building STE."
+    exit 1
+fi
+
+if [ -z "$OSPL_OUTER_HOME" ]
+then
+    echo "* SPLICE STE Ready"
+fi

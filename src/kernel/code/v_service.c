@@ -1,15 +1,23 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#include "os.h"
+#include "vortex_os.h"
 #include "os_report.h"
 
 #include "v__serviceManager.h"
@@ -29,26 +37,12 @@
 #include "v__leaseManager.h"
 #include "v_public.h"
 
-#define VSERVICESTATE_NAME        "kernelModule::v_serviceState"
+#define VSERVICESTATE_NAME        "kernelModuleI::v_serviceState"
 #define VSERVICESTATE_NAME_LENGTH 14
 
 /**************************************************************
  * private functions
  **************************************************************/
-static void
-v_serviceWatchSplicedaemon(
-    v_service service)
-{
-    v_kernel k;
-    v_serviceManager m;
-    v_serviceState splicedState;
-
-    k = v_objectKernel(service);
-    m = v_getServiceManager(k);
-    splicedState = v_serviceManagerGetServiceState(m, V_SPLICED_NAME);
-    v_observableAddObserver(v_observable(splicedState), v_observer(service), NULL);
-}
-
 
 static void
 addAllGroups(
@@ -63,7 +57,7 @@ addAllGroups(
     groups = v_groupSetSelectAll(groupSet);
     g = v_group(c_iterTakeFirst(groups));
     while (g != NULL) {
-        c_insert(newGroups, g);
+        ospl_c_insert(newGroups, g);
         c_free(g);
         g = v_group(c_iterTakeFirst(groups));
     }
@@ -75,38 +69,34 @@ addAllGroups(
  **************************************************************/
 v_service
 v_serviceNew(
-    v_serviceManager manager,
+    v_kernel kernel,
     const c_char *name,
     const c_char *extStateName,
+    v_serviceType serviceType,
     v_participantQos qos,
-    v_statistics stats)
+    c_bool enable)
 {
-    v_kernel k;
-    v_service s;
+    v_service s = NULL;
     v_participantQos q;
 
-    assert(C_TYPECHECK(manager, v_serviceManager));
+    assert(C_TYPECHECK(kernel, v_kernel));
     /* Do not C_TYPECHECK qos parameter, since it might be allocated on heap! */
     assert(name != NULL);
 
-    k = v_objectKernel(manager);
-    /* do no use cast method on qos parameter,
-     * it is most likely allocated on heap! */
-    q = v_participantQosNew(k, (v_participantQos)qos);
-    if (q == NULL) {
-        OS_REPORT(OS_ERROR, "v_serviceNew", 0,
-                  "Service not created: inconsistent qos");
-        s = NULL;
-    } else {
-        s = v_service(v_objectNew(k, K_SERVICE));
-        v_serviceInit(s, manager, name, extStateName, q, stats);
-        c_free(q);
-        /* always add, even when s->state==NULL, since v_participantFree always
-           removes the participant.*/
-        v_addParticipant(k, v_participant(s));
-        if (s->state == NULL) {
-            v_serviceFree(s);
-            s = NULL;
+    if (v_participantQosCheck(qos) == V_RESULT_OK) {
+        q = v_participantQosNew(kernel, (v_participantQos)qos);
+        if (q == NULL) {
+            OS_REPORT(OS_ERROR, "v_serviceNew", V_RESULT_INTERNAL_ERROR,
+                "Creation of service <%s> failed. Cannot create participant QoS.",
+                name);
+        } else {
+            s = v_service(v_objectNew(kernel, K_SERVICE));
+            v_serviceInit(s, name, extStateName, serviceType, q, enable);
+            c_free(q);
+            if (s->state == NULL) {
+                v_serviceFree(s);
+                s = NULL;
+            }
         }
     }
 
@@ -116,25 +106,32 @@ v_serviceNew(
 void
 v_serviceInit(
     v_service service,
-    v_serviceManager manager,
     const c_char *name,
     const c_char *extStateName,
+    v_serviceType serviceType,
     v_participantQos qos,
-    v_statistics stats)
+    c_bool enable)
 {
     c_char *typeName;
-    v_duration lp = {300, 0};
+    os_duration lp = 300*OS_DURATION_SECOND;
     v_kernel kernel;
+    v_serviceManager manager;
 
     assert(service != NULL);
+    assert(serviceType != V_SERVICETYPE_NONE);
     assert(C_TYPECHECK(service, v_service));
     assert(C_TYPECHECK(qos, v_participantQos));
     assert(name != NULL);
 
     kernel = v_objectKernel(service);
-    v_participantInit(v_participant(service), name, qos, stats, TRUE);
+    manager = v_getServiceManager(kernel);
+
+    /* v_participantInit writes the DCPSParticipant and CMParticipant topics, but
+       it downcasts to v_service to extract serviceType, and hence needs it available. */
+    service->serviceType = serviceType;
+    v_participantInit(v_participant(service), name, qos, enable);
     service->state = v_serviceManagerRegister(manager, service, extStateName);
-    service->lease = v_leaseNew(kernel, lp);
+    service->lease = v_leaseMonotonicNew(kernel, lp);
     if(service->lease)
     {
         v_result result;
@@ -149,13 +146,13 @@ v_serviceInit(
         {
             c_free(service->lease);
             service->lease = NULL;
-            OS_REPORT_1(OS_ERROR, "v_service", 0,
+            OS_REPORT(OS_FATAL, "v_service", result,
                 "A fatal error was detected when trying to register the liveliness lease "
                 "to the liveliness lease manager of the kernel. The result code was %d.", result);
         }
     } else
     {
-        OS_REPORT(OS_ERROR, "v_service", 0,
+        OS_REPORT(OS_FATAL, "v_service", V_RESULT_INTERNAL_ERROR,
             "Unable to create a liveliness lease! Most likely not enough shared "
             "memory available to complete the operation.");
     }
@@ -181,9 +178,9 @@ v_serviceInit(
             {
                 c_free(service->lease);
                 service->lease = NULL;
-                OS_REPORT_3(OS_ERROR, "v_service", 0,
+                OS_REPORT(OS_FATAL, "v_service", result,
                     "A fatal error was detected when trying to register the spliced's liveliness lease "
-                    "to the lease manager of participant %p (%s). The result code was %d.", service, name, result);
+                    "to the lease manager of participant %p (%s). The result code was %d.", (void*)service, name, result);
             }
         }
         c_iterFree(participants);
@@ -196,13 +193,15 @@ v_serviceInit(
             extStateName = VSERVICESTATE_NAME;
         }
         if (strcmp(typeName, extStateName) == 0) {
+            /* Splicedaemon may not observer itself! */
             if (strcmp(name, V_SPLICED_NAME) != 0) {
-                /* Splicedaemon may not observer itself! */
-                v_serviceWatchSplicedaemon(service);
+                v_serviceState splicedState;
+                splicedState = v_serviceManagerGetServiceState(manager, V_SPLICED_NAME);
+                (void)v_observableAddObserver(v_observable(splicedState), v_observer(service), NULL);
             }
         } else {
-            OS_REPORT_2(OS_ERROR, "v_service",
-                0, "Requested state type (%s) differs with existing state type (%s)",
+            OS_REPORT(OS_ERROR, "v_service",
+                V_RESULT_ILL_PARAM, "Requested state type (%s) differs with existing state type (%s)",
                 extStateName, typeName);
             c_free(service->state);
             service->state = NULL;
@@ -225,18 +224,9 @@ void
 v_serviceDeinit(
     v_service service)
 {
-    v_kernel kernel;
-
     assert(service != NULL);
     assert(C_TYPECHECK(service, v_service));
 
-    c_free(service->state);
-    service->state = NULL;
-    c_free((c_object)v_observer(service)->eventData);
-    kernel = v_objectKernel(service);
-    v_leaseManagerDeregister(kernel->livelinessLM, service->lease);
-    c_free(service->lease);
-    service->lease = NULL;
     v_participantDeinit(v_participant(service));
 }
 
@@ -249,41 +239,16 @@ v_serviceNotify(
     v_event event,
     c_voidp userData)
 {
-    v_group group;
-
     assert(service != NULL);
     assert(C_TYPECHECK(service, v_service));
 
     if (event != NULL) {
-        switch (event->kind) {
-        case V_EVENT_SERVICESTATE_CHANGED:
-        break;
-        case V_EVENT_NEW_GROUP:
-            group = v_group(event->userData);
-
-            if ((group != NULL) && (v_observer(service)->eventData != NULL)) {
-                /* Update new group admin */
-                c_insert((c_set)v_observer(service)->eventData, group);
+        if (event->kind == V_EVENT_NEW_GROUP) {
+            if ((event->data) && (v_observer(service)->eventData)) {
+                ospl_c_insert((c_set)v_observer(service)->eventData, event->data);
             }
-            /* This allows receiving the event by means of a waitset.*/
-            v_observableNotify(v_observable(service), event);
-        break;
-        case V_EVENT_HISTORY_DELETE:
-            /* This allows receiving the event by means of a waitset.*/
-            v_observableNotify(v_observable(service), event);
-        break;
-        case V_EVENT_HISTORY_REQUEST:
-            /* This allows receiving the event by means of a waitset.*/
-            v_observableNotify(v_observable(service), event);
-        break;
-        case V_EVENT_CONNECT_WRITER:
-        case V_EVENT_PERSISTENT_SNAPSHOT:
-            /* This allows receiving the event by means of a waitset.*/
-            v_observableNotify(v_observable(service), event);
-        break;
-        default:
-        break;
         }
+        v_observableNotify(v_observable(service), event);
     }
     v_participantNotify(v_participant(service), event, userData);
 }
@@ -299,7 +264,7 @@ v_serviceGetName(
 
     if ((service != NULL) && (service->state != NULL)) {
         assert(C_TYPECHECK(service, v_service));
-        name = v_entity(service->state)->name;
+        name = service->state->name;
     }
     return (const c_char *)name;
 }
@@ -322,21 +287,21 @@ v_serviceChangeState(
         switch(newState)
         {
             case STATE_OPERATIONAL:
-                OS_REPORT_1(OS_INFO, "v_serviceChangeState", 0,
+                OS_REPORT(OS_INFO, "v_serviceChangeState", 0,
                     "++++++++++++++++++++++++++++++++++++++++++++++++" OS_REPORT_NL
                     "++ The service '%s' is now operational. " OS_REPORT_NL
                     "++++++++++++++++++++++++++++++++++++++++++++++++",
                     v_serviceGetName(service));
                 break;
             case STATE_TERMINATED:
-                OS_REPORT_1(OS_INFO, "v_serviceChangeState", 0,
+                OS_REPORT(OS_INFO, "v_serviceChangeState", 0,
                     "================================================" OS_REPORT_NL
                     "== The service '%s' has now terminated. "OS_REPORT_NL
                     "================================================",
                     v_serviceGetName(service));
                 break;
             case STATE_DIED:
-                OS_REPORT_1(OS_INFO, "v_serviceChangeState", 0,
+                OS_REPORT(OS_INFO, "v_serviceChangeState", 0,
                     "================================================" OS_REPORT_NL
                     "== The service '%s' has died. "OS_REPORT_NL
                     "================================================",
@@ -360,8 +325,7 @@ v_serviceFillNewGroups(
 {
     c_set newGroups;
     C_STRUCT(v_event) ge;
-    v_group g, oldGroup;
-    c_iter oldGroups;
+    v_group g;
     v_kernel kernel;
 
     assert(service != NULL);
@@ -371,28 +335,16 @@ v_serviceFillNewGroups(
     newGroups = (c_voidp)c_setNew(v_kernelType(kernel, K_GROUP));
 
     if (newGroups != NULL) {
-        addAllGroups(newGroups, kernel->groupSet);
         v_observerLock(v_observer(service));
+        addAllGroups(newGroups, kernel->groupSet);
         g = v_group(c_read(newGroups)); /* need a group for the event */
-
-        if(v_observer(service)->eventData != NULL){
-            oldGroups = ospl_c_select((c_set)v_observer(service)->eventData, 0);
-            oldGroup = v_group(c_iterTakeFirst(oldGroups));
-
-            while(oldGroup){
-                newGroups = c_setInsert(newGroups, oldGroup);
-                c_free(oldGroup);
-                oldGroup = v_group(c_iterTakeFirst(oldGroups));
-            }
-            c_iterFree(oldGroups);
-        }
         /* just for safety, when assertion are compiled out, free the prev set */
         c_free((c_object)v_observer(service)->eventData);
         v_observer(service)->eventData = (c_voidp)newGroups;
 
         ge.kind = V_EVENT_NEW_GROUP;
-        ge.source = v_publicHandle(v_public(kernel));
-        ge.userData = g;
+        ge.source = v_observable(kernel);
+        ge.data = g;
         v_observerNotify(v_observer(service), &ge, NULL);
         v_observerUnlock(v_observer(service));
         c_free(g);
@@ -429,12 +381,12 @@ v_serviceTakeNewGroups(
 void
 v_serviceRenewLease(
     v_service service,
-    v_duration leasePeriod)
+    os_duration leasePeriod)
 {
     assert(service != NULL);
     assert(C_TYPECHECK(service, v_service));
 
     v_observerLock(v_observer(service));
-    v_leaseRenew(service->lease, &leasePeriod);
+    v_leaseRenew(service->lease, leasePeriod);
     v_observerUnlock(v_observer(service));
 }

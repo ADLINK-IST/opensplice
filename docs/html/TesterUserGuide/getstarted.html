@@ -1,0 +1,475 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Getting Started &mdash; Test Tool User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Test Tool User Guide" href="index.html" />
+    <link rel="next" title="4. Familiarization Exercises" href="familiarization.html" />
+    <link rel="prev" title="2. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="familiarization.html" title="4. Familiarization Exercises"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="getting-started">
+<span id="id1"></span><h1>3. Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<p><em>This section describes how to use the Tester’s main features.</em></p>
+<div class="section" id="starting-and-stopping-tester">
+<span id="id2"></span><h2>3.1. Starting and Stopping Tester<a class="headerlink" href="#starting-and-stopping-tester" title="Permalink to this headline">¶</a></h2>
+<p>Tester may be started by running the OpenSplice Tester application or from a
+command prompt and oslptest with the following command line arguments:</p>
+<dl class="docutils">
+<dt><strong>-?</strong> or <strong>-help</strong></dt>
+<dd>Display the command line options</dd>
+<dt><strong>-ns</strong></dt>
+<dd>No splash screen</dd>
+<dt><strong>-uri &lt;uri&gt;</strong></dt>
+<dd>URI to connect</dd>
+<dt><strong>-nac</strong></dt>
+<dd>No auto-connect upon application start</dd>
+<dt><strong>-s &lt;path to script&gt;</strong></dt>
+<dd>Script to run</dd>
+<dt><strong>-b &lt;path to batch file&gt;</strong></dt>
+<dd>Batch script to run</dd>
+<dt><strong>-noplugins</strong></dt>
+<dd>Do not process plugins</dd>
+<dt><strong>-plugindir &lt;dir&gt;</strong></dt>
+<dd>Extra plugin directory to search</dd>
+<dt><strong>-headless</strong></dt>
+<dd>Run script or batch script without the GUI</dd>
+<dt><strong>-rc &lt;port&gt;</strong></dt>
+<dd>Enable remote control (via &lt;port&gt;)</dd>
+<dt><strong>-dsl &lt;language&gt;</strong></dt>
+<dd>Default script language</dd>
+<dt><strong>-l &lt;path to topic file&gt;</strong></dt>
+<dd>Load topics from file</dd>
+</dl>
+<p>(These preferences can also be set from the menu <em>File &gt; Preferences</em>.)</p>
+</div>
+<div class="section" id="starting-local-connection">
+<h2>3.2. Starting - Local Connection<a class="headerlink" href="#starting-local-connection" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a>
+On Windows, use either of the shortcuts created by the installer (on the desktop and
+in <em>Start &gt; Programs</em>) to start Tester.</p>
+<p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a>
+On Linux go to the installation directory and execute the command:</p>
+<div class="highlight-python"><div class="highlight"><pre>%  ospltest
+</pre></div>
+</div>
+<p>This will start Tester with separate windows.</p>
+</div>
+<div class="section" id="starting-remote-connection">
+<span id="id3"></span><h2>3.3. Starting - Remote Connection<a class="headerlink" href="#starting-remote-connection" title="Permalink to this headline">¶</a></h2>
+<p>To connect to a remote platform, execute the command:</p>
+<div class="highlight-python"><div class="highlight"><pre>%  ospltest -uri http://perf1.perfnet.ptnl:50000
+</pre></div>
+</div>
+<p>(Port number 50000 is the default port in a standard DDS shared-memory
+deployment.)</p>
+</div>
+<div class="section" id="stopping">
+<h2>3.4. Stopping<a class="headerlink" href="#stopping" title="Permalink to this headline">¶</a></h2>
+<p>Stop Tester either by using the menu option <em>File &gt; Exit</em> or by clicking
+on the main window <em>`close&#8217;</em> button <a class="reference internal" href="_images/138_icon_close.png"><img alt="close" src="_images/138_icon_close.png" style="height: 3mm;" /></a>.</p>
+</div>
+<div class="section" id="remotely-controlling-tester">
+<h2>3.5. Remotely Controlling Tester<a class="headerlink" href="#remotely-controlling-tester" title="Permalink to this headline">¶</a></h2>
+<p>Starting Tester in remote control mode <em>e.g.</em> <tt class="docutils literal"><span class="pre">&quot;ospltest</span> <span class="pre">-rc</span> <span class="pre">&lt;port&gt;</span>
+<span class="pre">-headless&quot;</span></tt> allows Tester to be controlled from another application,
+shell script, <em>etc.</em>.</p>
+<p>Use cases for remote control include:</p>
+<ul class="simple">
+<li>Using Tester in combination with a commercial or proprietary test system;</li>
+<li>Within a continuous build and test environment this would provide more
+options to control DDS testing in combination with other application-specific
+testing;</li>
+<li>In an integrated development environment like Eclipse using Junit for testing.</li>
+</ul>
+<p>A Tester instance is controlled <em>via</em> a TCP/IP connection. Text-based commands
+are sent over this connection.</p>
+<p>The remote control application can be used by executing the command:</p>
+<div class="highlight-python"><div class="highlight"><pre>ospltestrc [-p &lt;port&gt;] [-h &lt;host&gt;] &lt;command&gt;
+</pre></div>
+</div>
+<p>where</p>
+<blockquote>
+<div><p><tt class="docutils literal"><span class="pre">&lt;host&gt;</span></tt> is the host name of the machine that the Tester you wish
+to control is running on</p>
+<p><tt class="docutils literal"><span class="pre">&lt;port&gt;</span></tt> is the port that Tester is listening on (specified by
+the <tt class="docutils literal"><span class="pre">-rc</span></tt> option when Tester was started)</p>
+<p><tt class="docutils literal"><span class="pre">&lt;command&gt;</span></tt> is the command to send to Tester.</p>
+</div></blockquote>
+<p>The remote control commands are:</p>
+<dl class="docutils">
+<dt><strong>stop</strong></dt>
+<dd>Terminate the Tester instance</dd>
+<dt><strong>batch &lt;batch name&gt;</strong></dt>
+<dd>Execute the batch with <tt class="docutils literal"><span class="pre">&lt;batch</span> <span class="pre">name&gt;</span></tt></dd>
+<dt><strong>script &lt;script name&gt;</strong></dt>
+<dd>Execute the script with <tt class="docutils literal"><span class="pre">&lt;script</span> <span class="pre">name&gt;</span></tt></dd>
+<dt><strong>scenario &lt;scenario&gt;</strong></dt>
+<dd>Execute a scenario which is provided in full text
+on a single line (new lines <tt class="docutils literal"><span class="pre">&quot;\n&quot;</span></tt> are replaced by
+<tt class="docutils literal"><span class="pre">&quot;&amp;nbsp&quot;</span></tt>)</dd>
+<dt><strong>connect &lt;optional uri&gt;</strong></dt>
+<dd>Connect to a specified or the default Domain uri</dd>
+</dl>
+<p><strong>disconnect</strong></p>
+<p>When a command is completed the following is reported on a single line:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">Done</span></tt></div></blockquote>
+<p>When a batch is executed, for each scenario two lines are returned to the test
+controller:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">Scenario:</span> <span class="pre">&lt;index&gt;</span> <span class="pre">of</span> <span class="pre">&lt;count&gt;</span> <span class="pre">execute:</span> <span class="pre">&lt;scenario</span> <span class="pre">name&gt;</span></tt>
+<tt class="docutils literal"><span class="pre">Scenario:</span> <span class="pre">&lt;index&gt;</span> <span class="pre">result:</span> <span class="pre">&lt;result&gt;</span></tt></div></blockquote>
+</div>
+<div class="section" id="trying-out-tester">
+<h2>3.6. Trying out Tester<a class="headerlink" href="#trying-out-tester" title="Permalink to this headline">¶</a></h2>
+<p>Once you have started Tester, you can get a feeling for how to use it with a few
+simple exercises:</p>
+<ul class="simple">
+<li>Create a default reader for some of the registered topics.</li>
+<li>Double-click one of the samples and see all the fields of the topic.</li>
+<li>Browse through the list of samples using the arrow keys.</li>
+<li>Select a topic in the sample list and press <em>[F9]</em>, then select a field for
+display in the sample list.</li>
+<li>Select another topic (it need not be of the same type as the one displayed
+in the topic instance window) and press <em>[F2]</em> for a comparison between the
+two topics.</li>
+<li>Select a topic in the sample list or in the topic list and press <em>[F4]</em>,
+then in the <tt class="docutils literal"><span class="pre">Write</span></tt> topic window set the fields to the desired value
+and write or dispose the topic.</li>
+<li>Choose <em>File &gt; Dump</em> on the sample list and save the information of the
+topic samples in the sample list to a file.</li>
+<li>Have a try with the scripting, it can make your life a lot easier
+(especially with recurring tasks).</li>
+</ul>
+<p>The rest of this section describes the features that you will use when
+you try these exercises.</p>
+</div>
+<div class="section" id="tester-windows">
+<h2>3.7. Tester Windows<a class="headerlink" href="#tester-windows" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="main-window">
+<h3>3.7.1. Main Window<a class="headerlink" href="#main-window" title="Permalink to this headline">¶</a></h3>
+<p>Once started, Tester presents the user with the following main window.</p>
+<p class="centered" id="tester-main-window">
+<strong><strong>Tester main window</strong></strong></p><a class="reference internal image-reference" href="_images/001_mainwindow.png"><img alt="Tester main window" class="align-center" src="_images/001_mainwindow.png" style="width: 145mm;" /></a>
+<p>The Command Menu (below) provides direct access to most of the Tester
+capabilities.</p>
+<p class="centered" id="tester-command-menu">
+<strong><strong>Tester command menu</strong></strong></p><a class="reference internal image-reference" href="_images/002_commandmenu.png"><img alt="Tester command menu" class="align-center" src="_images/002_commandmenu.png" style="width: 145mm;" /></a>
+<p>The Tester main window has three sub-frames:</p>
+<ol class="arabic simple">
+<li><em>Main</em> tabbed frame for selecting items from a list, such as topics,
+scenarios, and readers or writers.</li>
+<li><em>Working area</em> frame where you will do most of your work such as
+editing scenarios, investigate samples, and capturing statistics</li>
+<li><em>Debug</em> frame used to debug scripts and macros.</li>
+</ol>
+</div>
+<div class="section" id="overview-windows">
+<h3>3.7.2. Overview Windows<a class="headerlink" href="#overview-windows" title="Permalink to this headline">¶</a></h3>
+<p>The user can select the type of resource to work with by selecting tabs. These can be
+the Services and Topics in the system, the Scripts and Macros they have installed, or
+the Readers for the current Tester timeline.</p>
+<p class="centered" id="tester-resource-tabs">
+<strong><strong>Tester resource tabs</strong></strong></p><a class="reference internal image-reference" href="_images/003_tabs.png"><img alt="Tester resource tabs" class="align-center" src="_images/003_tabs.png" style="width: 90mm;" /></a>
+<div class="section" id="services">
+<h4>3.7.2.1. Services<a class="headerlink" href="#services" title="Permalink to this headline">¶</a></h4>
+<p>Lists the installed services. This is a read-only list.</p>
+<p class="centered" id="tester-services-list">
+<strong><strong>Tester Services list</strong></strong></p><a class="reference internal image-reference" href="_images/004_tab_services.png"><img alt="Tester Services list" class="align-center" src="_images/004_tab_services.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="scripts">
+<h4>3.7.2.2. Scripts<a class="headerlink" href="#scripts" title="Permalink to this headline">¶</a></h4>
+<p>The script list provides a convenient way of selecting an existing script for editing
+or execution. The list is filled at startup or when clicking the <em>Refresh</em> button. All
+files in the specified script directory are added to the list. The script directory (or
+directories) are specified in the preference page.</p>
+<p>A script can be selected in the script editor by single-clicking the entry in the table.
+When the entry is double-clicked the script is loaded in the script editor and
+executed.</p>
+<p class="centered" id="tester-scripts-tab">
+<strong><strong>Tester scripts tab</strong></strong></p><a class="reference internal image-reference" href="_images/005_tab_scripts.png"><img alt="Tester scripts tab" class="align-center" src="_images/005_tab_scripts.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="macros">
+<h4>3.7.2.3. Macros<a class="headerlink" href="#macros" title="Permalink to this headline">¶</a></h4>
+<p>The Macros List is similar to the Scripts List.</p>
+<p class="centered" id="tester-macros-tab">
+<strong><strong>Tester macros tab</strong></strong></p><a class="reference internal image-reference" href="_images/006_tab_macros.png"><img alt="Tester macros tab" class="align-center" src="_images/006_tab_macros.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="topics">
+<h4>3.7.2.4. Topics<a class="headerlink" href="#topics" title="Permalink to this headline">¶</a></h4>
+<p>The topics list displays the list of registered topics.</p>
+<p class="centered" id="tester-topics-tab">
+<strong><strong>Tester topics tab</strong></strong></p><a class="reference internal image-reference" href="_images/007_tab_topics.png"><img alt="Tester topics tab" class="align-center" src="_images/007_tab_topics.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="readers">
+<h4>3.7.2.5. Readers<a class="headerlink" href="#readers" title="Permalink to this headline">¶</a></h4>
+<p>The readers list displays the readers (and implicit topic writers) for the current
+Tester timeline. The default name for a reader is the same as the name of the topic it
+is subscribed to. For each reader the count of received samples (as available in the
+sample list) is displayed. A check box is provided for changing the read state or the
+show state. When <em>Read</em> is unchecked the reader stops reading topics. When <em>Show</em> is
+unchecked the topic of that topic will not be displayed in the sample list.</p>
+<p class="centered" id="tester-readers-tab">
+<strong><strong>Tester readers tab</strong></strong></p><a class="reference internal image-reference" href="_images/008_tab_readers.png"><img alt="Tester readers tab" class="align-center" src="_images/008_tab_readers.png" style="width: 90mm;" /></a>
+</div>
+</div>
+<div class="section" id="working-windows">
+<h3>3.7.3. Working Windows<a class="headerlink" href="#working-windows" title="Permalink to this headline">¶</a></h3>
+<p>These windows support testing activities.</p>
+<div class="section" id="sample-list-window">
+<h4>3.7.3.1. Sample List Window<a class="headerlink" href="#sample-list-window" title="Permalink to this headline">¶</a></h4>
+<p>Used to view and generate samples for the current timeline (Readers).</p>
+<p class="centered" id="id4">
+<strong><strong>Sample list window</strong></strong></p><a class="reference internal image-reference" href="_images/009_samplelist.png"><img alt="Sample list window" class="align-center" src="_images/009_samplelist.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="statistics-window">
+<h4>3.7.3.2. Statistics Window<a class="headerlink" href="#statistics-window" title="Permalink to this headline">¶</a></h4>
+<p>The statistics window provides statistics for the topics in use,
+like write count, number of alive topics, <em>etc.</em>.  Statistics
+are gathered from the local copy of OpenSplice. To gather statistics
+from remote nodes, use OpenSplice Tuner.</p>
+<p class="centered" id="id5">
+<strong><strong>Statistics window</strong></strong></p><a class="reference internal image-reference" href="_images/010_statistics.png"><img alt="Statistics window" class="align-center" src="_images/010_statistics.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="browser-window">
+<h4>3.7.3.3. Browser Window<a class="headerlink" href="#browser-window" title="Permalink to this headline">¶</a></h4>
+<p>The browser window provides information about nodes, executables,
+participants (applications), readers, writers and topics. Information
+can be browsed by selecting a node/executable participant or a topic.
+When an executable or participant is selected the reader and writer
+lists (subscribed and published topics) for that executable/participant
+are shown. Together with the topic name concise information about the
+QoS and partition is shown. When the mouse cursor is hovered over the
+QoS value the hint will show detailed information about the QoS.</p>
+<p>When a topic is selected the list of participant readers (subscribe)
+and writers (publish) are shown, together with concise information
+about the QoS and partition. By selecting a row in either the reader
+of writer list the compatible readers/writers will be shown in green
+and non-compatible (by QoS/partition) readers/writers will be shown
+in red.</p>
+<p class="centered" id="tester-browser-window">
+<strong><strong>Tester browser window</strong></strong></p><a class="reference internal image-reference" href="_images/011_browser.png"><img alt="Tester browser window" class="align-center" src="_images/011_browser.png" style="width: 145mm;" /></a>
+</div>
+</div>
+<div class="section" id="scripting-windows">
+<h3>3.7.4. Scripting Windows<a class="headerlink" href="#scripting-windows" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="edit-window">
+<h4>3.7.4.1. Edit Window<a class="headerlink" href="#edit-window" title="Permalink to this headline">¶</a></h4>
+<p>The script window is used for editing scripts. The editor supports
+syntax highlighting, auto-completion, and more.</p>
+<p class="centered" id="script-editing-window">
+<strong><strong>Script editing window</strong></strong></p><a class="reference internal image-reference" href="_images/012_editscript.png"><img alt="Script editing window" class="align-center" src="_images/012_editscript.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="debug-window">
+<h4>3.7.4.2. Debug Window<a class="headerlink" href="#debug-window" title="Permalink to this headline">¶</a></h4>
+<p>The debug window displays compile and execution results.
+Details can be filtered. Positive results are highlighted with
+green, negative results are highlighted with red.</p>
+<p class="centered" id="id6">
+<strong><strong>Debug window</strong></strong></p><a class="reference internal image-reference" href="_images/013_debug.png"><img alt="Debug window" class="align-center" src="_images/013_debug.png" style="width: 145mm;" /></a>
+</div>
+</div>
+<div class="section" id="other-windows">
+<h3>3.7.5. Other Windows<a class="headerlink" href="#other-windows" title="Permalink to this headline">¶</a></h3>
+<p>The following dialog windows will be used.</p>
+<div class="section" id="add-reader-window">
+<h4>3.7.5.1. Add Reader Window<a class="headerlink" href="#add-reader-window" title="Permalink to this headline">¶</a></h4>
+<p>Used to create/define a new Reader.</p>
+<p>The dialog provides a drop-down list of existing partitions to
+choose to create the new Reader in.</p>
+<p class="centered" id="add-reader-dialog">
+<strong><strong>Add Reader dialog</strong></strong></p><a class="reference internal image-reference" href="_images/014_AddReader.png"><img alt="Add Reader dialog" class="align-center" src="_images/014_AddReader.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="batch-window">
+<h4>3.7.5.2. Batch Window<a class="headerlink" href="#batch-window" title="Permalink to this headline">¶</a></h4>
+<p>Used to Start a batch scenario and display the test results.</p>
+<p class="centered" id="batch-execute-scenarios-window">
+<strong><strong>Batch Execute Scenarios window</strong></strong></p><a class="reference internal image-reference" href="_images/015_batch.png"><img alt="Batch Execute Scenarios window" class="align-center" src="_images/015_batch.png" style="width: 110mm;" /></a>
+</div>
+<div class="section" id="batch-results-window">
+<h4>3.7.5.3. Batch Results Window<a class="headerlink" href="#batch-results-window" title="Permalink to this headline">¶</a></h4>
+<p>Displays the detailed results of a batch of scripts.
+Detailed individual test result can be viewed by double-clicking
+on a test result.</p>
+<p class="centered" id="id7">
+<strong><strong>Batch results window</strong></strong></p><a class="reference internal image-reference" href="_images/016_results.png"><img alt="Batch results window" class="align-center" src="_images/016_results.png" style="width: 110mm;" /></a>
+<p class="centered" id="detailed-batch-results-log">
+<strong><strong>Detailed Batch results log</strong></strong></p><a class="reference internal image-reference" href="_images/017_results.png"><img alt="Detailed Batch results log" class="align-center" src="_images/017_results.png" style="width: 110mm;" /></a>
+</div>
+<div class="section" id="chart-window">
+<h4>3.7.5.4. Chart Window<a class="headerlink" href="#chart-window" title="Permalink to this headline">¶</a></h4>
+<p>Used to plot topic field values.</p>
+<p class="centered" id="topic-field-values-graph">
+<strong><strong>Topic field values graph</strong></strong></p><a class="reference internal image-reference" href="_images/018_graph.png"><img alt="Topic field values graph" class="align-center" src="_images/018_graph.png" style="width: 110mm;" /></a>
+</div>
+<div class="section" id="edit-sample-window">
+<h4>3.7.5.5. Edit Sample Window<a class="headerlink" href="#edit-sample-window" title="Permalink to this headline">¶</a></h4>
+<p>Used to create samples for a selected topic.</p>
+<p class="centered" id="id8">
+<strong><strong>Edit sample window</strong></strong></p><a class="reference internal image-reference" href="_images/019_edit.png"><img alt="Edit sample window" class="align-center" src="_images/019_edit.png" style="width: 110mm;" /></a>
+</div>
+<div class="section" id="topic-instance-window">
+<span id="id9"></span><h4>3.7.5.6. Topic Instance Window<a class="headerlink" href="#topic-instance-window" title="Permalink to this headline">¶</a></h4>
+<p>The topic sample window is used for displaying field values of a topic.
+It can be opened by double-clicking a sample in the sample list or by
+pressing <em>[F3]</em> (additional) or <em>[F2]</em> (additional with compare) in
+the sample list while a sample is selected. Special fields are
+highlighted with colors:</p>
+<blockquote>
+<div><p><em>Key field</em> (Green)</p>
+<p><em>Foreign key</em> (Yellow)</p>
+<p><em>Different (compare only)</em> (Red)</p>
+<p><em>Not existing (compare only)</em> (Orange)</p>
+</div></blockquote>
+<p>When a field is selected, <em>[Ctrl+H]</em> will toggle between normal and hexadecimal
+representation, and <em>[Ctrl+D]</em> will toggle between normal and degrees/radians
+representation.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Getting Started</a><ul>
+<li><a class="reference internal" href="#starting-and-stopping-tester">3.1. Starting and Stopping Tester</a></li>
+<li><a class="reference internal" href="#starting-local-connection">3.2. Starting - Local Connection</a></li>
+<li><a class="reference internal" href="#starting-remote-connection">3.3. Starting - Remote Connection</a></li>
+<li><a class="reference internal" href="#stopping">3.4. Stopping</a></li>
+<li><a class="reference internal" href="#remotely-controlling-tester">3.5. Remotely Controlling Tester</a></li>
+<li><a class="reference internal" href="#trying-out-tester">3.6. Trying out Tester</a></li>
+<li><a class="reference internal" href="#tester-windows">3.7. Tester Windows</a><ul>
+<li><a class="reference internal" href="#main-window">3.7.1. Main Window</a></li>
+<li><a class="reference internal" href="#overview-windows">3.7.2. Overview Windows</a><ul>
+<li><a class="reference internal" href="#services">3.7.2.1. Services</a></li>
+<li><a class="reference internal" href="#scripts">3.7.2.2. Scripts</a></li>
+<li><a class="reference internal" href="#macros">3.7.2.3. Macros</a></li>
+<li><a class="reference internal" href="#topics">3.7.2.4. Topics</a></li>
+<li><a class="reference internal" href="#readers">3.7.2.5. Readers</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#working-windows">3.7.3. Working Windows</a><ul>
+<li><a class="reference internal" href="#sample-list-window">3.7.3.1. Sample List Window</a></li>
+<li><a class="reference internal" href="#statistics-window">3.7.3.2. Statistics Window</a></li>
+<li><a class="reference internal" href="#browser-window">3.7.3.3. Browser Window</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#scripting-windows">3.7.4. Scripting Windows</a><ul>
+<li><a class="reference internal" href="#edit-window">3.7.4.1. Edit Window</a></li>
+<li><a class="reference internal" href="#debug-window">3.7.4.2. Debug Window</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#other-windows">3.7.5. Other Windows</a><ul>
+<li><a class="reference internal" href="#add-reader-window">3.7.5.1. Add Reader Window</a></li>
+<li><a class="reference internal" href="#batch-window">3.7.5.2. Batch Window</a></li>
+<li><a class="reference internal" href="#batch-results-window">3.7.5.3. Batch Results Window</a></li>
+<li><a class="reference internal" href="#chart-window">3.7.5.4. Chart Window</a></li>
+<li><a class="reference internal" href="#edit-sample-window">3.7.5.5. Edit Sample Window</a></li>
+<li><a class="reference internal" href="#topic-instance-window">3.7.5.6. Topic Instance Window</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">2. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="familiarization.html"
+                        title="next chapter">4. Familiarization Exercises</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/getstarted.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="familiarization.html" title="4. Familiarization Exercises"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

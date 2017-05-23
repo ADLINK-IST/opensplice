@@ -1,0 +1,102 @@
+Running manually
+
+If you wish to run an example manually then before running you must have OpenSplice installed and the example you wish to run should be built.
+
+run the release.com / release.bat file and set up the environment with the following as appropriate to the platform on which you are running and the example you wish to run.
+
+The following is assuming you are running on a build machine, running on your own machine then set the environment accordingly
+
+
+EXRUNTYPE= sp  or shm
+LOGDIR= < point to the location of the log directory - where logs will be copied to >
+
+OSPL_URI= <point to the location of the ospl config file you wish to use - if not using the default>
+
+#If running corba cpp example
+TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO211_0-RedHat-EL62-gcc446-inline-32bit-120927-head  (as appropriate for machine)
+ACE_ROOT=$TAO_ROOT
+
+LD_LIBRARY_PATH=$TAO_ROOT/lib:$LD_LIBRARY_PATH
+
+#if running corba java example
+JACORB_HOME=/home/dds/INSTALLED_FOR_DDS/JacORB-v2.3.1.0 (as appropriate for machine)
+
+#if running dbmsconnect example (non-windows platforms)
+ODBCHOME=/home/dds/INSTALLED_FOR_DDS/ODBC
+ODBCINI=$ODBCHOME/etc/odbc.ini
+ODBCINST=$ODBCHOME/etc/odbcinst.ini
+ODBC_MSSQL_SERVER=10.1.0.189
+ODBC_MYSQL_SERVER=10.1.0.191
+ODBCSYSINI=$ODBCHOME/etc
+LD_LIBRARY_PATH="$ODBCHOME/lib:.:$LD_LIBRARY_PATH"
+ODBC_LIB_NAME="odbc"
+
+ 
+
+On windows also set
+
+PATH=c:\Python27;%PATH%
+
+#If running dbmsconnect example
+
+ODBC_LIB_NAME=odbc32
+
+#if running protobuf example
+
+PROTOBUF_HOME=C:\cygwin\home\dds\INSTALLED_FOR_DDS\protobuf-2.6.0
+
+PROTOBUF_LIB_HOME=C:\cygwin\home\dds\INSTALLED_FOR_DDS\protobuf-2.6.0\src
+
+
+
+To run a single example for a given language and a given type (e.g. standalone or corba)
+
+python runExample.py -s <ExampleName> <lang> <type>
+
+Where lang is from c, cpp, cs, isocpp, isocpp2, java, java5 and where type is from standalone or corba
+
+Note: the use of standalone / corba will only be effective where applicable and is handled internally
+
+ 
+
+ExampleName will be from
+
+BuiltInTopics
+
+ContentFilteredTopic
+
+HelloWorld
+
+Lifecycle
+
+Listener
+
+Ownership
+
+PingPong
+
+QueryCondition
+
+RoundTrip
+
+Throughput
+
+Tutorial
+
+RMIClientServer
+
+RMIHelloWorld
+
+RMIPrinter
+
+WaitSet
+
+StreamsThroughput
+
+FaceHelloWorld
+
+protobuf
+
+Durability
+
+DBMSconnect

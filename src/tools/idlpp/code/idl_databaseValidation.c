@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "c_stringSupport.h"
@@ -15,7 +23,7 @@
 #include "idl_keyDef.h"
 #include "idl_catsDef.h"
 #include "idl_stacDef.h"
-#include "os.h"
+#include "vortex_os.h"
 
 
 /*************************************************************************************************
@@ -75,38 +83,6 @@ idl_databaseValidationShouldOnlyWarnForStac(
     return onlyWarn;
 }
 
-
-/*
- * return the real type (typedef are resoved) for a key (from a keylist).
- * scope should be the data type.
- */
-static c_type
-idl_getTypeOfKey(
-    c_type scope,
-    os_char* keyName)
-{
-    c_iter fields = NULL;
-    c_specifier sp;
-    char *fieldName;
-
-    /* Key field name consists of [<field>.]*<field> */
-    fields = c_splitString(keyName, ".");
-    fieldName = c_iterTakeFirst(fields);
-    /* find specificer (sp) corresponding to keylist field name */
-    while (fieldName != NULL) {
-        if (scope) {
-            sp = c_specifier(c_metaFindByName(c_metaObject(scope), fieldName, CQ_FIXEDSCOPE | CQ_MEMBER | CQ_CASEINSENSITIVE));
-            assert(sp && (strcmp(sp->name, fieldName) == 0));
-            scope = sp->type;
-        }
-        fieldName = c_iterTakeFirst(fields);
-    }
-
-    /* now scope is type of key. But it can be typedef. Determine the actual type. */
-    return c_typeActualType(scope);
-}
-
-
 /*
  * Check if each usage of a char array as a key has a corresponding
  * "#pragma cats" declaration.
@@ -118,7 +94,7 @@ idl_checkPragmaConsistency(
 {
     char errorBuffer [IDL_MAX_ERRORSIZE];
     idl_keyDef keyDef = idl_keyDefDefGet();
-    c_long keyMapIdx;
+    c_ulong keyMapIdx;
     idl_keyMap keyMap;
     c_type type;
     c_structure structure;
@@ -135,6 +111,8 @@ idl_checkPragmaConsistency(
     c_string typeName;
     c_type spType;
     os_boolean onlyWarnForStac;
+
+    OS_UNUSED_ARG(base);
 
     onlyWarnForStac = idl_databaseValidationShouldOnlyWarnForStac();
     if (keyDef != NULL) {
@@ -155,7 +133,7 @@ idl_checkPragmaConsistency(
 
                 /* type should be a structure */
                 if (c_baseObject(type)->kind != M_STRUCTURE) {
-                    snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_IllegalKeyFields]);
+                    snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, "%s", errorText[idl_IllegalKeyFields]);
                     idl_printError(filename, errorBuffer);
                     return OS_FALSE;
                 }
@@ -198,7 +176,7 @@ idl_checkPragmaConsistency(
                                  * a candidate for a #pragma cats or a #pragma stac,
                                  * so don't discard or approve the member yet.
                                  */
-                                if (c_collectionType(spType)->kind == C_ARRAY)
+                                if (c_collectionType(spType)->kind == OSPL_C_ARRAY)
                                 {
                                     /*
                                      * If the member is an array of chars AND it has
@@ -235,7 +213,7 @@ idl_checkPragmaConsistency(
                                      * a #pragma stac applied to itself or to its
                                      * structure, then this is illegal.
                                      */
-                                    if( c_collectionType(spType)->kind == C_STRING &&
+                                    if( c_collectionType(spType)->kind == OSPL_C_STRING &&
                                         c_collectionType(spType)->maxSize > 0 )
                                     {
                                         typeName = c_metaName(c_metaObject(tmpStructure));

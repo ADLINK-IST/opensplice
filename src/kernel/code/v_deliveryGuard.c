@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v_public.h"
@@ -25,6 +33,7 @@
 #include "c_sync.h"
 
 #include "os_report.h"
+#include "os_abstract.h"
 
 v_deliveryGuard
 v_deliveryGuardNew(
@@ -42,19 +51,19 @@ v_deliveryGuardNew(
     if (service && writer) {
         /* lookup or create a writer specific delivery guard */
         template.writerGID = v_publicGid(v_public(writer));
-        _this = v_deliveryServiceLookupGuard(service,&template);
+        _this = v_deliveryServiceLookupGuard(service, &template);
         if (!_this) {
             type = c_subType(service->guards);
             _this = c_new(type);
             c_free(type);
 
             if (_this) {
-                c_mutexInit(&(_this->mutex),SHARED_MUTEX);
+                c_mutexInit(c_getBase(_this), &(_this->mutex));
                 _this->writerGID = template.writerGID;
                 _this->owner = (c_voidp)service; /* backref used by the free */
                 _this->gidType = c_resolve(c_getBase(_this),"kernelModule::v_gid");
 
-                type = c_resolve(c_getBase(_this),"kernelModule::v_deliveryWaitList");
+                type = c_resolve(c_getBase(_this),"kernelModuleI::v_deliveryWaitList");
                 /* The sequence number is the key, as this is unique within each writer */
                 _this->waitlists = c_tableNew(type,"sequenceNumber");
                 c_free(type);
@@ -68,7 +77,7 @@ v_deliveryGuardNew(
                  * so the whole state will be delivered and delivery will
                  * update the list.
                  */
-                type = c_resolve(c_getBase(_this),"kernelModule::v_deliveryPublisher");
+                type = c_resolve(c_getBase(_this),"kernelModuleI::v_deliveryPublisher");
                 _this->publications = c_tableNew(type,"readerGID.systemId,readerGID.localId,readerGID.serial");
                 c_free(type);
 
@@ -97,18 +106,18 @@ v_deliveryGuardFree(
         v_deliveryService owner = v_deliveryService(_this->owner);
         result = v_deliveryServiceRemoveGuard(owner, _this);
         if (result != V_RESULT_OK) {
-            OS_REPORT_2(OS_ERROR,
+            OS_REPORT(OS_CRITICAL,
                 "v_deliveryGuardFree",result,
-                "Failed to remove guard from delivery-service; _this = 0x%x, owner = 0x%x.",
-                _this, owner);
+                "Failed to remove guard from delivery-service; _this = 0x%"PA_PRIxADDR", owner = 0x%"PA_PRIxADDR".",
+                (os_address)_this, (os_address)owner);
         } else {
             c_free(_this);
         }
     } else {
-        OS_REPORT(OS_ERROR,
-                  "v_deliveryGuardFree",0,
-                  "Precondition not met; _this == NULL.");
         result = V_RESULT_PRECONDITION_NOT_MET;
+        OS_REPORT(OS_CRITICAL,
+                  "v_deliveryGuardFree",result,
+                  "Precondition not met; _this == NULL.");
     }
     return result;
 }
@@ -123,6 +132,7 @@ waitlistNotify(
 
     result = v_deliveryWaitListNotify(v_deliveryWaitList(o), msg);
     assert(result == V_RESULT_OK);
+    OS_UNUSED_ARG(result);
     return TRUE;
 }
 
@@ -136,29 +146,15 @@ v_deliveryGuardNotify(
     v_deliveryGuard _this,
     v_deliveryInfoTemplate msg)
 {
-    c_syncResult sr;
     v_result result;
 
     assert(C_TYPECHECK(_this,v_deliveryGuard));
 
-    result = V_RESULT_UNDEFINED;
-
     if (_this && msg) {
-        sr = c_mutexLock(&_this->mutex);
-        if (sr == SYNC_RESULT_SUCCESS) {
-            c_walk(_this->waitlists,waitlistNotify,msg);
-            sr = c_mutexUnlock(&_this->mutex);
-        }
-
-        if (sr != SYNC_RESULT_SUCCESS) {
-            result = V_RESULT_INTERNAL_ERROR;
-            OS_REPORT_2(OS_ERROR,
-                      "v_deliveryGuardNotify",0,
-                      "Failed to claim/release mutex; _this = 0x%x, msg = 0x%x.",
-                      _this, msg);
-        } else {
-            result = V_RESULT_OK;
-        }
+        c_mutexLock(&_this->mutex);
+        c_walk(_this->waitlists,waitlistNotify,msg);
+        c_mutexUnlock(&_this->mutex);
+        result = V_RESULT_OK;
     } else {
         result = V_RESULT_ILL_PARAM;
     }
@@ -173,41 +169,21 @@ waitlistIgnore(
     v_gid readerGID = *(v_gid *)arg;
     v_result result;
 
-    result = v_deliveryWaitListIgnore(v_deliveryWaitList(o),
-                                      readerGID);
+    result = v_deliveryWaitListIgnore(v_deliveryWaitList(o), readerGID);
     assert(result == V_RESULT_OK);
+    OS_UNUSED_ARG(result);
     return TRUE;
 }
 
 v_result
 v_deliveryGuardIgnore(
-    v_deliveryGuard _this,
+    v_deliveryGuard _this /* must be locked */,
     v_gid readerGID)
 {
-    c_syncResult sr;
-    v_result result;
-
+    assert(_this);
     assert(C_TYPECHECK(_this,v_deliveryGuard));
 
-    result = V_RESULT_UNDEFINED;
+    c_walk(_this->waitlists, waitlistIgnore, &readerGID);
 
-    if (_this) {
-        sr = c_mutexLock(&_this->mutex);
-        if (sr == SYNC_RESULT_SUCCESS)
-        {
-            c_walk(_this->waitlists,waitlistIgnore,&readerGID);
-            sr = c_mutexUnlock(&_this->mutex);
-        }
-        if (sr != SYNC_RESULT_SUCCESS)
-        {
-            result = V_RESULT_INTERNAL_ERROR;
-            OS_REPORT_4(OS_ERROR,
-                      "v_deliveryGuardIgnore",0,
-                      "Failed to claim/release mutex; _this = 0x%x, readerGID = {%d,%d,%d}.",
-                      _this, readerGID.systemId, readerGID.localId, readerGID.serial);
-        }
-    } else {
-        result = V_RESULT_ILL_PARAM;
-    }
-    return result;
+    return V_RESULT_OK;
 }

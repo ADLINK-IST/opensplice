@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cmx_entity.h"
@@ -23,10 +31,10 @@
 #include "cmx__reader.h"
 #include "cmx__topic.h"
 #include "cmx__waitset.h"
-#include "cmx_factory.h"
-#include "cmx__qos.h"
+#include "cmx__factory.h"
 #include "sd_serializer.h"
 #include "sd_serializerXML.h"
+#include "u_observable.h"
 #include "u_entity.h"
 #include "u__entity.h"
 #include "u_participant.h"
@@ -38,18 +46,38 @@
 #include "u_groupQueue.h"
 #include "u_partition.h"
 #include "u_query.h"
+#include "u_waitsetEntry.h"
 #include "u_publisher.h"
 #include "u_subscriber.h"
 #include "v_kernel.h"
 #include "v_entity.h"
+#include "v_dataReader.h"
+#include "v_dataReaderQuery.h"
+#include "v_dataViewQuery.h"
+#include "v_groupQueue.h"
+#include "v_networking.h"
+#include "v_networkQueue.h"
+#include "v_durability.h"
+#include "v_cmsoap.h"
 #include "v_statistics.h"
+#include "v_kernelStatistics.h"
+#include "v_writerStatistics.h"
+#include "v_dataReaderStatistics.h"
+#include "v_queryStatistics.h"
+#include "v_networkReader.h"
+#include "v_networkReaderStatistics.h"
+#include "v_networkingStatistics.h"
+#include "v_durabilityStatistics.h"
+#include "v_groupQueueStatistics.h"
+#include "v_cmsoapStatistics.h"
 #include "c_typebase.h"
 #include "v_public.h"
 #include "v_qos.h"
-#include "os.h"
+#include "vortex_os.h"
 #include "os_stdlib.h"
 #include "sd_serializer.h"
 #include "os_abstract.h"
+#include "os_stdlib.h"
 #include <stdio.h>
 
 /* Number of escape-characters. This determines the size of the arrays used for
@@ -149,7 +177,7 @@ getXMLEscapedString(
                 result[strLen + extraStrLen] = '\0';
             } else {
                 /* Memory-claim denied, return NULL */
-                OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                         "Heap-memory claim of size %d denied, cannot generate escaped XML string.",
                         strLen + extraStrLen + 1);
             }
@@ -161,70 +189,239 @@ getXMLEscapedString(
     return result;
 }
 
+/**
+ * Resolves the user entities that match the supplied XML entities. This is done
+ * by casting the contents of the pointer tags in the XML entity to user
+ * entities.
+ *
+ * @param xmlEntities The XML representation of the user entities to resolve.
+ * @return The user entities that match the supplied XML entities.
+ */
+static c_iter
+cmx_entityCmxEntities(
+    const c_char* xmlEntities)
+{
+    size_t length = 0;
+    c_ulong i = 0;
+    c_ulong nrOfEntities = 0;
+    c_char * substring;
+    c_char * xmlEntity = NULL;
+    cmx_entity cmEntity;
+    c_iter cmEntities = NULL;
+
+    c_iter xmlEntityList = c_iterNew(NULL);
+    if (!xmlEntityList) goto err_iterNewEntityList;
+
+    cmEntities = c_iterNew(NULL);
+    if (!cmEntities) goto err_iterNewEntities;
+
+    xmlEntities+=12;                                            /*<entityList>*/
+    substring = strstr(xmlEntities, "</entity>");
+    while(substring){
+        length = (size_t) (substring - xmlEntities + 9);                   /*</entity>*/
+        xmlEntity = os_malloc((length+1) * sizeof(c_char));
+        os_strncpy(xmlEntity, xmlEntities, length);
+        xmlEntity[length] = '\0';
+        c_iterAppend(xmlEntityList, xmlEntity);
+        xmlEntities = xmlEntities + length;
+        substring = strstr(xmlEntities, "</entity>");
+    }
+    nrOfEntities = c_iterLength(xmlEntityList);
+    for(i = 0 ; i<nrOfEntities; i++){
+        xmlEntity = (c_char*)c_iterTakeFirst(xmlEntityList);
+        cmEntity = cmx_entityClaim(xmlEntity);
+
+        if(cmEntity){
+            c_iterAppend(cmEntities, cmEntity);
+        }
+        os_free(xmlEntity);
+    }
+
+err_iterNewEntities:
+    c_iterFree(xmlEntityList);
+err_iterNewEntityList:
+    return cmEntities;
+}
+
 void
 cmx_entityNewFromAction(
-    v_entity entity,
+    v_public entity,
     c_voidp args)
 {
-    cmx_entityNewFromWalk(entity, args);
+    (void)cmx_entityNewFromWalk(entity, args);
+}
+
+static c_bool
+cmx_entityNewEntityFromWalk(
+    v_entity entity,
+    cmx_entityArg arg)
+{
+    cmx_entity participant;
+    c_char* special;
+    c_bool  result = FALSE;
+
+    special = cmx_entityGetTypeXml(v_public(entity));
+    if (special != NULL) {
+        u_object proxy;
+        if (arg->create == TRUE) {
+            if (arg->entity->participant) {
+                participant = arg->entity->participant;
+            } else {
+                participant = arg->entity;
+            }
+            assert(u_objectKind(participant->uentity) == U_PARTICIPANT);
+            proxy = u_object(u_observableCreateProxy(v_public(entity),
+                                                     u_participant(participant->uentity)));
+            if (proxy != NULL) {
+                cmx_registerObject(proxy,participant);
+            }
+        } else {
+            proxy = arg->entity->uentity;
+        }
+        /* Get the entity XML representation. */
+        arg->result = (c_voidp)cmx_entityXml(entity->name,
+                                             (c_address)proxy,
+                                             &(v_public(entity)->handle),
+                                             entity->enabled,
+                                             special);
+        os_free(special);
+        result = TRUE;
+    }
+    return result;
+}
+
+static c_bool
+cmx_entityNewWaitSetFromWalk(
+    v_waitset waitset,
+    cmx_entityArg arg)
+{
+    cmx_entity participant;
+    c_char* special;
+    c_bool  result = FALSE;
+
+    special = cmx_entityGetTypeXml(v_public(waitset));
+    if(special != NULL){
+        u_object proxy = NULL;
+        if(arg->create == TRUE){
+            if (arg->entity->participant) {
+                participant = arg->entity->participant;
+            } else {
+                participant = arg->entity;
+            }
+            proxy = u_object(u_observableCreateProxy(v_public(waitset),
+                                                      u_participant(participant->uentity)));
+            if (proxy != NULL) {
+                cmx_registerObject(u_object(proxy), participant);
+            }
+        }
+        /* Get the waitset XML representation. */
+        arg->result = (c_voidp)cmx_entityXml(NULL,
+                                             (c_address)proxy,
+                                             &(v_public(waitset)->handle),
+                                             TRUE,
+                                             special);
+        os_free(special);
+        result = TRUE;
+    }
+    return result;
 }
 
 c_bool
 cmx_entityNewFromWalk(
-    v_entity entity,
+    v_public object,
     c_voidp args)
 {
-    char buf[1024];
-    c_char* special;
-    const c_char* enabled;
-    cmx_entityArg arg;
-    u_entity proxy;
-    c_bool result;
+    cmx_entityArg arg = cmx_entityArg(args);
+    c_bool result = FALSE;
 
-    arg = cmx_entityArg(args);
-    if(arg->create == TRUE){
-        proxy = u_entityNew(entity, arg->participant, FALSE);
-        cmx_registerEntity(proxy);
-    } else {
-        proxy = arg->entity;
-    }
-    if((proxy != NULL) || (arg->create == FALSE)){
-        special = cmx_entityInit(entity, proxy, arg->create);
+    assert(object);
+    assert(arg);
 
-        if(special != NULL){
-            if(entity->enabled){
-                enabled = "TRUE";
-            } else {
-                enabled = "FALSE";
-            }
-            if(entity->name != NULL){
-                c_char* escapedString = getXMLEscapedString(entity->name);
-                os_sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>%s</name><enabled>%s</enabled>%s</entity>",
-                            (c_address)proxy,
-                            v_public(entity)->handle.index,
-                            v_public(entity)->handle.serial,
-                            escapedString,
-                            enabled,
-                            special);
-                os_free(escapedString);
-            }
-            else{
-                os_sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>NULL</name><enabled>%s</enabled>%s</entity>",
-                        (c_address)proxy,
-                        v_public(entity)->handle.index,
-                        v_public(entity)->handle.serial,
-                        enabled,
-                        special);
-            }
-            os_free(special);
-            arg->result = (c_voidp)(os_strdup(buf));
-            result = TRUE;
-        } else {
-            result = FALSE;
-        }
+    if (c_instanceOf(object, "v_entity")) {
+        /* Is this really an entity? */
+        result = cmx_entityNewEntityFromWalk((v_entity)object, arg);
+    } else if (c_instanceOf(object, "v_waitset")) {
+        /* Or is this entity actually a waitset? */
+        result = cmx_entityNewWaitSetFromWalk((v_waitset)object, arg);
+    } else if (c_instanceOf(object, "v_listener")) {
+        /* Ignore listeners, these are (for now) internal objects */
     } else {
-        result = FALSE;
+        /* Should never come here. */
+        OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                    "Unknown object kind: '%d'\n",
+                    v_object(object)->kind);
+        assert(FALSE);
     }
+
+    return result;
+}
+
+c_char*
+cmx_entityGetTypeXml(
+    v_public object)
+{
+    c_char* result;
+
+    result = NULL;
+
+    switch(v_object(object)->kind){
+    case K_PARTICIPANT:
+        result = cmx_participantInit((v_participant)object);
+    break;
+    case K_NETWORKING:
+        /*fallthrough on purpose.*/
+    case K_DURABILITY:
+    case K_NWBRIDGE:
+    case K_CMSOAP:
+    case K_SPLICED:
+    case K_RNR:
+    case K_SERVICE:
+        result = cmx_serviceInit((v_service)object);
+    break;
+    case K_PUBLISHER:
+        result = cmx_publisherInit((v_publisher)object);
+    break;
+    case K_SERVICESTATE:
+        result = cmx_serviceStateInit((v_serviceState)object);
+    break;
+    case K_SUBSCRIBER:
+        result = cmx_subscriberInit((v_subscriber)object);
+    break;
+    case K_WRITER:
+        result = cmx_writerInit((v_writer)object);
+    break;
+    case K_QUERY:
+        /*fallthrough on purpose.*/
+    case K_DATAREADERQUERY:
+        result = cmx_queryInit((v_query)object);
+    break;
+    case K_DOMAIN:
+        result = cmx_domainInit((v_partition)object);
+    break;
+    case K_NETWORKREADER: /*fallthrough on purpose.*/
+    case K_DATAREADER: /*fallthrough on purpose.*/
+    case K_DATAVIEW: /*fallthrough on purpose.*/
+    case K_DELIVERYSERVICE: /*fallthrough on purpose.*/
+    case K_GROUPQUEUE:
+        result = cmx_readerInit((v_reader)object);
+    break;
+    case K_TOPIC:
+    case K_TOPIC_ADAPTER:
+        result = cmx_topicInit((v_topic)object);
+    break;
+    case K_WAITSET:
+        result = cmx_waitsetInit((v_waitset)object);
+    break;
+    case K_LISTENER:
+    break;
+    default:
+        OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                    "Unknown entity kind: '%d'\n",
+                    v_object(object)->kind);
+        assert(FALSE);
+    break;
+    }
+
     return result;
 }
 
@@ -235,8 +432,6 @@ cmx_entityInit(
     c_bool init)
 {
     c_char* result;
-    u_domain domain;
-    u_participant up;
     u_result ur;
 
     ur = U_RESULT_OK;
@@ -244,26 +439,7 @@ cmx_entityInit(
 
     if((proxy == NULL) && (init == TRUE)){
         ur = U_RESULT_ILL_PARAM;
-    } else if(proxy != NULL){
-        up = u_entityParticipant(proxy);
-
-        if(up != NULL){
-            domain = u_participantDomain(up);
-
-            if(domain == NULL){
-                ur = U_RESULT_ILL_PARAM;
-                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
-                          "cmx_entityInit proxy == NULL && init == TRUE "
-                          "but proxy participant has no kernel.");
-            }
-        } else {
-            OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
-                "cmx_entityInit proxy == NULL && init == TRUE "
-                "but proxy has no participant.");
-            ur = U_RESULT_ILL_PARAM;
-        }
     }
-
     if(ur == U_RESULT_OK){
         switch(v_object(entity)->kind){
         case K_PARTICIPANT:
@@ -272,6 +448,7 @@ cmx_entityInit(
         case K_NETWORKING:
             /*fallthrough on purpose.*/
         case K_DURABILITY:
+        case K_NWBRIDGE:
         case K_CMSOAP:
         case K_SPLICED:
         case K_RNR:
@@ -308,115 +485,53 @@ cmx_entityInit(
             result = cmx_readerInit((v_reader)entity);
         break;
         case K_TOPIC:
+        case K_TOPIC_ADAPTER:
             result = cmx_topicInit((v_topic)entity);
         break;
         case K_WAITSET:
             result = cmx_waitsetInit((v_waitset)entity);
         break;
         default:
-            OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0,
+            OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                         "Unknown entity kind: '%d'\n",
                         v_object(entity)->kind);
-            assert(FALSE);
+            assert(0);
         break;
         }
     } else {
         OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                   "cmx_entityInit ur != U_RESULT_OK.");
-        cmx_deregisterEntity(proxy);
-        assert(FALSE);
+        cmx_deregisterObject(u_object(proxy));
+        assert(0);
     }
+
     return result;
 }
-
-
 
 void
 cmx_entityFree(
     c_char* entity)
 {
-    u_entity e;
-    u_entity e2;
-
+    cmx_entity e;
     if(entity != NULL){
-        e = cmx_entityUserEntity(entity);
-
+        e = cmx_entityClaim(entity);
         if(e != NULL){
-            e2 = cmx_deregisterEntity(e);
-
-            if(e2 != NULL){
-                cmx_entityFreeUserEntity(e2);
-            }
+            cmx_deregisterObject(u_object(e->uentity));
+            cmx_factoryReleaseEntity(e);
         }
         os_free(entity);
     }
 }
 
 void
-cmx_entityFreeUserEntity(
-    u_entity entity)
-{
-    cmx_entityKindArg arg;
-
-    if(entity != NULL){
-        if(u_entityOwner(entity) == FALSE){
-            u_entityFree(entity);
-        } else {
-            /*find kind and call entity specific free.*/
-            arg = cmx_entityKindArg(os_malloc(C_SIZEOF(cmx_entityKindArg)));
-            u_entityAction(entity, cmx_entityKindAction, (c_voidp)arg);
-
-            switch(arg->kind){
-            case K_PARTICIPANT:
-                u_participantFree(u_participant(entity));
-                break;
-            case K_PUBLISHER:
-                u_publisherFree(u_publisher(entity));
-                break;
-            case K_SUBSCRIBER:
-                u_subscriberFree(u_subscriber(entity));
-                break;
-            case K_GROUPQUEUE:
-                u_groupQueueFree(u_groupQueue(entity));
-                break;
-            case K_DATAREADER:
-                u_dataReaderFree(u_dataReader(entity));
-                break;
-            case K_DOMAIN:
-                u_partitionFree(u_partition(entity));
-                break;
-            case K_QUERY:
-            case K_DATAREADERQUERY:
-                u_queryFree(u_query(entity));
-                break;
-            case K_TOPIC:
-                u_topicFree(u_topic(entity));
-                break;
-            case K_WRITER:
-                u_writerFree(u_writer(entity));
-                break;
-            case K_WAITSET:
-                u_waitsetFree(u_waitset(entity));
-                break;
-            default:
-                OS_REPORT(OS_WARNING, CM_XML_CONTEXT, 0,
-                          "entity already freed.\n");
-                break;
-            }
-            os_free(arg);
-        }
-    }
-}
-
-void
 cmx_entityKindAction(
-    v_entity entity,
+    v_public object,
     c_voidp args)
 {
     cmx_entityKindArg arg;
 
     arg = cmx_entityKindArg(args);
-    arg->kind = v_object(entity)->kind;
+    arg->kind = v_object(object)->kind;
 }
 
 c_bool
@@ -428,20 +543,35 @@ cmx_entityWalkAction(
   c_char* xmlEntity;
   c_bool add;
   c_bool proceed;
+  v_object object;
+
+  /*
+   * This is the callback of a call to u_entityWalkEntities().
+   * In contradication of the function name, it will return a waitset
+   * when it was called with a participant. This is because the waitset
+   * was a entity in the past.
+   *
+   * So, an entity pointer is given, even while it can be a waitset. This
+   * still works, but off course should change in the future.
+   *
+   * For now, just cast the entity to an object to indicate that we're not
+   * always dealing with an entity here.
+   */
+  object = (v_object)e;
 
   arg = cmx_walkEntityArg(args);
   add = FALSE;
 
-  if(e != NULL){
+  if(object != NULL){
       switch(arg->filter){
         /*User filter, select all entities of the supplied+inherited kinds */
         case K_ENTITY:/*Always add the entity.*/
-            if(v_object(e)->kind != K_DELIVERYSERVICE){
+            if(object->kind != K_DELIVERYSERVICE){
                 add = TRUE;
             }
         break;
         case K_QUERY:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_QUERY:
             case K_DATAREADERQUERY:
                                 add = TRUE; break;
@@ -449,31 +579,37 @@ cmx_entityWalkAction(
             }
         break;
         case K_TOPIC:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_TOPIC:       add = TRUE;  break;
             default:            break;
             }
         break;
+        case K_TOPIC_ADAPTER:
+            switch(object->kind){
+            case K_TOPIC_ADAPTER:add = TRUE;  break;
+            default:            break;
+            }
+        break;
         case K_PUBLISHER:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_PUBLISHER:   add = TRUE;  break;
             default:            break;
             }
         break;
         case K_SUBSCRIBER:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_SUBSCRIBER:  add = TRUE;  break;
             default:            break;
             }
         break;
         case K_DOMAIN:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_DOMAIN:      add = TRUE;  break;
             default:            break;
             }
         break;
         case K_READER:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_READER:
             case K_DATAREADER:
             case K_NETWORKREADER:
@@ -485,36 +621,37 @@ cmx_entityWalkAction(
             }
         break;
         case K_DATAREADER:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_DATAREADER:  add = TRUE;  break;
             default:            break;
             }
         break;
         case K_GROUPQUEUE:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_GROUPQUEUE:  add = TRUE;  break;
             default:            break;
             }
         break;
         case K_NETWORKREADER:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_NETWORKREADER:   add = TRUE;  break;
             default:                break;
             }
         break;
         case K_WRITER:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_WRITER:      add = TRUE;  break;
             default:            break;
             }
         break;
         case K_PARTICIPANT:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_PARTICIPANT:
             case K_SERVICE:
             case K_SPLICED:
             case K_NETWORKING:
             case K_DURABILITY:
+            case K_NWBRIDGE:
             case K_CMSOAP:
             case K_RNR:
                                 add = TRUE;  break;
@@ -522,11 +659,12 @@ cmx_entityWalkAction(
             }
         break;
         case K_SERVICE:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_SERVICE:
             case K_SPLICED:
             case K_NETWORKING:
             case K_DURABILITY:
+            case K_NWBRIDGE:
             case K_CMSOAP:
             case K_RNR:
                                 add = TRUE;  break;
@@ -534,33 +672,33 @@ cmx_entityWalkAction(
             }
         break;
         case K_SERVICESTATE:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_SERVICESTATE:add = TRUE;  break;
             default:            break;
             }
         break;
         case K_WAITSET:
-            switch(v_object(e)->kind){
+            switch(object->kind){
             case K_WAITSET: add = TRUE;  break;
             default:            break;
             }
         break;
         default:
-            OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0,
+            OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                         "Unknown Entity found in cmx_entityWalkAction: %d\n",
-                        v_object(e)->kind);
+                        object->kind);
         break;
         }
     }
     if(add == TRUE){
-        proceed = cmx_entityNewFromWalk(e, arg->entityArg);
+        proceed = cmx_entityNewFromWalk(v_public(object), &arg->entityArg);
         if(proceed == TRUE){
-            xmlEntity = arg->entityArg->result;
+            xmlEntity = arg->entityArg.result;
 
             if(xmlEntity == NULL){
-                OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0,
+                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                             "Entity found: %d\n",
-                            v_object(e)->kind);
+                            object->kind);
                 assert(FALSE);
             } else {
                 arg->list = c_iterInsert(arg->list, xmlEntity);
@@ -576,33 +714,148 @@ cmx_entityOwnedEntities(
     const c_char* entity,
     const c_char* filter)
 {
-    u_entity e;
+    cmx_entity ce;
     c_char* result;
-    v_kind kind;
     u_result walkSuccess;
     cmx_walkEntityArg arg;
 
     result = NULL;
-    e = cmx_entityUserEntity(entity);
-    kind = cmx_resolveKind(filter);
+    ce = cmx_entityClaim(entity);
 
-    arg = cmx_walkEntityArg(os_malloc(C_SIZEOF(cmx_walkEntityArg)));
-    arg->length = 0;
-    arg->filter = kind;
-    arg->list = NULL;
+    if(ce != NULL){
+        if (u_objectKind(u_object(ce->uentity)) == U_WAITSETENTRY) {
+            /* Waitset: return an empty list.
+             * Waitsets aren't and weren't supported by u_entityWalkEntities() anyway. */
+            result = cmx_convertToXMLList(NULL, 0);
+        } else {
+            arg = cmx_walkEntityArg(os_malloc(C_SIZEOF(cmx_walkEntityArg)));
+            arg->length = 0;
+            arg->filter = cmx_resolveKind(filter);
+            arg->list = NULL;
+            arg->entityArg.entity = ce;
+            arg->entityArg.create = TRUE;
+            arg->entityArg.result = NULL;
+            walkSuccess = u_entityWalkEntities(u_entity(ce->uentity),
+                                               cmx_entityWalkAction,
+                                               (c_voidp)(arg));
 
-    arg->entityArg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-    arg->entityArg->participant = u_entityParticipant(e);
-    arg->entityArg->create = TRUE;
-    arg->entityArg->result = NULL;
-
-    walkSuccess = u_entityWalkEntities(e, cmx_entityWalkAction, (c_voidp)(arg));
-
-    if(walkSuccess == U_RESULT_OK){
-        result = cmx_convertToXMLList(arg->list, arg->length);
+            if (walkSuccess == U_RESULT_OK) {
+                result = cmx_convertToXMLList(arg->list, arg->length);
+            }
+            os_free(arg);
+        }
+        cmx_entityRelease(ce);
     }
-    os_free(arg->entityArg);
-    os_free(arg);
+    return result;
+}
+
+struct cmx_entityHandleArg {
+    c_ulong index;
+    c_ulong serial;
+};
+
+void
+getHandleAction(
+    v_public object,
+    c_voidp args)
+{
+    struct cmx_entityHandleArg *arg;
+    arg = (struct cmx_entityHandleArg *)args;
+
+    arg->index =  object->handle.index;
+    arg->serial =  object->handle.serial;
+}
+
+c_ulong
+cmx_entityPathFinder(const c_char* entity,
+        c_ulong childIndex, c_ulong childSerial, c_iter* resultPath){
+    cmx_entity ce;
+    cmx_entity tempChild;
+    c_char* xmlTempChild;
+    v_kind kind;
+    u_result walkSuccess;
+    cmx_walkEntityArg arg;
+    struct cmx_entityHandleArg handle;
+    c_ulong resultLength=0;
+
+    ce = cmx_entityClaim(entity);
+    if(ce != NULL){
+        kind = K_ENTITY; /*FORCED*/
+
+        arg = cmx_walkEntityArg(os_malloc(C_SIZEOF(cmx_walkEntityArg)));
+
+        if(arg){
+            arg->length = 0;
+            arg->filter = kind;
+            arg->list = NULL;
+            arg->entityArg.entity = ce;
+            arg->entityArg.create = TRUE;
+            arg->entityArg.result = NULL;
+
+            walkSuccess = u_entityWalkEntities(u_entity(ce->uentity),
+                                               cmx_entityWalkAction,
+                                               (c_voidp)(arg));
+
+            if (walkSuccess == U_RESULT_OK) {
+                /*First level of children*/
+                if(arg->list != NULL && arg->length > 0){
+                    xmlTempChild = (c_char*)c_iterTakeFirst(arg->list);
+                    while(xmlTempChild){
+                        tempChild = cmx_entityClaim(xmlTempChild);
+                        if(tempChild != NULL){
+                            (void)u_observableAction(u_observable(ce->uentity),
+                                                     getHandleAction,
+                                                     (c_voidp)&handle);
+                            if((handle.index == childIndex) && (handle.serial == childSerial)){
+                                c_iterInsert(*resultPath, xmlTempChild);
+                                resultLength+=strlen(xmlTempChild);
+                                xmlTempChild = NULL;
+                                break;
+                            }else{
+                                resultLength+=cmx_entityPathFinder(xmlTempChild, childIndex, childSerial, resultPath);
+                                if(c_iterLength(*resultPath)==0){
+                                    cmx_entityFree(xmlTempChild);
+                                    xmlTempChild = (c_char*)c_iterTakeFirst(arg->list);
+                                }else{
+                                    c_iterInsert(*resultPath, xmlTempChild);
+                                    resultLength+=strlen(xmlTempChild);
+                                    xmlTempChild = NULL;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if(c_iterLength(arg->list)>0){
+                xmlTempChild = (c_char*)c_iterTakeFirst(arg->list);
+                while(xmlTempChild){
+                    cmx_entityFree(xmlTempChild);
+                    xmlTempChild = (c_char*)c_iterTakeFirst(arg->list);
+                }
+            }
+            c_iterFree(arg->list);
+            os_free(arg);
+        }
+    }
+    return resultLength;
+}
+
+c_char *
+cmx_entityGetEntityTree(
+    const c_char* entity,
+    const c_char* childIndex,
+    const c_char* childSerial)
+{
+    c_char* result;
+    c_ulong resultLength = 0;
+    c_iter resultPath = c_iterNew(NULL);
+    c_ulong _childIndex = 0;
+    c_ulong _childSerial = 0;
+    if(sscanf(childIndex,"%u", &_childIndex) && sscanf(childSerial,"%u", &_childSerial)){
+        resultLength = cmx_entityPathFinder(entity, _childIndex, _childSerial, &resultPath);
+    }
+    result = cmx_convertToXMLList(resultPath, resultLength);
 
     return result;
 }
@@ -612,36 +865,43 @@ cmx_entityDependantEntities(
     const c_char* entity,
     const c_char* filter)
 {
-    u_entity e;
+    cmx_entity ce;
     c_char* result;
-    v_kind kind;
     u_result walkSuccess;
     cmx_walkEntityArg arg;
 
     result = NULL;
-    e = cmx_entityUserEntity(entity);
-    kind = cmx_resolveKind(filter);
 
-    arg = cmx_walkEntityArg(os_malloc(C_SIZEOF(cmx_walkEntityArg)));
-    arg->length = 0;
-    arg->filter = kind;
-    arg->list = NULL;
+    ce = cmx_entityClaim(entity);
 
-    arg->entityArg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-    arg->entityArg->participant = u_entityParticipant(e);
-    arg->entityArg->create = TRUE;
-    arg->entityArg->result = NULL;
+    if(ce != NULL){
+        switch (u_objectKind(u_object(ce->uentity))) {
+        case U_WAITSET:
+            /* Waitset: return an empty list.
+             * Waitsets aren't and weren't supported by u_entityWalkEntities() anyway. */
+            result = cmx_convertToXMLList(NULL, 0);
+        break;
+        default:
+            arg = cmx_walkEntityArg(os_malloc(C_SIZEOF(cmx_walkEntityArg)));
+            arg->length = 0;
+            arg->filter = cmx_resolveKind(filter);
+            arg->list = NULL;
+            arg->entityArg.entity = ce;
+            arg->entityArg.create = TRUE;
+            arg->entityArg.result = NULL;
 
-    walkSuccess = u_entityWalkDependantEntities(e,
-                                                cmx_entityWalkAction,
-                                                (c_voidp)(arg));
+            walkSuccess = u_entityWalkDependantEntities(u_entity(ce->uentity),
+                                                        cmx_entityWalkAction,
+                                                        (c_voidp)(arg));
 
-    if(walkSuccess == U_RESULT_OK){
-        result = cmx_convertToXMLList(arg->list, arg->length);
+            if (walkSuccess == U_RESULT_OK) {
+                result = cmx_convertToXMLList(arg->list, arg->length);
+            }
+            os_free(arg);
+        break;
+        }
+        cmx_entityRelease(ce);
     }
-    os_free(arg->entityArg);
-    os_free(arg);
-
     return result;
 }
 
@@ -653,22 +913,24 @@ c_char*
 cmx_entityStatus(
     const c_char* entity)
 {
-    u_entity e;
+    cmx_entity ce;
     struct cmx_statusArg arg;
 
     arg.result = NULL;
 
-    e = cmx_entityUserEntity(entity);
-
-    if(e != NULL){
-        u_entityAction(e, cmx_entityStatusAction, &arg);
+    ce = cmx_entityClaim(entity);
+    if(ce != NULL){
+        if (u_objectKind(u_object(ce->uentity)) != U_WAITSET) {
+            (void)u_observableAction(u_observable(ce->uentity), cmx_entityStatusAction, &arg);
+        }
+        cmx_entityRelease(ce);
     }
     return arg.result;
 }
 
 void
 cmx_entityStatusAction(
-    v_entity entity,
+    v_public entity,
     c_voidp args)
 {
     sd_serializer ser;
@@ -676,8 +938,10 @@ cmx_entityStatusAction(
     struct cmx_statusArg *arg;
     arg = (struct cmx_statusArg *)args;
 
-    ser = sd_serializerXMLNewTyped(c_getType((c_object)entity->status));
-    data = sd_serializerSerialize(ser, entity->status);
+    /* Only entities will enter this function (no waitsets). */
+
+    ser = sd_serializerXMLNewTyped(c_getType(c_object(v_entity(entity)->status)));
+    data = sd_serializerSerialize(ser, c_object(v_entity(entity)->status));
     arg->result = sd_serializerToString(ser, data);
     sd_serializedDataFree(data);
     sd_serializerFree(ser);
@@ -691,15 +955,17 @@ c_char*
 cmx_entityStatistics(
     const c_char* entity)
 {
-    u_entity e;
+    cmx_entity ce;
     struct cmx_statisticsArg arg;
 
     arg.result = NULL;
 
-    e = cmx_entityUserEntity(entity);
-
-    if(e != NULL){
-        u_entityAction(e, cmx_entityStatisticsAction, &arg);
+    ce = cmx_entityClaim(entity);
+    if(ce != NULL){
+        if (u_objectKind(u_object(ce->uentity)) != U_WAITSET) {
+            (void)u_observableAction(u_observable(ce->uentity), cmx_entityStatisticsAction, &arg);
+        }
+        cmx_entityRelease(ce);
     }
     return arg.result;
 }
@@ -710,73 +976,116 @@ cmx_entitiesStatistics(
 {
     c_iter cmEntityList;
     c_iter cmStatisticsList = c_iterNew(NULL);
-    u_entity cmEntity;
+    cmx_entity cmEntity;
     struct cmx_statisticsArg temp, arg;
-    int statisticsSize = 0;
+    size_t statisticsSize = 0;
     c_char* openTag = "<statistics>";
     c_char* closeTag = "</statistics>";
     c_char* emptyStat = "<object></object>";
     c_char* cmStatistics = NULL;
     u_result result;
 
-    cmEntityList = cmx_entityUserEntities(entities);
+    cmEntityList = cmx_entityCmxEntities(entities);
     arg.result = NULL;
     temp.result = NULL;
 
     if(cmEntityList != NULL && c_iterLength(cmEntityList) > 0){
-        cmEntity = (u_entity) c_iterTakeFirst(cmEntityList);
-		while(cmEntity){
-		    result = u_entityAction(cmEntity, cmx_entityStatisticsAction, &temp);
-			if(temp.result != NULL && result == U_RESULT_OK){
-				statisticsSize += strlen(temp.result);
-				c_iterAppend(cmStatisticsList, temp.result);
-				temp.result = NULL;
-			}else{
-				statisticsSize += strlen(emptyStat);
-				c_iterAppend(cmStatisticsList, os_strdup(emptyStat));
-			}
-			cmEntity = (u_entity) c_iterTakeFirst(cmEntityList);
-		}
-	}
-    c_iterFree(cmEntityList);
-	arg.result = os_malloc((statisticsSize+strlen(openTag)+strlen(closeTag)+1)*sizeof(c_char));
-	if (arg.result) {
-        *arg.result = '\0';
-        os_strcat(arg.result, openTag);
-        if(c_iterLength(cmStatisticsList) > 0){
-            cmStatistics = (c_char*)c_iterTakeFirst(cmStatisticsList);
-            while(cmStatistics){
-                os_strcat(arg.result, cmStatistics);
-                os_free(cmStatistics);
-                cmStatistics = (c_char*)c_iterTakeFirst(cmStatisticsList);
+        cmEntity = (cmx_entity) c_iterTakeFirst(cmEntityList);
+        while(cmEntity){
+            if (u_objectKind(u_object(cmEntity->uentity)) != U_WAITSET) {
+                result = u_observableAction(u_observable(cmEntity->uentity),
+                                            cmx_entityStatisticsAction,
+                                            &temp);
+                if(temp.result != NULL && result == U_RESULT_OK){
+                    statisticsSize += strlen(temp.result);
+                    c_iterAppend(cmStatisticsList, temp.result);
+                    temp.result = NULL;
+                } else {
+                    statisticsSize += strlen(emptyStat);
+                    c_iterAppend(cmStatisticsList, os_strdup(emptyStat));
+                }
             }
+            cmx_entityRelease(cmEntity);
+            cmEntity = (cmx_entity) c_iterTakeFirst(cmEntityList);
         }
-        os_strcat(arg.result, closeTag);
-	} else {
-	    while ((cmStatistics = c_iterTakeFirst(cmStatisticsList)) != NULL) {
-	        os_free(cmStatistics);
-	    }
-	}
-	c_iterFree(cmStatisticsList);
+    }
+    c_iterFree(cmEntityList);
+    arg.result = os_malloc((statisticsSize+strlen(openTag)+strlen(closeTag)+1)*sizeof(c_char));
+    *arg.result = '\0';
+    os_strcat(arg.result, openTag);
+    if(c_iterLength(cmStatisticsList) > 0){
+        cmStatistics = (c_char*)c_iterTakeFirst(cmStatisticsList);
+        while(cmStatistics){
+            os_strcat(arg.result, cmStatistics);
+            os_free(cmStatistics);
+            cmStatistics = (c_char*)c_iterTakeFirst(cmStatisticsList);
+        }
+    }
+    os_strcat(arg.result, closeTag);
+    c_iterFree(cmStatisticsList);
     return arg.result;
 }
 
 void
 cmx_entityStatisticsAction(
-    v_entity entity,
+    v_public object,
     c_voidp args)
 {
     sd_serializer ser;
     sd_serializedData data;
     struct cmx_statisticsArg *arg;
+    v_statistics statistics;
+
     arg = (struct cmx_statisticsArg *)args;
 
-    if(entity->statistics != NULL){
-        ser = sd_serializerXMLNewTyped(c_getType((c_object)entity->statistics));
-        data = sd_serializerSerialize(ser, entity->statistics);
-        arg->result = sd_serializerToString(ser, data);
-        sd_serializedDataFree(data);
-        sd_serializerFree(ser);
+    if (object == NULL) {
+        /* Somebody actually tries to get statistics of a non-entity.
+         * There are none. */
+        arg->result = NULL;
+
+    } else {
+
+        switch(v_objectKind(object)) {
+        case K_WRITER:
+            statistics = v_statistics(v_writer(object)->statistics);
+        break;
+        case K_DATAREADER:
+            statistics = v_statistics(v_dataReader(object)->statistics);
+        break;
+        case K_QUERY:
+        case K_DATAREADERQUERY:
+        case K_DATAVIEWQUERY:
+            statistics = v_statistics(v_query(object)->statistics);
+        break;
+        case K_NETWORKREADER:
+            statistics = v_statistics(v_networkReader(object)->statistics);
+        break;
+        case K_NETWORKING:
+            statistics = v_statistics(v_networking(object)->statistics);
+        break;
+        case K_KERNEL:
+            statistics = v_statistics(v_kernel(object)->statistics);
+        break;
+        case K_DURABILITY:
+            statistics = v_statistics(v_durability(object)->statistics);
+        break;
+        case K_CMSOAP:
+            statistics = v_statistics(v_cmsoap(object)->statistics);
+        break;
+        default:
+            /* Remaining entities don't have specific statistics yet. */
+            statistics = NULL;
+            arg->result = NULL;
+        break;
+        }
+
+        if(statistics != NULL){
+            ser = sd_serializerXMLNewTyped(c_getType((c_object)statistics));
+            data = sd_serializerSerialize(ser, statistics);
+            arg->result = sd_serializerToString(ser, data);
+            sd_serializedDataFree(data);
+            sd_serializerFree(ser);
+        }
     }
 }
 
@@ -790,38 +1099,171 @@ cmx_entityResetStatistics(
     const c_char* entity,
     const c_char* fieldName)
 {
-    u_entity e;
+    cmx_entity ce;
     struct cmx_resetStatisticsArg arg;
 
     arg.result = CMX_RESULT_ENTITY_NOT_AVAILABLE;
 
-    e = cmx_entityUserEntity(entity);
+    ce = cmx_entityClaim(entity);
 
-    if(e != NULL){
+    if(ce != NULL){
         arg.fieldName = fieldName;
-
-        u_entityAction(e, cmx_entityStatisticsResetAction, &arg);
+        if (u_objectKind(u_object(ce->uentity)) != U_WAITSET) {
+            (void)u_observableAction(u_observable(ce->uentity),
+                                     cmx_entityStatisticsResetAction,
+                                     &arg);
+        }
+        cmx_entityRelease(ce);
     }
+
     return arg.result;
 }
 
 void
 cmx_entityStatisticsResetAction(
-    v_entity entity,
+    v_public object,
     c_voidp args)
 {
     struct cmx_resetStatisticsArg *arg;
-    c_bool result;
+    c_bool result = TRUE;
     arg = (struct cmx_resetStatisticsArg *)args;
 
-    if(entity->statistics != NULL){
-        result = v_statisticsReset(entity->statistics, arg->fieldName);
-
-        if(result == TRUE){
-            arg->result = CMX_RESULT_OK;
+    switch (v_objectKind(object)) {
+    case K_KERNEL:
+        if (arg->fieldName) {
+            result = v_statisticsResetField(v_statistics(v_kernel(object)->statistics), arg->fieldName);
         } else {
-            arg->result = CMX_RESULT_FAILED;
+            v_kernelStatisticsInit(v_kernel(object)->statistics);
         }
+    break;
+    case K_WRITER:
+        if (arg->fieldName) {
+            result = v_statisticsResetField(v_statistics(v_writer(object)->statistics), arg->fieldName);
+        } else {
+            v_writerStatisticsInit(v_writer(object)->statistics);
+        }
+    break;
+    case K_DATAREADER:
+        if (arg->fieldName) {
+            result = v_statisticsResetField(v_statistics(v_dataReader(object)->statistics), arg->fieldName);
+        } else {
+            v_dataReaderStatisticsInit(v_dataReader(object)->statistics);
+        }
+    break;
+    case K_DATAVIEWQUERY:
+    case K_QUERY:
+        if (arg->fieldName) {
+            result = v_statisticsResetField(v_statistics(v_query(object)->statistics), arg->fieldName);
+        } else {
+            v_queryStatisticsInit(v_query(object)->statistics);
+        }
+    break;
+    case K_NETWORKREADER:
+        if (arg->fieldName) {
+            result = v_statisticsResetField(v_statistics(v_networkReader(object)->statistics), arg->fieldName);
+        } else {
+            v_networkReaderStatisticsInit(v_networkReader(object)->statistics);
+        }
+    break;
+    case K_DURABILITY:
+        if (arg->fieldName) {
+            result = v_statisticsResetField(v_statistics(v_durability(object)->statistics), arg->fieldName);
+        } else {
+            v_durabilityStatisticsInit(v_durability(object)->statistics);
+        }
+    break;
+    case K_NWBRIDGE:
+    break;
+    case K_CMSOAP:
+        if (arg->fieldName) {
+            result = v_statisticsResetField(v_statistics(v_cmsoap(object)->statistics), arg->fieldName);
+        } else {
+            v_cmsoapStatisticsInit(v_cmsoap(object)->statistics);
+        }
+    break;
+    case K_NETWORKING:
+        if (arg->fieldName) {
+            result = v_statisticsResetField(v_statistics(v_networking(object)->statistics), arg->fieldName);
+        } else {
+            v_networkingStatisticsInit(v_networking(object)->statistics);
+        }
+    break;
+    case K_RNR:
+    break;
+    case K_GROUPQUEUE:
+        if (arg->fieldName) {
+            result = v_statisticsResetField(v_statistics(v_groupQueue(object)->statistics), arg->fieldName);
+        } else {
+            v_groupQueueStatisticsInit(v_groupQueue(object)->statistics);
+        }
+    break;
+    default:
+        result = FALSE;
+    break;
+    }
+    if(result == TRUE){
+        arg->result = CMX_RESULT_OK;
+    } else {
+        arg->result = CMX_RESULT_FAILED;
+    }
+}
+
+void
+cmx_entityStatisticsFieldResetAction(
+    v_public object,
+    c_voidp args)
+{
+    struct cmx_resetStatisticsArg *arg;
+    c_bool result = FALSE;
+    v_statistics statistics = NULL;
+
+    arg = (struct cmx_resetStatisticsArg *)args;
+
+    switch (v_objectKind(object)) {
+    case K_KERNEL:
+        statistics = v_statistics(v_kernel(object)->statistics);
+    break;
+    case K_WRITER:
+        statistics = v_statistics(v_writer(object)->statistics);
+    break;
+    case K_DATAREADER:
+        statistics = v_statistics(v_dataReader(object)->statistics);
+    break;
+    case K_DATAVIEWQUERY:
+    case K_QUERY:
+        statistics = v_statistics(v_query(object)->statistics);
+    break;
+    case K_NETWORKREADER:
+        statistics = v_statistics(v_networkReader(object)->statistics);
+    break;
+    case K_DURABILITY:
+        statistics = v_statistics(v_durability(object)->statistics);
+    break;
+    case K_NWBRIDGE:
+    break;
+    case K_CMSOAP:
+        statistics = v_statistics(v_cmsoap(object)->statistics);
+    break;
+    case K_NETWORKING:
+        statistics = v_statistics(v_networking(object)->statistics);
+    break;
+    case K_RNR:
+    break;
+    case K_GROUPQUEUE:
+    break;
+    default:
+        statistics = NULL;
+    break;
+    }
+
+    if(statistics != NULL){
+        result = v_statisticsResetField(statistics, arg->fieldName);
+    }
+
+    if(result == TRUE){
+        arg->result = CMX_RESULT_OK;
+    } else {
+        arg->result = CMX_RESULT_FAILED;
     }
 }
 
@@ -830,15 +1272,18 @@ cmx_entityQoS(
     const c_char* entity)
 {
     c_char* result;
-    u_result ur;
-    u_entity e;
+    cmx_entity ce;
 
     result = NULL;
-    e = cmx_entityUserEntity(entity);
+    ce = cmx_entityClaim(entity);
 
-    if (e != NULL) {
-        ur = u_entityAction(e, (void (*)(v_entity e, c_voidp arg))cmx_qosNew, &result);
+    if (ce != NULL) {
+        if (u_objectKind(u_object(ce->uentity)) != U_WAITSET) {
+            (void)u_entityGetXMLQos(u_entity(ce->uentity), &result);
+        }
+        cmx_entityRelease(ce);
     }
+
     return result;
 }
 
@@ -847,33 +1292,35 @@ cmx_entitySetQoS(
     const c_char* entity,
     const c_char* qos)
 {
-    v_qos vqos;
-    u_entity e;
+    cmx_entity ce;
     u_result ur;
     const c_char* result;
 
     result = CMX_RESULT_FAILED;
-    vqos = cmx_qosKernelQos(entity, qos);
+    if (qos != NULL && (strlen(qos) > 0)) {
+        ce = cmx_entityClaim(entity);
+        if(ce != NULL){
+            if (u_objectKind(u_object(ce->uentity)) != U_WAITSET) {
+                ur = u_entitySetXMLQos(u_entity(ce->uentity), qos);
 
-    if(vqos != NULL){
-        e = cmx_entityUserEntity(entity);
-
-        if(e != NULL){
-            ur = u_entitySetQoS(e, vqos);
-
-            if(ur == U_RESULT_OK){
-                result = CMX_RESULT_OK;
-            } else if(ur == U_RESULT_ILL_PARAM){
-                result = CMX_RESULT_ILL_PARAM;
-            } else if(ur == U_RESULT_INCONSISTENT_QOS){
-                result = CMX_RESULT_INCONSISTENT_QOS;
-            } else if(ur == U_RESULT_IMMUTABLE_POLICY){
-                result = CMX_RESULT_IMMUTABLE_POLICY;
+                if(ur == U_RESULT_OK){
+                    result = CMX_RESULT_OK;
+                } else if(ur == U_RESULT_ILL_PARAM){
+                    result = CMX_RESULT_ILL_PARAM;
+                } else if(ur == U_RESULT_INCONSISTENT_QOS){
+                    result = CMX_RESULT_INCONSISTENT_QOS;
+                } else if(ur == U_RESULT_IMMUTABLE_POLICY){
+                    result = CMX_RESULT_IMMUTABLE_POLICY;
+                } else {
+                    result = CMX_RESULT_FAILED;
+                }
             } else {
-                result = CMX_RESULT_FAILED;
+                result = CMX_RESULT_ILL_PARAM;
             }
+            cmx_entityRelease(ce);
         }
-        c_free(vqos);
+    } else {
+        result = CMX_RESULT_ILL_PARAM;
     }
     return result;
 }
@@ -882,43 +1329,116 @@ const c_char*
 cmx_entityEnable(
     const c_char* entity)
 {
-    u_entity e;
+    cmx_entity ce;
     const c_char* result;
 
     result = CMX_RESULT_ENTITY_NOT_AVAILABLE;
-    e = cmx_entityUserEntity(entity);
+    ce = cmx_entityClaim(entity);
 
-    if(e != NULL){
-        result = CMX_RESULT_NOT_IMPLEMENTED;
+    if(ce != NULL){
+        if (u_objectKind(u_object(ce->uentity)) != U_WAITSET) {
+            result = CMX_RESULT_NOT_IMPLEMENTED;
+        } else {
+            result = CMX_RESULT_ILL_PARAM;
+        }
+        cmx_entityRelease(ce);
     }
+
     return result;
 }
 
-u_entity
-cmx_entityUserEntity(
+c_char*
+cmx_entityXml(
+        const c_string name,
+        const c_address proxy,
+        const v_handle *handle,
+        const c_bool enabled,
+        const c_string special)
+{
+    c_char* xml_enabled;
+    c_char* xml_name;
+    c_ulong xml_hdl_index  = 0;
+    c_ulong xml_hdl_serial = 0;
+    char buf[1024];
+
+    assert(special);
+
+    if(enabled){
+        xml_enabled = "TRUE";
+    } else {
+        xml_enabled = "FALSE";
+    }
+
+    if(name){
+        xml_name = getXMLEscapedString(name);
+    } else {
+        xml_name = os_strdup("NULL");
+    }
+
+    if (handle) {
+        xml_hdl_index  = handle->index;
+        xml_hdl_serial = handle->serial;
+    }
+
+    os_sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%u</handle_index><handle_serial>%u</handle_serial><name>%s</name><enabled>%s</enabled>%s</entity>",
+                proxy,
+                xml_hdl_index,
+                xml_hdl_serial,
+                xml_name,
+                xml_enabled,
+                special);
+
+    os_free(xml_name);
+
+    return os_strdup(buf);
+}
+
+cmx_entity
+cmx_entityClaim(
     const c_char* xmlEntity)
 {
     c_char* copy;
     c_char* temp;
-    u_entity e;
+    c_char* savePtr;
+    u_object e;
     int assigned;
+    cmx_entity entity;
 
-    e = NULL;
+    entity = NULL;
 
     if(xmlEntity != NULL){
-        if(cmx_isInitialized() == TRUE){
+        if(cmx_isInitialized() == OS_TRUE){
             copy = (c_char*)(os_malloc(strlen(xmlEntity) + 1));
-            os_strcpy(copy, xmlEntity);
-            temp = strtok((c_char*)copy, "</>");    /*<entity>*/
-            temp = strtok(NULL, "</>");             /*<pointer>*/
-            temp = strtok(NULL, "</>");             /*... the pointer*/
 
-            if(temp != NULL){
-                assigned = sscanf(temp, PA_ADDRFMT, (c_address *)(&e));
-                if (assigned != 1) {
-                    OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0,
-                            "Failed to retrieve entity address from xml string '%s'.",
-                            xmlEntity);
+            if(copy != NULL){
+                (void)os_strcpy(copy, xmlEntity);
+
+                temp = os_strtok_r((c_char*)copy, "</>", &savePtr);/*<entity>*/
+
+                if(temp != NULL){
+                    temp = os_strtok_r(NULL, "</>", &savePtr);/*<pointer>*/
+
+                    if(temp != NULL){
+                        temp = os_strtok_r(NULL, "</>", &savePtr);/*...the pointer*/
+
+                        if(temp != NULL){
+                            assigned = sscanf(temp, PA_ADDRFMT, (c_address *)(&e));
+
+                            if (assigned != 1) {
+                                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                                        "Failed to retrieve entity address from xml string '%s' and address 0x%s",
+                                        xmlEntity, temp);
+                            } else {
+                                entity = cmx_factoryClaimEntity(e);
+
+                                if(entity == NULL){
+                                    OS_REPORT(OS_WARNING, CM_XML_CONTEXT, 0,
+                                         "Entity "PA_ADDRFMT" (0x%s) from string '%s' has already been freed.\n",
+                                         (c_address)e, temp, xmlEntity);
+                                }
+                            }
+                        }
+                    }
                 }
             }
             os_free(copy);
@@ -926,71 +1446,44 @@ cmx_entityUserEntity(
             cmx_detach();
         }
     }
-    return e;
-}
-
-c_iter
-cmx_entityUserEntities(
-    const c_char* xmlEntities)
-{
-    int length = 0;
-    int i = 0;
-    int nrOfEntities = 0;
-    c_char * substring;
-    c_char * xmlEntity = NULL;
-    u_entity cmEntity;
-    c_iter cmEntities = NULL;
-
-    c_iter xmlEntityList = c_iterNew(NULL);
-    if (!xmlEntityList) goto err_iterNewEntityList;
-
-    cmEntities = c_iterNew(NULL);
-    if (!cmEntities) goto err_iterNewEntities;
-
-    xmlEntities+=12; 											/*<entityList>*/
-    substring = strstr(xmlEntities, "</entity>");
-    while(substring){
-        length = substring - xmlEntities + 9;					/*</entity>*/
-        xmlEntity = os_malloc((length+1) * sizeof(c_char));
-        if (xmlEntity) {
-            os_strncpy(xmlEntity, xmlEntities, length);
-            xmlEntity[length] = '\0';
-            c_iterAppend(xmlEntityList, xmlEntity);
-            xmlEntities = xmlEntities + length;
-            substring = strstr(xmlEntities, "</entity>");
-        } else {
-            while ((xmlEntity = c_iterTakeFirst(xmlEntityList)) != NULL ) {
-                os_free(xmlEntity);
-            }
-            c_iterFree(cmEntities);
-            cmEntities = NULL;
-            goto err_iterNewEntities;
-        }
-    }
-    nrOfEntities = c_iterLength(xmlEntityList);
-    for(i = 0 ; i<nrOfEntities; i++){
-        xmlEntity = (c_char*)c_iterTakeFirst(xmlEntityList);
-        cmEntity = cmx_entityUserEntity(xmlEntity);
-        c_iterAppend(cmEntities, cmEntity);
-        os_free(xmlEntity);
-    }
-
-err_iterNewEntities:
-    c_iterFree(xmlEntityList);
-err_iterNewEntityList:
-    return cmEntities;
+    return entity;
 }
 
 void
 cmx_entityKernelAction(
-    v_entity entity,
+    v_public object,
     c_voidp args)
 {
     cmx_entityKernelArg arg;
 
     arg = cmx_entityKernelArg(args);
 
-    if(entity != NULL){
-        arg->kernel = v_objectKernel(entity);
+    if(object != NULL){
+        arg->kernel = v_objectKernel(object);
     }
 }
+
+u_result
+cmx_entityRegister (
+    u_object object,
+    cmx_entity participant,
+    c_char **xml)
+{
+    u_result ur = U_RESULT_ILL_PARAM;
+    if (object && xml) {
+        C_STRUCT(cmx_entityArg) arg;
+        arg.create = FALSE;
+        arg.result = NULL;
+        arg.entity = cmx_registerObject(object, participant);
+        ur = u_observableAction(u_observable(object),
+                                cmx_entityNewFromAction,
+                                (c_voidp)&arg);
+        if(ur == U_RESULT_OK){
+            *xml = arg.result;
+        } else {
+            cmx_deregisterObject(object);
+        }
+    }
+    return ur;
+}
+

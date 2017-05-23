@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_genSplHelper.h"
@@ -14,6 +22,8 @@
 
 #include "os_stdlib.h"
 #include "os_heap.h"
+
+#define NO_MEMALLOC_FAIL_REPORT 1
 
 /* Print a BOUNDSCHECK out of range error message to the default output file
 */
@@ -125,6 +135,33 @@ idl_boundsCheckFailNull(
     os_free(scopeName);
 }
 
+void
+idl_memoryAllocFailed(
+    idl_scope scope,
+    idl_typeSpec type,
+    const c_char* name,
+    c_long indent)
+{
+#if NO_MEMALLOC_FAIL_REPORT
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(type);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(indent);
+#else
+    c_char *scopeName;
+    /* Create scoped name for type */
+    scopeName = idl_scopeStack(scope, "::", NULL);
+    idl_printIndent(indent);
+    idl_fileOutPrintf(idl_fileCur(), "OS_REPORT (OS_ERROR, \"copyIn\", 0,"\
+            "\"Memory allocation failed for '%s.%s' of type '%s'.\");\n",
+            scopeName,
+            name,
+            idl_typeSpecName(type));
+    os_free(scopeName);
+#endif
+}
+
+
 /* Print the specified indentation the the default output file,
    the indent is specified in units of 4 space characters
 */
@@ -193,35 +230,35 @@ idl_scopedSplTypeName (
 
     /* QAC EXPECT 3416; No unexpected side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tseq) {
-	/* Sequences map to c_sequence */
-	os_strncpy (scopedTypeName, "c_sequence", sizeof(scopedTypeName));
+        /* Sequences map to c_sequence */
+        os_strncpy (scopedTypeName, "c_sequence", sizeof(scopedTypeName));
         /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tbasic) {
-	/* For basic types take the corresponding type name supported by the splice database */
-	/* QAC EXPECT 3416; No unexpected side effects here */
-	if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
-	    /* in case of bounded string the type name must become c_string 	*/
-	    /* type name is of form "C_STRING<xx>"				*/
-	   os_strncpy (scopedTypeName, "c_string", sizeof(scopedTypeName));
-	} else {
-	   os_strncpy (scopedTypeName, idl_typeSpecName(idl_typeSpec(typeSpec)), sizeof(scopedTypeName));
-	}
+        /* For basic types take the corresponding type name supported by the splice database */
+        /* QAC EXPECT 3416; No unexpected side effects here */
+        if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
+            /* in case of bounded string the type name must become c_string 	*/
+            /* type name is of form "C_STRING<xx>"				*/
+            os_strncpy (scopedTypeName, "c_string", sizeof(scopedTypeName));
+        } else {
+            os_strncpy (scopedTypeName, idl_typeSpecName(idl_typeSpec(typeSpec)), sizeof(scopedTypeName));
+        }
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct ||
-	idl_typeSpecType(typeSpec) == idl_tunion) {
-	snprintf (scopedTypeName, (size_t)sizeof(scopedTypeName), "struct _%s",
-	    idl_scopeStack (
+            idl_typeSpecType(typeSpec) == idl_tunion) {
+        snprintf (scopedTypeName, sizeof(scopedTypeName), "struct _%s",
+                idl_scopeStack (
                 idl_typeUserScope(idl_typeUser(typeSpec)),
                 "_",
                 idl_typeSpecName(idl_typeSpec(typeSpec))));
     } else if (idl_typeSpecType(typeSpec) == idl_tenum) {
-	snprintf (scopedTypeName, (size_t)sizeof(scopedTypeName), "enum _%s",
-	    idl_scopeStack (
+        snprintf (scopedTypeName, sizeof(scopedTypeName), "enum _%s",
+                idl_scopeStack (
                 idl_typeUserScope(idl_typeUser(typeSpec)),
                 "_",
                 idl_typeSpecName(idl_typeSpec(typeSpec))));
     } else {
-	snprintf (scopedTypeName, (size_t)sizeof(scopedTypeName), "_%s",
-	    idl_scopeStack (
+        snprintf (scopedTypeName, sizeof(scopedTypeName), "_%s",
+                idl_scopeStack (
                 idl_typeUserScope(idl_typeUser(typeSpec)),
                 "_",
                 idl_typeSpecName(idl_typeSpec(typeSpec))));
@@ -257,42 +294,42 @@ idl_scopedTypeIdent (
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
 	/* QAC EXPECT 3416; No unexpected side effects here */
 	if (idl_typeBasicType (idl_typeBasic(typeSpec)) == idl_string) {
-	    snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_string");
+	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "c_string");
 	} else {
-	    snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "%s",
+	    snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
 	        idl_typeSpecName(idl_typeSpec(typeSpec)));
 	}
 	/* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tenum) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "enum %s",
+	snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "enum %s",
 	    idl_scopeStack (
                 idl_typeUserScope(idl_typeUser(typeSpec)),
                 "_",
                 idl_typeSpecName(idl_typeSpec(typeSpec))));
 	/* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "struct %s",
+	snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "struct %s",
 	    idl_scopeStack (
                 idl_typeUserScope(idl_typeUser(typeSpec)),
                 "_",
                 idl_typeSpecName(idl_typeSpec(typeSpec))));
 	/* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tunion) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "struct %s",
+	snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "struct %s",
 	    idl_scopeStack (
                 idl_typeUserScope(idl_typeUser(typeSpec)),
                 "_",
                 idl_typeSpecName(idl_typeSpec(typeSpec))));
 	/* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "%s",
+	snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
 	    idl_scopeStack (
                 idl_typeUserScope(idl_typeUser(typeSpec)),
                 "_",
                 idl_typeSpecName(idl_typeSpec(typeSpec))));
 	/* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_sequence");
+	snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "c_sequence");
     } else {
 	/* Do nothing, only to prevent dangling else-ifs QAC messages */
     }
@@ -326,46 +363,46 @@ idl_scopedSplTypeIdent (
 
     /* QAC EXPECT 3416; No unexpected side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
-	/* QAC EXPECT 3416; No unexpected side effects here */
-	if (idl_typeBasicType (idl_typeBasic(typeSpec)) == idl_string) {
-	    snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_string");
-	} else {
-	    snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "%s",
-	        idl_typeSpecName(idl_typeSpec(typeSpec)));
-	}
-	/* QAC EXPECT 3416; No unexpected side effects here */
+        /* QAC EXPECT 3416; No unexpected side effects here */
+        if (idl_typeBasicType (idl_typeBasic(typeSpec)) == idl_string) {
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "c_string");
+        } else {
+            snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "%s",
+                    idl_typeSpecName(idl_typeSpec(typeSpec)));
+        }
+        /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tenum) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "enum _%s",
-	    idl_scopeStack (
-                idl_typeUserScope(idl_typeUser(typeSpec)),
-                "_",
-                idl_typeSpecName(idl_typeSpec(typeSpec))));
-	/* QAC EXPECT 3416; No unexpected side effects here */
+        snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "enum _%s",
+                idl_scopeStack (
+                        idl_typeUserScope(idl_typeUser(typeSpec)),
+                        "_",
+                        idl_typeSpecName(idl_typeSpec(typeSpec))));
+        /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "struct _%s",
-	    idl_scopeStack (
-                idl_typeUserScope(idl_typeUser(typeSpec)),
-                "_",
-                idl_typeSpecName(idl_typeSpec(typeSpec))));
-	/* QAC EXPECT 3416; No unexpected side effects here */
+        snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "struct _%s",
+                idl_scopeStack (
+                        idl_typeUserScope(idl_typeUser(typeSpec)),
+                        "_",
+                        idl_typeSpecName(idl_typeSpec(typeSpec))));
+        /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tunion) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "struct _%s",
-	    idl_scopeStack (
-                idl_typeUserScope(idl_typeUser(typeSpec)),
-                "_",
-                idl_typeSpecName(idl_typeSpec(typeSpec))));
-	/* QAC EXPECT 3416; No unexpected side effects here */
+        snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "struct _%s",
+                idl_scopeStack (
+                        idl_typeUserScope(idl_typeUser(typeSpec)),
+                        "_",
+                        idl_typeSpecName(idl_typeSpec(typeSpec))));
+        /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "_%s",
-	    idl_scopeStack (
-                idl_typeUserScope(idl_typeUser(typeSpec)),
-                "_",
-                idl_typeSpecName(idl_typeSpec(typeSpec))));
-	/* QAC EXPECT 3416; No unexpected side effects here */
+        snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "_%s",
+                idl_scopeStack (
+                        idl_typeUserScope(idl_typeUser(typeSpec)),
+                        "_",
+                        idl_typeSpecName(idl_typeSpec(typeSpec))));
+        /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_sequence");
+        snprintf (scopedTypeIdent, sizeof(scopedTypeIdent), "c_sequence");
     } else {
-	/* Do nothing, only to prevent dangling else-ifs QAC messages */
+        /* Do nothing, only to prevent dangling else-ifs QAC messages */
     }
 
     return os_strdup(scopedTypeIdent);

@@ -2,7 +2,6 @@ set_var DDS_CORE ddskernel
 set_var DDS_CMJNI cmjni
 set_var DDS_CMXML cmxml
 set_var DDS_CMCOMMON cmcommon
-set_var DDS_COMMONSERV commonserv
 set_var DDS_CONFPARSER ddsconfparser
 set_var DDS_CONF ddsconf
 set_var DDS_QOSPROVIDER ddsqosprovider
@@ -10,11 +9,13 @@ set_var DDS_QOSPROVIDER_STATIC s_ddsqosprovider
 set_var DDS_DATABASE ddsdatabase
 set_var DDS_DCPSCCPP dcpsccpp
 set_var DDS_DCPSSACPP dcpssacpp
-set_var DDS_DCPSGAPI dcpsgapi
+set_var DDS_DCPSISOCPP dcpsisocpp
+set_var DDS_FACECPP facecpp
 set_var DDS_DCPSJNI dcpsjni
 set_var DDS_DCPSSAC dcpssac
 set_var DDS_DCPSSAJ dcpssaj
 set_var DDS_DCPSSACS dcpssacs
+set_var DDS_DCPSCOMMON dcpscommon
 set_var DDS_KERNEL ddskernel
 set_var DDS_SERIALIZATION ddsserialization
 set_var DDS_OS ddsos
@@ -28,12 +29,15 @@ set_var DDS_DURABILITY durability
 set_var DDS_NETWORKING networking
 set_var DDS_DDSI ddsi
 set_var DDS_DDSI2 ddsi2
+set_var DDS_CMAGENT cmagent
 set_var TS_TECOMMON te_common
 set_var TS_TESTFRAME testframe
 set_var TS_XMLPARSER xml_parser
 set_var CS_ASSEMBLY_NAME dcpssacsAssembly
 set_var DDS_CMX_STORAGE_TMPL_INC -I$OSPL_HOME/src/api/cm/xml/code/tmpl/
 set_var DDS_DURABILITY_TMPL_INC -I$OSPL_HOME/src/services/durability/code/tmpl/
+set_var DDS_STREAMSCCPP streamsccpp
+set_var DDS_STREAMSSACPP streamssacpp
 
 #
 # Build driven setup
@@ -60,30 +64,41 @@ set_var INCLUDE_ORB yes
 set_var INCLUDE_API yes
 set_var INCLUDE_API_CM yes
 set_var INCLUDE_API_DCPS yes
+set_var INCLUDE_API_DCPS_DOCS yes
 set_var INCLUDE_API_DCPS_CCPP yes
 set_var INCLUDE_API_DCPS_SACPP yes
-set_var INCLUDE_API_DCPS_GAPI yes
+set_var INCLUDE_API_DCPS_SACPP_PROJECT yes
 set_var INCLUDE_API_DCPS_SAC yes
 set_var INCLUDE_API_DCPS_JNI yes
 set_var INCLUDE_API_DCPS_SAJ yes
+set_var INCLUDE_API_DCPS_SAJ5 yes
 set_var INCLUDE_API_DCPS_CJ yes
+set_var INCLUDE_API_DCPS_CJ5 yes
 set_var INCLUDE_API_DCPS_JAVA yes
 set_var INCLUDE_API_DCPS_SACS yes
+set_var INCLUDE_API_DCPS_ISOCPP yes
+set_var INCLUDE_API_DCPS_ISOCPP2 yes
+set_var INCLUDE_API_DCPS_C99 yes
+set_var INCLUDE_API_FACE yes
+set_var INCLUDE_API_STREAMS yes
+set_var INCLUDE_API_STREAMS_CCPP yes
+set_var INCLUDE_API_STREAMS_SACPP yes
+set_var INCLUDE_API_STREAMS_ISOCPP yes
 set_var INCLUDE_TOOLS yes
 set_var INCLUDE_TOOLS_IDLPP yes
 set_var INCLUDE_TOOLS_SHMDUMP yes
 set_var INCLUDE_TOOLS_TUNER yes
-set_var INCLUDE_TOOLS_TESTER yes
+set_var INCLUDE_TOOLS_TESTER no
 set_var INCLUDE_TOOLS_MMSTAT yes
 set_var INCLUDE_TOOLS_DEBUG yes
 set_var INCLUDE_TOOLS_DEBUG_DBD yes
-set_var INCLUDE_TOOLS_DEBUG_MMFD no
+set_var INCLUDE_TOOLS_PROTOBUF no
 set_var INCLUDE_SERVICES yes
-set_var INCLUDE_SERVICES_DURABILITY yes
-set_var INCLUDE_SERVICES_NETWORKING yes
+set_var INCLUDE_SERVICES_NETWORKING no
 set_var INCLUDE_SERVICES_DDSI yes
 set_var INCLUDE_SERVICES_SPLICED yes
 set_var INCLUDE_SERVICES_CMSOAP yes
+set_var INCLUDE_SERVICES_CMAGENT yes
 set_var INCLUDE_SERVICES_COMMON yes
 set_var INCLUDE_SINGLE_PROCESS yes
 set_var INCLUDE_UTILITIES yes
@@ -94,4 +109,3 @@ set_var INCLUDE_UTIL_UNIQUE_DOMAIN_ID yes
 #
 # Test setup
 #
-set_var INCLUDE_DBT_API_DCPS_SACS yes

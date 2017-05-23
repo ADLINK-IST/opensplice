@@ -10,8 +10,11 @@ else
 include $(OSPL_HOME)/setup/x86.linux-default.mak
 endif
 
+# C only Compiler flags
+CFLAGS += -std=c99
+
 # Compiler flags
-CFLAGS_OPT       = -O0 -g
+CFLAGS_OPT       = -O0 -g 
 CFLAGS_DEBUG     = -DNDEBUG
 CFLAGS_STRICT_UNINITIALIZED =
 JCFLAGS          = -g

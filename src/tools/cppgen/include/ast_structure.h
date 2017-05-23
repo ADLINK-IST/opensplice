@@ -84,30 +84,32 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 */
 
 class AST_Structure : public virtual AST_ConcreteType,
-         public virtual UTL_Scope
+   public virtual UTL_Scope
 {
-
 public:
-   // Operations
 
-   // Constructor(s)
-   AST_Structure();
-   AST_Structure(UTL_ScopedName *n, const UTL_Pragmas &p);
-   AST_Structure(AST_Decl::NodeType nt, UTL_ScopedName *n, const UTL_Pragmas &p);
-   virtual ~AST_Structure()
-   {}
+   AST_Structure ();
+   AST_Structure (UTL_ScopedName *n, const UTL_Pragmas &p);
+   AST_Structure 
+      (AST_Decl::NodeType nt, UTL_ScopedName *n, const UTL_Pragmas &p);
+   virtual ~AST_Structure() {}
 
-   // Narrowing
-   DEF_NARROW_METHODS2(AST_Structure, AST_ConcreteType, UTL_Scope);
-   DEF_NARROW_FROM_DECL(AST_Structure);
-   DEF_NARROW_FROM_SCOPE(AST_Structure);
+   DEF_NARROW_METHODS2 (AST_Structure, AST_ConcreteType, UTL_Scope);
+   DEF_NARROW_FROM_DECL (AST_Structure);
+   DEF_NARROW_FROM_SCOPE (AST_Structure);
 
-   // AST Dumping
-   virtual void dump(ostream &o);
+   virtual void dump (ostream &o);
+
+   bool is_defined () { return pd_defined; };
+   void set_defined (bool def) { pd_defined = def; };
+
+protected:
+
+   virtual void virt_set_gen_any (void);
 
 private:
+
    friend int yyparse();
-   // Scope Management Protocol
 
    virtual AST_Union *fe_add_union(AST_Union *u);
    virtual AST_Structure *fe_add_structure(AST_Structure *s);
@@ -115,6 +117,8 @@ private:
    virtual AST_Enum *fe_add_enum(AST_Enum *e);
    virtual AST_EnumVal *fe_add_enum_val(AST_EnumVal *v);
    virtual AST_Typedef *fe_add_typedef(AST_Typedef *t);
+
+   bool pd_defined;
 };
 
-#endif           // _AST_STRUCTURE_AST_STRUCTURE_HH
+#endif

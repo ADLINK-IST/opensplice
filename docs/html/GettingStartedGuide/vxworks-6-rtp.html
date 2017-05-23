@@ -1,0 +1,495 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>11. VxWorks 6.x RTP &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="12. VxWorks 6.x Kernel Mode" href="vxworks-6-kernel.html" />
+    <link rel="prev" title="10. VxWorks 5.5.1" href="vxworks-551.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="vxworks-6-kernel.html" title="12. VxWorks 6.x Kernel Mode"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="vxworks-551.html" title="10. VxWorks 5.5.1"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="vxworks-6-x-rtp">
+<span id="id1"></span><h1>11. VxWorks 6.x RTP<a class="headerlink" href="#vxworks-6-x-rtp" title="Permalink to this headline">¶</a></h1>
+<p><em>This chapter provides a brief description of how to deploy Vortex OpenSplice
+on VxWorks 6.x as a Real Time Process.</em></p>
+<div class="section" id="vxworks-real-time-processes">
+<h2>11.1. VxWorks Real Time Processes<a class="headerlink" href="#vxworks-real-time-processes" title="Permalink to this headline">¶</a></h2>
+<p>Vortex OpenSplice is deployed on the VxWorks 6.x operating system as Real
+Time Processes (RTPs). For more information about RTPs please refer to
+WindRiver&#8217;s VxWorks documentation.</p>
+</div>
+<div class="section" id="installation">
+<h2>11.2. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>The following instructions describe installing Vortex OpenSplice for
+VxWorks 6.x on the Windows host environment.</p>
+<p>Start the installation process by double-clicking the Vortex OpenSplice
+Host Development Environment (HDE) installer file. Follow the on-screen
+instructions and complete the installation. When asked to configure the
+installation with a license file, choose <em>No</em>. The installer will
+create an Vortex OpenSplice entry in <em>Start &gt; Programs</em> which contains
+links to the OpenSplice tools, documentation, and an Uninstall option.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><p class="first">Please note that WindRiver&#8217;s Workbench GUI must be run in an environment
+where the OpenSplice variables have already been set. If you chose to
+set the OpenSplice variables globally during the installation stage,
+then Workbench can be run directly. Otherwise, Workbench must be run
+from the Vortex OpenSplice command prompt. Start the command prompt by
+clicking <em>Start &gt; Programs &gt; Vortex OpenSplice menu entry &gt; Vortex OpenSplice
+command prompt</em>, then start the Workbench GUI. On VxWorks 6.6 the
+executable is located at</p>
+<p><tt class="docutils literal"><span class="pre">&lt;WindRiver</span> <span class="pre">root</span> <span class="pre">directory&gt;\workbench-3.0\wrwb\platform\eclipse\wrwb-x86-win32.exe</span></tt></p>
+<p class="last">This executable can be found by right-clicking on the WindRiver&#8217;s
+Workbench <em>Start</em> menu item and choosing <em>Properties</em>.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="vxworks-kernel-requirements">
+<h2>11.3. VxWorks Kernel Requirements<a class="headerlink" href="#vxworks-kernel-requirements" title="Permalink to this headline">¶</a></h2>
+<p>The VxWorks kernel required to support Vortex OpenSplice on VxWorks 6.x is
+built using the development kernel configuration profile with the
+additional posix thread components enabled. A kernel based on this
+requirement can be built within Workbench, by starting the Workbench GUI
+and selecting <em>File &gt; New &gt; VxWorks Image Project</em>.</p>
+<p>Type a name for the project then select the appropriate Board Support
+Package and Tool Chain (for example <tt class="docutils literal"><span class="pre">cpn805</span></tt> and <tt class="docutils literal"><span class="pre">gnu</span></tt>). Leave the
+kernel options to be used as blank, and on the <em>Configuration Profile</em>
+dialog choose <tt class="docutils literal"><span class="pre">PROFILE_DEVELOPMENT</span></tt> from the drop-down list.</p>
+<p>Once the kernel configuration project has been generated, the additional
+required functionality can be enabled:</p>
+<ul class="simple">
+<li>POSIX threads (<tt class="docutils literal"><span class="pre">INCLUDE_POSIX_PTHREADS</span></tt>)</li>
+<li>POSIX thread scheduler in RTPs (<tt class="docutils literal"><span class="pre">INCLUDE_POSIX_PTHREAD_SCHEDULER</span></tt>)</li>
+<li>built-in symbol table (<tt class="docutils literal"><span class="pre">INCLUDE_STANDALONE_SYM_TBL</span></tt>)</li>
+</ul>
+<p>Note that the Workbench GUI should be used to enable these components so
+that dependent components are automatically added to the project.</p>
+</div>
+<div class="section" id="deploying-vortex-opensplice">
+<h2>11.4. Deploying Vortex OpenSplice<a class="headerlink" href="#deploying-vortex-opensplice" title="Permalink to this headline">¶</a></h2>
+<p>As described in the <a class="reference internal" href="install-configure.html#configuration"><em>Configuration</em></a> section, Vortex OpenSplice is started with the
+Vortex OpenSplice domain service <tt class="docutils literal"><span class="pre">spliced</span></tt> and a number of optional services
+described within the Vortex OpenSplice configuration file (<tt class="docutils literal"><span class="pre">ospl.xml</span></tt>). On
+VxWorks 6.x, a Real Time Process for each of these services is deployed
+on to the target hardware. The sample <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> configuration file
+provided with the VxWorks 6.x edition of OpenSplice has particular
+settings so that these RTPs can operate effectively.</p>
+<p>The instructions below describe how to deploy these RTPs using the
+Workbench GUI and the Target Server File System (TSFS), although the
+processes can be deployed by using commands and other file system types.</p>
+<p><strong>Step 1</strong></p>
+<p>Start the Workbench and create a connection to the target hardware using
+the <em>Remote Systems</em> view.</p>
+<p><strong>Step 2</strong></p>
+<p>Create a connection to the host machine. In the <em>Properties</em> for the
+connection, make part of the host&#8217;s file system available to VxWorks
+using the TSFS by specifying both the <tt class="docutils literal"><span class="pre">-R</span></tt> and <tt class="docutils literal"><span class="pre">-RW</span></tt> options to <tt class="docutils literal"><span class="pre">tgtsvr</span></tt>.
+For example, connecting with the option <tt class="docutils literal"><span class="pre">-R</span> <span class="pre">c:\x</span> <span class="pre">-RW</span></tt> will enable
+read and write access to the contents of the <tt class="docutils literal"><span class="pre">c:\x</span></tt> directory from the
+target hardware under the mount name <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt>.</p>
+<p><strong>Step 3</strong></p>
+<p>Activate the new connection by selecting it and clicking <em>Connect</em>.</p>
+<p><strong>Step 4</strong></p>
+<p>With a connection to the target hardware established, create a new RTP
+deployment configuration for the connection by right-clicking on the
+connection and choosing <em>Run &gt; Run RTP on Target...</em>.</p>
+<p><strong>Step 5</strong></p>
+<p>Create a new configuration for the <em>spliced</em> deployment that points to
+the <tt class="docutils literal"><span class="pre">spliced.vxe</span></tt> executable from the OpenSplice installation. The
+following parameters should be set in the dialog:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="38%" />
+<col width="63%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="2">RTP configuration for spliced.vxe</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Exec Path on Target</td>
+<td><tt class="docutils literal"><span class="pre">/tgtsvr/spliced.vxe</span></tt></td>
+</tr>
+<tr class="row-odd"><td>Arguments</td>
+<td><tt class="docutils literal"><span class="pre">file://tgtsvr/ospl.xml</span></tt></td>
+</tr>
+<tr class="row-even"><td>Environment</td>
+<td><div class="first last line-block">
+<div class="line"><tt class="docutils literal"><span class="pre">LD_BIND_NOW=1</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">OSPL_URI=file://tgtsvr/ospl.xml</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">PATH=/tgtsvr</span></tt></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Priority</td>
+<td><tt class="docutils literal"><span class="pre">100</span></tt></td>
+</tr>
+<tr class="row-even"><td>Stack Size</td>
+<td><tt class="docutils literal"><span class="pre">0x10000</span></tt></td>
+</tr>
+</tbody>
+</table>
+<p>For simplicity it has been assumed that <tt class="docutils literal"><span class="pre">spliced.vxe</span></tt> and the other
+executables (located in the <tt class="docutils literal"><span class="pre">bin</span></tt> directory of the installation) and
+<tt class="docutils literal"><span class="pre">ospl.xml</span></tt> (located in the <tt class="docutils literal"><span class="pre">etc/config</span></tt> directory of the installation)
+have been copied to the directory made available as <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> described
+above. It is possible, if required, to copy the entire OpenSplice
+installation directory to the <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> location so that all files are
+available, but please be aware that log and information files will be
+written to the same <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> location when the <tt class="docutils literal"><span class="pre">spliced.vxe</span></tt> is
+deployed.</p>
+<p>The screen shot from Workbench in
+<a class="reference internal" href="#workbench-showing-spliced-deployment-configuration">Workbench showing spliced deployment configuration</a>
+shows this configuration.</p>
+<div class="figure" id="workbench-showing-spliced-deployment-configuration">
+<a class="reference internal image-reference" href="_images/VxWorks-splicedConfig.png"><img alt="Workbench showing spliced deployment configuration" src="_images/VxWorks-splicedConfig.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>Workbench showing spliced deployment configuration</strong></p>
+</div>
+<p>The configuration can be deployed by clicking <em>Run</em>, where an RTP for
+each service described in the configuration file should be created.
+These can be seen in Workbench in the Real Time Processes list for the
+target connection. An example is shown below in
+<a class="reference internal" href="#workbench-showing-deployed-opensplice-rtps">Workbench showing deployed OpenSplice RTPs</a>.
+(The list may need to be refreshed with the <em>F5</em> key.)</p>
+<p>Deployment problems are listed in <tt class="docutils literal"><span class="pre">ospl-error.txt</span></tt> and <tt class="docutils literal"><span class="pre">ospl-info.txt</span></tt>,
+which are created in the <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> directory if the configuration
+described above is used.</p>
+<div class="figure" id="workbench-showing-deployed-opensplice-rtps">
+<a class="reference internal image-reference" href="_images/VxWorks-deployedRTPs.png"><img alt="Workbench showing deployed OpenSplice RTPs" src="_images/VxWorks-deployedRTPs.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>Workbench showing deployed OpenSplice RTPs</strong></p>
+</div>
+</div>
+<div class="section" id="opensplice-examples">
+<h2>11.5. OpenSplice Examples<a class="headerlink" href="#opensplice-examples" title="Permalink to this headline">¶</a></h2>
+<p>PrismTech provides a number of examples both for C and C++ that are
+described in the <a class="reference internal" href="install-configure.html#examples"><em>Examples</em></a> section. These example are provided in the form of
+Workbench projects which can be easily built and then deployed on to the
+target hardware in a similar process to that described above.</p>
+<p>Each project contains a <tt class="docutils literal"><span class="pre">README</span></tt> file briefly explaining the example and
+the parameters required to run it.</p>
+<div class="section" id="importing-example-projects-into-workbench">
+<h3>11.5.1. Importing Example Projects into Workbench<a class="headerlink" href="#importing-example-projects-into-workbench" title="Permalink to this headline">¶</a></h3>
+<p>The example projects can be imported into Workbench by clicking
+<em>File &gt; Import... &gt; General &gt; Existing Projects into Workspace</em>.</p>
+<p>In the <em>Import Projects</em> dialog, browse to the <tt class="docutils literal"><span class="pre">examples</span></tt> directory of
+the OpenSplice installation. Select the required projects for importing
+from the list that Workbench has detected.</p>
+<p>Ensure that the <em>Copy projects into workspace</em> box is un-checked.</p>
+</div>
+<div class="section" id="building-example-projects-with-workbench">
+<h3>11.5.2. Building Example Projects with Workbench<a class="headerlink" href="#building-example-projects-with-workbench" title="Permalink to this headline">¶</a></h3>
+<p>Projects in a workspace can be built individually or as a group.</p>
+<ul class="simple">
+<li>Build a single project by selecting it and then clicking
+<em>Project &gt; Build Project</em>.</li>
+<li>Build all projects in the current workspace by clicking
+<em>Project &gt; Build All</em>.</li>
+</ul>
+</div>
+<div class="section" id="deploying-opensplice-examples">
+<h3>11.5.3. Deploying OpenSplice Examples<a class="headerlink" href="#deploying-opensplice-examples" title="Permalink to this headline">¶</a></h3>
+<p>The PingPong and the Tutorial examples are run in identical ways with
+the same parameters for both C and C++. These should be deployed onto
+the VxWorks target with the arguments described in the <tt class="docutils literal"><span class="pre">README</span></tt> files
+for each project.</p>
+<div class="section" id="deploying-pingpong">
+<h4>11.5.3.1. Deploying PingPong<a class="headerlink" href="#deploying-pingpong" title="Permalink to this headline">¶</a></h4>
+<p>The PingPong example consists of the <tt class="docutils literal"><span class="pre">ping.vxe</span></tt> and <tt class="docutils literal"><span class="pre">pong.vxe</span></tt>
+executables. If these executables have been copied to the directory made
+available as <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> as described in <a href="#id2"><span class="problematic" id="id3">`Deploying OpenSplice DDS`_</span></a>,
+RTP configurations should have the following parameters:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="47%" />
+<col width="53%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="2">RTP configuration for pong</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Exec Path on Target</td>
+<td><tt class="docutils literal"><span class="pre">/tgtsvr/pong.vxe</span></tt></td>
+</tr>
+<tr class="row-odd"><td>Arguments</td>
+<td><tt class="docutils literal"><span class="pre">PongRead</span> <span class="pre">PongWrite</span></tt></td>
+</tr>
+<tr class="row-even"><td>Environment</td>
+<td><div class="first last line-block">
+<div class="line"><tt class="docutils literal"><span class="pre">LD_BIND_NOW=1</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">OSPL_URI=file://tgtsvr/ospl.xml</span></tt></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Priority</td>
+<td><tt class="docutils literal"><span class="pre">100</span></tt></td>
+</tr>
+<tr class="row-even"><td>Stack Size</td>
+<td><tt class="docutils literal"><span class="pre">0x10000</span></tt></td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="47%" />
+<col width="53%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="2">RTP configuration for ping</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Exec Path on Target</td>
+<td><tt class="docutils literal"><span class="pre">/tgtsvr/ping.vxe</span></tt></td>
+</tr>
+<tr class="row-odd"><td>Arguments</td>
+<td><tt class="docutils literal"><span class="pre">10</span> <span class="pre">10</span> <span class="pre">s</span> <span class="pre">PongRead</span> <span class="pre">PongWrite</span></tt></td>
+</tr>
+<tr class="row-even"><td>Environment</td>
+<td><div class="first last line-block">
+<div class="line"><tt class="docutils literal"><span class="pre">LD_BIND_NOW=1</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">OSPL_URI=file://tgtsvr/ospl.xml</span></tt></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Priority</td>
+<td><tt class="docutils literal"><span class="pre">100</span></tt></td>
+</tr>
+<tr class="row-even"><td>Stack Size</td>
+<td><tt class="docutils literal"><span class="pre">0x10000</span></tt></td>
+</tr>
+</tbody>
+</table>
+<p>When deployment is successful, the console shows output from both the
+<tt class="docutils literal"><span class="pre">ping</span></tt> and <tt class="docutils literal"><span class="pre">pong</span></tt> executables. The console view can be switched to show
+the output for each process by clicking the <em>Display Selected Console</em>
+button.</p>
+</div>
+<div class="section" id="deploying-the-chat-tutorial">
+<h4>11.5.3.2. Deploying the Chat Tutorial<a class="headerlink" href="#deploying-the-chat-tutorial" title="Permalink to this headline">¶</a></h4>
+<p>The Chat Tutorial consists of the <tt class="docutils literal"><span class="pre">chatter.vxe</span></tt>, <tt class="docutils literal"><span class="pre">messageboard.vxe</span></tt> and
+<tt class="docutils literal"><span class="pre">userload.vxe</span></tt> executables. If these executables have been copied to the
+directory made available as <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> as described in
+<a href="#id4"><span class="problematic" id="id5">`Deploying OpenSplice DDS`_</span></a>, RTP configurations should have the following
+parameters:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="47%" />
+<col width="53%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="2">RTP configuration for userload</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Exec Path on Target</td>
+<td><tt class="docutils literal"><span class="pre">/tgtsvr/userload.vxe</span></tt></td>
+</tr>
+<tr class="row-odd"><td>Arguments</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Environment</td>
+<td><div class="first last line-block">
+<div class="line"><tt class="docutils literal"><span class="pre">LD_BIND_NOW=1</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">OSPL_URI=file://tgtsvr/ospl.xml</span></tt></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Priority</td>
+<td><tt class="docutils literal"><span class="pre">100</span></tt></td>
+</tr>
+<tr class="row-even"><td>Stack Size</td>
+<td><tt class="docutils literal"><span class="pre">0x10000</span></tt></td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="47%" />
+<col width="53%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="2">RTP configuration for messageboard</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Exec Path on Target</td>
+<td><tt class="docutils literal"><span class="pre">/tgtsvr/messageboard.vxe</span></tt></td>
+</tr>
+<tr class="row-odd"><td>Arguments</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>Environment</td>
+<td><div class="first last line-block">
+<div class="line"><tt class="docutils literal"><span class="pre">LD_BIND_NOW=1</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">OSPL_URI=file://tgtsvr/ospl.xml</span></tt></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Priority</td>
+<td><tt class="docutils literal"><span class="pre">100</span></tt></td>
+</tr>
+<tr class="row-even"><td>Stack Size</td>
+<td><tt class="docutils literal"><span class="pre">0x10000</span></tt></td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="47%" />
+<col width="53%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="2">RTP configuration for chatter</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Exec Path on Target</td>
+<td><tt class="docutils literal"><span class="pre">/tgtsvr/chatter.vxe</span></tt></td>
+</tr>
+<tr class="row-odd"><td>Arguments</td>
+<td><tt class="docutils literal"><span class="pre">1</span> <span class="pre">User1</span></tt></td>
+</tr>
+<tr class="row-even"><td>Environment</td>
+<td><div class="first last line-block">
+<div class="line"><tt class="docutils literal"><span class="pre">LD_BIND_NOW=1</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">OSPL_URI=file://tgtsvr/ospl.xml</span></tt></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Priority</td>
+<td><tt class="docutils literal"><span class="pre">100</span></tt></td>
+</tr>
+<tr class="row-even"><td>Stack Size</td>
+<td><tt class="docutils literal"><span class="pre">0x10000</span></tt></td>
+</tr>
+</tbody>
+</table>
+<p>When deployment is successful, the console will show output from each
+RTP. In particular the message board will show the messages sent by the
+<tt class="docutils literal"><span class="pre">chatter</span></tt> process. The console view can be switched to show the output
+for each process by clicking the <em>Display Selected Console</em> button.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">11. VxWorks 6.x RTP</a><ul>
+<li><a class="reference internal" href="#vxworks-real-time-processes">11.1. VxWorks Real Time Processes</a></li>
+<li><a class="reference internal" href="#installation">11.2. Installation</a></li>
+<li><a class="reference internal" href="#vxworks-kernel-requirements">11.3. VxWorks Kernel Requirements</a></li>
+<li><a class="reference internal" href="#deploying-vortex-opensplice">11.4. Deploying Vortex OpenSplice</a></li>
+<li><a class="reference internal" href="#opensplice-examples">11.5. OpenSplice Examples</a><ul>
+<li><a class="reference internal" href="#importing-example-projects-into-workbench">11.5.1. Importing Example Projects into Workbench</a></li>
+<li><a class="reference internal" href="#building-example-projects-with-workbench">11.5.2. Building Example Projects with Workbench</a></li>
+<li><a class="reference internal" href="#deploying-opensplice-examples">11.5.3. Deploying OpenSplice Examples</a><ul>
+<li><a class="reference internal" href="#deploying-pingpong">11.5.3.1. Deploying PingPong</a></li>
+<li><a class="reference internal" href="#deploying-the-chat-tutorial">11.5.3.2. Deploying the Chat Tutorial</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="vxworks-551.html"
+                        title="previous chapter">10. VxWorks 5.5.1</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="vxworks-6-kernel.html"
+                        title="next chapter">12. VxWorks 6.x Kernel Mode</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/vxworks-6-rtp.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="vxworks-6-kernel.html" title="12. VxWorks 6.x Kernel Mode"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="vxworks-551.html" title="10. VxWorks 5.5.1"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

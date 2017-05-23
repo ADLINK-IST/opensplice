@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -25,7 +33,7 @@
 #else
 #include <version.h>
 /* VxWorks versions 6 and newer define _WRS_VXWORKS_MAJOR */
-#ifndef _WRS_VXWORKS_MAJOR
+#if ! ( ( _WRS_VXWORKS_MAJOR >= 7 ) || ( _WRS_VXWORKS_MAJOR == 6 && _WRS_VXWORKS_MINOR >= 9 ) ) || defined _WRS_KERNEL
 #include <sys/times.h>
 #endif
 #endif
@@ -35,6 +43,7 @@
 #include <stdlib.h>
 
 #define SEQ_PAYLOAD_SIZE 100
+#define MAX_NR_OF_TIMEOUTS_BEFORE_QUIT 20
 
 #include "example_main.h"
 
@@ -285,6 +294,7 @@ PP_min_handler (
         PP_min_dataList._buffer[0].count++;
         if (PP_min_dataList._buffer[0].count < nof_cycles) {
             preWriteTime = timeGet ();
+
             pingpong_PP_min_msgDataWriter_write (PP_min_writer, &PP_min_dataList._buffer[0], DDS_HANDLE_NIL);
             postWriteTime = timeGet ();
             add_stats (&write_access, 1E6 * timeToReal (timeSub (postWriteTime, preWriteTime)));
@@ -579,6 +589,7 @@ int OSPL_MAIN (int argc, char ** argv)
     int                                      imax = 1;
     int                                      i;
     unsigned int                             block;
+    int                                      iNrOfTimeouts = 0;
 
     printf ("Starting ping example\n");
     fflush(stdout);
@@ -665,6 +676,7 @@ int OSPL_MAIN (int argc, char ** argv)
     DDS_DomainParticipant_get_default_publisher_qos (dp, pQos);
     pQos->partition.name._length = 1;
     pQos->partition.name._maximum = 1;
+    pQos->partition.name._release = TRUE;
     pQos->partition.name._buffer = DDS_StringSeq_allocbuf (1);
     pQos->partition.name._buffer[0] = DDS_string_dup (write_partition);
     p = DDS_DomainParticipant_create_publisher (dp, pQos, NULL, DDS_STATUS_MASK_NONE);
@@ -676,6 +688,7 @@ int OSPL_MAIN (int argc, char ** argv)
     DDS_DomainParticipant_get_default_subscriber_qos (dp, sQos);
     sQos->partition.name._length = 1;
     sQos->partition.name._maximum = 1;
+    sQos->partition.name._release = TRUE;
     sQos->partition.name._buffer = DDS_StringSeq_allocbuf (1);
     sQos->partition.name._buffer[0] = DDS_string_dup (read_partition);
     s = DDS_DomainParticipant_create_subscriber (dp, sQos, NULL, DDS_STATUS_MASK_NONE);
@@ -818,11 +831,13 @@ int OSPL_MAIN (int argc, char ** argv)
     /* Create datawriter */
     PP_quit_writer = DDS_Publisher_create_datawriter (p, PP_quit_topic, dwQos, NULL, DDS_STATUS_MASK_NONE);
 
+#if 0
     /* Fr: workarround for ticket dds1712 */
     conditionList = DDS_ConditionSeq__alloc();
     assert(conditionList);
     DDS_WaitSet_wait (w, conditionList, &wait_timeout);
     DDS_free(conditionList);
+#endif
 
     for (block = 0; block < nof_blocks && !terminate ; block++) {
         while (!finish_flag) {
@@ -959,31 +974,44 @@ int OSPL_MAIN (int argc, char ** argv)
                     result = DDS_WaitSet_wait (w, conditionList, &wait_timeout);
                     if(result == DDS_RETCODE_OK || result == DDS_RETCODE_NO_DATA || result == DDS_RETCODE_TIMEOUT)
                     {
-                        if (conditionList) {
+                        if ((conditionList) && (conditionList->_length != 0)) {
                             imax = conditionList->_length;
                             if (imax != 0) {
                                 for (i = 0; i < imax; i++) {
                                     if (conditionList->_buffer[i] == exp_condition) {
                                         finish_flag = active_handler (nof_cycles);
                                     } else {
-                                        printf ("PING: unexpected condition triggered: %lx\n",
+                                        printf ("PING: unexpected condition triggered: %lx, terminating.\n",
                                             (unsigned long)conditionList->_buffer[i]);
+                                        finish_flag = TRUE;
+                                        terminate = TRUE;
                                     }
                                 }
                             } else {
                                 printf ("PING: TIMEOUT - message lost\n");
                                 timeout_flag = TRUE;
                             }
-                            DDS_free(conditionList);
                         } else {
-                            printf ("PING: TIMEOUT - message lost\n");
+                            if (result == DDS_RETCODE_NO_DATA) {
+                                printf ("PING: NO DATA - message lost\n");
+                            } else {
+                                printf ("PING: TIMEOUT 2 - message lost\n");
+                            }
                             timeout_flag = TRUE;
                         }
-                    } else
-                    {
+                    } else {
                         printf ("PING: Waitset wait failed (code %d), terminating.\n", result);
                         finish_flag = TRUE;
                         terminate = TRUE;
+                    }
+                    DDS_free(conditionList);
+                    if (timeout_flag != FALSE)
+                    {
+                        if (++iNrOfTimeouts >= MAX_NR_OF_TIMEOUTS_BEFORE_QUIT) {
+                            printf("PING: Max nr of %d timeouts reached, terminating, test Failed \n", MAX_NR_OF_TIMEOUTS_BEFORE_QUIT);
+                            finish_flag = TRUE;
+                            terminate = TRUE;
+                        }
                     }
                 }
             }

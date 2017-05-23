@@ -53,7 +53,8 @@ namespace test.sacs
                 "long_1 > %101", expressionParameters);
             if (filteredTopic != null)
             {
-                System.Console.Out.WriteLine("NOTE\t\t: See STR/CP TH281");
+                this.testFramework.TestMessage(Test.Framework.TestMessage.Note, "See STR/CP TH281");
+                this.testFramework.TestMessage(Test.Framework.TestMessage.Note, "See OSPL-2628: Query parameter checking should be added.");
                 participant.DeleteContentFilteredTopic(filteredTopic);
                 result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 result.Result = "Could create a ContentFilteredTopic with an expression parameter %101 ";

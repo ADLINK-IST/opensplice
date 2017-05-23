@@ -4,9 +4,9 @@ check_osplhome
 
 startOSPL
 
-echo "=== Launching Subscriber "
+echo "=== Launching Ownership "
 ./sac_ownership_sub > subResult.txt &
-sleep 5
+sleep 7
 
 echo === starting publisher "pub1" with ownership strength 5
 ./sac_ownership_pub pub1 5 40 1 > pubResult_1.txt &	
@@ -17,9 +17,10 @@ sleep 2
 echo === starting publisher "pub2" with ownership strength 10
 ./sac_ownership_pub pub2 10 5 0 > pubResult_2.txt &
 
-sleep 15
+echo === Waiting for processes to terminate
+waitForProcessTermination sac_ownership_pub 30
+waitForProcessTermination sac_ownership_sub 30
 
 ownershipCheckResult
 
 stopOSPL
-

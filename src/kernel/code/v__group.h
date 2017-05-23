@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef V__GROUP_H
@@ -18,17 +26,24 @@
 extern "C" {
 #endif
 
+#define V_GROUP_NAME_TEMPLATE "Group<%s,%s>"
+
 #define v_groupKeyList(_this) \
         c_tableKeyList(v_group(_this)->instances)
 
 #define v_groupSampleCountIncrement(_this) \
-        v_group(_this)->count++;
+        v_group(_this)->resourceSampleCount++;
 
 #define v_groupSampleCountDecrement(_this) \
-        v_group(_this)->count--;
+        v_group(_this)->resourceSampleCount--;
 
 #define v_groupWriterAdministration(_this) \
         v_group(_this)->writerAdministration;
+
+struct v_groupFlushTransactionArg {
+    v_group group;
+    v_transaction txn;
+};
 
 v_group
 v_groupNew (
@@ -50,10 +65,6 @@ v_groupRemoveWriter (
     v_group _this,
     v_writer w);
 
-c_bool
-v_groupHasCache (
-    v_group _this);
-
 c_iter
 v_groupGetRegisterMessages(
     v_group _this,
@@ -73,23 +84,89 @@ v_groupResend(
     v_networkId writingNetworkId);
 
 void
-v_groupDisconnectWriter(
-    v_group g,
-    struct v_publicationInfo *oInfo,
-    c_time timestamp,
-    c_bool isValid);
-
-void
 v_groupDisconnectNode(
     v_group _this,
-    struct v_heartbeatInfo *missedHB);
+    c_ulong systemId,
+    os_timeW cleanTime);
 
 v_message
 v_groupCreateInvalidMessage(
     v_kernel kernel,
     v_gid writerGID,
     c_array writerQos,
-    c_time timestamp);
+    os_timeW timestamp);
+
+void
+v_groupNotifyGroupCoherentPublication(
+    v_group _this,
+    v_message msg);
+
+v_writeResult
+forwardMessageToStreams(
+    v_group group,
+    v_groupInstance instance,
+    v_message message,
+    os_timeE t,
+    v_groupActionKind actionKind);
+
+void
+v__groupDataReaderEntriesWriteEOTNoLock(
+    v_group _this,
+    v_message msg);
+
+void
+v_groupFlushTransactionNoLock(
+    v_instance instance,
+    v_message message,
+    c_voidp arg);  /* arg is internally cast to (struct v_groupFlushTransactionArg *) */
+
+void
+_dispose_purgeList_insert(
+    v_groupInstance instance,
+    os_timeE insertTime);
+
+void
+_empty_purgeList_insert(
+    v_groupInstance instance,
+    os_timeE insertTime);
+
+typedef c_bool (*v_groupEntrySetWalkAction)(v_groupEntry entry, c_voidp arg);
+
+c_bool
+v_groupEntrySetWalk(
+    struct v_groupEntrySet *s,
+    v_groupEntrySetWalkAction action,
+    c_voidp arg);
+
+v_groupSample
+v_groupSampleNew (
+    v_group _this,
+    v_message message);
+
+void
+v_groupSampleFree (
+    v_groupSample sample);
+
+os_boolean
+v_groupIsDurable(
+    v_group _this);
+
+v_transactionAdmin
+v__groupGetTransactionAdmin(
+    v_group _this);
+
+c_bool
+v_groupIsOnRequest(
+    v_group _this);
+
+/* This operation is called by a writer upon connecting to the group.
+ * This operation generates a V_EVENT_CONNECT_WRITER event to notify the Durability Service that
+ * the group has writers.
+ */
+void
+v_groupNotifyWriter(
+    v_group _this,
+    v_writer w);
 
 #if defined (__cplusplus)
 }

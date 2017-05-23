@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -99,7 +107,7 @@ int OSPL_MAIN (int argc, char *argv[])
    DDS_ReadCondition readCondition;
    DDS_WaitSet waitSet;
    DDS_Duration_t waitForSamplesToTakeTimeout = DDS_DURATION_INFINITE;
-   DDS_Duration_t waitForHistoricalDataTimeout = DDS_DURATION_INFINITE;
+   DDS_Duration_t waitForHistoricalDataTimeout =  { 10, 0 };
    DDS_ConditionSeq *guardList = NULL;
 
    DDS_boolean isAutomatic = TRUE;
@@ -121,15 +129,22 @@ int OSPL_MAIN (int argc, char *argv[])
 
    // Resolve the built-in Subscriber.
    builtInTopicsSubscriber = DDS_DomainParticipant_get_builtin_subscriber(g_domainParticipant);
+   checkHandle(builtInTopicsSubscriber, "DDS_DomainParticipant_get_builtin_subscriber(g_domainParticipant)");
 
    // Lookup the DataReader for the DCPSParticipant built-in Topic.
    builtInTopicsReader = DDS_Subscriber_lookup_datareader(builtInTopicsSubscriber, "DCPSParticipant");
+   checkHandle(builtInTopicsReader, "DDS_Subscriber_lookup_datareader(builtInTopicsSubscriber, DCPSParticipant)");
 
    printf("=== [BuiltInTopicsDataSubscriber] : Waiting for historical data ... ");
    fflush(stdout);
 
    // Make sure all historical data is delivered in the DataReader.
-   DDS_DataReader_wait_for_historical_data(builtInTopicsReader, &waitForHistoricalDataTimeout);
+   g_status = DDS_DataReader_wait_for_historical_data(builtInTopicsReader, &waitForHistoricalDataTimeout);
+   if(g_status == DDS_RETCODE_TIMEOUT)
+   {
+       printf("\n=== [BuiltInTopicsDataSubscriber] : WARNING: No historical data (durability probably not running) ... \n");
+   }
+   checkStatus(g_status, "DDS_DataReader_wait_for_historical_data (builtInTopicsReader, 1 minute)");
 
    printf("\n=== [BuiltInTopicsDataSubscriber] : done");
 
@@ -149,6 +164,7 @@ int OSPL_MAIN (int argc, char *argv[])
    // Initialize and pre-allocate the GuardList's seq.
    guardList->_maximum = 1;
    guardList->_length = 0;
+   guardList->_release = TRUE;
    guardList->_buffer = DDS_ConditionSeq_allocbuf(1);
    checkHandle(guardList->_buffer, "DDS_ConditionSeq_allocbuf");
 
@@ -246,6 +262,11 @@ int OSPL_MAIN (int argc, char *argv[])
    // Cleanup DDS from the created Entities.
    deleteContainedEntities();
    deleteParticipant();
+
+   DDS_free(guardList);
+   DDS_free(waitSet);
+   DDS_free(builtInTopicsDataSeq);
+   DDS_free(builtInTopicsInfoSeq);
 
    freeNodeInfoArray(&nodeInfoArray, &nodeInfoArraySize);
 

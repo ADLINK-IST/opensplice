@@ -1,17 +1,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**@file api/cm/xml/include/cmx_participant.h
- * @brief Represents a participant in Splice. It offers facilities to 
- * create/free participants and resolve participants/topics/domains in the 
+ * @brief Represents a participant in Splice. It offers facilities to
+ * create/free participants and resolve participants/topics/domains in the
  * system.
  */
 #ifndef CMX_PARTICIPANT_H
@@ -32,16 +40,17 @@ extern "C" {
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 /**
- * @brief Creates a new participant. It is creates by creating its user layer 
+ * @brief Creates a new participant. It is creates by creating its user layer
  * counterpart and serializing it into XML format.
- * 
+ *
  * This function constructs a new user layer participant and creates an XML
- * representation of it. The XML participant format is as described in 
+ * representation of it. The XML participant format is as described in
  * cmx_entity.h. In contradiction with the usual XML entity, the user entity
  * that is associated with the XML entity is owner of the kernel entity. That
  * means that the kernel entity will be removed when the participant is freed.
- * 
+ *
  * @param uri The URI of the kernel, where the participant must be created in.
+ * @param domainId The domain-ID to connect to; "" means U_DOMAIN_ID_ANY.
  * @param timeout The maximum amount of time the function must keep trying to
  * create a participant when creating wasn't a success.
  * @param name The name that the participant must have.
@@ -50,7 +59,8 @@ extern "C" {
  * @return The participant, which is the XML representation of the user
  *         participant.
  */
-OS_API c_char*         cmx_participantNew          (const c_char* uri, 
+OS_API c_char*         cmx_participantNew          (const c_char* uri,
+                                                    const c_char* domainId,
                                                     c_long timeout,
                                                     const c_char* name,
                                                     const c_char* qos);
@@ -58,7 +68,7 @@ OS_API c_char*         cmx_participantNew          (const c_char* uri,
 /**
  * @brief Resolves all participants in the same kernel the supplied participant
  * is participating in.
- * 
+ *
  * The result of this function is a list of participants in XML format.
  @verbatim
     <list>
@@ -87,7 +97,7 @@ OS_API c_char*         cmx_participantAllParticipants  (const c_char* participan
 /**
  * @brief Resolves all topics in the same kernel the supplied participant
  * is participating in.
- * 
+ *
  * The result of this function is a list of topics in XML format.
  @verbatim
     <list>
@@ -116,7 +126,7 @@ OS_API c_char*         cmx_participantAllTopics    (const c_char* participant);
 /**
  * @brief Resolves all domains in the same kernel the supplied participant
  * is participating in.
- * 
+ *
  * The result of this function is a list of domains in XML format.
  @verbatim
     <list>
@@ -144,13 +154,13 @@ OS_API c_char*         cmx_participantAllDomains   (const c_char* participant);
 
 /**
  * @brief Registers the supplied type in the database.
- * 
+ *
  * Subsequent registration of the same type has no effect.
- * 
+ *
  * @param participant The participant to use for registering the type.
  * @param type The XML representation of the type to register in the database.
- * @return The result of the registration. If 
- *         succeeded @verbatim<result>OK</result>@endverbatim is returned, 
+ * @return The result of the registration. If
+ *         succeeded @verbatim<result>OK</result>@endverbatim is returned,
  *         @verbatim<result>...</result>@endverbatim otherwise.
  */
 OS_API const c_char*   cmx_participantRegisterType (const c_char* participant,
@@ -158,8 +168,8 @@ OS_API const c_char*   cmx_participantRegisterType (const c_char* participant,
 
 /**
  * @brief Resolves a list of topics that match the supplied expression.
- * 
- * The topicName may contain wilcards '*' and '?'. The result of this function 
+ *
+ * The topicName may contain wilcards '*' and '?'. The result of this function
  * is a list of domains in XML format.
  @verbatim
     <list>
@@ -183,23 +193,25 @@ OS_API const c_char*   cmx_participantRegisterType (const c_char* participant,
  * @param topicName The name of the topics, that may contain wildcards.
  * @return A list of topics that match the supplied expression.
  */
-OS_API c_char*         cmx_participantFindTopic    (const c_char* participant, 
+OS_API c_char*         cmx_participantFindTopic    (const c_char* participant,
                                              const c_char* topicName);
 
 /**
  * @brief Allows the automatic deletion of the participant when the SPLICE-DDS
  * service terminates.
- * 
- * @param participant The participant that needs to registered for automatic 
+ *
+ * @param participant The participant that needs to registered for automatic
  *                    deletion.
  * @param enable If TRUE, the autodetach is enabled. If FALSE, the autodetach
  *               is disabled.
- * @param The result of the autodetach action. If 
- *         succeeded @verbatim<result>OK</result>@endverbatim is returned, 
+ * @param The result of the autodetach action. If
+ *         succeeded @verbatim<result>OK</result>@endverbatim is returned,
  *         @verbatim<result>...</result>@endverbatim otherwise.
  */
 OS_API const c_char*   cmx_participantAutoDetach   (const c_char* participant,
                                                     c_bool enable);
+
+OS_API c_char*         cmx_participantDomainId     (const c_char* participant);
 
 #undef OS_API
 

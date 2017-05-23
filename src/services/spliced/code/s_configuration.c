@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "s_configuration.h"
@@ -14,30 +22,20 @@
 
 #include "u_service.h"
 
-#include "os.h"
+#include "vortex_os.h"
+
+#include "v_durabilityClient.h"
 
 /*********************** static functions *************************/
 static void
 s_configurationSetDuration(
-    v_duration *timeOut,
-    c_float    seconds)
-{
-    os_time tmp;
-
-    tmp = os_realToTime(seconds);
-
-    timeOut->seconds     = tmp.tv_sec;
-    timeOut->nanoseconds = tmp.tv_nsec;
-}
-
-static void
-s_configurationSetTime(
-    os_time *timeOut,
+    os_duration *timeOut,
     c_float seconds)
 {
-    *timeOut = os_realToTime(seconds);
+    *timeOut = os_realToDuration(seconds);
 }
 
+#if 1
 /* Configuration retrieve functions */
 static void
 s_configurationAttrValueLong(
@@ -72,6 +70,7 @@ s_configurationAttrValueLong(
     }
     c_iterFree(iter);
 }
+#endif
 
 static void
 s_configurationAttrValueFloat(
@@ -202,6 +201,7 @@ s_configurationValueLong(
     c_iterFree(iter);
 }
 
+#if 0
 static void
 s_configurationValueULong(
     s_configuration configuration,
@@ -236,7 +236,9 @@ s_configurationValueULong(
     }
     c_iterFree(iter);
 }
+#endif
 
+#if 0
 static void
 s_configurationValueSize(
     s_configuration configuration,
@@ -262,6 +264,7 @@ s_configurationValueSize(
     }
     c_iterFree(iter);
 }
+#endif
 
 static void
 s_configurationValueFloat(
@@ -358,7 +361,7 @@ s_configurationSetServiceTerminatePeriod(
         sec = S_CFG_SERVICETERMINATEPERIOD_MAXIMUM;
     }
 
-    s_configurationSetTime(&(config->serviceTerminatePeriod), sec);
+    s_configurationSetDuration(&(config->serviceTerminatePeriod), sec);
 }
 
 /**
@@ -393,8 +396,6 @@ s_configurationSetHeartbeatUpdateInterval(
     s_configuration config,
     c_float update_factor)
 {
-    os_time expiryTime;
-
     if (update_factor < S_CFG_HEARTBEAT_UPDATE_FACTOR_MINIMUM) {
         update_factor = S_CFG_HEARTBEAT_UPDATE_FACTOR_MINIMUM;
     }
@@ -403,10 +404,30 @@ s_configurationSetHeartbeatUpdateInterval(
         update_factor = S_CFG_HEARTBEAT_UPDATE_FACTOR_MAXIMUM;
     }
 
-    expiryTime.tv_sec = config->heartbeatExpiryTime.seconds;
-    expiryTime.tv_nsec = config->heartbeatExpiryTime.nanoseconds;
-    update_factor = update_factor * (c_float)os_timeToReal(expiryTime);
-    s_configurationSetDuration(&(config->heartbeatUpdateInterval), update_factor);
+    config->heartbeatUpdateInterval = os_durationMul(config->heartbeatExpiryTime, update_factor);
+}
+
+static void s_configurationSetSchedulingClass( os_threadAttr *tattr,
+                                               const c_char* class )
+{
+   if (os_strcasecmp(class, "Timeshare") == 0)
+   {
+      tattr->schedClass = OS_SCHED_TIMESHARE;
+   }
+   else if (os_strcasecmp(class, "Realtime") == 0)
+   {
+      tattr->schedClass = OS_SCHED_REALTIME;
+   }
+   else
+   {
+      tattr->schedClass = OS_SCHED_DEFAULT;
+   }
+}
+
+static void s_configurationSetStackSize( os_threadAttr *tattr,
+                                         const c_long stackSize )
+{
+    tattr->stackSize = (os_uint32)stackSize;
 }
 
 /**
@@ -414,7 +435,7 @@ s_configurationSetHeartbeatUpdateInterval(
  * @param config The configuration struct to store the transport priority in
  * @param prio The transport priority
  */
-void
+static void
 s_configurationSetHeartbeatTransportPriority(
     s_configuration config,
     c_long prio)
@@ -433,28 +454,17 @@ s_configurationSetHeartbeatTransportPriority(
  * @param config The configuration struct to store the scheduling class in
  * @param class The scheduling class
  */
-void
+static void
 s_configurationSetHeartbeatSchedulingClass(
     s_configuration config,
     const c_char* class)
 {
-    if (config->heartbeatScheduling == NULL) {
-        config->heartbeatScheduling = os_malloc(sizeof(os_threadAttr));
-        if (config->heartbeatScheduling) {
-            os_threadAttrInit(config->heartbeatScheduling);
-            config->heartbeatScheduling->stackSize = 512*1024; /* 512KB */
-        }
+    if (config->heartbeatAttribute == NULL) {
+         config->heartbeatAttribute = os_malloc(sizeof(*config->heartbeatAttribute));
+         os_threadAttrInit(config->heartbeatAttribute);
+         s_configurationSetStackSize(config->heartbeatAttribute,S_CFG_STACKSIZE_DEFAULT);
     }
-
-    if (config->heartbeatScheduling) {
-        if (os_strcasecmp(class, "Timeshare") == 0) {
-            config->heartbeatScheduling->schedClass = OS_SCHED_TIMESHARE;
-        } else if (os_strcasecmp(class, "Realtime") == 0) {
-            config->heartbeatScheduling->schedClass = OS_SCHED_REALTIME;
-        } else {
-            config->heartbeatScheduling->schedClass = OS_SCHED_DEFAULT;
-        }
-    }
+    s_configurationSetSchedulingClass(config->heartbeatAttribute, class );
 }
 
 /**
@@ -462,22 +472,17 @@ s_configurationSetHeartbeatSchedulingClass(
  * @param config The configuration struct to store the scheduling class in
  * @param priority The scheduling priority
  */
-void
+static void
 s_configurationSetHeartbeatSchedulingPriority(
     s_configuration config,
     c_long priority)
 {
-    if (config->heartbeatScheduling == NULL) {
-        config->heartbeatScheduling = os_malloc(sizeof(os_threadAttr));
-        if (config->heartbeatScheduling) {
-            os_threadAttrInit(config->heartbeatScheduling);
-            config->heartbeatScheduling->stackSize = 512*1024; /* 512KB */
-        }
+    if (config->heartbeatAttribute == NULL) {
+         config->heartbeatAttribute = os_malloc(sizeof(*config->heartbeatAttribute));
+         os_threadAttrInit(config->heartbeatAttribute);
+         s_configurationSetStackSize(config->heartbeatAttribute,S_CFG_STACKSIZE_DEFAULT);
     }
-
-    if (config->heartbeatScheduling) {
-        config->heartbeatScheduling->schedPriority = priority;
-    }
+    config->heartbeatAttribute->schedPriority = priority;
 }
 
 
@@ -512,7 +517,6 @@ s_configurationSetLeaseRenewalPeriod(
     s_configuration config,
     c_float update_factor)
 {
-    os_time leasePeriod;
     if (update_factor < S_CFG_LEASE_UPDATE_FACTOR_MINIMUM) {
         update_factor = S_CFG_LEASE_UPDATE_FACTOR_MINIMUM;
     }
@@ -521,34 +525,78 @@ s_configurationSetLeaseRenewalPeriod(
         update_factor = S_CFG_LEASE_UPDATE_FACTOR_MAXIMUM;
     }
 
-    leasePeriod.tv_sec = config->leasePeriod.seconds;
-    leasePeriod.tv_nsec = config->leasePeriod.nanoseconds;
-    update_factor = update_factor * (c_float)os_timeToReal(leasePeriod);
-    s_configurationSetDuration(&(config->leaseRenewalPeriod), update_factor);
+    config->leaseRenewalPeriod = os_durationMul(config->leasePeriod, update_factor);
 }
 
-static void s_configurationSetSchedulingClass( os_threadAttr *tattr,
-                                               const c_char* class )
+
+
+static void
+s_configurationSetshmMonitorStackSize( s_configuration config,
+                                       const c_long stackSize)
 {
-   if (os_strcasecmp(class, "Timeshare") == 0)
-   {
-      tattr->schedClass = OS_SCHED_TIMESHARE;
-   }
-   else if (os_strcasecmp(class, "Realtime") == 0)
-   {
-      tattr->schedClass = OS_SCHED_REALTIME;
-   }
-   else
-   {
-      tattr->schedClass = OS_SCHED_DEFAULT;
-   }
+    s_configurationSetStackSize( &config->shmMonitorAttribute, stackSize );
+}
+
+static void
+s_configurationSetKernelManagerStackSize( s_configuration config,
+                                       const c_long stackSize)
+{
+    s_configurationSetStackSize( &config->kernelManagerAttribute, stackSize );
+}
+
+static void
+s_configurationSetLeaseRenewStackSize( s_configuration config,
+                                       const c_long stackSize)
+{
+    s_configurationSetStackSize( &config->leaseRenewAttribute, stackSize );
+}
+
+static void
+s_configurationSetGCStackSize( s_configuration config,
+                                       const c_long stackSize)
+{
+    s_configurationSetStackSize( &config->garbageCollectorAttribute, stackSize );
+}
+
+static void
+s_configurationSetResendManagerStackSize( s_configuration config,
+                                       const c_long stackSize)
+{
+    s_configurationSetStackSize( &config->resendManagerAttribute, stackSize );
+}
+
+static void
+s_configurationSetCandMCommandStackSize( s_configuration config,
+                                       const c_long stackSize)
+{
+    s_configurationSetStackSize( &config->cAndMCommandAttribute, stackSize );
+}
+
+static void
+s_configurationSetHeartbeatStackSize( s_configuration config,
+                                       const c_long stackSize)
+{
+    if (config->heartbeatAttribute == NULL) {
+         config->heartbeatAttribute = os_malloc(sizeof(*config->heartbeatAttribute));
+         os_threadAttrInit(config->heartbeatAttribute);
+    }
+    s_configurationSetStackSize(config->heartbeatAttribute, stackSize );
+}
+
+
+
+static void
+s_configurationSetshmMonitorSchedulingClass( s_configuration config,
+                                                const c_char* class)
+{
+   s_configurationSetSchedulingClass( &config->shmMonitorAttribute, class );
 }
 
 static void
 s_configurationSetKernelManagerSchedulingClass( s_configuration config,
                                                 const c_char* class)
 {
-   s_configurationSetSchedulingClass( &config->kernelManagerScheduling, class );
+   s_configurationSetSchedulingClass( &config->kernelManagerAttribute, class );
 }
 
 static void
@@ -556,15 +604,38 @@ s_configurationSetLeaseRenewSchedulingClass(
     s_configuration config,
     const c_char* class)
 {
-    s_configurationSetSchedulingClass( &config->leaseRenewScheduling, class );
+    s_configurationSetSchedulingClass( &config->leaseRenewAttribute, class );
 }
+
+
+static void
+s_configurationSetPartition(
+    s_configuration config,
+    const c_char* partition)
+{
+    if (config->partition) {
+        os_free(config->partition);
+    }
+    config->partition = os_strdup(partition);
+}
+
 
 static void
 s_configurationSetDomainName(
     s_configuration config,
     const c_char* domainName)
 {
+    if (config->domainName) {
+        os_free(config->domainName);
+    }
     config->domainName = os_strdup(domainName);
+}
+
+static void s_configurationSetshmMonitorSchedulingPriority(
+   s_configuration config,
+   c_long priority)
+{
+    config->shmMonitorAttribute.schedPriority = priority;
 }
 
 static void
@@ -572,7 +643,7 @@ s_configurationSetLeaseRenewSchedulingPriority(
     s_configuration config,
     c_long priority)
 {
-    config->leaseRenewScheduling.schedPriority = priority;
+    config->leaseRenewAttribute.schedPriority = priority;
 }
 
 
@@ -580,13 +651,13 @@ static void s_configurationSetKernelManagerSchedulingPriority(
    s_configuration config,
    c_long priority)
 {
-    config->kernelManagerScheduling.schedPriority = priority;
+    config->kernelManagerAttribute.schedPriority = priority;
 }
 
 static void s_configurationSetGCSchedulingClass( s_configuration config,
                                                  const c_char* class)
 {
-   s_configurationSetSchedulingClass( &config->garbageCollectorScheduling,
+   s_configurationSetSchedulingClass( &config->garbageCollectorAttribute,
                                       class );
 }
 
@@ -595,7 +666,7 @@ s_configurationSetGCSchedulingPriority(
     s_configuration config,
     c_long priority)
 {
-    config->garbageCollectorScheduling.schedPriority = priority;
+    config->garbageCollectorAttribute.schedPriority = priority;
 }
 
 static void
@@ -603,7 +674,7 @@ s_configurationSetResendManagerSchedulingClass(
     s_configuration config,
     const c_char* class)
 {
-   s_configurationSetSchedulingClass( &config->resendManagerScheduling, class );
+   s_configurationSetSchedulingClass( &config->resendManagerAttribute, class );
 }
 
 static void
@@ -611,22 +682,23 @@ s_configurationSetResendManagerSchedulingPriority(
     s_configuration config,
     c_long priority)
 {
-    config->resendManagerScheduling.schedPriority = priority;
+    config->resendManagerAttribute.schedPriority = priority;
 }
 
 static void s_configurationSetCandMCommandSchedulingClass( s_configuration config,
                                                         const c_char* class)
 {
-   s_configurationSetSchedulingClass( &config->cAndMCommandScheduling, class );
+   s_configurationSetSchedulingClass( &config->cAndMCommandAttribute, class );
 }
 
+#if 1
 static void
 s_configurationSetCandMCommandSchedulingPriority( s_configuration config,
                                                   c_long priority)
 {
-    config->cAndMCommandScheduling.schedPriority = priority;
+    config->cAndMCommandAttribute.schedPriority = priority;
 }
-
+#endif
 
 static void
 s_configurationSetTracingSynchronous(
@@ -741,47 +813,52 @@ s_configurationInit(
     s_configuration config)
 {
     assert(config != NULL);
-    if (config != NULL) {
-        /** First apply defaults for tracing */
-        config->tracingOutputFile           = NULL;
-        config->tracingOutputFileName       = NULL;
-        config->tracingSynchronous          = FALSE;
-        config->tracingVerbosityLevel       = S_RPTLEVEL_NONE;
-        config->tracingTimestamps           = TRUE;
-        config->tracingRelativeTimestamps   = FALSE;
-        config->startTime                   = os_timeGet();
-        config->domainName                  = NULL;
 
-        config->enableCandMCommandThread    = TRUE;
+    /** First apply defaults for tracing */
+    config->tracingOutputFile           = NULL;
+    config->tracingOutputFileName       = NULL;
+    config->tracingSynchronous          = FALSE;
+    config->tracingVerbosityLevel       = S_RPTLEVEL_NONE;
+    config->tracingTimestamps           = TRUE;
+    config->tracingRelativeTimestamps   = FALSE;
+    config->startTimeMonotonic          = os_timeMGet();
+    config->domainName                  = NULL;
+    config->partition                   = NULL;
+    config->enableCandMCommandThread    = TRUE;
+    config->durablePolicies             = NULL;
 
-        /*s_printTimedEvent(daemon, S_RPTLEVEL_FINER, S_THREAD_MAIN, "Initializing configuration...\n");*/
-        s_configurationSetTime(&(config->serviceTerminatePeriod), S_CFG_SERVICETERMINATEPERIOD_DEFAULT);
-        s_configurationSetLeasePeriod(config, S_CFG_LEASE_EXPIRYTIME_DEFAULT);
-        s_configurationSetLeaseRenewalPeriod(config, S_CFG_LEASE_UPDATE_FACTOR_DEFAULT);
+    /*s_printTimedEvent(daemon, S_RPTLEVEL_FINER, S_THREAD_MAIN, "Initializing configuration...\n");*/
+    s_configurationSetDuration(&(config->serviceTerminatePeriod), S_CFG_SERVICETERMINATEPERIOD_DEFAULT);
+    s_configurationSetLeasePeriod(config, S_CFG_LEASE_EXPIRYTIME_DEFAULT);
+    s_configurationSetLeaseRenewalPeriod(config, S_CFG_LEASE_UPDATE_FACTOR_DEFAULT);
 
-        s_configurationSetHeartbeatExpiryTime(config, S_CFG_HEARTBEAT_EXPIRYTIME_DEFAULT);
-        s_configurationSetHeartbeatUpdateInterval(config, S_CFG_HEARTBEAT_UPDATE_FACTOR_DEFAULT);
+    s_configurationSetHeartbeatExpiryTime(config, S_CFG_HEARTBEAT_EXPIRYTIME_DEFAULT);
+    s_configurationSetHeartbeatUpdateInterval(config, S_CFG_HEARTBEAT_UPDATE_FACTOR_DEFAULT);
 
-        s_configurationSetHeartbeatTransportPriority(config, S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_DEFAULT);
+    s_configurationSetHeartbeatTransportPriority(config, S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_DEFAULT);
 
-        /* Apply defaults to rest of configuration */
-        os_threadAttrInit(&config->kernelManagerScheduling);
-        config->kernelManagerScheduling.stackSize = 512*1024; /* 512KB */
+    s_configurationSetPartition(config, S_CFG_REQUEST_PARTITION_DEFAULT);
 
-        os_threadAttrInit(&config->garbageCollectorScheduling);
-        config->garbageCollectorScheduling.stackSize = 512*1024; /* 512KB */
+    /* Apply defaults to rest of configuration */
+    os_threadAttrInit(&config->kernelManagerAttribute);
+    s_configurationSetStackSize(&config->kernelManagerAttribute,S_CFG_STACKSIZE_DEFAULT);
 
-        os_threadAttrInit(&config->resendManagerScheduling);
-        config->resendManagerScheduling.stackSize = 512*1024; /* 512KB */
+    os_threadAttrInit(&config->garbageCollectorAttribute);
+    s_configurationSetStackSize(&config->garbageCollectorAttribute,S_CFG_STACKSIZE_DEFAULT);
 
-        os_threadAttrInit(&config->cAndMCommandScheduling);
-        config->cAndMCommandScheduling.stackSize = 512*1024; /* 512KB */
+    os_threadAttrInit(&config->resendManagerAttribute);
+    s_configurationSetStackSize(&config->resendManagerAttribute,S_CFG_STACKSIZE_DEFAULT);
 
-        os_threadAttrInit(&config->leaseRenewScheduling);
-        config->leaseRenewScheduling.stackSize = 512*1024; /* 512KB */
+    os_threadAttrInit(&config->cAndMCommandAttribute);
+    s_configurationSetStackSize(&config->cAndMCommandAttribute,S_CFG_STACKSIZE_DEFAULT);
 
-        config->heartbeatScheduling = NULL;
-    }
+    os_threadAttrInit(&config->leaseRenewAttribute);
+    s_configurationSetStackSize(&config->leaseRenewAttribute,S_CFG_STACKSIZE_DEFAULT);
+
+    os_threadAttrInit(&config->shmMonitorAttribute);
+    s_configurationSetStackSize(&config->shmMonitorAttribute,S_CFG_STACKSIZE_DEFAULT);
+
+    config->heartbeatAttribute = NULL;
 }
 
 static void
@@ -789,25 +866,36 @@ s_configurationDeinit(
     s_configuration config)
 {
     assert(config);
-    if (config) {
-        if (config->tracingOutputFileName) {
-            if( (strcmp(config->tracingOutputFileName, "stdout") != 0) &&
-                (strcmp(config->tracingOutputFileName, "stderr") != 0)) {
-                if (config->tracingOutputFile) {
-                    fclose(config->tracingOutputFile);
-                    config->tracingOutputFile = NULL;
-                }
-            }
-            os_free(config->tracingOutputFileName);
-            config->tracingOutputFileName = NULL;
-            if(config->domainName)
-            {
-                os_free(config->domainName);
-                config->domainName = NULL;
+
+    if (config->tracingOutputFileName) {
+        if( (strcmp(config->tracingOutputFileName, "stdout") != 0) &&
+            (strcmp(config->tracingOutputFileName, "stderr") != 0)) {
+            if (config->tracingOutputFile) {
+                fclose(config->tracingOutputFile);
+                config->tracingOutputFile = NULL;
             }
         }
-        os_free(config->heartbeatScheduling);
+        os_free(config->tracingOutputFileName);
+        config->tracingOutputFileName = NULL;
     }
+    if(config->domainName) {
+        os_free(config->domainName);
+        config->domainName = NULL;
+    }
+    if (config->partition) {
+        os_free(config->partition);
+        config->partition = NULL;
+    }
+    if (config->durablePolicies) {
+        struct durablePolicy *dp;
+        while ((dp = (struct durablePolicy *)c_iterTakeFirst(config->durablePolicies)) != NULL) {
+            os_free(dp->obtain);
+            os_free(dp);
+        }
+        c_iterFree(config->durablePolicies);
+    }
+    os_free(config->heartbeatAttribute);
+
     return;
 }
 
@@ -872,17 +960,59 @@ s_configurationReport(
             , relativeTimestamps);
 }
 
+
+static c_iter
+s_configurationResolveDurablePolicies(
+    u_cfElement  elementParent,
+    const c_char *policy)
+{
+    c_iter iter, result;
+    u_cfElement element;
+    c_bool found;
+    c_bool isCache = FALSE;
+    c_char *obtain;
+    c_char *cache;
+    struct durablePolicy *dp;
+
+    result = c_iterNew(NULL);
+    iter = u_cfElementXPath(elementParent, policy);
+    element = (u_cfElement)c_iterTakeFirst(iter);
+    while (element) {
+        /* Parse obtain attribute */
+        found = u_cfElementAttributeStringValue(element, "obtain", &obtain);
+        if (found) {
+            /* Parse cache attribute */
+            found = u_cfElementAttributeStringValue(element, "cache", &cache);
+            if (found){
+                isCache = (os_strcasecmp(cache, "TRUE") == 0) ? TRUE : FALSE;
+                os_free(cache);
+            } else {
+                isCache = S_CFG_DURABLE_POLICY_CACHE;   /* default cache */
+            }
+            /* Add to durablePolicy struct */
+            dp = (struct durablePolicy *)os_malloc(sizeof(struct durablePolicy));
+            dp->obtain = os_strdup(obtain);
+            dp->cache = isCache;
+            result = c_iterAppend(result, dp);
+            os_free(obtain);
+        }
+        u_cfElementFree(element);
+        element = (u_cfElement)c_iterTakeFirst(iter);
+    } /* while */
+    c_iterFree(iter);
+    return result;
+}
+
+
+
 /************* public **********************/
 
 s_configuration
 s_configurationNew(void)
 {
     s_configuration config;
-
-    config = s_configuration(os_malloc(C_SIZEOF(s_configuration)));
-    if (config != NULL) {
-        s_configurationInit(config);
-    }
+    config = os_malloc(sizeof *config);
+    s_configurationInit(config);
     return config;
 }
 
@@ -892,10 +1022,8 @@ s_configurationFree(
 {
     assert(config);
 
-    if (config) {
-        s_configurationDeinit(config);
-        os_free(config);
-    }
+    s_configurationDeinit(config);
+    os_free(config);
 }
 
 void
@@ -911,6 +1039,8 @@ s_configurationRead(
     u_cfNode node;
     c_iter iter;
     c_char *name;
+    c_bool enabled;
+    c_bool success;
 
     root = u_participantGetConfiguration(u_participant(splicedGetService(daemon)));
     if (root) {
@@ -939,19 +1069,26 @@ s_configurationRead(
     if (domain) {
         s_configurationValueString (config, domain, "Name/#text", s_configurationSetDomainName);
         /* Enable statistics */
-        iter = u_cfElementXPath(domain,
-                                "Statistics/Category[@enabled='true']");
+        iter = u_cfElementXPath(domain,"Statistics/Category");
         node = u_cfNode(c_iterTakeFirst(iter));
+
         while (node != NULL) {
             if (u_cfNodeKind(node) == V_CFELEMENT) {
-                attribute = u_cfElementAttribute(u_cfElement(node), "name");
-                if (attribute) {
-                    u_cfAttributeStringValue(attribute, &name);
-                    if (name) {
-                        u_serviceEnableStatistics(u_service(splicedGetService(daemon)), name);
-                        os_free(name);
+                /* Get the (optional) "enabled"-attribute of the category.
+                * If not present then "enabled=true" is assumed.
+                * Only if enabled="false" the category must not be checked. */
+                enabled = TRUE;
+                success = u_cfElementAttributeBoolValue(u_cfElement(node), "enabled", &enabled);
+                if (!success || enabled) {
+                    attribute = u_cfElementAttribute(u_cfElement(node), "name");
+                    if (attribute) {
+                        u_cfAttributeStringValue(attribute, &name);
+                        if (name) {
+                            u_domainEnableStatistics(u_participantDomain(u_participant(splicedGetService(daemon))), name);
+                            os_free(name);
+                        }
+                        u_cfAttributeFree(attribute);
                     }
-                    u_cfAttributeFree(attribute);
                 }
             }
             u_cfNodeFree(node);
@@ -961,15 +1098,12 @@ s_configurationRead(
         s_configurationValueFloat(config, domain, "ServiceTerminatePeriod/#text", s_configurationSetServiceTerminatePeriod);
         s_configurationValueFloat(config, domain, "Lease/ExpiryTime/#text", s_configurationSetLeasePeriod);
         s_configurationAttrValueFloat(config, domain, "Lease/ExpiryTime", "update_factor", s_configurationSetLeaseRenewalPeriod);
-        s_configurationValueString (config, domain, "Watchdog/Scheduling/Class/#text", s_configurationSetLeaseRenewSchedulingClass);
-        s_configurationValueLong   (config, domain, "Watchdog/Scheduling/Priority/#text", s_configurationSetLeaseRenewSchedulingPriority);
+        s_configurationAttrValueString (config, domain, "DurablePolicies", "partition", s_configurationSetPartition);
+        config->durablePolicies = s_configurationResolveDurablePolicies(domain, "DurablePolicies/Policy");
 
         /* Heartbeat */
-        config->heartbeatExpiryTime.seconds = config->leasePeriod.seconds;
-        config->heartbeatExpiryTime.nanoseconds = config->leasePeriod.nanoseconds;
-
-        config->heartbeatUpdateInterval.seconds = config->leaseRenewalPeriod.seconds;
-        config->heartbeatUpdateInterval.nanoseconds = config->leaseRenewalPeriod.nanoseconds;
+        config->heartbeatExpiryTime = config->leasePeriod;
+        config->heartbeatUpdateInterval = config->leaseRenewalPeriod;
     }
 
     if (dcfg) {
@@ -979,17 +1113,27 @@ s_configurationRead(
         s_configurationValueBoolean     (config, dcfg, "Tracing/Timestamps/#text", s_configurationSetTracingTimestamps);
         s_configurationSetTracingRelativeTimestamps(config, dcfg, "Tracing/Timestamps", "absolute");
 
+        s_configurationValueString (config, dcfg, "Watchdog/Scheduling/Class/#text", s_configurationSetLeaseRenewSchedulingClass);
+        s_configurationValueLong (config, dcfg, "Watchdog/Scheduling/Priority/#text", s_configurationSetLeaseRenewSchedulingPriority);
+        s_configurationValueLong (config, dcfg, "Watchdog/StackSize/#text", s_configurationSetLeaseRenewStackSize);
+
         /* Kernelmanager */
         s_configurationValueString(config, dcfg, "KernelManager/Scheduling/Class/#text", s_configurationSetKernelManagerSchedulingClass);
         s_configurationValueLong(config, dcfg, "KernelManager/Scheduling/Priority/#text", s_configurationSetKernelManagerSchedulingPriority);
-
+        s_configurationValueLong(config, dcfg, "KernelManager/StackSize/#text", s_configurationSetKernelManagerStackSize);
          /* GarbageCollector */
          s_configurationValueString(config, dcfg, "GarbageCollector/Scheduling/Class/#text", s_configurationSetGCSchedulingClass);
          s_configurationValueLong(config, dcfg, "GarbageCollector/Scheduling/Priority/#text", s_configurationSetGCSchedulingPriority);
+         s_configurationValueLong(config, dcfg, "GarbageCollector/StackSize/#text", s_configurationSetGCStackSize);
 
          /* ResendManager */
          s_configurationValueString(config, dcfg, "ResendManager/Scheduling/Class/#text", s_configurationSetResendManagerSchedulingClass);
          s_configurationValueLong(config, dcfg, "ResendManager/Scheduling/Priority/#text", s_configurationSetResendManagerSchedulingPriority);
+         s_configurationValueLong(config, dcfg, "ResendManager/StackSize/#text", s_configurationSetResendManagerStackSize);
+         /* shmMonitor */
+         s_configurationValueString(config, dcfg, "shmMonitor/Scheduling/Class/#text", s_configurationSetshmMonitorSchedulingClass);
+         s_configurationValueLong(config, dcfg, "shmMonitor/Scheduling/Priority/#text", s_configurationSetshmMonitorSchedulingPriority);
+         s_configurationValueLong(config, dcfg, "shmMonitor/StackSize/#text", s_configurationSetshmMonitorStackSize);
 
          /* Heartbeat */
          s_configurationAttrValueLong(config, dcfg, "Heartbeat", "transport_priority", s_configurationSetHeartbeatTransportPriority);
@@ -999,6 +1143,7 @@ s_configurationRead(
 
          s_configurationValueString(config, dcfg, "Heartbeat/Scheduling/Class/#text", s_configurationSetHeartbeatSchedulingClass);
          s_configurationValueLong(config, dcfg, "Heartbeat/Scheduling/Priority/#text", s_configurationSetHeartbeatSchedulingPriority);
+         s_configurationValueLong(config, dcfg, "Heartbeat/StackSize/#text", s_configurationSetHeartbeatStackSize);
 
          /* Control and Monitoring Command Receiver */
          iter = u_cfElementXPath(domain,
@@ -1028,7 +1173,8 @@ s_configurationRead(
                      if (name)
                      {
                         s_configurationValueString(config, dcfg, "ControlAndMonitoringCommandReceiver/Scheduling/Class/#text", s_configurationSetCandMCommandSchedulingClass);
-                        s_configurationValueLong(config, dcfg, "ControlAndMonitoringCommandReceiver/Scheduling/Priority/#text", s_configurationSetResendManagerSchedulingPriority);
+                        s_configurationValueLong(config, dcfg, "ControlAndMonitoringCommandReceiver/Scheduling/Priority/#text", s_configurationSetCandMCommandSchedulingPriority);
+                        s_configurationValueLong(config, dcfg, "ControlAndMonitoringCommandReceiver/StackSize/#text", s_configurationSetCandMCommandStackSize);
                         os_free(name);
                      }
                      u_cfAttributeFree(attribute);
@@ -1041,9 +1187,6 @@ s_configurationRead(
 
          }
     }
-
-
-
     /* Finally report the configuration */
     s_configurationReport(config, daemon);
 

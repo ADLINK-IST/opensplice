@@ -1,0 +1,14 @@
+<launch4jConfig>
+  <headerType>console</headerType>
+  <outfile>#OSPL_HOME#/exec/#SPLICE_TARGET#/protoc-gen-ddsjava.exe</outfile>
+  <jar>#OSPL_HOME#/jar/#SPLICE_TARGET#/dcpsprotobuf.jar</jar>
+  <priority>normal</priority>
+  <cmdLine>java</cmdLine>
+  <stayAlive>true</stayAlive>
+  <classPath>
+    <mainClass>com.prismtech.dds.protobuf.CompilerPlugin</mainClass>
+  </classPath>
+  <jre>
+    <minVersion>1.6.0</minVersion>
+  </jre>
+</launch4jConfig>

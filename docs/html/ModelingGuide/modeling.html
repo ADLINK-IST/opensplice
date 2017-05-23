@@ -1,0 +1,791 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Modeling &mdash; Modeling Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.5.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Modeling Guide" href="index.html" />
+    <link rel="next" title="6. Code Generation" href="codegeneration.html" />
+    <link rel="prev" title="4. Modeler Described" href="described.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="codegeneration.html" title="6. Code Generation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="described.html" title="4. Modeler Described"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="modeling">
+<span id="id1"></span><h1>5. Modeling<a class="headerlink" href="#modeling" title="Permalink to this headline">¶</a></h1>
+<p><em>This section describes in detail how to use the
+tools in Vortex OpenSplice Modeler for modeling and
+assembling resources (such as DDS entities).</em></p>
+<p><em>The Vortex OpenSplice Modeler provides separate</em> Information
+<em>and</em> Application <em>modeling. This section describes the use
+of these two modeling paradigms in a project.</em></p>
+<div class="section" id="information-modeling">
+<h2>5.1. Information Modeling<a class="headerlink" href="#information-modeling" title="Permalink to this headline">¶</a></h2>
+<p>The following sections describe how to use and add components to
+a project&#8217;s information model. Information modeling includes the
+modeling of <em>Types</em> and <em>Topics</em>. The following sections describe
+how to add and use Types and Topics in a project</p>
+<div class="section" id="types-and-their-idl-specification">
+<h3>5.1.1. Types and their IDL Specification<a class="headerlink" href="#types-and-their-idl-specification" title="Permalink to this headline">¶</a></h3>
+<p>A <em>data type</em>, which is part of the <em>Information Model</em> <a class="footnote-reference" href="#id4" id="id2">[1]</a> and
+will be distributed by the application, can be regarded as a table
+in a database where the database consists of a number of named
+columns, and each column is assigned its own primitive type.
+Just like a database table, the type has a set of keys, which is
+a subset of the set of columns.</p>
+<p>Data types are specified using the Interface Definition Language
+(IDL). Using the Interface Definition Language to specify the
+data types ensures that they will be platform and
+(implementation or native) language independent.</p>
+<p>A data type&#8217;s IDL specification is subsequently <em>mapped</em> (in other
+words, converted) to a data <em>type</em> of the target programming
+language that the application will be implemented in. For
+example, if the programming language that the application will
+be implemented in is Java, then the IDL specification for the
+data type would be mapped to <tt class="docutils literal"><span class="pre">attributes</span></tt> in a Java <tt class="docutils literal"><span class="pre">class</span></tt>.
+However, if the implementation language is C++, then the data
+type would be mapped to <tt class="docutils literal"><span class="pre">members</span></tt> in a C <tt class="docutils literal"><span class="pre">struct</span></tt>.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+The same data type can communicate between applications
+implemented in different languages without difficulty.</p>
+<p>A data type&#8217;s IDL specification is imported from a file
+containing the specification. The IDL specification is imported
+into a project by following these steps:</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><p>Choose <em>File &gt; Import</em> from the Eclipse menu. This
+displays the <em>Import</em> dialog.</p>
+<p>Expand the Vortex OpenSplice folder (displayed in the dialog),
+select <em>Vortex OpenSplice IDL Import Wizard</em>, then click the <em>Next</em>
+button. This will display the Vortex OpenSplice IDL Import Wizard
+(see the illustration below).</p>
+</div></blockquote>
+<p class="centered" id="vortex-opensplice-idl-import-wizard">
+<strong><strong>Vortex OpenSplice IDL Import Wizard</strong></strong></p><a class="reference internal image-reference" href="_images/010_IDLimportWizard.png"><img alt="Vortex OpenSplice IDL Import Wizard" class="align-center" src="_images/010_IDLimportWizard.png" style="width: 90mm;" /></a>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Enter the folder which the IDL specification is to be
+imported into in the Destination Folder text box by using the
+adjacent <em>Browse</em> button and navigating the Project Explorer&#8217;s
+projects (recommended method) <em>or</em> by writing the folder pathname
+in the text box.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Enter the full pathname of the file containing IDL
+specification into the <em>IDL Source</em> text box using the adjacent
+<em>Browse</em> button to navigate through the file system to locate the
+required IDL specification file.</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div><p>Click the <em>Finish</em> button when all entries are completed
+in order to import the IDL specification into the project.</p>
+<p>The IDL file being imported should appear in the Project Explorer
+in the destination folder.</p>
+<p>When the import is complete, a new model will be generated from
+the specification defined in the IDL file. The model will have
+the same name as the IDL file.</p>
+<p>OR</p>
+<p>Create an empty IDL file in a Vortex OpenSplice project, open it in
+the Eclipse text editor, then write the IDL specification. A
+model with the same name as the IDL file will be automatically
+generated. The model will contain the data types defined in the
+IDL specification. Any changes to the original IDL file will be
+reflected in the generated model.</p>
+</div></blockquote>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Models generated from an IDL file are &#8216;read only&#8217; and they appear
+in the Project Explorer with grey label text. It is not possible
+to add additional items to these models.</p>
+<p class="centered" id="example-imported-data-type-definitions">
+<strong><strong>Example Imported Data Type Definitions</strong></strong></p><a class="reference internal image-reference" href="_images/011_EgImportedTypeDefs.png"><img alt="Example Imported Data Type Definitions" class="align-center" src="_images/011_EgImportedTypeDefs.png" style="width: 100mm;" /></a>
+</div>
+<div class="section" id="topicdescription">
+<h3>5.1.2. TopicDescription<a class="headerlink" href="#topicdescription" title="Permalink to this headline">¶</a></h3>
+<p><tt class="docutils literal"><span class="pre">TopicDescription</span></tt> is the base class for <em>Topic</em>,
+<em>ContentFilteredTopic</em> and <em>MultiTopic</em> (in accordance with
+the <em>DDS Specification</em>).</p>
+<p><tt class="docutils literal"><span class="pre">TopicDescription</span></tt> represents the situation where both
+publications and subscriptions are associated with a single
+data-type.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>MultiTopics are not supported by this release.</dd>
+</dl>
+</div>
+<div class="section" id="topics">
+<h3>5.1.3. Topics<a class="headerlink" href="#topics" title="Permalink to this headline">¶</a></h3>
+<p>A Topic binds a name to an associated data type. Further,
+multiple Topics can be created for one specific type.</p>
+<p>A Topic can be added to a project or specific application
+(noting that Topics are associated with data types) by:</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><p>In the Project Explorer, right-clicking on the Module
+containing the application the Topic is to be added to,
+choosing <em>New Topic</em> from the pop-up dialog.</p>
+<p>OR</p>
+<p>Choosing <em>File &gt; New &gt; Topic</em> from the Eclipse Menu Bar
+(not recommended, since an additional step is required).</p>
+<p>OR</p>
+<p>In the Diagram Editor (if the application is in an open
+diagram) by choosing the <em>Topic</em> tool from the Diagram
+Editor&#8217;s tool palette, then clicking in a free area
+of the canvas.</p>
+<p>Either of these last two methods will display the
+<em>New Topic</em> dialog (see <a class="reference internal" href="#new-topic-dialog">New Topic dialog</a>).</p>
+</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div><p>In the <em>New Topic</em> dialog:</p>
+<ul class="simple">
+<li>Select the Module that the Topic is to be added to into
+the <em>Module</em> field (using the adjacent <em>Browse</em> button).
+This will automatically set the Model.</li>
+<li>Enter the Topic&#8217;s name into the <em>Name</em> text box.</li>
+<li>Select the data type, using the <em>Browse</em> button adjacent to
+the <em>Data Type</em> text box to find and select the data type the
+Topic is to be associated with; the data type should appear
+in the <em>Data Type</em> text box similar to the example in
+<a class="reference internal" href="#new-topic-dialog">New Topic dialog</a>.</li>
+</ul>
+</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Click <em>Finish</em> when complete. The new Topic should appear
+in the Project Explorer under the selected Module (and, if the
+Diagram Editor&#8217;s palette tool was used, in the diagram as well).</div></blockquote>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Topics are connected to DataWriters and DataReaders with the
+<em>Topic Connection Tool</em>: the instructions are given in
+<a class="reference internal" href="#using-the-connection-tool-for-topics">Using the Connection Tool for Topics</a>.</p>
+<p class="centered" id="new-topic-dialog">
+<strong><strong>New Topic dialog</strong></strong></p><a class="reference internal image-reference" href="_images/012_NewTopicDialog.png"><img alt="New Topic dialog" class="align-center" src="_images/012_NewTopicDialog.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="contentfilteredtopic">
+<h3>5.1.4. ContentFilteredTopic<a class="headerlink" href="#contentfilteredtopic" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">ContentFilteredTopic</span></tt> DDS entity, derived from the
+<tt class="docutils literal"><span class="pre">TopicDescription</span></tt> base class, can be used to do content-based
+subscriptions.</p>
+<p>A ContentFilteredTopic can be added to a Module by:</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><p>Right-click on the Module and choose <em>New
+ContentFilteredTopic</em> from the pop-up menu.</p>
+<p>OR</p>
+<p>In the Diagram Editor, select <em>Content Filtered Topic</em>
+from the Diagram Editor&#8217;s palette and click on the diagram.</p>
+</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div><p>When using the <em>New ContentFilteredTopic</em> dialog:</p>
+<ul class="simple">
+<li>In the <em>Module</em> field, select the Module the
+ContentFilteredTopic is to be added to using the
+adjacent <em>Browse</em> button. This will automatically
+set the <em>Model</em> field.</li>
+<li>Use the <em>Browse</em> button to browse for the Topic that
+the ContentFilteredTopic will be based on.</li>
+<li>Enter a filter expression for the ContentFilteredTopic
+(refer to the OMG&#8217;s <em>DDS Specification</em> for the syntax)</li>
+</ul>
+<p>ContentFilteredTopics are connected to DataReaders using the
+<em>Topic Connection Tool</em> (refer to
+<a class="reference internal" href="#using-the-connection-tool-for-topics">Using the Connection Tool for Topics</a>).</p>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="application-modeling">
+<span id="id3"></span><h2>5.2. Application Modeling<a class="headerlink" href="#application-modeling" title="Permalink to this headline">¶</a></h2>
+<p>The following sections describe how to use and add components to
+a project&#8217;s application model. Application modeling includes the
+modeling of <em>DomainParticipants</em>, <em>Publishers</em>, <em>Subscribers</em>,
+<em>DataWriters</em>, <em>DataReaders</em>, <em>Listeners</em>, <em>WaitSets</em> and <em>Conditions</em>.</p>
+<div class="section" id="applications">
+<h3>5.2.1. Applications<a class="headerlink" href="#applications" title="Permalink to this headline">¶</a></h3>
+<p>A Vortex OpenSplice Modeler <em>Application</em> represents an executable
+application. An application contains DDS entities such as
+DomainParticipants, Publishers, Subscribers, DataReaders and
+DataWriters.</p>
+<p>An application can be added to the project by
+following these steps:</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><p>Right-click on a module in the Project Explorer, then
+choose <em>New Application</em> from the pop-up dialog</p>
+<p>OR</p>
+<p>In the Diagram Editor, choose the <em>Application</em> tool from
+the tool palette, then click in the canvas.</p>
+<p>Either of these methods will display the <em>New Application</em> dialog.</p>
+</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Enter the application&#8217;s name into the <em>Name</em> text box in
+the <em>New Application</em> dialog.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Select the Module that the application is to be added to
+by clicking the <em>Browse</em> button adjacent to the <em>Module</em> text box,
+then navigating the project.</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div>Click the <em>Finish</em> button. The new application component
+should appear in the Project Explorer under the selected module.
+The application will also appear in the diagram if the Diagram
+Editor&#8217;s tool palette was used.</div></blockquote>
+<p class="centered" id="new-application-dialog">
+<strong><strong>New Application dialog</strong></strong></p><a class="reference internal image-reference" href="_images/013_NewApplicationDialog.png"><img alt="New Application dialog" class="align-center" src="_images/013_NewApplicationDialog.png" style="width: 90mm;" /></a>
+</div>
+<div class="section" id="domainparticipants">
+<h3>5.2.2. DomainParticipants<a class="headerlink" href="#domainparticipants" title="Permalink to this headline">¶</a></h3>
+<p>DomainParticipants can be added to an application by:</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><p>In the Project Explorer, right-click on the application the
+DomanParticipant is to be added to, then choose
+<em>New Domain Participant</em> from the pop-up dialog.</p>
+<p>OR</p>
+<p>If the application is in a diagram, then open it in the Diagram
+Editor, select the <em>DomanParticipant</em> tool from the tool
+palette, then click inside the target application&#8217;s symbol
+appearing on the canvas.</p>
+<p>Either of these methods will display the <em>New Domain Participant</em>
+dialog.</p>
+</div></blockquote>
+<p class="centered" id="new-domainparticipant-dialog">
+<strong><strong>New DomainParticipant dialog</strong></strong></p><a class="reference internal image-reference" href="_images/014_NewDomainParticipantDialog.png"><img alt="New DomainParticipant dialog" class="align-center" src="_images/014_NewDomainParticipantDialog.png" style="width: 90mm;" /></a>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Enter the DomainParticipant&#8217;s name into the <em>Name</em> text
+box in the <em>New Domain Participant</em> dialog.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>The desired target Application should appear in the
+<em>Application</em> text box: if not, then click the <em>Browse</em> button
+adjacent to the <em>Application</em> text box, and navigate the project
+to locate the parent Application.</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div>Click the <em>Finish</em> button. The new DomainParticipant should appear
+in the Project Explorer under the selected application. The
+DomainParticipant will also appear in the diagram, inside the
+application, if the Diagram Editor&#8217;s tool palette was used.</div></blockquote>
+</div>
+<div class="section" id="publishers-and-subscribers">
+<h3>5.2.3. Publishers and Subscribers<a class="headerlink" href="#publishers-and-subscribers" title="Permalink to this headline">¶</a></h3>
+<p>Publishers and subscribers can be added to DomainParticipants
+using the Diagram Editor&#8217;s palette as well as the Project
+Explorer. When using the palette, <em>drag</em> the palette&#8217;s icon for
+the entity instance to the DomainParticipant.</p>
+</div>
+<div class="section" id="datawriters-and-datareaders">
+<h3>5.2.4. DataWriters and DataReaders<a class="headerlink" href="#datawriters-and-datareaders" title="Permalink to this headline">¶</a></h3>
+<p>DataWriters and DataReaders are contained inside publishers and
+subscribers, respectively. They are added using Diagram Editor&#8217;s
+palette: <em>drag</em> the palette&#8217;s icon for the entity instance to the
+appropriate publisher or subscriber.</p>
+<p><em>Individual DataWriter and DataReader instances can be associated
+with only</em> <strong>one</strong> <em>particular Topic. The association is created using</em>
+Topic Connectors.</p>
+</div>
+<div class="section" id="partition">
+<h3>5.2.5. Partition<a class="headerlink" href="#partition" title="Permalink to this headline">¶</a></h3>
+<p>A DDS Partition entity is associated with Publishers and
+Subscribers: one or more Publishers and Subscribers can be
+connected to a single Partition.</p>
+<p>A Partition is added to a model using the Diagram Editor and a
+Model&#8217;s diagram, noting that a diagram should already exist
+which contains the Publishers and/or Subscribers the Partition
+is to be associated with.</p>
+<p>A Partition can also be added by clicking the toolbar&#8217;s
+partition icon <a class="reference internal" href="_images/000_icon_NewPartition.png"><img alt="newpart" src="_images/000_icon_NewPartition.png" style="height: 4mm;" /></a> and the <em>New Partition</em>
+context menu item for Modules. Either of these methods will
+launch a &#8216;new partition&#8217; wizard.</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Open a Model&#8217;s Diagram.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Select the <em>Partition</em> tool from the Diagram Editor&#8217;s palette.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Click in a free area of the diagram&#8217;s canvas: a new Partition
+will appear in the diagram and in the Project Explorer under the
+selected Model and Module.</div></blockquote>
+<p class="centered" id="partition-symbol">
+<strong><strong>Partition Symbol</strong></strong></p><a class="reference internal image-reference" href="_images/015_PartitionSymbol.png"><img alt="Partition Symbol" class="align-center" src="_images/015_PartitionSymbol.png" style="width: 45mm;" /></a>
+<p>Partitions are associated with (or connected to) Publishers and
+Subscribers using the <em>Partition Connection Tool</em>; instructions
+are in <a class="reference internal" href="#using-the-connection-tool-for-partitions">Using the Connection Tool for Partitions</a>.</p>
+</div>
+<div class="section" id="listeners">
+<h3>5.2.6. Listeners<a class="headerlink" href="#listeners" title="Permalink to this headline">¶</a></h3>
+<p>The Vortex OpenSplice Modeler supports the modeling of
+listeners. Listeners enable the application to asynchronously
+become aware of DCPS communication status changes. Using
+listeners is an alternative method to using conditions and
+WaitSets. A detailed description of each communication status is
+given in the OMG&#8217;s <em>Data Distribution Service for Real-time
+Systems Specification, Version 1.2, formal/07-01-01</em>.</p>
+<p>The communication statuses, whose changes can be communicated to
+the application, depend on the specific Entity being
+communicated with. A listener can be attached to any DDS Entity.</p>
+<p>Modeled listeners are associated with entities within an
+application or a Topic. When modeling listeners, users can
+choose which communication statuses that their application is
+interested in by selecting the Listener, opening the <em>Properties</em>
+view and modifying the <em>Status Mask</em> entries.</p>
+<p>The user can also define the Listener type; this affects the
+values appearing in the <em>Status Mask</em> field.</p>
+<p>The <em>Listener Type</em> property defines values for each type of DDS
+Entity that a listener can be connected to (Topic,
+DomainParticipant, Publisher, Subscriber, DataReader or
+DataWriter). These values are defined as:</p>
+<ul>
+<li><p class="first"><strong>Derived</strong></p>
+<p>If and only if the Listener is connected to an Entity of this
+type, will the <em>Status Mask</em> assume the <em>Status Mask</em> properties of
+this type of entity.</p>
+<p>For example, if the Listener is connected to a DataReader and
+the Listener Type property value for DataReader is set to
+<tt class="docutils literal"><span class="pre">Derived</span></tt>, then the <em>Status Mask</em> for the Listener will include all
+Status values for a DataReader and we will be able to model an
+interest in those statuses.</p>
+<p><tt class="docutils literal"><span class="pre">Derived</span></tt> is the default value since it only provides <em>Status Mask</em>
+properties for any entities that the listener is actually
+connected to.</p>
+</li>
+<li><p class="first"><strong>Enabled</strong></p>
+<p>This value ensures that the <em>Status Mask</em> properties for this type
+of entity always appear in the <em>Status Mask</em> for the Listener,
+regardless of whether the Listener is connected to an Entity of
+that type.</p>
+<p>This is useful, for example, if it is desirable to express an
+interest in Listening to an Entity that has not been modeled
+using the tool.</p>
+</li>
+<li><p class="first"><strong>Disabled</strong></p>
+<p>This value ensures that the Listener can <em>not</em> listen to Entities
+of that type. If an Entity is <tt class="docutils literal"><span class="pre">Disabled</span></tt>, then the user will not
+be able to connect the Listener to an Entity of that type using
+the <em>Listener Connection Tool</em>. Similarly, if a connection already
+exists to an Entity of that type, then the user will receive an
+Error in the <em>Problems</em> view.</p>
+</li>
+</ul>
+<p>A Listener can be created in the tool by</p>
+<p><em>EITHER</em></p>
+<blockquote>
+<div><p><strong>Step 1</strong></p>
+<blockquote>
+<div>Opening a Model in the Diagram Editor.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Choosing the <em>Listener</em> tool from the Diagram Editor&#8217;s
+Palette.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Clicking on the Application which the Listener should
+be associated with (in the Diagram Editor).</div></blockquote>
+</div></blockquote>
+<p><em>OR</em></p>
+<blockquote>
+<div><p><strong>Step 1</strong></p>
+<blockquote>
+<div>Right-click on an Application in the Project Explorer.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Select <em>New Listener</em>.</div></blockquote>
+</div></blockquote>
+<p>Listeners are associated with entities by using the <em>Listener
+Connection Tool</em>. (See <a class="reference internal" href="#using-the-connection-tool-for-listeners">Using the Connection Tool for Listeners</a>
+for details.)</p>
+</div>
+<div class="section" id="waitsets">
+<h3>5.2.7. WaitSets<a class="headerlink" href="#waitsets" title="Permalink to this headline">¶</a></h3>
+<p><em>WaitSets</em> are contained within an Application and are associated
+with certain <em>Condition</em> objects. WaitSets enable applications to
+be made synchronously aware of DCPS communication status changes
+and are an alternative method to using Listeners
+(see <a class="reference internal" href="#listeners">Listeners</a>).</p>
+<p>A WaitSet is a wait-based scheme. It is used in conjunction with
+Condition objects (see <a class="reference internal" href="#conditions">Conditions</a>) to block the current
+thread of the application until a specified condition is
+satisfied or until the timeout expires. This is the alternative
+to the listener-based scheme which uses notification for
+awareness of status changes.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+A WaitSet can be associated with one or more Condition objects.</p>
+<div class="section" id="modeling-waitsets">
+<h4>5.2.7.1. Modeling WaitSets<a class="headerlink" href="#modeling-waitsets" title="Permalink to this headline">¶</a></h4>
+<p>A WaitSet can be created using either the Diagram Editor or the
+Project Explorer.</p>
+<p><em>Using the Diagram Editor</em></p>
+<blockquote>
+<div><p><strong>Step 1</strong></p>
+<blockquote>
+<div>Open a model in the Diagram Editor.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Select the <em>WaitSet</em> tool from the Diagram Editor&#8217;s Tool
+palette.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Click on the Application symbol which the WaitSet
+should be associated with in the Diagram Editor. This will
+add a WaitSet symbol to the diagram.</div></blockquote>
+</div></blockquote>
+<p><em>Using the Project Explorer</em></p>
+<blockquote>
+<div><p><strong>Step 1</strong></p>
+<blockquote>
+<div>Right-click on an Application in the Project Explorer.
+A pop-up dialog will appear.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Select <em>New WaitSet</em> in the pop-up dialog. Provide the
+requested details.</div></blockquote>
+</div></blockquote>
+<p>Condition objects now need to be created and associated
+with the WaitSet.</p>
+</div>
+</div>
+<div class="section" id="conditions">
+<h3>5.2.8. Conditions<a class="headerlink" href="#conditions" title="Permalink to this headline">¶</a></h3>
+<p>WaitSets use Condition objects to determine which status changes
+an application should be notified of.</p>
+<p>There are different types of Condition object (referred to
+herein simply as <em>Conditions</em> for brevity). The following
+Condition types are specified in the OMG&#8217;s <em>DDS Specification</em>
+and are supported by the Vortex OpenSplice Modeler.</p>
+<p><strong>StatusCondition</strong></p>
+<blockquote>
+<div><p>A <em>StatusCondition</em> defines a specific condition which is
+associated with each Entity.</p>
+<p>The StatusCondition&#8217;s <em>status mask</em> determines which status
+changes the application is notified of (for its associated
+Entity).</p>
+<p>The StatusCondition contains properties of type boolean. These
+properties determine the communication statuses. The properties
+can be set in the <em>Status Mask</em> field of the <em>Properties View</em>.
+Further, when associating a StatusCondition with a Topic, the
+related Domain Participant for that Topic must be specified in
+the <em>Properties View</em>.</p>
+<p>See the OMG&#8217;s <em>DDS Specification</em> for detailed information about
+communication statuses.</p>
+</div></blockquote>
+<p><strong>ReadCondition</strong></p>
+<blockquote>
+<div><p><em>ReadCondition</em> objects are conditions specifically dedicated to
+read operations.</p>
+<p>An application can specify the data samples it is interested in
+by setting a ReadCondition&#8217;s <em>sample</em>, <em>view</em> and <em>instance</em> states.
+More than one ReadCondition can be associated with a DataReader.
+A ReadCondition&#8217;s states can be set in the Vortex OpenSplice
+Modeler <em>Properties View</em>.</p>
+</div></blockquote>
+<p><strong>QueryCondition</strong></p>
+<blockquote>
+<div><em>QueryCondition</em> objects are specialized <em>ReadCondition</em> objects.
+A subset of an SQL expression can be used to allow the application
+to filter out newly-arrived data, in addition to the
+notification of new arrivals.</div></blockquote>
+<p><strong>GuardCondition</strong></p>
+<blockquote>
+<div><p>Unlike the other conditions, the <em>GuardCondition</em> is completely
+under the control of the application.</p>
+<p>The application has the functionality to manually wake a WaitSet
+by attaching the GuardCondition to it and setting the trigger
+value of the Condition. See the OMG&#8217;s <em>DDS Specification</em> for
+detailed information.</p>
+</div></blockquote>
+<div class="section" id="modeling-conditions">
+<h4>5.2.8.1. Modeling Conditions<a class="headerlink" href="#modeling-conditions" title="Permalink to this headline">¶</a></h4>
+<p>Conditions are created, in a similar way to WaitSets, by using
+either the Diagram Editor or the Project Explorer.</p>
+<p><em>Using the Diagram Editor</em></p>
+<blockquote>
+<div><p><strong>Step 1</strong></p>
+<blockquote>
+<div>Open a model in the Diagram Editor.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Select the desired <em>Condition</em> tool from the Diagram
+Editor&#8217;s Tool palette</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Click on the Application symbol which the Condition
+should be associated with in the Diagram Editor. This will
+add the appropriate Condition symbol to the diagram.</div></blockquote>
+</div></blockquote>
+<p><em>Using the Project Explorer</em></p>
+<blockquote>
+<div><p><strong>Step 1</strong></p>
+<blockquote>
+<div>Right-click on an Application in the Project Explorer.
+A pop-up dialog will appear.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Choose the desired <em>New Condition</em> option in the pop-up
+dialog. Provide the requested details.</div></blockquote>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="connecting-components">
+<h3>5.2.9. Connecting Components<a class="headerlink" href="#connecting-components" title="Permalink to this headline">¶</a></h3>
+<p>The Diagram Editor has a single generic connection tool. This
+tool is selected by clicking it in the Diagram Editor&#8217;s <em>Tool
+Palette</em>.</p>
+<p>The connection tool connects:</p>
+<ul class="simple">
+<li>Topics to DataWriters and DataReaders, and specifies <em>which</em>
+data that the DataWriter or DataReader will write or read,
+respectively</li>
+<li>Partitions to Publishers and Subscribers, and specifies <em>where</em>
+the data will be written to or read from, respectively</li>
+<li>Listeners to Domain Participants, Publishers, Subscribers,
+DataReaders, DataWriters and Topics</li>
+<li>StatusConditions to DomainParticipants, Publishers,
+Subscribers, DataReaders, DataWriters and Topics</li>
+<li>ReadConditions and QueryConditions to DataReaders</li>
+<li>Conditions (GuardCondition, StatusCondition, ReadCondition
+and QueryCondition) to WaitSets</li>
+</ul>
+<div class="section" id="using-the-connection-tool-for-topics">
+<h4>5.2.9.1. Using the Connection Tool for Topics<a class="headerlink" href="#using-the-connection-tool-for-topics" title="Permalink to this headline">¶</a></h4>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Select the <em>Connection Tool</em> from the Diagram Editor&#8217;s
+palette.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Click on the topic to be connected, then click on the entity
+(for example, a data writer) that the topic is to be connected to.</div></blockquote>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+An entity can only be connected to one topic; an existing
+connection between a topic and an entity will be removed
+whenever the entity is connected to another topic.</p>
+</div>
+<div class="section" id="using-the-connection-tool-for-partitions">
+<h4>5.2.9.2. Using the Connection Tool for Partitions<a class="headerlink" href="#using-the-connection-tool-for-partitions" title="Permalink to this headline">¶</a></h4>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Select the <em>Connection Tool</em> from the Diagram Editor&#8217;s
+palette.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Start the connection from the Partition to the publisher or
+subscriber.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Click on the Partition to be connected, then click on the
+Publisher or Subscriber that the Partition is to be connected to.</div></blockquote>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Publishers and Subscribers can be connected to more than one
+Partition.</p>
+</div>
+<div class="section" id="using-the-connection-tool-for-listeners">
+<h4>5.2.9.3. Using the Connection Tool for Listeners<a class="headerlink" href="#using-the-connection-tool-for-listeners" title="Permalink to this headline">¶</a></h4>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Select the <em>Connection Tool</em> from the Diagram Editor&#8217;s
+palette.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Click on the Listener to be connected, then click on the
+Topic, DomainParticipant, Publisher, Subscriber, DataReader or
+DataWriter that the Listener is to be connected to.</div></blockquote>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Listeners can be connected to more than one entity.</p>
+</div>
+<div class="section" id="using-the-connection-tool-to-connect-statusconditions-to-an-entity">
+<h4>5.2.9.4. Using the Connection Tool to connect StatusConditions to an Entity<a class="headerlink" href="#using-the-connection-tool-to-connect-statusconditions-to-an-entity" title="Permalink to this headline">¶</a></h4>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Select the <em>Connection Tool</em> from the Diagram Editor&#8217;s
+palette.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Click on the StatusCondition to be connected, then click on
+the Topic, DomainParticipant, Publisher, Subscriber, DataReader
+or DataWriter that the Listener is to be connected to.</div></blockquote>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Only one StatusCondition can be attached to DomainParticipants,
+Publishers, Subscribers, DataWriters and DataReaders.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Multiple StatusConditions may be attached to a Topic <em>but</em> each
+StatusCondition must have a <em>different</em> related DomainParticipant
+specified.</p>
+</div>
+<div class="section" id="using-the-connection-tool-to-connect-readconditions-and-queryconditions-to-a-datareader">
+<h4>5.2.9.5. Using the Connection Tool to connect ReadConditions and QueryConditions to a DataReader<a class="headerlink" href="#using-the-connection-tool-to-connect-readconditions-and-queryconditions-to-a-datareader" title="Permalink to this headline">¶</a></h4>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Select the <em>Connection Tool</em> from the Diagram Editor&#8217;s
+palette.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Click on the ReadConditions or QueryConditions to be
+connected, then click on the DataReader or DataWriter that the
+Condition is to be connected to.</div></blockquote>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Multiple ReadConditions and QueryConditions can be attached to
+each DataReader.</p>
+</div>
+<div class="section" id="using-the-connection-tool-to-connect-conditions-to-a-waitset">
+<h4>5.2.9.6. Using the Connection Tool to connect Conditions to a WaitSet<a class="headerlink" href="#using-the-connection-tool-to-connect-conditions-to-a-waitset" title="Permalink to this headline">¶</a></h4>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Select the <em>Connection Tool</em> from the Diagram Editor&#8217;s
+palette.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Click on the Condition to be connected, then click on the
+WaitSet that the Condition is to be connected to.</div></blockquote>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>The Information Model is the complete set of topics in a
+domain, including their associated data types and QoS settings.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Modeling</a><ul>
+<li><a class="reference internal" href="#information-modeling">5.1. Information Modeling</a><ul>
+<li><a class="reference internal" href="#types-and-their-idl-specification">5.1.1. Types and their IDL Specification</a></li>
+<li><a class="reference internal" href="#topicdescription">5.1.2. TopicDescription</a></li>
+<li><a class="reference internal" href="#topics">5.1.3. Topics</a></li>
+<li><a class="reference internal" href="#contentfilteredtopic">5.1.4. ContentFilteredTopic</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#application-modeling">5.2. Application Modeling</a><ul>
+<li><a class="reference internal" href="#applications">5.2.1. Applications</a></li>
+<li><a class="reference internal" href="#domainparticipants">5.2.2. DomainParticipants</a></li>
+<li><a class="reference internal" href="#publishers-and-subscribers">5.2.3. Publishers and Subscribers</a></li>
+<li><a class="reference internal" href="#datawriters-and-datareaders">5.2.4. DataWriters and DataReaders</a></li>
+<li><a class="reference internal" href="#partition">5.2.5. Partition</a></li>
+<li><a class="reference internal" href="#listeners">5.2.6. Listeners</a></li>
+<li><a class="reference internal" href="#waitsets">5.2.7. WaitSets</a><ul>
+<li><a class="reference internal" href="#modeling-waitsets">5.2.7.1. Modeling WaitSets</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#conditions">5.2.8. Conditions</a><ul>
+<li><a class="reference internal" href="#modeling-conditions">5.2.8.1. Modeling Conditions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#connecting-components">5.2.9. Connecting Components</a><ul>
+<li><a class="reference internal" href="#using-the-connection-tool-for-topics">5.2.9.1. Using the Connection Tool for Topics</a></li>
+<li><a class="reference internal" href="#using-the-connection-tool-for-partitions">5.2.9.2. Using the Connection Tool for Partitions</a></li>
+<li><a class="reference internal" href="#using-the-connection-tool-for-listeners">5.2.9.3. Using the Connection Tool for Listeners</a></li>
+<li><a class="reference internal" href="#using-the-connection-tool-to-connect-statusconditions-to-an-entity">5.2.9.4. Using the Connection Tool to connect StatusConditions to an Entity</a></li>
+<li><a class="reference internal" href="#using-the-connection-tool-to-connect-readconditions-and-queryconditions-to-a-datareader">5.2.9.5. Using the Connection Tool to connect ReadConditions and QueryConditions to a DataReader</a></li>
+<li><a class="reference internal" href="#using-the-connection-tool-to-connect-conditions-to-a-waitset">5.2.9.6. Using the Connection Tool to connect Conditions to a WaitSet</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="described.html"
+                        title="previous chapter">4. Modeler Described</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="codegeneration.html"
+                        title="next chapter">6. Code Generation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/modeling.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="codegeneration.html" title="6. Code Generation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="described.html" title="4. Modeler Described"
+             >previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

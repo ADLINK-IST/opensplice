@@ -19,10 +19,53 @@ powerpc-none-linux-gnuspe-gcc {
   covopt    = -fprofile-arcs -ftest-coverage
 }
 
+PPCe5500-linux-gnu-gcc-5 {
+  cc        = powerpc64-linux-gnu-gcc-5
+  cxx       = powerpc64-linux-gnu-g++-5
+  linkflags   =
+  pic       = -fpic
+  shflags   = -shared
+  platforms = plat_PPCe5500_linux
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+}
+
+arm-linux-gnueabihf-gcc-5 {
+  cc        = arm-linux-gnueabihf-gcc-5
+  cxx       = arm-linux-gnueabihf-g++-5
+  linkflags   =
+  pic       = -fpic
+  shflags   = -shared
+  platforms = plat_armhf_linux
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+}
+
 powerpc-fsl-linux-gcc {
   cc        = powerpc-fsl-linux-gcc
   cxx       = powerpc-fsl-linux-g++
-  compilerflags = -m32 -mcpu=e500mc -mtune=e500mc
+  compilerflags = -m32 -mcpu=e500mc -mtune=e500mc -mhard-float --sysroot=$(SYSROOT)
+  linkflags   = --sysroot=$(SYSROOT)
+  pic       = -fpic
+  shflags   = -shared
+  platforms = e500mc_linux
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+  covopt    = -fprofile-arcs -ftest-coverage
+}
+
+powerpc-poky-linux-gcc {
+  cc        = powerpc-poky-linux-gcc
+  cxx       = powerpc-poky-linux-g++
+  compilerflags = -m32 -mcpu=e500mc -mtune=e500mc -mhard-float --sysroot=$(SDKTARGETSYSROOT)
+  linkflags   = --sysroot=$(SDKTARGETSYSROOT)
   pic       = -fpic
   shflags   = -shared
   platforms = e500mc_linux
@@ -49,10 +92,41 @@ powerpc-linux-gnu-gcc {
   covopt    = -fprofile-arcs -ftest-coverage
 }
 
+powerpc-lynxos-gnu-gcc {
+  cc        = lynxos5-ppc_gcc
+  cxx       = lynxos5-ppc_g++
+  compilerflags = -m32
+  pic       = -fPIC
+  shflags   = -shared
+  platforms = ppc_lynxos5
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+  covopt    = -fprofile-arcs -ftest-coverage
+}
+
+powerpc-lynxos-gnu-gcc-export {
+  cc        = gcc
+  cxx       = g++
+  compilerflags = -m32
+  pic       = -fPIC
+  shflags   = -shared
+  platforms = ppc_lynxos5
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+  covopt    = -fprofile-arcs -ftest-coverage
+}
+
 powerpc-e300c3-linux-gcc {
   cc        = powerpc-e300c3-linux-gcc
   cxx       = powerpc-e300c3-linux-g++
-  compilerflags = -m32
+  compilerflags = -m32 $(shell if [ \"${SDKTARGETSYSROOT}\" != \"\" ]; then echo \"--sysroot=${SDKTARGETSYSROOT}\"; fi)
+  linkflags     =  $(shell if [ \"${SDKTARGETSYSROOT}\" != \"\" ]; then echo \"--sysroot=${SDKTARGETSYSROOT}\"; fi)
   pic       = -fPIC
   shflags   = -shared
   platforms = mpc8313e_linux
@@ -71,6 +145,116 @@ i586-wrs-linux-gnu-i686-glibc_small-gcc {
   pic       = -fPIC
   shflags   = -shared
   platforms = common_pc_glibc_small_WRlinux4_gcc
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+  covopt    = -fprofile-arcs -ftest-coverage
+}
+
+arm-poky-linux-gnueabi-gcc {
+  cc        = arm-poky-linux-gnueabi-gcc
+  cxx       = arm-poky-linux-gnueabi-g++
+  platforms = cortexa9t_yocto
+  compilerflags = -march=armv7-a -mthumb-interwork -mfloat-abi=hard -mfpu=neon -mtune=cortex-a9 --sysroot=$(SDKTARGETSYSROOT)
+  linker    = arm-poky-linux-gnueabi-ld
+  pic       = -fPIC
+  shflags   = -shared
+
+}
+
+arm7a-vfp-neon-linux-gcc {
+  cc        = arm-poky-linux-gnueabi-gcc
+  cxx       = arm-poky-linux-gnueabi-g++
+  platforms = armv7a-vfp-neon_linux_gcc
+  compilerflags = -march=armv7-a -mthumb-interwork -mfloat-abi=hard -mfpu=neon --sysroot=$(SDKTARGETSYSROOT)
+  linker    = arm-poky-linux-gnueabi-ld
+  pic       = -fPIC
+  shflags   = -shared
+
+}
+
+armv7at2-vfp-neon-WRlinux7-gcc {
+  cc        = arm-wrs-linux-gnueabi-gcc
+  cxx       = arm-wrs-linux-gnueabi-g++
+  platforms = armv7at2-vfp-neon_WRlinux7_gcc
+  compilerflags = --sysroot=$(SDKTARGETSYSROOT)
+  linker    = arm-wrs-linux-gnueabi-ld
+  pic       = -fPIC
+  shflags   = -shared
+
+}
+
+cortexa9t-neon-wrswrap-linux-gnueabi-gcc {
+  cc        = cortexa9t-neon-wrswrap-linux-gnueabi-gcc
+  cxx       = cortexa9t-neon-wrswrap-linux-gnueabi-g++
+  compilerflags = -tthumb2-v7-a-neon -mfpu=neon -mthumb -mtune=cortex-a9
+  pic       = -fPIC
+  shflags   = -shared
+  platforms = cortexa9t_neon_WRlinux5_gcc
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+  covopt    = -fprofile-arcs -ftest-coverage
+}
+
+atom-wrswrap-linux-gnu-gcc {
+  cc        = atom-wrswrap-linux-gnu-gcc
+  cxx       = atom-wrswrap-linux-gnu-g++
+  compilerflags = -m32  -march=atom -MD -MP -c
+  pic       = -fPIC
+  shflags   = -shared
+  platforms = intel_atom_WRlinux5_gcc
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+  covopt    = -fprofile-arcs -ftest-coverage
+}
+
+i586-wrs-linux-gnu-gcc {
+  cc        = i586-wrs-linux-gcc
+  cxx       = i586-wrs-linux-g++
+  compilerflags = -MD -MP -c
+  pic       = -fPIC
+  shflags   = -shared
+  platforms = x86_WRlinux7_gcc
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+  covopt    = -fprofile-arcs -ftest-coverage
+}
+
+x86_64-windriver-linux-gcc {
+  cc        = x86_64-windriver-linux-gcc
+  cxx       = x86_64-windriver-linux-g++
+  compilerflags = -MD -MP -c --sysroot=$(WRL_SYSROOT)
+  linkflags = --sysroot=$(WRL_SYSROOT)
+  pic       = -fPIC
+  shflags   = -shared
+  platforms = x86_64_WRlinux7_gcc
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+  covopt    = -fprofile-arcs -ftest-coverage
+}
+
+x86-64-wrs-linux-gnu-gcc {
+  cc        = x86_64-wrs-linux-gcc
+  cxx       = x86_64-wrs-linux-g++
+  compilerflags = -m64 -MD -MP -c --sysroot=$(WRL_SYSROOT)
+  linkflags = --sysroot=$(WRL_SYSROOT)
+  pic       = -fpic
+  shflags   = -shared
+  platforms = x86_64_WRlinux8_gcc
   pchcreate = "-o "
   pchnobj   = 1
   checkopt  = -Wall -Wextra -pedantic -fsyntax-only
@@ -138,6 +322,21 @@ x86_486-gcc {
   covopt    = -fprofile-arcs -ftest-coverage
 }
 
+x86_64-unknown-linux-gnu-gcc {
+  cc        = x86_64-unknown-linux-gnu-gcc
+  cxx       = x86_64-unknown-linux-gnu-g++
+  pic       = -fPIC
+  shflags   = -shared
+  ldlibs = -lpthread
+  platforms = x86_64_elinos6_1
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+  covopt    = -fprofile-arcs -ftest-coverage
+}
+
 i486-pc-linux-gnu-gcc {
   cc        = i486-pc-linux-gnu-gcc
   cxx       = i486-pc-linux-gnu-g++
@@ -164,6 +363,32 @@ armel-unknown-linux-gnueabi-gcc {
   visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
   profopt   = -pg
   covopt    = -fprofile-arcs -ftest-coverage
+}
+
+arm-linux-gnueabihf-gcc {
+  cc        = arm-linux-gnueabihf-gcc
+  cxx       = arm-linux-gnueabihf-g++
+  pic       = -fPIC
+  shflags   = -shared
+  platforms = armv7l_linux
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+}
+
+arm-marvell-linux-gnueabihf-gcc {
+  cc        = arm-marvell-linux-gnueabi-gcc
+  cxx       = arm-marvell-linux-gnueabi-g++
+  pic       = -fPIC
+  shflags   = -shared
+  platforms = armv7l_linux
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
 }
 
 x86_586-pikeos-gcc {
@@ -196,6 +421,30 @@ ppc_oea-pikeos-gcc {
   // covopt    = -fprofile-arcs -ftest-coverage
 }
 
+x86-qcc {
+  cc      = qcc
+  cxx     = QCC
+  pic     =
+  shflags = -shared
+  platforms = x86_qnx
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+}
+
+arm-qcc {
+  cc      = qcc
+  cxx     = QCC
+  pic     = -fpic
+  shflags = -shared
+  platforms = arm_qnx
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+}
+
 clang {
   cc        = clang
   cxx       = clang++
@@ -223,21 +472,34 @@ x86-vxworks55-c-only {
   makedir      = "MKDIR"
   touch        =
 
-  compile_flags = -nostdlib -D_WRS_KERNEL -DSGM_ELF -DCPU_PENTIUM -DCPU=PENTIUM -mcpu=pentium -fvolatile -fsigned-char
+  compile_flags = -nostdlib -D_WRS_KERNEL -DUSE_NANOSLEEP -DSGM_ELF -DCPU_PENTIUM -DCPU=PENTIUM -mcpu=pentium -fvolatile -fsigned-char
 }
 
 PPC604-vxworks55-c-only {
   cputype	   = ppc
   dll_ext          = .out
   exe_ext          = .out
-  extracppflags += -DCPU_PPC -DCPU=PPC604 -mcpu=8540 -mlongcall
+  extracppflags += -DUSE_NANOSLEEP -DCPU_PPC -DCPU=PPC604 -mcpu=8540 -mlongcall
 }
 
 PPCE500-vxworks55-c-only {
   cputype	   = ppc
   dll_ext          = .out
   exe_ext          = .out
-  extracppflags += -DCPU_PPC -DCPU=PPC85XX -mcpu=8540 -mlongcall -fsigned-char
+  extracppflags += -DUSE_NANOSLEEP -DCPU_PPC -DCPU=PPC85XX -mcpu=8540 -mlongcall -fsigned-char
+}
+
+
+plat_PPCe5500_linux {
+  gnumake       = 1
+  compile_flags = -mcpu=e5500 -mno-altivec -mtune=e5500 -mlongcall
+  ldlibs = -lpthread
+}
+
+plat_armhf_linux {
+  gnumake       = 1
+  compile_flags = 
+  ldlibs = -lpthread
 }
 
 ppc440_linux {
@@ -249,6 +511,11 @@ e500v2_linux {
   gnumake       = 1
   ldlibs        = -ldl $(subst lib,-l,$(sort $(basename $(notdir $(wildcard /usr/lib/librt.so /lib/librt.so))))) -lpthread
   extracppflags = -D_REENTRANT -mcpu=8540 -mlongcall
+}
+
+e500mc_linux {
+  gnumake       = 1
+  ldlibs        = -lpthread
 }
 
 mpc8313e_linux {
@@ -269,10 +536,83 @@ mpc8308_glibc_small_WRlinux4_gcc{
   extracppflags = -D_REENTRANT -m32
 }
 
+cortexa9t_neon_WRlinux5_gcc{
+  gnumake       = 1
+  ldlibs        = -ldl $(subst lib,-l,$(sort $(basename $(notdir $(wildcard /usr/lib/librt.so /lib/librt.so))))) -lpthread -lstdc++
+  extracppflags = -D_REENTRANT
+  linkflags     = -mshared
+  shflags       = -shared
+}
+
+cortexa9t_yocto{
+  gnumake       = 1
+  cputype       = arm
+  linkflags     = -Wl,-O1 -Wl,--hash-style=gnu -Wl,--as-needed --sysroot=$(SDKTARGETSYSROOT)
+  ldlibs        = -lpthread
+}
+
+armv7a-vfp-neon_linux_gcc{
+  gnumake       = 1
+  cputype       = arm
+  linkflags     = -Wl,-O1 -Wl,--hash-style=gnu -Wl,--as-needed --sysroot=$(SDKTARGETSYSROOT)
+  ldlibs        = -lpthread
+}
+
+armv7at2-vfp-neon_WRlinux7_gcc{
+  gnumake       = 1
+  cputype       = arm
+  linkflags     = -Wl,-O1 -Wl,--hash-style=gnu -Wl,--as-needed --sysroot=$(SDKTARGETSYSROOT)
+  ldlibs        = -lpthread
+}
+
+armv6l_linux_cross {
+  gnumake       = 1
+  cputype       = arm
+  cc        = arm-linux-gnueabi-gcc
+  cxx       = arm-linux-gnueabi-g++
+  pic       = -fpic
+  shflags   = -shared
+  platforms = armv6_linux
+  pchcreate = "-o "
+  pchnobj   = 1
+  ldlibs        = -lpthread
+}
+
+armv7l_linux {
+  gnumake       = 1
+  cputype       = arm
+  ldlibs        = -lpthread
+}
+
+intel_atom_WRlinux5_gcc{
+  gnumake       = 1
+  ldlibs        = -ldl $(subst lib,-l,$(sort $(basename $(notdir $(wildcard /usr/lib/librt.so /lib/librt.so))))) -lpthread -lstdc++
+  extracppflags = -D_REENTRANT
+  linkflags     = -mshared
+  shflags       = -shared
+}
+
+x86_WRlinux7_gcc{
+  gnumake       = 1
+  ldlibs        = -ldl $(subst lib,-l,$(sort $(basename $(notdir $(wildcard /usr/lib/librt.so /lib/librt.so))))) -lpthread -lstdc++
+  extracppflags = -D_REENTRANT
+  shflags       = -shared
+}
+
+x86_64_WRlinux7_gcc{
+  gnumake       = 1
+  ldlibs        = -lc -lm -lpthread
+}
+
+x86_64_WRlinux8_gcc{
+  gnumake       = 1
+  ldlibs        = -lc -lm -lpthread
+}
+
 ppc_lynxos5 {
-  dll_ext       =
   extracppflags = -D__NO_INCLUDE_WARN__ -mthreads -mminimal-toc
   linkflags     = -mshared
+  shflags       = -shared
   ldlibs        = -ldl -lbsd -lbsdregex
 }
 
@@ -301,7 +641,7 @@ x86_pikeos {
     gnumake       = 1
     ldlibs        = -lstdcxx -llwip4 -lsbuf -lm -lc -lp4 -lvm -lstand -lgcc
     includes      += $(PIKEOS_HOME)/target/x86/i586/bposix/include $(PIKEOS_HOME)/target/x86/i586/include $(PIKEOS_HOME)/target/x86/i586/bposix/lwip/include $(PIKEOS_HOME)/target/x86/i586/bposix/lwip/include/opts $(PIKEOS_HOME)/target/x86/i586/bposix/include/c++
-    extracppflags = -DPIKEOS_POSIX
+    extracppflags = -DPIKEOS_POSIX -DFIX_FAULTY_ATTRIBUTE_NONNULL
     libpaths      = $(PIKEOS_HOME)/target/x86/i586/lib $(PIKEOS_HOME)/target/x86/i586/bposix/lwip/lib $(PIKEOS_HOME)/target/x86/i586/bposix/lib $(PIKEOS_HOME)/target/x86/i586/bposix/os/up $(PIKEOS_HOME)/cdk/x86/i586/lib/gcc/i386-unknown-elf/4.4.5
     linkflags       = -e _start -T$(PIKEOS_HOME)/target/x86/i586/scripts/app-ld-script -static $(PIKEOS_HOME)/target/x86/i586/bposix/os/up/crt0.o $(PIKEOS_HOME)/target/x86/i586/bposix/lib/cxx_init.o
 }
@@ -310,7 +650,20 @@ ppc_pikeos {
     gnumake       = 1
     ldlibs        = -lstdcxx -llwip4 -lm -lc -lp4 -lvm -lstand -lgcc
     includes      += $(PIKEOS_HOME)/target/ppc/oea/bposix/include $(PIKEOS_HOME)/target/ppc/oea/include $(PIKEOS_HOME)/target/ppc/oea/bposix/lwip/include $(PIKEOS_HOME)/target/ppc/oea/bposix/lwip/include/opts $(PIKEOS_HOME)/target/ppc/oea/bposix/include/c++
-    extracppflags = -DPIKEOS_POSIX $(LWIP_INC_FLAG)
+    extracppflags = -DPIKEOS_POSIX $(LWIP_INC_FLAG) -DFIX_FAULTY_ATTRIBUTE_NONNULL
     libpaths      = $(PIKEOS_HOME)/target/ppc/oea/lib $(PIKEOS_HOME)/target/ppc/oea/bposix/lwip/lib $(PIKEOS_HOME)/target/ppc/oea/bposix/lib $(PIKEOS_HOME)/cdk/ppc/oea/lib/gcc/powerpc-unknown-elf/3.4.4
     linkflags       = -e _start -T$(PIKEOS_HOME)/target/ppc/oea/scripts/app-ld-script -static $(PIKEOS_HOME)/target/ppc/oea/bposix/lib/crt0.o $(PIKEOS_HOME)/target/ppc/oea/bposix/lib/cxx_init.o
 }
+
+x86_qnx {
+    gnumake      = 1
+    compile_flags = -V4.4.2,gcc_ntox86
+    linkflags = -V4.4.2,gcc_ntox86
+}
+
+arm_qnx {
+    gnumake      = 1
+    compile_flags = -V4.4.2,gcc_ntoarmv7le
+    linkflags = -V4.4.2,gcc_ntoarmv7le
+}
+

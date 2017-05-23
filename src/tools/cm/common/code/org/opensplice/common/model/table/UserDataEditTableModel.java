@@ -1,22 +1,29 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.model.table;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 
 import org.opensplice.cm.data.Sample;
 import org.opensplice.cm.data.UserData;
+import org.opensplice.cm.meta.MetaCollection;
 import org.opensplice.cm.meta.MetaType;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.controller.AssignmentResult;
@@ -44,6 +51,13 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
      */
     public UserDataEditTableModel(MetaType _userDataType) {
         super(_userDataType, true);
+    }
+
+    public UserDataEditTableModel(MetaType _userDataType, UserData initialData) {
+        super(_userDataType, true);
+        if (initialData != null) {
+            setData(initialData);
+        }
     }
 
     public UserDataEditTableModel(MetaType _userDataType, String _struct) {
@@ -76,6 +90,11 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
             else if (ud.isCollection(name) && rows >1 && structName != null) {
                 result = false;
             }
+            else if (ud.isCollection(name) &&
+                    ((MetaCollection) ud.getUserDataType().getField(name)).getSubType() instanceof MetaCollection)
+            {
+                result = false;
+            }
             else if(editor == null){
                 result = false;
             }
@@ -106,6 +125,10 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
         return ud;
     }
 
+    public UserData getDataNoValidate() {
+        return ud;
+    }
+
     /**
      * Provides stops the table edit so edited data can be written.
      * 
@@ -122,77 +145,6 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
         }
     }
 
-    /**
-     * Sets the supplied data in the model.
-     * 
-     * @param data
-     *            The data to administrate in this model.
-     * @return true if the data != null and the type of the data equals the type
-     *         of this model.
-     * @todo TODO: Compare data types.
-     */
-
-    public boolean setData(UserData data, String colName, int index) {
-        boolean result = true;
-        int rowCount = this.getRowCount();
-        if (data == null) {
-            return false;
-        }
-        HashMap<String, ArrayList<String>> tableData = CollectSingleTableData(data, colName);
-        for (int i = 0; i < rowCount; i++) {
-            String fName = (String) this.getValueAt(i, 1);
-            if (index >= 0) {
-                if (fName.startsWith(colName)) {
-                    String tmp = fName.substring(colName.length());
-                    fName = colName + "[" + index + "]" + tmp;
-                }
-            }
-
-            if (tableData.containsKey(fName)) {
-                ArrayList<String> colVals = tableData.get(fName);
-                if (index >= 0) {
-                    this.setValueAt(colVals.get(index), i, 2);
-                } else {
-                    this.setValueAt(colVals.toString(), i, 2);
-                }
-            } else if (tableData.containsKey(colName)) {
-                ArrayList<String> colVals = tableData.get(colName);
-                if (index >= 0) {
-                    this.setValueAt(colVals.get(index), i, 2);
-                } else {
-                    this.setValueAt(colVals.toString(), i, 2);
-                }
-
-            } else {
-                LinkedHashSet<String> s = new LinkedHashSet<String>(data.getUserData().keySet());
-                String value = null;
-                for (String key : s) {
-                    if (key.startsWith(fName)) {
-                        if (value != null) {
-                            value = value + "," + data.getUserData().get(key);
-                        } else {
-                            value = data.getUserData().get(key);
-                        }
-                    }
-                }
-                if (value == null) {
-                    LinkedHashSet<String> td = new LinkedHashSet<String>(tableData.keySet());
-                    for (String key : td) {
-                        if (key.startsWith(fName)) {
-                            if (value != null) {
-                                value = value + "," + tableData.get(key).toString();
-                            } else {
-                                value = tableData.get(key).toString();
-                            }
-                        }
-                    }
-                }
-                this.setValueAt(value, i, 2);
-            }
-        }
-        return result;
-    }
-
     public boolean setData(UserData data){
         boolean result = false;
         if(data != null){
@@ -202,25 +154,30 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
             LinkedHashSet<String> s = new LinkedHashSet<String>(data.getUserData().keySet());
             for (int i = 0; i < rowCount; i++) {
                 String fieldName = (String) this.getValueAt(i, 1);
-                String fieldValue = null;
-
-                LinkedHashSet<String> tmpS = new LinkedHashSet<String>(s);
-                for (String key : tmpS) {
-                    String value = (data.getUserData().get(key));
-                    String newKey = key.replaceAll("[\\[0-9]*]", "");
-                    /*
-                     * if the key is equal to the fieldName we got the same data
-                     * so ignore for GUI
-                     */
-                    if (newKey.startsWith(fieldName)) {
-                        if (fieldValue == null) {
-                            fieldValue = value;
-                        } else {
-                            fieldValue = fieldValue + "," + value;
-                         }
-                        this.setValueAt(fieldValue, i, 2);
-                        s.remove(key);
-                     }
+                if (ud.getUserDataType().getField(fieldName).getTypeName().startsWith("C_SEQUENCE")) {
+                    this.setValueAt(ud.getFieldValue(fieldName), i, 2);
+                    result = true;
+                } else {
+                    StringBuilder fieldValue = new StringBuilder();
+                    LinkedHashSet<String> tmpS = new LinkedHashSet<String>(s);
+                    for (String key : tmpS) {
+                        String value = (data.getUserData().get(key));
+                        String newKey = key.replaceAll("[\\[0-9]*]", "");
+                        /*
+                         * if the key is equal to the fieldName we got the same data
+                         * so ignore for GUI
+                         */
+                        if (newKey.startsWith(fieldName)) {
+                            if (fieldValue.length() != 0) {
+                                fieldValue.append(",");
+                            }
+                            fieldValue.append(value);
+                            s.remove(key);
+                        }
+                    }
+                    if (fieldValue.length() != 0) {
+                        this.setValueAt(fieldValue.toString(), i, 2);
+                    }
                 }
             }
             result = true;
@@ -230,50 +187,42 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
 
     @Override
     public boolean setData(Sample sample, String colName) {
-        UserData data;
+        return setData(sample, colName, 0);
+    }
+
+    @Override
+    public boolean setData(Sample sample, String colName, int index) {
         boolean result = true;
 
         if (sample != null) {
-            data = sample.getMessage().getUserData();
+            UserData data = sample.getMessage().getUserData();
             int rowCount = this.getRowCount();
             if (data == null) {
                 return false;
             }
             ud.getUserData().putAll(data.getUserData());
-            HashMap<String, ArrayList<String>> tableData = CollectSingleTableData(data, colName);
             for (int i = 0; i < rowCount; i++) {
-                String fName = (String) this.getValueAt(i, 1);
-                if (tableData.containsKey(fName)) {
-                    ArrayList<String> colVals = tableData.get(fName);
-                    this.setValueAt(colVals.toString(), i, 2);
-                } else if (tableData.containsKey(colName)) {
-                    ArrayList<String> colVals = tableData.get(colName);
-                    this.setValueAt(colVals.toString(), i, 2);
+                String tableRowFName = (String) this.getValueAt(i, 1);
+                String structMember = "";
+                int dotIndex = tableRowFName.lastIndexOf('.');
+                if (dotIndex != -1) {
+                    structMember = tableRowFName.substring(dotIndex);
+                }
+
+                String fName = colName;
+                Object fType = data.getUserDataType().getField(fName);
+                if (fType instanceof MetaCollection && ((MetaCollection) fType).getSubType() instanceof MetaCollection) {
+                    this.setValueAt(data.getFieldValue(fName), i, 2);
                 } else {
-                    LinkedHashSet<String> s = new LinkedHashSet<String>(data.getUserData().keySet());
-                    String value = null;
-                    for (String key : s) {
-                        if (key.startsWith(fName)) {
-                            if (value != null) {
-                                value = value + "," + data.getUserData().get(key);
-                            } else {
-                                value = data.getUserData().get(key);
-                            }
-                        }
+                    int indexindex = colName.indexOf('[' ,colName.lastIndexOf('.'));
+                    String colNameStripped = colName;
+                    String colNameColIndex = "";
+                    if (indexindex != -1) {
+                        colNameStripped = colName.substring(0, indexindex);
+                        colNameColIndex = colName.substring(indexindex);
                     }
-                    if (value == null) {
-                        LinkedHashSet<String> td = new LinkedHashSet<String>(tableData.keySet());
-                        for (String key : td) {
-                            if (key.startsWith(fName)) {
-                                if (value != null) {
-                                    value = value + "," + tableData.get(key).toString();
-                                } else {
-                                    value = tableData.get(key).toString();
-                                }
-                            }
-                        }
-                    }
-                    this.setValueAt(value, i, 2);
+                    fName = colNameStripped + "[" + index + "]" + colNameColIndex + structMember;
+                    this.setValueAt(data.getFieldValue(fName), i, 2);
                 }
             }
         }
@@ -295,6 +244,7 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
         for (int i = 0; i < this.getRowCount(); i++) {
             this.setValueAt("", i, 2);
         }
+        ud.getUserData().clear();
     }
 
 

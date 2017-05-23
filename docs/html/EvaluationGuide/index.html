@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>OpenSplice Evaluation &amp; Benchmarking Guide &mdash; OpenSplice Evaluation and Benchmarking Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Evaluation and Benchmarking Guide" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="opensplice-evaluation-benchmarking-guide">
+<h1>OpenSplice Evaluation &amp; Benchmarking Guide<a class="headerlink" href="#opensplice-evaluation-benchmarking-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-evaluation-benchmarking-guide">1.1. About the Evaluation &amp; Benchmarking Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#conventions">1.2. Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">2. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basics.html">3. OpenSplice Enterprise Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architectural.html">4. OpenSplice Architectural Modes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="architectural.html#the-single-process-or-standalone-deployment">4.1. The Single Process or Standalone deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architectural.html#the-shared-memory-or-federated-deployment">4.2. The Shared Memory or Federated deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architectural.html#how-to-select-the-architectural-mode">4.3. How to select the Architectural Mode</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="networking.html">5. OpenSplice Networking Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="networking.html#how-to-select-the-networking-protocol">5.1. How to select the Networking Protocol</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="decisions.html">6. Benchmarking OpenSplice: Decision Trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html">7. How to run OpenSplice Enterprise</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="running.html#the-opensplice-enterprise-environment">7.1. The OpenSplice Enterprise Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="running.html#running-single-process-and-shared-memory-modes">7.2. Running Single Process and Shared Memory Modes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">8. Performance Tests and Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#round-trip-latency-performance">8.1. Round-Trip Latency Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#throughput-performance">8.2. Throughput Performance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="biblio.html">9. Bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">10. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">10.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">10.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">OpenSplice Evaluation &amp; Benchmarking Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

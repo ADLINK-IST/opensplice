@@ -12,6 +12,10 @@ sleep 2
 
 ./sac_querycondition_pub > pubResult.txt
 
+echo === Waiting for processes to terminate
+waitForProcessTermination sac_querycondition_pub 30
+waitForProcessTermination sac_querycondition_sub 30
+
 queryconditionCheckResult
 
 stopOSPL

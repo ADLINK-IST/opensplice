@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <ctype.h>
 #include <stddef.h>
 #include <stdarg.h>
@@ -16,9 +35,9 @@
 #include "os_thread.h"
 #include "os_if.h"
 #include "os_stdlib.h"
+#include "os_atomics.h"
 
 #include "ut_avl.h"
-#include "q_osplser.h"
 #include "q_protocol.h"
 #include "q_rtps.h"
 #include "q_misc.h"
@@ -289,7 +308,7 @@ struct nn_rbufpool {
      happens anyway. */
   os_mutex lock;
   struct nn_rbuf *current;
-  int rbuf_size;
+  os_uint32 rbuf_size;
   os_uint32 max_rmsg_size;
 #ifndef NDEBUG
   /* Thread that owns this pool, so we can check that no other thread
@@ -300,6 +319,11 @@ struct nn_rbufpool {
 
 static struct nn_rbuf *nn_rbuf_alloc_new (struct nn_rbufpool *rbufpool);
 static void nn_rbuf_release (struct nn_rbuf *rbuf);
+
+static os_uint32 align8uint32 (os_uint32 x)
+{
+  return (x + 7u) & (os_uint32)-8;
+}
 
 #ifndef NDEBUG
 #define ASSERT_RBUFPOOL_OWNER(rbp) (assert (os_threadEqual (os_threadIdSelf (), (rbp)->owner_tid)))
@@ -312,23 +336,8 @@ static os_uint32 max_uint32 (os_uint32 a, os_uint32 b)
   return a >= b ? a : b;
 }
 
-struct nn_rbufpool *nn_rbufpool_new (int rbuf_size, int max_rmsg_size)
+static os_uint32 max_rmsg_size_w_hdr (os_uint32 max_rmsg_size)
 {
-  struct nn_rbufpool *rbp;
-
-  assert (max_rmsg_size > 0);
-
-  if ((rbp = os_malloc (sizeof (*rbp))) == NULL)
-    goto fail_rbp;
-#ifndef NDEBUG
-  rbp->owner_tid = os_threadIdSelf ();
-#endif
-
-  if (os_mutexInit (&rbp->lock, &gv.mattr) != os_resultSuccess)
-    goto fail_lock;
-
-  rbp->rbuf_size = rbuf_size;
-
   /* rbuf_alloc allocates max_rmsg_size, which is actually max
      _payload_ size (this is so 64kB max_rmsg_size always suffices for
      a UDP packet, regardless of internal structure).  We use it for
@@ -336,10 +345,30 @@ struct nn_rbufpool *nn_rbufpool_new (int rbuf_size, int max_rmsg_size)
      negligible really.  So in the interest of simplicity, we always
      allocate for the worst case, and may waste a few bytes here or
      there. */
-  rbp->max_rmsg_size =
+  return
     max_uint32 ((os_uint32) offsetof (struct nn_rmsg, chunk.u.payload),
                 (os_uint32) offsetof (struct nn_rmsg_chunk, u.payload))
-    + (os_uint32) max_rmsg_size;
+    + max_rmsg_size;
+}
+
+struct nn_rbufpool *nn_rbufpool_new (os_uint32 rbuf_size, os_uint32 max_rmsg_size)
+{
+  struct nn_rbufpool *rbp;
+
+  assert (max_rmsg_size > 0);
+  assert (rbuf_size >= max_rmsg_size_w_hdr (max_rmsg_size));
+
+  if ((rbp = os_malloc (sizeof (*rbp))) == NULL)
+    goto fail_rbp;
+#ifndef NDEBUG
+  rbp->owner_tid = os_threadIdSelf ();
+#endif
+
+  if (os_mutexInit (&rbp->lock, NULL) != os_resultSuccess)
+    goto fail_lock;
+
+  rbp->rbuf_size = rbuf_size;
+  rbp->max_rmsg_size = max_rmsg_size;
 
 #if USE_VALGRIND
   VALGRIND_CREATE_MEMPOOL (rbp, 0, 0);
@@ -387,7 +416,7 @@ void nn_rbufpool_free (struct nn_rbufpool *rbp)
 /* RBUF ---------------------------------------------------------------- */
 
 struct nn_rbuf {
-  os_uint32 n_live_rmsg_chunks;
+  pa_uint32_t n_live_rmsg_chunks;
   os_uint32 size;
   os_uint32 max_rmsg_size;
   struct nn_rbufpool *rbufpool;
@@ -396,11 +425,11 @@ struct nn_rbuf {
      to reuse memory as soon as it becomes available again. I think
      this will have to change eventually, but this is the easiest
      approach.  Changes would be confined rmsg_new and rmsg_free. */
-  char *freeptr;
+  unsigned char *freeptr;
 
   union {
     /* raw data array, nn_rbuf::size bytes long in reality */
-    char raw[1];
+    unsigned char raw[1];
 
     /* to ensure reasonable alignment of raw[] */
     os_int64 l;
@@ -421,7 +450,7 @@ static struct nn_rbuf *nn_rbuf_alloc_new (struct nn_rbufpool *rbufpool)
 #endif
 
   rb->rbufpool = rbufpool;
-  rb->n_live_rmsg_chunks = 1;
+  pa_st32 (&rb->n_live_rmsg_chunks, 1);
   rb->size = rbufpool->rbuf_size;
   rb->max_rmsg_size = rbufpool->max_rmsg_size;
   rb->freeptr = rb->u.raw;
@@ -448,7 +477,7 @@ static void nn_rbuf_release (struct nn_rbuf *rbuf)
 {
   struct nn_rbufpool *rbp = rbuf->rbufpool;
   TRACE_RADMIN (("rbuf_release(%p) pool %p current %p\n", rbuf, rbp, rbp->current));
-  if (atomic_dec_u32_nv (&rbuf->n_live_rmsg_chunks) == 0)
+  if (pa_dec32_nv (&rbuf->n_live_rmsg_chunks) == 0)
   {
     TRACE_RADMIN (("rbuf_release(%p) free\n", rbuf));
     os_free (rbuf);
@@ -467,7 +496,7 @@ static void nn_rbuf_release (struct nn_rbuf *rbuf)
 #define RMSG_REFCOUNT_UNCOMMITTED_BIAS (1u << 31)
 #define RMSG_REFCOUNT_RDATA_BIAS (1u << 20)
 #ifndef NDEBUG
-#define ASSERT_RMSG_UNCOMMITTED(rmsg) (assert ((rmsg)->refcount >= RMSG_REFCOUNT_UNCOMMITTED_BIAS))
+#define ASSERT_RMSG_UNCOMMITTED(rmsg) (assert (pa_ld32 (&(rmsg)->refcount) >= RMSG_REFCOUNT_UNCOMMITTED_BIAS))
 #else
 #define ASSERT_RMSG_UNCOMMITTED(rmsg) ((void) 0)
 #endif
@@ -475,7 +504,7 @@ static void nn_rbuf_release (struct nn_rbuf *rbuf)
 static void *nn_rbuf_alloc (struct nn_rbufpool *rbufpool)
 {
   /* Note: only one thread calls nn_rmsg_new on a pool */
-  os_uint32 asize = rbufpool->max_rmsg_size;
+  os_uint32 asize = max_rmsg_size_w_hdr (rbufpool->max_rmsg_size);
   struct nn_rbuf *rb;
   TRACE_RADMIN (("rmsg_rbuf_alloc(%p, %u)\n", (void *) rbufpool, asize));
   ASSERT_RBUFPOOL_OWNER (rbufpool);
@@ -506,7 +535,7 @@ static void init_rmsg_chunk (struct nn_rmsg_chunk *chunk, struct nn_rbuf *rbuf)
   chunk->rbuf = rbuf;
   chunk->next = NULL;
   chunk->size = 0;
-  atomic_inc_u32_nv (&rbuf->n_live_rmsg_chunks);
+  pa_inc32 (&rbuf->n_live_rmsg_chunks);
 }
 
 struct nn_rmsg *nn_rmsg_new (struct nn_rbufpool *rbufpool)
@@ -520,7 +549,7 @@ struct nn_rmsg *nn_rmsg_new (struct nn_rbufpool *rbufpool)
     return NULL;
 
   /* Reference to this rmsg, undone by rmsg_commit(). */
-  rmsg->refcount = RMSG_REFCOUNT_UNCOMMITTED_BIAS;
+  pa_st32 (&rmsg->refcount, RMSG_REFCOUNT_UNCOMMITTED_BIAS);
   /* Initial chunk */
   init_rmsg_chunk (&rmsg->chunk, rbufpool->current);
   rmsg->lastchunk = &rmsg->chunk;
@@ -532,11 +561,11 @@ struct nn_rmsg *nn_rmsg_new (struct nn_rbufpool *rbufpool)
 
 void nn_rmsg_setsize (struct nn_rmsg *rmsg, os_uint32 size)
 {
-  os_uint32 size8 = ALIGN8 (size);
+  os_uint32 size8 = align8uint32 (size);
   TRACE_RADMIN (("rmsg_setsize(%p, %u => %u)\n", rmsg, size, size8));
   ASSERT_RBUFPOOL_OWNER (rmsg->chunk.rbuf->rbufpool);
   ASSERT_RMSG_UNCOMMITTED (rmsg);
-  assert (rmsg->refcount == RMSG_REFCOUNT_UNCOMMITTED_BIAS);
+  assert (pa_ld32 (&rmsg->refcount) == RMSG_REFCOUNT_UNCOMMITTED_BIAS);
   assert (rmsg->chunk.size == 0);
   assert (size8 <= rmsg->chunk.rbuf->max_rmsg_size);
   assert (rmsg->lastchunk == &rmsg->chunk);
@@ -557,7 +586,7 @@ void nn_rmsg_free (struct nn_rmsg *rmsg)
      compare-and-swap for this. */
   struct nn_rmsg_chunk *c;
   TRACE_RADMIN (("rmsg_free(%p)\n", rmsg));
-  assert (rmsg->refcount == 0);
+  assert (pa_ld32 (&rmsg->refcount) == 0);
   c = &rmsg->chunk;
   while (c)
   {
@@ -570,7 +599,7 @@ void nn_rmsg_free (struct nn_rmsg *rmsg)
       VALGRIND_MEMPOOL_FREE (rbuf->rbufpool, c);
     }
 #endif
-    assert (rbuf->n_live_rmsg_chunks > 0);
+    assert (pa_ld32 (&rbuf->n_live_rmsg_chunks) > 0);
     nn_rbuf_release (rbuf);
     c = c1;
   }
@@ -600,11 +629,11 @@ void nn_rmsg_commit (struct nn_rmsg *rmsg)
   ASSERT_RMSG_UNCOMMITTED (rmsg);
   assert (chunk->size <= chunk->rbuf->max_rmsg_size);
   assert ((chunk->size % 8) == 0);
-  assert (rmsg->refcount >= RMSG_REFCOUNT_UNCOMMITTED_BIAS);
-  assert (rmsg->chunk.rbuf->n_live_rmsg_chunks > 0);
-  assert (chunk->rbuf->n_live_rmsg_chunks > 0);
+  assert (pa_ld32 (&rmsg->refcount) >= RMSG_REFCOUNT_UNCOMMITTED_BIAS);
+  assert (pa_ld32 (&rmsg->chunk.rbuf->n_live_rmsg_chunks) > 0);
+  assert (pa_ld32 (&chunk->rbuf->n_live_rmsg_chunks) > 0);
   assert (chunk->rbuf->rbufpool->current == chunk->rbuf);
-  if (atomic_sub_u32_nv (&rmsg->refcount, RMSG_REFCOUNT_UNCOMMITTED_BIAS) == 0)
+  if (pa_sub32_nv (&rmsg->refcount, RMSG_REFCOUNT_UNCOMMITTED_BIAS) == 0)
     nn_rmsg_free (rmsg);
   else
   {
@@ -626,7 +655,7 @@ static void nn_rmsg_addbias (struct nn_rmsg *rmsg)
   TRACE_RADMIN (("rmsg_addbias(%p)\n", rmsg));
   ASSERT_RBUFPOOL_OWNER (rmsg->chunk.rbuf->rbufpool);
   ASSERT_RMSG_UNCOMMITTED (rmsg);
-  atomic_add_u32_noret (&rmsg->refcount, RMSG_REFCOUNT_RDATA_BIAS);
+  pa_add32 (&rmsg->refcount, RMSG_REFCOUNT_RDATA_BIAS);
 }
 
 static void nn_rmsg_rmbias_and_adjust (struct nn_rmsg *rmsg, int adjust)
@@ -640,8 +669,8 @@ static void nn_rmsg_rmbias_and_adjust (struct nn_rmsg *rmsg, int adjust)
   assert (adjust >= 0);
   assert ((os_uint32) adjust < RMSG_REFCOUNT_RDATA_BIAS);
   sub = RMSG_REFCOUNT_RDATA_BIAS - (os_uint32) adjust;
-  assert (rmsg->refcount >= sub);
-  if (atomic_sub_u32_nv (&rmsg->refcount, sub) == 0)
+  assert (pa_ld32 (&rmsg->refcount) >= sub);
+  if (pa_sub32_nv (&rmsg->refcount, sub) == 0)
     nn_rmsg_free (rmsg);
 }
 
@@ -650,15 +679,15 @@ static void nn_rmsg_rmbias_anythread (struct nn_rmsg *rmsg)
   /* For removing garbage when freeing a nn_defrag. */
   os_uint32 sub = RMSG_REFCOUNT_RDATA_BIAS;
   TRACE_RADMIN (("rmsg_rmbias_anythread(%p)\n", rmsg));
-  assert (rmsg->refcount >= sub);
-  if (atomic_sub_u32_nv (&rmsg->refcount, sub) == 0)
+  assert (pa_ld32 (&rmsg->refcount) >= sub);
+  if (pa_sub32_nv (&rmsg->refcount, sub) == 0)
     nn_rmsg_free (rmsg);
 }
 static void nn_rmsg_unref (struct nn_rmsg *rmsg)
 {
   TRACE_RADMIN (("rmsg_unref(%p)\n", rmsg));
-  assert (rmsg->refcount > 0);
-  if (atomic_dec_u32_nv (&rmsg->refcount) == 0)
+  assert (pa_ld32 (&rmsg->refcount) > 0);
+  if (pa_dec32_nv (&rmsg->refcount) == 0)
     nn_rmsg_free (rmsg);
 }
 
@@ -666,7 +695,7 @@ void *nn_rmsg_alloc (struct nn_rmsg *rmsg, os_uint32 size)
 {
   struct nn_rmsg_chunk *chunk = rmsg->lastchunk;
   struct nn_rbuf *rbuf = chunk->rbuf;
-  os_uint32 size8 = ALIGN8 (size);
+  os_uint32 size8 = align8uint32 (size);
   void *ptr;
   TRACE_RADMIN (("rmsg_alloc(%p, %u => %u)\n", rmsg, size, size8));
   ASSERT_RBUFPOOL_OWNER (rbuf->rbufpool);
@@ -715,10 +744,10 @@ struct nn_rdata *nn_rdata_new (struct nn_rmsg *rmsg, os_uint32 start, os_uint32 
   d->nextfrag = NULL;
   d->min = start;
   d->maxp1 = endp1;
-  d->submsg_zoff = NN_OFF_TO_ZOFF (submsg_offset);
-  d->payload_zoff = NN_OFF_TO_ZOFF (payload_offset);
+  d->submsg_zoff = (os_ushort) NN_OFF_TO_ZOFF (submsg_offset);
+  d->payload_zoff = (os_ushort) NN_OFF_TO_ZOFF (payload_offset);
 #ifndef NDEBUG
-  d->refcount_bias_added = 0;
+  pa_st32 (&d->refcount_bias_added, 0);
 #endif
   TRACE_RADMIN (("rdata_new(%p, bytes [%u,%u), submsg @ %u, payload @ %u) = %p\n", rmsg, start, endp1, NN_RDATA_SUBMSG_OFF (d), NN_RDATA_PAYLOAD_OFF (d), d));
   return d;
@@ -729,7 +758,7 @@ static void nn_rdata_addbias (struct nn_rdata *rdata)
   TRACE_RADMIN (("rdata_addbias(%p)\n", rdata));
 #ifndef NDEBUG
   ASSERT_RBUFPOOL_OWNER (rdata->rmsg->chunk.rbuf->rbufpool);
-  if (atomic_inc_u32_nv (&rdata->refcount_bias_added) != 1)
+  if (pa_inc32_nv (&rdata->refcount_bias_added) != 1)
     abort ();
 #endif
   nn_rmsg_addbias (rdata->rmsg);
@@ -739,7 +768,7 @@ static void nn_rdata_rmbias_and_adjust (struct nn_rdata *rdata, int adjust)
 {
   TRACE_RADMIN (("rdata_rmbias_and_adjust(%p, %d)\n", rdata, adjust));
 #ifndef NDEBUG
-  if (atomic_dec_u32_nv (&rdata->refcount_bias_added) != 0)
+  if (pa_dec32_nv (&rdata->refcount_bias_added) != 0)
     abort ();
 #endif
   nn_rmsg_rmbias_and_adjust (rdata->rmsg, adjust);
@@ -749,7 +778,7 @@ static void nn_rdata_rmbias_anythread (struct nn_rdata *rdata)
 {
   TRACE_RADMIN (("rdata_rmbias_anytrhead(%p, %d)\n", rdata));
 #ifndef NDEBUG
-  if (atomic_dec_u32_nv (&rdata->refcount_bias_added) != 0)
+  if (pa_dec32_nv (&rdata->refcount_bias_added) != 0)
     abort ();
 #endif
   nn_rmsg_rmbias_anythread (rdata->rmsg);
@@ -903,7 +932,7 @@ void nn_fragchain_adjust_refcount (struct nn_rdata *frag, int adjust)
   }
 }
 
-void nn_fragchain_rmbias_anythread (struct nn_rdata *frag, UNUSED_ARG (int adjust))
+static void nn_fragchain_rmbias_anythread (struct nn_rdata *frag, UNUSED_ARG (int adjust))
 {
   struct nn_rdata *frag1;
   TRACE_RADMIN (("fragchain_rmbias_anythread(%p)\n", frag));
@@ -1463,7 +1492,7 @@ int nn_defrag_nackmap (struct nn_defrag *defrag, os_int64 seq, os_uint32 maxfrag
         map->numbits = maxfragnum + 1;
       map->bitmap_base = 0;
       nn_bitset_one (map->numbits, map->bits);
-      return map->numbits;
+      return (int) map->numbits;
     }
   }
 
@@ -1524,7 +1553,7 @@ int nn_defrag_nackmap (struct nn_defrag *defrag, os_int64 seq, os_uint32 maxfrag
     }
     for (; i < map->bitmap_base + map->numbits && i < bound; i++)
     {
-      int x = (int) (i - map->bitmap_base);
+      unsigned x = (unsigned) (i - map->bitmap_base);
       nn_bitset_set (map->numbits, map->bits, x);
     }
     /* next sequence of fragments to request retranmsission of starts
@@ -1536,10 +1565,10 @@ int nn_defrag_nackmap (struct nn_defrag *defrag, os_int64 seq, os_uint32 maxfrag
   /* and set bits for missing fragments beyond the highest interval */
   for (; i < map->bitmap_base + map->numbits; i++)
   {
-    int x = (int) (i - map->bitmap_base);
+    unsigned x = (unsigned) (i - map->bitmap_base);
     nn_bitset_set (map->numbits, map->bits, x);
   }
-  return map->numbits;
+  return (int) map->numbits;
 }
 
 /* REORDER -------------------------------------------------------------
@@ -1915,7 +1944,7 @@ nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_r
     assert (s->min + s->n_samples <= s->maxp1);
     assert (reorder->n_samples >= s->n_samples - 1);
     reorder->n_samples -= s->n_samples - 1;
-    return s->n_samples;
+    return (nn_reorder_result_t) s->n_samples;
   }
   else if (s->min < reorder->next_seq)
   {
@@ -2262,7 +2291,7 @@ nn_reorder_result_t nn_reorder_gap (struct nn_rsample_chain *sc, struct nn_reord
     assert (coalesced->u.reorder.min + coalesced->u.reorder.n_samples <= coalesced->u.reorder.maxp1);
     assert (reorder->n_samples >= coalesced->u.reorder.n_samples);
     reorder->n_samples -= coalesced->u.reorder.n_samples;
-    return coalesced->u.reorder.n_samples;
+    return (nn_reorder_result_t) coalesced->u.reorder.n_samples;
   }
   else
   {
@@ -2285,7 +2314,7 @@ int nn_reorder_wantsample (struct nn_reorder *reorder, os_int64 seq)
   return (s == NULL || s->u.reorder.maxp1 <= seq);
 }
 
-int nn_reorder_nackmap (struct nn_reorder *reorder, os_int64 base, os_int64 maxseq, struct nn_sequence_number_set *map, os_uint32 maxsz, int notail)
+unsigned nn_reorder_nackmap (struct nn_reorder *reorder, os_int64 base, os_int64 maxseq, struct nn_sequence_number_set *map, os_uint32 maxsz, int notail)
 {
   struct nn_rsample *iv;
   os_int64 i;
@@ -2296,6 +2325,10 @@ int nn_reorder_nackmap (struct nn_reorder *reorder, os_int64 base, os_int64 maxs
      that we allow length-0 bitmaps here as well.  Map->numbits is
      bounded by max(based on sequence numbers, maxsz). */
   assert (maxsz <= 256);
+  /* not much point in requesting more data than we're willing to store
+     (it would be ok if we knew we'd be able to keep up) */
+  if (maxsz > reorder->max_samples)
+    maxsz = reorder->max_samples;
 #if 0
   /* this is what it used to be, where the reorder buffer is with
      delivery */
@@ -2303,13 +2336,13 @@ int nn_reorder_nackmap (struct nn_reorder *reorder, os_int64 base, os_int64 maxs
 #else
   if (base > reorder->next_seq)
   {
-    NN_ERROR2 ("nn_reorder_nackmap: incorrect base sequence number supplied (%lld > %lld)\n", base, reorder->next_seq);
+    NN_ERROR2 ("nn_reorder_nackmap: incorrect base sequence number supplied (%lld > %lld)\n", (long long int) base, (long long int) reorder->next_seq);
     base = reorder->next_seq;
   }
 #endif
   if (maxseq + 1 < base)
   {
-    NN_ERROR2 ("nn_reorder_nackmap: incorrect max sequence number supplied (maxseq %lld base %lld)\n", maxseq, base);
+    NN_ERROR2 ("nn_reorder_nackmap: incorrect max sequence number supplied (maxseq %lld base %lld)\n", (long long int) maxseq, (long long int) base);
     maxseq = base - 1;
   }
 
@@ -2327,19 +2360,19 @@ int nn_reorder_nackmap (struct nn_reorder *reorder, os_int64 base, os_int64 maxs
   {
     for (; i < base + map->numbits && i < iv->u.reorder.min; i++)
     {
-      int x = (int) (i - base);
+      unsigned x = (unsigned) (i - base);
       nn_bitset_set (map->numbits, map->bits, x);
     }
     i = iv->u.reorder.maxp1;
     iv = ut_avlFindSucc (&reorder_sampleivtree_treedef, &reorder->sampleivtree, iv);
   }
   if (notail && i < base + map->numbits)
-    map->numbits = (int) (i - base);
+    map->numbits = (unsigned) (i - base);
   else
   {
     for (; i < base + map->numbits; i++)
     {
-      int x = (int) (i - base);
+      unsigned x = (unsigned) (i - base);
       nn_bitset_set (map->numbits, map->bits, x);
     }
   }
@@ -2364,7 +2397,7 @@ struct nn_dqueue {
   struct thread_state1 *ts;
   char *name;
   os_uint32 max_samples;
-  os_uint32 nof_samples;
+  pa_uint32_t nof_samples;
 };
 
 enum dqueue_elem_kind {
@@ -2411,10 +2444,10 @@ static enum dqueue_elem_kind dqueue_elem_kind (const struct nn_rsample_chain_ele
 static void *dqueue_thread (struct nn_dqueue *q)
 {
   struct thread_state1 *self = lookup_thread_state ();
-  os_int64 next_thread_cputime = 0;
+  nn_mtime_t next_thread_cputime = { 0 };
   int keepgoing = 1;
   nn_guid_t rdguid, *prdguid = NULL;
-  os_int32 rdguid_count = 0;
+  os_uint32 rdguid_count = 0;
 
   os_mutexLock (&q->lock);
   while (keepgoing)
@@ -2434,7 +2467,7 @@ static void *dqueue_thread (struct nn_dqueue *q)
       struct nn_rsample_chain_elem *e = sc.first;
       int ret;
       sc.first = e->next;
-      atomic_dec_u32_nv (&q->nof_samples);
+      pa_dec32 (&q->nof_samples);
       thread_state_awake (self);
       switch (dqueue_elem_kind (e))
       {
@@ -2504,15 +2537,15 @@ struct nn_dqueue *nn_dqueue_new (const char *name, os_uint32 max_samples, nn_dqu
   if ((q->name = os_strdup (name)) == NULL)
     goto fail_name;
   q->max_samples = max_samples;
-  q->nof_samples = 0;
+  pa_st32 (&q->nof_samples, 0);
   q->handler = handler;
   q->handler_arg = arg;
   q->sc.first = q->sc.last = NULL;
 
-  if (os_mutexInit (&q->lock, &gv.mattr) != os_resultSuccess)
+  if (os_mutexInit (&q->lock, NULL) != os_resultSuccess)
     goto fail_lock;
 
-  if (os_condInit (&q->cond, &q->lock, &gv.cattr) != os_resultSuccess)
+  if (os_condInit (&q->cond, &q->lock, NULL) != os_resultSuccess)
     goto fail_cond;
 
   if ((thrname = os_malloc (3 + strlen (name) + 1)) == NULL)
@@ -2560,7 +2593,7 @@ void nn_dqueue_enqueue (struct nn_dqueue *q, struct nn_rsample_chain *sc, nn_reo
   assert (sc->first);
   assert (sc->last->next == NULL);
   os_mutexLock (&q->lock);
-  atomic_add_u32_noret (&q->nof_samples, (os_uint32) rres);
+  pa_add32 (&q->nof_samples, (os_uint32) rres);
   if (nn_dqueue_enqueue_locked (q, sc))
     os_condSignal (&q->cond);
   os_mutexUnlock (&q->lock);
@@ -2579,7 +2612,7 @@ static int nn_dqueue_enqueue_bubble_locked (struct nn_dqueue *q, struct nn_dqueu
 static void nn_dqueue_enqueue_bubble (struct nn_dqueue *q, struct nn_dqueue_bubble *b)
 {
   os_mutexLock (&q->lock);
-  atomic_inc_u32_nv (&q->nof_samples);
+  pa_inc32 (&q->nof_samples);
   if (nn_dqueue_enqueue_bubble_locked (q, b))
     os_condSignal (&q->cond);
   os_mutexUnlock (&q->lock);
@@ -2609,7 +2642,7 @@ void nn_dqueue_enqueue1 (struct nn_dqueue *q, const nn_guid_t *rdguid, struct nn
   assert (sc->first);
   assert (sc->last->next == NULL);
   os_mutexLock (&q->lock);
-  atomic_add_u32_noret (&q->nof_samples, 1 + (os_uint32) rres);
+  pa_add32 (&q->nof_samples, 1 + (os_uint32) rres);
   if (nn_dqueue_enqueue_bubble_locked (q, b))
     os_condSignal (&q->cond);
   nn_dqueue_enqueue_locked (q, sc);
@@ -2625,7 +2658,7 @@ int nn_dqueue_is_full (struct nn_dqueue *q)
      don't mind the occasional extra sample in the queue (we don't),
      and survive the occasional decision to not queue when it
      could've been queued (we do), it should be ok. */
-  const os_uint32 count = atomic_read_u32 (&q->nof_samples);
+  const os_uint32 count = pa_ld32 (&q->nof_samples);
   return (count >= q->max_samples);
 }
 

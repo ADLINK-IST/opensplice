@@ -49,6 +49,7 @@ namespace test.sacs
             publisher = (DDS.IPublisher)this.ResolveObject("publisher");
             topicQos = (DDS.TopicQos)this.ResolveObject("topicQos");
 
+            publisher.GetDefaultDataWriterQos(ref qosHolder);
             rc = publisher.CopyFromTopicQos(ref qosHolder, topicQos);
             if (rc != DDS.ReturnCode.Ok)
             {

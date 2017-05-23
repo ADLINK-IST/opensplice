@@ -1,19 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef __UTL_PRAGMAS_HH__
 #define __UTL_PRAGMAS_HH__
 
 #include <string.h>
-#include "idl_bool.h"
 #include "utl_idlist.h"
 #include "utl_scoped_name.h"
 #include "utl_string.h"
@@ -51,11 +58,11 @@ public:
    UTL_String * get_pragma_version();
    void set_pragma_version(UTL_String *version);
 
-   idl_bool get_pragma_client_synchronicity();
-   void set_pragma_client_synchronicity(idl_bool sync_type);
+   bool get_pragma_client_synchronicity();
+   void set_pragma_client_synchronicity(bool sync_type);
 
-   idl_bool get_pragma_server_synchronicity();
-   void set_pragma_server_synchronicity(idl_bool sync_type);
+   bool get_pragma_server_synchronicity();
+   void set_pragma_server_synchronicity(bool sync_type);
 
    void set_name(UTL_ScopedName *name);
 
@@ -66,8 +73,8 @@ private:
    UTL_String *pd_pragma_prefix;
    UTL_String *pd_pragma_ID;
    UTL_String *pd_pragma_version;
-   idl_bool pd_pragma_client_synchronicity;
-   idl_bool pd_pragma_server_synchronicity;
+   bool pd_pragma_client_synchronicity;
+   bool pd_pragma_server_synchronicity;
    UTL_ScopedName *pd_name;
 };
 

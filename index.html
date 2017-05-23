@@ -1,20 +1,210 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
   <head>
-    <title>OpenSplice DDS Community Edition</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-    <link rel="stylesheet" href="docs/css/prismstyle.css" type="text/css">
-  </head>
-  <frameset rows="115,500*">
-    <frame name="menu" frameborder="0" scrolling="NO" noresize marginheight="0"
-     src="docs/common/menu.html">
-    <frame name="main" frameborder="0" scrolling="AUTO" src="docs/intro.html" >
-    <noframes>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Vortex OpenSplice - documentation index</title>
+    <style type="text/css" media="all">
+      @import url("./docs/css/maven-base.css");
+      @import url("./docs/css/maven-theme.css");
+      @import url("./docs/css/site.css");
+    </style>
+    <link rel="stylesheet" href="./docs/css/print.css" type="text/css" media="print" />
+    <meta name="Date-Revision-yyyymmdd" content="20141002" />
+    <meta http-equiv="Content-Language" content="en" />
+        
+ </head>
+ <body class="composite">
+    <div id="banner">
+       <a href="http://www.prismtech.com" id="bannerLeft">
+          <img src="docs/images/Prismtech_Logo.png" alt="Prismtech" />
+       </a>
+       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
+          <img src="docs/images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       </a>
+       <div class="clear">
+          <hr/>
+       </div>
+    </div>
+    <div id="breadcrumbs">
+       <div class="xright">
+          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
+          <a href="../" title="OpenSplice">Vortex OpenSplice</a>
+       </div>
+       <div class="clear">
+         <hr/>
+       </div>
+    </div>
+    <div id="leftColumn">
+      <div id="navcolumn">
+         <h5>Vortex OpenSplice</h5>
+         <ul>
+            <li class="none">
+            <strong>Introduction</strong>
+            </li>
+            <li class="none">
+              <a href="docs/html/guides.html" title="APIs">User Guides</a>
+            </li>
+            <li class="none">
+              <a href="docs/html/changedV6.html" title="Changes">Changes</a><br>
+            </li>
+            <li class="none">
+              <a href="docs/html/platforms.html" title="Supported Platforms">Supported Platforms</a><br>
+            </li>
+            <li class="none">
+              <a href="docs/html/known_issues.html" title="Changes">Known Issues</a><br>
+            </li>
+            <li class="none">
+              <a href="docs/html/ddsi2_release_notes.html" title="Changes">DDSI Release Notes</a><br>
+            </li>
+            <li class="none">
+               <a href="docs/html/rebuilding_APIs.html" title = "User Guide">Rebuilding the APIs</a><br>
+            </li>
+            <li class="none">
+               <a href="docs/html/upgrading.html" title = "Upgrading">Upgrading OpenSplice</a><br>
+            </li>
+            <li class="none">
+               <a href="examples/dcps/README.html" title = "Examples">Examples</a><br>
+            </li>
+            <li class="none">
+               <a href="docs/html/third_party_licenses.html" title = "Third Party Licenses">Third party licenses</a><br>
+            </li>
+            <li class="none">
+              <a href="./LICENSE" title="License">License</a>
+            </li>
+          </ul>
+      </a>
+      </div>
+    </div>
+    <div id="bodyColumn">
+      <div id="contentBox">
+      <div class="section">
+         <h2>Introduction<a name="Introduction"></a></h2>
+
+  <p>
+    Vortex OpenSplice is the leading (commercial and Open Source) implementation of the
+    Object Management Group's (OMG) Data Distribution Service (DDS) for Real-Time
+    Systems messaging middleware standard. OpenSplice is an advanced and
+    proven data-centric solution that enables seamless, timely, scalable and
+    dependable distributed data sharing from Embedded and Mobile Devices to the
+    Enterprise and the Cloud. OpenSplice delivers the right data, in the right
+    place, at the right time, every time ; even in the largest-scale mission and
+    business critical systems.
+  </p>
+  
+  <p>
+  <b>Key Features:</b><br>
+
+  <ul>
+  <li>Deployed in the most challenging business and mission critical systems</li>
+  <li>Seamless Integration with 80+ middleware technologies</li>
+  <li>Largest ecosystem of plug-ins and tools for modeling, deployment and testing</li>
+  <li>Supported by world-renowned professional services expertise from the developers of the DDS standard</li>
+  <li>Genuinely the fastest, most scalable and most reliable Open Source integration technology</li>
+  <li>Genuine Open Source Apache 2.0 licensing for both its Community and Commercial editions</li>
+  <li>Field-proven Interoperability with other DDS Implementations</li>
+  <li>Richest set of QoS policies for controlling efficiency, determinism and fault-tolerance</li>
+  <li>Runtime choice between simple/standalone and  high-performance/federated deployment</li>
+  <li>Optional interaction-patterns, implemented on top of DDS: Remote Method invocation (RMI) and transparent batching (STREAMS)</li>
+  </ul>
+
+  </p>     
+  </div>
+  <div class="section"><h2>Getting Started<a name="Getting_Started"></a></h2>
+  <p>
+   <a href="docs/pdf/OpenSplice_GettingStartedGuide.pdf" target="guides">
+   Getting Started Guide</b> (pdf)</a> - the document that users should read
+   first.<br><br>
+
+   <a href="docs/pdf/OpenSplice_EvaluationGuide.pdf">Evaluating Vortex OpenSplice (pdf)</a><br>
+   <p>Start the OpenSplice Launcher : osplLauncher from the bin directory of your
+   OpenSplice installation or from the Windows Start Menu. The <a href="./bin/app/docs/main.html">
+   Launcher Guide</a> gives more details.  </p>
+     </div>
+
+      <h2><a name="org">OpenSplice Directory Organisation</a></h2>
+        <p>
+          The OpenSplice components are located in the following sub-directories
+          of the installation:
+          <ul>
+            <li>
+              <b>bin</b> - contains OpenSplice DDS executables.
+            </li>
+            <li>
+              <b>custom_lib</b> - contains source code of the C++, ISO C++ and Java
+                                  language binding, for the customer to re-build to
+                                  ensure compliance with platform/compiler.
+            </li>
+            <li>
+              <b>demos</b> - contains demos for OpenSplice DDS.
+            </li>
+            <li>
+              <b>docs</b> - contains the documentation set and release notes for
+                            OpenSplice.
+            </li>
+            <li>
+              <b>etc</b> - the default location for the license file and
+                           configuration file(s). In case of the HDE, the
+                           templates for code generation are also located in this
+                           directory.
+            </li>
+            <li>
+              <b>examples</b> - contains code examples (for all supported DDS
+                                languages) demonstrating the use of OpenSplice.
+            </li>
+            <li>
+              <b>include</b> - contains all OpenSplice header files.
+            </li>
+            <li>
+              <b>jar</b> - contains all JAVA archives for OpenSplice API's and
+                           OpenSplice tools.
+            </li>
+            <li>
+              <b>lib</b> - contains all OpenSplice library files.
+            </li>
+            <li>
+              <b>redist</b> - depending on the platform this directory contains
+                              redistributable packages needed by OpenSplice. These
+                              packages are automatically installed.
+            <li>
+              <b>src</b> - contains the source code for the open source components of
+                           OpenSplice that was used to build the OpenSplice libraries,
+                           jars, executables, etc of the installed version.
+            </li>
+            <li>
+              <b>tools</b> - contains useful tools/utilities for use with OpenSplice DDS.
+            </li>
+            <li>
+              <b>release.xxx</b> - running this script in your current shell will
+                                   setup the OpenSplice environment, where
+                                   .xxx = .com for Unix and .bat for Windows.
+            </li>
+          </ul>
+        </p>
+
+      <div class="section"><h2>Important Notice<a name="IMPORTANT_NOTICE"></a></h2>
+      <p>The following rights apply to PrismTech proprietary software contained in this distribution:</p>
+      <p>The Software and documentation are Copyright 2006 to TO_YEAR PrismTech Limited. All rights reserved.</p>
+      <p>The Software and documentation included herein are commercial items.</p>
+      <p>If the Licensee is the U.S. Government or any agency or department thereof, the Software is
+      licensed hereunder only as a commercial item subject to Restricted Rights and unless otherwise
+      expressly agreed in the purchase contract, with only those rights as are granted to all
+      other end users pursuant to the terms and conditions of PrismTech's Software License Agreement.</p>
+      </div><div class="section"><h2>Vortex OpenSplice licensing information<a name="Vortex_OpenSplice_licensing_information"></a></h2>
       <p>
-        This set of pages is designed to use frames and it is recommended that
-        you use a browser which supports frames in order to take advantage of
-        this feature.
-      </p>
-    </noframes>
-  </frameset>
+         <a href=".//LICENSE">Vortex OpenSplice licensing information</a></a>
+      </p>   
+      </div>
+    </div>
+    <div class="clear">
+    <hr/>
+    </div>
+    <div id="footer">
+      <div class="xright">
+       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.      
+      </div>
+     <div class="clear">
+     <hr/>
+     </div>
+    </div>
+  </body>
 </html>

@@ -1,21 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.model.table;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 
 import javax.swing.table.DefaultTableModel;
 
@@ -136,36 +141,18 @@ public class UserDataSingleTableModel extends DefaultTableModel {
         return result;
     }
 
-    protected HashMap<String, ArrayList<String>> CollectSingleTableData(UserData data, String struct) {
-        LinkedHashSet<String> s;
-        List<String> tmp;
-
-        MetaType mt = data.getUserDataType();
-        s = new LinkedHashSet<String>(data.getUserData().keySet());
-        HashMap<String, ArrayList<String>> tableVales = new HashMap<String, ArrayList<String>>();
-        tmp = new ArrayList<String>();
-        /* strip [] from userdata */
-        for (String key : s) {
-
-            String newKey = mt.removeIndicesFromStruct(key, struct);
-            tmp.add(newKey);
-            if (tableVales.containsKey(newKey)) {
-                ArrayList<String> tmpVal = tableVales.get(newKey);
-                tmpVal.add(data.getUserData().get(key));
-                tableVales.put(newKey, tmpVal);
-            } else {
-                ArrayList<String> tmpVal = new ArrayList<String>();
-                tmpVal.add(data.getUserData().get(key));
-                tableVales.put(newKey, tmpVal);
-            }
-        }
-        return tableVales;
-    }
-
     public boolean setData(Sample sample, String colName) {
-        return setData(sample, colName, -1);
+        return setData(sample, colName, 0);
     }
 
+    /**
+     * Set the data in the Single table according to the supplied source UserData, the
+     * desired collection name, and the index of the collection we are viewing.
+     * @param sample
+     * @param colName
+     * @param index
+     * @return
+     */
     public boolean setData(Sample sample, String colName, int index) {
         UserData data;
         boolean result = true;
@@ -175,56 +162,24 @@ public class UserDataSingleTableModel extends DefaultTableModel {
             if (data == null) {
                 return false;
             }
-            HashMap<String, ArrayList<String>> tableData = CollectSingleTableData(data, colName);
             for (int i = 0; i < rowCount; i++) {
-                String fName = (String) this.getValueAt(i, 1);
-                if (index >= 0) {
-                    if (fName.startsWith(colName)) {
-                        String tmp = fName.substring(colName.length());
-                        fName = colName + "[" + index + "]" + tmp;
-                    }
+                String tableRowFName = (String) this.getValueAt(i, 1);
+                String structMember = "";
+                int dotIndex = tableRowFName.lastIndexOf('.');
+                if (dotIndex != -1) {
+                    structMember = tableRowFName.substring(dotIndex);
                 }
 
-                if (tableData.containsKey(fName)) {
-                    ArrayList<String> colVals = tableData.get(fName);
-                    if (index >= 0) {
-                        this.setValueAt(colVals.get(index), i, 2);
-                    } else {
-                        this.setValueAt(colVals.toString(), i, 2);
-                    }
-                } else if (tableData.containsKey(colName)) {
-                    ArrayList<String> colVals = tableData.get(colName);
-                    if (index >= 0) {
-                        this.setValueAt(colVals.get(index), i, 2);
-                    } else {
-                        this.setValueAt(colVals.toString(), i, 2);
-                    }
-                } else {
-                    LinkedHashSet<String> s = new LinkedHashSet<String>(data.getUserData().keySet());
-                    String value = null;
-                    for (String key : s) {
-                        if (key.startsWith(fName)) {
-                            if (value != null) {
-                                value = value + "," + data.getUserData().get(key);
-                            } else {
-                                value = data.getUserData().get(key);
-                            }
-                        }
-                    }
-                    if (value == null) {
-                        LinkedHashSet<String> td = new LinkedHashSet<String>(tableData.keySet());
-                        for (String key : td) {
-                            if (key.startsWith(fName)) {
-                                if (value != null) {
-                                    value = value + "," + tableData.get(key).toString();
-                                } else {
-                                    value = tableData.get(key).toString();
-                                }
-                            }
-                        }
-                    }
-                    this.setValueAt(value, i, 2);
+                String fName = colName;
+                int indexindex = colName.indexOf('[' ,colName.lastIndexOf('.'));
+                String colNameStripped = colName;
+                String colNameColIndex = "";
+                if (indexindex != -1) {
+                    colNameStripped = colName.substring(0, indexindex);
+                    colNameColIndex = colName.substring(indexindex);
                 }
+                fName = colNameStripped + "[" + index + "]" + colNameColIndex + structMember;
+                this.setValueAt(data.getFieldValue(fName), i, 2);
             }
             ud = data;
         }

@@ -1,15 +1,23 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#include "os.h"
+#include "vortex_os.h"
 #include "u__cfValue.h"
 #include "u_cfData.h"
 #include "os_stdlib.h"
@@ -22,20 +30,21 @@
 #define CF_F_LONG     ""
 #define CF_F_LONGLONG "ll"
 #define CF_F_CHAR     "c"
+#define CF_F_UCHAR    "u"
 #define CF_F_INT      "d"
 #define CF_F_UINT     "u"
 #define CF_F_FLOAT    "f"
 
 #define CF_FORMAT_CHAR         CF_F_PREF CF_F_BYTE     CF_F_CHAR
-
+#define CF_FORMAT_OCTET        CF_F_PREF "hh"          CF_F_UCHAR
 #define CF_FORMAT_BOOLEAN      CF_F_PREF CF_F_BYTE     CF_F_CHAR
 #define CF_FORMAT_SHORT        CF_F_PREF CF_F_SHORT    CF_F_INT
 #define CF_FORMAT_USHORT       CF_F_PREF CF_F_SHORT    CF_F_UINT
 #define CF_FORMAT_WCHAR        CF_F_PREF CF_F_LONG     CF_F_CHAR
 #define CF_FORMAT_LONG         CF_F_PREF CF_F_LONG     CF_F_INT
 #define CF_FORMAT_ULONG        CF_F_PREF CF_F_LONG     CF_F_UINT
-#define CF_FORMAT_LONGLONG     CF_F_PREF CF_F_LONGLONG CF_F_INT
-#define CF_FORMAT_ULONGLONG    CF_F_PREF CF_F_LONGLONG CF_F_UINT
+#define CF_FORMAT_LONGLONG     CF_F_PREF PA_PRId64
+#define CF_FORMAT_ULONGLONG    CF_F_PREF PA_PRIu64
 #define CF_FORMAT_FLOAT        CF_F_PREF CF_F_LONG     CF_F_FLOAT
 #define CF_FORMAT_DOUBLE       CF_F_PREF CF_F_LONGLONG CF_F_FLOAT
 
@@ -46,12 +55,12 @@
  **************************************************************/
 /* Special routine for scanning booleans */
 /* scanf does not support this           */
-static c_bool
+static u_bool
 u_cfValueScanBoolean(
     c_char *dataPtr,
-    c_bool *resultPtr)
+    u_bool *resultPtr)
 {
-    c_bool result = FALSE;
+    u_bool result = FALSE;
     size_t l;
 
     l = strspn(dataPtr, CF_SPACES);
@@ -94,18 +103,19 @@ u_cfValueScanBoolean(
     }                                                        \
     break
 
-c_bool
+u_bool
 u_cfValueScan(
-    c_value value,
+    const c_value value,
     c_valueKind valueKind,
     c_value *valuePtr)
 {
     int i;
-    c_bool result = FALSE;
+    u_bool result = FALSE;
 
     if (value.kind == V_STRING) {
         switch (valueKind) {
         __CASE__(CHAR,c_char);
+        __CASE__(OCTET,c_octet);
         __CASE__(SHORT,c_short);
         __CASE__(USHORT,c_ushort);
         __CASE__(LONG,c_long);
@@ -115,7 +125,7 @@ u_cfValueScan(
         __CASE__(FLOAT,c_float);
         case V_BOOLEAN:
         {
-            c_bool dest;
+            u_bool dest;
             result = u_cfValueScanBoolean(value.is.String, &dest);
             if (result) {
                 *valuePtr = c_boolValue(dest);
@@ -125,20 +135,15 @@ u_cfValueScan(
         case V_STRING:
         {
              c_char *str;
-             c_ulong length;
-
-             length = (c_ulong)strlen(value.is.String);
-             str = os_malloc(length + 1U);
-             os_strncpy(str, value.is.String, length);
-             str[length] = 0;
+             str = os_strdup(value.is.String);
              *valuePtr = c_stringValue(str);
              result = TRUE;
         }
         break;
-        case V_OCTET:
         case V_DOUBLE:
         default:
             result = FALSE;
+            (void)result;
             assert(0); /* Catch unhandled case */
         break;
         }

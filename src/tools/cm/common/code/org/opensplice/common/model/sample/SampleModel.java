@@ -1,25 +1,39 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.model.sample;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.opensplice.cm.CMException;
 import org.opensplice.cm.Entity;
 import org.opensplice.cm.EntityFilter;
 import org.opensplice.cm.Reader;
-import org.opensplice.cm.Topic;
 import org.opensplice.cm.data.Sample;
 import org.opensplice.cm.data.UserData;
+import org.opensplice.cmdataadapter.CmDataException;
+import org.opensplice.cmdataadapter.TypeInfo;
+import org.opensplice.cmdataadapter.TypeInfo.TypeEvolution;
+import org.opensplice.cmdataadapter.protobuf.ProtobufDataAdapterFactory;
+import org.opensplice.cmdataadapter.protobuf.ProtobufFieldProperties;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.SampleModelSizeException;
 import org.opensplice.common.model.ModelRegister;
@@ -53,7 +67,7 @@ public abstract class SampleModel extends ModelRegister{
     public SampleModel(){
         sampleInfoModel = new SampleInfoTableModel();
     }
-    
+
     /**
      * Reads a Sample from its reader.
      * 
@@ -75,13 +89,6 @@ public abstract class SampleModel extends ModelRegister{
     public abstract Sample take() throws CommonException, SampleModelSizeException;
     
     public abstract Sample readNext() throws CommonException, SampleModelSizeException;
-    
-    /**
-     * Provides access to the key list of the data that is read/taken.
-     * 
-     * @return The comma separated list of keys.
-     */
-    public abstract String getDataTypeKeyList() throws CommonException;
     
     /**
      * Exports the complete content of the model to the specified file in XML
@@ -230,25 +237,61 @@ public abstract class SampleModel extends ModelRegister{
         return sampleInfoModel;
     }
     
-    protected String getKeyList(Topic t) throws CommonException{
-        String keys = null;
-        String result = null;
+    /**
+     * Gets the list of keys for the data type that this SampleModel is holding.
+     * @return A String containing comma separated key values.
+     * @throws CommonException Thrown when there is a problem retrieving the keys from the type metadata.
+     */
+    public String getKeyList() throws CommonException{
         String[] keyList;
+        StringBuilder result = new StringBuilder();
 
-        keys = t.getKeyList();
-
-        if(keys != null){
-            keyList = keys.split(",");
-
-            for(int i=0; i<keyList.length; i++){
-                if(result != null){
-                    result += "," + keyList[i].substring(9);
-                } else {
-                    result = keyList[i].substring(9);
-                }
-            }
+        try {
+            keyList = typeInfo.getKeys();
+        } catch (CmDataException e) {
+            throw new CommonException (e.getMessage());
         }
-        return result;
+
+        for(int i=0; i<keyList.length; i++){
+            if (result.length() != 0) {
+                result.append(",");
+            }
+            result.append(keyList[i].replaceAll("^userData\\.", ""));
+        }
+        return result.toString();
+    }
+
+    /**
+     * Get the ProtobufFieldProperties for every field name in the data type.
+     *
+     * @return A Map of field names to their corresponding ProtobufFieldProperties. 
+     *         If the Protobuf feature is disabled in this build of Tuner, then returns an empty Map.
+     * @throws CommonException If there is a problem while retrieving the ProtobufFieldProperties
+     *         from the protobuf metadata.
+     */
+    public Map<String, ProtobufFieldProperties> getProtobufFieldProperties() throws CommonException {
+        if (ProtobufDataAdapterFactory.getInstance().isEnabled() &&
+                typeInfo.getDataRepresentationId() == TypeInfo.GPB_DATA_ID) {
+                try {
+                    Map<String, ProtobufFieldProperties> result = new HashMap<String, ProtobufFieldProperties>(); 
+                    for (String fieldName : typeEvolution.getMetaType().getFieldNames()) {
+                        result.put(fieldName, ProtobufDataAdapterFactory.getInstance()
+                                .getFieldProperties(fieldName, typeEvolution));
+                    }
+                    return result;
+                } catch (CmDataException e) {
+                    throw new CommonException (e.getMessage());
+                }
+        }
+        return new HashMap<String, ProtobufFieldProperties>();
+    }
+
+    /**
+     * Get the TypeEvolution that this SampleModel is using to adapt UserData with.
+     * @return the TypeEvolution
+     */
+    public TypeEvolution getTypeEvolution() {
+        return typeEvolution;
     }
 
     /**
@@ -315,7 +358,7 @@ public abstract class SampleModel extends ModelRegister{
         } catch (CMException e) {}
         return partitions;
     }
-    
+
     /**
      * All UserData of the Sample object that are added will be administrated 
      * in this component.
@@ -337,4 +380,8 @@ public abstract class SampleModel extends ModelRegister{
     protected Sample lastReadSample = null;
 
     protected UserData toBeWrittenUserData = null;
+
+    protected TypeInfo typeInfo = null;
+
+    protected TypeEvolution typeEvolution = null;
 }

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -18,6 +26,7 @@
  */
 
 #include "os_rwlock.h"
+#include "os_mutex.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -28,12 +37,15 @@
  */
 os_result
 os_rwlockInit (
-    os_rwlock *rwlock, 
+    os_rwlock *rwlock,
     const os_rwlockAttr *rwlockAttr)
 {
     os_mutexAttr mutexAttr;
 
-    mutexAttr.scopeAttr = rwlockAttr->scopeAttr;
+    os_mutexAttrInit(&mutexAttr);
+    if(rwlockAttr) {
+        mutexAttr.scopeAttr = rwlockAttr->scopeAttr;
+    }
     return os_mutexInit (rwlock, &mutexAttr);
 }
 
@@ -41,34 +53,34 @@ os_rwlockInit (
  *
  * \b os_rwlockDestroy destroys the mutex that implements the rwlock
  */
-os_result
+void
 os_rwlockDestroy (
     os_rwlock *rwlock)
 {
     assert (rwlock != NULL);
-    return os_mutexDestroy (rwlock);
+    os_mutexDestroy (rwlock);
 }
 
 /** \brief Acquire the rwlock while intending to read only
  *
  * \b os_rwlockRead calls \b os_mutexLock to claim the rwlock
  */
-os_result
+void
 os_rwlockRead (
     os_rwlock *rwlock)
 {
-    return os_mutexLock (rwlock);
+    os_mutexLock (rwlock);
 }
 
 /** \brief Acquire the rwlock while intending to write
  *
  * \b os_rwlockWrite calls \b os_mutexLock to claim the rwlock
  */
-os_result
+void
 os_rwlockWrite (
     os_rwlock *rwlock)
 {
-    return os_mutexLock (rwlock);
+    os_mutexLock (rwlock);
 }
 
 /** \brief Try to acquire the rwlock while intending to read only
@@ -98,9 +110,9 @@ os_rwlockTryWrite (
  * \b os_rwlockUnlock calls \b os_mutexUnlock to release
  * the \b rwlock.
  */
-os_result
+void
 os_rwlockUnlock (
     os_rwlock *rwlock)
 {
-    return os_mutexUnlock (rwlock);
+    os_mutexUnlock (rwlock);
 }

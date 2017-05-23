@@ -1,0 +1,8 @@
+#ifndef $upper($(basename))STREAMS_IDL_
+#define $upper($(basename))STREAMS_IDL_
+
+#include "dds_dcps.idl"
+#include "streams_dcps.idl"
+
+#include "$(basename).idl"
+

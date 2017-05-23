@@ -1,12 +1,10 @@
 # target context is set in platform specific config.mak
 
 # Set name context of used tooling
-CC		 = gcc-mp-4.8 -std=gnu99 -m64 #-v
-CXX		 = g++-mp-4.8 -m64 #-v
+CC		 = gcc-5
+CXX		 = g++-5
 CSC      = gmcs
 
-    # Binary used for filtering
-FILTER           =
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
@@ -24,11 +22,11 @@ MAKE		 = make
 TOUCH		 = touch
 	# Archiving
 AR               = /usr/bin/ar
-AR_CMDS          = rv
+AR_CMDS          = r
 	# preprocessor
 MAKEDEPFLAGS     = -M
-CPP		 = gcc #cpp #-v
-GCPP     = g++ -E
+CPP		 = gcc-5 #cpp #-v
+GCPP     = g++-5 -E
 	# gcov
 GCOV		 = gcov
 
@@ -69,21 +67,27 @@ JAVA_INCLUDE	 += -I"$(JAVA_HOME)/include/darwin"
 SOAPCPP		= soapcpp2
 
 # Identify compiler flags for building shared libraries
-SHCFLAGS         = -dynamiclib #-fno-common
+SHCFLAGS         = -fpic #-fno-common
 
 # Values of compiler flags can be overruled
-CFLAGS_OPT       = -O4 -flto -g -DNDEBUG
+CFLAGS_OPT       = -O3 -g -DNDEBUG
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
 #CFLAGS_STRICT	 = -Wall
-CFLAGS_STRICT	 = -Wall -W -pedantic
+CFLAGS_STRICT	 = -Wall -W -Wno-deprecated-declarations
+CFLAGS_XSTRICT   = -Wconversion
+CFLAGS_PERMISSIVE= -Wno-unused-function -Wno-sign-compare -Wno-unused-parameter
 
-# Set compiler options for single threaded process
-CFLAGS		 = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+# Set compiler options
+CFLAGS		 = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(MTCFLAGS)
+CXXFLAGS	 = -std=c++11 -DOSPL_USE_CXX11 $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(MTCFLAGS)
 CSFLAGS	     = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # For Linux, this test release version supports symbolic names in stead of IP addresses
 CFLAGS      += -DDO_HOST_BY_NAME #-D__i386__
+
+PLATFORM_FLAGS = -m64
+CFLAGS += -std=gnu99 $(PLATFORM_FLAGS)
+CXXFLAGS += $(PLATFORM_FLAGS)
 
 # Set CPP flags
 CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -D_GNU_SOURCE
@@ -93,11 +97,10 @@ endif
 
 # Set compiler options for multi threaded process
 	# notify usage of posix threads
-#MTCFLAGS	 = -D_POSIX_C_SOURCE=199506L
-MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
+MTCFLAGS	 = -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
-LDFLAGS		 = -L$(SPLICE_LIBRARY_PATH) -Wl,-flat_namespace
+LDFLAGS		 = -L$(SPLICE_LIBRARY_PATH)
 
 # Identify linker options for building shared libraries
 SHLDFLAGS	 = -dynamiclib
@@ -145,10 +148,6 @@ CS_LIBPATH_SEP = ,
 CSTARGET_LIB = -target:library
 CSTARGET_MOD = -target:module
 CSTARGET_EXEC = -target:exe
-
-LDLIBS_ZLIB      = -lz
-LDFLAGS_ZLIB     =
-CINCS_ZLIB       =
 
 ifdef LKST_HOME
 CPPFLAGS += -I$(LKST_HOME) -DHAVE_LKST

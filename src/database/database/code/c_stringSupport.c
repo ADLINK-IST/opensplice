@@ -1,16 +1,24 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
-#include "os.h"
+#include "vortex_os.h"
 #include "c_stringSupport.h"
 
 #include <ctype.h>
@@ -94,14 +102,14 @@ c_splitString(
     const c_char *head, *tail;
     c_char *nibble;
     c_iter iter = NULL;
-    c_long length;
+    os_size_t length;
 
     if (str == NULL) return NULL;
 
     tail = str;
     while (*tail != '\0') {
         head = c_skipUntil(tail,delimiters);
-        length = abs((c_address)head - (c_address)tail);
+        length = (os_size_t) (head - tail);
         if (length != 0) {
             length++;
             nibble = (c_string)os_malloc(length);
@@ -179,7 +187,7 @@ c_trimString(
          * there is at least one non-space character.
          */
         assert(end >= begin);
-        size = end - begin;
+        size = (c_size) (end - begin);
         result = os_malloc((size + 1) * sizeof(c_char)); /* +1 for the '\0' character */
         memcpy(result, begin, size);
         result[size] = '\0'; /* null-terminated string */

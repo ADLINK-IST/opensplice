@@ -1,0 +1,48 @@
+REGENERATING OPENSPLICE GOOGLE PROTOCOL BUFFER PLUGIN
+-----------------------------------------------------
+
+By default the OpenSplice Google Protocol Buffer plugin is compiled for Google Protocol Buffers version 2.6.0
+When another version of Google Protocol Buffers is needed a recompile of the plugin can be done for this version.
+
+REQUIREMENTS
+------------
+
+It is assumed that the user will make sure the following preconditions are met:
+- Maven is installed
+- Java compiler is installed
+- The to be used version of Google Protocol Buffers is installed
+- the path is setup to include the preceding items
+- PROTOBUF_HOME environment variable is set to the directory of the to be used version of Google Protocol Buffers.
+
+------------------------------------------------------
+For Posix platforms:
+
+- Go to the installation directory of your OpenSplice release.
+- Source the release.com script of your OpenSplice release.
+  In a bash shell this means entering the following command
+
+  . ./release.com
+
+- Go to the custom_lib protocol buffer directory:
+
+  cd custom_lib/protobuf
+
+- Run the build script
+
+  ./build
+
+------------------------------------------------------
+For windows platforms:
+
+- Open a Vortex OpenSplice command prompt
+- Go to the custom_lib protocol buffer directory:
+
+  cd custom_lib/protobuf
+
+- Run the build script
+
+  build.bat
+------------------------------------------------------
+
+- Once the library has successfully been built it is copied into the
+  $OSPL_HOME/jar directory.

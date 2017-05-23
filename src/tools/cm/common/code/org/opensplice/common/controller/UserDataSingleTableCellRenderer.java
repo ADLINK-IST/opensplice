@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.controller;
@@ -28,7 +36,8 @@ import org.opensplice.common.util.Config;
  * @date Nov 8, 2004 
  */
 public class UserDataSingleTableCellRenderer extends JLabel implements TableCellRenderer{
-    private String[] highlight = null;
+    private String[] highlightKeys = null;
+    private String[] highlightRequired = null;
     protected static final Border noFocusBorder = new EmptyBorder(1, 1, 1, 1); 
     
     /**
@@ -40,9 +49,10 @@ public class UserDataSingleTableCellRenderer extends JLabel implements TableCell
      * @param _highlight  The list of keys.
      *                   
      */
-    public UserDataSingleTableCellRenderer(String[] _highlight){
+    public UserDataSingleTableCellRenderer(String[] _highlightKeys, String[] _highlightRequired){
         super();
-        highlight = _highlight;
+        highlightKeys = _highlightKeys;
+        highlightRequired = _highlightRequired;
         setOpaque(true);
         setBorder(noFocusBorder);
     }
@@ -59,6 +69,7 @@ public class UserDataSingleTableCellRenderer extends JLabel implements TableCell
      * @param row The row of the cell in the table.
      * @param column The column of the cell in the table.
      */
+    @Override
     public Component getTableCellRendererComponent(
             JTable table, Object value, boolean isSelected, boolean hasFocus, 
             int row, int column) 
@@ -69,10 +80,17 @@ public class UserDataSingleTableCellRenderer extends JLabel implements TableCell
         }
         else {
             super.setForeground(table.getForeground());
-            
-            if(containsKey(value.toString())){
+
+            // Key highlight takes precedence over required highlight.
+            boolean isKey = containsKey(value.toString());
+            boolean isReq = containsRequired(value.toString());
+            if (isReq){
+                super.setBackground(Config.getCustomColor1());
+            }
+            if (isKey) {
                 super.setBackground(Config.getSensitiveColor());
-            } else {
+            }
+            if (!isKey && !isReq) {
                 super.setBackground(table.getBackground());
             }
         }
@@ -98,12 +116,25 @@ public class UserDataSingleTableCellRenderer extends JLabel implements TableCell
     
     
     private boolean containsKey(String key){
-        if(highlight == null){
+        if(highlightKeys == null){
             return false;
         }
         
-        for(int i=0; i<highlight.length; i++){
-            if(highlight[i].equals(key)){
+        for(int i=0; i<highlightKeys.length; i++){
+            if(highlightKeys[i].equals(key)){
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private boolean containsRequired(String required){
+        if(highlightRequired == null){
+            return false;
+        }
+        
+        for(int i=0; i<highlightRequired.length; i++){
+            if(highlightRequired[i].equals(required)){
                 return true;
             }
         }

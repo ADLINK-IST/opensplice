@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -31,11 +39,9 @@
 #define __V_DATAREADER_UPDATE_FOR_FLAG__(flag, statSuffix, reader, oldState, xoredState) \
     if (v_stateTest(xoredState, flag)) {                         \
         if (v_stateTest(oldState, flag)) {                       \
-            v_statisticsULongValueDec(v_reader,                  \
-              numberOfInstancesWithStatus##statSuffix, reader); \
+            reader->statistics->numberOfInstancesWithStatusNew--; \
         } else {                                                 \
-            v_statisticsULongValueInc(v_reader,                 \
-              numberOfInstancesWithStatus##statSuffix, reader); \
+            reader->statistics->numberOfInstancesWithStatusNew++; \
         }                                                        \
     }
 /* Returns TRUE if both the L_DISPOSED and L_NOWRITERS flags are not set. */
@@ -49,49 +55,57 @@
 #define __V_DATAREADER_UPDATE_ALIVE__(reader, oldState, xoredState) \
     if (oldState && __V_DATAREADER_LIVELINESS_CHANGED__(xoredState)) { \
         if (__V_DATAREADER_ALIVE__(oldState)){\
-            v_statisticsULongValueDec(v_reader,                         \
-                    numberOfInstancesWithStatusAlive, reader);          \
+            reader->statistics->numberOfInstancesWithStatusAlive--; \
         } else if (__V_DATAREADER_ALIVE__(oldState ^ xoredState)){      \
-            v_statisticsULongValueInc(v_reader,                         \
-                    numberOfInstancesWithStatusAlive, reader);          \
+            reader->statistics->numberOfInstancesWithStatusAlive++; \
         }\
     }
 
 /* Updates the statistics for the instance-state flags that are enabled. Updates
  * are only performed when statistics are enabled for the specified reader. */
 #define UPDATE_READER_STATISTICS(index, instance, oldState) \
-    if (v_statisticsValid(index->reader)) { \
-        v_state xoredState = oldState^instance->instanceState; \
+    if (reader->statistics) { \
+        v_state xoredState = oldState^v_instanceState(instance); \
                                                                \
-        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NEW,      New,      index->reader,oldState,xoredState) \
-        __V_DATAREADER_UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, index->reader,oldState,xoredState) \
-        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,index->reader,oldState,xoredState) \
-        __V_DATAREADER_UPDATE_ALIVE__(index->reader,oldState,xoredState) \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NEW,      New,      reader,oldState,xoredState) \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, reader,oldState,xoredState) \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,reader,oldState,xoredState) \
+        __V_DATAREADER_UPDATE_ALIVE__(reader,oldState,xoredState) \
     }
 
 /* Subtracts the currently still enabled instance-state flags from the
  * statistics. Updates are only performed when statistics are enabled for
  * the specified reader. */
-#define UPDATE_READER_STATISTICS_REMOVE_INSTANCE(index, instance) \
-    if (v_statisticsValid(index->reader)) { \
-                                                                                   \
-        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NEW,      New,      index->reader,instance->instanceState,instance->instanceState) \
-        __V_DATAREADER_UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, index->reader,instance->instanceState,instance->instanceState) \
-        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NOWRITERS,NoWriters,index->reader,instance->instanceState,instance->instanceState) \
-        if(__V_DATAREADER_ALIVE__(instance->instanceState)){        \
-            v_statisticsULongValueDec(v_reader,                     \
-                numberOfInstancesWithStatusAlive, index->reader);   \
+#define UPDATE_READER_STATISTICS_REMOVE_INSTANCE(reader, instance) \
+    if (reader->statistics) { \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NEW, New, reader, \
+                                         v_instanceState(instance), v_instanceState(instance)) \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_DISPOSED, Disposed, reader, \
+                                         v_instanceState(instance), v_instanceState(instance)) \
+        __V_DATAREADER_UPDATE_FOR_FLAG__(L_NOWRITERS, NoWriters, reader, \
+                                         v_instanceState(instance), v_instanceState(instance)) \
+        if(__V_DATAREADER_ALIVE__(v_instanceState(instance))){        \
+            reader->statistics->numberOfInstancesWithStatusAlive--; \
         } \
     }
 
 #define v_dataReaderLock(_this) \
         v_observerLock(v_dataReader(_this))
 
-#define v_dataReaderUnLock(_this) \
+#define v_dataReaderUnlock(_this) \
         v_observerUnlock(v_dataReader(_this))
 
 #define v_dataReaderQos(_this) \
         (v_reader(v_dataReader(_this))->qos)
+
+#define v_dataReaderDeadLineInstanceList(_this) \
+        (v_deadLineInstanceList(v_dataReader(_this)->deadLineList))
+
+/**
+ * \brief Callback function definition for ordered read/take function.
+ */
+typedef v_actionResult(*v__dataReaderAction)(
+    v_dataReaderSample , v_readerSampleAction, c_voidp);
 
 #ifdef _MSG_STAMP_
 void
@@ -180,12 +194,12 @@ v_dataReaderUnSubscribeGroup(
  * instance-pointer explicitly kept, so it has to be freed. */
 #define v_dataReaderTriggerValueFree(triggerValue)          \
     {                                                       \
-        v_dataReaderInstance instance;                      \
+        v_dataReaderInstance _instance;                     \
                                                             \
         assert(C_TYPECHECK(triggerValue, v_readerSample));  \
-        instance = v_readerSample(triggerValue)->instance;  \
-        v_dataReaderSampleFree(triggerValue);               \
-        c_free(instance);                                   \
+        _instance = v_readerSample(triggerValue)->instance; \
+        c_free(triggerValue);                               \
+        c_free(_instance);                                  \
     }
 
 void
@@ -223,6 +237,16 @@ v_dataReaderTriggerDataAvailable(
     v_dataReader _this);
 
 void
+v_dataReaderNotifySampleLost(
+    v_dataReader _this,
+    c_ulong nrSamplesLost);
+
+void
+v_dataReaderNotifySampleLostLock(
+    v_dataReader _this,
+    c_ulong nrSamplesLost);
+
+void
 v_dataReaderNotifySampleRejected(
     v_dataReader _this,
     v_sampleRejectedKind kind,
@@ -236,9 +260,11 @@ v_dataReaderNotifyIncompatibleQos(
 
 void
 v_dataReaderNotifySubscriptionMatched (
-	v_dataReader r,
+    v_dataReader r,
     v_gid        writerGID,
-    c_bool       dispose);
+    c_bool       dispose,
+    struct v_publicationInfo *publicationInfo,
+    c_bool       isImplicit);
 
 void
 v_dataReaderNotifyChangedQos(
@@ -291,9 +317,9 @@ v_dataReaderRemoveInstance(
 void
 v_dataReaderCheckDeadlineMissed(
     v_dataReader _this,
-    c_time now);
+    os_timeE now);
 
-c_long
+c_ulong
 v_dataReaderInstanceCount(
     v_dataReader _this);
 
@@ -304,6 +330,42 @@ v_dataReaderAllocInstance(
 OS_API v_topic
 v_dataReaderGetTopic(
     v_dataReader _this);
+
+void
+v_dataReaderFlushPending(
+    v_dataReader _this);
+
+c_long
+v_dataReaderHistoryCount(
+    v_dataReader _this);
+
+c_bool
+v_dataReaderHasMatchingSamples(
+    v_dataReader _this,
+    v_sampleMask mask);
+
+void
+v_dataReaderTrigger(
+    v_dataReader _this);
+
+void
+v_dataReaderTriggerNoLock(
+    v_dataReader _this);
+
+void
+v_dataReaderCheckMinimumSeparationList(
+    v_dataReader _this,
+    os_timeE now);
+
+void
+v_dataReaderMinimumSeparationListRegister(
+    v_dataReader _this,
+    v_dataReaderSample sample);
+
+void
+v_dataReaderMinimumSeparationListRemove(
+    v_dataReader _this,
+    v_dataReaderInstance instance);
 
 #undef OS_API
 

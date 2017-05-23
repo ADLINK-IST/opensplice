@@ -106,6 +106,7 @@ class TestHost:
         return self.basedir
     
     def supportsMode(self, mode):
+        print mode
         """If deployment mode is supported by this host set it as active_mode and return true"""
         if mode == None:
             if self.active_mode == None:
@@ -118,6 +119,7 @@ class TestHost:
         return 0
 
     def supportsTarget(self, target):
+        print target
         """If target regex matches with any of this host's OpenSplice targets, set that target as active_target and return true"""
         if target == None:
             self.active_target = self.targets[0]
@@ -219,7 +221,7 @@ class TestHost:
                 else:
                     target = self.active_target
                 # Set prefix to installer dir
-                prefix = self.basedir + self.get_filesep() + 'OpenSpliceDDS' + self.get_filesep() + "V" + self.active_version + self.get_filesep() + self.active_mode + self.get_filesep() + target
+                prefix = self.basedir + self.get_filesep() + 'OpenSpliceDDS' + self.get_filesep() + self.active_version + self.get_filesep() + self.active_mode + self.get_filesep() + target
         
         if self.active_mode == 'SRC':
             prefix += self.get_filesep() + '..' + self.get_filesep() + 'osplo'

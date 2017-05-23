@@ -7,12 +7,12 @@
 # Set name context of used tooling
 #CC		 = gcc -std=gnu99 -m64 #-v
 #CXX		 = g++ -m64 #-v
+ifeq "$(origin CC)" "default"
 CC = clang
 CXX = clang++
+endif
 CSC      = gmcs
 
-    # Binary used for filtering
-FILTER           =
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
@@ -30,7 +30,7 @@ MAKE		 = make
 TOUCH		 = touch
 	# Archiving
 AR               = /usr/bin/ar
-AR_CMDS          = rv
+AR_CMDS          = r
 	# preprocessor
 MAKEDEPFLAGS     = -M
 CPP		 = clang #cpp #-v
@@ -80,16 +80,18 @@ SHCFLAGS         = #-dynamiclib #-fno-common
 # Values of compiler flags can be overruled
 CFLAGS_OPT       = -O4 -DNDEBUG
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
-#CFLAGS_STRICT	 = -Wall
-CFLAGS_STRICT	 = -Wall -W #-pedantic
+CFLAGS_STRICT	 = -Wall -W -Wno-deprecated-declarations
+CFLAGS_XSTRICT   = -Wconversion
+CFLAGS_PERMISSIVE= -Wno-unneeded-internal-declaration -Wno-unused-function -Wno-sign-compare
 
-# Set compiler options for single threaded process
-CFLAGS		 = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -DOSPL_DEFAULT_TO_CXX11 $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+# Set compiler option
+CFLAGS		 = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(MTCFLAGS)
+CXXFLAGS	 = -std=c++11 -DOSPL_USE_CXX11 $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(MTCFLAGS) -Wno-deprecated-register
 CSFLAGS	     = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # For Linux, this test release version supports symbolic names in stead of IP addresses
 CFLAGS      += -DDO_HOST_BY_NAME #-D__i386__
+CFLAGS      += -DFIX_FAULTY_ATTRIBUTE_NONNULL
 
 # Set CPP flags
 CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -D_GNU_SOURCE
@@ -99,8 +101,7 @@ endif
 
 # Set compiler options for multi threaded process
 	# notify usage of posix threads
-#MTCFLAGS	 = -D_POSIX_C_SOURCE=199506L
-MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
+MTCFLAGS	 = -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
 LDFLAGS		 = -L$(SPLICE_LIBRARY_PATH) $(CFLAGS) # -Wl,-flat_namespace
@@ -151,10 +152,6 @@ CS_LIBPATH_SEP = ,
 CSTARGET_LIB = -target:library
 CSTARGET_MOD = -target:module
 CSTARGET_EXEC = -target:exe
-
-LDLIBS_ZLIB      = -lz
-LDFLAGS_ZLIB     =
-CINCS_ZLIB       =
 
 ifdef LKST_HOME
 CPPFLAGS += -I$(LKST_HOME) -DHAVE_LKST

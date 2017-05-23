@@ -110,6 +110,15 @@ UserData;
 
 typedef dds::core::policy::TWriterDataLifecycle<foo::bar::core::policy::WriterDataLifecycle>
 WriterDataLifecycle;
+
+typedef dds::core::policy::TShare<foo::bar::core::policy::Share>
+Share;
+
+typedef dds::core::policy::TProductData<foo::bar::core::policy::ProductData>
+ProductData;
+
+typedef dds::core::policy::TSubscriptionKey<foo::bar::core::policy::SubscriptionKey>
+SubscriptionKey;
 }
 }
 }

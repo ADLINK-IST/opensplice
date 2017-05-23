@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "sd_stringsXML.h"
@@ -85,11 +93,11 @@ sd_getTypeAttributeFromOpenTag(
     const c_char *openTag)
 {
     int start, end;
-    int resultLen, openTagOffset = 0;
-    c_char *result, *tmpResult, *resultPos;
+    size_t resultLen, openTagOffset = 0;
+    c_char *result, *resultPos;
 
     resultLen = SD__BUFSIZE;
-    result = (c_char *)os_malloc(resultLen);
+    result = os_malloc(resultLen);
 
     /* Scan for 'object type="XMLEscapedTypeName"' */
     /* TODO: Remove sscanf; it is quite unfit for this purpose (see below effort
@@ -97,20 +105,12 @@ sd_getTypeAttributeFromOpenTag(
     if(sscanf(openTag, "object%*[ ]type=\"%n%"SD__BUFSIZE_STRLEN_STR"[^\"]%n", &start, result, &end) == 1){
         while((end - start) == SD__BUFSIZE_STRLEN){
             /* Truncation; realloc and scan the rest of the string */
-            tmpResult = (c_char *)os_realloc(result, resultLen + SD__BUFSIZE_STRLEN);
-            if(tmpResult){
-                result = tmpResult;
-                resultPos = result + resultLen - 1; /* Append at position of current NULL-terminator */
-                resultLen += SD__BUFSIZE_STRLEN;
-                openTagOffset += end;
-                /* Scan for the rest of the typeName, TODO: check successful parse */
-                sscanf(openTag + openTagOffset, "%n%"SD__BUFSIZE_STRLEN_STR"[^\"]%n", &start, resultPos, &end); /* start always 0 */
-            } else {
-                /* TODO: report out-of-resources */
-                os_free(result);
-                result = NULL;
-                break;
-            }
+            result = os_realloc(result, resultLen + SD__BUFSIZE_STRLEN);
+            resultPos = result + resultLen - 1; /* Append at position of current NULL-terminator */
+            resultLen += SD__BUFSIZE_STRLEN;
+            openTagOffset += (size_t) end;
+            /* Scan for the rest of the typeName, TODO: check successful parse */
+            sscanf(openTag + openTagOffset, "%n%"SD__BUFSIZE_STRLEN_STR"[^\"]%n", &start, resultPos, &end); /* start always 0 */
         }
     } else {
         os_free(result);
@@ -135,10 +135,10 @@ void
 sd_strEscapeXML(
     c_char** src)
 {
-    const c_ulong step = 12; /* Allows 2 pairs of <> to be replaced by &lt;&gt; */
-    c_ulong dstLen = 0;
-    c_ulong srcPos, dstPos;
-    c_char *newDst, *dst;
+    const os_size_t step = 12; /* Allows 2 pairs of <> to be replaced by &lt;&gt; */
+    os_size_t dstLen = 0;
+    os_size_t srcPos, dstPos;
+    c_char *dst;
 
     if(!src || !(*src)){
         return;
@@ -157,14 +157,7 @@ sd_strEscapeXML(
                dstLen = strlen(*src);
            }
            dstLen += step;
-           newDst = (c_char *)os_realloc(dst, dstLen);
-           if (newDst == NULL){
-               /* Out of resources */
-               os_free(dst);
-               dst = NULL;
-               break;
-           }
-           dst = newDst;
+           dst = os_realloc(dst, dstLen);
        }
 
        /* Scan the string for character-data */
@@ -192,7 +185,7 @@ sd_strEscapeXML(
 #define SD_UNESCAPE(dst, dstPos, srcPos, escSeq, escChar) \
 do { \
     (dst)[dstPos++] = escChar; \
-    srcPos += sizeof(escSeq) - 1; \
+    srcPos += (c_ulong) sizeof(escSeq) - 1; \
 } while (0)
 
 #define SD_SUBSTR_MATCHES(src, srcPos, str) (strncmp(str, &((src)[srcPos]), sizeof(str) - 1) == 0)
@@ -266,7 +259,7 @@ sd_strSkipChars(
     c_char **str,
     const c_char *chars)
 {
-    c_ulong count;
+    os_size_t count;
 
     count = strspn(*str, chars);
     *str = SD_DISPLACE(*str, count);
@@ -288,11 +281,11 @@ sd_strGetChars(
     c_char **str,
     const c_char *chars)
 {
-    c_ulong count;
+    os_size_t count;
     c_char *result;
 
     count = strspn(*str, chars);
-    result = (c_char *)os_malloc(count+1U);
+    result = os_malloc(count+1U);
     os_strncpy(result, *str, count);
     result[count] = 0;
     *str = SD_DISPLACE(*str, count);
@@ -306,11 +299,11 @@ sd_strGetUptoChars(
     c_char **str,
     const c_char *chars)
 {
-    c_ulong count;
+    os_size_t count;
     c_char *result;
 
     count = strcspn(*str, chars);
-    result = (c_char *)os_malloc(count+1U);
+    result = os_malloc(count+1U);
     os_strncpy(result, *str, count);
     result[count] = 0;
     *str = SD_DISPLACE(*str, count);
@@ -375,7 +368,7 @@ sd_strReplace(
     const c_char *patNew)
 {
     c_char *patStart = str;
-    c_ulong i, len;
+    os_size_t i, len;
 
     SD_CONFIDENCE(strlen(patNew) == strlen(patOld));
 

@@ -5,8 +5,6 @@ CC		 = opencc
 CXX		 = g++
 CSC		 = gmcs
 
-    # Binary used for filtering
-FILTER           =
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
@@ -75,9 +73,9 @@ ifeq ($(GCC_WERROR_IS_SWITCH_SUPPORT),1)
     CFLAGS_STRICT_UNINITIALIZED = -Werror=uninitialized
 endif
 
-# Set compiler options for single threaded process
-CFLAGS		 = -D_GNU_SOURCE -DOSPL_LINUX $(CFLAGS_OPT_C) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(CFLAGS_STRICT_UNINITIALIZED)
-CXXFLAGS	 = -D_GNU_SOURCE -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT_UNINITIALIZED)
+# Set compiler options
+CFLAGS		 = -D_GNU_SOURCE -DOSPL_LINUX $(CFLAGS_OPT_C) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(CFLAGS_STRICT_UNINITIALIZED) $(MTCFLAGS)
+CXXFLAGS	 = -D_GNU_SOURCE -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT_UNINITIALIZED) $(MTCFLAGS)
 
 # For Linux, this test release version supports symbolic names in stead of IP addresses
 CFLAGS      += -m64 -pipe -fPIC -DDO_HOST_BY_NAME
@@ -87,8 +85,7 @@ CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -D_XOPEN_SOURCE=500
 
 # Set compiler options for multi threaded process
 	# notify usage of posix threads
-#MTCFLAGS	 = -D_POSIX_C_SOURCE=199506L
-MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
+MTCFLAGS	 = -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
 LDFLAGS		 = -static-libgcc -L$(SPLICE_LIBRARY_PATH)
@@ -115,9 +112,6 @@ LDLIBS_OS = -lrt -lpthread -ldl
 LDLIBS_CMS =
 LDLIBS_JAVA = -ljvm -ljava -lverify
 LDLIBS_ODBC= -lodbc
-LDLIBS_ZLIB = -lz
-LDFLAGS_ZLIB =
-CINCS_ZLIB =
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .o

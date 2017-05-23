@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -43,7 +51,6 @@ static void sleep(int secs)
 #define TERMINATION_MESSAGE -1
 
 #ifdef _WRS_KERNEL
-#define USE_NANOSLEEP
 int messageboard_main (int argc, char ** argv);
 int messageboard (char * args)
 {
@@ -109,6 +116,7 @@ int OSPL_MAIN (int argc, char ** argv)
     checkHandle(parameterList, "DDS_StringSeq__alloc");
     parameterList->_length = 1;
     parameterList->_maximum = 1;
+    parameterList->_release = TRUE;
     parameterList->_buffer = DDS_StringSeq_allocbuf(1);
     checkHandle(parameterList->_buffer, "DDS_StringSeq_allocbuf");
 
@@ -220,6 +228,7 @@ int OSPL_MAIN (int argc, char ** argv)
     checkStatus(status, "DDS_DomainParticipant_get_default_subscriber_qos");
     sub_qos->partition.name._length = 1;
     sub_qos->partition.name._maximum = 1;
+    sub_qos->partition.name._release = TRUE;
     sub_qos->partition.name._buffer = DDS_StringSeq_allocbuf (1);
     checkHandle(sub_qos->partition.name._buffer, "DDS_StringSeq_allocbuf");
     sub_qos->partition.name._buffer[0] = DDS_string_dup (partitionName);
@@ -288,6 +297,10 @@ int OSPL_MAIN (int argc, char ** argv)
         usleep(100000);
 #endif
     }
+
+    DDS_free(msgSeq);
+    DDS_free(infoSeq);
+    DDS_free(parameterList);
 
     /* Remove the DataReader */
     status = DDS_Subscriber_delete_datareader(chatSubscriber, chatAdmin);

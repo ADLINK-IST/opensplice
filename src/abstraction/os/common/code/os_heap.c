@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file os/common/code/os_heap.c
@@ -24,6 +32,7 @@
 #include <string.h>
 #endif
 #include "os_abstract.h"
+#include "os_atomics.h"
 
 #if defined LINUX && defined OSPL_STRICT_MEM
 #include <stdint.h>
@@ -35,13 +44,14 @@
 
 #include <pthread.h>
 
-
+#ifndef _WRS_KERNEL
 static void *(* ptr_malloc)(size_t) = malloc;
 static void (* ptr_free)(void *) = free;
 static void *(* ptr_realloc)(void *,size_t) = realloc;
+#endif
 
 #ifdef OSPL_STRICT_MEM
-static uint32_t alloccnt = 0ULL;
+static pa_uint32_t alloccnt = { 0ULL };
 #endif
 
 /** \brief Allocate memory from heap
@@ -56,6 +66,8 @@ os_malloc (
 {
     char *ptr;
 
+    assert(size > 0);
+
 #ifdef OSPL_STRICT_MEM
     /* Allow 24 bytes so we can store the allocation size, magic number and malloc count, ( and keep alignement ) */
     ptr = ptr_malloc((size_t)size+24);
@@ -65,13 +77,26 @@ os_malloc (
        ptr += 24;
        memset(ptr, 0, size);
        *(((uint64_t*)ptr)-1) = OS_MALLOC_MAGIC_SIG;
-       *(((uint64_t*)ptr)-2) = pa_increment(&alloccnt);
+       *(((uint64_t*)ptr)-2) = pa_inc32_nv(&alloccnt);
     }
 #else
-    ptr = ptr_malloc((size_t)size);
+    ptr = ptr_malloc(size);
 #endif
+    assert((((char *)ptr)-(char *)0)%8 == 0);
+    if(size == 0 && !ptr) {
+        /* os_malloc() should never return NULL. Although it is not allowed to
+         * pass size 0, this fallback assures code continues to run if the
+         * os_malloc(0) isn't caught in a DEV-build. */
+        ptr = ptr_malloc(1);
+    }
+    assert((((char *)ptr)-(char *)0)%8 == 0);
 
-    return (ptr);
+    if(ptr == NULL) {
+        /* Heap exhausted */
+        abort();
+    }
+
+    return ptr;
 }
 
 void *
@@ -80,6 +105,8 @@ os_realloc(
     os_size_t size)
 {
     unsigned char *ptr = (unsigned char *)memblk;
+
+    assert(size > 0);
 
 #ifdef OSPL_STRICT_MEM
     size_t origsize = 0;
@@ -106,23 +133,28 @@ os_realloc(
 #endif
 
     ptr = ptr_realloc(ptr, size);
+    assert((((char *)ptr)-(char *)0)%8 == 0);
 
 #ifdef OSPL_STRICT_MEM
     if ( size > 0 && ptr != NULL )
     {
        size -= 24;
        if ( size > origsize )
-       { 
+       {
           memset( ptr + 24 + origsize, 0, size - origsize );
        }
        *((size_t *)ptr) = size;
        ptr += 24;
        *(((uint64_t*)ptr)-1) = OS_MALLOC_MAGIC_SIG;
-       *(((uint64_t*)ptr)-2) = pa_increment(&alloccnt);
+       *(((uint64_t*)ptr)-2) = pa_inc32_nv(&alloccnt);
     }
 #endif
 
-    return (ptr);
+    if(ptr == NULL){
+        abort();
+    }
+
+    return ptr;
 }
 
 /** \brief Free memory to heap
@@ -135,8 +167,10 @@ void
 os_free (
     void *ptr)
 {
-    if (ptr != NULL) 
+    if (ptr != NULL)
     {
+       assert((((char *)ptr)-(char *)0)%8 == 0);
+
 #ifdef OSPL_STRICT_MEM
         {
           size_t i;
@@ -149,7 +183,7 @@ os_free (
           }
           assert (*(((uint64_t*)ptr)-1) == OS_MALLOC_MAGIC_SIG);
           *(((uint64_t*)ptr)-1) = OS_FREE_MAGIC_SIG;
-          for ( i = 0; i+7 < memsize; i++ ) 
+          for ( i = 0; i+7 < memsize; i++ )
           {
             assert( OS_MAGIC_SIG_CHECK( &cptr[i] ) && "Free of memory containing Mutex or Condition variable");
           }
@@ -178,13 +212,13 @@ os_heapSetService (
     assert (((pmalloc != NULL) && (prealloc != NULL) && (pfree != NULL)) ||
             ((pmalloc == NULL) && (prealloc == NULL) && (pfree == NULL)));
     if (pmalloc == NULL) {
-	ptr_malloc = malloc;
+        ptr_malloc = malloc;
         ptr_realloc = realloc;
-	ptr_free = free;
+        ptr_free = free;
     } else {
-	ptr_malloc = (void *(*)(size_t))pmalloc;
+        ptr_malloc = (void *(*)(size_t))pmalloc;
         ptr_realloc = (void *(*)(void *,size_t))prealloc;
-	ptr_free = pfree;
+        ptr_free = pfree;
     }
     return;
 }

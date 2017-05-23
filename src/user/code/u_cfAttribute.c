@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -23,17 +31,19 @@
 
 u_cfAttribute
 u_cfAttributeNew(
-    u_participant participant,
+    const u_participant participant,
     v_cfAttribute kAttribute)
 {
-    u_cfAttribute _this = NULL;
+    u_cfAttribute _this;
 
-    if ((participant == NULL) || (kAttribute == NULL)) {
-        OS_REPORT(OS_ERROR, "u_cfAttributeNew", 0, "Illegal parameter");
-    } else {
-        _this = u_cfAttribute(os_malloc(U_CFATTRIBUTE_SIZE));
+    assert(participant != NULL);
+
+    _this = u_cfAttribute(os_malloc(U_CFATTRIBUTE_SIZE));
+    if (_this)
+    {
         u_cfNodeInit(u_cfNode(_this),participant,v_cfNode(kAttribute));
     }
+
     return _this;
 }
 
@@ -41,173 +51,204 @@ void
 u_cfAttributeFree(
     u_cfAttribute _this)
 {
-    if (_this != NULL) {
-        u_cfNodeDeinit(u_cfNode(_this));
-        memset(_this, 0, (size_t)sizeof(U_CFATTRIBUTE_SIZE));
-        os_free(_this);
-    }
+    assert(_this != NULL);
+    u_cfNodeDeinit(u_cfNode(_this));
+    memset(_this, 0, sizeof(U_CFATTRIBUTE_SIZE));
+    os_free(_this);
 }
 
-c_bool
+u_bool
 u_cfAttributeStringValue(
-    u_cfAttribute attr,
-    c_char **str)
+    const u_cfAttribute attr,
+    os_char **str)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfAttribute kAttr;
     c_value value;
     c_value resultValue;
 
-    result = FALSE;
-    if ((attr != NULL) && (str != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
-        if (r == U_RESULT_OK) {
-            value = v_cfAttributeValue(kAttr);
-            result = u_cfValueScan(value, V_STRING, &resultValue);
+    assert(attr != NULL);
+    assert(str != NULL);
 
-            if (result == TRUE) {
-                *str = resultValue.is.String;
-            }
-            u_cfNodeRelease(u_cfNode(attr));
+    result = FALSE;
+    r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
+    if (r == U_RESULT_OK) {
+        value = v_cfAttributeValue(kAttr);
+        result = u_cfValueScan(value, V_STRING, &resultValue);
+
+        if (result == TRUE) {
+            *str = resultValue.is.String;
         }
+        u_cfNodeRelease(u_cfNode(attr));
     }
     return result;
 }
 
-c_bool
+u_bool
 u_cfAttributeBoolValue(
-    u_cfAttribute attr,
-    c_bool *b)
+    const u_cfAttribute attr,
+    u_bool *b)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfAttribute kAttr;
     c_value value;
     c_value resultValue;
 
-    result = FALSE;
-    if ((attr != NULL) && (b != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
-        if (r == U_RESULT_OK) {
-            value = v_cfAttributeValue(kAttr);
-            result = u_cfValueScan(value, V_BOOLEAN, &resultValue);
+    assert(attr != NULL);
+    assert(b != NULL);
 
-            if (result == TRUE) {
-                *b = resultValue.is.Boolean;
-            }
-            u_cfNodeRelease(u_cfNode(attr));
+    result = FALSE;
+    r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
+    if (r == U_RESULT_OK) {
+        value = v_cfAttributeValue(kAttr);
+        result = u_cfValueScan(value, V_BOOLEAN, &resultValue);
+
+        if (result == TRUE) {
+            *b = resultValue.is.Boolean;
         }
+        u_cfNodeRelease(u_cfNode(attr));
     }
     return result;
 }
 
-c_bool
+u_bool
 u_cfAttributeLongValue(
-    u_cfAttribute attr,
-    c_long *lv)
+    const u_cfAttribute attr,
+    os_int32 *lv)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfAttribute kAttr;
     c_value value;
     c_value resultValue;
 
-    result = FALSE;
-    if ((attr != NULL) && (lv != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
-        if (r == U_RESULT_OK) {
-            value = v_cfAttributeValue(kAttr);
-            result = u_cfValueScan(value, V_LONG, &resultValue);
+    assert(attr != NULL);
+    assert(lv != NULL);
 
-            if (result == TRUE) {
-                *lv = resultValue.is.Long;
-            }
-            u_cfNodeRelease(u_cfNode(attr));
+    result = FALSE;
+    r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
+    if (r == U_RESULT_OK) {
+        value = v_cfAttributeValue(kAttr);
+        result = u_cfValueScan(value, V_LONG, &resultValue);
+
+        if (result == TRUE) {
+            *lv = resultValue.is.Long;
         }
+        u_cfNodeRelease(u_cfNode(attr));
     }
     return result;
 }
 
-c_bool
+u_bool
 u_cfAttributeULongValue(
-    u_cfAttribute attr,
-    c_ulong *ul)
+    const u_cfAttribute attr,
+    os_uint32 *ul)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfAttribute kAttr;
     c_value value;
     c_value resultValue;
 
-    result = FALSE;
-    if ((attr != NULL) && (ul != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
-        if (r == U_RESULT_OK) {
-            value = v_cfAttributeValue(kAttr);
-            result = u_cfValueScan(value, V_ULONG, &resultValue);
+    assert(attr != NULL);
+    assert(ul != NULL);
 
-            if (result == TRUE) {
-                *ul = resultValue.is.ULong;
-            }
-            u_cfNodeRelease(u_cfNode(attr));
+    result = FALSE;
+    r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
+    if (r == U_RESULT_OK) {
+        value = v_cfAttributeValue(kAttr);
+        result = u_cfValueScan(value, V_ULONG, &resultValue);
+
+        if (result == TRUE) {
+            *ul = resultValue.is.ULong;
         }
+        u_cfNodeRelease(u_cfNode(attr));
     }
     return result;
 }
 
-c_bool
+u_bool
+u_cfAttributeOctetValue(
+    const u_cfAttribute attr,
+    os_uchar *uc)
+{
+    u_result r;
+    u_bool result;
+    v_cfAttribute kAttr;
+    c_value value;
+    c_value resultValue;
+
+    assert(attr != NULL);
+    assert(uc != NULL);
+
+    result = FALSE;
+    r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
+    if (r == U_RESULT_OK) {
+        value = v_cfAttributeValue(kAttr);
+        result = u_cfValueScan(value, V_OCTET, &resultValue);
+
+        if (result == TRUE) {
+            *uc = resultValue.is.Octet;
+        }
+        u_cfNodeRelease(u_cfNode(attr));
+    }
+    return result;
+}
+
+u_bool
 u_cfAttributeSizeValue(
-    u_cfAttribute attr,
-    c_size *size)
+    const u_cfAttribute attr,
+    u_size *size)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfAttribute kAttr;
     c_value value;
 
+    assert(attr != NULL);
+    assert(size != NULL);
+
     result = FALSE;
-    if ((attr != NULL) && (size != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
-        if (r == U_RESULT_OK) {
-            value = v_cfAttributeValue(kAttr);
-            if(value.kind == V_STRING){
-                result = u_cfDataSizeValueFromString(value.is.String, size);
-            }
-            else
-            {
-                OS_REPORT(OS_ERROR, "u_cfAttributeSizeValue", 0, "Value is not a string");
-                assert(value.kind == V_STRING);
-            }
-            u_cfNodeRelease(u_cfNode(attr));
+    r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
+    if (r == U_RESULT_OK) {
+        value = v_cfAttributeValue(kAttr);
+        if(value.kind == V_STRING){
+           result = u_cfDataSizeValueFromString(value.is.String, size);
+        } else {
+            OS_REPORT(OS_ERROR, "u_cfAttributeSizeValue", r, "Value is not a string");
+            assert(value.kind == V_STRING);
         }
+        u_cfNodeRelease(u_cfNode(attr));
     }
     return result;
 }
 
-c_bool
+u_bool
 u_cfAttributeFloatValue(
-    u_cfAttribute attr,
-    c_float *f)
+    const u_cfAttribute attr,
+    os_float *f)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfAttribute kAttr;
     c_value value;
     c_value resultValue;
 
-    result = FALSE;
-    if ((attr != NULL) && (f != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
-        if (r == U_RESULT_OK) {
-            value = v_cfAttributeValue(kAttr);
-            result = u_cfValueScan(value, V_FLOAT, &resultValue);
+    assert(attr != NULL);
+    assert(f != NULL);
 
-            if (result == TRUE) {
-                *f = resultValue.is.Float;
-            }
-            u_cfNodeRelease(u_cfNode(attr));
+    result = FALSE;
+    r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
+    if (r == U_RESULT_OK) {
+        value = v_cfAttributeValue(kAttr);
+        result = u_cfValueScan(value, V_FLOAT, &resultValue);
+
+        if (result == TRUE) {
+            *f = resultValue.is.Float;
         }
+        u_cfNodeRelease(u_cfNode(attr));
     }
     return result;
 }

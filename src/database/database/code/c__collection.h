@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -19,17 +27,15 @@
 extern "C" {
 #endif
 
-extern const c_long c_listSize;
-extern const c_long c_setSize;
-extern const c_long c_bagSize;
-extern const c_long c_tableSize;
-extern const c_long c_querySize;
+extern const size_t c_listSize;
+extern const size_t c_setSize;
+extern const size_t c_bagSize;
+extern const size_t c_tableSize;
+extern const size_t c_querySize;
 
-c_array c_keyList        (c_table c);
-void    c_collectionInit (c_base base);
-void    c_queryOptimize  (c_query _this);
-
-void    c_clear(c_collection c);
+c_array c_keyList          (c_table c);
+void    c_collectionInit   (c_base base);
+void    c_queryOptimize    (c_query _this);
 
 #if defined (__cplusplus)
 }

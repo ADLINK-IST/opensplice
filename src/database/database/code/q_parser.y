@@ -1,12 +1,15 @@
 %{
 #include "os_stdlib.h"
+#include "os_errno.h"
 #include "c_base.h"
 #include "c_collection.h"
 #include "q_expr.h"
 #include "q_helper.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #define YY_NO_UNISTD_H
+#define YYMALLOC malloc
+#define YYFREE free
 #endif
 
 /* This define is needed for Win32, but also applies to other platforms */
@@ -27,7 +30,7 @@
 #define yy_scan_string       q_parser_yy_scan_string
 #define yy_scan_buffer       q_parser_yy_scan_buffer
 #define yy_init_buffer       q_parser_yy_init_buffer
-#define yy_flush_buffer      q_parser_yy_flush_buffer 
+#define yy_flush_buffer      q_parser_yy_flush_buffer
 #define yy_switch_to_buffer  q_parser_yy_switch_to_buffer
 #define yy_delete_buffer     q_parser_yy_delete_buffer
 #define yy_create_buffer     q_parser_yy_create_buffer
@@ -61,14 +64,15 @@ void dollar_warning();
 %}
 
 %union {
-    c_char    *String;
-    c_char     Char;
-    c_longlong Integer;
-    c_double   Float;
-    c_type     Type;
-    q_list     List;
-    q_expr     Expr;
-    q_tag      Tag;
+    c_char *    String;
+    c_char      Char;
+    c_longlong  Integer;
+    c_ulonglong UInteger;
+    c_double    Float;
+    c_type      Type;
+    q_list      List;
+    q_expr      Expr;
+    q_tag       Tag;
 }
 
 %start program
@@ -76,16 +80,16 @@ void dollar_warning();
 /* Removed tokens because these are currently unused
 
 %token PLUS MINUS DIV MOD ABS CONCAT QUERY
-%token STRUCT SET BAG LIST ARRAY 
+%token STRUCT SET BAG LIST ARRAY
 %token REPAR LEPAR FIRST LAST IN EXISTS
-%token UNIQUE SOME ANY COUNT SUM SUB MIN MAX AVG 
-%token DISTINCT FLATTEN SEMI DOUBLEDOT IMPORT 
+%token UNIQUE SOME ANY COUNT SUM SUB MIN MAX AVG
+%token DISTINCT FLATTEN SEMI DOUBLEDOT IMPORT
 %token ORELSE FOR ANDTHEN QUOTE
 %token IS_UNDEFINED IS_DEFINED UNSIGNED UNDEFINE
 %token DATE ENUM TIME INTERVAL TIMESTAMP DICTIONARY
 %token GROUP BY HAVING ORDER
 %token ASC DESC INTERSECT UNION EXCEPT LISTTOSET ELEMENT
-%token CTOKEN 
+%token CTOKEN
 */
 
 %token DEFINE AS_KEYWORD NIL TRUET FALSET LRPAR RRPAR
@@ -93,22 +97,23 @@ void dollar_warning();
 %token EQUAL NOTEQUAL GREATER LESS GREATEREQUAL LESSEQUAL
 %token NOT AND OR REF
 %token DOT ALL
-%token SELECT UNDEFINED 
+%token SELECT UNDEFINED
 %token FROM WHERE
 %token COLON COMMA DOUBLECOLON
-%token DOLLAR PERCENT 
+%token DOLLAR PERCENT
 %token SELECT_DISTINCT JOIN
 
-%token <String>  identifier stringLiteral queryId
-%token <Char>    charLiteral
-%token <Integer> longLiteral
-%token <Float>   doubleLiteral
+%token <String>   identifier stringLiteral queryId
+%token <Char>     charLiteral
+%token <Integer>  longlongLiteral
+%token <UInteger> ulonglongLiteral
+%token <Float>    doubleLiteral
 
-%type  <List>    propertyList fieldList scopedName 
+%type  <List>    propertyList fieldList scopedName
 %type  <Expr>    ID query projectionAttributes
                  fromClause relationalExpr
-                 whereClauseOpt expr selectExpr 
-                 orExpr andExpr equalityExpr literal 
+                 whereClauseOpt expr selectExpr
+                 orExpr andExpr equalityExpr literal
                  postfixExpr joinExpr notExpr
                  objectConstruction field
 %type  <Tag>     equalityOper relationalOper
@@ -362,8 +367,10 @@ relationalOper:
     ;
 
 literal:
-      longLiteral
+      longlongLiteral
         { $$ = q_newInt($1); }
+    | ulonglongLiteral
+        { $$ = q_newUInt($1); }
     | doubleLiteral
         { $$ = q_newDbl($1); }
     | charLiteral
@@ -375,11 +382,11 @@ literal:
           */
           free($1);
         }
-    | DOLLAR longLiteral
+    | DOLLAR ulonglongLiteral
         { $$ = q_newVar($2);
           dollar_warning();
         }
-    | PERCENT longLiteral
+    | PERCENT ulonglongLiteral
         { $$ = q_newVar($2); }
     | TRUET
         { $$ = q_newInt(TRUE); }
@@ -389,8 +396,6 @@ literal:
         { $$ = NULL; }
     | UNDEFINED
         { $$ = NULL; }
-    | ID
-        { $$ = $1; }
     ;
 
 %%
@@ -398,7 +403,7 @@ literal:
 #include "q_parser.h"
 #include "q__parser.h"
 #include "os_report.h"
-#include "os.h"
+#include "vortex_os.h"
 
 static os_mutex q_mtx;
 static os_int32 initialise = 1; /* reset by q_parserInit */
@@ -409,8 +414,8 @@ yyerror (
 {
     q_list params = NULL;
 
-    OS_REPORT_4(OS_ERROR,"SQL parse failed",0,"%s near %s at line: %d, column: %d",
-                text, yytext, q_parser_line, q_parser_column);
+    OS_REPORT(OS_ERROR,"SQL parse failed",0,"%s near %s at line: %d, column: %d",
+              text, yytext, q_parser_line, q_parser_column);
     yyclearin;
 
     q_dispose(expr);
@@ -441,34 +446,31 @@ q_parse (
     const c_char *expression)
 {
     q_expr e;
-    assert(expression != NULL);
 
-    os_mutexLock(&q_mtx);
-    q_parser_line = 1;
-    q_parser_column = 0;
-    q_parser_state = 0;
-    expr = NULL;
-    yy_scan_string((char *) expression);
-    yyparse();
-    e = expr;
-    yy_delete_buffer(YY_CURRENT_BUFFER);
-    q_exprSetText(e, expression);
-    os_mutexUnlock(&q_mtx);
+    if (expression) {
+        os_mutexLock(&q_mtx);
+        q_parser_line = 1;
+        q_parser_column = 0;
+        q_parser_state = 0;
+        expr = NULL;
+        yy_scan_string((char *) expression);
+        yyparse();
+        e = expr;
+        yy_delete_buffer(YY_CURRENT_BUFFER);
+        q_exprSetText(e, expression);
+        os_mutexUnlock(&q_mtx);
+    } else {
+        e = NULL;
+    }
     return e;
 }
 
 void
 q_parserInit()
 {
-    os_mutexAttr attr;
-
     if (initialise) {
         initialise = 0;
-
-        os_mutexAttrInit(&attr);
-	attr.scopeAttr = OS_SCOPE_PRIVATE;
-	if ( os_mutexInit(&q_mtx, &attr) != os_resultSuccess )
-	{
+        if ( os_mutexInit(&q_mtx, NULL) != os_resultSuccess ) {
            OS_REPORT(OS_ERROR, "SQL parser", 0, "mutex init failed");
         }
     }

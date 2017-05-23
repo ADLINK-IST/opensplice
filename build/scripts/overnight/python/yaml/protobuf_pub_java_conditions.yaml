@@ -1,0 +1,33 @@
+parseconditions:
+    desc: protobuf LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: pub_sub_found
+          type: line
+          inst: 1
+          required: yes
+          line: "Publisher: Subscriber found"
+
+        - name: pub_person
+          type: line
+          inst: 1
+          required: yes
+          line: "Publisher: publishing Person: Jane Doe"
+
+        - name: pub_dispose
+          type: line
+          inst: 1
+          required: yes
+          line: "Publisher: disposing Jane Doe..."
+
+        - name: pub_term
+          type: line
+          inst: 1
+          required: yes
+          line: "Publisher: terminating..."

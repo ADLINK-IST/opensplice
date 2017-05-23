@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cmx__waitset.h"
@@ -16,8 +24,8 @@
 #include "v_event.h"
 #include "v_public.h"
 #include "v_dataReaderQuery.h"
+#include "u_observable.h"
 #include "u_waitset.h"
-#include "u_waitsetEvent.h"
 #include "os_stdlib.h"
 #include <stdio.h>
 
@@ -25,32 +33,26 @@ c_char*
 cmx_waitsetNew(
     const c_char* participant)
 {
-    u_participant par;
     u_waitset waitset;
     c_char* result;
-    cmx_entityArg arg;
-    u_result ur;
 
-    par = u_participant(cmx_entityUserEntity(participant));
+    OS_UNUSED_ARG(participant);
+
     result = NULL;
+    waitset = u_waitsetNew();
+    if (waitset) {
+        /*
+         * C&M thinks that the WaitSet is an Entity. It was in the past, but it isn't anymore.
+         * Simulate that a WaitSet is still an entity.
+         */
+        result = cmx_entityXml((c_string)NULL,
+                               (c_address)waitset,
+                               (v_handle*)NULL,
+                               (c_bool)TRUE,
+                               (c_string)STRING_WAITSET_KIND);
 
-    if(par){
-        waitset = u_waitsetNew(par);
-
-        if(waitset){
-            cmx_registerEntity(u_entity(waitset));
-            arg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-            arg->entity = u_entity(waitset);
-            arg->create = FALSE;
-            arg->participant = NULL;
-            arg->result = NULL;
-            ur = u_entityAction(u_entity(waitset), cmx_entityNewFromAction, (c_voidp)(arg));
-
-            if(ur == U_RESULT_OK){
-                result = arg->result;
-                os_free(arg);
-            }
-        }
+        /* Register WaitSet for detaching purposes. */
+        cmx_registerObject(u_object(waitset),NULL);
     }
     return result;
 }
@@ -60,6 +62,7 @@ cmx_waitsetInit(
     v_waitset entity)
 {
     assert(C_TYPECHECK(entity, v_waitset));
+    OS_UNUSED_ARG(entity);
 
     return (c_char*)(os_strdup("<kind>WAITSET</kind>"));
 }
@@ -69,19 +72,17 @@ cmx_waitsetAttach(
     const c_char* waitset,
     const c_char* entity)
 {
-    u_waitset w;
-    u_entity e;
+    cmx_entity wce, ce;
     u_result ur;
     const c_char* r;
 
-    w = u_waitset(cmx_entityUserEntity(waitset));
-
-    if(w){
-        e = u_entity(cmx_entityUserEntity(entity));
-
-        if(e){
-            ur = u_waitsetAttach(w, e, (c_voidp) e);
-
+    wce = cmx_entityClaim(waitset);
+    if(wce != NULL){
+        ce = cmx_entityClaim(entity);
+        if(ce){
+            ur = u_waitsetAttach(u_waitset(wce->uentity),
+                                 u_observable(ce->uentity),
+                                 (c_voidp)ce->uentity);
             if(ur == U_RESULT_OK){
                 r = CMX_RESULT_OK;
             } else if(ur == U_RESULT_ILL_PARAM){
@@ -89,9 +90,11 @@ cmx_waitsetAttach(
             } else {
                 r = CMX_RESULT_FAILED;
             }
+            cmx_entityRelease(ce);
         } else {
             r = CMX_RESULT_ILL_PARAM;
         }
+        cmx_entityRelease(wce);
     } else {
         r = CMX_RESULT_ILL_PARAM;
     }
@@ -103,19 +106,15 @@ cmx_waitsetDetach(
     const c_char* waitset,
     const c_char* entity)
 {
-    u_waitset w;
-    u_entity e;
+    cmx_entity wce, ce;
     u_result ur;
     const c_char* r;
 
-    w = u_waitset(cmx_entityUserEntity(waitset));
-
-    if(w){
-        e = u_entity(cmx_entityUserEntity(entity));
-
-        if(e){
-            ur = u_waitsetDetach(w, e);
-
+    wce = cmx_entityClaim(waitset);
+    if(wce != NULL){
+        ce = cmx_entityClaim(entity);
+        if(ce){
+            ur = u_waitsetDetach_s(u_waitset(wce->uentity), u_observable(ce->uentity));
             if(ur == U_RESULT_OK){
                 r = CMX_RESULT_OK;
             } else if(ur == U_RESULT_ILL_PARAM){
@@ -123,9 +122,11 @@ cmx_waitsetDetach(
             } else {
                 r = CMX_RESULT_FAILED;
             }
+            cmx_entityRelease(ce);
         } else {
             r = CMX_RESULT_ILL_PARAM;
         }
+        cmx_entityRelease(wce);
     } else {
         r = CMX_RESULT_ILL_PARAM;
     }
@@ -139,6 +140,9 @@ cmx_alwaysTrue (
     c_object o,
     c_voidp args)
 {
+    OS_UNUSED_ARG(o);
+    OS_UNUSED_ARG(args);
+
     return TRUE;
 }
 
@@ -153,124 +157,82 @@ cmx_waitsetCollect(
     v_entity entity;
     v_handleResult r;
     u_entity ue;
+
     arg = cmx_walkEntityArg(args);
+    proceed = FALSE;
+
+    /* Forward the user layer entity to be able to create a proper user layer proxy. */
+
     r = v_handleClaim(event->source, (c_object)&entity);
     if (r == V_HANDLE_OK) {
-        ue = v_entityGetUserData(entity);
-        if (ue) {
-            if (u_entityKind(ue) == U_QUERY) {
-                if (v_dataReaderQueryTest(v_dataReaderQuery(entity),cmx_alwaysTrue,NULL)) {
-                    proceed = cmx_entityNewFromWalk(entity, arg->entityArg);
+        arg->entityArg.entity = cmx_factoryClaimEntity(u_object(event->userData));
+        if (arg->entityArg.entity) {
+            ue = u_entity(v_entityGetUserData(entity));
+            if (ue) {
+                if (u_objectKind(u_object(ue)) == U_QUERY) {
+                    if (v_dataReaderQueryTest(v_dataReaderQuery(entity),cmx_alwaysTrue,NULL)) {
+                        proceed = cmx_entityNewFromWalk(v_public(entity), &arg->entityArg);
+                    }
+                } else {
+                    proceed = cmx_entityNewFromWalk(v_public(entity), &arg->entityArg);
                 }
-            } else {
-                proceed = cmx_entityNewFromWalk(entity, arg->entityArg);
             }
+            cmx_factoryReleaseEntity(arg->entityArg.entity);
+        } else {
+            assert(FALSE);
         }
-
         r = v_handleRelease(event->source);
         assert(r == V_HANDLE_OK);
         if(proceed == TRUE){
-            xmlEntity = arg->entityArg->result;
+            xmlEntity = arg->entityArg.result;
             arg->list = c_iterInsert(arg->list, xmlEntity);
             arg->length += strlen(xmlEntity);
         }
     }
 }
 
-static void
-cmx_waitsetWaitAction(
-    v_entity entity,
-    c_voidp args)
-{
-    v_waitset kw;
-
-    kw = v_waitset(entity);
-    v_waitsetWait(kw,cmx_waitsetCollect, args);
-    return;
-}
-
-static void
-cmx_waitsetTimedWaitAction(
-    v_entity entity,
-    c_voidp args)
-{
-    v_waitset kw;
-    cmx_walkEntityArg arg;
-
-    arg = cmx_walkEntityArg(args);
-    kw = v_waitset(entity);
-    v_waitsetTimedWait(kw,cmx_waitsetCollect, args, *((c_time*)(arg->userData)));
-    return;
-}
-
 c_char*
 cmx_waitsetWait(
     const c_char* waitset)
 {
-    cmx_walkEntityArg arg;
-    u_waitset w;
-    c_char* result;
-    u_result ur;
-
-    result = NULL;
-    w = u_waitset(cmx_entityUserEntity(waitset));
-
-    if(w != NULL){
-        arg = cmx_walkEntityArg(os_malloc(C_SIZEOF(cmx_walkEntityArg)));
-        arg->length = 0;
-        arg->list = c_iterNew(NULL);
-
-        arg->entityArg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-        arg->entityArg->participant = u_entityParticipant(u_entity(w));
-        arg->entityArg->create = TRUE;
-        arg->entityArg->result = NULL;
-
-        ur = u_entityAction(u_entity(w), cmx_waitsetWaitAction, (c_voidp)arg);
-
-        if(ur == U_RESULT_OK){
-            result = cmx_convertToXMLList(arg->list, arg->length);
-        } else {
-            c_iterFree(arg->list);
-        }
-        os_free(arg->entityArg);
-        os_free(arg);
-    }
-    return result;
+    return cmx_waitsetTimedWait(waitset, OS_DURATION_INFINITE);
 }
 
 c_char*
 cmx_waitsetTimedWait(
     const c_char* waitset,
-    const c_time t)
+    const os_duration t)
 {
     cmx_walkEntityArg arg;
-    u_waitset w;
+    cmx_entity ce;
     c_char* result;
     u_result ur;
 
     result = NULL;
-    w = u_waitset(cmx_entityUserEntity(waitset));
-
-    if(w != NULL){
+    ce = cmx_entityClaim(waitset);
+    if(ce != NULL){
         arg = cmx_walkEntityArg(os_malloc(C_SIZEOF(cmx_walkEntityArg)));
-        arg->length = 0;
-        arg->list = NULL;
+        if (arg != NULL) {
+            arg->length = 0;
+            arg->list = NULL;
+            arg->entityArg.entity = ce;
+            arg->entityArg.create = TRUE;
+            arg->entityArg.result = NULL;
+            arg->userData = NULL;
 
-        arg->entityArg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-        arg->entityArg->participant = u_entityParticipant(u_entity(w));
-        arg->entityArg->create = TRUE;
-        arg->entityArg->result = NULL;
-        arg->userData = (c_voidp)(&t);
-
-        ur = u_entityAction(u_entity(w), cmx_waitsetTimedWaitAction, (c_voidp)arg);
-
-        if(ur == U_RESULT_OK){
-            result = cmx_convertToXMLList(arg->list, arg->length);
-        } else {
-            c_iterFree(arg->list);
+            ur = u_waitsetWaitAction(u_waitset(ce->uentity), cmx_waitsetCollect, arg, t);
+            if(ur == U_RESULT_OK){
+                result = cmx_convertToXMLList(arg->list, arg->length);
+            } else if (ur == U_RESULT_TIMEOUT) {
+                /* Timeout is also a valid result.
+                 * Return a list as result (most likely empty). */
+                result = cmx_convertToXMLList(arg->list, arg->length);
+            } else {
+                c_iterFree(arg->list);
+            }
+            os_free(arg);
         }
-        os_free(arg->entityArg);
-        os_free(arg);
+        cmx_entityRelease(ce);
     }
     return result;
 }
@@ -279,16 +241,14 @@ c_ulong
 cmx_waitsetGetEventMask(
     const c_char* waitset)
 {
-    u_waitset w;
+    cmx_entity ce;
     c_ulong mask;
-    u_result ur;
 
-    w = u_waitset(cmx_entityUserEntity(waitset));
-
-    if(w){
-        ur = u_waitsetGetEventMask(w, &mask);
-    } else {
-        mask = V_EVENT_UNDEFINED;
+    mask = V_EVENT_UNDEFINED;
+    ce = cmx_entityClaim(waitset);
+    if(ce != NULL){
+        (void)u_waitsetGetEventMask(u_waitset(ce->uentity), &mask);
+        cmx_entityRelease(ce);
     }
     return mask;
 }
@@ -299,12 +259,14 @@ cmx_waitsetSetEventMask(
     c_ulong mask)
 {
     u_waitset w;
+    cmx_entity ce;
     const c_char* result;
     u_result ur;
 
-    w = u_waitset(cmx_entityUserEntity(waitset));
+    ce = cmx_entityClaim(waitset);
 
-    if(w){
+    if(ce != NULL){
+        w = u_waitset(ce->uentity);
         ur = u_waitsetSetEventMask(w, mask);
 
         if(ur == U_RESULT_OK){
@@ -314,6 +276,7 @@ cmx_waitsetSetEventMask(
         } else {
             result = CMX_RESULT_FAILED;
         }
+        cmx_entityRelease(ce);
     } else {
         result = CMX_RESULT_ILL_PARAM;
     }

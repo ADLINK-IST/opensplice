@@ -11,6 +11,6 @@ feature(!src_co) {
 }
 
 feature(src_co) {
-    includes += $(OSPL_OUTER_HOME_NORMALIZED)/src/api/streams/sacpp/include
-    includes += $(OSPL_OUTER_HOME_NORMALIZED)/src/api/streams/ccpp/include
+    includes += $(OSPL_HOME_NORMALIZED)/src/api/streams/sacpp/include
+    includes += $(OSPL_HOME_NORMALIZED)/src/api/streams/ccpp/include
 }

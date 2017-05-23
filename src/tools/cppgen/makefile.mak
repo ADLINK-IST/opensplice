@@ -19,7 +19,8 @@ CXXFLAGS += -DYY_NEVER_INTERACTIVE
 
 CXXINCS += -I$(OSPL_HOME)/src/cpp/include
 CXXINCS += -I$(OSPL_HOME)/src/cpp/code
-CXXINCS += -I$(OSPL_HOME)/src/api/dcps/sacpp/include
+CXXINCS += -I$(OSPL_HOME)/src/api/dcps/c++/sacpp/include
+CXXINCS += -I$(OSPL_HOME)/src/api/dcps/c++/common/include
 
 ifeq "$(CXX)" "g++"
 
@@ -33,12 +34,6 @@ endif
 
 LDFLAGS += -L.
 
-.PHONY:
-
-libstdc++.a:
-	ln -sf `g++ $(ARCH_FLAG) -print-file-name=libstdc++.a`
-
-cppgen:libstdc++.a
 endif
 
 -include $(DEPENDENCIES)

@@ -177,7 +177,7 @@ AST_Array::base_type()
 void
 AST_Array::set_base_type(AST_Type *nbt)
 {
-   if (local() == I_FALSE)
+   if (local() == false)
    {
       set_local(nbt->local());
    }

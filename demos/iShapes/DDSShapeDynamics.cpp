@@ -15,7 +15,7 @@ extern char* colorString_[];
 DDSShapeDynamics::DDSShapeDynamics(int x0, int y0,
                                    dds::sub::DataReader<ShapeType> shapeReader,
                                    const std::string& color,
-                                   int colorIdx)
+                                   int colorIdx, bool dummy)
     :   ShapeDynamics(x0, y0, QRect(0, 0, 0, 0)),
         x0_(x0),
         y0_(y0),
@@ -23,7 +23,8 @@ DDSShapeDynamics::DDSShapeDynamics(int x0, int y0,
         attached_(false),
         color_(color),
         colorIdx_(colorIdx),
-        updateBounds_(true)
+        updateBounds_(true),
+        dummy_(dummy)
 {
     colorList_[BLUE] = QColor(0x33, 0x66, 0x99);
     colorList_[RED] = QColor(0xCC, 0x33, 0x33);
@@ -47,11 +48,25 @@ DDSShapeDynamics::simulate()
     QPoint tmp;
 
     //samples::iterator sample;
-
     samples = shapeReader_.read();
     plist_.erase(plist_.begin(), plist_.end());
+
+    //Create a dummy when the subscribe button is clicked until the first sample arrives
+    if(dummy_ == true)
+    {
+        SharedShape shape;
+        if (shape = shape_.lock())
+        {
+            plist_.push_back(QPoint((IS_WIDTH/2)-10, (IS_HEIGHT/2)-10));
+            QBrush brush = QBrush(QColor(0xd3, 0xd3, 0xd3), Qt::SolidPattern);
+            shape->setBrush(brush);
+            QRect bounds(0, 0, 90, 90);
+        }
+    }
+
     for (dds::sub::LoanedSamples<ShapeType>::const_iterator sample = samples.begin(); sample != samples.end(); ++sample)
     {
+        dummy_ = false;
         #ifdef TESTBUILD
         qDebug() << "Time:"
                  << os_timeGet().tv_sec

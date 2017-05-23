@@ -140,15 +140,15 @@ UTL_StrList::dump(ostream &o)
 {
    char *s;
    UTL_StrlistActiveIterator *i = new UTL_StrlistActiveIterator(this);
-   idl_bool first = I_TRUE;
-   idl_bool second = I_FALSE;
+   bool first = true;
+   bool second = false;
 
    while (!(i->is_done()))
    {
       if (!first)
          o << "::";
       else if (second)
-         first = second = I_FALSE;
+         first = second = false;
 
       s = i->item()->get_string();
 
@@ -157,9 +157,9 @@ UTL_StrList::dump(ostream &o)
       if (first)
       {
          if (strcmp(s, "::") != 0)
-            first = I_FALSE;
+            first = false;
          else
-            second = I_TRUE;
+            second = true;
       }
 
       i->next();

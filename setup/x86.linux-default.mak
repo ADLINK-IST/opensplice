@@ -21,7 +21,11 @@ TOUCH		 = touch
 	# Tool used for creating soft/hard links.
 LN               = ln
 	# Archiving
+ifeq (,$(OSPL_AR))
 AR               = /usr/bin/ar
+else
+AR               = $(OSPL_AR)
+endif
 AR_CMDS          = rv
 	# preprocessor
 MAKEDEPFLAGS     = -M
@@ -63,18 +67,21 @@ SOAPCPP		= soapcpp2
 SHCFLAGS         = -fpic
 
 # Values of compiler flags can be overruled
-CFLAGS_OPT       = -O4 -DNDEBUG -g -fno-strict-aliasing
+CFLAGS_OPT       = -O3 -DNDEBUG -g -fno-strict-aliasing
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
-#CFLAGS_STRICT	 = -Wall
-CFLAGS_STRICT	 = -Wall -W -pedantic -Wno-long-long
+CFLAGS_STRICT	 = -Wall -W -Wno-long-long
+CFLAGS_PERMISSIVE= -Wno-unused-parameter -Wno-sign-compare -Wno-unused-function
 ifeq ($(GCC_WERROR_IS_SWITCH_SUPPORT),1)
     # Seperate from STRICT because this option won't work with -O0 on older compilers now it can be overruled
     CFLAGS_STRICT_UNINITIALIZED = -Werror=uninitialized
 endif
+ifeq ($(GCC_WCONVERSION_IS_SUPPORTED),1)
+    CFLAGS_XSTRICT   = -Wconversion
+endif
 
-# Set compiler options for single threaded process
-CFLAGS		 = -m32 -march=i686 -pipe -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(CFLAGS_STRICT_UNINITIALIZED)
-CXXFLAGS	 = -m32 -march=i686 -pipe -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT_UNINITIALIZED)
+# Set compiler options
+CFLAGS		 = -m32 -march=i686 -pipe -D_POSIX_C_SOURCE=200112L -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(CFLAGS_STRICT_UNINITIALIZED) $(MTCFLAGS)
+CXXFLAGS	 = -m32 -march=i686 -pipe -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT_UNINITIALIZED) $(MTCFLAGS)
 CSFLAGS	     = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # For Linux, this test release version supports symbolic names in stead of IP addresses
@@ -86,10 +93,24 @@ ifeq (,$(wildcard /etc/gentoo-release))
 CPPFLAGS	 += -D_XOPEN_SOURCE=500
 endif
 
+# On older platforms (e.g., RHEL/Debian 4) the pthread.h doesn't include the
+# newer NPTL signatures. While it is possible to include the NPTL pthread.h,
+# this typically coincides with old (incomplete) GLIBC versions being installed
+# on the platform (2.3ish), which have pthread_condattr_setclock(...) missing
+# despite being available in the NPTL headers. In that case set the following
+# define to disable the calls in the abstraction layer to the missing function.
+ifneq (,$(wildcard /usr/include/nptl/pthread.h))
+CPPFLAGS	 += -DOSPL_NO_POSIX_CLOCK_SELECTION
+endif
+
+# For isocpp2 use c++11 compiler option
+ifeq ($(GCC_SUPPORTS_CPLUSPLUS11),1)
+ISOCPP2_CXX_FLAGS=-std=c++0x
+endif
+
 # Set compiler options for multi threaded process
 	# notify usage of posix threads
-#MTCFLAGS	 = -D_POSIX_C_SOURCE=199506L
-MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
+MTCFLAGS	 = -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
 LDFLAGS		 = -m32 -march=i686 -static-libgcc -L$(SPLICE_LIBRARY_PATH)
@@ -122,9 +143,6 @@ LDLIBS_OS = -lrt -lpthread -ldl
 LDLIBS_CMS =
 LDLIBS_JAVA = -ljvm -ljava -lverify -lhpi
 LDLIBS_ODBC= -lodbc
-LDLIBS_ZLIB = -lz
-LDFLAGS_ZLIB =
-CINCS_ZLIB =
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .o

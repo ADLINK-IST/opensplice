@@ -1,0 +1,15 @@
+
+project (ISO_Cxx_v2*Types) : _repetitive_isocpp2_example_types {
+}
+
+project (ISO_Cxx_v2*Impl) : _repetitive_isocpp2_example_impl {
+    Source_Files {
+        ExampleDataReaderListener.cpp
+    }
+}
+
+project (ISO_Cxx_v2*Pub) : _repetitive_isocpp2_example_pub {
+}
+
+project (ISO_Cxx_v2*Sub) : _repetitive_isocpp2_example_sub {
+}

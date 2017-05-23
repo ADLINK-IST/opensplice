@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "ut_thread_pool.h"
@@ -47,7 +55,7 @@ static void * ut_thread_start_fn (void * arg)
 
   /* Thread loops, pulling jobs from queue */
 
-  while (TRUE)
+  while (1)
   {
     /* Wait for job */
 
@@ -96,19 +104,21 @@ static os_result ut_thread_pool_new_thread (ut_thread_pool pool)
   os_threadId id;
   os_result res;
 
-  sprintf (name, "OSPL-%u-%u", pools++, pool->m_count++);
+  snprintf (name, 16, "OSPL-%u-%u", pools++, pool->m_count++);
   res = os_threadCreate (&id, name, &pool->m_attr, ut_thread_start_fn, pool);
 
   if (res == os_resultSuccess)
   {
+    os_mutexLock (&pool->m_mutex);
     pool->m_threads++;
     pool->m_waiting++;
+    os_mutexUnlock (&pool->m_mutex);
   }
 
   return res;
 }
 
-ut_thread_pool ut_thread_pool_new 
+ut_thread_pool ut_thread_pool_new
 (
   os_uint32 threads,
   os_uint32 max_threads,
@@ -118,7 +128,6 @@ ut_thread_pool ut_thread_pool_new
 {
   ut_thread_pool pool;
   ddsi_work_queue_job_t job;
-  os_mutexAttr mattr;
 
   /* Sanity check QoS */
 
@@ -138,8 +147,7 @@ ut_thread_pool ut_thread_pool_new
   pool->m_job_max = max_queue;
   os_sem_init (&pool->m_sem, 0);
   os_threadAttrInit (&pool->m_attr);
-  os_mutexAttrInit (&mattr);
-  os_mutexInit (&pool->m_mutex, &mattr);
+  os_mutexInit (&pool->m_mutex, NULL);
 
   if (attr)
   {
@@ -166,7 +174,7 @@ ut_thread_pool ut_thread_pool_new
 
 void ut_thread_pool_free (ut_thread_pool pool)
 {
-  static const os_time delay = { 0, 250000000 }; /* 250 ms */
+  static const os_duration delay = OS_DURATION_INIT(0, 250000000 ); /* 250 ms */
 
   os_uint32 retry = 8;
   os_uint32 threads;
@@ -211,7 +219,7 @@ void ut_thread_pool_free (ut_thread_pool pool)
     {
       break;
     }
-    os_nanoSleep (delay);
+    os_sleep (delay);
   }
 
   /* Delete all free jobs from queue */

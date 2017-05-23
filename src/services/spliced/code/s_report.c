@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "report.h"
@@ -26,7 +34,7 @@ s_doPrint(
     if (config->tracingOutputFile) {
         os_vsnprintf(description, sizeof(description)-1, format, args);
         description [sizeof(description)-1] = '\0';
-        fprintf(config->tracingOutputFile, description);
+        fprintf(config->tracingOutputFile, "%s", description);
         fflush(config->tracingOutputFile);
 
         if (config->tracingSynchronous) {
@@ -41,17 +49,23 @@ s_printState(
     s_configuration config,
     const char* threadName)
 {
-    os_time time;
+    OS_UNUSED_ARG(s);
 
     if (config->tracingOutputFile) {
         if (config->tracingTimestamps == TRUE) {
-            time = os_timeGet();
 
             if (config->tracingRelativeTimestamps == TRUE) {
-                time = os_timeSub(time, config->startTime);
+                os_duration diff;
+                /* relative timestamps, use the monotonic clock for timestamping log messages */
+                diff = os_timeMDiff(os_timeMGet(), config->startTimeMonotonic);
+                fprintf(config->tracingOutputFile, "%"PA_PRId64".%09d (%s) -> ",
+                        OS_DURATION_GET_SECONDS(diff), OS_DURATION_GET_NANOSECONDS(diff), threadName);
+            } else {
+                os_timeM time;
+                time = os_timeMGet();
+                fprintf(config->tracingOutputFile, "%" PA_PRItime " (%s) -> ",
+                        OS_TIMEM_PRINT(time), threadName);
             }
-            fprintf(config->tracingOutputFile, "%d.%9.9d (%s) -> ",
-                    time.tv_sec, time.tv_nsec, threadName);
         } else {
             fprintf(config->tracingOutputFile, "(%s) -> ", threadName);
         }

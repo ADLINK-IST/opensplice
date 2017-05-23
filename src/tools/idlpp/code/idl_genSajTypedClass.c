@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_program.h"
@@ -14,6 +22,7 @@
 #include "idl_genSplHelper.h"
 #include "idl_genJavaHelper.h"
 #include "idl_genLanguageHelper.h"
+#include "idl_genMetaHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_keyDef.h"
 
@@ -31,6 +40,56 @@ static idl_macroSet idlpp_macroSet;
 #define IDL_TOKEN_OPEN 		'('
 #define IDL_TOKEN_CLOSE 	')'
 
+/* Generate string in the format "<old>:<new>;<old>:<new>". */
+static os_char *
+idl_packageRedirects (
+    void)
+{
+    idl_packageRedirect redirect;
+    os_uint32 count, total;
+    os_size_t length;
+    os_char *macro, *module, *package, *buffer;
+
+    total = os_iterLength (idl_genJavaHelperPackageRedirects);
+    length = 0;
+    macro = NULL;
+    for (count = 0; count < total; count++) {
+        redirect = idl_packageRedirect(os_iterObject (
+            idl_genJavaHelperPackageRedirects, count));
+        assert (redirect != NULL);
+        module = redirect->module;
+        package = redirect->package;
+
+        assert (package != NULL);
+        if (module == NULL) {
+            module = "";
+        }
+
+        length += strlen (module) + strlen (package) + 3; /* ';' + ':' + '\0' */
+        buffer = os_malloc (length);
+        memset (buffer, '\0', length);
+        if (macro != NULL) {
+            (void)snprintf (buffer, length, "%s;%s:%s",macro, module, package);
+            os_free (macro);
+        } else {
+            (void)snprintf (buffer, length, "%s:%s", module, package);
+        }
+        macro = buffer;
+    }
+
+    if (macro == NULL) {
+        macro = os_strdup ("null");
+    } else {
+        length = strlen (macro) + 3; /* '"' + '"' */
+        buffer = os_malloc (length);
+        (void)snprintf (buffer, length, "\"%s\"", macro);
+        os_free (macro);
+        macro = buffer;
+    }
+
+    return macro;
+}
+
 static int
 idl_genInterface(
     idl_scope scope,
@@ -47,6 +106,10 @@ idl_genInterface(
     int tmplFile;
     struct os_stat tmplStat;
     unsigned int nRead;
+    os_char *redirects;
+    char *scopedMetaTypeName;
+    const char *internalTypeName;
+    const char *keyList;
 
     tmplPath = os_getenv("OSPL_TMPL_PATH");
     orbPath = os_getenv("OSPL_ORB_PATH");
@@ -64,24 +127,24 @@ idl_genInterface(
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("actual-type-name", idl_typeSpecName(typeSpec)));
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scoped-type-name", idl_scopeStackJava(scope, ".", name)));
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-class-name", idl_scopeStackJava(scope, "/", name)));
-    if(idl_genJavaHelperGetOrgLastSubstituted())
-    {
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-org-package-name", idl_genJavaHelperGetOrgLastSubstituted()));
-    } else
-    {
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-org-package-name", "null"));
-    }
-    if(idl_genJavaHelperGetTgtLastSubstituted())
-    {
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-tgt-package-name", idl_genJavaHelperGetTgtLastSubstituted()));
-    } else
-    {
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-tgt-package-name", "null"));
-    }
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scoped-meta-type-name", idl_scopeStack(scope, "::", name)));
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scoped-actual-type-name", idl_corbaJavaTypeFromTypeSpec(typeSpec)));
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("key-list", idl_keyResolve(idl_keyDefDefGet(), scope, name)));
 
+    redirects = idl_packageRedirects ();
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("java-package-redirects", redirects));
+    os_free(redirects);
+
+    scopedMetaTypeName = idl_scopeStack(scope, "::", name);
+    internalTypeName = idl_internalTypeNameForBuiltinTopic(scopedMetaTypeName);
+    keyList = idl_keyResolve(idl_keyDefDefGet(), scope, name);
+    if ((strlen(internalTypeName) != 0) &&
+        ((keyList == NULL) ||
+         (strcmp(keyList,"key") == 0))) {
+        keyList = "key.localId,key.systemId";
+    }
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scoped-meta-type-name", scopedMetaTypeName));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("internal-type-name", internalTypeName));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scoped-actual-type-name", idl_corbaJavaTypeFromTypeSpec(typeSpec)));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("key-list", keyList));
+    os_free(scopedMetaTypeName);
 
     /* Generate only in standalone mode */
     if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
@@ -90,13 +153,9 @@ idl_genInterface(
         if (idl_fileCur() == NULL) {
             return -1;
         }
-        if (idl_scopeStackSize(scope) > 0) {
-            idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava (scope, ".", NULL));
-            idl_fileOutPrintf(idl_fileCur(), "\n");
-        }
         /* Prepare Interface class */
         if (generateInterfaceClass) {
-            snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%s.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
+            snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ctmpl%s.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
             /* QAC EXPECT 3416; No side effects here */
             if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
                 (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -104,10 +163,10 @@ idl_genInterface(
                 return -1;
             }
             /* QAC EXPECT 5007; will not use wrapper */
-            idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+            idlpp_template = os_malloc(tmplStat.stat_size+1);
             tmplFile = open(tmplFileName, O_RDONLY);
-            nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-            memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+            nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+            memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
             close(tmplFile);
             idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
             idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
@@ -124,12 +183,8 @@ idl_genInterface(
         if (idl_fileCur() == NULL) {
             return -1;
         }
-        if (idl_scopeStackSize(scope) > 0) {
-            idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
-            idl_fileOutPrintf(idl_fileCur(), "\n");
-        }
         /* Prepare typeSupportHolder class */
-        snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sHolder.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
+        snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ctmpl%sHolder.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
         /* QAC EXPECT 3416; No side effects here */
         if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
             (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -137,10 +192,10 @@ idl_genInterface(
             return -1;
         }
         /* QAC EXPECT 5007; will not use wrapper */
-        idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+        idlpp_template = os_malloc(tmplStat.stat_size+1);
         tmplFile = open(tmplFileName, O_RDONLY);
-        nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-        memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+        nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+        memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
         close(tmplFile);
         idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
@@ -156,12 +211,8 @@ idl_genInterface(
         if (idl_fileCur() == NULL) {
             return -1;
         }
-        if (idl_scopeStackSize(scope) > 0) {
-            idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
-            idl_fileOutPrintf(idl_fileCur(), "\n");
-        }
         /* Prepare typeSupportHelper class */
-        snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sHelper.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
+        snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ctmpl%sHelper.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
         /* QAC EXPECT 3416; No side effects here */
         if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
             (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -169,10 +220,10 @@ idl_genInterface(
             return -1;
         }
         /* QAC EXPECT 5007; will not use wrapper */
-        idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+        idlpp_template = os_malloc(tmplStat.stat_size+1);
         tmplFile = open(tmplFileName, O_RDONLY);
-        nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-        memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+        nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+        memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
         close(tmplFile);
         idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
@@ -188,12 +239,8 @@ idl_genInterface(
         if (idl_fileCur() == NULL) {
             return (idl_abort);
         }
-        if (idl_scopeStackSize(scope) > 0) {
-            idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
-            idl_fileOutPrintf(idl_fileCur(), "\n");
-        }
         /* Prepare typeSupportOperations class */
-        snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sOperations.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
+        snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ctmpl%sOperations.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
         /* QAC EXPECT 3416; No side effects here */
         if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
             (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -201,10 +248,10 @@ idl_genInterface(
             return -1;
         }
         /* QAC EXPECT 5007; will not use wrapper */
-        idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+        idlpp_template = os_malloc(tmplStat.stat_size+1);
         tmplFile = open(tmplFileName, O_RDONLY);
-        nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-        memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+        nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+        memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
         close(tmplFile);
         idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
@@ -227,12 +274,8 @@ idl_genInterface(
     if (idl_fileCur() == NULL) {
         return -1;
     }
-    if (idl_scopeStackSize(scope) > 0) {
-        idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
-        idl_fileOutPrintf(idl_fileCur(), "\n");
-    }
     /* Prepare typeSupportStub class */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sImpl.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
+    snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ctmpl%sImpl.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
     /* QAC EXPECT 3416; No side effects here */
     if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -240,10 +283,10 @@ idl_genInterface(
         return (idl_abort);
     }
     /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+    idlpp_template = os_malloc(tmplStat.stat_size+1);
     tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+    nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+    memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
     close(tmplFile);
     idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
@@ -294,12 +337,9 @@ idl_genTypeSeqHolder(
     if (idl_fileCur() == NULL) {
         return -1;
     }
-    if (idl_scopeStackSize(scope) > 0) {
-        idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
-        idl_fileOutPrintf(idl_fileCur(), "\n");
-    }
+
     /* Prepare typeSupport class */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmplSeqHolder.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
+    snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%ctmplSeqHolder.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
     /* QAC EXPECT 3416; No side effects here */
     if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -307,10 +347,10 @@ idl_genTypeSeqHolder(
         return -1;
     }
     /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+    idlpp_template = os_malloc(tmplStat.stat_size+1);
     tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+    nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+    memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
     close(tmplFile);
     idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
@@ -330,6 +370,10 @@ idl_fileOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -339,6 +383,10 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -349,6 +397,8 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
         idl_genInterface(scope, name, "TypeSupport", idl_typeSpec(structSpec), FALSE);
         idl_genInterface(scope, name, "DataReader", idl_typeSpec(structSpec), TRUE);
@@ -368,6 +418,8 @@ idl_unionOpen(
     idl_typeUnion unionSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
         idl_genInterface(scope, name, "TypeSupport", idl_typeSpec(unionSpec), FALSE);
         idl_genInterface(scope, name, "DataReader", idl_typeSpec(unionSpec), TRUE);
@@ -387,6 +439,8 @@ idl_typedefOpenClose(
     idl_typeDef defSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     if ((idl_typeSpecType(idl_typeDefActual (defSpec)) == idl_tstruct) ||
         (idl_typeSpecType (idl_typeDefActual (defSpec)) == idl_tunion)) {
         if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {

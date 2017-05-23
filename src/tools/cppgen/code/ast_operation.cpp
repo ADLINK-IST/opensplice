@@ -159,7 +159,7 @@ UTL_NameList * AST_Operation::fe_add_exceptions(UTL_NameList *t)
    while (!(nl_i->is_done()))
    {
       nl_n = nl_i->item();
-      d = lookup_by_name(nl_n, I_TRUE);
+      d = lookup_by_name(nl_n, true);
 
       if (d == NULL || d->node_type() != AST_Decl::NT_except)
       {
@@ -241,7 +241,7 @@ AST_Argument *AST_Operation::fe_add_argument(AST_Argument *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -351,6 +351,6 @@ UTL_ExceptList * AST_Operation::exceptions()
 
 // Narrowing
 
-IMPL_NARROW_METHODS2(AST_Operation, AST_Decl, UTL_Scope)
-IMPL_NARROW_FROM_DECL(AST_Operation)
-IMPL_NARROW_FROM_SCOPE(AST_Operation)
+IMPL_NARROW_METHODS2 (AST_Operation, AST_Decl, UTL_Scope)
+IMPL_NARROW_FROM_DECL (AST_Operation)
+IMPL_NARROW_FROM_SCOPE (AST_Operation)

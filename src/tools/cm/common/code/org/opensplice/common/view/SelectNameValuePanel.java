@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.view;
@@ -17,6 +25,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Arrays;
 
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -28,6 +37,7 @@ import javax.swing.JList;
  * @date Mar 31, 2005 
  */
 public class SelectNameValuePanel extends NameValuePanel{
+    private JComboBox combo;
     /**
      * Creates an input panel with a label and a combobox.
      * @param values The possible values that will be put in the combobox.
@@ -52,62 +62,71 @@ public class SelectNameValuePanel extends NameValuePanel{
     {
         super(fieldName, defaultValue, true, labelDim, fieldDim);
         if (values == null) {
-            field = new JComboBox();
+            combo = new JComboBox();
+            field = combo;
         } else {
             Arrays.sort(values);
-            field = new JComboBox(values);
+            combo = new JComboBox(values);
+            field = combo;
 
             if (defaultValue != null) {
-                ((JComboBox) field).setSelectedItem(defaultValue);
+                combo.setSelectedItem(defaultValue);
             }
-            field.setToolTipText((((JComboBox) field).getSelectedItem()).toString());
-            ((JComboBox) field).setRenderer(new SelectNameValuePanelRenderer());
+            if (combo.getSelectedItem() != null) {
+                field.setToolTipText((combo.getSelectedItem()).toString());
+            }
+            combo.setRenderer(new SelectNameValuePanelRenderer());
 
-            ((JComboBox) field).addActionListener(new ActionListener() {
+            combo.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent evt) {
-                    if (((JComboBox) field).getSelectedItem() != null) {
-                        field.setToolTipText((((JComboBox) field).getSelectedItem()).toString());
+                    if (combo.getSelectedItem() != null) {
+                        field.setToolTipText((combo.getSelectedItem())
+                                .toString());
                     }
                 }
             });
         }
-        
         field.setMinimumSize(this.fieldDim);
         field.setPreferredSize(this.fieldDim);
         field.setMaximumSize(this.fieldDim);
-        
         this.add(field);
     }
     
     public void updateSelectNameValuePanel(Object values, int index) {
-        ((JComboBox) field).removeItemAt(index);
-        ((JComboBox) field).insertItemAt(values, index);
+        combo.removeItemAt(index);
+        combo.insertItemAt(values, index);
     }
 
     public void insertSelectNameValuePanel(Object values) {
-        ((JComboBox) field).addItem(values);
+        combo.addItem(values);
     }
 
     public void removeSelectNameValuePanel(Object values) {
-        ((JComboBox) field).removeItem(values);
+        combo.removeItem(values);
     }
 
     @Override
     public Object getValue(){
-        return ((JComboBox)field).getSelectedItem();
+        return combo.getSelectedItem();
     }
     
     @Override
     public void setEnabled(boolean enabled) {
-        ((JComboBox)field).setEditable(false);
-        ((JComboBox)field).setEnabled(false);
+        combo.setEditable(false);
+        combo.setEnabled(false);
      
+    }
+    
+    public void setModel(Object[] values) {
+        combo.setModel(new DefaultComboBoxModel(values));
     }
     
     private static class SelectNameValuePanelRenderer extends DefaultListCellRenderer {
         @Override
-        public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+        public Component getListCellRendererComponent(JList list,
+                Object value, int index, boolean isSelected,
+                boolean cellHasFocus) {
             JLabel out = (JLabel)super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             if (value != null) {
                 out.setToolTipText(value.toString());

@@ -1,0 +1,23 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+get_libjsig
+
+startOSPL
+
+echo "=== Launching HelloWorld "
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP HelloWorldDataSubscriber > subResult.txt&
+cmd_pid=$!
+
+sleep 5
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes:$SPLICE_EXTRA_CP HelloWorldDataPublisher > pubResult.txt 
+PUB_RESULT=$?
+
+wait $cmd_pid &> /dev/null
+SUB_RESULT=$?
+
+checkResultZero $SUB_RESULT $PUB_RESULT HelloWorld
+
+stopOSPL

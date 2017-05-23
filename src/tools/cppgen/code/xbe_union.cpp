@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl.h"
@@ -43,15 +51,17 @@ be_union::be_union()
    isAtModuleScope(pbfalse);
 }
 
-be_union::be_union( AST_ConcreteType *dt,
-                    UTL_ScopedName *n,
-                    const UTL_Pragmas &p)
+be_union::be_union
+(
+   UTL_ScopedName *n,
+   const UTL_Pragmas &p
+)
 :
    AST_Decl (AST_Decl::NT_union, n, p),
    UTL_Scope (AST_Decl::NT_union, n, p),
    AST_Structure (AST_Decl::NT_union, n, p),
-   AST_Union (dt, n, p),
-   m_isFixedLength (TRUE),
+   AST_Union (n, p),
+   m_isFixedLength (true),
    defaultBranch (0),
    discType (0),
    defaultValue (0),
@@ -61,38 +71,33 @@ be_union::be_union( AST_ConcreteType *dt,
    m_interface_dependant(pbfalse)
 {
    DDS_StdString barScopedName = NameToString(name(), "_");
-   isAtModuleScope(pbfalse);
-   // YO JOEY this is a lame way to assert
-
-   if ( !disc_type() ||
-         !(discType = be_Type::_narrow(disc_type())) )
-   {
-      assert(pbfalse);
-   }
 
    localName = local_name()->get_string();
    enclosingScope = be_Type::EnclosingScopeString(this);
-
 
    m_tc_ctor_val = (DDS_StdString) barScopedName + "_ctor";
    m_tc_dtor_val = (DDS_StdString) barScopedName + "_dtor";
    m_tc_put_val = (DDS_StdString) barScopedName + "_put";
    m_tc_get_val = (DDS_StdString) barScopedName + "_get";
-   m_tc_assign_val = (DDS_StdString) barScopedName +
-      "_copy";
+   m_tc_assign_val = (DDS_StdString) barScopedName + "_copy";
 
    m_any_op_id = barScopedName;
-   // YO JOEY
-   //  m_nullArg        = (DDS_StdString)"*(new " + ScopedName() + ")";
    m_typecode->kind = DDS::tk_union;
-   m_typecode->id = get_decl_pragmas().get_repositoryID()->get_string();
+   UTL_String *temp = get_decl_pragmas().get_repositoryID();
+   m_typecode->id = temp->get_string();
+   delete temp;
    m_typecode->name_of_type = localName;
-   m_typecode->disc_type = discType->m_typecode;
    m_typecode->has_default = defaultIndex;
 
    InitializeTypeMap(this);
    if (!imported())
       be_CppFwdDecl::Add(be_CppFwdDecl::UNION, this, m_cppScope);
+}
+
+void be_union::update_type ()
+{
+   discType = be_Type::_narrow (disc_type ());
+   m_typecode->disc_type = discType->m_typecode;
 }
 
 void
@@ -447,7 +452,6 @@ void
 be_union::GenerateEquality(be_ClientHeader& source)
 {
    ostream & os = source.Stream();
-   pbbool first = pbtrue;
    be_Tab tab(source);
    be_union_branch * branch;
    TList<be_union_branch *>::iterator bit;
@@ -458,18 +462,27 @@ be_union::GenerateEquality(be_ClientHeader& source)
    os << tab << "{" << nl;
    source.Indent();
 
+   os << tab << tab << "if (_d() != that._d())" << nl << tab << tab << tab << "return false;" << nl;
+
    for (bit = branches.begin(); bit != branches.end(); bit++)
    {
       branch = *bit;
+      os << tab << tab << "else if (that._d() == " << branch->Label() << ")" << nl << tab << tab << tab;
 
-      if (first)
-         os << tab;
-      else
-         os << tab << "else ";
-
-      first = pbfalse;
-      os << "if (that._d() == " << branch->Label() << ")" << nl << tab << tab << "return " << branch->LocalName() << "() == "
-         << "that." << branch->LocalName() << "();" << nl;
+      const be_Type *branchType = branch->Type();
+      be_typedef *branchBase = (be_typedef *) branchType->narrow((long) & be_typedef::type_id);
+      if (branchBase) {
+          branchType = be_typedef::_beBase(branchBase);
+      }
+      be_predefined_type * pdt = (be_predefined_type *) branchType->narrow((long) & be_predefined_type::type_id);
+      if (pdt && ( pdt->pt() == AST_PredefinedType::PT_boolean)) {
+          /* Booleans must both be either FALSE, or not FALSE. That is not the same thing as total equality!! */
+          os << "return ((" << branch->LocalName() << "() && that." << branch->LocalName() << "()) || "
+             << "(!" << branch->LocalName() << "() && !that." << branch->LocalName() << "()));" << nl;
+      } else {
+          os << "return " << branch->LocalName() << "() == "
+             << "that." << branch->LocalName() << "();" << nl;
+      }
    }
    os << nl << tab << "return false;" << nl;
    source.Outdent();

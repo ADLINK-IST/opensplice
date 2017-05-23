@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -18,6 +26,7 @@
 #include "os_if.h"
 #include "os_stdlib.h"
 #include "os_heap.h"
+#include "os_errno.h"
 
 #ifndef _WIN32
 #include <netdb.h>
@@ -27,39 +36,264 @@
 #include "q_nwif.h"
 #include "q_globals.h"
 #include "q_config.h"
-#include "q_md5.h"
 #include "q_unused.h"
+#include "q_md5.h"
+#include "q_misc.h"
+#include "q_addrset.h" /* unspec locator */
+#include "q_feature_check.h"
+#include "ut_avl.h"
+
+
+struct nn_group_membership_node {
+  ut_avlNode_t avlnode;
+  os_socket sock;
+  os_sockaddr_storage srcip;
+  os_sockaddr_storage mcip;
+  unsigned count;
+};
+
+struct nn_group_membership {
+  os_mutex lock;
+  ut_avlTree_t mships;
+};
+
+static int sockaddr_compare_no_port (const os_sockaddr_storage *as, const os_sockaddr_storage *bs)
+{
+  if (as->ss_family != bs->ss_family)
+    return (as->ss_family < bs->ss_family) ? -1 : 1;
+  else if (as->ss_family == 0)
+    return 0; /* unspec address */
+  else if (as->ss_family == AF_INET)
+  {
+    const os_sockaddr_in *a = (const os_sockaddr_in *) as;
+    const os_sockaddr_in *b = (const os_sockaddr_in *) bs;
+    if (a->sin_addr.s_addr != b->sin_addr.s_addr)
+      return (a->sin_addr.s_addr < b->sin_addr.s_addr) ? -1 : 1;
+    else
+      return 0;
+  }
+#if OS_SOCKET_HAS_IPV6
+  else if (as->ss_family == AF_INET6)
+  {
+    const os_sockaddr_in6 *a = (const os_sockaddr_in6 *) as;
+    const os_sockaddr_in6 *b = (const os_sockaddr_in6 *) bs;
+    int c;
+    if ((c = memcmp (&a->sin6_addr, &b->sin6_addr, 16)) != 0)
+      return c;
+    else
+      return 0;
+  }
+#endif
+  else
+  {
+    assert (0);
+    return 0;
+  }
+}
+
+static int cmp_group_membership (const void *va, const void *vb)
+{
+  const struct nn_group_membership_node *a = va;
+  const struct nn_group_membership_node *b = vb;
+  int c;
+  if (a->sock < b->sock)
+    return -1;
+  else if (a->sock > b->sock)
+    return 1;
+  else if ((c = sockaddr_compare_no_port (&a->srcip, &b->srcip)) != 0)
+    return c;
+  else if ((c = sockaddr_compare_no_port (&a->mcip, &b->mcip)) != 0)
+    return c;
+  else
+    return 0;
+}
+
+static ut_avlTreedef_t mship_td = UT_AVL_TREEDEF_INITIALIZER(offsetof (struct nn_group_membership_node, avlnode), 0, cmp_group_membership, 0);
+
+struct nn_group_membership *new_group_membership (void)
+{
+  struct nn_group_membership *mship = os_malloc (sizeof (*mship));
+  if (os_mutexInit (&mship->lock, NULL) != os_resultSuccess) {
+    os_free (mship);
+    return NULL;
+  }
+  ut_avlInit (&mship_td, &mship->mships);
+  return mship;
+}
+
+void free_group_membership (struct nn_group_membership *mship)
+{
+  ut_avlFree (&mship_td, &mship->mships, os_free);
+  os_mutexDestroy (&mship->lock);
+  os_free (mship);
+}
+
+static int reg_group_membership (struct nn_group_membership *mship, os_socket sock, const os_sockaddr_storage *srcip, const os_sockaddr_storage *mcip)
+{
+  struct nn_group_membership_node key, *n;
+  ut_avlIPath_t ip;
+  int isnew;
+  key.sock = sock;
+  if (srcip)
+    key.srcip = *srcip;
+  else
+    memset (&key.srcip, 0, sizeof (key.srcip));
+  key.mcip = *mcip;
+  if ((n = ut_avlLookupIPath (&mship_td, &mship->mships, &key, &ip)) != NULL) {
+    isnew = 0;
+    n->count++;
+  } else {
+    isnew = 1;
+    n = os_malloc (sizeof (*n));
+    n->sock = sock;
+    n->srcip = key.srcip;
+    n->mcip = key.mcip;
+    n->count = 1;
+    ut_avlInsertIPath (&mship_td, &mship->mships, n, &ip);
+  }
+  return isnew;
+}
+
+static int unreg_group_membership (struct nn_group_membership *mship, os_socket sock, const os_sockaddr_storage *srcip, const os_sockaddr_storage *mcip)
+{
+  struct nn_group_membership_node key, *n;
+  ut_avlDPath_t dp;
+  int mustdel;
+  key.sock = sock;
+  if (srcip)
+    key.srcip = *srcip;
+  else
+    memset (&key.srcip, 0, sizeof (key.srcip));
+  key.mcip = *mcip;
+  n = ut_avlLookupDPath (&mship_td, &mship->mships, &key, &dp);
+  assert (n != NULL);
+  assert (n->count > 0);
+  if (--n->count > 0)
+    mustdel = 0;
+  else
+  {
+    mustdel = 1;
+    ut_avlDeleteDPath (&mship_td, &mship->mships, n, &dp);
+    os_free (n);
+  }
+  return mustdel;
+}
+
+void nn_loc_to_address (os_sockaddr_storage *dst, const nn_locator_t *src)
+{
+  memset (dst, 0, sizeof (*dst));
+  switch (src->kind)
+  {
+    case NN_LOCATOR_KIND_INVALID:
+#if OS_SOCKET_HAS_IPV6
+      dst->ss_family = config.useIpv6 ? AF_INET6 : AF_INET;
+#else
+      dst->ss_family = AF_INET;
+#endif
+      break;
+    case NN_LOCATOR_KIND_UDPv4:
+    case NN_LOCATOR_KIND_TCPv4:
+    {
+      os_sockaddr_in *x = (os_sockaddr_in *) dst;
+      x->sin_family = AF_INET;
+      x->sin_port = htons ((unsigned short) src->port);
+      memcpy (&x->sin_addr.s_addr, src->address + 12, 4);
+      break;
+    }
+#if OS_SOCKET_HAS_IPV6
+    case NN_LOCATOR_KIND_UDPv6:
+    case NN_LOCATOR_KIND_TCPv6:
+    {
+      os_sockaddr_in6 *x = (os_sockaddr_in6 *) dst;
+      x->sin6_family = AF_INET6;
+      x->sin6_port = htons ((unsigned short) src->port);
+      memcpy (&x->sin6_addr.s6_addr, src->address, 16);
+      if (IN6_IS_ADDR_LINKLOCAL (&x->sin6_addr))
+      {
+        x->sin6_scope_id = gv.interfaceNo;
+      }
+      break;
+    }
+#endif
+    default:
+      break;
+  }
+}
+
+void nn_address_to_loc (nn_locator_t *dst, const os_sockaddr_storage *src, os_int32 kind)
+{
+  dst->kind = kind;
+  switch (src->ss_family)
+  {
+    case AF_INET:
+    {
+      const os_sockaddr_in *x = (const os_sockaddr_in *) src;
+      assert (kind == NN_LOCATOR_KIND_UDPv4 || kind == NN_LOCATOR_KIND_TCPv4);
+      if (x->sin_addr.s_addr == htonl (INADDR_ANY))
+        set_unspec_locator (dst);
+      else
+      {
+        dst->port = ntohs (x->sin_port);
+        memset (dst->address, 0, 12);
+        memcpy (dst->address + 12, &x->sin_addr.s_addr, 4);
+      }
+      break;
+    }
+#if OS_SOCKET_HAS_IPV6
+    case AF_INET6:
+    {
+      const os_sockaddr_in6 *x = (const os_sockaddr_in6 *) src;
+      assert (kind == NN_LOCATOR_KIND_UDPv6 || kind == NN_LOCATOR_KIND_TCPv6);
+      if (IN6_IS_ADDR_UNSPECIFIED (&x->sin6_addr))
+        set_unspec_locator (dst);
+      else
+      {
+        dst->port = ntohs (x->sin6_port);
+        memcpy (dst->address, &x->sin6_addr.s6_addr, 16);
+      }
+      break;
+    }
+#endif
+    default:
+      NN_FATAL1 ("nn_address_to_loc: family %d unsupported\n", (int) src->ss_family);
+  }
+}
 
 void print_sockerror (const char *msg)
 {
-  int err = os_sockError ();
-  NN_ERROR2 ("SOCKET ERROR %s %d\n", msg, err);
+  int err = os_getErrno ();
+  NN_ERROR2 ("SOCKET %s errno %d\n", msg, err);
 }
 
 unsigned short sockaddr_get_port (const os_sockaddr_storage *addr)
 {
   if (addr->ss_family == AF_INET)
     return ntohs (((os_sockaddr_in *) addr)->sin_port);
+#if OS_SOCKET_HAS_IPV6
   else
     return ntohs (((os_sockaddr_in6 *) addr)->sin6_port);
+#endif
 }
 
 void sockaddr_set_port (os_sockaddr_storage *addr, unsigned short port)
 {
   if (addr->ss_family == AF_INET)
     ((os_sockaddr_in *) addr)->sin_port = htons (port);
+#if OS_SOCKET_HAS_IPV6
   else
     ((os_sockaddr_in6 *) addr)->sin6_port = htons (port);
+#endif
 }
 
 char *sockaddr_to_string_with_port (char addrbuf[INET6_ADDRSTRLEN_EXTENDED], const os_sockaddr_storage *src)
 {
-  int pos;
+  size_t pos;
   switch (src->ss_family)
   {
     case AF_INET:
       os_sockaddrAddressToString ((const os_sockaddr *) src, addrbuf, INET6_ADDRSTRLEN);
-      pos = (int) strlen (addrbuf);
+      pos = strlen (addrbuf);
+      assert(pos <= INET6_ADDRSTRLEN_EXTENDED);
       snprintf (addrbuf + pos, INET6_ADDRSTRLEN_EXTENDED - pos,
                 ":%u", ntohs (((os_sockaddr_in *) src)->sin_port));
       break;
@@ -67,7 +301,8 @@ char *sockaddr_to_string_with_port (char addrbuf[INET6_ADDRSTRLEN_EXTENDED], con
     case AF_INET6:
       addrbuf[0] = '[';
       os_sockaddrAddressToString ((const os_sockaddr *) src, addrbuf + 1, INET6_ADDRSTRLEN);
-      pos = (int) strlen (addrbuf);
+      pos = strlen (addrbuf);
+      assert(pos <= INET6_ADDRSTRLEN_EXTENDED);
       snprintf (addrbuf + pos, INET6_ADDRSTRLEN_EXTENDED - pos,
                 "]:%u", ntohs (((os_sockaddr_in6 *) src)->sin6_port));
       break;
@@ -83,6 +318,20 @@ char *sockaddr_to_string_with_port (char addrbuf[INET6_ADDRSTRLEN_EXTENDED], con
 char *sockaddr_to_string_no_port (char addrbuf[INET6_ADDRSTRLEN_EXTENDED], const os_sockaddr_storage *src)
 {
   return os_sockaddrAddressToString ((const os_sockaddr *) src, addrbuf, INET6_ADDRSTRLEN);
+}
+
+char *locator_to_string_with_port (char addrbuf[INET6_ADDRSTRLEN_EXTENDED], const nn_locator_t *loc)
+{
+  os_sockaddr_storage addr;
+  nn_loc_to_address (&addr, loc);
+  return sockaddr_to_string_with_port (addrbuf, &addr);
+}
+
+char *locator_to_string_no_port (char addrbuf[INET6_ADDRSTRLEN_EXTENDED], const nn_locator_t *loc)
+{
+  os_sockaddr_storage addr;
+  nn_loc_to_address (&addr, loc);
+  return sockaddr_to_string_no_port (addrbuf, &addr);
 }
 
 
@@ -134,34 +383,43 @@ static void set_socket_nodelay (os_socket sock)
 
 static int set_rcvbuf (os_socket socket)
 {
-  int ReceiveBufferSize;
+  os_uint32 ReceiveBufferSize;
   os_uint32 optlen = (os_uint32) sizeof (ReceiveBufferSize);
+  os_uint32 socket_min_rcvbuf_size;
+  if (config.socket_min_rcvbuf_size.isdefault)
+    socket_min_rcvbuf_size = 1048576;
+  else
+    socket_min_rcvbuf_size = config.socket_min_rcvbuf_size.value;
   if (os_sockGetsockopt (socket, SOL_SOCKET, SO_RCVBUF, (char *) &ReceiveBufferSize, &optlen) != os_resultSuccess)
   {
     print_sockerror ("get SO_RCVBUF");
     return -2;
   }
-  if (ReceiveBufferSize < config.socket_min_rcvbuf_size)
+  if (ReceiveBufferSize < socket_min_rcvbuf_size)
   {
     /* make sure the receive buffersize is at least the minimum required */
-    ReceiveBufferSize = config.socket_min_rcvbuf_size;
-    if (os_sockSetsockopt (socket, SOL_SOCKET, SO_RCVBUF, (const char *) &ReceiveBufferSize, sizeof (ReceiveBufferSize)) != os_resultSuccess)
-    {
-      print_sockerror ("SO_RCVBUF");
-      return -2;
-    }
+    ReceiveBufferSize = socket_min_rcvbuf_size;
+    os_sockSetsockopt (socket, SOL_SOCKET, SO_RCVBUF, (const char *) &ReceiveBufferSize, sizeof (ReceiveBufferSize));
 
-    /* Problem is: O/Ss tend to silently cap the buffer size.  The
-       only way to make sure is to read the option value back and
-       check it is now set correctly. */
+    /* We don't check the return code from setsockopt, because some O/Ss tend
+       to silently cap the buffer size.  The only way to make sure is to read
+       the option value back and check it is now set correctly. */
     if (os_sockGetsockopt (socket, SOL_SOCKET, SO_RCVBUF, (char *) &ReceiveBufferSize, &optlen) != os_resultSuccess)
     {
       print_sockerror ("get SO_RCVBUF");
       return -2;
     }
-    if (ReceiveBufferSize < config.socket_min_rcvbuf_size)
+    if (ReceiveBufferSize < socket_min_rcvbuf_size)
     {
-      NN_ERROR2 ("Failed to increase socket receive buffer size to %d bytes, continuing with %d bytes\n", config.socket_min_rcvbuf_size, ReceiveBufferSize);
+      /* NN_ERROR does more than just nn_log(LC_ERROR), hence the duplication */
+      if (config.socket_min_rcvbuf_size.isdefault)
+        nn_log (LC_CONFIG, "failed to increase socket receive buffer size to %u bytes, continuing with %u bytes\n", socket_min_rcvbuf_size, ReceiveBufferSize);
+      else
+        NN_ERROR2 ("failed to increase socket receive buffer size to %u bytes, continuing with %u bytes\n", socket_min_rcvbuf_size, ReceiveBufferSize);
+    }
+    else
+    {
+      nn_log (LC_CONFIG, "socket receive buffer size set to %u bytes\n", ReceiveBufferSize);
     }
   }
   return 0;
@@ -169,14 +427,14 @@ static int set_rcvbuf (os_socket socket)
 
 static int set_sndbuf (os_socket socket)
 {
-  int SendBufferSize;
+  unsigned SendBufferSize;
   os_uint32 optlen = (os_uint32) sizeof(SendBufferSize);
-  if( os_sockGetsockopt(socket, SOL_SOCKET, SO_SNDBUF,(char *)&SendBufferSize, &optlen) != os_resultSuccess)
+  if (os_sockGetsockopt(socket, SOL_SOCKET, SO_SNDBUF,(char *)&SendBufferSize, &optlen) != os_resultSuccess)
   {
     print_sockerror ("get SO_SNDBUF");
     return -2;
   }
-  if ( SendBufferSize < config.socket_min_sndbuf_size )
+  if (SendBufferSize < config.socket_min_sndbuf_size )
   {
     /* make sure the send buffersize is at least the minimum required */
     SendBufferSize = config.socket_min_sndbuf_size;
@@ -219,7 +477,7 @@ static int maybe_set_dont_route (os_socket socket)
 
 static int set_reuse_options (os_socket socket)
 {
-  /* Set REUSEADDR and REUSEPORT (if available on platform) for
+  /* Set REUSEADDR (if available on platform) for
      multicast sockets, leave unicast sockets alone. */
   int one = 1;
 
@@ -228,13 +486,6 @@ static int set_reuse_options (os_socket socket)
     print_sockerror ("SO_REUSEADDR");
     return -2;
   }
-#ifdef SO_REUSEPORT
-  if (os_sockSetsockopt (socket, SOL_SOCKET, SO_REUSEPORT, (char *) &one, sizeof (one)) != os_resultSuccess)
-  {
-    print_sockerror ("SO_REUSEPORT");
-    return -2;
-  }
-#endif
   return 0;
 }
 
@@ -249,9 +500,10 @@ static int interface_in_recvips_p (const struct nn_interface *interf)
   return 0;
 }
 
-static int bind_socket (os_socket socket, unsigned short port, const char * address)
+static int bind_socket (os_socket socket, unsigned short port)
 {
   int rc;
+
 #if OS_SOCKET_HAS_IPV6
   if (config.useIpv6)
   {
@@ -259,18 +511,9 @@ static int bind_socket (os_socket socket, unsigned short port, const char * addr
     memset (&socketname, 0, sizeof (socketname));
     socketname.sin6_family = AF_INET6;
     socketname.sin6_port = htons (port);
-    if (address)
-    {
-#ifdef WIN32
-      int sslen = sizeof (socketname);
-      WSAStringToAddress ((LPTSTR) address, AF_INET6, NULL, (os_sockaddr*) &socketname, &sslen);
-#else
-      inet_pton (AF_INET6, address, &(socketname.sin6_addr));
-#endif
-    }
-    else
-    {
-      socketname.sin6_addr = os_in6addr_any;
+    socketname.sin6_addr = os_in6addr_any;
+    if (IN6_IS_ADDR_LINKLOCAL (&socketname.sin6_addr)) {
+      socketname.sin6_scope_id = gv.interfaceNo;
     }
     rc = os_sockBind (socket, (struct sockaddr *) &socketname, sizeof (socketname));
   }
@@ -280,76 +523,24 @@ static int bind_socket (os_socket socket, unsigned short port, const char * addr
     struct sockaddr_in socketname;
     socketname.sin_family = AF_INET;
     socketname.sin_port = htons (port);
-    socketname.sin_addr.s_addr = (address == NULL) ? htonl (INADDR_ANY) : inet_addr (address);
+    socketname.sin_addr.s_addr = htonl (INADDR_ANY);
     rc = os_sockBind (socket, (struct sockaddr *) &socketname, sizeof (socketname));
   }
   if (rc != os_resultSuccess)
   {
-    if (os_sockError () != os_sockEADDRINUSE)
+    if (os_getErrno () != os_sockEADDRINUSE)
+    {
       print_sockerror ("bind");
-    return -1;
-  }
-  return 0;
-}
-
-static int join_mcgroup (os_socket socket, const os_sockaddr_storage *mcip, const struct nn_interface *interf)
-{
-  /* Note: interf == NULL indicates default address for multicast */
-  int rc;
-
-#if OS_SOCKET_HAS_IPV6
-  if (config.useIpv6)
-  {
-    os_ipv6_mreq ipv6mreq;
-    memset (&ipv6mreq, 0, sizeof (ipv6mreq));
-    memcpy (&ipv6mreq.ipv6mr_multiaddr, &((os_sockaddr_in6 *) mcip)->sin6_addr, sizeof (ipv6mreq.ipv6mr_multiaddr));
-    ipv6mreq.ipv6mr_interface = interf ? interf->if_index : 0;
-    rc = os_sockSetsockopt (socket, IPPROTO_IPV6, IPV6_JOIN_GROUP, &ipv6mreq, sizeof (ipv6mreq));
-  }
-  else
-#endif
-  {
-    struct ip_mreq mreq;
-    mreq.imr_multiaddr = ((os_sockaddr_in *) mcip)->sin_addr;
-    if (interf)
-      mreq.imr_interface = ((os_sockaddr_in *) &interf->addr)->sin_addr;
-    else
-      mreq.imr_interface.s_addr = htonl (INADDR_ANY);
-    rc = os_sockSetsockopt (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *) &mreq, sizeof (mreq));
-  }
-
-  if (rc != os_resultSuccess)
-  {
-    const char *op = config.useIpv6 ? "IPV6_JOIN_GROUP" : "IP_ADD_MEMBERSHIP";
-    int err = os_sockError ();
-    char buf1[INET6_ADDRSTRLEN_EXTENDED];
-    sockaddr_to_string_no_port (buf1, mcip);
-    if (interf)
-    {
-      char buf2[INET6_ADDRSTRLEN];
-      sockaddr_to_string_no_port (buf2, &interf->addr);
-      if (err == os_sockEADDRINUSE)
-        NN_WARNING3 ("%s for %s failed on interface with address %s: already bound\n", op, buf1, buf2);
-      else
-        NN_WARNING4 ("%s for %s failed on interface with address %s (errno %d)\n", op, buf1, buf2, err);
     }
-    else
-    {
-      if (err == os_sockEADDRINUSE)
-        NN_WARNING2 ("%s for %s failed on default interface: already bound\n", op, buf1);
-      else
-        NN_WARNING3 ("%s for %s failed on default interface (errno %d)\n", op, buf1, err);
-    }
-    return -2;
   }
-  return 0;
+  return (rc == os_resultSuccess) ? 0 : -1;
 }
 
 #if OS_SOCKET_HAS_IPV6
 static int set_mc_options_transmit_ipv6 (os_socket socket)
 {
   os_uint interfaceNo = gv.interfaceNo;
-  os_uint ttl = config.multicast_ttl;
+  os_uint ttl = (os_uint) config.multicast_ttl;
   unsigned loop;
   if (os_sockSetsockopt (socket, IPPROTO_IPV6, IPV6_MULTICAST_IF, &interfaceNo, sizeof (interfaceNo)) != os_resultSuccess)
   {
@@ -361,7 +552,7 @@ static int set_mc_options_transmit_ipv6 (os_socket socket)
     print_sockerror ("IPV6_MULTICAST_HOPS");
     return -2;
   }
-  loop = config.enableMulticastLoopback;
+  loop = (unsigned) !!config.enableMulticastLoopback;
   if (os_sockSetsockopt (socket, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &loop, sizeof (loop)) != os_resultSuccess)
   {
     print_sockerror ("IPV6_MULTICAST_LOOP");
@@ -373,10 +564,30 @@ static int set_mc_options_transmit_ipv6 (os_socket socket)
 
 static int set_mc_options_transmit_ipv4 (os_socket socket)
 {
-  unsigned char ttl = config.multicast_ttl;
+  unsigned char ttl = (unsigned char) config.multicast_ttl;
   unsigned char loop;
+  os_result ret;
 
-  if (os_sockSetsockopt (socket, IPPROTO_IP, IP_MULTICAST_IF, (char *) &((os_sockaddr_in *) &gv.ownip)->sin_addr, sizeof (((os_sockaddr_in *) &gv.ownip)->sin_addr)) != os_resultSuccess)
+#if defined __linux || defined __APPLE__
+  if (config.use_multicast_if_mreqn)
+  {
+    struct ip_mreqn mreqn;
+    memset (&mreqn, 0, sizeof (mreqn));
+    /* looks like imr_multiaddr is not relevant, not sure about imr_address */
+    mreqn.imr_multiaddr.s_addr = htonl (INADDR_ANY);
+    if (config.use_multicast_if_mreqn > 1)
+      mreqn.imr_address.s_addr = ((os_sockaddr_in *) &gv.ownip)->sin_addr.s_addr;
+    else
+      mreqn.imr_address.s_addr = htonl (INADDR_ANY);
+    mreqn.imr_ifindex = (int) gv.interfaceNo;
+    ret = os_sockSetsockopt (socket, IPPROTO_IP, IP_MULTICAST_IF, &mreqn, sizeof (mreqn));
+  }
+  else
+#endif
+  {
+    ret = os_sockSetsockopt (socket, IPPROTO_IP, IP_MULTICAST_IF, (char *) &((os_sockaddr_in *) &gv.ownip)->sin_addr, sizeof (((os_sockaddr_in *) &gv.ownip)->sin_addr));
+  }
+  if (ret != os_resultSuccess)
   {
     print_sockerror ("IP_MULTICAST_IF");
     return -2;
@@ -386,7 +597,7 @@ static int set_mc_options_transmit_ipv4 (os_socket socket)
     print_sockerror ("IP_MULICAST_TTL");
     return -2;
   }
-  loop = config.enableMulticastLoopback;
+  loop = (unsigned char) config.enableMulticastLoopback;
 
   if (os_sockSetsockopt (socket, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof (loop)) != os_resultSuccess)
   {
@@ -410,7 +621,63 @@ static int set_mc_options_transmit (os_socket socket)
   }
 }
 
-int join_mcgroups (os_socket socket, const os_sockaddr_storage *mcip)
+static int joinleave_asm_mcgroup (os_socket socket, int join, const os_sockaddr_storage *mcip, const struct nn_interface *interf)
+{
+  int rc;
+#if OS_SOCKET_HAS_IPV6
+  if (config.useIpv6)
+  {
+    os_ipv6_mreq ipv6mreq;
+    memset (&ipv6mreq, 0, sizeof (ipv6mreq));
+    memcpy (&ipv6mreq.ipv6mr_multiaddr, &((os_sockaddr_in6 *) mcip)->sin6_addr, sizeof (ipv6mreq.ipv6mr_multiaddr));
+    ipv6mreq.ipv6mr_interface = interf ? interf->if_index : 0;
+    rc = os_sockSetsockopt (socket, IPPROTO_IPV6, join ? IPV6_JOIN_GROUP : IPV6_LEAVE_GROUP, &ipv6mreq, sizeof (ipv6mreq));
+  }
+  else
+#endif
+  {
+    struct ip_mreq mreq;
+    mreq.imr_multiaddr = ((os_sockaddr_in *) mcip)->sin_addr;
+    if (interf)
+      mreq.imr_interface = ((os_sockaddr_in *) &interf->addr)->sin_addr;
+    else
+      mreq.imr_interface.s_addr = htonl (INADDR_ANY);
+    rc = os_sockSetsockopt (socket, IPPROTO_IP, join ? IP_ADD_MEMBERSHIP : IP_DROP_MEMBERSHIP, (char *) &mreq, sizeof (mreq));
+  }
+  return (rc == -1) ? os_getErrno() : 0;
+}
+
+
+static char *make_joinleave_msg (char *buf, size_t bufsz, os_socket socket, int join, const os_sockaddr_storage *srcip, const os_sockaddr_storage *mcip, const struct nn_interface *interf, int err)
+{
+  char mcstr[INET6_ADDRSTRLEN_EXTENDED], srcstr[INET6_ADDRSTRLEN_EXTENDED], interfstr[INET6_ADDRSTRLEN_EXTENDED];
+  int n;
+  OS_UNUSED_ARG (srcip);
+  strcpy (srcstr, "*");
+  sockaddr_to_string_no_port (mcstr, mcip);
+  if (interf)
+    sockaddr_to_string_no_port(interfstr, &interf->addr);
+  else
+    (void) snprintf (interfstr, sizeof (interfstr), "(default)");
+  n = err ? snprintf (buf, bufsz, "error %d in ", err) : 0;
+  if ((size_t) n  < bufsz)
+    snprintf (buf + n, bufsz - (size_t) n, "%s socket %lu for (%s, %s) interface %s", join ? "join" : "leave", (unsigned long) socket, mcstr, srcstr, interfstr);
+  return buf;
+}
+
+static int joinleave_mcgroup (os_socket socket, int join, const os_sockaddr_storage *srcip, const os_sockaddr_storage *mcip, const struct nn_interface *interf)
+{
+  char buf[256];
+  int err;
+  TRACE (("%s\n", make_joinleave_msg (buf, sizeof(buf), socket, join, srcip, mcip, interf, 0)));
+  assert (srcip == NULL);
+  err = joinleave_asm_mcgroup(socket, join, mcip, interf);
+  if (err)
+    NN_WARNING1 ("%s\n", make_joinleave_msg (buf, sizeof(buf), socket, join, srcip, mcip, interf, err));
+  return err ? -1 : 0;
+}
+
+static int joinleave_mcgroups (os_socket socket, int join, const os_sockaddr_storage *srcip, const os_sockaddr_storage *mcip)
 {
   int rc;
   switch (gv.recvips_mode)
@@ -419,12 +686,12 @@ int join_mcgroups (os_socket socket, const os_sockaddr_storage *mcip)
       break;
     case RECVIPS_MODE_ANY:
       /* User has specified to use the OS default interface */
-      if ((rc = join_mcgroup (socket, mcip, NULL)) < 0)
+      if ((rc = joinleave_mcgroup (socket, join, srcip, mcip, NULL)) < 0)
         return rc;
       break;
     case RECVIPS_MODE_PREFERRED:
       if (gv.interfaces[gv.selected_interface].mc_capable)
-        return join_mcgroup (socket, mcip, &gv.interfaces[gv.selected_interface]);
+        return joinleave_mcgroup (socket, join, srcip, mcip, &gv.interfaces[gv.selected_interface]);
       return 0;
     case RECVIPS_MODE_ALL:
     case RECVIPS_MODE_SOME:
@@ -436,7 +703,7 @@ int join_mcgroups (os_socket socket, const os_sockaddr_storage *mcip)
           {
             if (gv.recvips_mode == RECVIPS_MODE_ALL || interface_in_recvips_p (&gv.interfaces[i]))
             {
-              if ((rc = join_mcgroup (socket, mcip, &gv.interfaces[i])) < 0)
+              if ((rc = joinleave_mcgroup (socket, join, srcip, mcip, &gv.interfaces[i])) < 0)
                 fails++;
               else
                 oks++;
@@ -456,19 +723,62 @@ int join_mcgroups (os_socket socket, const os_sockaddr_storage *mcip)
   return 0;
 }
 
+int join_mcgroups (struct nn_group_membership *mship, os_socket socket, const os_sockaddr_storage *srcip, const os_sockaddr_storage *mcip)
+{
+  int ret;
+  os_mutexLock (&mship->lock);
+  if (!reg_group_membership (mship, socket, srcip, mcip))
+  {
+    char buf[256];
+    TRACE (("%s: already joined\n", make_joinleave_msg (buf, sizeof(buf), socket, 1, srcip, mcip, NULL, 0)));
+    ret = 0;
+  }
+  else
+  {
+    ret = joinleave_mcgroups (socket, 1, srcip, mcip);
+  }
+  os_mutexUnlock (&mship->lock);
+  return ret;
+}
+
+int leave_mcgroups (struct nn_group_membership *mship, os_socket socket, const os_sockaddr_storage *srcip, const os_sockaddr_storage *mcip)
+{
+  int ret;
+  os_mutexLock (&mship->lock);
+  if (!unreg_group_membership (mship, socket, srcip, mcip))
+  {
+    char buf[256];
+    TRACE (("%s: not leaving yet\n", make_joinleave_msg (buf, sizeof(buf), socket, 0, srcip, mcip, NULL, 0)));
+    ret = 0;
+  }
+  else
+  {
+    ret = joinleave_mcgroups (socket, 0, srcip, mcip);
+  }
+  os_mutexUnlock (&mship->lock);
+  return ret;
+}
+
 int make_socket
 (
   os_socket * sock,
   unsigned short port,
   c_bool stream,
-  c_bool reuse,
-  const os_sockaddr_storage * mcip,
-  const char * address
+  c_bool reuse
 )
 {
   int rc = -2;
 
-  *sock = os_sockNew ((config.useIpv6 ? AF_INET6 : AF_INET), stream ? SOCK_STREAM : SOCK_DGRAM);
+#if OS_SOCKET_HAS_IPV6
+  if (config.useIpv6)
+  {
+    *sock = os_sockNew (AF_INET6, stream ? SOCK_STREAM : SOCK_DGRAM);
+  }
+  else
+#endif
+  {
+    *sock = os_sockNew (AF_INET, stream ? SOCK_STREAM : SOCK_DGRAM);
+  }
 
   if (! Q_VALID_SOCKET (*sock))
   {
@@ -486,7 +796,7 @@ int make_socket
     (rc = set_rcvbuf (*sock) < 0) ||
     (rc = set_sndbuf (*sock) < 0) ||
     ((rc = maybe_set_dont_route (*sock)) < 0) ||
-    ((rc = bind_socket (*sock, port, address)) < 0)
+    ((rc = bind_socket (*sock, port)) < 0)
   )
   {
     goto fail;
@@ -513,11 +823,6 @@ int make_socket
 #endif
   }
 
-  if (mcip && ((rc = join_mcgroups (*sock, mcip)) < 0))
-  {
-    goto fail;
-  }
-
   return 0;
 
 fail:
@@ -525,6 +830,22 @@ fail:
   os_sockFree (*sock);
   *sock = Q_INVALID_SOCKET;
   return rc;
+}
+
+static int multicast_override(const char *ifname)
+{
+  char *copy = os_strdup (config.assumeMulticastCapable), *cursor = copy, *tok;
+  int match = 0;
+  if (copy != NULL)
+  {
+    while ((tok = os_strsep (&cursor, ",")) != NULL)
+    {
+      if (ddsi2_patmatch (tok, ifname))
+        match = 1;
+    }
+  }
+  os_free (copy);
+  return match;
 }
 
 int find_own_ip (const char *requested_address)
@@ -538,22 +859,18 @@ int find_own_ip (const char *requested_address)
   os_ifAttributes *ifs;
   int maxq_list[MAX_INTERFACES];
   int maxq_count = 0;
-  int maxq_strlen = 0;
+  size_t maxq_strlen = 0;
   int selected_idx = -1;
   char addrbuf[INET6_ADDRSTRLEN_EXTENDED];
 
-  if ((ifs = os_malloc (MAX_INTERFACES * sizeof (*ifs))) == NULL)
-  {
-    NN_FATAL0 ("ddsi2: insufficient memory for enumerating network interfaces\n");
-    return 0;
-  }
+  ifs = os_malloc (MAX_INTERFACES * sizeof (*ifs));
 
   nn_log (LC_CONFIG, "interfaces:");
 
   if (config.useIpv6)
-    res = os_sockQueryIPv6Interfaces (ifs, (os_uint32) MAX_INTERFACES, &nif);
+    res = os_sockQueryIPv6Interfaces (ifs, MAX_INTERFACES, &nif);
   else
-    res = os_sockQueryInterfaces (ifs, (os_uint32) MAX_INTERFACES, &nif);
+    res = os_sockQueryInterfaces (ifs, MAX_INTERFACES, &nif);
   if (res != os_resultSuccess)
   {
     NN_ERROR1 ("os_sockQueryInterfaces: %d\n", (int) res);
@@ -585,7 +902,13 @@ int find_own_ip (const char *requested_address)
     tmpip = ifs[i].address;
     tmpmask = ifs[i].network_mask;
     sockaddr_to_string_no_port (addrbuf, &tmpip);
-    nn_log (LC_CONFIG, " %s", addrbuf);
+    nn_log (LC_CONFIG, " %s(", addrbuf);
+
+    if (!(ifs[i].flags & IFF_MULTICAST) && multicast_override (if_name))
+    {
+      nn_log (LC_CONFIG, "assume-mc:");
+      ifs[i].flags |= IFF_MULTICAST;
+    }
 
     if (ifs[i].flags & IFF_LOOPBACK)
     {
@@ -626,7 +949,7 @@ int find_own_ip (const char *requested_address)
         q += 2;
     }
 
-    nn_log (LC_CONFIG, "(q%d)", q);
+    nn_log (LC_CONFIG, "q%d)", q);
     if (q == quality) {
       maxq_list[maxq_count] = gv.n_interfaces;
       maxq_strlen += 2 + strlen (if_name);
@@ -655,19 +978,15 @@ int find_own_ip (const char *requested_address)
     {
       const int idx = maxq_list[0];
       char *names;
+      int p;
       sockaddr_to_string_no_port (addrbuf, &gv.interfaces[idx].addr);
-      if ((names = os_malloc (maxq_strlen + 1)) == NULL)
-        NN_WARNING2 ("using network interface %s (%s) out of multiple candidates\n",
-                     gv.interfaces[idx].name, addrbuf);
-      else
-      {
-        int p = 0;
-        for (i = 0; i < maxq_count; i++)
-          p += snprintf (names + p, maxq_strlen - p, ", %s", gv.interfaces[maxq_list[i]].name);
-        NN_WARNING3 ("using network interface %s (%s) selected arbitrarily from: %s\n",
-                     gv.interfaces[idx].name, addrbuf, names + 2);
-        os_free (names);
-      }
+      names = os_malloc (maxq_strlen + 1);
+      p = 0;
+      for (i = 0; i < maxq_count && (size_t) p < maxq_strlen; i++)
+        p += snprintf (names + p, maxq_strlen - (size_t) p, ", %s", gv.interfaces[maxq_list[i]].name);
+      NN_WARNING3 ("using network interface %s (%s) selected arbitrarily from: %s\n",
+                   gv.interfaces[idx].name, addrbuf, names + 2);
+      os_free (names);
     }
 
     if (maxq_count > 0)
@@ -678,13 +997,16 @@ int find_own_ip (const char *requested_address)
   else
   {
     os_sockaddr_storage req;
-    if (!os_sockaddrStringToAddress (config.networkAddressString, (os_sockaddr *) &req, !config.useIpv6))
+    /* Presumably an interface name */
+    for (i = 0; i < gv.n_interfaces; i++)
     {
-      /* Presumably an interface name */
-      for (i = 0; i < gv.n_interfaces; i++)
-        if (strcmp (gv.interfaces[i].name, config.networkAddressString) == 0)
-          break;
+      if (strcmp (gv.interfaces[i].name, config.networkAddressString) == 0)
+        break;
     }
+    if (i < gv.n_interfaces)
+      ; /* got a match */
+    else if (!os_sockaddrStringToAddress (config.networkAddressString, (os_sockaddr *) &req, !config.useIpv6))
+      ; /* not good, i = gv.n_interfaces, so error handling will kick in */
     else
     {
       /* Try an exact match on the address */
@@ -745,7 +1067,8 @@ int find_own_ip (const char *requested_address)
     }
 #endif
     nn_log (LC_CONFIG, "selected interface: %s (index %u)\n",
-            gv.interfaces[selected_idx].name, (unsigned) gv.interfaceNo);
+            gv.interfaces[selected_idx].name, gv.interfaceNo);
+
     return 1;
   }
 }

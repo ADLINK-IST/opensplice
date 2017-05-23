@@ -21,9 +21,11 @@
                <Operational>0.1</Operational>
             </RequestCombinePeriod>
          </Alignment>
+         <!--Not currently needed because there is no networking service available
          <WaitForAttachment maxWaitCount="10">
             <ServiceName>networking</ServiceName>
          </WaitForAttachment>
+         -->
       </Network>
       <NameSpaces>
          <NameSpace name="defaultNamespace">

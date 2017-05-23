@@ -1,0 +1,357 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Modeling Guide &mdash; Modeling Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.5.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Modeling Guide" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="modeling-guide">
+<h1>Modeling Guide<a class="headerlink" href="#modeling-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-modeling-guide">1.1. About The Modeling Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#intended-audience">1.2. Intended Audience</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#organisation">1.3. Organisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#conventions">1.4. Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">2. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">3. Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#general-installation-instructions">3.1. General Installation Instructions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#setting-opensplice-preferences">3.2. Setting OpenSplice Preferences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#uninstallation-instructions">3.3. Uninstallation Instructions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="described.html">4. Modeler Described</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="described.html#overview">4.1. Overview</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="described.html#the-vortex-opensplice-modeler-and-eclipse">4.1.1. The Vortex OpenSplice Modeler and Eclipse</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="described.html#the-modeler-gui">4.2. The Modeler GUI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="described.html#eclipse-workbench-and-perspectives">4.2.1. Eclipse Workbench and Perspectives</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="described.html#the-vortex-opensplice-design-perspective">4.2.1.1. The Vortex OpenSplice Design Perspective</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="described.html#creating-and-using-a-vortex-opensplice-project">4.3. Creating and Using a Vortex OpenSplice Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="described.html#project-components">4.4. Project Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="described.html#component-descriptions">4.4.1. Component Descriptions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="described.html#specialized-editors">4.5. Specialized Editors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="described.html#qos-set-editor-and-qos-sets">4.5.1. QoS Set Editor and QoS Sets</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="described.html#overview-page">4.5.1.1. Overview Page</a></li>
+<li class="toctree-l4"><a class="reference internal" href="described.html#edit-qos-policy-values-page">4.5.1.2. Edit QoS Policy Values Page</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="described.html#adding-a-qos-policy">4.5.1.2.1. Adding a QoS Policy</a></li>
+<li class="toctree-l5"><a class="reference internal" href="described.html#removing-a-qos-policy">4.5.1.2.2. Removing a QoS Policy</a></li>
+<li class="toctree-l5"><a class="reference internal" href="described.html#changing-a-qos-property-value">4.5.1.2.3. Changing a QoS Property Value</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="described.html#edit-imported-qos-sets-page">4.5.1.3. Edit Imported QoS Sets Page</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="described.html#importing-a-qos-set">4.5.1.3.1. Importing a QoS Set</a></li>
+<li class="toctree-l5"><a class="reference internal" href="described.html#removing-an-imported-qos-set">4.5.1.3.2. Removing an Imported QoS Set</a></li>
+<li class="toctree-l5"><a class="reference internal" href="described.html#changing-the-order-of-imported-qos-sets">4.5.1.3.3. Changing the Order of Imported QoS Sets</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="described.html#qos-resultant-set">4.5.1.4. QoS Resultant Set</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="described.html#default-qos-sets">4.5.1.4.1. Default QoS Sets</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="described.html#diagram-editor-and-diagrams">4.5.2. Diagram Editor and Diagrams</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="described.html#adding-components">4.5.2.1. Adding Components</a></li>
+<li class="toctree-l4"><a class="reference internal" href="described.html#deleting-components">4.5.2.2. Deleting Components</a></li>
+<li class="toctree-l4"><a class="reference internal" href="described.html#renaming-components">4.5.2.3. Renaming Components</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modeling.html">5. Modeling</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modeling.html#information-modeling">5.1. Information Modeling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#types-and-their-idl-specification">5.1.1. Types and their IDL Specification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#topicdescription">5.1.2. TopicDescription</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#topics">5.1.3. Topics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#contentfilteredtopic">5.1.4. ContentFilteredTopic</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modeling.html#application-modeling">5.2. Application Modeling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#applications">5.2.1. Applications</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#domainparticipants">5.2.2. DomainParticipants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#publishers-and-subscribers">5.2.3. Publishers and Subscribers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#datawriters-and-datareaders">5.2.4. DataWriters and DataReaders</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#partition">5.2.5. Partition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#listeners">5.2.6. Listeners</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#waitsets">5.2.7. WaitSets</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modeling.html#modeling-waitsets">5.2.7.1. Modeling WaitSets</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#conditions">5.2.8. Conditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modeling.html#modeling-conditions">5.2.8.1. Modeling Conditions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="modeling.html#connecting-components">5.2.9. Connecting Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="modeling.html#using-the-connection-tool-for-topics">5.2.9.1. Using the Connection Tool for Topics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="modeling.html#using-the-connection-tool-for-partitions">5.2.9.2. Using the Connection Tool for Partitions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="modeling.html#using-the-connection-tool-for-listeners">5.2.9.3. Using the Connection Tool for Listeners</a></li>
+<li class="toctree-l4"><a class="reference internal" href="modeling.html#using-the-connection-tool-to-connect-statusconditions-to-an-entity">5.2.9.4. Using the Connection Tool to connect StatusConditions to an Entity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="modeling.html#using-the-connection-tool-to-connect-readconditions-and-queryconditions-to-a-datareader">5.2.9.5. Using the Connection Tool to connect ReadConditions and QueryConditions to a DataReader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="modeling.html#using-the-connection-tool-to-connect-conditions-to-a-waitset">5.2.9.6. Using the Connection Tool to connect Conditions to a WaitSet</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="codegeneration.html">6. Code Generation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="codegeneration.html#saving-to-eclipse-projects">6.1. Saving to Eclipse Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="codegeneration.html#exporting-applications">6.2. Exporting Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="codegeneration.html#java-code-generation">6.3. Java Code Generation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#applications">6.3.1. Applications</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#domainparticipants">6.3.2. DomainParticipants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#publishers">6.3.3. Publishers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#subscribers">6.3.4. Subscribers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#data-readers">6.3.5. Data Readers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#data-writers">6.3.6. Data Writers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#listeners">6.3.7. Listeners</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#waitsets">6.3.8. WaitSets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#conditions">6.3.9. Conditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="codegeneration.html#statuscondition">6.3.9.1. StatusCondition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="codegeneration.html#readcondition">6.3.9.2. ReadCondition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="codegeneration.html#querycondition">6.3.9.3. QueryCondition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="codegeneration.html#guardcondition">6.3.9.4. GuardCondition</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#partitions">6.3.10. Partitions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#error-handling">6.3.11. Error Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="codegeneration.html#c-code-generation">6.4. C++ Code Generation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#id3">6.4.1. Applications</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#id4">6.4.2. DomainParticipants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#id5">6.4.3. Publishers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#id6">6.4.4. Subscribers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#id7">6.4.5. Data Readers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#id8">6.4.6. Data Writers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#id9">6.4.7. Listeners</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#id11">6.4.8. WaitSets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#id12">6.4.9. Conditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="codegeneration.html#id13">6.4.9.1. StatusCondition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="codegeneration.html#id14">6.4.9.2. ReadCondition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="codegeneration.html#id15">6.4.9.3. QueryCondition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="codegeneration.html#id16">6.4.9.4. GuardCondition</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="codegeneration.html#id17">6.4.10. Partitions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="launchconfig.html">7. Creating Launch Configurations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="launchconfig.html#creating-and-running-an-ospl-start-launch-configuration">7.1. Creating and Running an <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">start</span></tt> Launch Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="launchconfig.html#creating-the-start-configuration">7.1.1. Creating the <tt class="docutils literal"><span class="pre">start</span></tt> Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="launchconfig.html#running-the-start-configuration">7.1.2. Running the <tt class="docutils literal"><span class="pre">start</span></tt> Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="launchconfig.html#creating-and-running-an-ospl-stop-launch-configuration">7.2. Creating and Running an <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">stop</span></tt> Launch Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="launchconfig.html#creating-the-stop-configuration">7.2.1. Creating the <tt class="docutils literal"><span class="pre">stop</span></tt> Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="launchconfig.html#running-the-stop-configuration">7.2.2. Running the <tt class="docutils literal"><span class="pre">stop</span></tt> Configuration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="compileandrun.html">8. Compiling and Running</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="compileandrun.html#compiling">8.1. Compiling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compileandrun.html#running">8.2. Running</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="compileandrun.html#java">8.2.1. Java</a></li>
+<li class="toctree-l3"><a class="reference internal" href="compileandrun.html#c">8.2.2. C++</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">9. Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#example-chatroom-overview">9.1. Example Chatroom Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#creating-the-chatroom">9.2. Creating the Chatroom</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#step-1-create-a-project">9.2.1. Step 1:  Create a Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#step-2-provide-an-information-model">9.2.2. Step 2:  Provide an Information Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#step-3-create-a-chat-module">9.2.3. Step 3:  Create a Chat module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#step-4-create-the-topics">9.2.4. Step 4:  Create the Topics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#step-5-set-the-qos-policy-values">9.2.5. Step 5:  Set the QoS policy values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#step-6-create-the-chatroom-partition">9.2.6. Step 6:  Create the ChatRoom Partition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#step-7-create-the-application-models">9.2.7. Step 7:  Create the Application Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#step-8-generate-the-source-code">9.2.8. Step 8:  Generate the source code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#step-9-implement-the-applications-business-logic">9.2.9. Step 9:  Implement the applications&#8217; business logic</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#java-implementation">9.2.9.1. Java Implementation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#c-implementation">9.2.9.2. C++ Implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#step-10-compile-the-code">9.2.10. Step 10: Compile the code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#step-11-run-and-test-the-chatroom-application">9.2.11. Step 11: Run and test the Chatroom application</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#application-output">9.2.11.1. Application Output</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="appendixa.html">10. Appendix A</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="appendixa.html#a-chatroom-example-java-source-code">10.1. A Chatroom Example, Java Source Code</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="appendixa.html#chatter-application">10.1.1. Chatter Application</a></li>
+<li class="toctree-l3"><a class="reference internal" href="appendixa.html#messageboard-application">10.1.2. MessageBoard Application</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="appendixa.html#chatmessagedatareaderlistenerimpl-java">10.1.2.1. ChatMessageDataReaderListenerImpl.java</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixa.html#namedmessagedatareaderlistenerimpl-java">10.1.2.2. NamedMessageDataReaderListenerImpl.java</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="appendixa.html#userload-application">10.1.3. UserLoad Application</a></li>
+<li class="toctree-l3"><a class="reference internal" href="appendixa.html#error-handler">10.1.4. Error Handler</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="appendixb.html">11. Appendix B</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="appendixb.html#chatroom-example-c-source-code">11.1. Chatroom Example, C++ Source Code</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="appendixb.html#chatter-application">11.1.1. Chatter Application</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#chatterapplication-cpp-linux-version">11.1.1.1. ChatterApplication.cpp, Linux Version</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#chatterapplication-cpp-windows-version">11.1.1.2. ChatterApplication.cpp, Windows Version</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="appendixb.html#messageboard-application">11.1.2. MessageBoard Application</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#messageboardapplication-cpp-linux-version">11.1.2.1. MessageBoardApplication.cpp, Linux Version</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#messageboardapplication-cpp-windows-version">11.1.2.2. MessageBoardApplication.cpp, Windows Version</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#chatmessagedatareaderlistenerimpl-h-linux-version">11.1.2.3. ChatMessageDataReaderListenerImpl.h, Linux version</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#chatmessagedatareaderlistenerimpl-h-windows-version">11.1.2.4. ChatMessageDataReaderListenerImpl.h, Windows version</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#chatmessagedatareaderlistenerimpl-cpp">11.1.2.5. ChatMessageDataReaderListenerImpl.cpp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#namedmessagedatareaderlistenerimpl-h-linux-version">11.1.2.6. NamedMessageDataReaderListenerImpl.h, Linux Version</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#namedmessagedatareaderlistenerimpl-h-windows-version">11.1.2.7. NamedMessageDataReaderListenerImpl.h, Windows Version</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#namedmessagedatareaderlistenerimpl-cpp">11.1.2.8. NamedMessageDataReaderListenerImpl.cpp</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="appendixb.html#userload-application">11.1.3. UserLoad Application</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#userloadapplication-cpp-linux-version">11.1.3.1. UserLoadApplication.cpp, Linux Version</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#userloadapplication-cpp-windows-version">11.1.3.2. UserLoadApplication.cpp, Windows Version</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#checkstatus-h">11.1.3.3. CheckStatus.h</a></li>
+<li class="toctree-l4"><a class="reference internal" href="appendixb.html#checkstatus-cpp">11.1.3.4. CheckStatus.cpp</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">12. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">12.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">12.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Modeling Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

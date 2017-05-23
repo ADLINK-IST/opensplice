@@ -38,7 +38,8 @@ class TCondition;
  * to a WaitSet. This basic class is specialized in three classes that are
  * known by the middleware: GuardCondition (Section 7.1.2.1.8),
  * StatusCondition (Section 7.1.2.1.9), and ReadCondition (Section 7.1.2.5.8).
- *
+ * For more information see \ref DCPS_Modules_Infrastructure_Waitset and
+ * \ref DCPS_Modules_Infrastructure_Status
  */
 template <typename DELEGATE>
 class dds::core::cond::TCondition : public dds::core::Reference<DELEGATE>

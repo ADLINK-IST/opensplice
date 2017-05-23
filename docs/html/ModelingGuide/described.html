@@ -1,0 +1,1201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Modeler Described &mdash; Modeling Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.5.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Modeling Guide" href="index.html" />
+    <link rel="next" title="5. Modeling" href="modeling.html" />
+    <link rel="prev" title="3. Installation" href="installation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modeling.html" title="5. Modeling"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="3. Installation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="modeler-described">
+<span id="id1"></span><h1>4. Modeler Described<a class="headerlink" href="#modeler-described" title="Permalink to this headline">¶</a></h1>
+<p><em>This section describes the features and specialized tools
+available in Vortex OpenSplice Modeler, and outlines how to
+use them for modeling and assembling resources (such as DDS
+entities) as well as for generating DDS-compliant source code.</em></p>
+<div class="section" id="overview">
+<h2>4.1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice Modeler is an integrated Eclipse-based
+tool chain based on DDS domain-specific model-driven techniques.</p>
+<p>The Vortex OpenSplice Modeler modeling tool provides both
+<em>Information</em> and <em>Application</em> modeling:</p>
+<ul class="simple">
+<li><em>Information modeling</em> includes the modeling of Types and Topics</li>
+<li><em>Application modeling</em> includes the modeling of
+DomainParticipants, Publishers, Subscribers, DataWriters,
+DataReaders, Listeners, WaitSets and Conditions.</li>
+</ul>
+<p>Future releases will also include Deployment modeling (a
+graphical deployment-control environment supporting real-time
+connectivity).</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>A detailed example showing how to model a publisher-subscriber
+application is provided in the <a class="reference internal" href="tutorial.html#tutorial"><em>Tutorial</em></a>.
+Readers should be familiar with the Vortex OpenSplice product,
+the OMG&#8217;s <em>Data Distribution Service for Real-Time Systems
+Specification</em>, Version 1.2, and the Eclipse IDE before reading
+these sections or using the Vortex OpenSplice Modeler.</dd>
+</dl>
+<div class="section" id="the-vortex-opensplice-modeler-and-eclipse">
+<h3>4.1.1. The Vortex OpenSplice Modeler and Eclipse<a class="headerlink" href="#the-vortex-opensplice-modeler-and-eclipse" title="Permalink to this headline">¶</a></h3>
+<p>Eclipse (<a class="reference external" href="http://www.eclipse.org">http://www.eclipse.org</a>) is an extensible, Open Source,
+Integrated Development Environment (IDE) for developing software.</p>
+<p>The <em>Vortex OpenSplice Modeler</em> (also referred to simply as <em>Modeler</em>
+for convenience) is a set of plug-ins for Eclipse. The Vortex
+OpenSplice Modeler plug-in enables the <em>model</em>-driven development
+of the Information Model together with the software components
+(the Application Model) that operate on it. Distinguishing
+between information and application modeling allows a clear
+&#8216;separation of concerns&#8217; for users. System architects can model
+the information and software engineers can model their
+applications on this model.</p>
+<p>The Modeler can generate the source code and descriptors needed
+for any of the supported OpenSplice architectures and platforms.</p>
+</div>
+</div>
+<div class="section" id="the-modeler-gui">
+<h2>4.2. The Modeler GUI<a class="headerlink" href="#the-modeler-gui" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice Modeler Graphical User Interface (GUI) is
+composed of:</p>
+<ul class="simple">
+<li><em>views</em> - panels within the GUI which provide information about
+the components which constitute the models.</li>
+<li><em>editing tools</em> - editors which are used to create, manage, and
+modify the models and components.</li>
+<li>a <em>Vortex OpenSplice Design Perspective</em> - a collection of specific
+views, menus and editors which are particular to the Modeler
+plug-in.</li>
+</ul>
+<p>The GUI elements are introduced below.</p>
+<div class="section" id="eclipse-workbench-and-perspectives">
+<h3>4.2.1. Eclipse Workbench and Perspectives<a class="headerlink" href="#eclipse-workbench-and-perspectives" title="Permalink to this headline">¶</a></h3>
+<p>The Workbench is the Eclipse main window and working area. The
+Workbench contains the editors and views that are used to
+develop, modify and view your software project and its
+components (see
+<a class="reference internal" href="#vortex-opensplice-design-perspective-and-example-project">Vortex OpenSplice Design Perspective and Example Project</a>).</p>
+<p>A Perspective defines what actions are available in the Eclipse
+menus and tool bars as well as arranging the available editors
+and views. A Perspective&#8217;s views can be customized to suit
+individual needs. Any number of Perspectives can be open at one
+time, but only one is visible at a time. The <em>Perspective Switch</em>
+icon, located in the  upper right-hand corner of the Workbench,
+is used to change the currently displayed perspective.</p>
+<div class="section" id="the-vortex-opensplice-design-perspective">
+<h4>4.2.1.1. The Vortex OpenSplice Design Perspective<a class="headerlink" href="#the-vortex-opensplice-design-perspective" title="Permalink to this headline">¶</a></h4>
+<p>The Vortex OpenSplice Design Perspective is an Eclipse perspective
+containing the views, menus and editors needed by users to
+perform tasks within the Modeler.</p>
+<p>The Vortex OpenSplice Design Perspective</p>
+<ul class="simple">
+<li>is displayed when using the Vortex OpenSplice Modeler</li>
+<li>populates the Menu and Tool Bars with OpenSplice-specific items.</li>
+</ul>
+<p>The Vortex OpenSplice Design Perspective with an open project, editors
+and Outline View is shown below.</p>
+<p class="centered" id="vortex-opensplice-design-perspective-and-example-project">
+<strong><strong>Vortex OpenSplice Design Perspective and Example Project</strong></strong></p><a class="reference internal image-reference" href="_images/003_DesignPerspec_EgProj.png"><img alt="Vortex OpenSplice Design Perspective and Example Project" class="align-center" src="_images/003_DesignPerspec_EgProj.png" style="width: 145mm;" /></a>
+<p>The Vortex OpenSplice Design Perspective contains the views listed
+below. These views can be seen in the illustration above.</p>
+<ul class="simple">
+<li><em>Project Explorer</em> (located on the left-hand side of the
+Workbench) - This view shows all of the Vortex OpenSplice and other
+Eclipse projects loaded in the Eclipse Workbench, with their
+contents.</li>
+<li><em>Editor Area</em> (located in the centre of the Workbench) - This
+area is where all editors are displayed. More than one editor
+can be loaded into the editor area: they are accessed by
+clicking the tabs appearing along the top of the editing area.
+The specialized Modeler editors are described in detail in the
+section <a class="reference internal" href="#specialized-editors">Specialized Editors</a>.</li>
+<li><em>Outline</em> (located along the right-hand side of the
+Workbench) - This view shows an outline of the component or
+entity being edited in the current editor. Selecting a component
+in the Outline will change the focus in the editor to that component.
+This is useful for finding a component in a diagram when the
+diagram too large to fit within the visible area of the editor.
+Various types of outline can be shown, including hierarchical
+and zoomable thumbnail views of the editor contents: the type of
+outline(s) available depends on the editor being used.</li>
+<li><em>Properties View</em> (located at the bottom of the Workbench) - The
+Properties View displays an object&#8217;s properties: the object
+can be selected in either the Project Explorer or in an editor.</li>
+<li><em>Problems View</em> (located at the bottom of the Workbench) - The
+Problems View displays all Problem Markers on all resources in
+the users Workspace, including errors and warnings in Vortex
+OpenSplice projects.</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="creating-and-using-a-vortex-opensplice-project">
+<h2>4.3. Creating and Using a Vortex OpenSplice Project<a class="headerlink" href="#creating-and-using-a-vortex-opensplice-project" title="Permalink to this headline">¶</a></h2>
+<p>A Vortex OpenSplice project contains the components and entities that
+are used to generate the source code and interfaces for
+Vortex OpenSplice-based DDS applications.</p>
+<p>The following basic steps describes how to create a Vortex OpenSplice
+project.</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><p>Open the Create a Vortex OpenSplice Project wizard, by</p>
+<ul class="simple">
+<li>choosing <em>File &gt; New &gt; Vortex OpenSplice Project</em> from the Menu Bar</li>
+</ul>
+<p>OR</p>
+<ul class="simple">
+<li>clicking the <em>New Vortex OpenSplice Project</em> icon <a class="reference internal" href="_images/000_icon_NewDDS.png"><img alt="newproj" src="_images/000_icon_NewDDS.png" style="height: 4mm;" /></a>
+located in the Tool Bar</li>
+</ul>
+<p>OR</p>
+<ul class="simple">
+<li>right-clicking in the Project Explorer window to display the
+pop-up menu, then choosing <em>New &gt; Other &gt; Vortex OpenSplice Project</em>
+(see <a class="reference internal" href="#new-vortex-opensplice-project-dialog">New Vortex OpenSplice Project dialog</a> and <a class="reference internal" href="#new-vortex-opensplice-project">New Vortex
+OpenSplice Project</a>.).</li>
+</ul>
+</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div><p>Enter a name for the project into the <em>Project Name</em> text
+box (in the <em>Create a Vortex OpenSplice Project</em> wizard). The <em>Location</em>
+text box shows where the project will be saved: you can change
+the location if desired, however the <em>Use Default Location</em> check
+box must be cleared before the <em>Location</em> text box can be edited.</p>
+<p>Click the <em>Finish</em> button to create your new project.</p>
+</div></blockquote>
+<p>Your newly-created project should appear in the Project Explorer
+window (located on the left-hand side of the Eclipse Workbench).
+The project will contain a single Vortex OpenSplice Model called <tt class="docutils literal"><span class="pre">model</span></tt>.
+The model will contain the global or default module, appearing
+as <tt class="docutils literal"><span class="pre">default</span></tt> in the Project Explorer view.</p>
+<p>The project, complete with its basic file structure, will be
+saved to the location specified in the <em>Location</em> text box of the
+<em>Create a Vortex OpenSplice Project</em> wizard.</p>
+<p>A project&#8217;s contents can be displayed in the Project Explorer
+window by clicking the expansion icon <a class="reference internal" href="_images/000_icon_Expand.png"><img alt="exptree" src="_images/000_icon_Expand.png" style="height: 4mm;" /></a> appearing at the
+left of the project name.</p>
+<p class="centered" id="new-vortex-opensplice-project-dialog">
+<strong><strong>New Vortex OpenSplice Project dialog</strong></strong></p><a class="reference internal image-reference" href="_images/004_NewProjectDialog.png"><img alt="New Vortex OpenSplice Project dialog" class="align-center" src="_images/004_NewProjectDialog.png" style="width: 90mm;" /></a>
+<p class="centered" id="new-vortex-opensplice-project">
+<strong><strong>New Vortex OpenSplice Project</strong></strong></p><a class="reference internal image-reference" href="_images/005_NewProject.png"><img alt="New Vortex OpenSplice Project" class="align-center" src="_images/005_NewProject.png" style="width: 100mm;" /></a>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Add all of the DDS entities, Modeler components and
+resources that are needed for your DDS software application.</div></blockquote>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd><table border="1" class="first last docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><p class="first"><em>Steps 3 through 5 can be done in any order, using the Diagram
+Editor or Project Explorer.</em></p>
+<p>A diagram is just one specific view on the model: it does not
+necessarily show all model components and/or relationships.
+Consider the model a UML diagram, for example: one diagram can
+be used to clarify the inheritance relationships without showing
+the attributes of the objects, while another shows exactly the
+same objects with attributes and associations to other objects.</p>
+<p class="last">Accordingly, components that are in the diagram are always in
+the model, but components in the model do not need to be in the
+diagram.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div>Set each DDS entity&#8217;s properties and QoS policy values
+as needed.</div></blockquote>
+<p><strong>Step 5</strong></p>
+<blockquote>
+<div>Create Diagram component(s). Use the Diagram Editor to
+assemble your projects entities into a model of your software
+application in the diagram components. This model will be used
+to generate your project&#8217;s source code and interfaces.</div></blockquote>
+<p><strong>Step 6</strong></p>
+<blockquote>
+<div>Generate the DDS source code using your completed Vortex
+OpenSplice project model.</div></blockquote>
+<p><strong>Step 7</strong></p>
+<blockquote>
+<div>Implement your application&#8217;s interfaces (using the
+generated class names).</div></blockquote>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd><table border="1" class="first last docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Creating different versions of your application can easily be
+done by simply re-using the generated DDS code (created in Step
+6), then writing different implementations of the interfaces.</em></td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p><strong>Step 8</strong></p>
+<blockquote>
+<div>Compile your software application using your chosen
+compiler.</div></blockquote>
+</div>
+<div class="section" id="project-components">
+<h2>4.4. Project Components<a class="headerlink" href="#project-components" title="Permalink to this headline">¶</a></h2>
+<p>Vortex OpenSplice projects consists of components. The project
+components include:</p>
+<ol class="arabic simple">
+<li><strong>Generic Components</strong> - items which are used by the modeling
+tool to contain and structure the software project&#8217;s DDS
+entities and include<ol class="loweralpha">
+<li><em>Diagrams</em> - graphically model the software project&#8217;s
+structure, entities and properties, as well as defining the
+associations between the entities</li>
+<li><em>Modules</em> - a container for other components or elements within
+the model</li>
+<li><em>QoS Sets</em> - sets containing QoS policy instances which can be
+associated with one or more Application Modeling Components; QoS
+sets can also be associated with one or more Information
+Modeling Components <a class="footnote-reference" href="#id7" id="id2">[1]</a></li>
+<li><em>Specialized Editors</em> - these include editors which are used to
+create and modify the Diagram and QoS Set components</li>
+<li><em>Resources</em> - directory folders, files, or other items which
+are used by the project</li>
+</ol>
+</li>
+<li><strong>Information Modeling Components</strong><ol class="loweralpha">
+<li><em>IDL Type</em> - the specification (or definition) of the
+information that will be used or transmitted by the application
+(as a data type) <a class="footnote-reference" href="#id8" id="id3">[2]</a></li>
+<li><em>Topic</em> - a DDS entity which provides the most basic
+description of the data to be published and subscribed to</li>
+<li><em>Content Filtered Topic</em> - a DDS entity that is a
+specialization of &#8216;TopicDescription&#8217; that allows for
+content-based subscriptions</li>
+</ol>
+</li>
+<li><strong>Application Modeling Components</strong><ol class="loweralpha">
+<li><em>Application</em> - In the context of Vortex OpenSplice Modeler, an
+application is a deployable software component that uses DDS for
+the distribution of information. An application is associated
+with a set of entities, which determine the incoming and/or
+outgoing information as well as how the information is obtained
+and or published.</li>
+<li><em>DomainParticipant</em> - contains and associates DDS entities such
+publishers and subscribers; represents the local membership of
+the application in a domain</li>
+<li><em>Publisher</em> - responsible for data distribution: it publishes
+data types using a DataWriter</li>
+<li><em>Subscriber</em> - responsible for receiving published data and
+making it available to the receiving application</li>
+<li><em>DataWriter</em> - used by the application to communicate with
+a Publisher</li>
+<li><em>DataReader</em> - used by the application to communicate with
+a Subscriber</li>
+<li><em>Partition</em> - a logical partition for associating matching
+topics between Publishers and Subscribers</li>
+<li><em>Listeners</em> - a mechanism for the Vortex OpenSplice middleware to
+asynchronously alert the application of the occurrence of
+relevant status changes</li>
+<li><em>WaitSets</em> - a mechanism for the Vortex OpenSplice middleware to
+synchronously alert the application of the occurrence of
+relevant status changes</li>
+<li><em>Conditions</em> - objects which filter the status changes that
+applications are advised of</li>
+</ol>
+</li>
+</ol>
+<p>The project&#8217;s components are displayed as a hierarchical tree in
+the Project Explorer: higher level items contain lower level or
+dependent items. For example, the <em>Model</em> component (which is the
+top-level entity for all projects in the tool) contains <em>Modules</em>,
+which contain <em>Applications</em>, which in turn contain
+<em>DomainParticipants</em>.</p>
+<p>All project components have properties which can be displayed in
+the <em>Properties</em> panel. The Properties view is located in the
+bottom section of the Workbench.</p>
+<p>If the Properties view is not visible, then choose <em>Window &gt; Show
+View &gt; Properties</em> from the Menu Bar to display the panel.</p>
+<div class="section" id="component-descriptions">
+<h3>4.4.1. Component Descriptions<a class="headerlink" href="#component-descriptions" title="Permalink to this headline">¶</a></h3>
+<p>The following table provides detailed descriptions of the project
+components listed above. These components are used for creating
+project applications and are added to projects from either the
+Project Explorer, by using the Eclipse <em>File &gt; New</em> menu dialogs
+and pop-ups or by using a specialized editor (see
+<a class="reference internal" href="#specialized-editors">Specialized Editors</a>).</p>
+<p class="centered">
+<strong><strong>Detailed Descriptions of Modeler&#8217;s Project Components</strong></strong></p><table border="1" class="docutils">
+<colgroup>
+<col width="34%" />
+<col width="66%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="2"><em>Generic Components</em></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Diagram</td>
+<td><p class="first">This is a graphical representation of the
+project&#8217;s model and is a main component of
+a modeling project. Diagrams:</p>
+<ul class="last simple">
+<li>perform the actual modeling of the project
+and its applications</li>
+<li>show the structure and relationships of
+the project&#8217;s applications and associated
+elements</li>
+<li>are used to create components, including
+all low-level components</li>
+<li>link and associate application components
+with each other, as required by the
+application</li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td>Module</td>
+<td>A module is used to provide a logical
+separation for users. It can be used to
+<em>package</em> items together that are
+related, in order to improve the
+readability. A module in the Modeler is
+like a <em>package</em> in UML.</td>
+</tr>
+<tr class="row-even"><td>QoS Set</td>
+<td>A Modeler component which contains the
+set of QoS policy instances which can
+be associated with one or more modeled
+DDS entities.</td>
+</tr>
+<tr class="row-odd"><td>Resources</td>
+<td>Directory folders, files, or other
+items which are used by the project.</td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="34%" />
+<col width="66%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="2"><em>Information Modeling Components</em></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>IDL Type,
+Data Type</td>
+<td>The <em>specification</em> (or definition) of
+the information that will be used or
+transmitted by the application (as a
+<em>data type</em>).</td>
+</tr>
+<tr class="row-odd"><td>Topic</td>
+<td>A Topic is a DDS entity which provides
+the most basic description of the data
+to be published and subscribed. A Topic
+is identified by its name, which must
+be unique in the whole DDS Domain. It
+fully specifies the type of the data
+that can be communicated when
+publishing or subscribing to the Topic.</td>
+</tr>
+<tr class="row-even"><td>Content Filter Topic</td>
+<td>A DDS entity that is a specialization
+of &#8216;TopicDescription&#8217; that allows for
+content-based subscriptions. Based on
+an existing topic, the
+ContentFilteredTopic allows DataReaders
+to subscribe to a subset of the topic
+content.</td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="34%" />
+<col width="66%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head" colspan="2"><em>Application Modeling Components</em></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Application</td>
+<td><p class="first">An application is a Modeler component
+that uses DDS to publish information or
+subscribe to information. An
+application contains or helps to
+organise related DDS entities. DDS
+entities are:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">DomainParticipant</div>
+<div class="line">Publisher</div>
+<div class="line">Subscriber</div>
+<div class="line">DataWriter</div>
+<div class="line">DataReader</div>
+<div class="line">Topic</div>
+<div class="line">Topic type</div>
+<div class="line">QoS Sets with QoS policies</div>
+</div>
+</div></blockquote>
+<p>Applications will only communicate with
+each other if they <em>publish</em> or
+<em>subscribe from</em> or <em>to</em> the same Topic
+<strong>and</strong> their mutual sets of QoS
+policies are compatible. Developers
+should refer to the OMG&#8217;s <em>DDS
+Specification</em> to ascertain the
+appropriate settings for the relevant
+QoS policies.</p>
+<p class="last">Note that the Partition QoS is shown
+separately as the <em>Partition</em> building
+block.</p>
+</td>
+</tr>
+<tr class="row-odd"><td>DomainParticipant</td>
+<td><p class="first">A DDS entity, needed by all DDS
+applications, which holds and
+associates DDS entities such publishers
+and subscribers.</p>
+<p class="last">Developers should refer to the OMG&#8217;s
+<em>DDS Specification</em> for the complete
+description.</p>
+</td>
+</tr>
+<tr class="row-even"><td>Publisher</td>
+<td>This is responsible for data
+distribution; it publishes data types
+using a <em>DataWriter</em>.</td>
+</tr>
+<tr class="row-odd"><td>Subscriber</td>
+<td>This is responsible for receiving
+published data and making it available
+to the receiving application.</td>
+</tr>
+<tr class="row-even"><td>DataWriter</td>
+<td>This is used by the application to
+communicate to a Publisher.</td>
+</tr>
+<tr class="row-odd"><td>DataReader</td>
+<td>This is used by the application to
+communicate to a Subscriber.</td>
+</tr>
+<tr class="row-even"><td>Partition</td>
+<td><p class="first">This is a logical partition for
+associating matching topics between
+Publishers and Subscribers and
+represents a Partition QoS policy.
+Publishers and Subscribers connect to
+one or more Partitions.</p>
+<p class="last">The Partition is shown as a separate
+building block (in the <em>Diagram Editor</em>)</p>
+</td>
+</tr>
+<tr class="row-odd"><td>Listener</td>
+<td>A mechanism for the Vortex OpenSplice
+middleware to asynchronously alert the
+application of the occurrence of
+relevant status changes, such as a
+missed deadline, violation of a
+QosPolicy setting <em>etc</em>.</td>
+</tr>
+<tr class="row-even"><td>WaitSet</td>
+<td>A mechanism for the Vortex OpenSplice
+middleware to asynchronously alert the
+application of the occurrence of
+relevant status changes, such as
+missed deadlines, violation of a
+QosPolicy setting <em>etc</em>.
+WaitSets allow application threads to wait
+until one or more of the attached Condition
+objects have a trigger value of
+<tt class="docutils literal"><span class="pre">TRUE</span></tt> or until a specified timeout
+expires.</td>
+</tr>
+<tr class="row-odd"><td>GuardCondition</td>
+<td>A GuardCondition is a specific
+Condition whose trigger value is
+completely under the control of the
+application. The purpose of a
+GuardCondition is to provide the means
+for an application to manually wake a
+WaitSet.</td>
+</tr>
+<tr class="row-even"><td>StatusCondition</td>
+<td>Entity objects that have status
+attributes also have a StatusCondition.
+StatusConditions can be set to monitor
+various communication statuses of the
+Entity which are enabled by setting a
+status mask. When attached to a
+WaitSet, a StatusCondtion causes the
+WaitSet to trigger when one or more of
+the enabled status attributes becomes
+<tt class="docutils literal"><span class="pre">TRUE</span></tt>.</td>
+</tr>
+<tr class="row-odd"><td>ReadCondition</td>
+<td><p class="first">ReadCondition objects are associated
+with a DataReader and provide an
+alternative communication style between
+the Data Distribution Service and the
+application (in other words, wait-based
+rather than notification-based).</p>
+<p>A ReadCondtion allows a DataReader to
+specify the data samples it is
+interested in by specifying the desired
+sample-states, view-states and
+instance-states.</p>
+<p class="last">A ReadCondition object can be used on
+its own to read from a DataReader or it
+can be attached to a WaitSet. When
+attached to a WaitSet a ReadCondition
+causes the WaitSet to trigger when data
+is available which satisfies the
+settings of the ReadCondition.</p>
+</td>
+</tr>
+<tr class="row-even"><td>QueryCondition</td>
+<td>QueryCondition objects are specialized
+ReadCondition objects. A subset of an
+SQL expression can be used to allow the
+application to filter out newly arrived
+data, in addition to the notification
+of new arrivals.</td>
+</tr>
+</tbody>
+</table>
+<p>All of the components shown in the table can be added to a project
+by following the steps shown below. The <em>Diagram Editor</em> (see
+<a class="reference internal" href="#diagram-editor-and-diagrams">Diagram Editor and Diagrams</a>) can also be used to add the
+components to the project.</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><em>Select (click on) the project&#8217;s name</em> located in the
+Eclipse Project Explorer panel.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div><p>Either</p>
+<ul class="simple">
+<li>choose <em>File &gt; New &gt; &lt;item&gt;</em> from the Eclipse Menu Bar</li>
+</ul>
+<p>OR</p>
+<ul class="simple">
+<li>right-click on the project name and choose <em>New &gt; Other &gt;
+Vortex OpenSplice &gt; &lt;item&gt;</em> from the pop-up dialog</li>
+</ul>
+<p>where <em>&lt;item&gt;</em> is the name of the required component or resource,
+for example <em>Module</em>. This opens a pop-up dialog for adding
+details about the new component.</p>
+</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Provide details about the new component in the pop-up
+dialog&#8217;s text boxes, including the component&#8217;s intended root
+(the parent or container that the component is to be added to),
+the component&#8217;s name, plus any other requested information.
+Click <em>Next</em> or <em>Finish</em> to add the component (after providing all
+requested details).</div></blockquote>
+<p><em>Components are context- and container-sensitive</em>: they can
+only be added to the appropriate parts of a project or other
+components.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd><table border="1" class="first last docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Components are context- and container-sensitive</em>: they can
+only be added to the appropriate parts of a project or other
+components.</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="specialized-editors">
+<h2>4.5. Specialized Editors<a class="headerlink" href="#specialized-editors" title="Permalink to this headline">¶</a></h2>
+<p>Certain modeling components, including Diagrams and QoS Sets
+(see <a class="reference internal" href="#component-descriptions">Component Descriptions</a>) are created and/or
+edited using the Modeler&#8217;s specialized editors: the <em>QoS Set
+Editor</em> (<a class="reference internal" href="#qos-set-editor-and-qos-sets">QoS Set Editor and QoS Sets</a>) and <em>Diagram
+Editor</em> (<a class="reference internal" href="#diagram-editor-and-diagrams">Diagram Editor and Diagrams</a>).</p>
+<p>The editors are displayed in the Workbench&#8217;s centre panel and
+are opened by:</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Locating the component to be edited in the Project
+Explorer.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div><p>Right-clicking the component, then clicking on the
+required editor when it is displayed in the pop-up dialog that
+appears.</p>
+<p>OR</p>
+<p>Double-clicking the component or its parent (container).</p>
+</div></blockquote>
+<p>The use of these specialized editors is described in
+<a class="reference internal" href="#qos-set-editor-and-qos-sets">QoS Set Editor and QoS Sets</a> and <a class="reference internal" href="#diagram-editor-and-diagrams">Diagram Editor and Diagrams</a>.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+More than one editor can be <em>open</em> at one time, but <em>only one</em>
+editor is <em>visible</em> at a time. Each editor can be displayed by
+clicking on its tab (displayed along the top of the Workbench&#8217;s
+centre panel).</p>
+<div class="section" id="qos-set-editor-and-qos-sets">
+<h3>4.5.1. QoS Set Editor and QoS Sets<a class="headerlink" href="#qos-set-editor-and-qos-sets" title="Permalink to this headline">¶</a></h3>
+<p>A <em>QoS Set</em> is a set of Quality of Service policies and associated
+values <a class="footnote-reference" href="#id9" id="id4">[3]</a> . A Qos Set can be assigned to a particular DDS entity or
+it may exist as an independent set within a module.</p>
+<p>A QoS Set is added to a module by:</p>
+<blockquote>
+<div><ul class="simple">
+<li>choosing <em>File &gt; New &gt; QoS Set</em> from the Eclipse Menu Bar</li>
+</ul>
+<p>OR</p>
+<ul class="simple">
+<li>right-clicking on the module and choosing <em>QoS Set</em> from the
+pop-up dialog</li>
+</ul>
+</div></blockquote>
+<p>The <em>QoS Set Editor</em> is an editing tool specifically designed to
+quickly and easily add and set Quality of Service (QoS) policies.</p>
+<p>The QoS Set Editor is opened by double-clicking on a QoS Set
+component, or right-clicking on it and then choosing <em>Edit QoS
+Set</em> from the pop-up menu.</p>
+<p>The QoS Set Editor is a multi-page editor with three pages:</p>
+<blockquote>
+<div><ul class="simple">
+<li>The <em>Overview</em> page provides general information about the QoS
+Set (see <a class="reference internal" href="#qosset-editor-and-overview-page">QoSSet Editor and Overview page</a>).</li>
+<li>The <em>Edit QoS Policy Values</em> page is used to manage and display
+the set&#8217;s QoS properties (see <a class="reference internal" href="#id5">Edit QoS Policy Values page</a>).</li>
+<li>The <em>Edit Imported QoS Sets</em> page page has facilities for
+managing imported QoS sets (see <a class="reference internal" href="#id6">Edit Imported QoS Sets page</a>).</li>
+</ul>
+</div></blockquote>
+<p>The pages are opened by clicking on their tabs located along the
+bottom of the editor (see <a class="reference internal" href="#qosset-editor-and-overview-page">QoSSet Editor and Overview page</a>).</p>
+<p>Each page contains widgets that are specific to the page such as
+combo boxes, buttons and lists. The combo boxes are opened and
+closed by clicking on the icons located at the left of each list.</p>
+<p>In addition to the page-specific widgets, there is also a
+<em>Resultant QoS Set</em> tree viewer; this widget is common to all
+pages. The <em>Resultant QoS Set</em> is the actual set of policies and
+values that will be assigned to the QoS Set&#8217;s owner, using both
+the current QoS Set and imported QoS Sets. The Resultant QoS Set
+is determined by an algorithm which compares the current QoS
+Set&#8217;s values with the values of its imported QoS Sets, then
+calculates which values should be used (see <a class="reference internal" href="#qos-resultant-set">QoS Resultant Set</a>).</p>
+<div class="section" id="overview-page">
+<h4>4.5.1.1. Overview Page<a class="headerlink" href="#overview-page" title="Permalink to this headline">¶</a></h4>
+<p>The <em>Overview</em> page contains the following lists and information:</p>
+<blockquote>
+<div><p><em>General Information</em> - general information about the QoS set
+including its name, path (relationship with ancestor components)
+and name of its parent - the set&#8217;s owner</p>
+<p><em>Imports</em> - QoS sets which have been imported into this QoS set.</p>
+</div></blockquote>
+<p class="centered" id="qosset-editor-and-overview-page">
+<strong><strong>QoSSet Editor and Overview page</strong></strong></p><a class="reference internal image-reference" href="_images/006_QoSsetEditor_overview.png"><img alt="QoSSet Editor and Overview page" class="align-center" src="_images/006_QoSsetEditor_overview.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="edit-qos-policy-values-page">
+<h4>4.5.1.2. Edit QoS Policy Values Page<a class="headerlink" href="#edit-qos-policy-values-page" title="Permalink to this headline">¶</a></h4>
+<p>The <em>Edit QoS Policy Values</em> page contains a <em>QoS Policies</em> list
+section and <em>&lt;Policy&gt; Values</em> section (in addition to the
+<em>Resultant QoS Set</em> list):</p>
+<ul class="simple">
+<li>the <em>QoS Policies</em> displays the list of QoS policies which
+users can alter the property values of</li>
+<li>the <em>&lt;Policy&gt; Values</em> section displays the properties and value
+for the policy, <tt class="docutils literal"><span class="pre">&lt;Policy&gt;</span></tt>, selected in the <em>QoS Policies</em> list.</li>
+</ul>
+<p>The <em>&lt;Policy&gt; Values</em> section is only visible when a QoS policy is
+selected in the <em>QoS Policies</em> list.</p>
+<p class="centered" id="id5">
+<strong><strong>Edit QoS Policy Values page</strong></strong></p><a class="reference internal image-reference" href="_images/007_EditQoSPolicyValues.png"><img alt="Edit QoS Policy Values page" class="align-center" src="_images/007_EditQoSPolicyValues.png" style="width: 140mm;" /></a>
+<div class="section" id="adding-a-qos-policy">
+<h5>4.5.1.2.1. Adding a QoS Policy<a class="headerlink" href="#adding-a-qos-policy" title="Permalink to this headline">¶</a></h5>
+<p>This process adds a QoS Policy to the <em>QoS Policies</em> list.</p>
+<p>All appropriate QoS Policies already exist for the entity;
+however, only those QoS Policies which appear in the list are
+able to have their values changed or edited using the <em>QoS Policy
+Values</em> section.</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Click the <em>Add</em> button located at the right of the <em>QoS
+Policies</em> list. This displays the <em>Add QoS Value</em> dialog.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Click the icon adjacent to the <em>Type</em> drop-down list. The
+list displays the <em>policies</em> which are appropriate for the entity
+that the QoS Set is assigned to. Scroll down the list of
+available policies to find and select the one required. Click
+the <em>OK</em> button when finished. The new policy will be added to the
+<em>QoS Policies</em> and <em>Resultant QoS Set</em> lists.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div><p>Select the newly-added policy from the <em>QoS Policies</em>
+list (if it is not already selected). The properties and values
+for the selected policy will be displayed in the <em>&lt;Policy&gt; Values</em>
+list, where <em>&lt;Policy&gt;</em> is the policy&#8217;s name. The values and
+selection methods shown are specific to each policy type. Select
+and set the policy values by choosing them from the displayed
+drop-down lists, check boxes or text boxes.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Check boxes are used to enter boolean values: setting the check
+box (displaying an &#8216;X&#8217; mark) sets the associated value to <tt class="docutils literal"><span class="pre">TRUE</span></tt>.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+The data types and values displayed for each policy are in
+accordance with the OMG&#8217;s DDS Specification. However, it is the
+developer&#8217;s responsibility to correctly select or set the values
+that are appropriate for the selected policy and component
+(entity) the QoS Set will be assigned to. It is recommended that
+reference is made to the <em>DDS Specification</em> when setting these
+values.</p>
+</div></blockquote>
+</div>
+<div class="section" id="removing-a-qos-policy">
+<h5>4.5.1.2.2. Removing a QoS Policy<a class="headerlink" href="#removing-a-qos-policy" title="Permalink to this headline">¶</a></h5>
+<p>Select the policy to be removed from the <em>QoS Value</em> list, then
+click the <em>Remove</em> button.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+The QoS policy still exists but it is removed from the <em>QoS
+Policies</em> list and its properties are reset to their
+default values.</p>
+</div>
+<div class="section" id="changing-a-qos-property-value">
+<h5>4.5.1.2.3. Changing a QoS Property Value<a class="headerlink" href="#changing-a-qos-property-value" title="Permalink to this headline">¶</a></h5>
+<p>A policy&#8217;s values can be changed if needed: select the policy
+from the <em>QoS Policies</em> list, then change the values which are
+displayed in the <em>&lt;Policy&gt; Values</em> section, where <em>&lt;Policy&gt;</em> is the
+policy&#8217;s name.</p>
+<p>It is recommended that users refer to the <em>DDS Specification</em>
+to ensure that the values used for a policy are appropriate.</p>
+</div>
+</div>
+<div class="section" id="edit-imported-qos-sets-page">
+<h4>4.5.1.3. Edit Imported QoS Sets Page<a class="headerlink" href="#edit-imported-qos-sets-page" title="Permalink to this headline">¶</a></h4>
+<p>The <em>Edit Imported QoS Sets</em> page contains an <em>Imports</em> list and
+<em>Imported Set Detail</em> section (in addition to the <em>Resultant QoS
+Set</em> list):</p>
+<ul>
+<li><p class="first"><em>Imports</em> displays an ordered list of the QoS sets which have
+been imported into the current QoS Set: sets can be added,
+removed and reordered.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+The order that the QoS Sets are displayed in the <em>Imports</em> list is
+used by the <em>Resultant QoS Set</em> to resolve conflicts and
+determine the priority of each set&#8217;s policy values. The order is
+changed using the <em>Promote</em> and <em>Demote</em> buttons.</p>
+</li>
+<li><p class="first"><em>Imported Set Details</em> - displays the <em>Resultant QoS Sets</em> for
+the selected imported sets.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+This section is only visible when a QoS Set is selected from the
+<em>Imports</em> section <em>Imported Set Details</em>.</p>
+</li>
+</ul>
+<p class="centered" id="id6">
+<strong><strong>Edit Imported QoS Sets page</strong></strong></p><a class="reference internal image-reference" href="_images/008_EditImportedQoSsets.png"><img alt="Edit Imported QoS Sets page" class="align-center" src="_images/008_EditImportedQoSsets.png" style="width: 140mm;" /></a>
+<div class="section" id="importing-a-qos-set">
+<h5>4.5.1.3.1. Importing a QoS Set<a class="headerlink" href="#importing-a-qos-set" title="Permalink to this headline">¶</a></h5>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Click the <em>Add</em> button located at the right of the
+<em>Imports</em> list. This displays the <em>QoS Set Selection</em> dialog.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div><p>Click the expansion icons <a class="reference internal" href="_images/000_icon_Expand.png"><img alt="exptree" src="_images/000_icon_Expand.png" style="height: 4mm;" /></a> adjacent to the project name
+and component containing the QoS Set you want to import.
+Expand the project-component tree until the desired QoS Set
+appears (see the Project Explorer tree shown in the
+<a class="reference internal" href="#qosset-editor-and-overview-page">QoSSet Editor and Overview page</a> screen).</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Only QoS Sets that have not already been imported will be
+displayed in order to prevent inadvertently importing the same
+QoS Set more than once.</p>
+</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div><p>Select the desired QoS Set, then click the <em>OK</em> button.</p>
+<p>The newly-imported QoS set will appear in the <em>Imports</em> list and
+its details will appear in the <em>Imported Set Details</em> list.</p>
+</div></blockquote>
+</div>
+<div class="section" id="removing-an-imported-qos-set">
+<h5>4.5.1.3.2. Removing an Imported QoS Set<a class="headerlink" href="#removing-an-imported-qos-set" title="Permalink to this headline">¶</a></h5>
+<p>Select the required QoS Set from the <em>Imports</em> list, then click
+the <em>Remove</em> button.</p>
+</div>
+<div class="section" id="changing-the-order-of-imported-qos-sets">
+<h5>4.5.1.3.3. Changing the Order of Imported QoS Sets<a class="headerlink" href="#changing-the-order-of-imported-qos-sets" title="Permalink to this headline">¶</a></h5>
+<p>An imported QoS Set can be moved up or down the <em>Imports</em> list by
+clicking the <em>Promote</em> or <em>Demote</em> buttons, respectively. However,
+default QoS Sets and QoS Sets from a topic (datawriters and
+datareaders) can not be moved.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+The order that the QoS Sets are displayed in the <em>Imports</em> list is
+used by the <em>Resultant QoS Set</em> to resolves conflicts and
+determine the priority of each set&#8217;s policy values.</p>
+</div>
+</div>
+<div class="section" id="qos-resultant-set">
+<h4>4.5.1.4. QoS Resultant Set<a class="headerlink" href="#qos-resultant-set" title="Permalink to this headline">¶</a></h4>
+<p>A QoS Set can import other, stand-alone QoS sets. The imported
+sets are merged with the current set&#8217;s policy values to create a
+Resultant Set.</p>
+<p>Strict rules of precedence are followed when computing the
+Resultant Set, since different QoS sets may contain duplicate
+values. Starting with an empty working set, values are merged to
+form the Resultant Set, where duplicate values overwrite values
+already in the working set and the steps are applied recursively:</p>
+<ol class="arabic simple">
+<li>Merge the Resultant Set into the working set for each QoS
+set in the imports list.</li>
+<li>Merge the values into the working set to produce the final
+Resultant Set.</li>
+</ol>
+<div class="section" id="default-qos-sets">
+<h5>4.5.1.4.1. Default QoS Sets<a class="headerlink" href="#default-qos-sets" title="Permalink to this headline">¶</a></h5>
+<p>The modeling tool contains default QoS Sets. The default QoS
+Sets contain all the values that are required for a particular
+entity. There are six hidden global default sets for each type
+of entity. <em>DomainParticipants</em> and <em>Topics</em> import this set as the
+first set in the imports list. The default QoS Set cannot be
+removed.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+The default QoS Set does not appear in the <em>QoS Policies</em> list.</p>
+<p>The <em>DomainParticipant</em> also has an extra three default sets for
+the <em>Subscriber</em>, <em>Publisher</em> and <em>Topic</em> which contain the global
+default for the entity type and extend it. This is equivalent to
+the Vortex OpenSplice factory defaults. Subscribers and Publishers
+then inherit the default QoS set from their parent
+DomainParticipant (again restricted to being first in list and
+compulsory). Subscribers and Publishers contain extended default
+sets for DataReaders and DataWriters and their child
+DataReaders/Writers pick these default sets up.</p>
+<p>DataReaders/DataWriters also by default inherit the topic&#8217;s QoS
+if they are connected to one. This is placed second in the
+imports list and it can be removed (this is equivalent to the
+optional <tt class="docutils literal"><span class="pre">copy_from_topic_qos()</span></tt> DDS method).</p>
+</div>
+</div>
+</div>
+<div class="section" id="diagram-editor-and-diagrams">
+<h3>4.5.2. Diagram Editor and Diagrams<a class="headerlink" href="#diagram-editor-and-diagrams" title="Permalink to this headline">¶</a></h3>
+<p>A project&#8217;s diagram is a graphical representation of the
+project&#8217;s <em>Application Model</em> (see the illustration
+<a class="reference internal" href="#diagram-editor-with-tool-palette-and-example-components">Diagram Editor with Tool Palette and Example Components</a>).
+A diagram is a main component of a modeling project.</p>
+<p>The Diagram Editor and diagrams:</p>
+<ul class="simple">
+<li>perform the actual modeling of the project and it
+application(s)</li>
+<li>show the relationships of the project&#8217;s applications and
+associated elements</li>
+<li>are used to create components</li>
+<li>associate application components with each other, as required
+by the application</li>
+</ul>
+<p>The Diagram Editor contains a tool palette and a canvas.</p>
+<ul class="simple">
+<li>The tool palette, located on the left-hand side of the
+editor, contains a list of components and connection tools
+(see
+<a class="reference internal" href="#diagram-editor-with-tool-palette-and-example-components">Diagram Editor with Tool Palette and Example Components</a>).
+The palette can be used to add components to the
+model and create connection between components.<ul>
+<li>Tools are selected by clicking on the tool in the palette;
+its associated component is added to the diagram by the
+clicking in the diagram&#8217;s canvas (see below).</li>
+<li>A tool can be de-selected by pressing the <em>[Esc]</em> key on the
+keyboard.</li>
+</ul>
+</li>
+<li>The canvas, the large area located on the right-hand side of
+the editor, is where symbols representing the model&#8217;s component
+are placed and edited.</li>
+</ul>
+<p>Components&#8217; symbols appearing on the diagram can be &#8216;collapsed&#8217;
+and &#8216;expanded&#8217;.</p>
+<ul class="simple">
+<li>Collapsing a component&#8217;s symbol reduces the symbol to a
+simple box and hides the items it contain. This is useful for
+hiding unwanted detail in the diagram.<ul>
+<li>Collapse a symbol by clicking on the minus (<em>&#8216;-&#8216;</em>) icon located
+at the top-left corner of the symbol.</li>
+<li>The minus icon changes to an addition (<em>&#8216;+&#8217;</em>) icon.</li>
+</ul>
+</li>
+<li>Expanding a component&#8217;s symbol returns the symbol to its
+normal size and shape revealing the items it contains.<ul>
+<li>Expand the symbol by clicking on the addition (<em>&#8216;+&#8217;</em>) icon located
+at the top-left corner of the symbol.</li>
+</ul>
+</li>
+</ul>
+<p class="centered" id="diagram-editor-with-tool-palette-and-example-components">
+<strong><strong>Diagram Editor with Tool Palette and Example Components</strong></strong></p><a class="reference internal image-reference" href="_images/009_DiagramEditor_Tools.png"><img alt="Diagram Editor with Tool Palette and Example Components" class="align-center" src="_images/009_DiagramEditor_Tools.png" style="width: 145mm;" /></a>
+<div class="section" id="adding-components">
+<h4>4.5.2.1. Adding Components<a class="headerlink" href="#adding-components" title="Permalink to this headline">¶</a></h4>
+<p>Components which are added to the diagram using the Diagram
+Editor&#8217;s palette are added to the project&#8217;s model: they are
+automatically displayed in the Project Explorer (as well as on
+the canvas).</p>
+<p>Components in the Project Explorer can be added to diagram by
+clicking on the component then dragging it from the Project
+Explorer to the diagram&#8217;s canvas. If the component is already
+displayed in the canvas, then rather than being duplicated, it
+will only be moved to the location where the mouse button is
+released.</p>
+<p>Detailed instructions for adding components to the model are
+given in the section
+<a class="reference internal" href="modeling.html#application-modeling"><em>Application Modeling</em></a>.</p>
+</div>
+<div class="section" id="deleting-components">
+<h4>4.5.2.2. Deleting Components<a class="headerlink" href="#deleting-components" title="Permalink to this headline">¶</a></h4>
+<p>Deleting a Modeler&#8217;s component or DDS entities removes it from
+the project.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><table border="1" class="first last docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><p class="first">Components that are deleted from Diagram Editor&#8217;s canvas
+are also deleted from the project&#8217;s model. There is <strong>NO</strong>
+<em>UNDO</em> function! Do not delete a component using the
+Diagram Editor unless you want to permanently delete
+it from the model.</p>
+<p>It is strongly advised that the project be saved before
+deleting items.</p>
+<p class="last">However, an item can be <em>removed</em> from a diagram <em>without
+deleting</em> it from the project by right-clicking the item,
+then choosing <em>Remove</em> from the pop-up dialog.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p>A component or entity can be deleted by:</p>
+<ul class="simple">
+<li>right-clicking on it, then choosing the <em>Delete</em> option from
+the pop-up dialog</li>
+<li>selecting it in the Diagram, then choosing <em>Edit &gt; Delete</em> from
+the Menu Bar</li>
+<li>selecting it in the Diagram, then pressing the <em>[Shift]+[Delete]</em>
+keys</li>
+</ul>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Pressing the <em>[Delete]</em> key when an entity is selected in a Diagram
+will just remove the entity from the Diagram, but not actually
+delete it.</p>
+</div>
+<div class="section" id="renaming-components">
+<h4>4.5.2.3. Renaming Components<a class="headerlink" href="#renaming-components" title="Permalink to this headline">¶</a></h4>
+<p>Components and entities can be renamed in either the Project Explorer
+or Diagram Editor by:</p>
+<ul>
+<li><p class="first">Right-clicking on the component, then choosing the <em>Rename</em>
+option from the context menu.</p>
+</li>
+<li><p class="first">Entering the desired name in the <em>Name</em> text box in the pop-up
+dialog, then clicking the <em>Return</em> button.</p>
+<p>OR</p>
+<p>The name of a component in the Diagram can be edited directly
+by double-clicking on the component.</p>
+</li>
+</ul>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="id7" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>QoS sets are categorized under Generic Components for this reason.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id8" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>The Data Type definitions are imported from IDL specifications
+written outside of the Vortex OpenSplice Modeler. The Vortex
+OpenSplice Modeler supports the generation of models from IDL files
+within the project (automatic) as well. Users can write and modify
+IDL alongside their models which will automatically be compiled
+into a splice model.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id9" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td>Refer to the OMG’s <em>DDS Specification</em> and the Vortex OpenSplice
+<em>Language Reference Guides</em> for explanations and descriptions
+of Quality of Service properties and their use.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Modeler Described</a><ul>
+<li><a class="reference internal" href="#overview">4.1. Overview</a><ul>
+<li><a class="reference internal" href="#the-vortex-opensplice-modeler-and-eclipse">4.1.1. The Vortex OpenSplice Modeler and Eclipse</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-modeler-gui">4.2. The Modeler GUI</a><ul>
+<li><a class="reference internal" href="#eclipse-workbench-and-perspectives">4.2.1. Eclipse Workbench and Perspectives</a><ul>
+<li><a class="reference internal" href="#the-vortex-opensplice-design-perspective">4.2.1.1. The Vortex OpenSplice Design Perspective</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#creating-and-using-a-vortex-opensplice-project">4.3. Creating and Using a Vortex OpenSplice Project</a></li>
+<li><a class="reference internal" href="#project-components">4.4. Project Components</a><ul>
+<li><a class="reference internal" href="#component-descriptions">4.4.1. Component Descriptions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specialized-editors">4.5. Specialized Editors</a><ul>
+<li><a class="reference internal" href="#qos-set-editor-and-qos-sets">4.5.1. QoS Set Editor and QoS Sets</a><ul>
+<li><a class="reference internal" href="#overview-page">4.5.1.1. Overview Page</a></li>
+<li><a class="reference internal" href="#edit-qos-policy-values-page">4.5.1.2. Edit QoS Policy Values Page</a><ul>
+<li><a class="reference internal" href="#adding-a-qos-policy">4.5.1.2.1. Adding a QoS Policy</a></li>
+<li><a class="reference internal" href="#removing-a-qos-policy">4.5.1.2.2. Removing a QoS Policy</a></li>
+<li><a class="reference internal" href="#changing-a-qos-property-value">4.5.1.2.3. Changing a QoS Property Value</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#edit-imported-qos-sets-page">4.5.1.3. Edit Imported QoS Sets Page</a><ul>
+<li><a class="reference internal" href="#importing-a-qos-set">4.5.1.3.1. Importing a QoS Set</a></li>
+<li><a class="reference internal" href="#removing-an-imported-qos-set">4.5.1.3.2. Removing an Imported QoS Set</a></li>
+<li><a class="reference internal" href="#changing-the-order-of-imported-qos-sets">4.5.1.3.3. Changing the Order of Imported QoS Sets</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#qos-resultant-set">4.5.1.4. QoS Resultant Set</a><ul>
+<li><a class="reference internal" href="#default-qos-sets">4.5.1.4.1. Default QoS Sets</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#diagram-editor-and-diagrams">4.5.2. Diagram Editor and Diagrams</a><ul>
+<li><a class="reference internal" href="#adding-components">4.5.2.1. Adding Components</a></li>
+<li><a class="reference internal" href="#deleting-components">4.5.2.2. Deleting Components</a></li>
+<li><a class="reference internal" href="#renaming-components">4.5.2.3. Renaming Components</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">3. Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="modeling.html"
+                        title="next chapter">5. Modeling</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/described.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modeling.html" title="5. Modeling"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="3. Installation"
+             >previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

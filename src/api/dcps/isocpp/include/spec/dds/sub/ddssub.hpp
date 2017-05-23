@@ -52,7 +52,7 @@
 #include <dds/sub/SampleInfo.hpp>
 
 #include <dds/sub/LoanedSamples.hpp>
-
+#include <dds/sub/SharedSamples.hpp>
 
 /* Depends on:
  *  <dds/sub/qos/SubscriberQos.hpp>

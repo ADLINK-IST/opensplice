@@ -9,6 +9,8 @@ LDLIBS :=  $(LDLIBS)
 LDLIBS :=   -l$(DDS_CORE)  $(LDLIBS)
 LDLIBS :=    $(LDLIBS)
 
+CFLAGS += $(CFLAGS_XSTRICT)
+
 CINCS += -I$(OSPL_HOME)/src/database/database/include
 CINCS += -I$(OSPL_HOME)/src/kernel/include
 CINCS += -I$(OSPL_HOME)/src/database/database/code

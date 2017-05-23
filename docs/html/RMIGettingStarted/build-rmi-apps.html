@@ -1,0 +1,1002 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Building an RMI Application &mdash; RMI User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RMI User Guide" href="index.html" />
+    <link rel="next" title="5. Language mapping for Vortex OpenSplice RMI" href="language-map.html" />
+    <link rel="prev" title="3. Vortex OpenSplice RMI over DDS" href="rmi-over-dds.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="language-map.html" title="5. Language mapping for Vortex OpenSplice RMI"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="rmi-over-dds.html" title="3. Vortex OpenSplice RMI over DDS"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="building-an-rmi-application">
+<span id="id1"></span><h1>4. Building an RMI Application<a class="headerlink" href="#building-an-rmi-application" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="about-rmi-applications">
+<h2>4.1. About RMI Applications<a class="headerlink" href="#about-rmi-applications" title="Permalink to this headline">¶</a></h2>
+<p>The process of building an Vortex OpenSplice RMI application is shown in
+<a class="reference internal" href="#steps-building-applications-with-rmi">Steps Building Applications with RMI</a> below. The different steps
+are described in the following subsections.</p>
+<div class="figure" id="steps-building-applications-with-rmi">
+<a class="reference internal image-reference" href="_images/RMI-diag-03.png"><img alt="Steps Building Applications with RMI" src="_images/RMI-diag-03.png" style="height: 70mm;" /></a>
+</div>
+<p><strong>Steps Building Applications with RMI</strong></p>
+</div>
+<div class="section" id="services-description">
+<h2>4.2. Services description<a class="headerlink" href="#services-description" title="Permalink to this headline">¶</a></h2>
+<p>The first step in building an RMI application is the definition of its
+provided services in terms of interfaces. The application interfaces
+should be declared using the OMG IDL language. The operations parameters
+can be either of basic (<tt class="docutils literal"><span class="pre">short</span></tt>, <tt class="docutils literal"><span class="pre">long</span></tt>, ...) or complex (<tt class="docutils literal"><span class="pre">struct</span></tt>,
+<tt class="docutils literal"><span class="pre">sequence</span></tt>, <tt class="docutils literal"><span class="pre">string</span></tt>, ...) types. However, the following restrictions
+should be respected:</p>
+<ul class="simple">
+<li>the <tt class="docutils literal"><span class="pre">Any</span></tt> and the <tt class="docutils literal"><span class="pre">valuetype</span></tt> IDL types are not supported because they
+are not supported by the underlying DDS DCPS layer. <tt class="docutils literal"><span class="pre">Union</span></tt> type is also
+not supported.</li>
+<li>Exceptions are not supported at this time.</li>
+<li>Each interface must extend <tt class="docutils literal"><span class="pre">DDS_RMI::Services</span></tt> base interface to
+indicate that it is invocable over DDS. This interface is defined in the
+file <tt class="docutils literal"><span class="pre">dds_rmi.idl</span></tt>, which must be included.</li>
+<li>Each interface must be declared `local&#8217;.</li>
+<li>Oneway operations are supported. The semantics of oneway operations is
+the same as for the OMG CORBA interfaces. A oneway operation must not
+contain any output parameter and must return a void type.</li>
+</ul>
+<p>The following IDL snippet shows an example of a service data
+description:</p>
+<div class="highlight-idl"><div class="highlight"><pre><span class="o">#</span>include &quot;dds_rmi.idl&quot;
+module HelloWorld
+{
+  <span class="o">//</span> interface definition
+local interface HelloService <span class="o">:</span> <span class="o">::</span>DDS_RMI<span class="o">::</span>Services
+{
+  <span class="nb">string</span> greet();
+};
+};
+</pre></div>
+</div>
+</div>
+<div class="section" id="qos-policies-description">
+<h2>4.3. QoS policies description<a class="headerlink" href="#qos-policies-description" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice RMI module provides the ability to tune the quality
+of service of the services invocations (requests and/or replies), if
+needed, by setting the underlying DDS QoS policies. By default, the DDS
+RMI module uses the default values of the DDS QoS policies except for
+the reliability QoS policy which is set to <tt class="docutils literal"><span class="pre">RELIABLE</span></tt>.</p>
+<p>If needed, the application designer can define the QoS policies to be
+set on the invocations in an XML file. This file must respect the XML
+schema given in <a class="reference internal" href="qos-policies.html#qos-policies-xml-schema"><em>QoS policies XML schema</em></a>.</p>
+<p>Note that setting the DDS QoS policies requires a good knowledge of the
+rules for mapping the specified interfaces onto the DDS topics
+description (please refer to
+<a class="reference internal" href="topics-maps.html#rmi-interface-to-dds-topics-mapping-rules"><em>RMI Interface to DDS topics mapping rules</em></a>).</p>
+<p>The following XML snippet shows an example:</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="cp">&lt;?xml version=&quot;1.0&quot; encoding=&quot;ISO-8859-1&quot; ?&gt;</span>
+<span class="nt">&lt;dcps</span> <span class="na">xmlns=</span><span class="s">&quot;http://www.omg.org/dds/&quot;</span>
+<span class="na">xmlns:xsi=</span><span class="s">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span>
+<span class="na">xsi:schemaLocation=</span><span class="s">&quot;http://www.omg.org/dds/DCPS.xsd&quot;</span><span class="nt">&gt;</span>
+
+<span class="nt">&lt;domain</span> <span class="na">id=</span><span class="s">&quot;&quot;</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;topic</span> <span class="na">name=</span><span class="s">&quot;greet_req&quot;</span>
+<span class="na">idltype=</span><span class="s">&quot;::HelloWorld::HelloService::greet_request&quot;</span> <span class="na">idlfile=</span><span class="s">&quot;&quot;</span><span class="nt">&gt;</span>
+
+  <span class="nt">&lt;topic_qos&gt;</span>
+  <span class="nt">&lt;destinationOrderQosPolicy&gt;</span>
+    <span class="nt">&lt;destinationOrderKind&gt;</span>
+      BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS
+    <span class="nt">&lt;/destinationOrderKind&gt;</span>
+  <span class="nt">&lt;/destinationOrderQosPolicy&gt;</span>
+
+  <span class="nt">&lt;durabilityQosPolicy&gt;</span>
+    <span class="nt">&lt;durabilityKind&gt;</span>
+      PERSISTENT_DURABILITY_QOS
+    <span class="nt">&lt;/durabilityKind&gt;</span>
+  <span class="nt">&lt;/durabilityQosPolicy&gt;</span>
+
+  <span class="nt">&lt;latencyBudgetQosPolicy&gt;</span>
+    <span class="nt">&lt;duration&gt;</span>
+      <span class="nt">&lt;nanosec&gt;</span>10000000<span class="nt">&lt;/nanosec&gt;</span>
+      <span class="nt">&lt;sec&gt;</span>0<span class="nt">&lt;/sec&gt;</span>
+    <span class="nt">&lt;/duration&gt;</span>
+  <span class="nt">&lt;/latencyBudgetQosPolicy&gt;</span>
+
+  <span class="nt">&lt;reliabilityQosPolicy&gt;</span>
+    <span class="nt">&lt;duration&gt;</span>
+      <span class="nt">&lt;nanosec&gt;</span>100000000<span class="nt">&lt;/nanosec&gt;</span>
+      <span class="nt">&lt;sec&gt;</span>0<span class="nt">&lt;/sec&gt;</span>
+    <span class="nt">&lt;/duration&gt;</span>
+  <span class="nt">&lt;reliabilityKind&gt;</span>
+    RELIABLE_RELIABILITY_QOS
+  <span class="nt">&lt;/reliabilityKind&gt;</span>
+  <span class="nt">&lt;/reliabilityQosPolicy&gt;</span>
+
+  <span class="nt">&lt;/topic_qos&gt;</span>
+
+  <span class="nt">&lt;/topic&gt;</span>
+
+<span class="nt">&lt;/domain&gt;</span>
+<span class="nt">&lt;/dcps&gt;</span>
+</pre></div>
+</div>
+<p>This example specifies the QoS policies to be applied on the topic
+invocation request of the <tt class="docutils literal"><span class="pre">greet</span></tt> operation of the interface
+<tt class="docutils literal"><span class="pre">HelloWorld::HelloService</span></tt>. Note that the invocation request topic is
+named <tt class="docutils literal"><span class="pre">greet_req</span></tt> and its IDL type is
+<tt class="docutils literal"><span class="pre">HelloWorld::HelloService::greet_request</span></tt>.</p>
+</div>
+<div class="section" id="rmi-compilation">
+<h2>4.4. RMI compilation<a class="headerlink" href="#rmi-compilation" title="Permalink to this headline">¶</a></h2>
+<p>Once the application has defined its services and (optionally) its QoS
+settings, these definitions are compiled to generate type-specific code
+for the application services invocation.</p>
+<p>The RMI compilation is done using the <tt class="docutils literal"><span class="pre">rmipp</span></tt> pre-processor applied on
+the interfaces definition file and the QoS file if it exists.
+The <tt class="docutils literal"><span class="pre">rmipp</span></tt> usage is:</p>
+<div class="highlight-bash"><div class="highlight"><pre>rmipp <span class="o">[</span>-l <span class="o">(</span>java <span class="p">|</span> c++<span class="o">)]</span> <span class="o">[</span>-I &lt;path&gt;<span class="o">]</span> <span class="o">[</span>-d &lt;directory&gt;<span class="o">]</span> <span class="o">[</span>-topics
+&lt;qos_file&gt;<span class="o">]</span> <span class="o">[</span>-P dll_macro_name<span class="o">[</span>,&lt;header-file&gt;<span class="o">]]</span> &lt;interfaces_file&gt;
+</pre></div>
+</div>
+<p>The parameters are:</p>
+<dl class="docutils">
+<dt><strong>-l (java | c++)</strong></dt>
+<dd>Define the target language. The C++ language is the default.</dd>
+<dt><strong>-I &lt;path&gt;</strong></dt>
+<dd>Define the include path directives.</dd>
+<dt><strong>-d &lt;directory&gt;</strong></dt>
+<dd>Define the location to place the generated files.</dd>
+<dt><strong>-topics &lt;qos_file&gt;</strong></dt>
+<dd>Define the XML file including the QoS policies settings.</dd>
+<dt><strong>-P dll_macro_name[,&lt;header-file&gt;]</strong></dt>
+<dd><em>Only applicable to C and C++.</em>
+Sets export macro that will be prefixed to all functions
+in the generated code. This allows creating DLLs from generated
+code. Optionally a header file can be given that will
+be included in each generated file.</dd>
+<dt><strong>&lt;interfaces_file&gt;</strong></dt>
+<dd>The IDL file including the interfaces definition.</dd>
+</dl>
+<p>The <tt class="docutils literal"><span class="pre">rmipp</span></tt> compilation will generate a set of Java or C++ source files
+as well as an IDL file including the mapping of the provided interfaces
+onto the DDS topics. The generated IDL file name is the interfaces file
+name with &#8220;<tt class="docutils literal"><span class="pre">_topics</span></tt>&#8221; concatenated.</p>
+<p><tt class="docutils literal"><span class="pre">Rmipp</span></tt> follows the mapping rules described in
+<a class="reference internal" href="language-map.html#language-mapping-for-product-name-rmi"><em>Language mapping for Vortex OpenSplice RMI</em></a>.</p>
+<p>Example usage:</p>
+<div class="highlight-bash"><div class="highlight"><pre>rmipp -d generated HelloService.idl
+</pre></div>
+</div>
+<p>The generated directory will include:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line"><tt class="docutils literal"><span class="pre">HelloService_topics.idl</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">HelloService_Interface.h</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">HelloService_Interface.cpp</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">HelloService_InterfaceProxy.h</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">HelloService_InterfaceProxy.cpp</span></tt></div>
+</div>
+</div></blockquote>
+<p>In addition, the <tt class="docutils literal"><span class="pre">rmipp</span></tt> compiler performs a DDS compilation to generate
+the DDS/DCPS code that is required to support the requests/replies
+transport over DDS.</p>
+</div>
+<div class="section" id="application-implementation">
+<h2>4.5. Application implementation<a class="headerlink" href="#application-implementation" title="Permalink to this headline">¶</a></h2>
+<p>As mentioned before, the target applications have a client/server
+design. A typical application includes a server part that implements the
+provided interfaces, and a client part that invokes these interfaces.
+This section describes the programming model of both parts.</p>
+<div class="section" id="runtime-starting-and-stopping">
+<span id="id2"></span><h3>4.5.1. Runtime starting and stopping<a class="headerlink" href="#runtime-starting-and-stopping" title="Permalink to this headline">¶</a></h3>
+<p>Any DDS RMI application process must initialize the RMI runtime prior to
+any other operation, regardless of whether it is a client and/or a
+server process. The runtime initialization sets up the underlying DDS
+infrastructure and configures it to make the services invocable and the
+clients capable of invoking the services. It is also important to stop
+the runtime when the application is no longer using RMI.</p>
+<p>The following code snippets show the runtime initialisation and stopping
+procedure in C++ and Java.</p>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p><strong>RMI runtime starting and stopping in C++</strong></p>
+<div class="highlight-C++"><div class="highlight"><pre>01  #include &quot;ddsrmi.hpp&quot;
+02
+03  using namespace org::opensplice::DDS_RMI;
+04
+05  int main (int argc, char * argv [])
+06  {
+07    CRuntime_ref runtime = CRuntime::getDefaultRuntime();
+08    if (runtime.get() == NULL)
+09    {
+10      std::cout &lt;&lt; &quot;Failed to get the Runtime &quot; &lt;&lt; std::endl;
+11      exit(1);
+12    }
+13
+14    //starting the runtime
+15    bool result = runtime-&gt;start(argc, argv);
+16    if (result !=true)
+17    {
+18      std::cout &lt;&lt; &quot;Failed to start the Runtime &quot; &lt;&lt; std::endl;
+19      exit(1);
+20    }
+21    ...
+22
+23    //stopping the runtime
+24    result = runtime-&gt;stop();
+25    if (result !=true)
+26    {
+27      std::cout &lt;&lt; &quot;Failed to stop the Runtime &quot; &lt;&lt; std::endl;
+28      exit(1);
+29    }
+30  }
+</pre></div>
+</div>
+<p>Comments below refer to line numbers in the sample code above:</p>
+<dl class="docutils">
+<dt><strong>1</strong>     <em>Include the OpenSplice RMI library header file</em>.</dt>
+<dd>Any OpenSplice RMI application should include this file.</dd>
+</dl>
+<p><strong>3</strong>     <em>Declare the usage of the OpenSplice RMI library namespace</em>.</p>
+<dl class="docutils">
+<dt><strong>7-12</strong>  <em>Get the default DDS runtime</em>.</dt>
+<dd>This selects the default DDS domain as the data space where
+all subsequent RMI requests and replies will be exchanged.</dd>
+<dt><strong>15-20</strong> <em>Initialize the created runtime</em>.</dt>
+<dd>This creates all the needed DDS entities. A set of configuration
+options can be passed to the <tt class="docutils literal"><span class="pre">start</span></tt> operation <em>via</em> <tt class="docutils literal"><span class="pre">argc</span></tt>
+and <tt class="docutils literal"><span class="pre">argv</span></tt> parameters. This latter is a string array including
+possible option names and values, and <tt class="docutils literal"><span class="pre">argc</span></tt> is the length of
+this array. Note that these parameters are typically the same
+parameters that were passed to the main program so that the RMI
+options can be specified on the command line, each following
+the format &#8216;<tt class="docutils literal"><span class="pre">--option=value</span></tt>&#8216;. All of the supported options
+are described in the section
+<a class="reference internal" href="runtime-config.html#rmi-runtime-configuration-options"><em>RMI Runtime Configuration Options</em></a>.</dd>
+<dt><strong>24-28</strong> <em>Stop the created runtime</em>.</dt>
+<dd>This removes all the created DDS entities and releases the
+RMI-allocated resources. It is strongly recommended to stop the
+runtime when it no longer needed.</dd>
+</dl>
+<p>The Java code below works in a similar way.</p>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p><strong>RMI runtime starting and stopping in Java</strong></p>
+<div class="highlight-Java"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">org.opensplice.DDS_RMI</span><span class="o">;</span>
+
+<span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span> <span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span>
+<span class="o">{</span>
+
+  <span class="n">CRuntime</span> <span class="n">runtime</span> <span class="o">=</span> <span class="n">CRuntime</span><span class="o">.</span><span class="na">getDefaultRuntime</span><span class="o">();</span>
+  <span class="k">if</span><span class="o">(</span><span class="kc">null</span> <span class="o">==</span> <span class="n">runtime</span><span class="o">)</span>
+  <span class="o">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">();</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">exit</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+  <span class="o">}</span>
+
+  <span class="c1">//starting the runtime</span>
+  <span class="kt">boolean</span> <span class="n">result</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="na">start</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+  <span class="k">if</span><span class="o">(!</span><span class="n">result</span><span class="o">)</span>
+  <span class="o">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Failed to start the Runtime&quot;</span><span class="o">)</span> <span class="o">;</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">exit</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+  <span class="o">}</span>
+  <span class="o">...</span>
+  <span class="c1">//stopping the runtime</span>
+  <span class="n">result</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="na">stop</span><span class="o">();</span>
+  <span class="k">if</span><span class="o">(!</span><span class="n">result</span><span class="o">)</span>
+  <span class="o">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Failed to stop the Runtime&quot;</span><span class="o">)</span> <span class="o">;</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">exit</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="server-programming-model">
+<h3>4.5.2. Server programming model<a class="headerlink" href="#server-programming-model" title="Permalink to this headline">¶</a></h3>
+<p>At the server side of the application, each provided interface should be
+implemented, then instantiated and finally registered to be invocable
+<em>via</em> Vortex OpenSplice.</p>
+<p>To define an implementation, the application developer must write an
+implementation class including public methods corresponding to the
+operations of the related IDL interface. The <tt class="docutils literal"><span class="pre">rmipp</span></tt> compilation
+generates for each interface a skeleton class, named
+<tt class="docutils literal"><span class="pre">::DDS_RMI::HelloWorld::HelloServiceInterface</span></tt>, that must be extended
+by the application-supplied implementation class. The language mapping
+rules of the RMI IDL interfaces are given in
+<a class="reference internal" href="language-map.html#language-mapping-for-product-name-rmi"><em>Language mapping for Vortex OpenSplice RMI</em></a>.</p>
+<p>To make an interface invocable over DDS, it must be registered within
+the RMI framework, then activated. The registration process requires the
+following information:</p>
+<ul class="simple">
+<li>the implementation class object</li>
+<li>the server name, as well as a unique id identifying that interface
+inside the server.</li>
+</ul>
+<p>The services activation makes the RMI runtime wait for incoming requests
+for all the registered services.</p>
+<p>The following code snippets show the server programming model in
+C++ and Java.</p>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p><strong>C++ RMI interface implementation</strong></p>
+<div class="highlight-C++"><div class="highlight"><pre><span class="k">class</span> <span class="nc">HelloService_impl</span> <span class="o">:</span>
+      <span class="k">public</span> <span class="k">virtual</span> <span class="n">DDS_RMI</span><span class="o">::</span><span class="n">HelloWorld</span><span class="o">::</span><span class="n">HelloServiceInterface</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="n">HelloService_impl</span><span class="p">();</span>
+   <span class="o">~</span> <span class="n">HelloService_impl</span><span class="p">();</span>
+
+   <span class="k">virtual</span> <span class="n">DDS</span><span class="o">::</span><span class="n">String</span> <span class="n">greet</span> <span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p><strong>Java RMI interface implementation</strong></p>
+<div class="highlight-Java"><div class="highlight"><pre><span class="kd">public</span> <span class="kd">class</span> <span class="nc">HelloService_impl</span> <span class="o">:</span>
+<span class="n">DDS_RMI</span><span class="o">.</span><span class="na">HelloWorld</span><span class="o">.</span><span class="na">myInterfaceInterface</span> <span class="o">{</span>
+   <span class="kd">public</span> <span class="n">String</span> <span class="nf">greet</span> <span class="o">()</span>
+   <span class="o">{</span>
+      <span class="c1">// operation implementation</span>
+   <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p><strong>C++ RMI server</strong></p>
+<div class="highlight-C++"><div class="highlight"><pre>01   #include “ddsrmi.hpp”
+02   #include “HelloService_Interface.hpp”
+03
+04   using namespace org::opensplice::DDS_RMI;
+05
+06   int main (int argc, char * argv [])
+07   {
+08
+09      // Runtime starting
+10      ...
+11
+12      // implementation class instantiation
+13      shared_ptr&lt;HelloService_impl&gt; impl (new HelloService_impl());
+14
+15      //interface registration
+16      bool res = DDS_Service::register_interface&lt;
+16      ::DDS_RMI::HelloWorld::HelloServiceInterface, HelloService_impl&gt;
+17      (
+18            impl, //implementation class
+19            “HelloServer”, // server name
+20            1 // unique server id
+21       );
+22
+23      if(!res)
+24      {
+25          std::cout &lt;&lt; &quot;Failed to register the
+25                        HelloWorld::HelloService interface&quot;) ;
+26          System.exit(1);
+27      }
+28      //services activation
+29      runtime-&gt;run()
+30      // Runtime stopping
+31      ...
+32   }
+</pre></div>
+</div>
+<p>Comments below refer to line numbers in the sample code above:</p>
+<p><strong>1-2</strong>   <em>Include the OpenSplice RMI library header file as well as the generated interface skeleton header file</em>.</p>
+<p><strong>4</strong>     <em>Declare the usage of the OpenSplice RMI library namespace</em>.</p>
+<p><strong>10</strong>    <em>Start the DDS runtime</em>.</p>
+<dl class="docutils">
+<dt><strong>13</strong>    <em>Instantiate the implementation class of the</em> <tt class="docutils literal"><span class="pre">HelloService</span></tt> <em>interface and assign it to a smart pointer</em>.</dt>
+<dd>The OpenSplice RMI library provides an implementation of
+smart pointers <em>via</em> the <tt class="docutils literal"><span class="pre">shared_ptr</span></tt> template class.</dd>
+<dt><strong>16-27</strong> <em>Register the</em> <tt class="docutils literal"><span class="pre">HelloService</span></tt> <em>interface in the default DDS domain</em>.</dt>
+<dd>The <tt class="docutils literal"><span class="pre">register_interface</span></tt> function is a template function
+requiring the interface skeleton class and the interface
+implementation class as template parameters.</dd>
+<dt><strong>28</strong>    <em>Activates all the registered services including the</em> <tt class="docutils literal"><span class="pre">HelloServer</span></tt> <em>service</em>.</dt>
+<dd>This is a blocking call that makes the server runtime
+wait for incoming requests. To shut down the server runtime
+the <tt class="docutils literal"><span class="pre">shutdown()</span></tt> operation must be called.</dd>
+</dl>
+<p><strong>31</strong>    <em>Stop the DDS runtime</em>.</p>
+<p>The Java code below works in a similar way.</p>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p><strong>Java RMI server</strong></p>
+<div class="highlight-Java"><div class="highlight"><pre>static void main (String[] args)
+{
+
+   // Runtime starting
+   ...
+
+   // implementation class instanciation
+   HelloService_impl impl = new HelloService_impl();
+
+   // interface registration
+   boolean res = org.opensplice.DDS_RMI.DDS_Service.register_interface
+   (
+         impl, // implementation class
+         “HelloServer”, // server name
+         1, // unique server id
+         DDS_RMI.HelloWorld.HelloServiceInterface.class //Interface java Class
+   );
+
+   if(!res)
+   {
+       System.out.println(&quot;Failed to register the
+                           HelloWorld::HelloService interface&quot;) ;
+       System.exit(1);
+   }
+runtime.run();
+   // Runtime stopping
+   ...
+}
+</pre></div>
+</div>
+</div>
+<div class="section" id="client-programming-model">
+<h3>4.5.3. Client programming model<a class="headerlink" href="#client-programming-model" title="Permalink to this headline">¶</a></h3>
+<p>As mentioned before, OpenSplice RMI supports synchronous, asynchronous
+and oneway invocation modes. The following subsections present the
+synchronous and asynchronous programming model. The oneway programming
+model is similar to the synchronous one but, of course, with a different
+behaviour.</p>
+<div class="section" id="synchronous-invocation-mode">
+<h4>4.5.3.1. Synchronous invocation mode<a class="headerlink" href="#synchronous-invocation-mode" title="Permalink to this headline">¶</a></h4>
+<p>The client part of the RMI application is as simple as calling a local
+class. Note that these calls block until the server-side responds or an
+internal timeout expires. Typically, in case of failure, the call will
+block until the timeout expiration. This timeout value is set by default
+to 10 minutes, but it may be configured <em>via</em> the interface proxy
+object. This object is a generated object, named
+<tt class="docutils literal"><span class="pre">::DDS_RMI::HelloWorld::HelloServiceInterfaceProxy</span></tt>, that is the local
+representative of the RMI interface. This object is mainly used to call
+the RMI services, as shown in the following client code examples.</p>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p><strong>C++ RMI client</strong></p>
+<div class="highlight-C++"><div class="highlight"><pre>01 #include “ddsrmi.hpp”
+02 #include “HelloService_InterfaceProxy.hpp”
+03
+04 using namespace org::opensplice::DDS_RMI;
+05
+06 int main (int argc, char * argv [])
+07 {
+08
+09   // Runtime starting
+10   ...
+11
+12   // Getting the interface proxy
+13   shared_ptr&lt;::DDS_RMI::HelloWorld::HelloServiceInterfaceProxy&gt; proxy ;
+14   bool ret = DDS_Service::getServerProxy&lt;
+14              ::DDS_RMI::HelloWorld::HelloServiceInterfaceProxy&gt;
+15     (
+16       “HelloServer”, //server name
+17       1, //unique proxy instance id
+18       proxy  // proxy reference
+19     );
+20
+21   // Calling the services
+22   proxy-&gt;greet();
+23
+24   // Runtime stopping
+25   ...
+26
+27 }
+</pre></div>
+</div>
+<p>Comments below refer to line numbers in the sample code above:</p>
+<p><strong>1-2</strong>   <em>Include the RMI library header file as well as the generated interface proxy header file</em>.</p>
+<p><strong>4</strong>     <em>Declare the usage of the OpenSplice RMI library namespace</em>.</p>
+<p><strong>10</strong>    <em>Start the DDS runtime</em>.</p>
+<p><strong>13</strong>    <em>Declare a smart pointer of the HelloService interface proxy type</em>.</p>
+<dl class="docutils">
+<dt><strong>13-19</strong> <em>Get the HelloServer service proxy</em>.</dt>
+<dd>The <tt class="docutils literal"><span class="pre">getServerProxy</span></tt> function is a template function requiring the proxy class type
+as a template parameter. This function accepts the service name, a proxy
+instance id and the smart pointer to the proxy object as parameters. In case of success,
+the smart pointer is set to the created proxy object. The proxy instance id is a unique
+identifier that refers to the created proxy. It is important to ensure the uniqueness
+of the identifiers of all the proxies of the same service. If the client application
+intends to use the same proxy in different threads, the MultiThreaded mode must be set
+(see <a class="reference internal" href="#multithreaded-client">MultiThreaded Client</a> later in this chapter).
+If the requested service is not found, the <tt class="docutils literal"><span class="pre">getServerProxy</span></tt> operation will raise an
+<tt class="docutils literal"><span class="pre">org::opensplice::DDS_RMI::SERVICE_NOT_FOUND</span></tt> exception.</dd>
+</dl>
+<p><strong>22</strong>    <em>Invoke the greet operation synchronously using the created proxy</em>.</p>
+<p><strong>25</strong>    <em>Stop the  runtime</em>.</p>
+<p>The Java code below works in a similar way.</p>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p><strong>Java RMI client</strong></p>
+<div class="highlight-Java"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">org.opensplice.DDS_RMI.*</span><span class="o">;</span>
+
+<span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span> <span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+  <span class="c1">// Runtime starting</span>
+  <span class="o">...</span>
+
+  <span class="c1">// Getting the interface proxy</span>
+  <span class="k">try</span> <span class="o">{</span>
+  <span class="n">DDS_RMI</span><span class="o">.</span><span class="na">HelloWorld</span><span class="o">.</span><span class="na">HelloServiceInterfaceProxy</span> <span class="n">proxy</span> <span class="o">=</span>
+    <span class="n">DDS_Service</span><span class="o">.</span><span class="na">getServerProxy</span> <span class="o">(</span>
+      <span class="s">&quot;HelloServer&quot;</span><span class="o">,</span> <span class="c1">//server name</span>
+      <span class="mi">1</span><span class="o">,</span> <span class="c1">//unique proxy instance id</span>
+       <span class="n">DDS_RMI</span><span class="o">.</span><span class="na">HelloWorld</span><span class="o">.</span><span class="na">HelloServiceInterfaceProxy</span><span class="o">.</span><span class="na">class</span> <span class="c1">// proxy java Class</span>
+    <span class="o">);</span>
+
+  <span class="c1">// Calling the services</span>
+  <span class="n">proxy</span><span class="o">.</span><span class="na">greet</span><span class="o">();</span>
+  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">SERVICE_NOT_FOUND</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+  <span class="c1">// error</span>
+  <span class="o">}</span>
+  <span class="c1">// Runtime stopping</span>
+  <span class="o">...</span>
+
+<span class="o">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="asynchronous-invocation-mode">
+<h4>4.5.3.2. Asynchronous invocation mode<a class="headerlink" href="#asynchronous-invocation-mode" title="Permalink to this headline">¶</a></h4>
+<p>To invoke asynchronously a given non-oneway operation, such as the <tt class="docutils literal"><span class="pre">greet</span></tt>
+operation in the examples shown here, the client application must:</p>
+<ul class="simple">
+<li>Implement a specific reply handler class to handle the operation
+out/inout/return parameters if any. This handler must extend a base
+reply handler class that is generated for each operation and
+implement the <tt class="docutils literal"><span class="pre">greetReply</span></tt> callback function or method whose parameters
+are the out/inout/return parameters of the related IDL operation.</li>
+<li>Use the generated asynchronous function or method that maps to the
+IDL operation whose name is the concatenation of ‘<tt class="docutils literal"><span class="pre">async_</span></tt>’ and the
+IDL operation name. This operation is a void operation that accepts
+only the <tt class="docutils literal"><span class="pre">in</span></tt> and <tt class="docutils literal"><span class="pre">inout</span></tt> IDL parameters, in addition to the
+eference of the implemented reply handler.</li>
+</ul>
+<p>Note that the reply handler class is not re-entrant in the current
+implementation. It cannot handle concurrent replies. It means that
+if two successive asynchronous calls are made with the same reply
+handler instance, this latter will reject the second reply if it
+has not finished dispatching the first one. In this case the asynchronous
+call will raise a <tt class="docutils literal"><span class="pre">BAD_PARAM</span></tt> exception.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><strong>IMPORTANT</strong>: It is strongly recommended not to mix synchronous and
+asynchronous calls of the same operation without proper synchronization.
+The application should ensure that the asynchronous call has received
+its reply before requesting a synchronous one.</dd>
+</dl>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p><strong>C++ RMI Client with asynchronous invocation</strong></p>
+<div class="highlight-C++"><div class="highlight"><pre>01   #include &quot;ddsrmi.hpp&quot;
+02   #include &quot;HelloService_InterfaceProxy.hpp&quot;
+03
+04   using namespace org::opensplice::DDS_RMI;
+05
+06   /**
+07   * Reply Handler of the &#39;async_greet&#39; operation
+08   *
+09   */
+10   class MyGreetReplyHandler :
+11      public virtual   HelloWorld_HelloService_greet_Reply_Handler
+12   {
+13      void greet_Reply(DDS::String ret)
+14      {
+15           std::cout &lt;&lt; &quot;Reply received: &quot; &lt;&lt; ret &lt;&lt; std::endl;
+16      }
+17   }
+18
+19   int main (int argc, char * argv [])
+20   {
+21
+22   // Runtime starting
+23      ...
+24
+25   // Getting the interface proxy
+26   shared_ptr&lt;::DDS_RMI::HelloWorld::HelloServiceInterfaceProxy&gt; proxy ;
+27   bool ret = DDS_Service::getServerProxy&lt;
+27              ::DDS_RMI::HelloWorld::HelloServiceInterfaceProxy&gt;
+28      (
+29        &quot;HelloServer&quot;, //server name
+30        1, // proxy instance id
+31        proxy  // proxy reference
+32      );
+33
+34   // instantiating a reply handler
+35   MyGreetReplyHandler handler;
+36
+37   // Calling the services asynchronously
+38   proxy-&gt;async_greet(&amp;handler);
+39   ...
+40
+41   // Runtime stopping
+42   ...
+43
+44   }
+</pre></div>
+</div>
+<p>Comments below refer to line numbers in the sample code above:</p>
+<p><strong>10-16</strong> <em>Provide the implementation class of the</em> <tt class="docutils literal"><span class="pre">greet</span></tt> <em>operation reply handler</em>.</p>
+<p><strong>21</strong>    <em>Start the DDS runtime</em>.</p>
+<p><strong>24-31</strong> <em>Get the</em> <tt class="docutils literal"><span class="pre">HelloServer</span></tt> <em>service proxy as for the synchronous mode</em>.</p>
+<p><strong>34</strong>    <em>Instantiate the</em> <tt class="docutils literal"><span class="pre">greet</span></tt> <em>reply handler class</em>.</p>
+<dl class="docutils">
+<dt><strong>37</strong>    <em>Invoke the</em> <tt class="docutils literal"><span class="pre">async_greet()</span></tt> <em>operation by providing the reply handler</em>.</dt>
+<dd>This call is a non-blocking call. The application steps immediately to the
+next instruction. The invocation reply will be delivered to the application
+by invoking the <tt class="docutils literal"><span class="pre">greet_Reply</span></tt> operation of the reply handler.
+Note that this operation will be invoked in a middleware-provided thread.</dd>
+<dt><strong>41</strong>    <em>Stop the runtime</em>.</dt>
+<dd>Note that some synchronization may be needed to avoid exiting before
+the <tt class="docutils literal"><span class="pre">async_greet</span></tt> reply is delivered to the application.</dd>
+</dl>
+<p>The Java code below works in a similar way.</p>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p><strong>Java RMI Client with asynchronous invocation</strong></p>
+<div class="highlight-Java"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">org.opensplice.DDS_RMI.*</span><span class="o">;</span>
+
+<span class="cm">/**</span>
+<span class="cm">     * Reply Handler of the &#39;async_greet&#39; operation</span>
+<span class="cm">     *</span>
+<span class="cm">     */</span>
+    <span class="kd">class</span> <span class="nc">MyGreetReplyHandler</span> <span class="kd">extends</span>
+          <span class="n">DDS_RMI</span><span class="o">.</span><span class="na">HelloWorld</span><span class="o">.</span><span class="na">HelloServiceInterfaceProxy</span><span class="o">.</span><span class="na">greet_Reply_Handler</span> <span class="o">{</span>
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">greet_Reply</span><span class="o">(</span><span class="n">String</span> <span class="n">ret</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;async_greet returns: &quot;</span> <span class="o">+</span> <span class="n">ret</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">};</span>
+
+<span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span> <span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+   <span class="c1">// Runtime starting</span>
+   <span class="o">...</span>
+
+  <span class="k">try</span> <span class="o">{</span>
+   <span class="c1">// Getting the interface proxy</span>
+   <span class="n">DDS_RMI</span><span class="o">.</span><span class="na">HelloWorld</span><span class="o">.</span><span class="na">HelloServiceInterfaceProxy</span> <span class="n">proxy</span> <span class="o">=</span>
+      <span class="n">DDS_Service</span><span class="o">.</span><span class="na">getServerProxy</span> <span class="o">(</span>
+        <span class="s">&quot;HelloServer&quot;</span><span class="o">,</span> <span class="c1">//server name</span>
+        <span class="mi">1</span><span class="o">,</span> <span class="c1">//server instance id</span>
+         <span class="n">DDS_RMI</span><span class="o">.</span><span class="na">HelloWorld</span><span class="o">.</span><span class="na">HelloServiceInterfaceProxy</span><span class="o">.</span><span class="na">class</span> <span class="c1">// proxy java Class</span>
+      <span class="o">);</span>
+
+   <span class="c1">// Calling the services asynchronously</span>
+   <span class="n">proxy</span><span class="o">.</span><span class="na">asynch_greet</span><span class="o">();</span>
+  <span class="o">}</span> <span class="k">catch</span><span class="o">(</span><span class="n">SERVICE_NOT_FOUND</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;&#39;HelloServer&#39; service not found !&quot;</span><span class="o">);</span>
+  <span class="o">}</span>
+
+   <span class="c1">// Runtime stopping</span>
+   <span class="o">...</span>
+
+<span class="o">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="multithreaded-client">
+<h4>4.5.3.3. MultiThreaded Client<a class="headerlink" href="#multithreaded-client" title="Permalink to this headline">¶</a></h4>
+<p>The default threading model of a client application is single threaded. It means that,
+by default, a service proxy may not be used by multiple concurrent threads to
+perform service invocations. To enable or disable the multithreaded mode for
+clients, a configuration option must be specified in the command line as follows:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">--RMIClientThreadingModel=[ST|MT]</span></tt></div></blockquote>
+</div>
+</div>
+</div>
+<div class="section" id="using-a-specific-dds-domain">
+<h2>4.6. Using a specific DDS domain<a class="headerlink" href="#using-a-specific-dds-domain" title="Permalink to this headline">¶</a></h2>
+<p>Using the default RMI CRuntime implies that all the RMI invocations will
+be performed within the default DDS domain. The default domain id is the
+one specified by the current Vortex OpenSplice configuration, specifically
+in the Domain Service section of the related XML file. The default
+Vortex OpenSplice configuration files set the <tt class="docutils literal"><span class="pre">domain</span> <span class="pre">id</span></tt> to <tt class="docutils literal"><span class="pre">0</span></tt>.
+For more information on configuring Vortex OpenSplice please refer to the
+<em>Vortex OpenSplice Deployment Guide</em>.</p>
+<p>If the RMI application operates with a user-defined domain id, using the
+default CRuntime enables RMI interactions within that domain. In case of
+an application operating in multiple domains, it should create a
+CRuntime object for the targeted domain id and get a
+<tt class="docutils literal"><span class="pre">DDS_ServiceInterface</span></tt> object from that CRuntime. The
+<tt class="docutils literal"><span class="pre">DDS_ServiceInterface</span></tt> object provides all the convenient methods for
+server applications to register/unregister services and for client
+applications to get service proxies on the relevant domain id. These
+methods are the same as the <tt class="docutils literal"><span class="pre">DDS_Service</span></tt> object ones. The following
+code snippets show this in C++ and Java.</p>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p><strong>Getting DDS_ServiceInterface in C++</strong></p>
+<div class="highlight-C++"><div class="highlight"><pre><span class="c1">// Getting a CRuntime on my specific domain</span>
+<span class="n">CRuntime_ref</span> <span class="n">runtime</span> <span class="o">=</span> <span class="n">CRuntime</span><span class="o">::</span><span class="n">getRuntime</span><span class="p">(</span><span class="n">my_domain_id</span><span class="p">);</span>
+<span class="c1">// Getting a DDS_ServiceInterface object</span>
+<span class="n">DDS_ServiceInterface_ref</span> <span class="n">dds_service</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">-&gt;</span><span class="n">getDDS_ServiceInterface</span><span class="p">();</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p><strong>Getting DDS_ServiceInterface in Java</strong></p>
+<div class="highlight-Java"><div class="highlight"><pre><span class="c1">// Getting a CRuntime on my specific domain</span>
+<span class="n">CRuntime</span> <span class="n">runtime</span> <span class="o">=</span> <span class="n">CRuntime</span><span class="o">.</span><span class="na">getRuntime</span><span class="o">(</span><span class="n">my_domain_id</span><span class="o">);</span>
+<span class="c1">// Getting a DDS_ServiceInterface object</span>
+<span class="n">DDS_ServiceInterface</span> <span class="n">dds_service</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="na">getDDS_ServiceInterface</span><span class="o">();</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="server-threading-and-scheduling-policies">
+<span id="id3"></span><h2>4.7. Server Threading and Scheduling policies<a class="headerlink" href="#server-threading-and-scheduling-policies" title="Permalink to this headline">¶</a></h2>
+<p>OpenSplice RMI allows configuration of the threading and the scheduling
+models of the RMI server applications by enabling a set of policies that
+control how the server allocates threads to handle service invocations
+and how these threads are scheduled with regard to the others.
+Hence developers may enhance the responsiveness of their services by
+choosing a multi-threaded execution model, or may protect a non-thread-safe
+service implementation by choosing a single thread execution model.</p>
+<div class="section" id="threading-policies">
+<h3>4.7.1. Threading policies<a class="headerlink" href="#threading-policies" title="Permalink to this headline">¶</a></h3>
+<p>OpenSplice RMI provides three threading policies that apply on a single
+RMI runtime at the server side. The RMI runtime uses a thread pool that hosts
+a number of threads to execute the services incoming requests.
+This number defines the thread pool size and depends on the specified
+threading policy.</p>
+<dl class="docutils">
+<dt><strong>1 &#8211; Single Thread (ST) policy</strong></dt>
+<dd>This policy allocates a single thread to process all the services&#8217; incoming
+requests within the server process. The requests are processed one by one
+in the order that they are received. It guarantees that no two threads will
+execute concurrently the different services calls within that server.
+In this case, the RMI runtime creates a single thread pool. This policy is
+the default threading policy. The ST policy ensures thread safety to all
+the services within the server process, but with the drawback that services
+with long-running tasks will block the others.</dd>
+<dt><strong>2 &#8211; Thread Per Service (TPS) policy</strong></dt>
+<dd>This policy allocates a single thread to each service, up to the number specified
+as the thread pool size. All the requests coming to one service are processed in
+sequence by a single thread borrowed from the thread pool, but different services
+requests are processed in parallel, within the limit of the thread pool size.
+The thread pool size is defined by the user application. The TPS policy ensures
+that services having long-running requests won&#8217;t block the others, but  concurrent
+calls are not possible for one single service.</dd>
+<dt><strong>3 &#8211; Multi Thread (MT) policy</strong></dt>
+<dd>This policy allows for a full multi-threaded environment. All the incoming requests
+are processed concurrently in different threads whatever the targeted services,
+within the limit of the thread pool size. The service implementation should take care
+of that and ensure thread safety. The thread pool size is user-defined.</dd>
+</dl>
+<div class="section" id="scheduling-policies">
+<h4>4.7.1.1. Scheduling policies<a class="headerlink" href="#scheduling-policies" title="Permalink to this headline">¶</a></h4>
+<p>These policies specify the scheduling parameters that will be used for the threads created
+by the RMI runtime for a RMI server.</p>
+<p>A RMI scheduling policy is defined by a scheduling priority and a scheduling class.
+The scheduling priority specifies the priority that will be assigned to all the threads that
+are spawned by the RMI runtime. The scheduling class may be <tt class="docutils literal"><span class="pre">SCHEDULE_DEFAULT</span></tt>,
+<tt class="docutils literal"><span class="pre">SCHEDULE_TIMESHARING</span></tt>, or <tt class="docutils literal"><span class="pre">SCHEDULE_REALTIME</span></tt>. These scheduling classes depend on the
+underlying operating system. A <tt class="docutils literal"><span class="pre">SCHEDULE_DEFAULT</span></tt> class is the default OS scheduling algorithm.</p>
+<p>In general, the Timesharing class attempts to distribute the processor resources fairly among
+the threads. In a Realtime class a thread normally runs until completion but can be pre-empted
+by higher-priority threads. Both Timesharing and Realtime scheduling classes are priority-based,
+so the scheduling priority is meaningful for both classes.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that some scheduling classes may not be supported by the underlying operating system,
+or that you may need special privileges to select particular settings.</dd>
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></dt>
+<dd>Note that the Java platform does not define a scheduling model for threads but defers to the
+underlying thread implementation. As a result, only the scheduling priority is usable for the
+Java RMI applications. In fact, there <em>is</em> a notion of priority in the Java threading model,
+but this is only a hint to the scheduler. The way in which the JVM maps these hints to the
+underlying OS scheduler varies from JVM to JVM and even from platform to platform for a given JVM.</dd>
+</dl>
+</div>
+<div class="section" id="service-priority">
+<h4>4.7.1.2. Service priority<a class="headerlink" href="#service-priority" title="Permalink to this headline">¶</a></h4>
+<p>OpenSplice RMI allows priorities to be assigned to the services registered in a RMI runtime
+within a server process. It defines the business importance of each service relative to the
+others. It allows incoming requests to be handled in order of priority if not enough threads
+are available to handle them concurrently. The service priority is exploited by the
+OpenSplice RMI framework to decide which service request a thread should be assigned to first,
+whereas the scheduling priority is exploited by the OS scheduler itself to decide which thread
+should run first.</p>
+<p>By default, each RMI service has priority set to <tt class="docutils literal"><span class="pre">0</span></tt>.</p>
+</div>
+<div class="section" id="programming-model">
+<h4>4.7.1.3. Programming model<a class="headerlink" href="#programming-model" title="Permalink to this headline">¶</a></h4>
+<p>Threading and scheduling policies may be passed either by command line,
+or programmatically at runtime. The command line options are described
+in <a class="reference internal" href="runtime-config.html#rmi-runtime-configuration-options"><em>RMI Runtime Configuration Options</em></a>;
+this section shows the related APIs only.</p>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p><strong>Setting the threading/sceduling policies in Java</strong></p>
+<div class="highlight-Java"><div class="highlight"><pre><span class="mi">01</span>  <span class="c1">// getting and starting the default runtime</span>
+<span class="mi">02</span>  <span class="n">CRuntime</span> <span class="n">runtime</span> <span class="o">=</span> <span class="n">Cruntime</span><span class="o">.</span><span class="na">getDefaultRuntime</span><span class="o">();</span>
+<span class="mi">03</span>  <span class="kt">boolean</span> <span class="n">res</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="na">start</span><span class="o">(</span><span class="n">argv</span><span class="o">);</span>
+<span class="mi">04</span>
+<span class="mi">05</span>  <span class="c1">//setting a MT threading policy with a thread pool size set to 5</span>
+<span class="mi">06</span>  <span class="n">ServerThreadingPolicy</span> <span class="n">t_policy</span> <span class="o">=</span> <span class="k">new</span>  <span class="n">ServerThreadingPolicy</span>
+<span class="mi">06</span>                                   <span class="o">(</span><span class="n">ThreadingPolicyKind</span><span class="o">.</span><span class="na">MT</span><span class="o">,</span> <span class="mi">5</span><span class="o">);</span>
+<span class="mi">07</span>  <span class="n">runtime</span><span class="o">.</span><span class="na">setServerThreadingPolicy</span><span class="o">(</span><span class="n">t_policy</span><span class="o">);</span>
+<span class="mi">08</span>
+<span class="mi">09</span>  <span class="c1">// setting a scheduling priority and keeping the scheduling</span>
+<span class="mi">10</span>  <span class="c1">// class to the default</span>
+<span class="mi">11</span>  <span class="n">SchedulingPolicy</span> <span class="n">s_policy</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="na">getServerSchedulingPolicy</span><span class="o">();</span>
+<span class="mi">12</span>  <span class="n">s_policy</span><span class="o">.</span><span class="na">schedulingPriority</span> <span class="o">=</span> <span class="mi">10</span><span class="o">;</span>
+<span class="mi">13</span>  <span class="n">runtime</span><span class="o">.</span><span class="na">setServerSchedulingPolicy</span><span class="o">(</span><span class="n">s_policy</span><span class="o">);</span>
+<span class="mi">14</span>
+<span class="mi">15</span>  <span class="c1">//registering a set of services</span>
+<span class="mi">16</span>  <span class="n">HelloService_impl</span> <span class="n">impl</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HelloService_impl</span><span class="o">();</span>
+<span class="mi">17</span>  <span class="n">res</span>  <span class="o">=</span> <span class="n">DDS_Service</span><span class="o">.</span><span class="na">register_interface</span><span class="o">(</span><span class="n">impl</span><span class="o">,</span> <span class="s">&quot;HelloServer&quot;</span><span class="o">,</span><span class="mi">1</span><span class="o">,</span>
+<span class="mi">18</span>         <span class="n">DDS_RMI</span><span class="o">.</span><span class="na">HelloWorld</span><span class="o">.</span><span class="na">HelloServiceInterface</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+<span class="mi">19</span>  <span class="c1">// registering other services</span>
+<span class="mi">20</span>
+<span class="mi">21</span>  <span class="c1">// making HelloServer service the highest priority service</span>
+<span class="mi">22</span>  <span class="n">impl</span><span class="o">.</span><span class="na">setPriority</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
+<span class="mi">23</span>
+<span class="mi">24</span>  <span class="c1">//running the runtime</span>
+<span class="mi">25</span>  <span class="n">runtime</span><span class="o">.</span><span class="na">run</span><span class="o">();</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that setting the <em>thread pool size</em> on java is done asynchronously. This
+means that there could be more server threads (and thus parallel calls) then
+expected when reducing the <em>thread pool size</em>.</dd>
+</dl>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p><strong>Setting the threading/sceduling policies in C++</strong></p>
+<div class="highlight-C++"><div class="highlight"><pre><span class="mo">01</span>  <span class="c1">// getting and starting the default runtime</span>
+<span class="mo">02</span>  <span class="n">CRuntime_ref</span> <span class="n">runtime</span> <span class="o">=</span> <span class="n">Cruntime</span><span class="o">::</span><span class="n">getDefaultRuntime</span><span class="p">();</span>
+<span class="mo">03</span>  <span class="kt">bool</span> <span class="n">res</span> <span class="o">=</span> <span class="n">runtime</span><span class="p">.</span><span class="n">start</span><span class="p">(</span><span class="n">argc</span><span class="p">,</span> <span class="n">argv</span><span class="p">);</span>
+<span class="mo">04</span>
+<span class="mo">05</span>  <span class="c1">//setting a MT threading policy with a thread pool size set to 5</span>
+<span class="mo">06</span>  <span class="n">ServerThreadingPolicy</span> <span class="n">t_policy</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">-&gt;</span><span class="n">getServerThreadingPolicy</span><span class="p">();</span>
+<span class="mo">06</span>  <span class="n">t_policy</span><span class="p">.</span><span class="n">kind</span> <span class="o">=</span> <span class="n">MT</span><span class="p">;</span>
+<span class="mo">07</span>  <span class="n">t_policy</span><span class="p">.</span><span class="n">threadPoolSize</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+<span class="mi">08</span>  <span class="n">runtime</span><span class="o">-&gt;</span><span class="n">setServerThreadingPolicy</span><span class="p">(</span><span class="n">t_policy</span><span class="p">);</span>
+<span class="mi">09</span>
+<span class="mi">10</span>  <span class="c1">// setting a scheduling priority and keeping the scheduling</span>
+<span class="mi">11</span>  <span class="c1">// class to the default</span>
+<span class="mi">12</span>  <span class="n">SchedulingPolicy</span> <span class="n">s_policy</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">-&gt;</span><span class="n">getServerSchedulingPolicy</span><span class="p">();</span>
+<span class="mi">13</span>  <span class="n">s_policy</span><span class="p">.</span><span class="n">schedulingPriority</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+<span class="mi">14</span>  <span class="n">runtime</span><span class="p">.</span><span class="n">setServerSchedulingPolicy</span><span class="p">(</span><span class="n">s_policy</span><span class="p">);</span>
+<span class="mi">15</span>
+<span class="mi">16</span>  <span class="c1">//registering a set of services</span>
+<span class="mi">17</span>  <span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">HelloService_impl</span><span class="o">&gt;</span> <span class="n">impl</span> <span class="p">(</span><span class="k">new</span> <span class="n">HelloService_impl</span><span class="p">());</span>
+<span class="mi">18</span>  <span class="n">res</span>  <span class="o">=</span> <span class="n">DDS_Service</span><span class="o">::</span><span class="n">register_interface</span><span class="o">&lt;</span><span class="n">DDS_RMI</span><span class="o">::</span><span class="n">HelloWorld</span><span class="o">::</span><span class="n">HelloServiceInterface</span><span class="p">,</span>
+<span class="mi">19</span>         <span class="n">HelloService_impl</span><span class="o">&gt;</span> <span class="p">(</span><span class="n">impl</span><span class="p">,</span> <span class="s">&quot;HelloServer&quot;</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
+<span class="mi">20</span>  <span class="c1">// registering other services</span>
+<span class="mi">21</span>
+<span class="mi">22</span>  <span class="c1">// making HelloServer service the highest priority service</span>
+<span class="mi">23</span>  <span class="n">impl</span><span class="o">-&gt;</span><span class="n">set_priority</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+<span class="mi">24</span>
+<span class="mi">25</span>  <span class="c1">//running the runtime</span>
+<span class="mi">26</span>  <span class="n">runtime</span><span class="o">-&gt;</span><span class="n">run</span><span class="p">();</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that the <em>threading policy</em> may only be changed as long as the runtime
+is not run. Once run, only the <em>thread pool size</em> may be changed.</dd>
+</dl>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Building an RMI Application</a><ul>
+<li><a class="reference internal" href="#about-rmi-applications">4.1. About RMI Applications</a></li>
+<li><a class="reference internal" href="#services-description">4.2. Services description</a></li>
+<li><a class="reference internal" href="#qos-policies-description">4.3. QoS policies description</a></li>
+<li><a class="reference internal" href="#rmi-compilation">4.4. RMI compilation</a></li>
+<li><a class="reference internal" href="#application-implementation">4.5. Application implementation</a><ul>
+<li><a class="reference internal" href="#runtime-starting-and-stopping">4.5.1. Runtime starting and stopping</a></li>
+<li><a class="reference internal" href="#server-programming-model">4.5.2. Server programming model</a></li>
+<li><a class="reference internal" href="#client-programming-model">4.5.3. Client programming model</a><ul>
+<li><a class="reference internal" href="#synchronous-invocation-mode">4.5.3.1. Synchronous invocation mode</a></li>
+<li><a class="reference internal" href="#asynchronous-invocation-mode">4.5.3.2. Asynchronous invocation mode</a></li>
+<li><a class="reference internal" href="#multithreaded-client">4.5.3.3. MultiThreaded Client</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-a-specific-dds-domain">4.6. Using a specific DDS domain</a></li>
+<li><a class="reference internal" href="#server-threading-and-scheduling-policies">4.7. Server Threading and Scheduling policies</a><ul>
+<li><a class="reference internal" href="#threading-policies">4.7.1. Threading policies</a><ul>
+<li><a class="reference internal" href="#scheduling-policies">4.7.1.1. Scheduling policies</a></li>
+<li><a class="reference internal" href="#service-priority">4.7.1.2. Service priority</a></li>
+<li><a class="reference internal" href="#programming-model">4.7.1.3. Programming model</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="rmi-over-dds.html"
+                        title="previous chapter">3. Vortex OpenSplice RMI over DDS</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="language-map.html"
+                        title="next chapter">5. Language mapping for Vortex OpenSplice RMI</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/build-rmi-apps.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="language-map.html" title="5. Language mapping for Vortex OpenSplice RMI"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="rmi-over-dds.html" title="3. Vortex OpenSplice RMI over DDS"
+             >previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

@@ -1,24 +1,30 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef U_TOPIC_H
 #define U_TOPIC_H
 
+#include "u_types.h"
+
 #if defined (__cplusplus)
 extern "C" {
 #endif
-
-#include "u_types.h"
-#include "v_status.h"
-#include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -28,66 +34,81 @@ extern "C" {
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 #define u_topic(o) \
-        ((u_topic)u_entityCheckType(u_entity(o), U_TOPIC))
-
-#define u__topicName(o) u_topic(o)->name
-
-typedef c_bool (*u_topicAction)(u_topic topic, c_voidp arg);
+        ((u_topic)u_objectCheckType(u_object(o), U_TOPIC))
 
 OS_API u_topic
 u_topicNew (
-    u_participant p,
-    const c_char *name,
-    const c_char *typeName,
-    const c_char *keyList,
-    v_topicQos qos);
+    const u_participant p,
+    const os_char *name,
+    const os_char *typeName,
+    const os_char *keyList,
+    u_topicQos qos);
 
 OS_API u_result
-u_topicFree (
-    u_topic _this);
+u_topicGetQos (
+    const u_topic _this,
+    u_topicQos *qos);
 
-OS_API c_char *
+OS_API u_topic
+u_topicNewFromTopicInfo(
+    u_participant p,
+    const struct v_topicInfo *info,
+    c_bool announce);
+
+OS_API u_result
+u_topicSetQos (
+    const u_topic _this,
+    const u_topicQos qos);
+
+OS_API os_char *
 u_topicName (
-    u_topic _this);
+    const u_topic _this);
 
-OS_API c_char *
+OS_API os_char *
 u_topicTypeName (
-    u_topic _this);
+    const u_topic _this);
 
-OS_API c_type
-u_topicGetUserType (
-    u_topic _this);
+OS_API os_uint32
+u_topicTypeSize(
+    const u_topic _this);
 
-OS_API c_string
-u_topicGetTopicKeys (
-    u_topic _this);
+OS_API os_char *
+u_topicKeyExpr(
+    const u_topic _this);
+
+OS_API os_char *
+u_topicMetaDescriptor (
+    const u_topic _this);
 
 OS_API u_result
 u_topicGetInconsistentTopicStatus (
-    u_topic _this,
-    c_bool reset,
-    v_statusAction action,
-    c_voidp arg);
+    const u_topic _this,
+    u_bool reset,
+    u_statusAction action,
+    void *arg);
 
 OS_API u_result
 u_topicGetAllDataDisposedStatus (
-    u_topic _this,
-    c_bool reset,
-    v_statusAction action,
-    c_voidp arg);
+    const u_topic _this,
+    u_bool reset,
+    u_statusAction action,
+    void *arg);
 
 OS_API u_result
-u_topicDisposeAllData (u_topic _this);
+u_topicDisposeAllData (
+    const u_topic _this);
 
-OS_API u_participant
-u_topicParticipant (
-    u_topic _this);
-
-OS_API c_bool
+OS_API u_bool
 u_topicContentFilterValidate (
-    u_topic _this,
-    q_expr expr,
-    c_value params[]);
+    const u_topic _this,
+    const q_expr expr,
+    const c_value params[]);
+
+OS_API u_bool
+u_topicContentFilterValidate2 (
+    const u_topic _this,
+    const q_expr expr,
+    const c_value params[]);
 
 #undef OS_API
 

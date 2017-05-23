@@ -1,0 +1,243 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Data Available through Node Monitor &mdash; OpenSplice Node Monitor User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Node Monitor User Guide" href="index.html" />
+    <link rel="next" title="6. References" href="biblio.html" />
+    <link rel="prev" title="4. Configuring Node Monitor" href="configuring.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="biblio.html" title="6. References"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="configuring.html" title="4. Configuring Node Monitor"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Node Monitor User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="data-available-through-node-monitor">
+<span id="id1"></span><h1>5. Data Available through Node Monitor<a class="headerlink" href="#data-available-through-node-monitor" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="cpu-information">
+<h2>5.1. CPU Information<a class="headerlink" href="#cpu-information" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Vendor</li>
+<li>CPU Model</li>
+<li>CPU Frequency</li>
+<li>Cache size</li>
+<li>Number of cores on the CPU</li>
+</ul>
+</div>
+<div class="section" id="operating-system-information">
+<h2>5.2. Operating System Information<a class="headerlink" href="#operating-system-information" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>OS name</li>
+<li>Distribution name (<em>e.g.</em> Ubuntu 12.04)</li>
+<li>Architecture of the OS</li>
+<li>Linux kernel image version</li>
+<li>Vendor and vendor version</li>
+<li>Data model (32/64 bit <em>etc.</em>)</li>
+<li>Endianness</li>
+</ul>
+</div>
+<div class="section" id="network-information">
+<h2>5.3. Network Information<a class="headerlink" href="#network-information" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Primary interface primary address primary MAC address and primary netmask</li>
+<li>Domain name</li>
+<li>Default gateway default gateway interface</li>
+<li>Primary DNS and secondary DNS</li>
+</ul>
+</div>
+<div class="section" id="network-interface-information">
+<h2>5.4. Network Interface Information<a class="headerlink" href="#network-interface-information" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Interface name</li>
+<li>Interface type (<em>e.g.</em> Ethernet Loopback)</li>
+<li>MAC address</li>
+<li>Destination</li>
+<li>Broadcast</li>
+<li>Netmask</li>
+<li>MTU</li>
+</ul>
+</div>
+<div class="section" id="process-information">
+<h2>5.5. Process Information<a class="headerlink" href="#process-information" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Process ID</li>
+<li>Name</li>
+<li>Current working directory</li>
+<li>Priority</li>
+<li>Number of threads in the process</li>
+<li>OSPL environment variables (<em>e.g.</em> <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt>, <tt class="docutils literal"><span class="pre">OSPL_HOME</span></tt>, <em>etc.</em>)</li>
+</ul>
+</div>
+<div class="section" id="network-interface-statistics">
+<h2>5.6. Network Interface Statistics<a class="headerlink" href="#network-interface-statistics" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>RX values: bytes packets errors dropped overruns and frame</li>
+<li>TX values: bytes packets errors dropped overruns collisions and carrier</li>
+</ul>
+</div>
+<div class="section" id="memory-statistics">
+<h2>5.7. Memory Statistics<a class="headerlink" href="#memory-statistics" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Total system memory</li>
+<li>Total used system memory</li>
+<li>Total free system memory</li>
+<li>Actual total used system memory</li>
+<li>Actual total free system memory</li>
+<li>Total swap size</li>
+<li>Total used swap size</li>
+<li>Total free swap size</li>
+<li>RAM size in MB</li>
+</ul>
+</div>
+<div class="section" id="cpu-statistics">
+<h2>5.8. CPU statistics<a class="headerlink" href="#cpu-statistics" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Load and load average</li>
+<li>Total number of processes in idle state</li>
+<li>Total number of processes in running state</li>
+<li>Total number of processes in sleeping state</li>
+<li>Total number of zombie processes</li>
+<li>Total number of processes</li>
+<li>Total number of threads</li>
+</ul>
+</div>
+<div class="section" id="process-memory-statistics">
+<h2>5.9. Process Memory Statistics:<a class="headerlink" href="#process-memory-statistics" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Process ID</li>
+<li>Resident memory size used in Bytes</li>
+<li>Shared memory size used in Bytes</li>
+<li>Number of minor page faults</li>
+<li>Number of major page faults</li>
+<li>Total number of page faults (Major + Minor)</li>
+<li>Virtual memory size used in Bytes</li>
+</ul>
+</div>
+<div class="section" id="process-cpu-statistics">
+<h2>5.10. Process CPU Statistics<a class="headerlink" href="#process-cpu-statistics" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Process ID</li>
+<li>Percent CPU used</li>
+<li>Start time in milliseconds (Epoch time)</li>
+<li>Total CPU time in milliseconds (User + System)</li>
+<li>User CPU time in milliseconds</li>
+<li>System CPU time in milliseconds</li>
+</ul>
+<div class="figure" id="example-process-memory-cpu-statistics">
+<a class="reference internal image-reference" href="_images/processInfoStats.png"><img alt="Example Process Memory &amp; CPU statistics" src="_images/processInfoStats.png" style="height: 65mm;" /></a>
+<p class="caption"><strong>Example Process Memory &amp; CPU statistics</strong></p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Data Available through Node Monitor</a><ul>
+<li><a class="reference internal" href="#cpu-information">5.1. CPU Information</a></li>
+<li><a class="reference internal" href="#operating-system-information">5.2. Operating System Information</a></li>
+<li><a class="reference internal" href="#network-information">5.3. Network Information</a></li>
+<li><a class="reference internal" href="#network-interface-information">5.4. Network Interface Information</a></li>
+<li><a class="reference internal" href="#process-information">5.5. Process Information</a></li>
+<li><a class="reference internal" href="#network-interface-statistics">5.6. Network Interface Statistics</a></li>
+<li><a class="reference internal" href="#memory-statistics">5.7. Memory Statistics</a></li>
+<li><a class="reference internal" href="#cpu-statistics">5.8. CPU statistics</a></li>
+<li><a class="reference internal" href="#process-memory-statistics">5.9. Process Memory Statistics:</a></li>
+<li><a class="reference internal" href="#process-cpu-statistics">5.10. Process CPU Statistics</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="configuring.html"
+                        title="previous chapter">4. Configuring Node Monitor</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="biblio.html"
+                        title="next chapter">6. References</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/dataavailable.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="biblio.html" title="6. References"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="configuring.html" title="4. Configuring Node Monitor"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Node Monitor User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

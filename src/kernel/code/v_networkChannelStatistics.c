@@ -1,46 +1,55 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
-#include "v_statistics.h"
-#include "v__statistics.h"
 #include "v_networkChannelStatistics.h"
 #include "v_maxValue.h"
+#include "v_fullCounter.h"
+#include "v_avgValue.h"
+#include "v_minValue.h"
 #include "os_report.h"
 
-/* Legitimate use of static variable to hold type information in this case.
- * This type information may be accessed multiple times depending on how many
- * channels are set up, but this is only ever in the same single instance of
- * the networking service, so will not affect multi domain support.
- */
-static c_type networkChannelStatisticsType = NULL;
-
-v_networkChannelStatistics v_networkChannelStatisticsNew(v_kernel k, const c_char *name)
+v_networkChannelStatistics
+v_networkChannelStatisticsNew(
+    v_kernel k,
+    const c_char *name)
 {
     v_networkChannelStatistics ncs;
     c_string channelName;
+    c_type type;
 
     assert(k != NULL);
     assert(C_TYPECHECK(k, v_kernel));
 
-    if (networkChannelStatisticsType == NULL) {
-        networkChannelStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_networkChannelStatistics");
-    }
-    ncs = v_networkChannelStatistics(v_new(k, networkChannelStatisticsType));
+    type = c_resolve(c_getBase(k), "kernelModuleI::v_networkChannelStatistics");
+    assert(type);
+    ncs = v_networkChannelStatistics(v_new(k, type));
+    c_free(type);
     channelName = c_stringNew(c_getBase(c_object(k)),name);
     v_networkChannelStatisticsInit(ncs,channelName);
     return ncs;
 }
 
-void v_networkChannelStatisticsInit(v_networkChannelStatistics ncs, c_string name)
+void
+v_networkChannelStatisticsInit(
+    v_networkChannelStatistics ncs,
+    c_string name)
 {
     assert(ncs != NULL);
     assert(C_TYPECHECK(ncs,v_networkChannelStatistics));
@@ -72,6 +81,7 @@ void v_networkChannelStatisticsInit(v_networkChannelStatistics ncs, c_string nam
     ncs->numberOfBytesDelivered=0;
     ncs->numberOfMessagesNotInterested=0;
     ncs->numberOfBytesNotInterested=0;
+    ncs->numberOfPacketsReliabilityMismatch=0;
     ncs->numberOfPacketsNotConnectedPartition=0;
     ncs->numberOfPacketsUnknownAddress=0;
     ncs->numberOfPacketsInvalid=0;
@@ -113,59 +123,18 @@ void v_networkChannelStatisticsInit(v_networkChannelStatistics ncs, c_string nam
     ncs->nofBytesAfterDecompression=0;
 }
 
-c_bool v_networkChannelStatisticsReset(v_networkChannelStatistics ncs)
-{
-    c_bool result;
-
-    assert(ncs!=NULL);
-    assert(C_TYPECHECK(ncs, v_networkChannelStatistics));
-	ncs->numberOfMessagesSent=0;
-	ncs->numberOfBytesSent=0;
-	ncs->numberOfPacketsSent=0;
-
-	ncs->numberOfMessagesFragmented=0;
-	ncs->numberOfMessagesPacked=0;
-
-	ncs->numberOfKnownNodes=0;
-	ncs->numberOfBytesResent=0;
-	ncs->numberOfPacketsResent=0;
-	ncs->numberOfBytesInResendBuffer=0;
-	ncs->numberOfPacketsInResendBuffer=0;
-    ncs->maxNumberOfBytesResentToOneNode=0;
-    ncs->maxNumberOfPacketsResentToOneNode=0;
-
-	ncs->numberOfMessagesReceived=0;
-	ncs->numberOfBytesReceived=0;
-	ncs->numberOfPacketsReceived=0;
-	ncs->numberOfPacketsLost=0;
-	ncs->numberOfAcksSent=0;
-
-	ncs->numberOfMessagesDelivered=0;
-	ncs->numberOfBytesDelivered=0;
-	ncs->numberOfMessagesNotInterested=0;
-	ncs->numberOfBytesNotInterested=0;
-	ncs->nofFreePacketBuffers=0;
-	ncs->nofUsedPacketBuffers=0;
-	v_fullCounterInit(&(ncs->adminQueueAcks));
-	v_fullCounterInit(&(ncs->adminQueueData));
-
-    ncs->nofBytesBeforeCompression=0;
-    ncs->nofBytesAfterCompression=0;
-    ncs->nofBytesBeforeDecompression=0;
-    ncs->nofBytesAfterDecompression=0;
-
-    result = TRUE;
-    return result;
-}
-
-void v_networkChannelStatisticsDeinit(v_networkChannelStatistics ncs)
+void
+v_networkChannelStatisticsDeinit(
+    v_networkChannelStatistics ncs)
 {
     assert(ncs != NULL);
     assert(C_TYPECHECK(ncs, v_networkChannelStatistics));
     OS_UNUSED_ARG(ncs);
 }
 
-void v_networkChannelStatisticsFree(v_networkChannelStatistics ncs)
+void
+v_networkChannelStatisticsFree(
+    v_networkChannelStatistics ncs)
 {
     assert(ncs != NULL);
     assert(C_TYPECHECK(ncs, v_networkChannelStatistics));
@@ -173,7 +142,6 @@ void v_networkChannelStatisticsFree(v_networkChannelStatistics ncs)
     v_networkChannelStatisticsDeinit(ncs);
 
     c_free(ncs);
-
 }
 
 

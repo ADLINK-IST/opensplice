@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -31,14 +39,14 @@
 #include "idl_genLanguageHelper.h"
 #include "idl_dll.h"
 
-#include "os.h"
+#include "vortex_os.h"
 #include <ctype.h>
 #include "c_typebase.h"
 
-    /** indentation level */
+/** indentation level */
 static c_long indent_level = 0;
     /** enumeration element index */
-static c_long enum_element = 0;
+static c_ulong enum_element = 0;
     /** enumeration enum name */
 static char *enum_enumName = NULL;
 
@@ -56,6 +64,10 @@ idl_fileOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     /* Generate inclusion of standard OpenSplice DDS type definition files */
     idl_fileOutPrintf(idl_fileCur(), "using DDS;\n");
     idl_fileOutPrintf(idl_fileCur(), "using System.Runtime.InteropServices;\n");
@@ -84,6 +96,9 @@ idl_moduleOpen(
     void *userData)
 {
     SACSTypeUserData *csUserData = (SACSTypeUserData *) userData;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     /* Generate the C# code that opens the namespace. */
     idl_printIndent(indent_level);
@@ -112,6 +127,7 @@ static void
 idl_moduleClose(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
 
     /* Decrease the indentation level back to its original size. */
     indent_level--;
@@ -209,6 +225,9 @@ idl_structureClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     /* Decrease the indentation level back to its original size. */
     indent_level--;
 
@@ -246,6 +265,9 @@ idl_structureMemberOpenClose (
     char *tpName = idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM);
     char *str_no_idx = NULL;
     char *str_idx = NULL;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     /* Dereference possible typedefs first. */
     while (idl_typeSpecType(typeSpec) == idl_ttypedef && !isPredefined) {
@@ -477,6 +499,9 @@ idl_unionClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     indent_level--;
     idl_printIndent(indent_level); idl_fileOutPrintf(idl_fileCur(), "} _u;\n");
     indent_level--;
@@ -510,7 +535,10 @@ idl_unionCaseOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
-
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(typeSpec);
+    OS_UNUSED_ARG(userData);
 }
 
 /** @brief callback function called on definition of an enumeration.
@@ -580,6 +608,9 @@ idl_enumerationClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     indent_level--;
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "};\n");
@@ -621,6 +652,9 @@ idl_enumerationElementOpenClose (
 {
     char *nameCopy, *labelName;
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     /* If the element if prefixed with the name of the enum, remove the prefix. */
     nameCopy = os_strdup(name);
@@ -651,6 +685,9 @@ idl_constantOpenClose (
     char *constTypeName = idl_CsharpTypeFromTypeSpec(
             idl_constSpecTypeGet(constantSpec),
             csUserData->customPSM);
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     idl_printIndent(indent_level);
     idl_fileOutPrintf(
@@ -677,6 +714,7 @@ static idl_programControl *
 idl_getControl(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     return &idl_genSACSLoadControl;
 }
 

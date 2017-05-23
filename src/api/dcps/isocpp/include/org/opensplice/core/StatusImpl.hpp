@@ -1,12 +1,20 @@
 /*
 *                         OpenSplice DDS
 *
-*   This software and documentation are Copyright 2006 to 2012 PrismTech
-*   Limited and its licensees. All rights reserved. See file:
-*
-*                     $OSPL_HOME/LICENSE
-*
-*   for full copyright notice and license terms.
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
 *
 */
 
@@ -17,6 +25,8 @@
 
 #ifndef ORG_OPENSPLICE_CORE_STATUS_STATUS_IMPL_HPP_
 #define ORG_OPENSPLICE_CORE_STATUS_STATUS_IMPL_HPP_
+
+#include <org/opensplice/core/config.hpp>
 
 namespace org
 {
@@ -53,7 +63,7 @@ public:
 
     bool operator ==(const InconsistentTopicStatusImpl& other) const
     {
-        return other.total_count() == total_count_ && other.total_count_change() == total_count_change_;
+        return other.total_count() == total_count_ ;
     }
 
 protected:
@@ -90,7 +100,7 @@ public:
 
     bool operator ==(const SampleLostStatusImpl& other) const
     {
-        return other.total_count() == total_count_ && other.total_count_change() == total_count_change_;
+        return other.total_count() == total_count_;
     }
 
 protected:
@@ -149,7 +159,6 @@ public:
     bool operator ==(const SampleRejectedStatusImpl& other) const
     {
         return other.total_count() == total_count_ &&
-               other.total_count_change() == total_count_change_ &&
                other.last_reason() == last_reason_ &&
                other.last_instance_handle() == last_instance_handle_;
     }
@@ -190,8 +199,7 @@ public:
 
     bool operator ==(const LivelinessLostStatusImpl& other) const
     {
-        return other.total_count() == total_count_ &&
-               other.total_count_change() == total_count_change_;
+        return other.total_count() == total_count_;
     }
 protected:
     int32_t total_count_;
@@ -260,9 +268,7 @@ public:
     bool operator ==(const LivelinessChangedStatusImpl& other) const
     {
         return other.alive_count() == alive_count_ &&
-               other.not_alive_count() == not_alive_count_ &&
-               other.alive_count_change() == alive_count_change_ &&
-               other.not_alive_count_change() == not_alive_count_change_;
+               other.not_alive_count() == not_alive_count_;
     }
 
 protected:
@@ -314,7 +320,6 @@ public:
     bool operator ==(const OfferedDeadlineMissedStatusImpl& other) const
     {
         return other.total_count() == total_count_ &&
-               other.total_count_change() == total_count_change_ &&
                other.last_instance_handle() == last_instance_handle_;
     }
 
@@ -364,7 +369,6 @@ public:
     bool operator ==(const RequestedDeadlineMissedStatusImpl& other) const
     {
         return other.total_count() == total_count_ &&
-               other.total_count_change() == total_count_change_ &&
                other.last_instance_handle() == last_instance_handle_;
     }
 
@@ -430,7 +434,6 @@ public  :
     bool operator ==(const OfferedIncompatibleQosStatusImpl& other) const
     {
         return other.total_count() == total_count_ &&
-               other.total_count_change() == total_count_change_ &&
                other.last_policy_id() == last_policy_id_ &&
                other.policies() == policies_;
     }
@@ -497,7 +500,6 @@ public  :
     bool operator ==(const RequestedIncompatibleQosStatusImpl& other) const
     {
         return other.total_count() == total_count_ &&
-               other.total_count_change() == total_count_change_ &&
                other.last_policy_id() == last_policy_id_ &&
                other.policies() == policies_;
     }
@@ -571,9 +573,7 @@ public:
     bool operator ==(const PublicationMatchedStatusImpl& other) const
     {
         return other.total_count() == total_count_ &&
-               other.total_count_change() == total_count_change_ &&
                other.current_count() == current_count_ &&
-               other.current_count_change() == current_count_change_ &&
                other.last_subscription_handle() == last_subscription_handle_;
     }
 
@@ -645,9 +645,7 @@ public:
     bool operator ==(const SubscriptionMatchedStatusImpl& other) const
     {
         return other.total_count() == total_count_ &&
-               other.total_count_change() == total_count_change_ &&
                other.current_count() == current_count_ &&
-               other.current_count_change() == current_count_change_ &&
                other.last_publication_handle() == last_publication_handle_;
     }
 

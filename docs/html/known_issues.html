@@ -1,0 +1,893 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Vortex OpenSplice - documentation index</title>
+    <style type="text/css" media="all">
+      @import url("../css/maven-base.css");
+      @import url("../css/maven-theme.css");
+      @import url("../css/site.css");
+    </style>
+    <link rel="stylesheet" href="./docs/css/print.css" type="text/css" media="print" />
+    <meta name="Date-Revision-yyyymmdd" content="20141002" />
+    <meta http-equiv="Content-Language" content="en" />
+
+ </head>
+ <body class="composite">
+    <div id="banner">
+       <a href="http://www.prismtech.com" id="bannerLeft">
+          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       </a>
+       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       </a>
+       <div class="clear">
+          <hr/>
+       </div>
+    </div>
+    <div id="breadcrumbs">
+       <div class="xright">
+          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
+          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+       </div>
+       <div class="clear">
+         <hr/>
+       </div>
+    </div>
+    <div id="leftColumn">
+      <div id="navcolumn">
+         <h5>Vortex OpenSplice</h5>
+         <ul>
+            <li class="none">
+            <a href="../../index.html" title = "Intro">Introduction</a>
+            </li>
+            <li class="none">
+              <a href="guides.html" title="APIs">User Guides</a>
+            </li>
+            <li class="none">
+              <a href="changedV6.html" title="Changes">Changes</a><br>
+            </li>
+            <li class="none">
+              <a href="platforms.html" title="Supported Platforms">Supported Platforms</a><br>
+            </li>
+            <li class="none">
+              <a href="known_issues.html" title="Changes"><strong>Known Issues</strong></a><br>
+            </li>
+            <li class="none">
+              <a href="ddsi2_release_notes.html" title="Changes">DDSI Release Notes</a><br>
+            </li>
+            <li class="none">
+               <a href="rebuilding_APIs.html" title = "User Guide">Rebuilding the APIs</a><br>
+            </li>
+            <li class="none">
+               <a href="upgrading.html" title = "Upgrading">Upgrading OpenSplice</a><br>
+            </li>
+            <li class="none">
+               <a href="../../examples/dcps/README.html" title = "Examples">Examples</a><br>
+            </li>
+            <li class="none">
+               <a href="third_party_licenses.html" title = "Third Party Licenses">Third party licenses</a><br>
+            </li>
+            <li class="none">
+              <a href="./../../LICENSE" title="License">License</a>
+            </li>
+          </ul>
+      </a>
+      </div>
+    </div>
+    <div id="bodyColumn">
+      <div id="contentBox">
+      <h2>OpenSplice Issues</h2>
+
+        <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>
+            dds184
+          </td>
+          <td>
+            <b>Query parser doesn't support escape characters</b><br/>
+            <i>
+              The internal OpenSplice DDS query parser does not support escape characters. This
+              implicates that specific tokens cannot be used in query expressions (like
+              for instance SQL keywords 'select', 'where', etc).<br/>
+              Impact at API level:
+              <ul>
+                <li>Topics with a SQL keyword as name cannot be created</li>
+                <li>
+                  QueryCondition expressions cannot refer to datafields with SQL keyword as name
+                </li>
+                <li>
+                  ContentFilteredTopic expressions cannot refer to datafields with SQL keyword as name
+                </li>
+              </ul>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4508<br/>
+            dds206
+          </td>
+          <td>
+            <b>typeSupport with invalid type name causes crash during register_type</b><br/>
+            <i>
+              When a type support object is created with an type name which is not known in
+              the meta database, the following register_type function crashes.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds492
+          </td>
+          <td>
+            <b>idlpp cannot handle same struct in a struct or forward declarations to structs</b><br/>
+            <i>
+            The following (faulty) idl code generates a 'floating point exception', instead idlpp should
+            not allow such constructs.
+            <pre><code>
+            struct TestStruct;
+
+            struct TestStruct{
+                long x;
+                TestStruct someEnum;
+                string val;
+            };
+            </code></pre>
+            The following idl also fails (the forward declaration to the TestStruct is not correctly
+            processed):
+            <pre><code>
+            struct TestStruct;
+
+            struct TestStruct1{
+                TestStruct y;
+            };
+
+            struct TestStruct{
+                long x;
+            };
+            </code></pre>
+            with the error: <code>***DDS parse error TestStruct undefined at line: 4</code>. The
+            following idl construct is not allowed, however the IDL preprocessor does not give
+            a clear error:
+            <pre><code>
+            struct TestStruct;
+
+            struct TestStruct1{
+                TestStruct y;
+            };
+
+            struct TestStruct{
+                TestStruct1 x;
+            };
+            </code></pre>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            4821<br/>
+            dds494
+          </td>
+          <td>
+            <b>SQL RelOp like not supported</b><br/>
+            <i>
+              Using the SQL relational operator like is not supported.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1117
+          </td>
+          <td>
+            <b>Implicit unregister messages can corrupt copy-out functions</b><br/>
+            <i>
+              On all language bindings there are methods that only use the key
+              fields of a sample, as for example the register, unregister and
+              dispose methods. However, currently the complete sample (including
+              the non-key fields) need to adhere to the IDL to language mapping
+              rules, as all fields are validated. This means that when a sample
+              contains garbage data in its non-key fields, the sample could be
+              rejected and the application might even crash in case of dangling
+              pointers (segmentation fault). <br>
+              The work-around is that no values should be initalised to NULL
+              values, no values should contain dangling pointers, all unions
+              should explicitly be initialized to a valid value and any
+              enumeration value should remain within its bounds.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1696
+          </td>
+          <td>
+            <b>Limitations for output directories for ospl_projgen on Integrity</b><br/>
+            <i>
+              ospl_projgen will generate projects which will build incorrectly if it is supplied an output
+              directory ( -o option ) in which the final part of the path matches the name of one of the
+              address spaces being generated. <br>
+              e.g. ospl_projgen ... -t mmstat -o path/mmstat<br>
+              These projects appear to build correctly however the final image will be incorrect.<br>
+              Other names to avoid currently are inetserver, ivfs_server, ResourceStore, spliced,
+              networking, durability, pong, ping1, ping2, ping3, ping4, ping5, ping6, shmdump, Chatter,
+              Chatter_Quit, MessageBoard, UserLoad            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds1711
+          </td>
+          <td>
+            <b>Warnings when compiling with the Studio12 compiler</b><br/>
+            <i>
+              There are still numerous warnings when using the Studio12 compiler. These can be ignored and will
+              be tidied in future releases.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2142
+          </td>
+          <td>
+            <b>Default buffer size used by networking may cause an error to be logged on Solaris9.</b><br/>
+            <i>
+              On Solaris9 there may be an error in the ospl-error.log when the networking service is started:
+              "setsockopt returned errno 132 (No buffer space available)" this is down to the udp_max_buf being to small.
+              To find out what the system has it set to do <code> /usr/sbin/ndd -get /dev/udp udp_max_buf</code> and to set it larger do :
+              <code>/usr/sbin/ndd -set /dev/udp udp_max_buf &ltxxxxxxx size in bytes&gt </code>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds3276
+          </td>
+          <td>
+            <b>Tester - Reconnection to shared memory OpenSplice domain on Windows fails</b><br/>
+            <i>
+              On Windows, when trying to reconnect to a running domain of OpenSplice DDS
+              that utilises shared memory the reconnection will fail.<br><br>
+              <b>Workaround:</b> Restart OpenSplice Tester.
+
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            dds2260 / OSPL-259 / OSPL-6304
+          </td>
+          <td>
+            <b>idlpp cannot handle recursive sequences</b><br/>
+            <i>
+            The idlpp tool is not able to cope with recursive sequences:
+<pre><code>module example {
+    typedef sequence<string> NameList;
+
+    struct DataType {
+        sequence<NameList> nameLists;
+    };
+};</code></pre>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-973
+          </td>
+          <td>
+            <b>Partitions with wild-cards don't work properly in all cases </b><br/>
+            <i>
+              The PartitionQosPolicy for Publisher and Subscriber entities can contain two types
+              of values. An absolute value that specifies a partition or a partition expression
+              i.e. a name containing wildcard symbols '?'' and/or '*'. A partition expression is
+              locally used by the Entity to discover matching absolute partitions to build up
+              connections. Entities react on the creation of new partitions and those that match
+              the partition expression are connected. Unfortunately information about newly
+              created remote partitions is not distributed at this time. This means no matching
+              can be performed to determine if the remote partition must be instantiated locally.
+              As a result Subscribers and Publishers that use wild-cards in partition expression
+              won't connect to partitions that are not explicitly created in the local application
+              (when running in single process mode) or local node (when running in federated mode).
+              As a workaround, all partitions that need to match must be explicitly mentioned in
+              the PartitionQosPolicy.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-2542
+          </td>
+          <td>
+            <b>64 bit stack space issues with the JVM</b><br/>
+            <i>
+              Newer versions of JDK (at least 1.6u43 and 1.6u45) run out of stack space on 64 bit
+              platforms. Using a larger default StackSize would impact all non-Java applications
+              too, and is therefore undesirable. Try increasing StackSize to 128000 bytes if you're
+              experiencing problems with using listeners from Java on 64 bit platforms.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-2696
+          </td>
+          <td>
+            <b>Merge policy behaviour</b><br/>
+            <i>Merging of different data-sets after a re-connect only works when the disconnect
+               takes less than the service_cleanup_delay value of the Topic(s). Otherwise it is
+               not possible for the middleware to determine whether instances that are available
+               on one side and not on the other have been disposed or created during the disconnect.
+               If a re-connect takes place after a period larger than the configured service_cleanup_delay,
+               data-sets on both sides may be different after the merge-policy has been applied.
+
+               One should carefully consider the merge-policy configuration for all federations in the
+               system as a whole as not all combinations make sense. Consider the example of a two-node
+               system. The following configurations semantically make no sense:
+               <ul>
+                 <li>
+                   Configuring REPLACE as policy on both sides.
+                 </li>
+                 <li>
+                   Combining REPLACE as policy on one side and MERGE on the other side.
+                 </li>
+                 <li>
+                   Combining REPLACE as policy on one side and DELETE on the other side.
+                 </li>
+                 <li>
+                   Combining DELETE as policy on one side and MERGE on the other side.
+                 </li>
+               </ul>
+               The wait_for_historical_data() call does not block while performing a merge due to
+               the configured merge-policy. This means it is currently not possible to block an application
+               until the merge has completed.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-4891
+          </td>
+          <td>
+            <b>RMI Java/C++ incompatibility</b><br/>
+            <i>RMI Java and RMI C++ will not communication with each other due to
+            internal topic names mismatch.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-5885
+          </td>
+          <td>
+            <b>DDSI message verification</b><br/>
+            <i>Verification of incoming messages is quite strict, but enum values
+            embedded in the data are not checked against the set of valid values.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-6080
+          </td>
+          <td>
+            <b>Crash duration termination by a signal</b><br/>
+            <i>There is a small chance that a process crashes when it is
+            terminated by a signal. In this situation the termination sequence
+            will first disable the API so that the application will no longer be
+            able to access entities and then free all resources. The problem is
+            that the termination sequence should wait until all ongoing
+            operations, which started accessing entities before the API was
+            disabled, have finished before freeing resources otherwise they may
+            access freed memory and cause a crash. This problem can only occur
+            when the termination sequence starts during entity create and enable
+            operations.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-6152
+          </td>
+          <td>
+            <b>Tuner doesn't accept the name of the domain anymore (for connecting)</b><br/>
+            <i>Other than in 6.4, the current 6.5 version doesn't allow the name
+            of the domain to be specified anymore as a means to connect to that domain,
+            i.e. using "ospl_shmem_ddsi_statistics_rnr" as the URI rather than
+            the (working) integer value (0) or the xml-config-file URI.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-6233
+          </td>
+          <td>
+            <b>DCPS API unregister_instance with timestamp before most recent register fails</b><br/>
+            <i>A call to unregister_instance (on an existing instance) with a
+            timestamp prior to the most recent registration for that writer is
+            handled incorrectly: the group instance correctly detects the
+            unregister_instance operation should be ignored, but the writer
+            nonetheless incorrectly removes the instance from its own adminstration.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-6901
+          </td>
+          <td>
+            <b>Behavior of built-in topic part of ISOCPP2 DCPS API not working with GCC &lt;= 4.3</b><br/>
+            <i>Builds that have been generated with GCC version &lt;= 4.3, will
+            not be able to use the built-in topic part of the ISOCPP2 DCPS API
+            due to issues with dynamic casting in the combination of the API
+            and the compiler.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-6974
+          </td>
+          <td>
+            <b>Group coherency during durability alignment</b><br/>
+            <i>When in a running system an end of a group coherent update takes
+            place at the same time a late joining Node is aligning historical
+            data there is a chance that a group coherent update is partially
+            lost by the late joining node.<br/><br/>
+            The problem is caused by the sending node that not yet treats a
+            group coherent update as an atomic change, in this situation the
+            sending node will partially aligns data as a coherent update and
+            partially aligns data as completed, the receiving node will not be
+            able to detect completeness of the whole and eventually discard the
+            part of the data that was send as a coherent update. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-7244
+          </td>
+          <td>
+            <b>Tuner does not support writing samples containing multi-dimensional collections</b><br/>
+            <i>Currently, the Tuner tool does not support editing multi-dimensional
+            sequences (in IDL, sequence&lt;sequence&lt;some_type&gt;&gt;, or
+            some_type[x][y]). When editing such data fields in the Tuner writer table,
+            the fields will be uneditable. This also affects editing Google Protocol
+            Buffer samples that contain a field defined as repeated bytes, as that is
+            represented as a sequence of a sequence of octets in the data model.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-7299
+          </td>
+          <td>
+            <b>DDSI2(E) and RTNetworking ssl/crypto versions are incompatibile/not-available on some linux platforms</b><br/>
+            <i>DDSI2(E) and RTNetworking services may report "error while
+            loading shared libraries: libssl.so.10: cannot open shared object
+            file: No such file or directory" on some platforms even when
+            ssl is installed properly due to a difference in ssl setups between
+            linux distributions.<br/><br/>
+            A workaround for this is creating symbolic links in /lib for
+            libssl.so.10 and libcrypto.so.10 that point to your libssl and
+            libcrypto libraries on your system.
+
+
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-7382
+          </td>
+          <td>
+            <b>Incorrect instance state after group coherence update and deletion of writer</b><br/>
+            <i>If a group scope coherent writer publishes a coherent set and then is
+               deleted while a group scope coherent reader has locked its state by
+               having called the begin_access operation it is expected that the
+               coherent set will become available as soon as the end_access operation
+               is called by the reader and that the state of the reader's instances
+               has become NO_WRITERS (assuming that the writer was the only writer).
+               In the current implementation it is possible that the update to the
+               NO_WRITERS state is not detected and that the instance state of the
+               reader's instances remain alive.
+            libcrypto libraries on your system. 
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-7387
+          </td>
+          <td>
+            <b>Coherent updates that hit the DataReader's max_instances or
+            max_samples_per_instance resource limits are always aborted and can
+            leak memory.</b><br/>
+            <i>When a coherent update hits a Reader's max_instances or
+            max_sample_per_instance limit it will be aborted. Aborting a
+            transaction when running into these resource limits is only required
+            when the Reader cannot solve this resource by taking action i.e.
+            when releasing resources solely depends on arrival of data, however
+            analysis of the actual situation and determining what to do is, in
+            the current implementation, too costly so for now we always abort.
+            Aborting can also leak some resources within the transaction
+            administration because some dependencies may still be unknown at
+            abortion, which is considered acceptable for the time being and for
+            as long hitting resource limits only occurs occasionally.<br/><br/>
+            Advised is to avoid hitting these resource limits either by not
+            setting them or to assure normal operation never reaches these
+            limits
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-7707
+          </td>
+          <td>
+            <b>Coherent updates not working properly i.c.w. QoS changes.</b><br/>
+            <i>When modifying the QoS-ses of existing publishers, writers,
+            subscribers or readers that are involved in an ongoing coherent
+            update, readers may not receive this coherent update in all cases.
+            Users are advised to refrain from changing the QoS-ses of existing
+            entities. If different QoS-ses are required, the involved entity
+            should be deleted and re-created instead.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-8008
+          </td>
+          <td>
+            <b>C++ global const struct copy failure on g++ 4.1.1</b><br/>
+            <i>When using DDS C++ pre-defined const structures (like
+            </code>DDS::DURATION_INFINITE, DDS::TIMESTAMP_CURRENT</code>, etc) with g++ 4.1.1,
+            assignments can fail. It will fail only when assigning it to a global
+            const variable, which is then assigned to a variable within a function.
+            <pre><code>
+DDS::Duration_t globalStruct = DDS::DURATION_INFINITE;
+const DDS::Duration_t globalStructC = DDS::DURATION_INFINITE;
+void main(void)
+{
+    const DDS::Duration_t localStructC = DDS::DURATION_INFINITE;
+    DDS::Duration_t copy_localStructC  = localStructC;
+    DDS::Duration_t copy_globalStructC = globalStructC;
+    DDS::Duration_t copy_globalStruct  = globalStruct;
+}
+            </code></pre>
+            The content of <code>copy_globalStructC</code> does not equal
+            <code>DDS::DURATION_INFINITE</code> but is zero. The other structures
+            don't have this problem.<br><br>
+            Easiest workaround is by initializing <code>globalStructC</code>
+            differently:
+            <pre><code>
+const DDS::Duration_t globalStructC = {DURATION_INFINITE_SEC, DURATION_INFINITE_NSEC};
+            </code></pre>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-8507
+          </td>
+          <td>
+            <b>Transactions with explicit registration messages never become complete.</b><br/>
+            <i>When explicitly registering one or more instances during a
+            coherent update by calling the register_instance() or
+            register_instance_w_timestamp() operations on one or more
+            datawriters, the coherent update will never become complete
+            for datareaders that do not participate in the same federation.
+            The workaround for this is to never explicitly register instances
+            in a coherent update from within application code, but instead rely
+            on implicit registration of instances by the middleware.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-8665
+          </td>
+          <td>
+            <b>DDS wait_for_historical_data_w_condition operations cannot deal
+            with partial coherent sets</b><br/>
+            <i>The wait_for_historical_data_w_condition() operation cannot deal
+            with alignment of partial coherent sets, which basically means that
+            the operation cannot be used in environments where coherent
+            updates are used. Solving this issue requires an alternative
+            implementation of the condition because the current implementation
+            creates a query by splitting the condition into a list of instance
+            (key) queries and sample (non-key) queries but transactions have no
+            knowledge of instances and samples, for these the query can only
+            rely on the messages so a different kind of implementation is
+            required. A workaround is to stick to wait_for_historical_data()
+            and have the application filter out the desired data.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-8673
+          </td>
+          <td>
+            <b>Possible release claim and memory leak when receiving transaction
+            twice</b><br/>
+            <i>When a federation starts and receives part of a transaction via
+            the normal path and durability aligns the complete transaction
+            afterwards, the part of the transaction that is received twice
+            may leak memory (as long as the reader/group lives) and also 'leaks'
+            the resource claims the samples have done, potentially causing
+            delivery of new samples to be denied because of ResourceLimits
+            that have been set (only if they are used). If a second transaction
+            is completely received after first transaction then this is not a
+            problem.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-8768
+          </td>
+          <td>
+            <b>RMI Java multithread service priority not working on PERC</b><br/>
+            <i>When using multi-thread server policy for RMI Java on PERC, then the
+            requests are not handled in the expected order. For instance, when you have
+            different priorities, then the higher priority requests should be handled
+            before the lower priority ones. This doesn't happen.<br>
+            The problem is that, for request handling order, RMI Java uses the native
+            java.util.concurrent.PriorityBlockingQueue. This does not work properly on
+            PERC.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-9113
+          </td>
+          <td>
+            <b>Non-coherent reader may not be aligned with data from an unfinished transaction</b><br/>
+            <i>Under certain circumstances a non-coherent reader may not receive historical
+            data from an unfinished transaction. When a non-coherent reader is created and
+            there is a unfinished transaction present for which no writer exists anymore
+            (thus the transaction will never become complete) then this non-coherent reader
+            may not receive the historical data from this transaction.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            TSTTOOL-266
+          </td>
+          <td>
+            <b>Tester cannot edit recursive message fields in protocol buffer samples.</b><br/>
+            <i>When editing a sample belonging to a topic type defined by protocol
+            buffer, if the defining message type contains a field that is the same
+            message type as its parent, the fields in question don't appear in the
+            data model. This renders them non-editable in the Sample Edit window,
+            as well as when specifying their field names in scripting commands.
+            </i>
+          </td>
+        </tr>
+		<tr>
+          <td>
+            TSTTOOL-181
+          </td>
+          <td>
+            <b>Scripting grammar does not allow multidimentional collections as FieldNames.</b><br/>
+            <i>When accessing user data fields in a sample read in via a script, the scripting
+			language does not allow more than one collection index in the field name, as defined
+			by this rule (taken from the scripting BNF found in the Tester user guide, appendix A):<br>
+			<code>
+				FieldName ::= <IDENTIFIER> ( "[" <INTEGER_LITERAL> "]" )? ( ( "." FieldName ) )?
+            </code><br>
+			The grammar specifies that the collection index can be present 0 or 1 time. So if one
+			tries to create a parameter to a send or check instruction for a field called
+			"array2D[0][0]", script compilation fails.
+            </i>
+          </td>
+        </tr>
+		<tr>
+          <td>
+            TSTTOOL-186
+          </td>
+          <td>
+            <b>Tester erroneously adds in an extra collection index to UserData, when populating the
+			edit sample table with existing sample data containing sequences containing arrays.</b><br/>
+            <i>In the case where there is a parent sequence containing an array, or containing a
+			struct that also contains an array further down the chain, the internal data model thinks
+			there is valid data in the parent sequence index one greater that there actually is.<br>
+			For example, in a live sample in the system there contains the fields:<br>
+			<pre><code>
+sequence[0].array[0] = 0
+sequence[0].array[1] = 1
+sequence[1].array[0] = 10
+sequence[1].array[1] = 11
+            </code></pre>
+			But, when selecting that sample to edit it, the sample userdata is populated with the
+			following fields defined:
+			<pre><code>
+sequence[0].array[0] = 0
+sequence[0].array[1] = 1
+sequence[1].array[0] = 10
+sequence[1].array[1] = 11
+sequence[2].array[0] = 0
+sequence[2].array[1] = 0
+            </code></pre>
+			The parent sequence has the next sequence member already defined when it shouldn't have.
+            </i>
+          </td>
+        </tr>
+		<tr>
+          <td>
+            TSTTOOL-187
+          </td>
+          <td>
+            <b>Confusing/erroneous table readouts of multidimensional collection user data in the
+			sample editor.</b><br/>
+            <i>When using the sample edit window for editing multidimensional collections (eg. an
+			integer matrix), the sample edit model does not properly account for the proper ordering
+			of the collection indices, when assigning the field values to the field names. For
+			example, a 2x3 matrix defined like this in application code:<br>
+			<pre><code>
+int[][] array2D = new int [2][3];
+array2D[0][0] = 0;
+array2D[0][1] = 1;
+array2D[0][2] = 2;
+array2D[1][0] = 3;
+array2D[1][1] = 4;
+array2D[1][2] = 5;
+            </code></pre>
+			would look like this in the Tester sample edit window table:
+			<pre><code>
+array2D[0][0]: 0
+array2D[0][1]: 3
+array2D[0][2]:
+array2D[1][0]: 1
+array2D[1][1]: 4
+array2D[1][2]:
+            </code></pre>
+            </i>
+          </td>
+        </tr>
+		<tr>
+          <td>
+            TSTTOOL-341
+          </td>
+          <td>
+            <b>Mismatch in handling of bounded character sequences between script send and script
+			check.</b><br/>
+            <i>In a scenario script, given a topic that has an bounded sequence of characters
+			in its type "b_seq", the following script code would fail the check:<br>
+			<pre><code>
+send test_SimpleCollectionTopic (
+    b_seq => abc
+);
+
+check test_SimpleCollectionTopic (
+    b_seq=> abc
+);
+            </code></pre>
+			Passing in non-indexed parameters (ie. treating the character sequence as a regular
+			string in scirpt) for bounded character sequences is accepted for send, but not for check.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            TSTTOOL-343
+          </td>
+          <td>
+            <b>Tester's statistics browser can't display statistics information.</b><br/>
+            <i>Navigating to the statistics tab and attempting to view statistics information for DDS
+            entities does not currently work. The Tester log file reports that the entities are not available.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            TSTTOOL-355
+          </td>
+          <td>
+            <b>Tester scenario scripts continue running if Tester is
+            disconnected from OpenSplice.</b><br/>
+            <i>If Tester is disconnected from a domain while a scenario script
+            is running, the scenario is not interrupted and continues to its
+            natural completion. If the script contains commands to read/write
+            samples, the result is the script will report a fail, and will spam
+            NullPointerExceptions reports to the OSPLTEST log for each attempt
+            to communicate with OSPL until the script runs its course.<br/><br/>
+            <b>Workaround:</b> After domain disconnection, and the script
+            execution ends (either by ending naturally or by explicit stoppage
+            by user), the script can be run again after domain re-connection
+            with success. Be aware though that previously written transient or
+            persistent samples will be read in again on reconnect and be input
+            into the sample table again. If it is needed, the sample table can
+            be cleared before executing the scenario again.
+            </i>
+          </td>
+        </tr>
+      </table>
+
+      <h2>Operating System/Platform Related Issues</h2>
+      <p>
+        <ul>
+          <li>
+            LynxOS 5 - Does not support multiple networking services using the same interface, this causes an error within the logs.
+          </li>
+          <li>
+            VxWorks 6.8 - When creating the target kernel an extra module is required
+            <ul>
+              <li>
+                <b>POSIX scheduling polices SCHED_FIFO/SCHED_RR/SCHED_OTHER support in RTPs (INCLUDE_PX_SCHED_DEF_POLICIES)</b>
+              </li>
+            </ul>
+          </li>
+          <li>
+            VxWorks 6.7 - Usage of SIOCGIFCONF in the ioctl call from an RTP kernel causes kernel task tNet0 to crash.
+            <ul>
+              <li>
+                Fix : <b>Upgrade 6.7 with Service Pack 1 (6.7.1), includes fix to WIND00162016</b>
+              </li>
+            </ul>
+          </li>
+          <li>
+            VxWorks 6.5 - When launching the Spliced using WindRiver Workbench 2.6 as described in the OpenSplice Getting Started guide, there is an intermittent problem where the Spliced or the other OpenSplice services may not spawn.  This problem does not occur when Spliced is deployed using the console command prompt.
+            <ul>
+              <li>
+                Workaround : <b>rtp exec -a -p 100 -u 65536 -e "PATH=&lt;path to OpenSplice services&gt;" &lt;path&gt;/spliced.vxe file://&lt;path&gt;/ospl.xml &</b>
+              </li>
+            </ul>
+          </li>
+          <li>
+            VxWorks 6.5 - There is an issue with the standard installation of VxWorks 6.5 in that the netmask passed from the VxWorks BootLoader may not take effect.  This can cause problems with OpenSplice networking services apparantely not communicating as expected.<br>
+            <ul>
+              <li>
+                Fix: This can be rectified with a patch from WindRiver: <i>VxWorks 6.5 Point Patch for Defect WIND00102686 revC</i>.
+              </li>
+              <li>
+                Workaround: <b>It is possible to hardcode the IP address and netmask into the kernel to workaround this.  Enable INCLUDE_IFCONFIG and set IFCONFIG_ENTRY_1 to "gei0 192.168.1.1 netmask 255.255.0.0" (including the quotoes), for example.</b>
+              </li>
+            </ul>
+          </li>
+           <li>
+            VxWorks 5.5 - When multicast is enabled a message of the format below will written to the error log file. This is under investigation and is caused by the IP_MULTICAST_TTL being set on a socket. The system default for IP_MULTICAST_TTL is always used and the value set in the OpenSplice configuration file is ignored.
+            <ul>
+              <li><b>
+               Report      : ERROR<br>
+               Date        : THU JAN 01 00:00:00 1970<br>
+               Description : setsockopt returned errno 22 (errno = 0x16)<br>
+               Node        : vxTarget<br>
+               Process     : networking <534898608 521237760><br>
+               Thread      : networking (534917136 521237760)<br>
+               Internals   : V5.4.2p1/networking: setting multicast timetolive option - Please see release notes, known issue/nw_socketMulticast.c/201/0/249999990<br>
+              </b></li>
+            </ul>
+          </li>
+        </ul>
+      </p>
+
+    <div class="clear">
+    <hr/>
+    </div>
+    <div id="footer">
+      <div class="xright">
+       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.
+      </div>
+     <div class="clear">
+     <hr/>
+     </div>
+    </div>
+  </body>
+</html>

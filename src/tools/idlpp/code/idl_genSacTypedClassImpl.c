@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_program.h"
@@ -14,6 +22,7 @@
 #include "idl_genSacTypedClassImpl.h"
 #include "idl_genSacHelper.h"
 #include "idl_genCHelper.h"
+#include "idl_genMetaHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_keyDef.h"
 
@@ -45,6 +54,11 @@ idl_fileOpen(
     int tmplFile;
     struct os_stat tmplStat;
     unsigned int nRead;
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
 
     tmplPath = os_getenv("OSPL_TMPL_PATH");
     orbPath = os_getenv("OSPL_ORB_PATH");
@@ -58,7 +72,7 @@ idl_fileOpen(
     }
 
     /* Prepare file header template */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%csacClassBodyHeader", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
+    snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%csacClassBodyHeader", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
     /* QAC EXPECT 3416; No unexpected side effects here */
     if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -66,10 +80,10 @@ idl_fileOpen(
         return (idl_abort);
     }
     /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+    idlpp_template = os_malloc(tmplStat.stat_size+1);
     tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+    nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+    memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
     close(tmplFile);
     idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
     idlpp_macroSet = idl_macroSetNew();
@@ -82,7 +96,7 @@ idl_fileOpen(
     idl_tmplExpFree(te);
 
     /* Prepare class definition template */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%csacClassBody", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
+    snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%csacClassBody", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
     /* QAC EXPECT 3416; No unexpected side effects here */
     if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -90,10 +104,10 @@ idl_fileOpen(
         return (idl_abort);
     }
     /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+    idlpp_template = os_malloc(tmplStat.stat_size+1);
     tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+    nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+    memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
     close(tmplFile);
 
     idlpp_indent_level = 0;
@@ -108,6 +122,10 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -143,7 +161,7 @@ idl_sequenceObjManagDef(
         idl_fileOutPrintf(idl_fileCur(), "{\n");
         idl_fileOutPrintf(
             idl_fileCur(),
-            "    return (DDS_sequence_%s *)DDS__malloc (DDS_sequence_free, 0, sizeof(DDS_sequence_%s));\n",
+            "    return (DDS_sequence_%s *)DDS_alloc(sizeof(DDS_sequence_%s), (DDS_deallocatorType)DDS_sequence_free);\n",
             idl_scopeStack(scope, "_", name),
             idl_scopeStack(scope, "_", name));
         idl_fileOutPrintf(idl_fileCur(), "}\n\n");
@@ -157,7 +175,7 @@ idl_sequenceObjManagDef(
         if (idl_typeSpecHasRef(typeSpec)) {
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "    DDS_boolean DDS_sequence_%s_freebuf (void *buffer);\n\n",
+                "    DDS_ReturnCode_t DDS_sequence_%s_freebuf (void *buffer);\n\n",
                 idl_scopeStack(scope, "_", name));
             idl_fileOutPrintf(
                 idl_fileCur(),
@@ -177,7 +195,11 @@ idl_sequenceObjManagDef(
             /* Deallocation routine for the buffer is required */
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "\nDDS_boolean DDS_sequence_%s_freebuf (void *buffer)\n",
+                "\nDDS_ReturnCode_t DDS_sequence_%s_freebuf (void *buffer);\n",
+                idl_scopeStack(scope, "_", name));
+            idl_fileOutPrintf(
+                idl_fileCur(),
+                "DDS_ReturnCode_t DDS_sequence_%s_freebuf (void *buffer)\n",
                 idl_scopeStack(scope, "_", name));
             idl_fileOutPrintf(idl_fileCur(), "{\n");
             idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long *count = (DDS_unsigned_long *)DDS__header (buffer);\n");
@@ -189,15 +211,15 @@ idl_sequenceObjManagDef(
             idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long i;\n");
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "    void %s__free (void *object);\n\n",
+                "    DDS_ReturnCode_t %s__free (void *object);\n\n",
                 idl_scopeStack(scope, "_", name));
             idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "        %s__free (&b[i]);\n",
+                "        (void) %s__free (&b[i]);\n",
                 idl_scopeStack(scope, "_", name));
             idl_fileOutPrintf(idl_fileCur(), "    }\n");
-            idl_fileOutPrintf(idl_fileCur(), "    return TRUE;\n");
+            idl_fileOutPrintf(idl_fileCur(), "    return DDS_RETCODE_OK;\n");
             idl_fileOutPrintf(idl_fileCur(), "}\n");
         }
         idl_fileOutPrintf(idl_fileCur(), "\n");
@@ -211,21 +233,36 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
-    c_char spaces[20];
+    c_char spaces[128];
     idl_tmplExp te;
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(userData);
 
     /* QAC EXPECT 3416; No unexpected side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
+        char *scopedTypeName = idl_scopeStack(scope, "::", name);
+        const char *internalTypeName = idl_internalTypeNameForBuiltinTopic(scopedTypeName);
+        const char *keyList = idl_keyResolve(idl_keyDefDefGet(), scope, name);
+        if ((strlen(internalTypeName) != 0) &&
+            ((keyList == NULL) ||
+             (strcmp(keyList,"key") == 0))) {
+            keyList = "key.localId,key.systemId";
+        }
         /* keylist defined for this struct */
         idl_sequenceObjManagDef(scope, name, idl_typeSpec(structSpec));
         te = idl_tmplExpNew(idlpp_macroSet);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("type_name", idl_scopeStack(scope, "_", name)));
-        snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scopedtypename", scopedTypeName));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("internaltypename", internalTypeName));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("keyList", keyList));
+        snprintf(spaces, sizeof(spaces), "%d", idlpp_indent_level*4);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew ("spaces", spaces));
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
         idl_streamInFree(idlpp_inStream);
         idl_tmplExpFree(te);
+        os_free(scopedTypeName);
     }
     return idl_abort;
 }
@@ -235,6 +272,8 @@ idl_structureClose(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
 }
 
 static void
@@ -244,6 +283,10 @@ idl_structureMemberOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(typeSpec);
+    OS_UNUSED_ARG(userData);
 }
 
 static idl_action
@@ -255,6 +298,9 @@ idl_unionOpen (
 {
     c_char spaces[20];
     idl_tmplExp te;
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(userData);
 
     /* QAC EXPECT 3416; No unexpected side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
@@ -262,7 +308,7 @@ idl_unionOpen (
         idl_sequenceObjManagDef(scope, name, idl_typeSpec(unionSpec));
         te = idl_tmplExpNew(idlpp_macroSet);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("type_name", idl_scopeStack(scope, "_", name)));
-        snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
+        snprintf(spaces, sizeof(spaces), "%d", idlpp_indent_level*4);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew ("spaces", spaces));
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
@@ -281,6 +327,9 @@ idl_typedefOpenClose(
 {
     c_char spaces[20];
     idl_tmplExp te;
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(userData);
 
     /* QAC EXPECT 3416; No unexpected side effects here */
     if ((idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tstruct ||
@@ -290,7 +339,7 @@ idl_typedefOpenClose(
         idl_sequenceObjManagDef(scope, name, idl_typeSpec(defSpec));
         te = idl_tmplExpNew(idlpp_macroSet);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("type_name", idl_scopeStack(scope, "_", name)));
-        snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
+        snprintf(spaces, sizeof(spaces), "%d", idlpp_indent_level*4);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());

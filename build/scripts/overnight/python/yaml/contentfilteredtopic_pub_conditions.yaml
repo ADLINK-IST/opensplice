@@ -1,0 +1,15 @@
+parseconditions:
+    desc: ContentFilteredTopic LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: pub_send
+          type: line
+          inst: All
+          required: yes
+          line: "=== [ContentFilteredTopicDataPublisher] sends 2 stockQuotes : (GE, *"

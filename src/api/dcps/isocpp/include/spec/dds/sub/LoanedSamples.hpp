@@ -33,9 +33,6 @@ class LoanedSamples;
 
 // Used by C++11 compilers to allow for using LoanedSamples
 // and SharedSamples in a range-based for-loop.
-template <typename T> typename T::iterator begin(T& t);
-template <typename T> typename T::iterator end(T& t);
-
 template <typename T> typename T::const_iterator cbegin(const T& t);
 template <typename T> typename T::const_iterator cend(const T& t);
 }
@@ -59,7 +56,6 @@ class dds::sub::LoanedSamples
 {
 public:
     typedef T                     DataType;
-    typedef typename DELEGATE<T>::iterator              iterator;
     typedef typename DELEGATE<T>::const_iterator        const_iterator;
 
     typedef typename dds::core::smart_ptr_traits< DELEGATE<T> >::ref_type DELEGATE_REF_T;

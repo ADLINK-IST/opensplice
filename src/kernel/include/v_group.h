@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef V_GROUP_H
@@ -34,6 +42,9 @@ extern "C" {
 
 typedef c_bool (*v_groupEntryAction)(v_entry e, c_voidp arg);
 typedef c_bool (*v_groupWriterAction)(v_writer w, c_voidp arg);
+typedef c_bool (*groupInstanceDisposeFunc)(v_groupInstance instance, c_voidp arg);
+typedef c_bool (*dataReaderInstanceDisposeFunc)(v_dataReaderInstance instance, c_voidp arg);
+
 
 /**
  * \brief The <code>v_group</code> cast method.
@@ -68,7 +79,7 @@ typedef c_bool (*v_groupWriterAction)(v_writer w, c_voidp arg);
 #define v_groupSampleTemplate(o) ((v_groupSampleTemplate)(o))
 
 #define v_groupName(_this) \
-        (v_entityName(v_group(_this)))
+        ((v_group(_this))->name != NULL?(v_group(_this))->name:"NULL")
 
 #define v_groupDataDescription(_this)\
         v_data(v_group(_this)->dataDescription)
@@ -90,13 +101,21 @@ typedef c_bool (*v_groupWriterAction)(v_writer w, c_voidp arg);
 
 #define v_groupwriterAdministration(o) (C_CAST(o,v_groupwriterAdministration))
 
+
 typedef c_equality (*v_matchIdentityAction)(v_gid id1, v_gid id2);
 
 typedef enum {
     V_GROUP_FLUSH_REGISTRATION,     /* The object flushed is a v_registration */
     V_GROUP_FLUSH_UNREGISTRATION,   /* The object flushed is a v_registration */
-    V_GROUP_FLUSH_MESSAGE           /* The object flushed is a v_message */
+    V_GROUP_FLUSH_MESSAGE,          /* The object flushed is a v_message */
+    V_GROUP_FLUSH_TRANSACTION       /* The object flushed is a v_transaction */
 } v_groupFlushType;
+
+struct v_groupFlushData {
+    c_object object;
+    v_groupInstance instance;
+    v_groupFlushType flushType;
+};
 
 typedef c_bool (*v_groupFlushCallback)
                (c_object obj, v_groupInstance instance,
@@ -135,18 +154,34 @@ OS_API c_long
 v_groupSampleCount (
     v_group _this);
 
+OS_API c_bool
+v_groupSetRoutingEnabled(
+    v_group group,
+    c_bool routingEnabled);
+
 /* The following hash defines implement a basic form of
  * destination identification for resend messages.
  * The resendScope is a set of these bits specifying the
  * resend scope.
  */
 
-#define V_RESEND_NONE        (0)
-#define V_RESEND_TOPIC       (1)
-#define V_RESEND_VARIANT     (2)
-#define V_RESEND_REMOTE      (4)
-#define V_RESEND_DURABLE     (8)
-#define V_RESEND_ALL        (15)
+#define V_RESEND_NONE        (0u)
+#define V_RESEND_TOPIC       (1u)
+#define V_RESEND_VARIANT     (2u)
+#define V_RESEND_REMOTE      (4u)
+#define V_RESEND_DURABLE     (8u)
+#define V_RESEND_ALL        (15u)
+
+#define v_resendScopeSet(scope,mask)    ((scope)|=(mask))
+#define v_resendScopeClear(scope,mask)  ((scope)&=(v_resendScope)(~mask))
+#define v_resendScopeTest(scope,mask)   (((scope)&(mask))==(mask))
+#define v_resendScopeTestNot(scope,mask)(((scope)&(~mask))==(scope))
+
+OS_API os_ssize_t
+v_resendScopeImage (
+    os_char *str,
+    os_size_t len,
+    v_resendScope scope);
 
 OS_API v_writeResult
 v_groupWrite (
@@ -188,23 +223,77 @@ v_groupWriteCheckSampleLost(
 /**
  * \brief Disposes all instances in the group and the registered DataReaders.
  *
- * \param group The group for which the instances must be disposed.
- * \param t The source timestamp of the dispose message
- * \param flags The additional flags to set for the dispose messages.
+ * This is a convenience function that builds on v_groupDisposeAllMatchingInstances
+ */
+OS_API v_writeResult
+v_groupDisposeAll (
+    v_group group,
+    os_timeW t,
+    c_ulong flags);
+
+
+/**
+ * \brief Disposes all instances in the group and the registered DataReaders
+ *        for which the provided callback functions match.
+ *
+ * \param group
+ *      The group for which the instances must be disposed.
+ * \param t
+ *      The source timestamp of the dispose message.
+ *      The dispose operation only affects message that were written
+ *      prior to the timestamp.
+ * \param flags
+ *      The additional flags to set for the dispose messages.
+ * \param condition
+ *      Callback function to filter to which groupInstances and
+ *      dataReaderInstances this disposeAll-functionality matches.
+ *      When NULL all instances are assumed to match.
+ * \param arg
+ *      Optional parameter of the callback function
  *
  * \remark The 'flags' parameter is introduced to implement the REPLACE
  * merge policy.
  */
 OS_API v_writeResult
-v_groupDisposeAll (
+v_groupDisposeAllMatchingInstances (
     v_group group,
-    c_time t,
-    c_ulong flags);
+    os_timeW t,
+    c_ulong flags,
+    c_bool (*condition)(c_object instance, c_voidp arg),
+    c_voidp arg);
+
+/**
+ * \brief Disposes all instances in the group and the registered DataReaders
+ *        for which the provided callback functions match. The difference
+ *        with v_groupDisposeAllMatchingInstances is that this one slaves the
+ *        readerInstances to the groupInstances, where the former walks over
+ *        groupInstances and readerInstances separately.
+ *
+ * \param group
+ *      The group for which the instances must be disposed.
+ * \param t
+ *      The source timestamp of the dispose message.
+ *      The dispose operation only affects message that were written
+ *      prior to the timestamp.
+ * \param condition
+ *      Callback function to filter to which groupInstances and
+ *      dataReaderInstances this disposeAll-functionality matches.
+ *      When NULL all instances are assumed to match.
+ * \param arg
+ *      Optional parameter of the callback function
+ *
+ * \remark The 'flags' parameter is introduced to implement the REPLACE
+ * merge policy.
+ */
+OS_API v_writeResult
+v_groupSweepMarkedInstances(
+        v_group group,
+        os_timeW timestamp);
 
 OS_API v_writeResult
 v_groupDeleteHistoricalData (
     v_group _this,
-    c_time t);
+    os_timeE t);
 
 OS_API v_writeResult
 v_groupResend (
@@ -216,10 +305,6 @@ v_groupResend (
 
 OS_API c_bool
 v_groupNwAttachedGet (
-    v_group _this );
-
-OS_API c_time
-v_groupCreationTimeGet (
     v_group _this );
 
 OS_API c_bool
@@ -243,10 +328,6 @@ v_groupServiceGetAttachState (
     const c_char* serviceName);
 
 OS_API void
-v_groupFlush (
-    v_group _this);
-
-OS_API void
 v_groupFlushAction (
     v_group _this,
     v_groupFlushCallback action,
@@ -258,27 +339,18 @@ v_groupWalkEntries (
     v_groupEntryAction action,
     c_voidp arg);
 
-OS_API c_bool
-v_groupWaitForComplete (
-    v_group _this,
-    c_time waitTime);
-
-OS_API v_groupSample
-v_groupSampleNew (
-    v_group _this,
-    v_message message);
-
-OS_API void
+OS_API v_result
 v_groupGetHistoricalData (
     v_group _this,
-    v_entry e);
+    v_entry e,
+    c_bool openTransactions);
 
 OS_API void
 v_groupStreamHistoricalData(
     v_group g,
     v_groupStream stream);
 
-OS_API c_bool
+OS_API v_result
 v_groupGetHistoricalDataWithCondition(
     v_group g,
     v_entry entry,
@@ -334,7 +406,13 @@ v_groupCheckForSampleLost(
  * to the group is locked.
  */
 OS_API void
-v_groupMarkReaderInstanceStates (
+v_groupMarkGroupInstanceStates (
+    v_group group,
+    c_ulong flags);
+
+
+OS_API void
+v_groupUnmarkGroupInstanceStates (
     v_group group,
     c_ulong flags);
 
@@ -352,6 +430,36 @@ OS_API void
 v_groupUnmarkReaderInstanceStates (
     v_group group,
     c_ulong flags);
+
+/**
+ * \brief Sets the onRequest flag of the group
+ *
+ * When this flag is set then when a group transaction becomes
+ * complete and is flushed the transaction messages are not
+ * inserted in the group.
+ * Note that this flag is used in case of On_Request alignment
+ * where durability inserts the samples directly in the readers
+ * and not in the group but transaction message have to be
+ * handled by the group. In that case when the transaction
+ * becomes complete this flag ensures that the transaction
+ * is not flushed to the group and only to the datareaders.
+ *
+ * \param group The group
+ * \param value The value to set the onRequest flag
+ *
+ */
+OS_API void
+v_groupSetOnRequest(
+    v_group _this,
+    c_bool value);
+
+OS_API void
+v_groupDisconnectWriter(
+    v_group g,
+    struct v_publicationInfo *oInfo /* key only */,
+    os_timeW timestamp,
+    c_bool isLocal,
+    c_bool isImplicit);
 
 #undef OS_API
 

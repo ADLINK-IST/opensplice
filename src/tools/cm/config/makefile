@@ -1,3 +1,5 @@
+.NOTPARALLEL:
+
 JAR_MODULE	 =osplconf.jar
 JAR_LOCATION = $(OSPL_HOME)
 JAR_INC_DIR	 =$(OSPL_HOME)/jar/$(SPLICE_TARGET)
@@ -10,28 +12,35 @@ META_SRC_DIR     =$(CONFIG_DIR)/code
 META_BLD_DIR     =$(CONFIG_DIR)/bld/$(SPLICE_TARGET)
 META_FILE        =splice_metaconfig_6.1.xml
 META_XSD_FILE    =splice_metaconfig_6.1.xsd
-META_FILES       =$(META_BLD_DIR)/$(META_FILE)
-META_FILES      +=$(META_BLD_DIR)/$(META_XSD_FILE)
+DST_META_FILE    =metaconfig.xml
+DST_META_XSD_FILE=metaconfig.xsd
+META_FILES       =$(META_BLD_DIR)/$(DST_META_FILE)
+META_FILES      +=$(META_BLD_DIR)/$(DST_META_XSD_FILE)
 
 JPACKAGES=org/opensplice/config/meta \
 		  org/opensplice/config/data \
 		  org/opensplice/config/swing \
 		  org/opensplice/config
 
-all link: $(META_FILES) jar
+LOGOS = bld/$(SPLICE_TARGET)/resources/
+LOGO_SRC = resources/*.png
+
+all link: $(META_FILES) $(LOGOS) jar
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
-$(META_FILES): $(CLASS_DIR) $(META_SRC_DIR)/$(META_FILE) $(META_SRC_DIR)/$(META_XSD_FILE)
-	cp $(META_SRC_DIR)/$(META_FILE) $(META_BLD_DIR)/$(META_FILE)
-	chmod +w $(META_BLD_DIR)/$(META_FILE)
-	cp $(META_SRC_DIR)/$(META_XSD_FILE) $(META_BLD_DIR)/$(META_XSD_FILE)
-	chmod +w $(META_BLD_DIR)/$(META_XSD_FILE)
+$(LOGOS): $(LOGO_SRC)
+	@mkdir -p bld/$(SPLICE_TARGET)/resources
+	@cp $(LOGO_SRC) $(LOGOS)
+
+$(META_FILES): $(CLASS_DIR)/.STAMP $(META_SRC_DIR)/$(META_FILE) $(META_SRC_DIR)/$(META_XSD_FILE)
+	cp $(META_SRC_DIR)/$(META_FILE) $(META_BLD_DIR)/$(DST_META_FILE)
+	chmod +w $(META_BLD_DIR)/$(DST_META_FILE)
+	cp $(META_SRC_DIR)/$(META_XSD_FILE) $(META_BLD_DIR)/$(DST_META_XSD_FILE)
+	chmod +w $(META_BLD_DIR)/$(DST_META_XSD_FILE)
 	@rm -rf $(CONFIG_DIR)/manifest/$(SPLICE_TARGET)
 	@rm -f $(JAR_INC_DIR)/$(JAR_MODULE)
 
-analyse:
-	@$(ANALYSE) bld/$(SPLICE_TARGET) code
 
 clean:
 	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) manifest/$(SPLICE_TARGET)

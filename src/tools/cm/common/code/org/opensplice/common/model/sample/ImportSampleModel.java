@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.model.sample;
@@ -29,6 +37,7 @@ import org.opensplice.cm.Publisher;
 import org.opensplice.cm.Topic;
 import org.opensplice.cm.Writer;
 import org.opensplice.cm.data.Sample;
+import org.opensplice.cm.data.UserData;
 import org.opensplice.cm.meta.MetaType;
 import org.opensplice.cm.qos.PublisherQoS;
 import org.opensplice.cm.qos.QoS;
@@ -41,6 +50,8 @@ import org.opensplice.cm.transform.QoSSerializer;
 import org.opensplice.cm.transform.SampleDeserializer;
 import org.opensplice.cm.transform.SampleSerializer;
 import org.opensplice.cm.transform.TransformationException;
+import org.opensplice.cmdataadapter.CmDataException;
+import org.opensplice.cmdataadapter.TypeInfo;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.SampleModelSizeException;
 import org.opensplice.common.model.table.UserDataSingleTableModel;
@@ -114,15 +125,15 @@ public class ImportSampleModel extends SampleModel {
                 throw new CommonException("Input file not valid: no topic defined.");
             }
 
+            this.resolveTopicName((Element)topicEl);
+            this.resolveTopicTypeName((Element)topicEl);
+            this.resolveTopicKeyList((Element)topicEl);
+            this.resolveTopicQoS((Element)topicEl);
             if(topicEl instanceof Element){
                 this.initializeMetaType((Element)topicEl);
             } else {
                 throw new CommonException("Input file not valid: topic definition in file not valid.");
             }
-            this.resolveTopicName((Element)topicEl);
-            this.resolveTopicTypeName((Element)topicEl);
-            this.resolveTopicKeyList((Element)topicEl);
-            this.resolveTopicQoS((Element)topicEl);
 
             if(partitionExpression == null){
                 this.resolvePartitions(rootElement);
@@ -134,9 +145,9 @@ public class ImportSampleModel extends SampleModel {
                 throw new CommonException("No partitions in file and not specified as parameter.");
             }
 
-            sd = DataTransformerFactory.getSampleDeserializer(
-userDataModel.getUserDataType(),
-                                            DataTransformerFactory.XML);
+            sd = DataTransformerFactory
+                    .getSampleDeserializer(typeInfo.getBareMetaType(),
+                            DataTransformerFactory.XML);
             NodeList dataList = rootElement.getElementsByTagName("data");
 
             if(dataList.getLength() != 1){
@@ -187,9 +198,14 @@ userDataModel.getUserDataType(),
                 }
             }
             if(result != null){
+                try {
+                    result = typeInfo.adaptDataForRead(typeInfo.getMostRecentEvolution(), result);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
                 boolean added = this.addSample(result);
 
-                if(added && (result != null)){
+                if (added) {
                     this.notifyListeners("data_read");
                 }
             }
@@ -228,6 +244,11 @@ userDataModel.getUserDataType(),
                 }
             }
             if(result != null){
+                try {
+                    result = typeInfo.adaptDataForRead(typeInfo.getMostRecentEvolution(), result);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
                 this.checkSize();
                 added = this.addSample(result);
             }
@@ -259,14 +280,6 @@ userDataModel.getUserDataType(),
             dataNodesIndex++;
         }
         return result;
-    }
-
-    @Override
-    public String getDataTypeKeyList() throws CommonException {
-        NodeList topics = document.getDocumentElement().getElementsByTagName("topic");
-        Element topicElement = (Element)topics.item(0);
-
-        return this.resolveTopicKeyList(topicElement);
     }
 
     @Override
@@ -404,10 +417,16 @@ userDataModel.getUserDataType(),
         }
 
         try {
-            Sample data = userDataModel.getDataAt(index);
+            Sample sample = userDataModel.getDataAt(index);
 
-            if(data != null){
-                writer.write(data.getMessage().getUserData());
+            if(sample != null){
+                UserData data = sample.getMessage().getUserData();
+                try {
+                    data = typeInfo.adaptDataForWrite(typeInfo.getMostRecentEvolution(), data);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
+                writer.write(data);
             } else {
                 throw new CommonException("No data selected.");
             }
@@ -433,10 +452,16 @@ userDataModel.getUserDataType(),
         }
 
         try {
-            Sample data = userDataModel.getDataAt(index);
+            Sample sample = userDataModel.getDataAt(index);
 
-            if(data != null){
-                writer.dispose(data.getMessage().getUserData());
+            if(sample != null){
+                UserData data = sample.getMessage().getUserData();
+                try {
+                    data = typeInfo.adaptDataForDispose(typeInfo.getMostRecentEvolution(), data);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
+                writer.dispose(data);
             } else {
                 throw new CommonException("No data selected.");
             }
@@ -451,10 +476,16 @@ userDataModel.getUserDataType(),
         }
 
         try {
-            Sample data = userDataModel.getDataAt(index);
+            Sample sample = userDataModel.getDataAt(index);
 
-            if(data != null){
-                writer.writeDispose(data.getMessage().getUserData());
+            if(sample != null){
+                UserData data = sample.getMessage().getUserData();
+                try {
+                    data = typeInfo.adaptDataForWrite(typeInfo.getMostRecentEvolution(), data);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
+                writer.writeDispose(data);
             } else {
                 throw new CommonException("No data selected.");
             }
@@ -469,10 +500,16 @@ userDataModel.getUserDataType(),
         }
 
         try {
-            Sample data = userDataModel.getDataAt(index);
+            Sample sample = userDataModel.getDataAt(index);
 
-            if(data != null){
-                writer.register(data.getMessage().getUserData());
+            if(sample != null){
+                UserData data = sample.getMessage().getUserData();
+                try {
+                    data = typeInfo.adaptDataForDispose(typeInfo.getMostRecentEvolution(), data);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
+                writer.register(data);
             } else {
                 throw new CommonException("No data selected.");
             }
@@ -487,10 +524,16 @@ userDataModel.getUserDataType(),
         }
 
         try {
-            Sample data = userDataModel.getDataAt(index);
+            Sample sample = userDataModel.getDataAt(index);
 
-            if(data != null){
-                writer.unregister(data.getMessage().getUserData());
+            if(sample != null){
+                UserData data = sample.getMessage().getUserData();
+                try {
+                    data = typeInfo.adaptDataForDispose(typeInfo.getMostRecentEvolution(), data);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
+                writer.unregister(data);
             } else {
                 throw new CommonException("No data selected.");
             }
@@ -514,7 +557,13 @@ userDataModel.getUserDataType(),
             int size = userDataModel.getVisibleContentCount();
 
             for(int i=0; i<size; i++){
-                writer.write(userDataModel.getDataAt(i).getMessage().getUserData());
+                UserData data = userDataModel.getDataAt(i).getMessage().getUserData();
+                try {
+                    data = typeInfo.adaptDataForWrite(typeInfo.getMostRecentEvolution(), data);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
+                writer.write(data);
             }
         } catch (CMException ce) {
             throw new CommonException(ce.getMessage());
@@ -536,7 +585,13 @@ userDataModel.getUserDataType(),
             int size = userDataModel.getVisibleContentCount();
 
             for(int i=0; i<size; i++){
-                writer.dispose(userDataModel.getDataAt(i).getMessage().getUserData());
+                UserData data = userDataModel.getDataAt(i).getMessage().getUserData();
+                try {
+                    data = typeInfo.adaptDataForDispose(typeInfo.getMostRecentEvolution(), data);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
+                writer.dispose(data);
             }
         } catch (CMException ce) {
             throw new CommonException(ce.getMessage());
@@ -552,7 +607,13 @@ userDataModel.getUserDataType(),
             int size = userDataModel.getVisibleContentCount();
 
             for(int i=0; i<size; i++){
-                writer.writeDispose(userDataModel.getDataAt(i).getMessage().getUserData());
+                UserData data = userDataModel.getDataAt(i).getMessage().getUserData();
+                try {
+                    data = typeInfo.adaptDataForWrite(typeInfo.getMostRecentEvolution(), data);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
+                writer.writeDispose(data);
             }
         } catch (CMException ce) {
             throw new CommonException(ce.getMessage());
@@ -568,7 +629,13 @@ userDataModel.getUserDataType(),
             int size = userDataModel.getVisibleContentCount();
 
             for(int i=0; i<size; i++){
-                writer.register(userDataModel.getDataAt(i).getMessage().getUserData());
+                UserData data = userDataModel.getDataAt(i).getMessage().getUserData();
+                try {
+                    data = typeInfo.adaptDataForDispose(typeInfo.getMostRecentEvolution(), data);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
+                writer.register(data);
             }
         } catch (CMException ce) {
             throw new CommonException(ce.getMessage());
@@ -584,7 +651,13 @@ userDataModel.getUserDataType(),
             int size = userDataModel.getVisibleContentCount();
 
             for(int i=0; i<size; i++){
-                writer.unregister(userDataModel.getDataAt(i).getMessage().getUserData());
+                UserData data = userDataModel.getDataAt(i).getMessage().getUserData();
+                try {
+                    data = typeInfo.adaptDataForDispose(typeInfo.getMostRecentEvolution(), data);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
+                writer.unregister(data);
             }
         } catch (CMException ce) {
             throw new CommonException(ce.getMessage());
@@ -592,11 +665,11 @@ userDataModel.getUserDataType(),
     }
 
     public void writeMetadata() throws CommonException{
-        if(!metaDataWritten){
-            synchronized (this) {
+        synchronized (this) {
+            if(!metaDataWritten){
                 if (topic == null) {
                     try {
-                        MetaType type = userDataModel.getUserDataType();
+                        MetaType type = typeInfo.getBareMetaType();
                         participant.registerType(type);
                         this.initializeTopic(type);
                         metaDataWritten = true;
@@ -619,12 +692,7 @@ userDataModel.getUserDataType(),
                     qos = PublisherQoS.getDefault();
 
                     if(partitionExpression != null){
-                        qos.setPartition(partitionExpression);
-                    }
-                    publisher = participant.createPublisher("import_publisher", qos);
-
-                    if (partitionExpression != null) {
-                        ArrayList domains = new ArrayList();
+                        ArrayList<Partition> domains = new ArrayList<Partition>();
                         String[] expr = partitionExpression.split(",");
                         for (int i = 0; i < expr.length; i++) {
                             if (expr[i].indexOf("*") == -1) {
@@ -635,13 +703,21 @@ userDataModel.getUserDataType(),
                                 } else {
                                     p.free();
                                 }
-                                publisher.publish(p.getName());
+                                qos.addPartition(p.getName());
                             } else {
-                                publisher.publish(expr[i]);
+                                qos.addPartition(expr[i]);
                             }
                         }
-                        partitions = (Partition[]) domains.toArray(new Partition[domains.size()]);
+                        // remove leading comma if present
+                        String thePartition = qos.getPartition();
+                        if (thePartition.startsWith(",")) {
+                            qos.setPartition(thePartition.substring(1, thePartition.length()));
+                        }
+                        partitions = domains.toArray(new Partition[domains
+                                .size()]);
                     }
+                    
+                    publisher = participant.createPublisher("import_publisher", qos);
 
                     WriterQoS wqos = WriterQoS.copyFromTopicQoS((TopicQoS)topic.getQoS());
                     writer = publisher.createWriter("import_writer", topic, wqos);
@@ -720,25 +796,20 @@ userDataModel.getUserDataType(),
             TopicQoS qos = this.resolveTopicQoS(topicElement);
 
             if(myTopic == null){
-                String keyListNew = null;
+                StringBuilder keyListNew = new StringBuilder();
                 String[] keys = keyList.split(",");
 
                 for(int i=0; i<keys.length; i++){
-                    if(keyListNew == null){
-                        if(keys[i].startsWith("userData.")){
-                            keyListNew = keys[i].substring(9);
-                        } else {
-                            keyListNew = keys[i];
-                        }
+                    if(keyListNew.length() != 0){
+                        keyListNew.append(",");
+                    }
+                    if(keys[i].startsWith("userData.")){
+                        keyListNew.append(keys[i].substring(9));
                     } else {
-                        if(keys[i].startsWith("userData.")){
-                            keyListNew += "," + keys[i].substring(9);
-                        } else {
-                            keyListNew += "," + keys[i];
-                        }
+                        keyListNew.append(keys[i]);
                     }
                 }
-                this.topic = participant.createTopic(name, typeName, keyListNew, qos);
+                this.topic = participant.createTopic(name, typeName, keyListNew.toString(), qos);
             } else if(myTopic.getTypeName().equals(typeName)){
                 if(myTopic.getKeyList().equals(keyList)){
                     if(type.equals(myTopic.getDataType())){
@@ -792,15 +863,30 @@ userDataModel.getUserDataType(),
                 }
             }
             MetaType type = md.deserializeMetaType(child);
+            typeInfo = TypeInfo.getTypeInfoByName(topicTypeName);
 
-            userDataModel = new UserDataTableModel(type);
-            singleUserDataModel = new UserDataSingleTableModel(type, false);
+            String[] keys = topicKeyList.split(",");
+            String[] newKeys = new String[keys.length];
+            for (int i = 0; i < keys.length; i++) {
+                if(keys[i].startsWith("userData.")){
+                    newKeys[i] = keys[i].substring(9);
+                } else {
+                    newKeys[i] = keys[i];
+                }
+            }
+            typeInfo.setBareTopicType(type, newKeys);
+
+            userDataModel = new UserDataTableModel(typeInfo.getMetaType());
+            singleUserDataModel = new UserDataSingleTableModel(typeInfo.getMetaType(), false);
         } catch (TransformationException te) {
             Report.getInstance().writeErrorLog("TransformationException");
             throw new CommonException(te.getMessage());
         } catch (DataTypeUnsupportedException de) {
             Report.getInstance().writeErrorLog("DataTypeUnsupportedException");
             throw new CommonException(de.getMessage());
+        } catch (CmDataException e) {
+            Report.getInstance().writeErrorLog("CmDataException");
+            throw new CommonException(e.getMessage());
         }
     }
 

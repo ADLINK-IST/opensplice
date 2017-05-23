@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.config.swing;
@@ -286,7 +294,7 @@ public class DataNodePopup implements MouseListener, ActionListener {
                     boolean remove = false;
                     if (dataNode.getOwner().isServiceElement(dataNode)) {
                         int value = JOptionPane.showConfirmDialog(null,
-                                "Are you sure you want to remove this service?", "Remove service confirmation",
+                                "Are you sure you want to remove this " + ConfigWindow.SERVICE_TEXT + "?", "Remove " + ConfigWindow.SERVICE_TEXT + " confirmation",
                                 JOptionPane.YES_NO_OPTION);
                         if (value == JOptionPane.NO_OPTION) {
                             remove = true;
@@ -297,8 +305,8 @@ public class DataNodePopup implements MouseListener, ActionListener {
                             if(dn instanceof DataElement){
                                 if (dn.getOwner().isServiceElement(dn)) {
                                     int value = JOptionPane.showConfirmDialog(null,
-                                            "Are you sure you want to remove this service?",
-                                            "Remove service confirmation", JOptionPane.YES_NO_OPTION);
+                                            "Are you sure you want to remove this " + ConfigWindow.SERVICE_TEXT + "?",
+                                            "Remove " + ConfigWindow.SERVICE_TEXT + " confirmation", JOptionPane.YES_NO_OPTION);
                                     if (value == JOptionPane.NO_OPTION) {
                                         remove = true;
                                     }
@@ -315,8 +323,8 @@ public class DataNodePopup implements MouseListener, ActionListener {
                 } else if ("removeService".equals(command)) {
                     boolean remove = false;
                     int value = JOptionPane.showConfirmDialog(null,
-                            "Are you sure you want to remove this service?",
-                            "Remove service confirmation", JOptionPane.YES_NO_OPTION);
+                            "Are you sure you want to remove this " + ConfigWindow.SERVICE_TEXT + "?",
+                            "Remove " + ConfigWindow.SERVICE_TEXT + " confirmation", JOptionPane.YES_NO_OPTION);
                     if (value == JOptionPane.NO_OPTION) {
                         remove = true;
                     }
@@ -327,7 +335,7 @@ public class DataNodePopup implements MouseListener, ActionListener {
                         if (dataDomain != null) {
                             dataDomain.getOwner().removeNode(dataDomain);
                         } else {
-                            this.notifyStatus("Error: failed to remove the service ", false, false);
+                            this.notifyStatus("Error: failed to remove the " + ConfigWindow.SERVICE_TEXT + " ", false, false);
                         }
                         dataNode.getOwner().removeNode(dataNode);
                     }
@@ -424,34 +432,39 @@ public class DataNodePopup implements MouseListener, ActionListener {
 
     public void addService(DataNode dataNode, MetaNode metaNode) throws DataException {
         if (dataNode instanceof DataElement) {
-            String serviceName = null;
+            if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.LITE_MODE){
+                String serviceName = null;
 
-            String suggestedName = dataNode.getOwner().getMetaAttributeValue((MetaElement) metaNode, "name");
-            /*
-             * generate a new name if there is already a service with the
-             * default name
-             */
-            if (dataNode.getOwner().containsServiceName(suggestedName)) {
-                String tmp = suggestedName + "_1";
-                for (int i = 1; dataNode.getOwner().containsServiceName(tmp); i++) {
-                    tmp = suggestedName + "_" + i;
+                String suggestedName = dataNode.getOwner().getMetaAttributeValue((MetaElement) metaNode, "name");
+                /*
+                 * generate a new name if there is already a service with the
+                 * default name
+                 */
+                if (dataNode.getOwner().containsServiceName(suggestedName)) {
+                    String tmp = suggestedName + "_1";
+                    for (int i = 1; dataNode.getOwner().containsServiceName(tmp); i++) {
+                        tmp = suggestedName + "_" + i;
+                    }
+                    suggestedName = tmp;
                 }
-                suggestedName = tmp;
-            }
 
-            serviceName = (String) JOptionPane.showInputDialog(null, "Please enter a service name:",
-                    "Set the service name", JOptionPane.QUESTION_MESSAGE, null, null, suggestedName);
+                serviceName = (String) JOptionPane.showInputDialog(null, "Please enter a service name:",
+                        "Set the service name", JOptionPane.QUESTION_MESSAGE, null, null, suggestedName);
 
-            if (serviceName != null) {
-                if (!dataNode.getOwner().containsServiceName(serviceName)) {
-                    /* get the newly created service element */
-                    dataNode = dataNode.getOwner().addNodeWithDependency((DataElement) dataNode, metaNode);
-                    dataNode.getOwner().createDomainServiceForSerivce(dataNode, metaNode, serviceName);
+                if (serviceName != null) {
+                    if (!dataNode.getOwner().containsServiceName(serviceName)) {
+                        /* get the newly created service element */
+                        dataNode = dataNode.getOwner().addNodeWithDependency((DataElement) dataNode, metaNode);
+                        dataNode.getOwner().createDomainServiceForSerivce(dataNode, metaNode, serviceName);
+                    } else {
+                        this.notifyStatus("Error: Servicename is already in use", false, false);
+                    }
                 } else {
-                    this.notifyStatus("Error: Servicename is already in use", false, false);
+                    this.notifyStatus("Error: Please fill in a servicename", false, false);
                 }
             } else {
-                this.notifyStatus("Error: Please fill in a servicename", false, false);
+                /* get the newly created service element */
+                dataNode.getOwner().addNode((DataElement) dataNode, metaNode);
             }
         } else {
             this.notifyStatus("Error: Unexpected type of parent found: '" + dataNode.getClass() + "'.", false, false);

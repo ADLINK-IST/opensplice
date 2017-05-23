@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file services/serialization/code/sd_deepwalk.c
@@ -172,10 +180,7 @@
 /* --------------------------- deepwalk ------------------------ */
 
 
-static void
-sd_deepwalkType(
-    c_type type, c_object *objectPtr,
-    sd_deepwalkFunc action, void *actionArg);
+static c_bool sd_deepwalkType(c_type type, c_object *objectPtr, sd_deepwalkFunc action, void *actionArg) __nonnull((1, 2, 3)) __attribute_warn_unused_result__;
 
 /** \brief Helper structure for deepwalkInterface */
 typedef struct sd_interfaceContext{
@@ -188,49 +193,41 @@ typedef struct sd_interfaceContext{
 /** \brief Helper callback function for deepwalkInterface.
  *         This function handles one attribute of an interface.
  */
- 
-static c_bool
-sd_deepwalkInterface(
-    c_metaObject object,
-    c_metaWalkActionArg actionArg)
+static c_bool sd_deepwalkInterface (c_metaObject object, c_metaWalkActionArg actionArg) __nonnull_all__ __attribute_warn_unused_result__;
+
+static c_bool sd_deepwalkInterface (c_metaObject object, c_metaWalkActionArg actionArg)
 {
-    sd_interfaceContext context = (sd_interfaceContext)actionArg;
+    sd_interfaceContext context = actionArg;
     c_property property;
     c_object propertyData;
-
     /* For now, we are interested in properties only */
-
     assert(c_baseObject(object)->kind == M_ATTRIBUTE);
-
     property = c_property(object);
     propertyData = C_DISPLACE(*context->objectPtr, property->offset);
-    sd_deepwalkType(property->type, &propertyData,
-                    context->action, context->actionArg);
-
-    return TRUE;
+    return sd_deepwalkType(property->type, &propertyData, context->action, context->actionArg);
 }
 
 /** \brief Routine for the walking over baseclasses of a class and over
  *         the (interface) attributes
  */
-static void
-sd_deepwalkClass(
-    c_class class,
-    c_object *objectPtr,
-    sd_deepwalkFunc action,
-    void *actionArg)
+static c_bool sd_deepwalkClass(c_class class, c_object *objectPtr, sd_deepwalkFunc action, void *actionArg) __nonnull_all__ __attribute_warn_unused_result__;
+
+static c_bool sd_deepwalkClass(c_class class, c_object *objectPtr, sd_deepwalkFunc action, void *actionArg)
 {
     struct sd_interfaceContext context;
     if (class->extends) {
         /* QAC EXPECT 3670; Recursive call is OK */
-        sd_deepwalkClass(class->extends, objectPtr, action, actionArg);
+        if (!sd_deepwalkClass(class->extends, objectPtr, action, actionArg)) {
+            return FALSE;
+        }
     }
     if (*(c_object *)(*objectPtr)) {
         context.objectPtr = (c_object *)(*objectPtr);
         context.action = action;
         context.actionArg = actionArg;
-        c_metaWalk(c_metaObject(class),
-                   (c_metaWalkAction)sd_deepwalkInterface, &context);
+        return c_metaWalkBool (c_metaObject(class), sd_deepwalkInterface, &context);
+    } else {
+        return TRUE;
     }
 }
 
@@ -246,25 +243,20 @@ typedef struct sd_collectionContext{
 /** \brief Helper callback function for \b deepwalkCollectionElements.
  *         This function handles one element of a collection.
  */
- 
-static c_bool
-sd_deepwalkCollection(
-    c_object object,
-    c_voidp actionArg)
+static c_bool sd_deepwalkCollection(c_object object, c_voidp actionArg) __nonnull_all__ __attribute_warn_unused_result__;
+
+static c_bool sd_deepwalkCollection(c_object object, c_voidp actionArg)
 {
-    sd_collectionContext context = (sd_collectionContext)actionArg;
+    sd_collectionContext context = actionArg;
     c_object placeHolder;
 
-    if (!(int)c_typeIsRef(context->type)) {
+    if (!c_typeIsRef(context->type)) {
         placeHolder = object;
     } else {
         placeHolder = (c_object)&object;
     }
 
-    sd_deepwalkType(context->type, &placeHolder,
-                   context->action, context->actionArg);
-
-    return TRUE;
+    return sd_deepwalkType(context->type, &placeHolder, context->action, context->actionArg);
 }
 
 
@@ -273,7 +265,7 @@ sd_deepwalkCollection(
  *  This routine determines which handling function to call by
  *  selecting on the metadata kind. It is the general entry
  *  point of \b deepwalk and is recursively called by most handling
- *  functions. 
+ *  functions.
  *
  *  \param type      Metadata information for the type.
  *  \param objectPtr Pointer to the object instance of the given type.
@@ -281,156 +273,164 @@ sd_deepwalkCollection(
  *  \param actionArg The user-defined pointer to be passed to the
  *                   action function.
  */
-
-static void
-sd_deepwalkType(
-    c_type type,
-    c_object *objectPtr,
-    sd_deepwalkFunc action,
-    void *actionArg)
+static c_bool sd_deepwalkType(c_type type, c_object *objectPtr, sd_deepwalkFunc action, void *actionArg)
 {
-    c_type actualType;
-    int i, size;
-    
-    actualType = c_typeActualType(type);
-    
+    c_type const actualType = c_typeActualType(type);
+    c_ulong i, size;
+
     /* Determine which action to take */
     switch (c_baseObject(actualType)->kind) {
-    case M_COLLECTION:
-    {
-        c_collectionType ctype;
+        case M_COLLECTION: {
+            c_collectionType ctype;
 
-        /* Action for the array type itself */
-        action(actualType, objectPtr, actionArg);
-
-        ctype = c_collectionType(actualType);
-        switch (ctype->kind) {
-        case C_ARRAY:
-        case C_SEQUENCE:
-        {
-            c_object o;
-            c_long size;
-
-            if ((ctype->kind == C_ARRAY) &&
-                (ctype->maxSize != 0)) {
-                size = ctype->maxSize;
-                o = *objectPtr;
-            } else {
-                o = *((c_object *)(*objectPtr));
-                size = c_arraySize(o);
+            /* Action for the array type itself */
+            if (!action(actualType, objectPtr, actionArg)) {
+                return FALSE;
             }
-            for (i=0; i<size; i++) {
-                sd_deepwalkType(ctype->subType, &o, action, actionArg);
-                if (c_typeIsRef(ctype->subType)) {
-                    o = C_DISPLACE(o, sizeof(c_voidp));
-                } else {
-                    o = C_DISPLACE(o, ctype->subType->size);
+
+            ctype = c_collectionType(actualType);
+            switch (ctype->kind) {
+                case OSPL_C_ARRAY:
+                case OSPL_C_SEQUENCE: {
+                    c_object o;
+                    c_ulong size;
+
+                    if ((ctype->kind == OSPL_C_ARRAY) && (ctype->maxSize != 0)) {
+                        size = ctype->maxSize;
+                        o = *objectPtr;
+                    } else {
+                        o = *((c_object *)(*objectPtr));
+                        size = c_arraySize(o);
+                    }
+                    for (i=0; i<size; i++) {
+                        if (!sd_deepwalkType(ctype->subType, &o, action, actionArg)) {
+                            return FALSE;
+                        }
+                        if (c_typeIsRef(ctype->subType)) {
+                            o = C_DISPLACE(o, sizeof(c_voidp));
+                        } else {
+                            o = C_DISPLACE(o, ctype->subType->size);
+                        }
+                    }
+                    break;
+                }
+                case OSPL_C_STRING: {
+                    ; /* No action here, chars are not treated separately */
+                    break;
+                }
+                case OSPL_C_SET:
+                case OSPL_C_LIST:
+                case OSPL_C_BAG:
+                case OSPL_C_DICTIONARY:
+                case OSPL_C_QUERY: {
+                    if (*(c_object *)(*objectPtr)) {
+                        struct sd_collectionContext context;
+                        /* Walk over the elements */
+                        context.type = ctype->subType;
+                        context.action = action;
+                        context.actionArg = actionArg;
+                        if (!c_walk(*(c_object *)(*objectPtr), sd_deepwalkCollection, &context)) {
+                            return FALSE;
+                        }
+                    }
+                    break;
+                }
+                default: {
+                    SD_CONFIDENCE(FALSE);
+                    break;
                 }
             }
+            break;
         }
-        break;
-        case C_STRING:
-            ; /* No action here, chars are not treated separately */
-        break;
-        case C_SET:
-        case C_LIST:
-        case C_BAG:
-        case C_DICTIONARY:
-        case C_QUERY:
-            if (*(c_object *)(*objectPtr)) {
-                struct sd_collectionContext context;
-                /* Walk over the elements */
-                context.type = ctype->subType;
+        case M_STRUCTURE:
+        case M_EXCEPTION: {
+            c_member member;
+            c_structure structure = c_structure(actualType);
+            c_object memberData;
+
+            size = c_arraySize(structure->members);
+            for (i=0; i<size; i++) {
+                member = structure->members[i];
+                memberData = C_DISPLACE(*objectPtr, member->offset);
+                if (!sd_deepwalkType(c_specifier(member)->type, &memberData, action, actionArg)) {
+                    return FALSE;
+                }
+            }
+            break;
+        }
+        case M_CLASS: {
+            /* Action for the class itself */
+            if (!action(actualType, objectPtr, actionArg)) {
+                return FALSE;
+            }
+            /* Walk over the baseclasses and their attributes */
+            if (!sd_deepwalkClass(c_class(actualType), objectPtr, action, actionArg)) {
+                return FALSE;
+            }
+            break;
+        }
+#ifndef NDEBUG
+        case M_INTERFACE: {
+            struct sd_interfaceContext context;
+
+            /* action for the interface itself */
+            if (!action(actualType, objectPtr, actionArg)) {
+                return FALSE;
+            }
+            /* Only walk over the properties if the reference is valid. */
+            if (*objectPtr && *(c_object *)(*objectPtr)) {
+                context.objectPtr = (c_object *)(*objectPtr);
                 context.action = action;
                 context.actionArg = actionArg;
-                c_walk(*(c_object *)(*objectPtr),
-                       (c_action)sd_deepwalkCollection,
-                       &context);
-            }               
-        break;
-        default:
-            SD_CONFIDENCE(FALSE);
-        break;
-        }
-    }
-    break;
-    case M_STRUCTURE:
-    case M_EXCEPTION:
-    {
-        c_member member;
-        c_structure structure = c_structure(actualType);
-        c_object memberData;
-
-        size = c_arraySize(structure->members);
-        for (i=0; i<size; i++) {
-            member = structure->members[i];
-            memberData = C_DISPLACE(*objectPtr, (c_address)member->offset);
-            sd_deepwalkType(c_specifier(member)->type,
-                            &memberData,
-                            action, actionArg);
-        }
-    }
-    break;
-    case M_CLASS:
-        /* Action for the class itself */
-        action(actualType, objectPtr, actionArg);
-        /* Walk over the baseclasses and their attributes */
-        sd_deepwalkClass(c_class(actualType), objectPtr, action, actionArg);
-    break;
-#ifndef NDEBUG
-    case M_INTERFACE:
-    {
-        struct sd_interfaceContext context;
-
-        /* action for the interface itself */
-        action(actualType, objectPtr, actionArg);
-        /* Only walk over the properties if the reference is valid. */
-        if (*objectPtr && *(c_object *)(*objectPtr)) {
-            context.objectPtr = (c_object *)(*objectPtr);
-            context.action = action;
-            context.actionArg = actionArg;
-            c_metaWalk(c_metaObject(actualType),
-                       (c_metaWalkAction)sd_deepwalkInterface,
-                       &context);
-        }
-    }
-    break;
-#endif
-    case M_UNION:
-    {
-        c_union un;
-        c_unionCase activeCase;
-        c_object unionData;
-        c_long dataOffset;
-
-        un = c_union(actualType);
-
-        sd_deepwalkType(un->switchType, objectPtr, action, actionArg);
-
-        /* Determine which case is valid and do action for this case */
-        activeCase = sd_unionDetermineActiveCase(un, *objectPtr);
-        SD_CONFIDENCE(activeCase);
-        if (activeCase) {
-            if (c_type(un)->alignment >= un->switchType->size) {
-                dataOffset = c_type(un)->alignment;
-            } else {
-                dataOffset = un->switchType->size;
+                if (!c_metaWalkBool(c_metaObject(actualType), sd_deepwalkInterface, &context)) {
+                    return FALSE;
+                }
             }
-            unionData = C_DISPLACE(*objectPtr, dataOffset);
-            sd_deepwalkType(c_specifier(activeCase)->type,
-                            &unionData,
-                            action, actionArg);
+            break;
+        }
+#endif
+        case M_UNION: {
+            c_union un;
+            c_unionCase activeCase;
+            c_object unionData;
+            os_size_t dataOffset;
+
+            un = c_union(actualType);
+
+            if (!sd_deepwalkType(un->switchType, objectPtr, action, actionArg)) {
+                return FALSE;
+            }
+
+            /* Determine which case is valid and do action for this case */
+            activeCase = sd_unionDetermineActiveCase(un, *objectPtr);
+            SD_CONFIDENCE(activeCase);
+            if (activeCase) {
+                if (c_type(un)->alignment >= un->switchType->size) {
+                    dataOffset = c_type(un)->alignment;
+                } else {
+                    dataOffset = un->switchType->size;
+                }
+                unionData = C_DISPLACE(*objectPtr, dataOffset);
+                if (!sd_deepwalkType(c_specifier(activeCase)->type, &unionData, action, actionArg)) {
+                    return FALSE;
+                }
+            }
+            break;
+        }
+        case M_PRIMITIVE:
+        case M_ENUMERATION: {
+            if (!action(actualType, objectPtr, actionArg)) {
+                return FALSE;
+            }
+            break;
+        }
+        default: {
+            SD_CONFIDENCE(FALSE); /* Only descendants of type possible */
+            break;
         }
     }
-    break;
-    case M_PRIMITIVE:
-    case M_ENUMERATION:
-        action(actualType, objectPtr, actionArg);
-    break;
-    default:
-        SD_CONFIDENCE(FALSE); /* Only descendants of type possible */
-    break;
-    }
+    
+    return TRUE;
 }
 
 
@@ -453,7 +453,7 @@ sd_deepwalkType(
  *                   action function.
  */
 
-void
+c_bool
 sd_deepwalk(
     c_type type,
     c_object *objectPtr,
@@ -470,5 +470,5 @@ sd_deepwalk(
         placeHolder = (c_object**)objectPtr;
     }
 
-    sd_deepwalkType(type, (c_object*)placeHolder, action, actionArg);
+    return sd_deepwalkType(type, (c_object*)placeHolder, action, actionArg);
 }

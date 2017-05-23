@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /* Interface */
@@ -71,48 +79,51 @@ sd_checkSerializerType(
 }
 #endif
 
+#if 0
 typedef struct {
     sd_contextItemKind kind;
     c_metaKind         metaKind;
     const c_char      *xmlName;
     const c_char      *typeName;
     union {
+        int            kind;
         c_primKind     primKind;
         c_collKind     collKind;
     } special;
 } sd_typeInfo;
 
 static const sd_typeInfo typeInfoMap[] = {
-    { SD_CONTEXT_ITEM_MODULE,      M_MODULE,      "Module",      "c_structure",   { P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_STRUCTURE,   M_STRUCTURE,   "Struct",      "c_structure",   { P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_MEMBER,      M_MEMBER,      "Member",      "c_member",      { P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_TYPEDEF,     M_TYPEDEF,     "TypeDef",     "c_typeDef",     { P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_ARRAY,       M_COLLECTION,  "Array",       "c_collection",  { C_ARRAY     } },
-    { SD_CONTEXT_ITEM_SEQUENCE,    M_COLLECTION,  "Sequence",    "c_collection",  { C_SEQUENCE  } },
-    { SD_CONTEXT_ITEM_ENUMERATION, M_ENUMERATION, "Enum",        "c_enumeration", { P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_UNION,       M_UNION,       "Union",       "c_union",       { P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_UNIONCASE,   M_UNIONCASE,   "UNIONCASE",   "c_unionCase",   { P_UNDEFINED } }
+    { SD_CONTEXT_ITEM_MODULE,      M_MODULE,      "Module",      "c_structure",   { (int) P_UNDEFINED } },
+    { SD_CONTEXT_ITEM_STRUCTURE,   M_STRUCTURE,   "Struct",      "c_structure",   { (int) P_UNDEFINED } },
+    { SD_CONTEXT_ITEM_MEMBER,      M_MEMBER,      "Member",      "c_member",      { (int) P_UNDEFINED } },
+    { SD_CONTEXT_ITEM_TYPEDEF,     M_TYPEDEF,     "TypeDef",     "c_typeDef",     { (int) P_UNDEFINED } },
+    { SD_CONTEXT_ITEM_ARRAY,       M_COLLECTION,  "Array",       "c_collection",  { (int) C_ARRAY     } },
+    { SD_CONTEXT_ITEM_SEQUENCE,    M_COLLECTION,  "Sequence",    "c_collection",  { (int) C_SEQUENCE  } },
+    { SD_CONTEXT_ITEM_ENUMERATION, M_ENUMERATION, "Enum",        "c_enumeration", { (int) P_UNDEFINED } },
+    { SD_CONTEXT_ITEM_UNION,       M_UNION,       "Union",       "c_union",       { (int) P_UNDEFINED } },
+    { SD_CONTEXT_ITEM_UNIONCASE,   M_UNIONCASE,   "UNIONCASE",   "c_unionCase",   { (int) P_UNDEFINED } }
 };
 static const c_long typeInfoMapSize = sizeof(typeInfoMap)/sizeof(sd_typeInfo);
 
 static const sd_typeInfo specTypeInfoMap[] = {
-    { SD_CONTEXT_ITEM_TYPE,      M_UNDEFINED,  "Type",      NULL,           { P_UNDEFINED } },
-    { SD_CONTEXT_ITEM_STRING,    M_COLLECTION, "String",    "c_string",     { C_STRING    } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Address",   "c_address",    { P_ADDRESS   } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Boolean",   "c_bool",       { P_BOOLEAN   } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Char",      "c_char",       { P_CHAR      } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "WChar",     "c_wchar",      { P_WCHAR     } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Octet",     "c_octet",      { P_OCTET     } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Short",     "c_short",      { P_SHORT     } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "UShort",    "c_ushort",     { P_USHORT    } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Long",      "c_long",       { P_LONG      } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "ULong",     "c_ulong",      { P_ULONG     } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "LongLong",  "c_longlong",   { P_LONGLONG  } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "ULongLong", "c_ulonglong",  { P_ULONGLONG } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Float",     "c_float",      { P_FLOAT     } },
-    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Double",    "c_double",     { P_DOUBLE    } }
+    { SD_CONTEXT_ITEM_TYPE,      M_UNDEFINED,  "Type",      NULL,           { (int) P_UNDEFINED } },
+    { SD_CONTEXT_ITEM_STRING,    M_COLLECTION, "String",    "c_string",     { (int) C_STRING    } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Address",   "c_address",    { (int) P_ADDRESS   } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Boolean",   "c_bool",       { (int) P_BOOLEAN   } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Char",      "c_char",       { (int) P_CHAR      } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "WChar",     "c_wchar",      { (int) P_WCHAR     } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Octet",     "c_octet",      { (int) P_OCTET     } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Short",     "c_short",      { (int) P_SHORT     } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "UShort",    "c_ushort",     { (int) P_USHORT    } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Long",      "c_long",       { (int) P_LONG      } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "ULong",     "c_ulong",      { (int) P_ULONG     } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "LongLong",  "c_longlong",   { (int) P_LONGLONG  } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "ULongLong", "c_ulonglong",  { (int) P_ULONGLONG } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Float",     "c_float",      { (int) P_FLOAT     } },
+    { SD_CONTEXT_ITEM_PRIMITIVE, M_PRIMITIVE,  "Double",    "c_double",     { (int) P_DOUBLE    } }
 };
 static const c_long specTypeInfoMapSize = sizeof(specTypeInfoMap)/sizeof(sd_typeInfo);
+#endif
 
 /* --------------------- Serialization driving functions -------------------- */
 
@@ -142,7 +153,7 @@ typedef struct sd_item_s* sd_item;
 typedef struct sd_moduleItem_s* sd_moduleItem;
 struct sd_moduleItem_s {
     c_metaObject self;
-    c_long typeCount; /* Worst case amount of types that can be stored at once in this module. */
+    c_ulong typeCount; /* Worst case amount of types that can be stored at once in this module. */
     sd_item* array; /* Array which at any time contains the unprinted root-type items with dependency count 0 */
     sd_item* start; /* Pointer to the next item that should be printed. */
     sd_item* end; /* Pointer which indicates the next free element in the list. */
@@ -354,6 +365,8 @@ static void
 sd_itemDerefDependee(
     void* o, void* udata)
 {
+    OS_UNUSED_ARG(udata);
+
     if(!--((sd_item)o)->refcount) {
         sd_itemAddToModule(o);
     }
@@ -521,7 +534,7 @@ sd_serializeCollectionDependencies(
     allowCycles = FALSE;
 
     /* Check if type is a sequence or array to find out if cycles are allowed. */
-    if(type->kind == C_SEQUENCE) {
+    if(type->kind == OSPL_C_SEQUENCE) {
         allowCycles = TRUE;
     }
 
@@ -549,7 +562,7 @@ sd_serializeStructureDependencies(
 {
     c_member member;
     sd_item memberType;
-    c_long i;
+    c_ulong i;
 
     memberType = NULL;
 
@@ -579,7 +592,7 @@ sd_serializeUnionDependencies(
 {
     c_unionCase _case;
     sd_item caseType, switchType;
-    c_long i;
+    c_ulong i;
 
     switchType = NULL;
     caseType = NULL;
@@ -780,7 +793,7 @@ sd_printXmlAppend(
     char* str /* char[SD_XML_BUFFER] */)
 {
     char* lastBuffer;
-    c_ulong strLen, buffLen, spaceLeft;
+    os_size_t strLen, buffLen, spaceLeft;
 
     /* Get first buffer from list, create if it didn't exist */
     lastBuffer = c_iterObject(context->xmlbuff, 0);
@@ -820,13 +833,13 @@ sd_printXmlAggegrate(
     sd_serializedData* result)
 {
     c_iterIter iter;
-    c_long size;
+    c_ulong size;
     c_char* chunk;
 
     size = c_iterLength(context->xmlbuff);
 
     /* Allocate memory for string */
-    *result = sd_serializedDataNew(SD_FORMAT_ID, SD_FORMAT_VERSION, size * (SD_XML_BUFFER) + 1);
+    *result = sd_serializedDataNew(SD_FORMAT_ID, SD_FORMAT_VERSION, size * SD_XML_BUFFER + 1);
 
     /* Copy buffers in final structure. */
     iter = c_iterIterGet(context->xmlbuff);
@@ -848,14 +861,14 @@ sd_printXmlEscapeQuotes(
     c_char* escapedBuffer)
 {
     c_char *ptr, *quotePtr, *escapedPtr;
-    c_long ptrLen;
+    os_size_t ptrLen;
 
     ptr = buffer;
     escapedPtr = escapedBuffer;
 
     /* Copy in chunks between quotes, replace quotes with escaped quotes. */
     while((quotePtr = strchr(ptr, '\"'))) {
-        memcpy(escapedPtr, ptr, quotePtr - ptr);
+        memcpy(escapedPtr, ptr, (size_t) (quotePtr - ptr));
         escapedPtr += quotePtr - ptr;
         *escapedPtr = '\\';
         escapedPtr++;
@@ -977,7 +990,7 @@ sd_printXmlEnumeration(
     sd_context context,
     c_enumeration type)
 {
-    c_long i;
+    c_ulong i;
     c_constant constant;
     c_long value;
 
@@ -986,7 +999,7 @@ sd_printXmlEnumeration(
     /* Walk constants */
     for(i=0; i<c_arraySize(type->elements); i++) {
         constant = type->elements[i];
-        value = (c_long)(c_literal(c_constant(constant)->operand)->value.is.Long);
+        value = c_literal(c_constant(constant)->operand)->value.is.Long;
         sd_printXml(context, "<Element name=\"%s\" value=\"%d\"/>", c_metaObject(constant)->name, value);
     }
 
@@ -999,7 +1012,7 @@ sd_printXmlStructure(
     sd_context context,
     c_structure type)
 {
-    c_long i;
+    c_ulong i;
     c_member member;
 
     sd_printXml(context, "<Struct name=\"%s\">", c_metaObject(type)->name);
@@ -1023,7 +1036,7 @@ sd_printXmlUnion(
     sd_context context,
     c_union type)
 {
-    c_long i, j;
+    c_ulong i, j;
     c_unionCase _case;
     c_char* image;
     c_literal literal;
@@ -1058,12 +1071,13 @@ sd_printXmlUnion(
                 /* Obtain and print string for value */
                 if(c_baseObject(switchType)->kind == M_ENUMERATION) {
                     c_enumeration enumeration;
-                    c_long n;
+                    c_ulong n;
 
                     assert(literal->value.kind == V_LONG);
                     enumeration = c_enumeration(switchType);
 
-                    n = literal->value.is.Long;
+                    assert(literal->value.is.Long >= 0);
+                    n = (c_ulong) literal->value.is.Long;
 
                     assert(n < c_arraySize(enumeration->elements));
 
@@ -1103,13 +1117,13 @@ sd_printXmlCollection(
 
     /* Print collection header */
     switch(type->kind) {
-    case C_SEQUENCE:
+    case OSPL_C_SEQUENCE:
         elementName = "Sequence";
         break;
-    case C_ARRAY:
+    case OSPL_C_ARRAY:
         elementName = "Array";
         break;
-    case C_STRING:
+    case OSPL_C_STRING:
         elementName = "String";
         break;
     default:
@@ -1124,8 +1138,8 @@ sd_printXmlCollection(
      * sd_printXmlType so inlined types that are used as subtype are defined within
      * the inline collection. */
     switch(type->kind) {
-    case C_SEQUENCE:
-    case C_ARRAY:
+    case OSPL_C_SEQUENCE:
+    case OSPL_C_ARRAY:
         if(type->maxSize) {
             sd_printXml(context, " size=\"%d\">", type->maxSize);
         }else {
@@ -1134,7 +1148,7 @@ sd_printXmlCollection(
         sd_printXmlType(context, current, type->subType);
         sd_printXml(context, "</%s>", elementName);
         break;
-    case C_STRING:
+    case OSPL_C_STRING:
         if(type->maxSize) {
             sd_printXml(context, " length=\"%d\"/>", type->maxSize);
         }else {
@@ -1169,7 +1183,7 @@ sd_utilModuleStack(
     }
 
     if(count > SD_MAX_SCOPE_DEPTH) {
-        OS_REPORT_2(OS_ERROR, "sd_printXmlCollection", 0, "unsupported scope-depth (depth=%d, max=%d).", count, SD_MAX_SCOPE_DEPTH);
+        OS_REPORT(OS_ERROR, "sd_printXmlCollection", 0, "unsupported scope-depth (depth=%d, max=%d).", count, SD_MAX_SCOPE_DEPTH);
     }
     assert(count <= SD_MAX_SCOPE_DEPTH);
 
@@ -1280,7 +1294,7 @@ sd_printXmlModuleOpen(
          * last common module. */
         sd_utilModuleStack(from, fromStack);
         sd_utilModuleStack(to, toStack);
-        fromPtr = toPtr = sd_utilFirstCommonModule(from, to, fromStack, toStack, &i);
+        toPtr = sd_utilFirstCommonModule(from, to, fromStack, toStack, &i);
 
         /* Walk down from module 'from' to 'toPtr' */
         fromPtr = from;
@@ -1413,6 +1427,8 @@ sd_addInitialItems(
     void* udata)
 {
     sd_item item;
+
+    OS_UNUSED_ARG(udata);
 
     item = o;
 
@@ -1566,7 +1582,7 @@ sd_serializerXMLTypeinfoSerialize(
 #ifdef SER_DEBUG
     os_time t, start, stop;
 
-    start = os_timeGet();
+    start = os_timeGetMonotonic();
     printf("=== Start serializing..\n");
 #endif
 
@@ -1590,7 +1606,7 @@ sd_serializerXMLTypeinfoSerialize(
     sd_contextFree(context);
 
 #ifdef SER_DEBUG
-    stop = os_timeGet();
+    stop = os_timeGetMonotonic();
     t = os_timeSub(stop, start);
     printf("=== Serializing finished in %d.%09d seconds.\n", t.tv_sec, t.tv_nsec);
 #endif
@@ -1636,7 +1652,7 @@ sd_elementContextFree (
 
     if ( context->children ) {
         while ( !sd_listIsEmpty(context->children) ) {
-            sd_elementContext child = (sd_elementContext) sd_listTakeFirst(context->children);
+            sd_elementContext child = sd_listTakeFirst(context->children);
             sd_elementContextFree(child);
         }
         sd_listFree(context->children);
@@ -1655,8 +1671,8 @@ sd_elementContextCompareAction (
     void* o /* sd_elementContext */,
     void* arg /* sd_elementContextCompareHelper */)
 {
-    sd_elementContext context = (sd_elementContext)o;
-    sd_elementContextCompareHelper *helper = (sd_elementContextCompareHelper*)arg;
+    sd_elementContext context = o;
+    sd_elementContextCompareHelper *helper = arg;
     c_bool proceed = TRUE;
 
     if (context->name && (strcmp(context->name, helper->name) == 0)) {
@@ -1690,42 +1706,16 @@ sd_elementContextNew (
     sd_elementContext parent,
     c_bool            hasChildren)
 {
-    sd_elementContext context;
-
-    context = (sd_elementContext) os_malloc(C_SIZEOF(sd_elementContext));
-    if ( context ) {
-        context->info = info;
-        if ( name ) {
-            context->name = sd_stringDup(name);
-            if ( !context->name ) {
-                sd_elementContextFree(context);
-                context = NULL;
-            }
-        } else {
-            context->name = NULL;
-        }
-    }
-
-    if ( context ) {
-        context->object = object;
-        context->parent = parent;
-
-        if ( hasChildren ) {
-            context->children = sd_listNew();
-            if ( !context->children ) {
-                sd_elementContextFree(context);
-                context = NULL;
-            }
-        } else {
-            context->children = NULL;
-        }
-    }
-
-    if ( context && parent ) {
+    sd_elementContext context = os_malloc(C_SIZEOF(sd_elementContext));
+    context->info = info;
+    context->name = name ? sd_stringDup(name) : NULL;
+    context->object = object;
+    context->parent = parent;
+    context->children = hasChildren ? sd_listNew() : NULL;
+    if (parent) {
         assert(parent->children);
         sd_listAppend(parent->children, context);
     }
-
     return context;
 }
 
@@ -1816,7 +1806,7 @@ sd_deserXmlModule (
             o = c_metaDeclare(scope, name, M_MODULE);
             if ( !o ) {
                 c_char *scopeName = c_metaScopedName(scope);
-                OS_REPORT_2(OS_ERROR,"sd_deserXmlModule",0,
+                OS_REPORT(OS_ERROR,"sd_deserXmlModule",0,
                             "c_metaDeclare failed for Module <%s> in scope <%s>.",
                             name, scopeName);
                 os_free(scopeName);
@@ -1869,13 +1859,13 @@ sd_deserXmlPrimitive (
                           "Allocation context element failed");
             }
         } else {
-            OS_REPORT_1(OS_ERROR,"sd_deserXmlPrimitive",0,
+            OS_REPORT(OS_ERROR,"sd_deserXmlPrimitive",0,
                         "Internal error : "
                         "resolve meta data for primitive type <%s> failed.",
                         name);
         }
     } else {
-        OS_REPORT_1(OS_ERROR,"sd_deserXmlPrimitive",0,
+        OS_REPORT(OS_ERROR,"sd_deserXmlPrimitive",0,
                     "Internal error : Primitive type name not found for kind <%d>.",
                     kind);
     }
@@ -1920,7 +1910,7 @@ sd_deserXmlString (
     sd_elementContext element;
     c_metaObject      o;
     c_type            type = NULL;
-    c_ulong           length = 0;
+    c_long            length = 0;
     c_char            name[265];
     c_metaObject      scope;
 
@@ -1932,9 +1922,9 @@ sd_deserXmlString (
         scope = sd_elementContextGetScope(parent);
         o = c_metaObject(c_metaDefine(scope, M_COLLECTION));
         if ( o ) {
-            c_collectionType(o)->kind = C_STRING;
+            c_collectionType(o)->kind = OSPL_C_STRING;
             c_collectionType(o)->subType = c_keep(c_type(c_metaResolve(parent->info->base, "c_char")));
-            c_collectionType(o)->maxSize = length;
+            c_collectionType(o)->maxSize = (c_ulong) length;
             c_metaObject(o)->definedIn   = scope;
             c_metaFinalize(o);
 
@@ -1942,7 +1932,7 @@ sd_deserXmlString (
             type = c_type(c_metaBind(scope, name, o));
             if ( !type ) {
                 c_char *scopeName = c_metaScopedName(scope);
-                OS_REPORT_2(OS_ERROR,"sd_deserXmlString",0,
+                OS_REPORT(OS_ERROR,"sd_deserXmlString",0,
                             "c_metaBind failed for String <%s> in scope <%s>.",
                             name, scopeName);
                 os_free(scopeName);
@@ -1997,17 +1987,17 @@ sd_deserXmlArray (
         scope = sd_elementContextGetScope(parent);
         o = c_metaObject(c_metaDefine(scope, M_COLLECTION));
         if ( o ) {
-            c_collectionType(o)->kind = C_ARRAY;
+            c_collectionType(o)->kind = OSPL_C_ARRAY;
             element = sd_elementContextNew(parent->info, NULL, o, parent, TRUE);
             if ( element ) {
                 if ( sd_typeInfoParserNext(handle, sd_handleTypeElement, element) ) {
                     c_type            subType;
-                    sd_elementContext child = (sd_elementContext) sd_listTakeFirst(element->children);
+                    sd_elementContext child = sd_listTakeFirst(element->children);
 
                     assert(child);
                     subType = c_type(child->object);
                     c_collectionType(o)->subType = c_keep(subType);
-                    c_collectionType(o)->maxSize = size;
+                    c_collectionType(o)->maxSize = (c_ulong) size;
                     c_metaObject(o)->definedIn   = scope;
                     c_metaFinalize(o);
                     if ( child->name ) {
@@ -2023,7 +2013,7 @@ sd_deserXmlArray (
                         result = TRUE;
                     } else {
                         c_char *scopeName = c_metaScopedName(scope);
-                        OS_REPORT_2(OS_ERROR,"sd_deserXmlArray",0,
+                        OS_REPORT(OS_ERROR,"sd_deserXmlArray",0,
                                     "c_metaBind failed for Array <%s> in scope <%s>.",
                                     name, scopeName);
                         os_free(scopeName);
@@ -2042,7 +2032,7 @@ sd_deserXmlArray (
                       "Allocation c_metaDefine failed.");
         }
     } else {
-        OS_REPORT_1(OS_ERROR,"sd_deserXmlArray",0,
+        OS_REPORT(OS_ERROR,"sd_deserXmlArray",0,
                     "Illegal array size <%d> specified.",
                     size);
     }
@@ -2071,17 +2061,17 @@ sd_deserXmlSequence (
         scope = sd_elementContextGetScope(parent);
         o = c_metaObject(c_metaDefine(scope, M_COLLECTION));
         if ( o ) {
-            c_collectionType(o)->kind = C_SEQUENCE;
+            c_collectionType(o)->kind = OSPL_C_SEQUENCE;
             element = sd_elementContextNew(parent->info, NULL, o, parent, TRUE);
             if ( element ) {
                 if ( sd_typeInfoParserNext(handle, sd_handleTypeElement, element) ) {
                     c_type            subType;
-                    sd_elementContext child = (sd_elementContext) sd_listTakeFirst(element->children);
+                    sd_elementContext child = sd_listTakeFirst(element->children);
 
                     assert(child);
                     subType = c_type(child->object);
                     c_collectionType(o)->subType = c_keep(subType);
-                    c_collectionType(o)->maxSize = size;
+                    c_collectionType(o)->maxSize = (c_ulong) size;
                     c_metaObject(o)->definedIn   = scope;
                     c_metaFinalize(o);
 
@@ -2108,7 +2098,7 @@ sd_deserXmlSequence (
                         result = TRUE;
                     } else {
                         c_char *scopeName = c_metaScopedName(scope);
-                        OS_REPORT_2(OS_ERROR,"sd_deserXmlSequence",0,
+                        OS_REPORT(OS_ERROR,"sd_deserXmlSequence",0,
                                     "c_metaBind failed for Sequence <%s> in scope <%s>.",
                                     name, scopeName);
                         os_free(scopeName);
@@ -2128,7 +2118,7 @@ sd_deserXmlSequence (
                       "Allocation c_metaDefine failed.");
         }
     } else {
-        OS_REPORT_1(OS_ERROR,"sd_deserXmlSequence",0,
+        OS_REPORT(OS_ERROR,"sd_deserXmlSequence",0,
                     "Illegal Sequence size <%d> specified.",
                     size);
     }
@@ -2172,9 +2162,9 @@ sd_findScopeInChild (
     void *obj,
     void *arg)
 {
-    sd_elementContext context = (sd_elementContext) obj;
-    sd_findScopeArg  *info    = (sd_findScopeArg  *)arg;
-    c_char           *str     = info->name;
+    sd_elementContext context = obj;
+    sd_findScopeArg  *info    = arg;
+    c_char           *str;
     c_char           *cur;
     c_bool            proceed = TRUE;
 
@@ -2312,7 +2302,7 @@ sd_deserXmlTypedef (
         element = sd_elementContextNew(parent->info, name, o, parent, TRUE);
         if ( element ) {
             if ( sd_typeInfoParserNext(handle, sd_handleTypeElement, element) ) {
-                sd_elementContext child = (sd_elementContext) sd_listTakeFirst(element->children);
+                sd_elementContext child = sd_listTakeFirst(element->children);
                 assert(child);
 
                 c_typeDef(o)->alias = c_type(child->object);
@@ -2359,24 +2349,14 @@ sd_deserXmlMember (
     if ( o ) {
         c_specifier(o)->name = c_stringNew(c_object(parent->info->base), name);
         element = sd_elementContextNew(parent->info, name, o, parent, TRUE);
-        if ( element ) {
-            if ( sd_typeInfoParserNext(handle, sd_handleTypeElement, element) ) {
-                sd_elementContext child = (sd_elementContext) sd_listTakeFirst(element->children);
-                assert(child);
-                c_specifier(o)->type = c_type(child->object);
-                c_metaFinalize(o);
-                sd_elementContextFree(child);
-                result = TRUE;
-            }
-        } else {
-            OS_REPORT(OS_ERROR,"sd_deserXmlMember",0,
-                      "Internal error (out of resources) : "
-                      "Allocation Member context element failed.");
+        if ( sd_typeInfoParserNext(handle, sd_handleTypeElement, element) ) {
+            sd_elementContext child = sd_listTakeFirst(element->children);
+            assert(child);
+            c_specifier(o)->type = c_type(child->object);
+            c_metaFinalize(o);
+            sd_elementContextFree(child);
+            result = TRUE;
         }
-    } else {
-        OS_REPORT(OS_ERROR,"sd_deserXmlMember",0,
-                  "Internal error (out of resources) : "
-                  "Allocation c_metaDefine failed.");
     }
 
     return result;
@@ -2411,7 +2391,7 @@ sd_deserXmlStructure (
                     members = c_arrayNew(c_member_t((c_base)element->info->base),num);
                     if ( members ) {
                         while ( !sd_listIsEmpty(element->children) ) {
-                            sd_elementContext child = (sd_elementContext)sd_listTakeFirst(element->children);
+                            sd_elementContext child = sd_listTakeFirst(element->children);
                             assert(child);
                             members[i] = child->object;
                             sd_elementContextFree(child);
@@ -2431,7 +2411,7 @@ sd_deserXmlStructure (
                     result = TRUE;
                 } else {
                     c_char *scopeName = c_metaScopedName(scope);
-                    OS_REPORT_2(OS_ERROR,"sd_deserXmlStructure",0,
+                    OS_REPORT(OS_ERROR,"sd_deserXmlStructure",0,
                                 "c_metaBind failed for Struct <%s> in scope <%s>.",
                                 name, scopeName);
                     os_free(scopeName);
@@ -2491,7 +2471,7 @@ sd_deserXmlElement (
         valueDefined = TRUE;
     }
     if ( checkEnumLabel(name, parent->name, scope) ) {
-        o = c_metaObject(c_metaDeclare(scope, name, M_CONSTANT));
+        o = c_metaObject(c_metaDeclareEnumElement(scope, name));
         if ( o ) {
             if ( valueDefined && c_constant(o)->operand == NULL) {
                 l = c_literal(c_metaDefine(scope, M_LITERAL));
@@ -2510,14 +2490,14 @@ sd_deserXmlElement (
             }
         } else {
             c_char *scopeName = c_metaScopedName(scope);
-            OS_REPORT_2(OS_ERROR,"sd_deserXmlElement",0,
+            OS_REPORT(OS_ERROR,"sd_deserXmlElement",0,
                       "c_metaDeclare of EnumLabel <%s> in scope <%s> failed.",
                       name, scopeName);
             os_free(scopeName);
         }
     } else {
         c_char *scopeName = c_metaScopedName(scope);
-        OS_REPORT_3(OS_ERROR,"sd_deserXmlElement",0,
+        OS_REPORT(OS_ERROR,"sd_deserXmlElement",0,
                   "Illegal EnumLabel <%s> for enum <%s> in scope <%s> failed.",
                   name, parent->name, scopeName);
         os_free(scopeName);
@@ -2554,7 +2534,7 @@ sd_deserXmlEnumeration (
                     elements = c_arrayNew(c_constant_t((c_base)parent->info->base), num);
                     if ( elements ) {
                         while ( !sd_listIsEmpty(element->children) ) {
-                            sd_elementContext child = (sd_elementContext)sd_listTakeFirst(element->children);
+                            sd_elementContext child = sd_listTakeFirst(element->children);
                             assert(child);
                             elements[i] = child->object;
                             sd_elementContextFree(child);
@@ -2574,7 +2554,7 @@ sd_deserXmlEnumeration (
                     result = TRUE;
                 } else {
                     c_char *scopeName = c_metaScopedName(scope);
-                    OS_REPORT_2(OS_ERROR,"sd_deserXmlEnumeration",0,
+                    OS_REPORT(OS_ERROR,"sd_deserXmlEnumeration",0,
                                 "c_metaBind failed for Enum <%s> in scope <%s>.",
                                 name, scopeName);
                     os_free(scopeName);
@@ -2679,7 +2659,7 @@ sd_stringToEnumValue (
     for ( i = 0; !found && (i < len); i++ ) {
         c = (c_metaObject)elements[i];
         if ( c->name && (strcmp(c->name, str) == 0) ) {
-            value = c_longValue(i);
+            value = c_longValue((c_long)i);
             found = TRUE;
         }
     }
@@ -2705,7 +2685,7 @@ sd_deserXmlLabel (
     scope = sd_elementContextGetScope(parent);
     assert(scope);
 
-    discriminator = (sd_elementContext) sd_listReadFirst(parent->parent->children);
+    discriminator = sd_listReadFirst(parent->parent->children);
     if ( discriminator ) {
         type = c_type(discriminator->object);
         type = c_typeActualType(type);
@@ -2780,7 +2760,7 @@ sd_deserXmlUnionCase (
         element = sd_elementContextNew(parent->info, name, o, parent, TRUE);
         if ( element ) {
             if ( sd_typeInfoParserNext(handle, sd_handleTypeElement, element) ) {
-                sd_elementContext child = (sd_elementContext)sd_listTakeFirst(element->children);
+                sd_elementContext child = sd_listTakeFirst(element->children);
                 assert(child);
 
                 c_specifier(o)->type = c_type(child->object);
@@ -2793,7 +2773,7 @@ sd_deserXmlUnionCase (
                     labels = c_arrayNew(c_literal_t((c_base)parent->info->base), num);
                     if ( labels ) {
                         while ( !sd_listIsEmpty(element->children) ) {
-                            child = (sd_elementContext)sd_listTakeFirst(element->children);
+                            child = sd_listTakeFirst(element->children);
                             assert(child);
 
                             labels[i] = c_literal(child->object);
@@ -2861,7 +2841,7 @@ sd_deserXmlUnion (
         element = sd_elementContextNew(parent->info, name, o, parent, TRUE);
         if ( element ) {
             if ( sd_typeInfoParserNext(handle, sd_handleTypeElement, element) ) {
-                sd_elementContext child = (sd_elementContext)sd_listTakeFirst(element->children);
+                sd_elementContext child = sd_listTakeFirst(element->children);
                 assert(child);
 
                 c_union(o)->switchType = c_type(child->object);
@@ -2872,7 +2852,7 @@ sd_deserXmlUnion (
                     cases = c_arrayNew(c_unionCase_t((c_base)parent->info->base), num);
                     if ( cases ) {
                         while ( !sd_listIsEmpty(element->children) ) {
-                            child = (sd_elementContext)sd_listTakeFirst(element->children);
+                            child = sd_listTakeFirst(element->children);
                             assert(child);
 
                             cases[i] = child->object;
@@ -2892,7 +2872,7 @@ sd_deserXmlUnion (
                     result = TRUE;
                 } else {
                     c_char *scopeName = c_metaScopedName(scope);
-                    OS_REPORT_2(OS_ERROR,"sd_deserXmlUnion",0,
+                    OS_REPORT(OS_ERROR,"sd_deserXmlUnion",0,
                                 "c_metaBind failed for Union <%s> in scope <%s>.",
                                 name, scopeName);
                     os_free(scopeName);
@@ -2924,7 +2904,7 @@ sd_handleTypeElement (
     sd_typeInfoHandle  handle)
 {
     c_bool            result = FALSE;
-    sd_elementContext context = (sd_elementContext) argument;
+    sd_elementContext context = argument;
 
     assert(context);
 
@@ -3004,10 +2984,10 @@ reportError (
     if ( report ) {
         if ( report->message ) {
             if ( report->location ) {
-                OS_REPORT_2(OS_ERROR,"Type deserialize",0,
+                OS_REPORT(OS_ERROR,"Type deserialize",0,
                     "Deserialize failed : %s at %s", report->message, report->location);
             } else {
-                OS_REPORT_1(OS_ERROR,"Type deserialize",0, "Deserialize failed : %s", report->message);
+                OS_REPORT(OS_ERROR,"Type deserialize",0, "Deserialize failed : %s", report->message);
             }
         } else {
             OS_REPORT(OS_ERROR,"Type deserialize",0, "Deserialize failed");
@@ -3022,8 +3002,7 @@ reportError (
 static c_object
 sd_serializerXMLTypeinfoDeserialize(
     sd_serializer serializer,
-    sd_serializedData serData,
-    c_bool doValidation)
+    sd_serializedData serData)
 {
     c_char *xmlString;
     c_object result = NULL;
@@ -3032,7 +3011,7 @@ sd_serializerXMLTypeinfoDeserialize(
 
     SD_CONFIDENCE(sd_checkSerializerType(serializer));
 
-    sd_serializerSetValidationState(serializer, doValidation);
+    sd_serializerResetValidationState(serializer);
 
     xmlString = (c_char *)serData->data;
 
@@ -3046,7 +3025,7 @@ sd_serializerXMLTypeinfoDeserialize(
 
     if ( sd_typeInfoParserParse(xmlString, sd_handleTypeElement, element, &info.errorInfo) ) {
         if ( !sd_listIsEmpty(element->children) ) {
-            sd_elementContext child = (sd_elementContext)sd_listReadFirst(element->children);
+            sd_elementContext child = sd_listReadFirst(element->children);
             result = child->object;
         } else {
             OS_REPORT(OS_ERROR,"sd_serializerXMLTypeinfoDeserialize",0,"Succeeded but no type found");
@@ -3065,7 +3044,7 @@ sd_serializerXMLTypeinfoDeserialize(
             sd_serializerSetValidationInfo(serializer, info.errorInfo->errorNumber, message, location);
             sd_errorReportFree(info.errorInfo);
         } else {
-            sd_serializerSetValidationInfo(serializer, -1, NULL, NULL);
+            sd_serializerSetValidationInfo(serializer, (c_ulong) -1, NULL, NULL);
         }
     }
 
@@ -3101,13 +3080,9 @@ sd_serializerXMLTypeinfoNew(
     VMT.toString = sd_serializerXMLToString;
     VMT.fromString = sd_serializerXMLFromString;
 
-    result = (sd_serializerXMLTypeinfo)os_malloc(C_SIZEOF(sd_serializerXMLTypeinfo));
-
-    if ( result ) {
-        sd_serializerInitialize((sd_serializer)result, SD_FORMAT_ID, SD_FORMAT_VERSION, base, NULL, VMT);
-        result->escapeQuote = escapeQuote;
-    }
-
+    result = os_malloc(C_SIZEOF(sd_serializerXMLTypeinfo));
+    sd_serializerInitialize((sd_serializer)result, SD_FORMAT_ID, SD_FORMAT_VERSION, base, NULL, VMT);
+    result->escapeQuote = escapeQuote;
     return (sd_serializer)result;
 }
 

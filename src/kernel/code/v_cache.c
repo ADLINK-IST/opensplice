@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -57,14 +65,7 @@ v_cacheNodeNew (
     assert(C_TYPECHECK(cache,v_cache));
 
     node = c_new(cache->itemType);
-    if (node) {
-        v_cacheNodeInit(node);
-    } else {
-        OS_REPORT(OS_ERROR,
-                  "v_cacheNode::v_cacheNodeNew",0,
-                  "Failed to allocate v_cacheNode object.");
-        assert(FALSE);
-    }
+    v_cacheNodeInit(node);
     return node;
 }
 
@@ -84,16 +85,9 @@ v_cacheNew (
         base = c_getBase(type);
         if (base) {
             cache = c_new(v_kernelType(kernel,K_CACHE));
-            if (cache) {
-                cache->kind = kind;
-                cache->itemType = c_keep(type);
-                v_cacheNodeInit(v_cacheNode(cache));
-            } else {
-                OS_REPORT(OS_ERROR,
-                          "v_cacheNode::v_cacheNew",0,
-                          "Failed to allocate v_cache object.");
-                assert(FALSE);
-            }
+            cache->kind = kind;
+            cache->itemType = c_keep(type);
+            v_cacheNodeInit(v_cacheNode(cache));
         }
     }
     return cache;
@@ -103,7 +97,7 @@ void
 v_cacheDeinit (
     v_cache cache)
 {
-    v_cacheNode node, next;
+    v_cacheNode node;
 
     assert(C_TYPECHECK(cache,v_cache));
 
@@ -114,10 +108,8 @@ v_cacheDeinit (
         while (node != NULL) {
             v_cacheNodeCheck(node);
             assert(C_TYPECHECK(node,v_cacheNode));
-            next = node->connections.next;
             v_cacheNodeRemove(node,V_CACHE_ANY); /* also frees node. */
             node = v_cacheNode(cache)->connections.next;
-            assert(next == node);
             v_cacheNodeCheck(v_cacheNode(cache));
         }
     break;
@@ -126,10 +118,8 @@ v_cacheDeinit (
         while (node != NULL) {
             v_cacheNodeCheck(node);
             assert(C_TYPECHECK(node,v_cacheNode));
-            next = node->targets.next;
             v_cacheNodeRemove(node,V_CACHE_ANY); /* also frees node. */
             node = v_cacheNode(cache)->targets.next;
-            assert(next == node);
             v_cacheNodeCheck(v_cacheNode(cache));
         }
     break;
@@ -175,9 +165,9 @@ v_cacheInsert (
     break;
     default:
         assert(FALSE);
-        OS_REPORT_1(OS_ERROR, "v_cacheInsert", 0,
-                    "Illegal value of cache->kind detected. (%d)",
-                    cache->kind);
+        OS_REPORT(OS_ERROR, OS_FUNCTION, V_RESULT_ILL_PARAM,
+                  "Illegal value of cache->kind detected. (%d)",
+                  cache->kind);
         error = TRUE;
     break;
     }

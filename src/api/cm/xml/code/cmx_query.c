@@ -1,18 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cmx__query.h"
 #include "cmx_query.h"
 #include "cmx__factory.h"
 #include "cmx__entity.h"
+#include "u_observable.h"
 #include "u_entity.h"
 #include "u_reader.h"
 #include "u_query.h"
@@ -27,40 +36,26 @@ cmx_queryNew(
     const c_char* name,
     const c_char* expression)
 {
-    u_reader rea;
     u_query que;
-    q_expr qexpr;
-    c_char* result;
-    cmx_entityArg arg;
     u_result ur;
+    cmx_entity ce;
+    c_char* result;
 
-    result = NULL;    
-    rea = u_reader(cmx_entityUserEntity(reader));
-    
-    if(rea != NULL){
-        qexpr = q_parse(expression);
-        
-        if(qexpr != NULL){
-            que = u_queryNew(rea, name, qexpr, NULL);
-            q_dispose(qexpr);
-        
-            if(que != NULL){
-                cmx_registerEntity(u_entity(que));
-                arg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-                arg->entity = u_entity(que);
-                arg->create = FALSE;
-                arg->participant = NULL;
-                arg->result = NULL;
-                ur = u_entityAction(u_entity(que),
-                                    cmx_entityNewFromAction,
-                                    (c_voidp)(arg));
-                
-                if(ur == U_RESULT_OK){
-                    result = arg->result;
-                    os_free(arg);
-                }
+    result = NULL;
+    ce = cmx_entityClaim(reader);
+    if(ce != NULL){
+        ur = U_RESULT_OK;
+        que = u_queryNew(u_reader(ce->uentity), name, expression, NULL, 0, U_STATE_ANY);
+        if(que != NULL){
+            ur = cmx_entityRegister(u_object(que), ce->participant, &result);
+            if (ur != U_RESULT_OK) {
+                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                          "cmx_queryNew failed (reason: cmx_entityRegister returned %u).",
+                          ur);
+                u_objectFree(u_object(que));
             }
         }
+        cmx_entityRelease(ce);
     }
     return result;
 }
@@ -69,62 +64,74 @@ c_char*
 cmx_queryInit(
     v_query entity)
 {
+#if 0
     v_dataReaderQuery query;
+#endif
     char buf[512];
 
+#if 0
     query = v_dataReaderQuery(entity);
-
     if(query->expression){
         if(query->params){
-            os_sprintf(buf, 
+            os_sprintf(buf,
                 "<kind>QUERY</kind>"
                 "<expression><![CDATA[%s]]></expression>"
                 "<params><![CDATA[%s]]></params>"
                 "<instanceState>%u</instanceState>"
                 "<sampleState>%u</sampleState>"
-                "<viewState>%u</viewState>", 
-                query->expression, query->params, 
+                "<viewState>%u</viewState>",
+                query->expression, query->params,
                 query->instanceMask,
                 query->sampleMask,
                 query->viewMask);
         } else {
-            os_sprintf(buf, 
+            os_sprintf(buf,
                 "<kind>QUERY</kind>"
                 "<expression><![CDATA[%s]]></expression>"
                 "<params></params>"
                 "<instanceState>%u</instanceState>"
                 "<sampleState>%u</sampleState>"
-                "<viewState>%u</viewState>", 
-                query->expression, 
+                "<viewState>%u</viewState>",
+                query->expression,
                 query->instanceMask,
                 query->sampleMask,
                 query->viewMask);
         }
     } else {
         if(query->params){
-            os_sprintf(buf, 
+            os_sprintf(buf,
                 "<kind>QUERY</kind>"
                 "<expression></expression>"
                 "<params><![CDATA[%s]]></params>"
                 "<instanceState>%u</instanceState>"
                 "<sampleState>%u</sampleState>"
-                "<viewState>%u</viewState>", 
-                query->params,  
+                "<viewState>%u</viewState>",
+                query->params,
                 query->instanceMask,
                 query->sampleMask,
                 query->viewMask);
         } else {
-            os_sprintf(buf, 
+            os_sprintf(buf,
                 "<kind>QUERY</kind>"
                 "<expression></expression>"
                 "<params></params>"
                 "<instanceState>%u</instanceState>"
                 "<sampleState>%u</sampleState>"
-                "<viewState>%u</viewState>", 
+                "<viewState>%u</viewState>",
                 query->instanceMask,
                 query->sampleMask,
                 query->viewMask);
         }
     }
+#else
+    OS_UNUSED_ARG(entity);
+    os_sprintf(buf,
+        "<kind>QUERY</kind>"
+        "<expression></expression>"
+        "<params></params>"
+        "<instanceState></instanceState>"
+        "<sampleState></sampleState>"
+        "<viewState></viewState>" );
+#endif
     return (c_char*)(os_strdup(buf));
 }

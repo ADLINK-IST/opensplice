@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -16,7 +24,19 @@
 #include "u_participant.h"
 #include "u_domain.h"
 #include "u_entity.h"
-#include "os.h"
+#include "vortex_os.h"
+
+u_result
+u_domainOpenForService(
+    u_domain *domain,
+    const os_char *uri,
+    const u_domainId_t id,
+    os_int32 timeout);
+
+os_uint32
+u_domainThreadFlags(
+    _In_ os_uint32 mask,
+    _In_ os_uchar enable);
 
 /** \brief Protect against process termination during domain access.
  *
@@ -27,7 +47,7 @@
  */
 u_result
 u_domainProtect(
-    u_domain _this);
+    const u_domain _this);
 
 /** \brief Unprotect against process termination after domain access.
  *
@@ -35,45 +55,93 @@ u_domainProtect(
  * release the protection against termination set by the method
  * u_domainProtect.
  */
-u_result
-u_domainUnprotect(
-    u_domain _this);
+void
+u_domainUnprotect(void);
 
-c_long
+os_uint32
 u_domainProtectCount(
-    u_domain _this);
+    _In_ u_domain _this);
+
+u_bool
+u_domainIsService(
+    _In_ u_domain _this);
+
+u_result
+u_domainAddWaitset(
+    const u_domain _this,
+    const u_waitset w);
+
+u_result
+u_domainRemoveWaitset(
+    const u_domain _this,
+    const u_waitset w);
+
+u_bool
+u_domainContainsWaitset(
+    const u_domain _this,
+    const u_waitset w);
+
+os_uint32
+u_domainWaitsetCount(
+    const u_domain _this);
 
 u_result
 u_domainAddParticipant (
-    u_domain _this,
-    u_participant p);
+    const u_domain _this,
+    const u_participant p);
 
 u_result
 u_domainRemoveParticipant (
-    u_domain _this,
-    u_participant p);
+    const u_domain _this,
+    const u_participant p);
+
+u_domain
+u_domainKeep (
+    const u_domain _this);
+
+_Check_return_
+u_bool
+u_domainSetDetaching(
+    _Inout_ u_domain _this,
+    _In_ os_uint32 flags);
+
+void
+u_domainWaitDetaching(
+    _Inout_ u_domain _this);
+
+u_bool
+u_domainProtectAllowed(
+    _In_ u_domain _this);
+
+u_bool
+u_domainProtectAllowedClaimed(
+    _In_ u_domain _this);
 
 u_result
-u_domainDetachParticipants (
-    u_domain _this);
+u_domainDetach (
+    _Inout_ u_domain _this);
 
-c_bool
+u_bool
 u_domainCheckHandleServer (
-    u_domain _this,
-    c_long serverId);
+    const u_domain _this,
+    const os_uint32 serverId);
 
-c_voidp
-u_domainGetCopy (
-    u_domain _this,
-    u_entityCopy copy,
-    void* copyArg);
-
-c_address
+os_address
 u_domainHandleServer(
-    u_domain _this);
+    _In_ u_domain _this);
 
-c_voidp
+os_address
 u_domainAddress(
-    u_domain _this);
+    const u_domain _this);
+
+u_result
+u_domainFederationSpecificPartitionName (
+    u_domain _this,
+    c_char *buf,
+    os_size_t bufsize);
+
+void
+u_domainIdSetThreadSpecific(
+    _In_ u_domain domain);
 
 #endif

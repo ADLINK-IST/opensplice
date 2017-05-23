@@ -56,6 +56,7 @@ public:
      *
      * @param pub the publisher
      * @param topic the Topic associated with this DataWriter
+     * See \ref DCPS_Modules_Publication_DataWriter "DataWriter" for more information
      */
     DataWriter(const dds::pub::Publisher& pub,
                const ::dds::topic::Topic<T>& topic);
@@ -73,7 +74,7 @@ public:
                const ::dds::topic::Topic<T>& topic,
                const dds::pub::qos::DataWriterQos& qos,
                dds::pub::DataWriterListener<T>* listener = NULL,
-               const dds::core::status::StatusMask& mask = ::dds::core::status::StatusMask::all());
+               const dds::core::status::StatusMask& mask = ::dds::core::status::StatusMask::none());
 
 public:
     virtual ~DataWriter();
@@ -279,6 +280,110 @@ public:
      */
     DataWriter& dispose_instance(const ::dds::core::InstanceHandle& i,
                                  const dds::core::Time& timestamp);
+
+#if OSPL_EXPLICIT_WRITEDISPOSE
+    /**
+     * Write and dispose a sample.
+     *
+     * @param sample the sample to be written and disposed
+     */
+    void writedispose(const T& sample);
+
+    /**
+     * Write and dispose a sample with a given timestamp.
+     *
+     * @param sample the sample to be written and disposed
+     * @param timestamp the timestamp used for this sample
+     */
+    void writedispose(const T& sample, const dds::core::Time& timestamp);
+
+    /**
+     * Write and dispose a sample by providing the instance handle.
+     * This is usually the most efficient way of writing a sample.
+     *
+     * @param sample the sample to be written and disposed
+     * @param instance the handle representing the instance that is written and disposed
+     */
+    void writedispose(const T& sample, const ::dds::core::InstanceHandle& instance);
+
+    /**
+     * Write and dispose a sample, with a time-stamp, by providing the instance handle.
+     * This is usually the most efficient way of writing a sample.
+     *
+     * @param sample the sample to be written and disposed
+     * @param instance the handle representing the instance that is written and disposed
+     * @param timestamp the timestamp to use for this sample
+     */
+    void writedispose(const T& data,
+               const ::dds::core::InstanceHandle& instance,
+               const dds::core::Time& timestamp);
+
+
+    /**
+     * Write and dispose a series of samples or TopicInstances (determined
+     * by the template specialization).
+     *
+     * @param begin an iterator pointing to the beginning of a sequence of
+     * TopicInstances
+     * @param end an iterator pointing to the end of a sequence of
+     * TopicInstances
+     */
+    template <typename FWIterator>
+    void writedispose(const FWIterator& begin, const FWIterator& end);
+
+    /**
+     * Write and dispose a series of samples or TopicInstances (determined
+     * by the template specialization) with timestamp.
+     *
+     * @param begin an iterator pointing to the beginning of a sequence of
+     * TopicInstances
+     * @param end an iterator pointing to the end of a sequence of
+     * TopicInstances
+     * @param timestamp the time stamp
+     */
+    template <typename FWIterator>
+    void writedispose(const FWIterator& begin, const FWIterator& end,
+               const dds::core::Time& timestamp);
+
+    /**
+     * Write and dispose a series of samples and their parallel instance handles.
+     *
+     * @param data_begin an iterator pointing to the beginning of a sequence of
+     * samples
+     * @param data_end an iterator pointing to the end of a sequence of
+     * samples
+     * @param handle_begin an iterator pointing to the beginning of a sequence of
+     * InstanceHandles
+     * @param handle_end an iterator pointing to the end of a sequence of
+     * InstanceHandles
+     */
+    template <typename SamplesFWIterator, typename HandlesFWIterator>
+    void writedispose(const SamplesFWIterator& data_begin,
+               const SamplesFWIterator& data_end,
+               const HandlesFWIterator& handle_begin,
+               const HandlesFWIterator& handle_end);
+
+    /**
+     * Write and dispose a series of samples and their parallel instance handles with
+     * a timestamp.
+     *
+     * @param data_begin an iterator pointing to the beginning of a sequence of
+     * samples
+     * @param data_end an iterator pointing to the end of a sequence of
+     * samples
+     * @param handle_begin an iterator pointing to the beginning of a sequence of
+     * InstanceHandles
+     * @param handle_end an iterator pointing to the end of a sequence of
+     * InstanceHandles
+     * @param timestamp the time stamp
+     */
+    template <typename SamplesFWIterator, typename HandlesFWIterator>
+    void writedispose(const SamplesFWIterator& data_begin,
+               const SamplesFWIterator& data_end,
+               const HandlesFWIterator& handle_begin,
+               const HandlesFWIterator& handle_end,
+               const dds::core::Time& timestamp);
+#endif
 
     /**
      * This operation can be used to retrieve the instance key that corresponds

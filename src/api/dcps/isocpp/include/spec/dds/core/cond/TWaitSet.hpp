@@ -46,6 +46,8 @@ class TWaitSet;
  * A WaitSet is not necessarily associated with a single DomainParticipant
  * and could be used to wait for Condition objects associated with different
  * DomainParticipant objects.
+ *
+ * For more information see \ref DCPS_Modules_Infrastructure_Waitset "Waitset"
  */
 template <typename DELEGATE>
 class dds::core::cond::TWaitSet : public dds::core::Reference<DELEGATE>

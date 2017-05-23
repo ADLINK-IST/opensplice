@@ -1,18 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef NN_PROTOCOL_H
 #define NN_PROTOCOL_H
 
 #include "os_abstract.h"
+#include "q_feature_check.h"
 
 #ifdef PA_LITTLE_ENDIAN
 #define PLATFORM_IS_LITTLE_ENDIAN 1
@@ -40,6 +49,9 @@ typedef struct {
   int high;
   unsigned low;
 } nn_sequence_number_t;
+#define NN_SEQUENCE_NUMBER_UNKNOWN_HIGH -1
+#define NN_SEQUENCE_NUMBER_UNKNOWN_LOW 0
+#define NN_SEQUENCE_NUMBER_UNKNOWN ((os_int64) (((os_uint64)NN_SEQUENCE_NUMBER_UNKNOWN_HIGH << 32) | NN_SEQUENCE_NUMBER_UNKNOWN_LOW))
 typedef struct nn_sequence_number_set {
   nn_sequence_number_t bitmap_base;
   unsigned numbits;
@@ -47,7 +59,7 @@ typedef struct nn_sequence_number_set {
 } nn_sequence_number_set_t; /* Why strict C90? zero-length/flexible array members are far nicer */
 /* SequenceNumberSet size is base (2 words) + numbits (1 word) +
    bitmap ((numbits+31)/32 words), and this at 4 bytes/word */
-#define NN_SEQUENCE_NUMBER_SET_BITS_SIZE(numbits) (4 * ((numbits + 31) / 32))
+#define NN_SEQUENCE_NUMBER_SET_BITS_SIZE(numbits) ((unsigned) (4 * (((numbits) + 31) / 32)))
 #define NN_SEQUENCE_NUMBER_SET_SIZE(numbits) (offsetof (nn_sequence_number_set_t, bits) + NN_SEQUENCE_NUMBER_SET_BITS_SIZE (numbits))
 typedef unsigned nn_fragment_number_t;
 typedef struct nn_fragment_number_set {
@@ -57,7 +69,7 @@ typedef struct nn_fragment_number_set {
 } nn_fragment_number_set_t;
 /* FragmentNumberSet size is base (2 words) + numbits (1 word) +
    bitmap ((numbits+31)/32 words), and this at 4 bytes/word */
-#define NN_FRAGMENT_NUMBER_SET_BITS_SIZE(numbits) (4 * ((numbits + 31) / 32))
+#define NN_FRAGMENT_NUMBER_SET_BITS_SIZE(numbits) ((unsigned) (4 * (((numbits) + 31) / 32)))
 #define NN_FRAGMENT_NUMBER_SET_SIZE(numbits) (offsetof (nn_fragment_number_set_t, bits) + NN_FRAGMENT_NUMBER_SET_BITS_SIZE (numbits))
 typedef int nn_count_t;
 #define DDSI_COUNT_MIN (-2147483647 - 1)
@@ -65,33 +77,43 @@ typedef int nn_count_t;
 /* address field in locator maintained in network byte order, the rest
    in host (yes: that's a FIXME)  */
 typedef struct {
-  int kind;
+  os_int32 kind;
   unsigned port;
   unsigned char address[16];
 } nn_locator_t;
 
 struct cdrstring {
   unsigned length;
-  char contents[1]; /* C90 does not support flex. array members */
+  unsigned char contents[1]; /* C90 does not support flex. array members */
 };
 
-#define NN_STATUSINFO_DISPOSE      0x1
-#define NN_STATUSINFO_UNREGISTER   0x2
+#define NN_STATUSINFO_DISPOSE      0x1u
+#define NN_STATUSINFO_UNREGISTER   0x2u
 
 #define NN_GUID_PREFIX_UNKNOWN_INITIALIZER {{0,0,0,0, 0,0,0,0, 0,0,0,0}}
 
-#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_ANNOUNCER (1 << 0)
-#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_DETECTOR (1 << 1)
-#define NN_DISC_BUILTIN_ENDPOINT_PUBLICATION_ANNOUNCER (1 << 2)
-#define NN_DISC_BUILTIN_ENDPOINT_PUBLICATION_DETECTOR (1 << 3)
-#define NN_DISC_BUILTIN_ENDPOINT_SUBSCRIPTION_ANNOUNCER (1 << 4)
-#define NN_DISC_BUILTIN_ENDPOINT_SUBSCRIPTION_DETECTOR (1 << 5)
-#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_PROXY_ANNOUNCER (1 << 6) /* undefined meaning */
-#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_PROXY_DETECTOR (1 << 7) /* undefined meaning */
-#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_STATE_ANNOUNCER (1 << 8) /* undefined meaning */
-#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_STATE_DETECTOR (1 << 9) /* undefined meaning */
-#define NN_BUILTIN_ENDPOINT_PARTICIPANT_MESSAGE_DATA_WRITER (1 << 10)
-#define NN_BUILTIN_ENDPOINT_PARTICIPANT_MESSAGE_DATA_READER (1 << 11)
+#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_ANNOUNCER (1u << 0)
+#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_DETECTOR (1u << 1)
+#define NN_DISC_BUILTIN_ENDPOINT_PUBLICATION_ANNOUNCER (1u << 2)
+#define NN_DISC_BUILTIN_ENDPOINT_PUBLICATION_DETECTOR (1u << 3)
+#define NN_DISC_BUILTIN_ENDPOINT_SUBSCRIPTION_ANNOUNCER (1u << 4)
+#define NN_DISC_BUILTIN_ENDPOINT_SUBSCRIPTION_DETECTOR (1u << 5)
+#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_PROXY_ANNOUNCER (1u << 6) /* undefined meaning */
+#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_PROXY_DETECTOR (1u << 7) /* undefined meaning */
+#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_STATE_ANNOUNCER (1u << 8) /* undefined meaning */
+#define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_STATE_DETECTOR (1u << 9) /* undefined meaning */
+#define NN_BUILTIN_ENDPOINT_PARTICIPANT_MESSAGE_DATA_WRITER (1u << 10)
+#define NN_BUILTIN_ENDPOINT_PARTICIPANT_MESSAGE_DATA_READER (1u << 11)
+#define NN_DISC_BUILTIN_ENDPOINT_TOPIC_ANNOUNCER (1u << 12)
+#define NN_DISC_BUILTIN_ENDPOINT_TOPIC_DETECTOR (1u << 13)
+
+/* PrismTech extensions: */
+#define NN_DISC_BUILTIN_ENDPOINT_CM_PARTICIPANT_WRITER (1u << 0)
+#define NN_DISC_BUILTIN_ENDPOINT_CM_PARTICIPANT_READER (1u << 1)
+#define NN_DISC_BUILTIN_ENDPOINT_CM_PUBLISHER_WRITER (1u << 2)
+#define NN_DISC_BUILTIN_ENDPOINT_CM_PUBLISHER_READER (1u << 3)
+#define NN_DISC_BUILTIN_ENDPOINT_CM_SUBSCRIBER_WRITER (1u << 4)
+#define NN_DISC_BUILTIN_ENDPOINT_CM_SUBSCRIBER_READER (1u << 5)
 
 #define NN_LOCATOR_KIND_INVALID -1
 #define NN_LOCATOR_KIND_RESERVED 0
@@ -116,6 +138,8 @@ struct cdrstring {
 #define NN_VENDORID_PRISMTECH_GATEWAY {{ 0x01, 0x0c }}
 #define NN_VENDORID_PRISMTECH_LITE    {{ 0x01, 0x0d }}
 #define NN_VENDORID_TECHNICOLOR       {{ 0x01, 0x0e }}
+#define NN_VENDORID_EPROSIMA          {{ 0x01, 0x0f }}
+#define NN_VENDORID_PRISMTECH_CLOUD   {{ 0x01, 0x20 }}
 
 #define MY_VENDOR_ID NN_VENDORID_PRISMTECH_OSPL
 
@@ -141,7 +165,7 @@ typedef struct SubmessageHeader {
   unsigned short octetsToNextHeader;
 } SubmessageHeader_t;
 #define RTPS_SUBMESSAGE_HEADER_SIZE (sizeof (SubmessageHeader_t))
-#define SMFLAG_ENDIANNESS 0x01
+#define SMFLAG_ENDIANNESS 0x01u
 
 typedef enum SubmessageKind {
   SMID_PAD = 0x01,
@@ -168,6 +192,11 @@ typedef struct InfoTimestamp {
   nn_ddsi_time_t time;
 } InfoTimestamp_t;
 
+typedef struct EntityId {
+  SubmessageHeader_t smhdr;
+  nn_entityid_t entityid;
+} EntityId_t;
+
 typedef struct InfoDST {
   SubmessageHeader_t smhdr;
   nn_guid_prefix_t guid_prefix;
@@ -182,11 +211,11 @@ typedef struct InfoSRC {
 } InfoSRC_t;
 
 #if PLATFORM_IS_LITTLE_ENDIAN
-#define PL_CDR_BE 0x0200
-#define PL_CDR_LE 0x0300
+#define PL_CDR_BE 0x0200u
+#define PL_CDR_LE 0x0300u
 #else
-#define PL_CDR_BE 0x0002
-#define PL_CDR_LE 0x0003
+#define PL_CDR_BE 0x0002u
+#define PL_CDR_LE 0x0003u
 #endif
 
 typedef unsigned short nn_parameterid_t; /* spec says short */
@@ -208,9 +237,9 @@ typedef struct Data_DataFrag_common {
 typedef struct Data {
   Data_DataFrag_common_t x;
 } Data_t;
-#define DATA_FLAG_INLINE_QOS 0x02
-#define DATA_FLAG_DATAFLAG 0x04
-#define DATA_FLAG_KEYFLAG 0x08
+#define DATA_FLAG_INLINE_QOS 0x02u
+#define DATA_FLAG_DATAFLAG 0x04u
+#define DATA_FLAG_KEYFLAG 0x08u
 
 typedef struct DataFrag {
   Data_DataFrag_common_t x;
@@ -219,8 +248,8 @@ typedef struct DataFrag {
   unsigned short fragmentSize;
   unsigned sampleSize;
 } DataFrag_t;
-#define DATAFRAG_FLAG_INLINE_QOS 0x02
-#define DATAFRAG_FLAG_KEYFLAG 0x04
+#define DATAFRAG_FLAG_INLINE_QOS 0x02u
+#define DATAFRAG_FLAG_KEYFLAG 0x04u
 
 typedef struct MsgLen {
   SubmessageHeader_t smhdr;
@@ -234,9 +263,9 @@ typedef struct AckNack {
   nn_sequence_number_set_t readerSNState;
   /* nn_count_t count; */
 } AckNack_t;
-#define ACKNACK_FLAG_FINAL 0x02
+#define ACKNACK_FLAG_FINAL 0x02u
 #define ACKNACK_SIZE(numbits) (offsetof (AckNack_t, readerSNState) + NN_SEQUENCE_NUMBER_SET_SIZE (numbits) + 4)
-#define ACKNACK_SIZE_MAX ACKNACK_SIZE (256)
+#define ACKNACK_SIZE_MAX ACKNACK_SIZE (256u)
 
 typedef struct Gap {
   SubmessageHeader_t smhdr;
@@ -246,13 +275,13 @@ typedef struct Gap {
   nn_sequence_number_set_t gapList;
 } Gap_t;
 #define GAP_SIZE(numbits) (offsetof (Gap_t, gapList) + NN_SEQUENCE_NUMBER_SET_SIZE (numbits))
-#define GAP_SIZE_MAX GAP_SIZE (256)
+#define GAP_SIZE_MAX GAP_SIZE (256u)
 
 typedef struct InfoTS {
   SubmessageHeader_t smhdr;
   nn_ddsi_time_t time;
 } InfoTS_t;
-#define INFOTS_INVALIDATE_FLAG 0x2
+#define INFOTS_INVALIDATE_FLAG 0x2u
 
 typedef struct Heartbeat {
   SubmessageHeader_t smhdr;
@@ -262,8 +291,8 @@ typedef struct Heartbeat {
   nn_sequence_number_t lastSN;
   nn_count_t count;
 } Heartbeat_t;
-#define HEARTBEAT_FLAG_FINAL 0x02
-#define HEARTBEAT_FLAG_LIVELINESS 0x04
+#define HEARTBEAT_FLAG_FINAL 0x02u
+#define HEARTBEAT_FLAG_LIVELINESS 0x04u
 
 typedef struct HeartbeatFrag {
   SubmessageHeader_t smhdr;
@@ -283,13 +312,13 @@ typedef struct NackFrag {
   /* nn_count_t count; */
 } NackFrag_t;
 #define NACKFRAG_SIZE(numbits) (offsetof (NackFrag_t, fragmentNumberState) + NN_FRAGMENT_NUMBER_SET_SIZE (numbits) + 4)
-#define NACKFRAG_SIZE_MAX NACKFRAG_SIZE (256)
+#define NACKFRAG_SIZE_MAX NACKFRAG_SIZE (256u)
 
 typedef struct PT_InfoContainer {
   SubmessageHeader_t smhdr;
   os_uint32 id;
 } PT_InfoContainer_t;
-#define PTINFO_ID_ENCRYPT (0x01)
+#define PTINFO_ID_ENCRYPT (0x01u)
 
 typedef union Submessage {
   SubmessageHeader_t smhdr;
@@ -312,106 +341,133 @@ typedef struct ParticipantMessageData {
   unsigned length;
   char value[1 /* length */];
 } ParticipantMessageData_t;
-#define PARTICIPANT_MESSAGE_DATA_KIND_UNKNOWN 0x0
-#define PARTICIPANT_MESSAGE_DATA_KIND_AUTOMATIC_LIVELINESS_UPDATE 0x1
-#define PARTICIPANT_MESSAGE_DATA_KIND_MANUAL_LIVELINESS_UPDATE 0x2
-#define PARTICIPANT_MESSAGE_DATA_VENDER_SPECIFIC_KIND_FLAG 0x8000000
+#define PARTICIPANT_MESSAGE_DATA_KIND_UNKNOWN 0x0u
+#define PARTICIPANT_MESSAGE_DATA_KIND_AUTOMATIC_LIVELINESS_UPDATE 0x1u
+#define PARTICIPANT_MESSAGE_DATA_KIND_MANUAL_LIVELINESS_UPDATE 0x2u
+#define PARTICIPANT_MESSAGE_DATA_VENDER_SPECIFIC_KIND_FLAG 0x8000000u
 
-#define PID_VENDORSPECIFIC_FLAG 0x8000
-#define PID_UNRECOGNIZED_INCOMPATIBLE_FLAG 0x4000
+#define PID_VENDORSPECIFIC_FLAG 0x8000u
+#define PID_UNRECOGNIZED_INCOMPATIBLE_FLAG 0x4000u
 
-#define PID_PAD                                 0x0
-#define PID_SENTINEL                            0x1
-#define PID_USER_DATA                           0x2c
-#define PID_TOPIC_NAME                          0x5
-#define PID_TYPE_NAME                           0x7
-#define PID_GROUP_DATA                          0x2d
-#define PID_TOPIC_DATA                          0x2e
-#define PID_DURABILITY                          0x1d
-#define PID_DURABILITY_SERVICE                  0x1e
-#define PID_DEADLINE                            0x23
-#define PID_LATENCY_BUDGET                      0x27
-#define PID_LIVELINESS                          0x1b
-#define PID_RELIABILITY                         0x1a
-#define PID_LIFESPAN                            0x2b
-#define PID_DESTINATION_ORDER                   0x25
-#define PID_HISTORY                             0x40
-#define PID_RESOURCE_LIMITS                     0x41
-#define PID_OWNERSHIP                           0x1f
-#define PID_OWNERSHIP_STRENGTH                  0x6
-#define PID_PRESENTATION                        0x21
-#define PID_PARTITION                           0x29
-#define PID_TIME_BASED_FILTER                   0x4
-#define PID_TRANSPORT_PRIORITY                  0x49
-#define PID_PROTOCOL_VERSION                    0x15
-#define PID_VENDORID                            0x16
-#define PID_UNICAST_LOCATOR                     0x2f
-#define PID_MULTICAST_LOCATOR                   0x30
-#define PID_MULTICAST_IPADDRESS                 0x11
-#define PID_DEFAULT_UNICAST_LOCATOR             0x31
-#define PID_DEFAULT_MULTICAST_LOCATOR           0x48
-#define PID_METATRAFFIC_UNICAST_LOCATOR         0x32
-#define PID_METATRAFFIC_MULTICAST_LOCATOR       0x33
-#define PID_DEFAULT_UNICAST_IPADDRESS           0xc
-#define PID_DEFAULT_UNICAST_PORT                0xe
-#define PID_METATRAFFIC_UNICAST_IPADDRESS       0x45
-#define PID_METATRAFFIC_UNICAST_PORT            0xd
-#define PID_METATRAFFIC_MULTICAST_IPADDRESS     0xb
-#define PID_METATRAFFIC_MULTICAST_PORT          0x46
-#define PID_EXPECTS_INLINE_QOS                  0x43
-#define PID_PARTICIPANT_MANUAL_LIVELINESS_COUNT 0x34
-#define PID_PARTICIPANT_BUILTIN_ENDPOINTS       0x44
-#define PID_PARTICIPANT_LEASE_DURATION          0x2
-#define PID_CONTENT_FILTER_PROPERTY             0x35
-#define PID_PARTICIPANT_GUID                    0x50
-#define PID_PARTICIPANT_ENTITYID                0x51
-#define PID_GROUP_GUID                          0x52
-#define PID_GROUP_ENTITYID                      0x53
-#define PID_BUILTIN_ENDPOINT_SET                0x58
-#define PID_PROPERTY_LIST                       0x59
-#define PID_TYPE_MAX_SIZE_SERIALIZED            0x60
-#define PID_ENTITY_NAME                         0x62
-#define PID_KEYHASH                             0x70
-#define PID_STATUSINFO                          0x71
-#define PID_CONTENT_FILTER_INFO                 0x55
-#define PID_COHERENT_SET                        0x56
-#define PID_DIRECTED_WRITE                      0x57
-#define PID_ORIGINAL_WRITER_INFO                0x61
-#define PID_ENDPOINT_GUID                       0x5a /* !SPEC <=> PRISMTECH_ENDPOINT_GUID */
+#define PID_PAD                                 0x0u
+#define PID_SENTINEL                            0x1u
+#define PID_USER_DATA                           0x2cu
+#define PID_TOPIC_NAME                          0x5u
+#define PID_TYPE_NAME                           0x7u
+#define PID_GROUP_DATA                          0x2du
+#define PID_TOPIC_DATA                          0x2eu
+#define PID_DURABILITY                          0x1du
+#define PID_DURABILITY_SERVICE                  0x1eu
+#define PID_DEADLINE                            0x23u
+#define PID_LATENCY_BUDGET                      0x27u
+#define PID_LIVELINESS                          0x1bu
+#define PID_RELIABILITY                         0x1au
+#define PID_LIFESPAN                            0x2bu
+#define PID_DESTINATION_ORDER                   0x25u
+#define PID_HISTORY                             0x40u
+#define PID_RESOURCE_LIMITS                     0x41u
+#define PID_OWNERSHIP                           0x1fu
+#define PID_OWNERSHIP_STRENGTH                  0x6u
+#define PID_PRESENTATION                        0x21u
+#define PID_PARTITION                           0x29u
+#define PID_TIME_BASED_FILTER                   0x4u
+#define PID_TRANSPORT_PRIORITY                  0x49u
+#define PID_PROTOCOL_VERSION                    0x15u
+#define PID_VENDORID                            0x16u
+#define PID_UNICAST_LOCATOR                     0x2fu
+#define PID_MULTICAST_LOCATOR                   0x30u
+#define PID_MULTICAST_IPADDRESS                 0x11u
+#define PID_DEFAULT_UNICAST_LOCATOR             0x31u
+#define PID_DEFAULT_MULTICAST_LOCATOR           0x48u
+#define PID_METATRAFFIC_UNICAST_LOCATOR         0x32u
+#define PID_METATRAFFIC_MULTICAST_LOCATOR       0x33u
+#define PID_DEFAULT_UNICAST_IPADDRESS           0xcu
+#define PID_DEFAULT_UNICAST_PORT                0xeu
+#define PID_METATRAFFIC_UNICAST_IPADDRESS       0x45u
+#define PID_METATRAFFIC_UNICAST_PORT            0xdu
+#define PID_METATRAFFIC_MULTICAST_IPADDRESS     0xbu
+#define PID_METATRAFFIC_MULTICAST_PORT          0x46u
+#define PID_EXPECTS_INLINE_QOS                  0x43u
+#define PID_PARTICIPANT_MANUAL_LIVELINESS_COUNT 0x34u
+#define PID_PARTICIPANT_BUILTIN_ENDPOINTS       0x44u
+#define PID_PARTICIPANT_LEASE_DURATION          0x2u
+#define PID_CONTENT_FILTER_PROPERTY             0x35u
+#define PID_PARTICIPANT_GUID                    0x50u
+#define PID_PARTICIPANT_ENTITYID                0x51u
+#define PID_GROUP_GUID                          0x52u
+#define PID_GROUP_ENTITYID                      0x53u
+#define PID_BUILTIN_ENDPOINT_SET                0x58u
+#define PID_PROPERTY_LIST                       0x59u
+#define PID_TYPE_MAX_SIZE_SERIALIZED            0x60u
+#define PID_ENTITY_NAME                         0x62u
+#define PID_KEYHASH                             0x70u
+#define PID_STATUSINFO                          0x71u
+#define PID_CONTENT_FILTER_INFO                 0x55u
+#define PID_COHERENT_SET                        0x56u
+#define PID_DIRECTED_WRITE                      0x57u
+#define PID_ORIGINAL_WRITER_INFO                0x61u
+#define PID_ENDPOINT_GUID                       0x5au /* !SPEC <=> PRISMTECH_ENDPOINT_GUID */
+
+#define PID_RTI_TYPECODE                        (PID_VENDORSPECIFIC_FLAG | 0x4u)
+
+
 
 /* Deprecated parameter IDs (accepted but ignored) */
-#define PID_PERSISTENCE                         0x03
-#define PID_TYPE_CHECKSUM                       0x08
-#define PID_TYPE2_NAME                          0x09
-#define PID_TYPE2_CHECKSUM                      0x0a
-#define PID_EXPECTS_ACK                         0x10
-#define PID_MANAGER_KEY                         0x12
-#define PID_SEND_QUEUE_SIZE                     0x13
-#define PID_RELIABILITY_ENABLED                 0x14
-#define PID_VARGAPPS_SEQUENCE_NUMBER_LAST       0x17
-#define PID_RECV_QUEUE_SIZE                     0x18
-#define PID_RELIABILITY_OFFERED                 0x19
+#define PID_PERSISTENCE                         0x03u
+#define PID_TYPE_CHECKSUM                       0x08u
+#define PID_TYPE2_NAME                          0x09u
+#define PID_TYPE2_CHECKSUM                      0x0au
+#define PID_EXPECTS_ACK                         0x10u
+#define PID_MANAGER_KEY                         0x12u
+#define PID_SEND_QUEUE_SIZE                     0x13u
+#define PID_RELIABILITY_ENABLED                 0x14u
+#define PID_VARGAPPS_SEQUENCE_NUMBER_LAST       0x17u
+#define PID_RECV_QUEUE_SIZE                     0x18u
+#define PID_RELIABILITY_OFFERED                 0x19u
 
-#define PID_PRISMTECH_WRITER_INFO               (PID_VENDORSPECIFIC_FLAG | 0x1)
-#define PID_PRISMTECH_PARTICIPANT_VERSION_INFO  (PID_VENDORSPECIFIC_FLAG | 0x7)
+#define PID_PRISMTECH_BUILTIN_ENDPOINT_SET      (PID_VENDORSPECIFIC_FLAG | 0x0u)
+#define PID_PRISMTECH_WRITER_INFO               (PID_VENDORSPECIFIC_FLAG | 0x1u)
 
 /* parameter ids for READER_DATA_LIFECYCLE & WRITER_DATA_LIFECYCLE are
    undefined, but let's publish them anyway */
-#define PID_PRISMTECH_READER_DATA_LIFECYCLE     (PID_VENDORSPECIFIC_FLAG | 0x2)
-#define PID_PRISMTECH_WRITER_DATA_LIFECYCLE     (PID_VENDORSPECIFIC_FLAG | 0x3)
+#define PID_PRISMTECH_READER_DATA_LIFECYCLE     (PID_VENDORSPECIFIC_FLAG | 0x2u)
+#define PID_PRISMTECH_WRITER_DATA_LIFECYCLE     (PID_VENDORSPECIFIC_FLAG | 0x3u)
 
 /* ENDPOINT_GUID is formally undefined, so in strictly conforming
    mode, we use our own */
-#define PID_PRISMTECH_ENDPOINT_GUID             (PID_VENDORSPECIFIC_FLAG | 0x4)
+#define PID_PRISMTECH_ENDPOINT_GUID             (PID_VENDORSPECIFIC_FLAG | 0x4u)
 
-#if defined (__cplusplus)
-}
-#endif
+#define PID_PRISMTECH_SYNCHRONOUS_ENDPOINT      (PID_VENDORSPECIFIC_FLAG | 0x5u)
 
 /* Relaxed QoS matching readers/writers are best ignored by
    implementations that don't understand them.  This also covers "old"
    DDSI2's, although they may emit an error. */
-#define PID_PRISMTECH_RELAXED_QOS_MATCHING      (PID_VENDORSPECIFIC_FLAG | PID_UNRECOGNIZED_INCOMPATIBLE_FLAG | 0x6)
+#define PID_PRISMTECH_RELAXED_QOS_MATCHING      (PID_VENDORSPECIFIC_FLAG | PID_UNRECOGNIZED_INCOMPATIBLE_FLAG | 0x6u)
+
+#define PID_PRISMTECH_PARTICIPANT_VERSION_INFO  (PID_VENDORSPECIFIC_FLAG | 0x7u)
+
+/* See CMTopics protocol.doc (2013-12-09) */
+#define PID_PRISMTECH_NODE_NAME                 (PID_VENDORSPECIFIC_FLAG | 0x8u)
+#define PID_PRISMTECH_EXEC_NAME                 (PID_VENDORSPECIFIC_FLAG | 0x9u)
+#define PID_PRISMTECH_PROCESS_ID                (PID_VENDORSPECIFIC_FLAG | 0xau)
+#define PID_PRISMTECH_SERVICE_TYPE              (PID_VENDORSPECIFIC_FLAG | 0xbu)
+#define PID_PRISMTECH_ENTITY_FACTORY            (PID_VENDORSPECIFIC_FLAG | 0xcu)
+#define PID_PRISMTECH_WATCHDOG_SCHEDULING       (PID_VENDORSPECIFIC_FLAG | 0xdu)
+#define PID_PRISMTECH_LISTENER_SCHEDULING       (PID_VENDORSPECIFIC_FLAG | 0xeu)
+#define PID_PRISMTECH_SUBSCRIPTION_KEYS         (PID_VENDORSPECIFIC_FLAG | 0xfu)
+#define PID_PRISMTECH_READER_LIFESPAN           (PID_VENDORSPECIFIC_FLAG | 0x10u)
+#define PID_PRISMTECH_SHARE                     (PID_VENDORSPECIFIC_FLAG | 0x11u)
+#define PID_PRISMTECH_TYPE_DESCRIPTION          (PID_VENDORSPECIFIC_FLAG | 0x12u)
+#define PID_PRISMTECH_LAN                       (PID_VENDORSPECIFIC_FLAG | 0x13u)
+#define PID_PRISMTECH_ENDPOINT_GID              (PID_VENDORSPECIFIC_FLAG | 0x14u)
+#define PID_PRISMTECH_GROUP_GID                 (PID_VENDORSPECIFIC_FLAG | 0x15u)
+#define PID_PRISMTECH_EOTINFO                   (PID_VENDORSPECIFIC_FLAG | 0x16u)
+#define PID_PRISMTECH_PART_CERT_NAME            (PID_VENDORSPECIFIC_FLAG | 0x17u);
+#define PID_PRISMTECH_LAN_CERT_NAME             (PID_VENDORSPECIFIC_FLAG | 0x18u);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* NN_PROTOCOL_H */
 

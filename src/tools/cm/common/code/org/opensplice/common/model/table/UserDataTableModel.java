@@ -1,19 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.model.table;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -25,6 +32,8 @@ import javax.swing.table.DefaultTableModel;
 
 import org.opensplice.cm.data.Sample;
 import org.opensplice.cm.data.UserData;
+import org.opensplice.cm.meta.MetaCollection;
+import org.opensplice.cm.meta.MetaField;
 import org.opensplice.cm.meta.MetaType;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.model.UserDataFilter;
@@ -305,7 +314,8 @@ public class UserDataTableModel extends DefaultTableModel {
         if(data == null){
             return false;
         }
-        if(data.getUserDataType() != userDataType){
+        if(!"".equals(userDataType.toXML())
+                && !data.getUserDataType().equals(userDataType)){
             return false;
         }
         this.sampleInfoModel.setData(sample);
@@ -353,38 +363,11 @@ public class UserDataTableModel extends DefaultTableModel {
         return true;
     }
 
-    private HashMap<String, ArrayList<String>> CollectTableData(UserData data, String struct) {
-        LinkedHashSet<String> s;
-        List<String> tmp;
-
-        MetaType mt = data.getUserDataType();
-        s = new LinkedHashSet<String>(data.getUserData().keySet());
-        HashMap<String, ArrayList<String>> tableVales = new HashMap<String, ArrayList<String>>();
-        tmp = new ArrayList<String>();
-        /* strip [] from userdata */
-        for (String key : s) {
-
-            String newKey = mt.removeIndicesFromStruct(key, struct);
-            tmp.add(newKey);
-            if (tableVales.containsKey(newKey)) {
-                ArrayList<String> tmpVal = tableVales.get(newKey);
-                tmpVal.add(data.getUserData().get(key));
-                tableVales.put(newKey, tmpVal);
-            } else {
-                ArrayList<String> tmpVal = new ArrayList<String>();
-                tmpVal.add(data.getUserData().get(key));
-                tableVales.put(newKey, tmpVal);
-            }
-        }
-        return tableVales;
-    }
-
     public boolean setData(Sample sample, String colName) {
         UserData data;
         boolean match = true;
 
         boolean result = true;
-        String typeName = null;
         boolean res = false;
         
         synchronized(content){
@@ -399,22 +382,11 @@ public class UserDataTableModel extends DefaultTableModel {
                 String columnName = null;
                 int columnCount = this.getColumnCount();
                 int nrOfRows = 0;
-                HashMap<String, ArrayList<String>> tableData = CollectTableData(data, colName);
-                for (int j = 1; j < columnCount; j++) {
-                    if (tableData.containsKey(this.getColumnName(j))) {
-                        ArrayList<String> t = tableData.get(this.getColumnName(j));
-                        if (nrOfRows < t.size()) {
-                            nrOfRows = t.size();
-                        }
-                    }
-                }
-                if (nrOfRows == 0 && tableData.size() > 0) {
-                    if (tableData.containsKey(colName)) {
-                        ArrayList<String> t = tableData.get(colName);
-                        if (nrOfRows < t.size()) {
-                            nrOfRows = t.size();
-                        }
-                    }
+                MetaField f = data.getUserDataType().getField(colName);
+                if (f.getTypeName().startsWith("C_SEQUENCE<")) {
+                    nrOfRows = data.getCollectionRealSize(colName);
+                } else {
+                    nrOfRows = ((MetaCollection) f).getMaxSize();
                 }
 
                 for (int k = 0; k < nrOfRows && result; k++) {
@@ -423,76 +395,68 @@ public class UserDataTableModel extends DefaultTableModel {
                     LinkedHashSet<String> s = new LinkedHashSet<String>(data.getUserData().keySet());
                     for (int i = 1; i < columnCount; i++) {
                         columnName = this.getColumnName(i);
-                        String actualFieldName = "";
-                        if (columnName.startsWith(structDetail)) {
-                            actualFieldName = columnName.substring(structDetail.length());
-                        }
-                        if (!actualFieldName.startsWith(".value") && tableData.containsKey(columnName)) {
-                            ArrayList<String> colVals = tableData.get(columnName);
-                            if (k >= colVals.size()) { // we have a union with
-                                                      // only 1 kind value pair
-                                tmp[i] = colVals.get(0);
-                            } else {
-                                tmp[i] = colVals.get(k);
-                            }
-                        } else if (!actualFieldName.startsWith(".value") && tableData.containsKey(colName)) {
-                            ArrayList<String> colVals = tableData.get(colName);
-                            if (k >= colVals.size()) { // we have a union with
-                                                      // only 1 kind value pair
-                                tmp[i] = colVals.get(0);
-                            } else {
-                                tmp[i] = colVals.get(k);
-                            }
-                        } else {
                             String name = columnName;
+                            String collectionIndices = "";
+                            String trailingStructMember = "";
                             if (data.isCollection(structDetail) && columnName.startsWith(structDetail)) {
-                                name = structDetail + "[" + k + "]" + columnName.substring(structDetail.length());
+                                int index = structDetail.indexOf("[", structDetail.lastIndexOf("."));
+                                if (index == -1) {
+                                    name = structDetail;
+                                    collectionIndices = "[" + k + "]";
+                                } else {
+                                    name = structDetail.substring(0, index);
+                                    collectionIndices = "[" + k + "]" + structDetail.substring(index);
+                                }
+                                trailingStructMember = columnName.substring(structDetail.length());
                             }
                             LinkedHashSet<String> tmpS = new LinkedHashSet<String>(s);
-                            String value = null;
+                            StringBuilder value = new StringBuilder();
                             for (String key : tmpS) {
-                                if (key.startsWith(name)) {
-                                    if (value != null) {
-                                        value = value + "," + data.getUserData().get(key);
-                                    } else {
-                                        value = data.getUserData().get(key);
+                                boolean matchFound;
+                                if (trailingStructMember.length() == 0) {
+                                    matchFound = key.startsWith(name) && key.endsWith(collectionIndices);
+                                } else {
+                                    matchFound = key.startsWith(name) && key.contains(collectionIndices + trailingStructMember);
+                                }
+                                if (matchFound) {
+                                    if (value.length() != 0) {
+                                        value.append(",");
                                     }
+                                    value.append(data.getUserData().get(key));
                                     s.remove(key);
                                 }
                             }
-                            tmp[i] = value;
-                        }
+                            tmp[i] = value.toString();
                     }
-                    if (tmp != null) {
-                        synchronized (content) {
-                            synchronized (visibleContent) {
-                                synchronized (filters) {
-                                    Iterator<UserDataFilter> iter = filters.iterator();
-                                    UserDataFilter filter;
+                    synchronized (content) {
+                        synchronized (visibleContent) {
+                            synchronized (filters) {
+                                Iterator<UserDataFilter> iter = filters
+                                        .iterator();
+                                UserDataFilter filter;
 
-                                    content.add(sample);
+                                content.add(sample);
 
-                                    while (iter.hasNext() && match) {
-                                        filter = iter.next();
+                                while (iter.hasNext() && match) {
+                                    filter = iter.next();
 
-                                        if (!(filter.matches(tmp))) {
-                                            match = false;
-                                        }
+                                    if (!(filter.matches(tmp))) {
+                                        match = false;
                                     }
-                                    if (match) {
-                                        this.addRow(tmp);
-                                        visibleContent.add(sample);
-                                        if (sorter != null) {
-                                            sorter.resort();
-                                        }
-                                    } else {
-                                        result = false;
+                                }
+                                if (match) {
+                                    this.addRow(tmp);
+                                    visibleContent.add(sample);
+                                    if (sorter != null) {
+                                        sorter.resort();
                                     }
+                                } else {
+                                    result = false;
                                 }
                             }
                         }
-                        result = true;
                     }
+                    result = true;
                 }
             }
         }

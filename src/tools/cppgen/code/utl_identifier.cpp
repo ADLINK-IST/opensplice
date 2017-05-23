@@ -76,29 +76,20 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 #include "idl_extern.h"
 #include "xbe_globals.h"
 
-Identifier::Identifier (const char * s, long x, long y, long z)
+Identifier::Identifier (const char * id)
 {
-   pv_string = s;
+   /* Remove escaping */
 
-   if (s && (s[0] == '_'))
+   if (id && id[0] == '_')
    {
-      pv_string++;
+      id++;
    }
-};
-
-Identifier::Identifier (const char * s)
-{
-   pv_string = s;
-
-   if (s && (s[0] == '_'))
-   {
-      pv_string++;
-   }
-};
+   pv_string = id;
+}
 
 unsigned long Identifier::hash () const
 {
-   const long p = 1073741827L;  // prime
+   static const long p = 1073741827L;  // prime
    int n = strlen (pv_string);
    long h = 0;
    char * str = (char*) pv_string;
@@ -115,17 +106,17 @@ unsigned long Identifier::hash () const
 // Compare two Identifiers either case sensitive or insensitive.
 // Note: not all systems support strcasecmp. 
 
-long Identifier::compare (Identifier * o)
+bool Identifier::compare (Identifier * o)
 {
-   long result;
+   bool result;
    const char * id1 = pv_string;;
    const char * id2;
 
    if (o == NULL)
-      return I_FALSE;
+      return false;
 
    if (pv_string == NULL || o->get_string () == NULL)
-      return I_FALSE;
+      return false;
 
    id2 = o->get_string ();
 
@@ -150,7 +141,7 @@ long Identifier::compare (Identifier * o)
       }
    }
 
-   result = (strcmp (id1, id2) == 0) ? I_TRUE : I_FALSE;
+   result = (strcmp (id1, id2) == 0) ? true : false;
 
    if (! BE_Globals::case_sensitive)
    {

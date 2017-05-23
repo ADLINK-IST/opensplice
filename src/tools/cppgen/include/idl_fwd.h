@@ -73,7 +73,7 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 /*
 ** DEPENDENCIES: NONE
 **
-** USE: Included from idl.hh
+** USE: Included from idl.h
 */
 
 // Class for global data representation:

@@ -137,7 +137,7 @@ AST_Field *AST_Exception::fe_add_field(AST_Field *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -182,7 +182,7 @@ AST_Union *AST_Exception::fe_add_union(AST_Union *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -228,7 +228,7 @@ AST_Structure *AST_Exception::fe_add_structure(AST_Structure *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -273,7 +273,7 @@ AST_Enum *AST_Exception::fe_add_enum(AST_Enum *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -321,7 +321,7 @@ AST_EnumVal *AST_Exception::fe_add_enum_val(AST_EnumVal *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }

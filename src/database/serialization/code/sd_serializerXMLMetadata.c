@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file database/serialization/include/sd_serializerXMLMetadata.h
@@ -141,85 +149,83 @@ sd_getSpecialAddresses(
     sd_specialAddresses result;
     c_metaObject metaObject;
 
-    result = (sd_specialAddresses)os_malloc(sizeof(*result));
-    if (result) {
-        metaObject = (c_metaObject)c_resolve(base, SD_CBASEOBJECTNAME);
-        SD_CONFIDENCE(metaObject);
-        result->baseObject.kind = c_metaResolve(metaObject, SD_KINDNAME);
-        SD_CONFIDENCE(result->baseObject.kind);
-        c_free(metaObject);
+    result = os_malloc(sizeof(*result));
 
-        metaObject = (c_metaObject)c_resolve(base, SD_CMETAOBJECTNAME);
-        SD_CONFIDENCE(metaObject);
-        result->metaObject.definedIn = c_metaResolve(metaObject, SD_DEFINEDINNAME);
-        SD_CONFIDENCE(result->metaObject.definedIn);
-        result->metaObject.name = c_metaResolve(metaObject, SD_NAMENAME);
-        SD_CONFIDENCE(result->metaObject.name);
-        c_free(metaObject);
+    metaObject = (c_metaObject)c_resolve(base, SD_CBASEOBJECTNAME);
+    SD_CONFIDENCE(metaObject);
+    result->baseObject.kind = c_metaResolve(metaObject, SD_KINDNAME);
+    SD_CONFIDENCE(result->baseObject.kind);
+    c_free(metaObject);
 
-        metaObject = (c_metaObject)c_resolve(base, SD_CTYPENAME);
-        SD_CONFIDENCE(metaObject);
-        result->abstractTypes.type = c_keep(metaObject);
-        result->ignore.type.alignment = c_metaResolve(metaObject, SD_ALIGNMENTNAME);
-        SD_CONFIDENCE(result->ignore.type.alignment);
-        result->ignore.type.base = c_metaResolve(metaObject, SD_BASENAME);
-        SD_CONFIDENCE(result->ignore.type.base);
-        result->ignore.type.size = c_metaResolve(metaObject, SD_SIZENAME);
-        SD_CONFIDENCE(result->ignore.type.size);
-        result->ignore.type.objectCount = c_metaResolve(metaObject, SD_COUNTNAME);
-        SD_CONFIDENCE(result->ignore.type.objectCount);
-        c_free(metaObject);
+    metaObject = (c_metaObject)c_resolve(base, SD_CMETAOBJECTNAME);
+    SD_CONFIDENCE(metaObject);
+    result->metaObject.definedIn = c_metaResolve(metaObject, SD_DEFINEDINNAME);
+    SD_CONFIDENCE(result->metaObject.definedIn);
+    result->metaObject.name = c_metaResolve(metaObject, SD_NAMENAME);
+    SD_CONFIDENCE(result->metaObject.name);
+    c_free(metaObject);
 
-        metaObject = (c_metaObject)c_resolve(base, SD_CSTRUCTURENAME);
-        SD_CONFIDENCE(metaObject);
-        result->abstractTypes.structure = c_keep(metaObject);
-        result->ignore.structure.references = c_metaResolve(metaObject, SD_REFERENCESNAME);
-        SD_CONFIDENCE(result->ignore.structure.references);
-        result->ignore.structure.scope = c_metaResolve(metaObject, SD_SCOPENAME);
-        SD_CONFIDENCE(result->ignore.structure.scope);
-        c_free(metaObject);
+    metaObject = (c_metaObject)c_resolve(base, SD_CTYPENAME);
+    SD_CONFIDENCE(metaObject);
+    result->abstractTypes.type = c_keep(metaObject);
+    result->ignore.type.alignment = c_metaResolve(metaObject, SD_ALIGNMENTNAME);
+    SD_CONFIDENCE(result->ignore.type.alignment);
+    result->ignore.type.base = c_metaResolve(metaObject, SD_BASENAME);
+    SD_CONFIDENCE(result->ignore.type.base);
+    result->ignore.type.size = c_metaResolve(metaObject, SD_SIZENAME);
+    SD_CONFIDENCE(result->ignore.type.size);
+    result->ignore.type.objectCount = c_metaResolve(metaObject, SD_COUNTNAME);
+    SD_CONFIDENCE(result->ignore.type.objectCount);
+    c_free(metaObject);
 
-        metaObject = (c_metaObject)c_resolve(base, SD_CUNIONNAME);
-        SD_CONFIDENCE(metaObject);
-        result->ignore.v_union.references = c_metaResolve(metaObject, SD_REFERENCESNAME);
-        SD_CONFIDENCE(result->ignore.v_union.references);
-        result->ignore.v_union.scope = c_metaResolve(metaObject, SD_SCOPENAME);
-        SD_CONFIDENCE(result->ignore.v_union.scope);
-        c_free(metaObject);
+    metaObject = (c_metaObject)c_resolve(base, SD_CSTRUCTURENAME);
+    SD_CONFIDENCE(metaObject);
+    result->abstractTypes.structure = c_keep(metaObject);
+    result->ignore.structure.references = c_metaResolve(metaObject, SD_REFERENCESNAME);
+    SD_CONFIDENCE(result->ignore.structure.references);
+    result->ignore.structure.scope = c_metaResolve(metaObject, SD_SCOPENAME);
+    SD_CONFIDENCE(result->ignore.structure.scope);
+    c_free(metaObject);
 
-        metaObject = (c_metaObject)c_resolve(base, SD_CTYPEDEFNAME);
-        SD_CONFIDENCE(metaObject);
-        result->abstractTypes.typeDef = c_keep(metaObject);
-        c_free(metaObject);
+    metaObject = (c_metaObject)c_resolve(base, SD_CUNIONNAME);
+    SD_CONFIDENCE(metaObject);
+    result->ignore.v_union.references = c_metaResolve(metaObject, SD_REFERENCESNAME);
+    SD_CONFIDENCE(result->ignore.v_union.references);
+    result->ignore.v_union.scope = c_metaResolve(metaObject, SD_SCOPENAME);
+    SD_CONFIDENCE(result->ignore.v_union.scope);
+    c_free(metaObject);
 
-        metaObject = (c_metaObject)c_resolve(base, SD_CENUMERATIONNAME);
-        SD_CONFIDENCE(metaObject);
-        result->specialTypes.enumeration = c_keep(metaObject);
-        c_free(metaObject);
+    metaObject = (c_metaObject)c_resolve(base, SD_CTYPEDEFNAME);
+    SD_CONFIDENCE(metaObject);
+    result->abstractTypes.typeDef = c_keep(metaObject);
+    c_free(metaObject);
 
-        metaObject = (c_metaObject)c_resolve(base, SD_CCONSTANTNAME);
-        SD_CONFIDENCE(metaObject);
-        result->specialTypes.constant = c_keep(metaObject);
-        result->ignore.constant.operand = c_metaResolve(metaObject, SD_OPERANDNAME);
-        SD_CONFIDENCE(result->ignore.constant.operand);
-        result->ignore.constant.type = c_metaResolve(metaObject, SD_TYPENAME);
-        SD_CONFIDENCE(result->ignore.constant.type);
-        c_free(metaObject);
+    metaObject = (c_metaObject)c_resolve(base, SD_CENUMERATIONNAME);
+    SD_CONFIDENCE(metaObject);
+    result->specialTypes.enumeration = c_keep(metaObject);
+    c_free(metaObject);
 
-        metaObject = (c_metaObject)c_resolve(base, SD_CMEMBERNAME);
-        SD_CONFIDENCE(metaObject);
-        result->ignore.member.offset = c_metaResolve(metaObject, SD_OFFSETNAME);
-        SD_CONFIDENCE(result->ignore.member.offset);
-        c_free(metaObject);
+    metaObject = (c_metaObject)c_resolve(base, SD_CCONSTANTNAME);
+    SD_CONFIDENCE(metaObject);
+    result->specialTypes.constant = c_keep(metaObject);
+    result->ignore.constant.operand = c_metaResolve(metaObject, SD_OPERANDNAME);
+    SD_CONFIDENCE(result->ignore.constant.operand);
+    result->ignore.constant.type = c_metaResolve(metaObject, SD_TYPENAME);
+    SD_CONFIDENCE(result->ignore.constant.type);
+    c_free(metaObject);
 
-        result->currentContext.existingType = NULL;
-        result->currentContext.doDefinedIn = FALSE;
-        result->currentContext.doEnumeration = FALSE;
-        result->currentContext.enumerationScope = NULL;
-        result->currentContext.doCompare = FALSE;
-        result->currentContext.processedTypes =
-            c_setNew((c_type)result->abstractTypes.type);
-    }
+    metaObject = (c_metaObject)c_resolve(base, SD_CMEMBERNAME);
+    SD_CONFIDENCE(metaObject);
+    result->ignore.member.offset = c_metaResolve(metaObject, SD_OFFSETNAME);
+    SD_CONFIDENCE(result->ignore.member.offset);
+    c_free(metaObject);
+
+    result->currentContext.existingType = NULL;
+    result->currentContext.doDefinedIn = FALSE;
+    result->currentContext.doEnumeration = FALSE;
+    result->currentContext.enumerationScope = NULL;
+    result->currentContext.doCompare = FALSE;
+    result->currentContext.processedTypes = c_setNew((c_type)result->abstractTypes.type);
 
     return result;
 }
@@ -299,19 +305,20 @@ sd_matchesAbstractTypeAddresses(
 /* --------------- action argument for (de)serialiazation actions ---------- */
 
 struct sd_metaActionSerArg {
-    c_ulong *sizePtr;
+    os_size_t *sizePtr;
     c_char **dataPtrPtr;
 };
 
 /* -------------------- more string helper routines -------------------*/
 
-static c_ulong
+static c_size
 sd_printTaggedString(
     c_string dst,
     c_string src,
     const c_char *tagName)
 {
     int len;
+    c_ulong ulen;
     c_ulong result = 0;
     c_char *current;
 
@@ -319,17 +326,18 @@ sd_printTaggedString(
     len = os_sprintf(current, "<%s>", tagName);
     result += (c_ulong)len;
     current = SD_DISPLACE(current, C_ADDRESS(len));
-    len = sd_printCharData(current, src);
-    result += (c_ulong)len;
-    current = SD_DISPLACE(current, C_ADDRESS(len));
+    ulen = sd_printCharData(current, src);
+    result += ulen;
+    current = SD_DISPLACE(current, C_ADDRESS(ulen));
     len = os_sprintf(current, "</%s>", tagName);
     result += (c_ulong)len;
 
     return result;
 }
 
+static c_bool sd_scanTaggedString(c_char **dst, c_char **src, c_char *tagName, sd_errorInfo *errorInfo) __nonnull_all__ __attribute_warn_unused_result__;
 
-static void
+static c_bool
 sd_scanTaggedString(
     c_char **dst,
     c_char **src,
@@ -339,42 +347,27 @@ sd_scanTaggedString(
     c_char *foundTagName;
 
     foundTagName = sd_strGetOpeningTag(src);
-    if (SD_VALIDATION_NEEDED(errorInfo)) {
-        if ((foundTagName == NULL) ||
-            (strncmp(foundTagName, tagName, strlen(tagName)) != 0)) {
-            SD_VALIDATION_SET_ERROR(errorInfo, UNEXPECTED_OPENING_TAG,
-                tagName, *src);
-        }
-    } else {
-        SD_CONFIDENCE((foundTagName != NULL) &&
-                      (strncmp(foundTagName, tagName, strlen(tagName)) == 0));
-    }
-    if (foundTagName) {
+    if ((foundTagName == NULL) || (strncmp(foundTagName, tagName, strlen(tagName)) != 0)) {
+        SD_VALIDATION_SET_ERROR(errorInfo, UNEXPECTED_OPENING_TAG, tagName, *src);
         os_free(foundTagName);
+        return FALSE;
     }
-    SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
-    sd_scanCharData(dst, src, errorInfo);
-
-    /* If an error has occurred, fill its name */
-    SD_VALIDATION_ERROR_SET_NAME(errorInfo, tagName);
-    SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
+    os_free(foundTagName);
+    if (!sd_scanCharData(dst, src, errorInfo)) {
+        SD_VALIDATION_ERROR_SET_NAME(errorInfo, tagName);
+        return FALSE;
+    }
 
     foundTagName = sd_strGetClosingTag(src);
-    if (SD_VALIDATION_NEEDED(errorInfo)) {
-        if ((foundTagName == NULL) ||
-            (strncmp(foundTagName, tagName, strlen(tagName)) != 0)) {
-            SD_VALIDATION_SET_ERROR(errorInfo, UNEXPECTED_CLOSING_TAG,
-                tagName, *src);
-        }
-    } else {
-        SD_CONFIDENCE((foundTagName != NULL) &&
-                      (strncmp(foundTagName, tagName, strlen(tagName)) == 0));
-    }
-    if (foundTagName) {
+    if ((foundTagName == NULL) || (strncmp(foundTagName, tagName, strlen(tagName)) != 0)) {
+        SD_VALIDATION_SET_ERROR(errorInfo, UNEXPECTED_CLOSING_TAG, tagName, *src);
+        os_free(*dst);
         os_free(foundTagName);
+        return FALSE;
     }
+    os_free(foundTagName);
 
-/* QAC EXPECT 2006; more than one return path is justified here */
+    return TRUE;
 }
 
 
@@ -385,7 +378,7 @@ sd_concatScoped(
     c_char *name)
 {
     c_char *result;
-    c_ulong len;
+    os_size_t len;
 
     if (scopeName && *scopeName) {
         len = strlen(scopeName) + sizeof(SD_SCOPE_IDENTIFIER) + strlen(name) + 1;
@@ -408,7 +401,7 @@ sd_printScopedMetaObjectName(
     c_char **dataPtrPtr)
 {
     c_char *scopeName;
-    int len;
+    c_ulong len;
 
     scopeName = c_metaScopedName(object);
     if (scopeName) {
@@ -457,7 +450,9 @@ sd_stringSkipIgnoreSpaces(
 
 /* --------------------- Serialization driving functions -------------------- */
 
-static void
+static c_bool sd_XMLMetadataSerCallbackPre(const c_char *name, c_type type, c_object *objectPtr, void *actionArg, sd_errorInfo *errorInfo, void *userData) __nonnull((2, 3, 4, 5, 6)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_XMLMetadataSerCallbackPre(
     const c_char *name,
     c_type type,
@@ -466,15 +461,14 @@ sd_XMLMetadataSerCallbackPre(
     sd_errorInfo *errorInfo,
     void *userData)
 {
-    struct sd_metaActionSerArg *metaActionArg = (struct sd_metaActionSerArg *)actionArg;
+    struct sd_metaActionSerArg *metaActionArg = actionArg;
+    sd_specialAddresses special = userData;
     c_char **dataPtrPtr = metaActionArg->dataPtrPtr;
     c_ulong len;
     c_char *tagName;
     int spRes;
-    sd_specialAddresses special;
 
     OS_UNUSED_ARG(errorInfo);
-    special = (sd_specialAddresses)userData;
 
     /* Opening tag */
     tagName = sd_getTagName(name, type);
@@ -493,10 +487,14 @@ sd_XMLMetadataSerCallbackPre(
         len = sd_XMLSerType(type, *objectPtr, *dataPtrPtr);
         *dataPtrPtr = SD_DISPLACE(*dataPtrPtr, len);
     }
+
+    return TRUE;
 }
 
 
-static void
+static c_bool sd_XMLMetadataSerCallbackPost(const c_char *name, c_type type, c_object *objectPtr, void *actionArg, sd_errorInfo *errorInfo, void *userData) __nonnull((2, 3, 4, 5, 6)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_XMLMetadataSerCallbackPost(
     const c_char *name,
     c_type type,
@@ -505,18 +503,16 @@ sd_XMLMetadataSerCallbackPost(
     sd_errorInfo *errorInfo,
     void *userData)
 {
-    struct sd_metaActionSerArg *metaActionArg = (struct sd_metaActionSerArg *)actionArg;
+    struct sd_metaActionSerArg *metaActionArg = actionArg;
+    sd_specialAddresses special = userData;
     c_char **dataPtrPtr = metaActionArg->dataPtrPtr;
     c_long len;
     c_char *tagName;
     c_object found;
-    sd_specialAddresses special;
     c_metaObject typeInstance;
 
     OS_UNUSED_ARG(errorInfo);
     SD_CONFIDENCE(objectPtr);
-
-    special = (sd_specialAddresses)userData;
 
     /* Closing tag */
     tagName = sd_getTagName(name, type);
@@ -530,14 +526,19 @@ sd_XMLMetadataSerCallbackPost(
         typeInstance = *(c_metaObject *)(*objectPtr);
         found = c_remove(special->currentContext.processedTypes, typeInstance, NULL, NULL);
         SD_CONFIDENCE(found == typeInstance);
+        OS_UNUSED_ARG(found);
     }
+
+    return TRUE;
 }
 
 
 /* An implementation for counting: do the serialization but overwrite
  * a static buffer. Count anyway and return the count.
  */
-static void
+static c_bool sd_XMLMetadataCountCallbackPre(const c_char *name, c_type type, c_object *objectPtr, void *actionArg, sd_errorInfo *errorInfo, void *userData) __nonnull((2, 3, 4, 5, 6)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_XMLMetadataCountCallbackPre(
     const c_char *name,
     c_type type,
@@ -546,21 +547,25 @@ sd_XMLMetadataCountCallbackPre(
     sd_errorInfo *errorInfo,
     void *userData)
 {
-    struct sd_metaActionSerArg *metaActionArg = (struct sd_metaActionSerArg *)actionArg;
-    c_ulong *size = metaActionArg->sizePtr;
+    struct sd_metaActionSerArg *metaActionArg = actionArg;
+    os_size_t *size = metaActionArg->sizePtr;
     c_char *start, *end;
 
-    OS_UNUSED_ARG(errorInfo);
-
     start = *metaActionArg->dataPtrPtr;
-    sd_XMLMetadataSerCallbackPre(name, type, objectPtr, actionArg, NULL, userData);
+    if (!sd_XMLMetadataSerCallbackPre(name, type, objectPtr, actionArg, errorInfo, userData)) {
+        assert(0);
+    }
     end = *metaActionArg->dataPtrPtr;
     *size += (C_ADDRESS(end)-C_ADDRESS(start));
     *metaActionArg->dataPtrPtr = start;
+
+    return TRUE;
 }
 
 
-static void
+static c_bool sd_XMLMetadataCountCallbackPost(const c_char *name, c_type type, c_object *objectPtr, void *actionArg, sd_errorInfo *errorInfo, void *userData) __nonnull((2, 3, 4, 5, 6)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_XMLMetadataCountCallbackPost(
     const c_char *name,
     c_type type,
@@ -569,64 +574,66 @@ sd_XMLMetadataCountCallbackPost(
     sd_errorInfo *errorInfo,
     void *userData)
 {
-    struct sd_metaActionSerArg *metaActionArg = (struct sd_metaActionSerArg *)actionArg;
-    c_ulong *size = metaActionArg->sizePtr;
+    struct sd_metaActionSerArg *metaActionArg = actionArg;
+    os_size_t *size = metaActionArg->sizePtr;
     c_char *start, *end;
 
-    OS_UNUSED_ARG(errorInfo);
-
     start = *metaActionArg->dataPtrPtr;
-    sd_XMLMetadataSerCallbackPost(name, type, objectPtr, actionArg, NULL, userData);
+    if (!sd_XMLMetadataSerCallbackPost(name, type, objectPtr, actionArg, errorInfo, userData)) {
+        assert(0);
+    }
     end = *metaActionArg->dataPtrPtr;
     *size += (C_ADDRESS(end)-C_ADDRESS(start));
     *metaActionArg->dataPtrPtr = start;
+
+    return TRUE;
 }
 
+static c_bool sd_XMLMetadataSerHook(c_bool *doRecurse, const c_char *name, c_baseObject propOrMem, c_object *objectPtr, void *actionArg, sd_errorInfo *errorInfo, void *userData) __nonnull((1, 3, 4, 5, 6, 7)) __attribute_warn_unused_result__;
 
 static c_bool
 sd_XMLMetadataSerHook(
+    c_bool *doRecurse,
     const c_char *name,
     c_baseObject propOrMem,
     c_object *objectPtr,
     void *actionArg,
+    sd_errorInfo *errorInfo,
     void *userData)
 {
-    struct sd_metaActionSerArg *metaActionArg = (struct sd_metaActionSerArg *)actionArg;
+    struct sd_metaActionSerArg *metaActionArg = actionArg;
+    sd_specialAddresses special = userData;
     c_char **dataPtrPtr = metaActionArg->dataPtrPtr;
-    c_ulong *size = metaActionArg->sizePtr;
-    c_bool result;
-    sd_specialAddresses special;
+    os_size_t *size = metaActionArg->sizePtr;
     c_object found;
     c_metaObject typeInstance;
     c_type type;
-    c_char *start;
     c_char *scopedName;
-    c_ulong len;
+    c_size len;
 
-    special = (sd_specialAddresses)userData;
+    OS_UNUSED_ARG(errorInfo);
+
     SD_CONFIDENCE(propOrMem->kind == M_ATTRIBUTE);
 
-    result = !sd_matchesIgnoreAddresses(special, (c_object)propOrMem);
+    *doRecurse = !sd_matchesIgnoreAddresses(special, (c_object)propOrMem);
 
-    if (result) {
+    if (*doRecurse) {
         switch(propOrMem->kind) {
-        case M_MEMBER:
-            type = c_specifier(propOrMem)->type;
-        break;
-        case M_ATTRIBUTE:
-            type = c_property(propOrMem)->type;
-        break;
-        default:
-            SD_CONFIDENCE(FALSE);
-            type = NULL;
+            case M_MEMBER:
+                type = c_specifier(propOrMem)->type;
+                break;
+            case M_ATTRIBUTE:
+                type = c_property(propOrMem)->type;
+                break;
+            default:
+                SD_CONFIDENCE(FALSE);
+                type = NULL;
         }
         if (sd_matchesAbstractTypeAddresses(special, c_typeActualType(type))) {
             typeInstance = *(c_metaObject *)(*objectPtr);
-            found = c_replace(special->currentContext.processedTypes,
-                typeInstance, NULL, NULL);
+            found = c_replace(special->currentContext.processedTypes, typeInstance, NULL, NULL);
             if (found) {
                 /* Recursive type definition, do special things and stop */
-                start = *dataPtrPtr;
                 scopedName = c_metaScopedName(typeInstance);
                 SD_CONFIDENCE(scopedName);
                 if (scopedName) {
@@ -634,11 +641,11 @@ sd_XMLMetadataSerHook(
                     if (size != NULL) {
                         (*size) += len;
                     } else {
-                        *dataPtrPtr = SD_DISPLACE(*dataPtrPtr, C_ADDRESS(len));
+                        *dataPtrPtr = SD_DISPLACE(*dataPtrPtr, len);
                     }
                     os_free(scopedName);
                 }
-                result = FALSE;
+                *doRecurse = FALSE;
             }
         }
     }
@@ -647,7 +654,7 @@ sd_XMLMetadataSerHook(
         special->currentContext.doDefinedIn = TRUE;
     }
 
-    return result;
+    return TRUE;
 }
 
 
@@ -657,23 +664,20 @@ sd_serializerXMLMetadataSerialize(
     c_object object)
 {
     sd_serializedData result;
-    c_ulong size;
+    os_size_t size;
     c_char *startPtr;
     c_type type;
-    c_type actualType;
-    sd_deepwalkMetaContext context;
+    C_STRUCT(sd_deepwalkMetaContext) context;
     sd_specialAddresses specialAddresses;
     struct sd_metaActionSerArg metaActionArg;
     c_char *buffer;
+    c_bool ok;
 
     SD_CONFIDENCE(sd_checkSerializerType(serializer));
+    OS_UNUSED_ARG(serializer);
 
     specialAddresses = sd_getSpecialAddresses(c_getBase(object));
-    c_insert(specialAddresses->currentContext.processedTypes, object);
-
-    /* Can serialize structures only */
-    actualType = (c_type)object;
-    actualType = c_typeActualType(actualType);
+    ospl_c_insert(specialAddresses->currentContext.processedTypes, object);
 
     type = c_getType(object);
     SD_CONFIDENCE(c_metaObject(type)->name != NULL);
@@ -684,38 +688,41 @@ sd_serializerXMLMetadataSerialize(
     metaActionArg.sizePtr = &size;
     metaActionArg.dataPtrPtr = &buffer;
 
-    context = sd_deepwalkMetaContextNew(sd_XMLMetadataCountCallbackPre,
-        sd_XMLMetadataCountCallbackPost, sd_XMLMetadataSerHook, &metaActionArg,
-        FALSE, specialAddresses);
-    sd_deepwalkMeta(type, c_metaObject(type)->name, &object, context);
+    sd_deepwalkMetaContextInit(&context, sd_XMLMetadataCountCallbackPre, sd_XMLMetadataCountCallbackPost, sd_XMLMetadataSerHook, &metaActionArg, specialAddresses);
+    ok = sd_deepwalkMeta(type, c_metaObject(type)->name, &object, &context);
     SD_CONFIDENCE(c_count(specialAddresses->currentContext.processedTypes) == 0);
-    sd_deepwalkMetaContextFree(context);
+    sd_deepwalkMetaContextDeinit(&context);
 
     os_free(buffer);
 
+    if (!ok) {
+        sd_releaseSpecialAddresses(specialAddresses);
+        return NULL;
+    }
 
     /* Instantiate the serialized data */
     result = sd_serializedDataNew(SD_FORMAT_ID, SD_FORMAT_VERSION, size);
 
     /* Fill the block, then do the walk */
 
-    startPtr =  (c_char *)result->data;
+    startPtr = (c_char *)result->data;
     metaActionArg.sizePtr = NULL;
     metaActionArg.dataPtrPtr = &startPtr;
-    c_insert(specialAddresses->currentContext.processedTypes, object);
+    ospl_c_insert(specialAddresses->currentContext.processedTypes, object);
 
-    context = sd_deepwalkMetaContextNew(sd_XMLMetadataSerCallbackPre,
-        sd_XMLMetadataSerCallbackPost, sd_XMLMetadataSerHook, &metaActionArg, FALSE,
-        specialAddresses);
-    sd_deepwalkMeta(type, c_metaObject(type)->name, &object, context);
+    sd_deepwalkMetaContextInit(&context, sd_XMLMetadataSerCallbackPre, sd_XMLMetadataSerCallbackPost, sd_XMLMetadataSerHook, &metaActionArg, specialAddresses);
+    if (!sd_deepwalkMeta(type, c_metaObject(type)->name, &object, &context)) {
+        sd_serializedDataFree(result);
+        result = NULL;
+    }
     SD_CONFIDENCE(c_count(specialAddresses->currentContext.processedTypes) == 0);
-    sd_deepwalkMetaContextFree(context);
+    sd_deepwalkMetaContextDeinit(&context);
 
-    /* Terminator */
-    *startPtr = 0;
-    startPtr = &(startPtr[1]);
-
-    SD_CONFIDENCE((C_ADDRESS(startPtr) - C_ADDRESS(result->data)) == size);
+    if (result) {
+        /* Terminator */
+        *startPtr++ = 0;
+        SD_CONFIDENCE((C_ADDRESS(startPtr) - C_ADDRESS(result->data)) == size);
+    }
 
     sd_releaseSpecialAddresses(specialAddresses);
 
@@ -736,7 +743,7 @@ sd_createOrLookupScope(
     c_char *helperString, *lastName;
     c_char *currentLastName;
     c_char *currentSrc, *currentDst;
-    int len;
+    os_size_t len;
     c_object o;
 
     /* if the scopeName is the empty string, then the scope is the general scope, i.e.
@@ -819,7 +826,9 @@ sd_createOrLookupScope(
 #define SD_METAOBJECT_NAME_NAME      "name"
 #define SD_METAOBJECT_DEFINEDIN_NAME "definedIn"
 
-static void
+static c_bool sd_createOrLookupType(c_object *objectPtr, c_char *dataPtr, c_type *actualType, c_bool *typeExisted, sd_errorInfo *errorInfo, sd_specialAddresses special) __nonnull_all__ __attribute_warn_unused_result__;
+
+static c_bool
 sd_createOrLookupType(
     c_object *objectPtr,
     c_char *dataPtr,
@@ -849,23 +858,20 @@ sd_createOrLookupType(
     helperPtrPtr = &dataPtr;
 
     kindPtrPtr = &kindPtr;
-    sd_XMLDeserCallbackPre(SD_BASEOBJECT_KIND_NAME,
-        c_property(special->baseObject.kind)->type, (c_object *)kindPtrPtr,
-        helperPtrPtr, errorInfo, NULL);
-    SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
-    sd_XMLDeserCallbackPost(SD_BASEOBJECT_KIND_NAME,
-        c_property(special->baseObject.kind)->type, (c_object *)kindPtrPtr,
-        helperPtrPtr, errorInfo, NULL);
-    SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
+    if (!sd_XMLDeserCallbackPre(SD_BASEOBJECT_KIND_NAME, c_property(special->baseObject.kind)->type, (c_object *)kindPtrPtr, helperPtrPtr, errorInfo, NULL)) {
+        return FALSE;
+    }
 
+    if (!sd_XMLDeserCallbackPost(SD_BASEOBJECT_KIND_NAME, c_property(special->baseObject.kind)->type, (c_object *)kindPtrPtr, helperPtrPtr, errorInfo, NULL)) {
+        return FALSE;
+    }
 
-    sd_scanTaggedString(&name, helperPtrPtr, SD_METAOBJECT_NAME_NAME, errorInfo);
-    SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
-    sd_scanTaggedString(&scopeName, helperPtrPtr, SD_METAOBJECT_DEFINEDIN_NAME,
-        errorInfo);
-    if (SD_VALIDATION_ERROR(errorInfo)) {
+    if (!sd_scanTaggedString(&name, helperPtrPtr, SD_METAOBJECT_NAME_NAME, errorInfo)) {
+        return FALSE;
+    }
+    if (!sd_scanTaggedString(&scopeName, helperPtrPtr, SD_METAOBJECT_DEFINEDIN_NAME, errorInfo)) {
         os_free(name);
-        return;
+        return FALSE;
     }
 
     fullName = sd_concatScoped(scopeName, name);
@@ -903,6 +909,7 @@ sd_createOrLookupType(
     os_free(scopeName);
     os_free(name);
     os_free(fullName);
+    return TRUE;
 }
 
 #undef SD_BASEOBJECT_KIND_NAME
@@ -912,7 +919,9 @@ sd_createOrLookupType(
 
 /* --------------------- Deserialization driving functions ----------------- */
 
-static void
+static c_bool sd_XMLMetadataDeserCallbackPre(const c_char *name, c_type type, c_object *objectPtr, void *actionArg, sd_errorInfo *errorInfo, void *userData) __nonnull((2, 3, 4, 5, 6)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_XMLMetadataDeserCallbackPre(
     const c_char *name,
     c_type type,
@@ -921,7 +930,8 @@ sd_XMLMetadataDeserCallbackPre(
     sd_errorInfo *errorInfo,
     void *userData)
 {
-    c_char **dataPtrPtr = (c_char **)actionArg;
+    c_char **dataPtrPtr = actionArg;
+    sd_specialAddresses special = userData;
     c_char *startPtr = *dataPtrPtr;
     c_char *tagName;
     c_char *openingTag;
@@ -930,11 +940,8 @@ sd_XMLMetadataDeserCallbackPre(
     c_type actualType;
     c_bool typeExisted;
     c_metaObject scope;
-    sd_specialAddresses special;
     c_char *enumName;
     c_type insertedType;
-
-    special = (sd_specialAddresses)userData;
 
     if (special->currentContext.doCompare) {
         c_char *buffer;
@@ -949,51 +956,41 @@ sd_XMLMetadataDeserCallbackPre(
         memset(buffer, 0, 256);
         metaActionArg.dataPtrPtr = &buffer;
         metaActionArg.sizePtr = NULL;
-        sd_XMLMetadataSerCallbackPre(name, type, objectPtr, &metaActionArg,
-            errorInfo, userData);
+        if (!sd_XMLMetadataSerCallbackPre(name, type, objectPtr, &metaActionArg, errorInfo, userData)) {
+            assert(0);
+        }
         equals = sd_stringSkipIgnoreSpaces(dataPtrPtr, toFree);
-        if (SD_VALIDATION_NEEDED(errorInfo)) {
-            if (!equals) {
-                SD_VALIDATION_SET_ERROR(errorInfo, UNMATCHING_TYPE, name,
-                    start);
-            }
-        } else {
-            SD_CONFIDENCE(equals);
+        if (!equals) {
+            SD_VALIDATION_SET_ERROR(errorInfo, UNMATCHING_TYPE, name, start);
+            os_free(toFree);
+            return FALSE;
         }
         os_free(toFree);
-        return;
+        return TRUE;
     }
 
 
     /* Opening tag */
     openingTag = sd_strGetOpeningTag(dataPtrPtr);
     tagName = sd_getTagName(name, type);
-    if (SD_VALIDATION_NEEDED(errorInfo)) {
-        if ((openingTag == NULL) ||
-            (strncmp(openingTag, tagName, strlen(openingTag)) != 0)) {
-            SD_VALIDATION_SET_ERROR(errorInfo, UNEXPECTED_OPENING_TAG, tagName,
-                startPtr);
-        }
-    } else {
-        SD_CONFIDENCE((openingTag != NULL) &&
-                      (strncmp(openingTag, tagName, strlen(openingTag)) == 0));
-    }
-    if (openingTag) {
+    if ((openingTag == NULL) ||
+        (strncmp(openingTag, tagName, strlen(openingTag)) != 0)) {
+        SD_VALIDATION_SET_ERROR(errorInfo, UNEXPECTED_OPENING_TAG, tagName, startPtr);
         os_free(openingTag);
-    }
-
-    if (SD_VALIDATION_ERROR(errorInfo)) {
         os_free(tagName);
-        return;
+        return FALSE;
     }
+    os_free(openingTag);
 
     /* Determine the deserialization action */
     /* definedIn requires special actions */
     if (special->currentContext.doDefinedIn) {
-        sd_scanCharData(&scopeName, dataPtrPtr, errorInfo);
-        /* If an error has occurred, fill its name */
-        SD_VALIDATION_ERROR_SET_NAME(errorInfo, tagName);
-        SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
+        if (!sd_scanCharData(&scopeName, dataPtrPtr, errorInfo)) {
+            SD_VALIDATION_ERROR_SET_NAME(errorInfo, tagName);
+            os_free(tagName);
+            return FALSE;
+        }
+
         if (*(c_metaObject *)(*objectPtr) == NULL) {
             scope = sd_createOrLookupScope(c_getBase(type), scopeName);
             *(c_metaObject *)(*objectPtr) = scope;
@@ -1017,18 +1014,20 @@ sd_XMLMetadataDeserCallbackPre(
         if (C_ADDRESS(type) == C_ADDRESS(special->specialTypes.constant)) {
             SD_CONFIDENCE(special->currentContext.doEnumeration);
             SD_CONFIDENCE(special->currentContext.enumerationScope);
-            sd_scanCharData(&enumName, dataPtrPtr, errorInfo);
-            /* If an error has occurred, fill its name */
-            SD_VALIDATION_ERROR_SET_NAME(errorInfo, tagName);
-            SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
-            *(c_metaObject *)(*objectPtr) = c_metaDeclare(
-                special->currentContext.enumerationScope,
-                enumName, M_CONSTANT);
+            if (!sd_scanCharData(&enumName, dataPtrPtr, errorInfo)) {
+                SD_VALIDATION_ERROR_SET_NAME(errorInfo, tagName);
+                os_free(tagName);
+                return FALSE;
+            }
+            *(c_metaObject *)(*objectPtr) = c_metaDeclare(special->currentContext.enumerationScope, enumName, M_CONSTANT);
             os_free(enumName);
         } else {
             /* The data */
             /* Deserialization also updates dataPtrPtr */
-            sd_XMLDeserType(type, objectPtr, dataPtrPtr, errorInfo);
+            if (!sd_XMLDeserType(type, objectPtr, dataPtrPtr, errorInfo)) {
+                os_free(tagName);
+                return FALSE;
+            }
         }
     }
 
@@ -1041,8 +1040,9 @@ sd_XMLMetadataDeserCallbackPre(
     if (typeAction) {
         /* This is an abstract type. Lookup the concrete instance type and
          * create it, if it does not exist */
-        sd_createOrLookupType(objectPtr, *dataPtrPtr, &actualType, &typeExisted,
-            errorInfo, special);
+        if (!sd_createOrLookupType(objectPtr, *dataPtrPtr, &actualType, &typeExisted, errorInfo, special)) {
+            return FALSE;
+        }
         if (typeExisted) {
             special->currentContext.existingType = actualType;
             special->currentContext.doCompare = TRUE;
@@ -1053,14 +1053,15 @@ sd_XMLMetadataDeserCallbackPre(
         }
 
         insertedType = *(c_type *)(*objectPtr);
-        c_replace(special->currentContext.processedTypes,
-                  insertedType, NULL, NULL);
+        c_replace(special->currentContext.processedTypes, insertedType, NULL, NULL);
     }
 
-/* QAC EXPECT 2006; more than one return path is justified here */
+    return TRUE;
 }
 
-static void
+static c_bool sd_XMLMetadataDeserCallbackPost (const c_char *name, c_type type, c_object *objectPtr, void *actionArg, sd_errorInfo *errorInfo, void *userData) __nonnull((2, 3, 4, 5, 6)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_XMLMetadataDeserCallbackPost(
     const c_char *name,
     c_type type,
@@ -1069,19 +1070,17 @@ sd_XMLMetadataDeserCallbackPost(
     sd_errorInfo *errorInfo,
     void *userData)
 {
-    c_char **dataPtrPtr = (c_char **)actionArg;
+    c_char **dataPtrPtr = actionArg;
+    sd_specialAddresses special = userData;
     c_char *startPtr = *dataPtrPtr;
     c_char *tagName;
     c_char *closingTag;
-    sd_specialAddresses special;
     c_metaObject metaObject;
     c_bool typeAction;
     c_metaObject typeInstance;
     c_metaObject found;
 
     SD_CONFIDENCE(objectPtr);
-
-    special = (sd_specialAddresses)userData;
 
     /* Do the DB finalization actions */
     typeAction = sd_matchesAbstractTypeAddresses(special, c_typeActualType(type));
@@ -1105,7 +1104,8 @@ sd_XMLMetadataDeserCallbackPost(
         if (!special->currentContext.doCompare) {
             found = c_remove(special->currentContext.processedTypes, typeInstance, NULL, NULL);
             SD_CONFIDENCE(found == typeInstance);
-            }
+            OS_UNUSED_ARG(found);
+        }
     }
 
     if (special->currentContext.doCompare) {
@@ -1119,47 +1119,44 @@ sd_XMLMetadataDeserCallbackPost(
         toFree = buffer;
         metaActionArg.dataPtrPtr = &buffer;
         metaActionArg.sizePtr = NULL;
-        sd_XMLMetadataSerCallbackPost(name, type, objectPtr, &metaActionArg,
-            errorInfo, userData);
+        if (!sd_XMLMetadataSerCallbackPost(name, type, objectPtr, &metaActionArg, errorInfo, userData)) {
+            assert(0);
+        }
         equals = sd_stringSkipIgnoreSpaces(dataPtrPtr, toFree);
-        if (SD_VALIDATION_NEEDED(errorInfo)) {
-            if (!equals) {
-                SD_VALIDATION_SET_ERROR(errorInfo, UNMATCHING_TYPE, name,
-                    startPtr);
-            }
-        } else {
-            SD_CONFIDENCE(equals);
+        if (!equals) {
+            SD_VALIDATION_SET_ERROR(errorInfo, UNMATCHING_TYPE, name, startPtr);
+            os_free(toFree);
+            return FALSE;
         }
         os_free(toFree);
     } else {
-
         /* Closing tag */
         /* Check if it has the correct name */
         closingTag = sd_strGetClosingTag(dataPtrPtr);
         tagName = sd_getTagName(name, type);
-        if (SD_VALIDATION_NEEDED(errorInfo)) {
-            if ((closingTag == NULL) ||
-                (strncmp(closingTag, tagName, strlen(closingTag)) != 0)) {
-                SD_VALIDATION_SET_ERROR(errorInfo, UNEXPECTED_CLOSING_TAG,
-                    tagName, startPtr);
-            }
-        } else {
-            SD_CONFIDENCE((closingTag != NULL) &&
-                          (strncmp(closingTag, tagName, strlen(closingTag)) == 0));
-        }
-        if (closingTag) {
+        if ((closingTag == NULL) || (strncmp(closingTag, tagName, strlen(closingTag)) != 0)) {
+            SD_VALIDATION_SET_ERROR(errorInfo, UNEXPECTED_CLOSING_TAG, tagName, startPtr);
             os_free(closingTag);
+            os_free(tagName);
+            return FALSE;
         }
+        os_free(closingTag);
         os_free(tagName);
     }
+
+    return TRUE;
 }
+
+static c_bool doSerHook(c_bool *doRecurse, const c_char *name, c_baseObject propOrMem, c_object *objectPtr, char **dataPtrPtr, sd_errorInfo *errorInfo, sd_specialAddresses special) __nonnull((1, 3, 4, 5, 6, 7)) __attribute_warn_unused_result__;
 
 static c_bool
 doSerHook(
+    c_bool *doRecurse,
     const c_char *name,
     c_baseObject propOrMem,
     c_object *objectPtr,
     char **dataPtrPtr,
+    sd_errorInfo *errorInfo,
     sd_specialAddresses special)
 {
     struct sd_metaActionSerArg metaActionArg;
@@ -1173,68 +1170,71 @@ doSerHook(
     toFree = buffer;
     metaActionArg.dataPtrPtr = &buffer;
     metaActionArg.sizePtr = NULL;
-    result = sd_XMLMetadataSerHook(name, propOrMem, objectPtr, &metaActionArg,
-        (void *)special);
+    result = sd_XMLMetadataSerHook(doRecurse, name, propOrMem, objectPtr, &metaActionArg, errorInfo, special);
     equals = sd_stringSkipIgnoreSpaces(dataPtrPtr, toFree);
     SD_CONFIDENCE(equals);
+    OS_UNUSED_ARG(equals);
     os_free(toFree);
 
     return result;
 }
 
+static c_bool sd_XMLMetadataDeserHook(c_bool *doRecurse, const c_char *name, c_baseObject propOrMem, c_object *objectPtr, void *actionArg, sd_errorInfo *errorInfo, void *userData) __nonnull((1, 3, 4, 5, 6, 7)) __attribute_warn_unused_result__;
+
 static c_bool
 sd_XMLMetadataDeserHook(
+    c_bool *doRecurse,
     const c_char *name,
     c_baseObject propOrMem,
     c_object *objectPtr,
     void *actionArg,
+    sd_errorInfo *errorInfo,
     void *userData)
 {
-    c_char **dataPtrPtr = (c_char **)actionArg;
-    c_bool result;
-    sd_specialAddresses special;
+    c_char **dataPtrPtr = actionArg;
+    sd_specialAddresses special = userData;
     c_metaObject typeInstance;
     c_type type;
     c_string memberName;
     c_char *scopedName;
 
-    special = (sd_specialAddresses)userData;
     SD_CONFIDENCE(propOrMem->kind == M_ATTRIBUTE);
 
     if (special->currentContext.doCompare) {
-        result = doSerHook(name, propOrMem, objectPtr, dataPtrPtr, special);
+        return doSerHook(doRecurse, name, propOrMem, objectPtr, dataPtrPtr, errorInfo, special);
     } else {
-        result = !sd_matchesIgnoreAddresses(special, (c_object)propOrMem);
+        *doRecurse = !sd_matchesIgnoreAddresses(special, (c_object)propOrMem);
 
-        if (result) {
+        if (*doRecurse) {
             switch(propOrMem->kind) {
-            case M_MEMBER:
-                type = c_specifier(propOrMem)->type;
-                memberName = c_specifier(propOrMem)->name;
-            break;
-            case M_ATTRIBUTE:
-                type = c_property(propOrMem)->type;
-                memberName = c_metaObject(propOrMem)->name;
-            break;
-            default:
-                SD_CONFIDENCE(FALSE);
-                type = NULL;
-                memberName = NULL;
+                case M_MEMBER:
+                    type = c_specifier(propOrMem)->type;
+                    memberName = c_specifier(propOrMem)->name;
+                    break;
+                case M_ATTRIBUTE:
+                    type = c_property(propOrMem)->type;
+                    memberName = c_metaObject(propOrMem)->name;
+                    break;
+                default:
+                    SD_CONFIDENCE(FALSE);
+                    type = NULL;
+                    memberName = NULL;
             }
             if (sd_matchesAbstractTypeAddresses(special, c_typeActualType(type))) {
                 typeInstance = *(c_metaObject *)(*objectPtr);
                 if (typeInstance == NULL) {
                     scopedName = sd_peekTaggedCharData(*dataPtrPtr, memberName);
                     if (scopedName) {
-                        typeInstance = c_metaResolve(
-                            c_metaObject(c_getBase(propOrMem)), scopedName);
+                        typeInstance = c_metaResolve(c_metaObject(c_getBase(propOrMem)), scopedName);
                         SD_CONFIDENCE(typeInstance);
                         *(c_metaObject *)(*objectPtr) = c_keep(typeInstance);
-                        os_free(scopedName);
-                        sd_scanTaggedString(&scopedName, dataPtrPtr, memberName, NULL);
-                        os_free(scopedName);
-                        result = FALSE;
                         c_free(typeInstance);
+                        os_free(scopedName);
+                        if (!sd_scanTaggedString(&scopedName, dataPtrPtr, memberName, errorInfo)) {
+                            return FALSE;
+                        }
+                        os_free(scopedName);
+                        *doRecurse = FALSE;
                     }
                 } else {
                     /* This is a special case. The type has already been set
@@ -1243,7 +1243,9 @@ sd_XMLMetadataDeserHook(
                      * subtype. */
                     special->currentContext.existingType = c_type(typeInstance);
                     special->currentContext.doCompare = TRUE;
-                    result = doSerHook(name, propOrMem, objectPtr, dataPtrPtr, special);
+                    if (!doSerHook(doRecurse, name, propOrMem, objectPtr, dataPtrPtr, errorInfo, special)) {
+                        return FALSE;
+                    }
                 }
             }
         }
@@ -1251,13 +1253,10 @@ sd_XMLMetadataDeserHook(
         if (C_ADDRESS(propOrMem) == C_ADDRESS(special->metaObject.definedIn)) {
             special->currentContext.doDefinedIn = TRUE;
         }
+
+        return TRUE;
     }
-
-    return result;
 }
-
-
-
 
 #define SD_MESSAGE_FORMAT "Error in tag %s: %s"
 static c_bool
@@ -1266,65 +1265,53 @@ sd_serializerXMLDeserializeInternal(
     c_type type,
     const c_char *name,
     c_object *objectPtr,
-    c_char **dataPtrPtr,
-    c_bool doValidation)
+    c_char **dataPtrPtr)
 {
-    sd_deepwalkMetaContext context;
+    C_STRUCT(sd_deepwalkMetaContext) context;
     c_ulong errorNumber;
     c_char *errname;
     c_char *message;
     c_char *location;
-    c_bool errorOccurred;
+    c_bool result;
     c_char *XMLmessage;
-    c_ulong size;
-    c_bool result = TRUE;
     sd_specialAddresses specialAddresses;
 
-    /* No checking, this function is used internally only */
+    sd_serializerResetValidationState(serializer);
 
     if (!*objectPtr) {
         if (c_typeIsRef(type)) {
             *objectPtr = NULL;
-        } else {
-            *objectPtr = c_new(type);
-            SD_CONFIDENCE(*objectPtr);
+        } else if ((*objectPtr = c_new_s(type)) == NULL) {
+            sd_serializerSetOutOfMemory(serializer);
+            return FALSE;
         }
     }
 
-    sd_serializerSetValidationState(serializer, doValidation);
     specialAddresses = sd_getSpecialAddresses(c_getBase(type));
 
-    context = sd_deepwalkMetaContextNew(sd_XMLMetadataDeserCallbackPre,
-        sd_XMLMetadataDeserCallbackPost, sd_XMLMetadataDeserHook, dataPtrPtr,
-        doValidation, specialAddresses);
+    sd_deepwalkMetaContextInit(&context, sd_XMLMetadataDeserCallbackPre, sd_XMLMetadataDeserCallbackPost, sd_XMLMetadataDeserHook, dataPtrPtr, specialAddresses);
 
-    sd_deepwalkMeta(type, name, objectPtr, context);
-
-    if (doValidation) {
-        errorOccurred = sd_deepwalkMetaContextGetErrorInfo(context,
-            &errorNumber, &errname, &message, &location);
-
-        if (errorOccurred) {
-            size = strlen(SD_MESSAGE_FORMAT) + strlen(errname) + strlen(message) -
-                   4U + 1U; /* 4 = 2strlen ("%s")*/
-            XMLmessage = os_malloc(size);
-            snprintf(XMLmessage, size, SD_MESSAGE_FORMAT, errname, message);
-            sd_serializerSetValidationInfo(serializer, errorNumber, XMLmessage,
-                sd_stringDup(location));
-
-            os_free(message);
-            /* Free the partially deserialized data */
-            if (*objectPtr) {
-                c_free(*objectPtr);
-            }
-            *objectPtr = NULL;
-            result = FALSE;
-        } else {
-           SD_CONFIDENCE(c_count(specialAddresses->currentContext.processedTypes) == 0);
+    result = sd_deepwalkMeta(type, name, objectPtr, &context);
+    if (!result) {
+        os_size_t size;
+        if (!sd_deepwalkMetaContextGetErrorInfo(&context, &errorNumber, &errname, &message, &location)) {
+            assert(0);
         }
+        size = strlen(SD_MESSAGE_FORMAT) + strlen(errname) + strlen(message) - 4U + 1U; /* 4 = 2strlen ("%s")*/
+        XMLmessage = os_malloc(size);
+        snprintf(XMLmessage, size, SD_MESSAGE_FORMAT, errname, message);
+        sd_serializerSetValidationInfo(serializer, errorNumber, XMLmessage, sd_stringDup(location));
+        os_free(message);
+        /* Free the partially deserialized data */
+        c_free(*objectPtr);
+        *objectPtr = NULL;
+    } else {
+        assert (!sd_deepwalkMetaContextGetErrorInfo(&context, &errorNumber, &errname, &message, &location));
+        SD_CONFIDENCE(c_count(specialAddresses->currentContext.processedTypes) == 0);
+        SD_CONFIDENCE(*objectPtr);
     }
 
-    sd_deepwalkMetaContextFree(context);
+    sd_deepwalkMetaContextDeinit(&context);
     sd_releaseSpecialAddresses(specialAddresses);
 
     return result;
@@ -1335,8 +1322,7 @@ sd_serializerXMLDeserializeInternal(
 static c_object
 sd_serializerXMLMetadataDeserialize(
     sd_serializer serializer,
-    sd_serializedData serData,
-    c_bool doValidation)
+    sd_serializedData serData)
 {
     c_char *xmlString, *dummy;
     c_char *typeName;
@@ -1353,18 +1339,19 @@ sd_serializerXMLMetadataDeserialize(
     dummy = xmlString;
     openingTag = sd_strGetOpeningTag(&dummy);
     typeName = os_strdup(openingTag);
-    SD_CONFIDENCE((strcmp(typeName, "c_structure") == 0) ||
-                  (strcmp(typeName, "c_typeDef") == 0));
+    SD_CONFIDENCE((strcmp(typeName, "c_structure") == 0) || (strcmp(typeName, "c_typeDef") == 0));
 
     resultType = c_resolve(serializer->base, typeName);
     /* resultType is c_class or c_struct or whatever metatype */
 
     if (resultType) {
-        deserOK = sd_serializerXMLDeserializeInternal(serializer, resultType,
-                      openingTag, &result, &xmlString, doValidation);
+        deserOK = sd_serializerXMLDeserializeInternal(serializer, resultType, openingTag, &result, &xmlString);
         /* Check if we reached the end */
         if (deserOK) {
             SD_CONFIDENCE((int)*xmlString == '\0');
+            SD_CONFIDENCE(result);
+        } else {
+            SD_CONFIDENCE(result == NULL);
         }
         c_free(resultType);
     }
@@ -1390,16 +1377,11 @@ sd_serializer
 sd_serializerXMLMetadataNew(
     c_base base)
 {
-    sd_serializer result;
     struct sd_serializerVMT VMT;
-
     VMT.serialize = sd_serializerXMLMetadataSerialize;
     VMT.deserialize = sd_serializerXMLMetadataDeserialize;
     VMT.deserializeInto = NULL;
     VMT.toString = sd_serializerXMLToString;
     VMT.fromString = sd_serializerXMLFromString;
-
-    result = sd_serializerNew(SD_FORMAT_ID, SD_FORMAT_VERSION, base, NULL, VMT);
-
-    return result;
+    return sd_serializerNew(SD_FORMAT_ID, SD_FORMAT_VERSION, base, NULL, VMT);
 }

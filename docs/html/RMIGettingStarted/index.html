@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Vortex OpenSplice RMI User Guide &mdash; RMI User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RMI User Guide" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="vortex-opensplice-rmi-user-guide">
+<h1>Vortex OpenSplice RMI User Guide<a class="headerlink" href="#vortex-opensplice-rmi-user-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-rmi-user-guide">1.1. About the RMI User Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#conventions">1.2. Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">2. Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#features">2.1. Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#benefits">2.2. Benefits</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="rmi-over-dds.html">3. Vortex OpenSplice RMI over DDS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rmi-over-dds.html#key-components">3.1. Key components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rmi-over-dds.html#binding-languages">3.2. Binding Languages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="build-rmi-apps.html">4. Building an RMI Application</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="build-rmi-apps.html#about-rmi-applications">4.1. About RMI Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build-rmi-apps.html#services-description">4.2. Services description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build-rmi-apps.html#qos-policies-description">4.3. QoS policies description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build-rmi-apps.html#rmi-compilation">4.4. RMI compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build-rmi-apps.html#application-implementation">4.5. Application implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build-rmi-apps.html#using-a-specific-dds-domain">4.6. Using a specific DDS domain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build-rmi-apps.html#server-threading-and-scheduling-policies">4.7. Server Threading and Scheduling policies</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="language-map.html">5. Language mapping for Vortex OpenSplice RMI</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="language-map.html#mapping-for-interfaces">5.1. Mapping for interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="language-map.html#mapping-for-operations">5.2. Mapping for operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="language-map.html#mapping-for-basic-types">5.3. Mapping for basic types</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="topics-maps.html">6. RMI Interface to DDS topics mapping rules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runtime-config.html">7. RMI Runtime Configuration Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="runtime-config.html#rmiclientthreadingmodel-option">7.1. RMIClientThreadingModel option</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runtime-config.html#rmiservicediscoverytimeout-option">7.2. RMIServiceDiscoveryTimeout option</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runtime-config.html#rmiserverthreadingmodel-option">7.3. RMIServerThreadingModel option</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runtime-config.html#rmiserverschedulingmodel-option">7.4. RMIServerSchedulingModel option</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runtime-config.html#rmidurability-option">7.5. RMIDurability option</a></li>
+<li class="toctree-l2"><a class="reference internal" href="runtime-config.html#rmiclientschedulingmodel-option">7.6. RMIClientSchedulingModel option</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="qos-policies.html">8. QoS policies XML schema</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">9. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">9.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">9.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Vortex OpenSplice RMI User Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

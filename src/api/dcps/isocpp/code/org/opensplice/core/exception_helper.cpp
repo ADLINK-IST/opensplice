@@ -1,12 +1,20 @@
 /*
 *                         OpenSplice DDS
 *
-*   This software and documentation are Copyright 2006 to 2012 PrismTech
-*   Limited and its licensees. All rights reserved. See file:
-*
-*                     $OSPL_HOME/LICENSE
-*
-*   for full copyright notice and license terms.
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
 *
 */
 
@@ -41,34 +49,6 @@ const char* spec_return_codes[13] =
 
 const std::size_t spec_return_codes_size = (sizeof(spec_return_codes) / sizeof(spec_return_codes[0]));
 
-const char* opensplice_error_codes[22] =
-{
-    "UNDEFINED",
-    "ERROR",
-    "OUT_OF_RESOURCES",
-    "CREATION_KERNEL_ENTITY_FAILED",
-    "INVALID_VALUE",
-    "INVALID_DURATION",
-    "INVALID_TIME",
-    "ENTITY_INUSE",
-    "CONTAINS_ENTITIES",
-    "ENTITY_UNKNOWN",
-    "HANDLE_NOT_REGISTERED",
-    "HANDLE_NOT_MATCH",
-    "HANDLE_INVALID",
-    "INVALID_SEQUENCE",
-    "UNSUPPORTED_VALUE",
-    "INCONSISTENT_VALUE",
-    "IMMUTABLE_QOS_POLICY",
-    "INCONSISTENT_QOS",
-    "UNSUPPORTED_QOS_POLICY",
-    "CONTAINS_CONDITIONS",
-    "CONTAINS_LOANS",
-    "INCONSISTENT_TOPIC"
-};
-
-const std::size_t opensplice_error_codes_size = (sizeof(opensplice_error_codes) / sizeof(opensplice_error_codes[0]));
-
 void populate(std::string& message,
               bool ospl_error_info,
               bool /* stack_trace */)
@@ -83,14 +63,14 @@ void populate(std::string& message,
             DDS::ReturnCode_t result = tss_error_interface.update();
             if(result == DDS::RETCODE_OK)
             {
-                DDS::ErrorCode_t ospl_error_code = -1;
+                DDS::ReturnCode_t ospl_error_code = -1;
                 DDS::String_var error_info_string;
                 result = tss_error_interface.get_code(ospl_error_code);
                 tmp += "\n    Error code : ";
                 tmp += (result == DDS::RETCODE_OK && ospl_error_code >= 0
-                        && static_cast<std::size_t>(ospl_error_code) < opensplice_error_codes_size
-                        ? opensplice_error_codes[ospl_error_code]
-                        :    not_available + (ospl_error_code < 0 || static_cast<std::size_t>(ospl_error_code) > opensplice_error_codes_size
+                        && static_cast<std::size_t>(ospl_error_code) < spec_return_codes_size
+                        ? spec_return_codes[ospl_error_code]
+                        :    not_available + (ospl_error_code < 0 || static_cast<std::size_t>(ospl_error_code) > spec_return_codes_size
                                               ? "value out of known range"
                                               : spec_return_codes[result]));
                 result = tss_error_interface.get_message(error_info_string.out());

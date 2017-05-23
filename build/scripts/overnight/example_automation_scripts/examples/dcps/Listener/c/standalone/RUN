@@ -13,8 +13,9 @@ echo "=== Launching Publisher "
 
 ./sac_listener_pub > pubResult.txt
 
-#We need to wait for the file to be written
-sleep 15
+echo "=== Waiting for processes to terminate"
+waitForProcessTermination sac_listener_pub 30
+waitForProcessTermination sac_listener_sub 30
 
 listenerCheckResult
 

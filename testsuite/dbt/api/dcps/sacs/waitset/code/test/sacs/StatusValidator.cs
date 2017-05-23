@@ -6,7 +6,8 @@ namespace test.sacs
         public static bool StatussesValid(DDS.IDataReader reader, int rdmTotalCount, int rdmTotalCountChange
             , int riqsTotalCount, int riqsTotalCountChange, int srTotalCount, int srTotalCountChange
             , int lcActiveCount, int lcActiveCountChange, int lcInactiveCount, int lcInactiveCountChange
-            , int smTotalCount, int smTotalCountChange, int slTotalCount, int slTotalCountChange
+            , int smTotalCount, int smTotalCountChange, int smCurrentCount, int smCurrentCountChange
+            , int slTotalCount, int slTotalCountChange
             )
         {
             bool result = false;
@@ -19,7 +20,7 @@ namespace test.sacs
                         if (LivelinessChangedValid(reader, lcActiveCount, lcActiveCountChange, lcInactiveCount
                             , lcInactiveCountChange))
                         {
-                            if (SubscriptionMatchValid(reader, smTotalCount, smTotalCountChange))
+                            if (SubscriptionMatchValid(reader, smTotalCount, smTotalCountChange, smCurrentCount, smCurrentCountChange))
                             {
                                 if (SampleLostValid(reader, slTotalCount, slTotalCountChange))
                                 {
@@ -35,7 +36,7 @@ namespace test.sacs
 
         public static bool StatussesValid(DDS.IDataWriter writer, int odmTotalCount, int odmTotalCountChange
             , int oiqsTotalCount, int oiqsTotalCountChange, int llTotalCount, int llTotalCountChange
-            , int pmTotalCount, int pmTotalCountChange)
+            , int pmTotalCount, int pmTotalCountChange, int pmCurrentCount, int pmCurrentCountChange)
         {
             bool result = false;
             if (OfferedDeadlineMissedValid(writer, odmTotalCount, odmTotalCountChange))
@@ -44,7 +45,7 @@ namespace test.sacs
                 {
                     if (LivelinessLostValid(writer, llTotalCount, llTotalCountChange))
                     {
-                        if (PublicationMatchValid(writer, pmTotalCount, pmTotalCountChange))
+                        if (PublicationMatchValid(writer, pmTotalCount, pmTotalCountChange, pmCurrentCount, pmCurrentCountChange))
                         {
                             result = true;
                         }
@@ -209,7 +210,7 @@ namespace test.sacs
         }
 
         public static bool SubscriptionMatchValid(DDS.IDataReader reader, int totalCount,
-            int totalCountChange)
+            int totalCountChange, int currentCount, int currentCountChange)
         {
             bool result = false;
             DDS.SubscriptionMatchedStatus holder = new DDS.SubscriptionMatchedStatus();
@@ -221,7 +222,23 @@ namespace test.sacs
                 {
                     if (status.TotalCountChange == totalCountChange)
                     {
-                        result = true;
+                        if (status.CurrentCount == currentCount)
+                        {
+                            if (status.CurrentCountChange == currentCountChange)
+                            {
+                                result = true;
+                            }
+                            else
+                            {
+                                System.Console.Error.WriteLine("subscription_match.CurrentCountChange != '" + currentCountChange
+                                     + "', but '" + status.CurrentCountChange + "'.");
+                            }
+                        }
+                        else
+                        {
+                            System.Console.Error.WriteLine("subscription_match.CurrentCount != '" + currentCount
+                                 + "', but '" + status.CurrentCount + "'.");
+                        }
                     }
                     else
                     {
@@ -381,7 +398,7 @@ namespace test.sacs
         }
 
         public static bool PublicationMatchValid(DDS.IDataWriter writer, int totalCount, int
-             totalCountChange)
+             totalCountChange, int currentCount, int currentCountChange)
         {
             bool result = false;
 			DDS.PublicationMatchedStatus holder = null;
@@ -393,7 +410,24 @@ namespace test.sacs
                 {
                     if (status.TotalCountChange == totalCountChange)
                     {
-                        result = true;
+                        if (status.CurrentCount == currentCount)
+                        {
+                            if (status.CurrentCountChange == currentCountChange)
+                            {
+                                result = true;
+                            }
+                            else
+                            {
+                                System.Console.Error.WriteLine("publication_matched.CurrentCountChange != '" + currentCountChange
+                                     + "', but '" + status.CurrentCountChange + "'.");
+                            }
+                        }
+                        else
+                        {
+                            System.Console.Error.WriteLine("publication_matched.CurrentCount != '" + currentCount
+                                 + "', but '" + status.CurrentCount + "'.");
+                        }
+                        
                     }
                     else
                     {

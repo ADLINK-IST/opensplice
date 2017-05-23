@@ -4,7 +4,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<title>OpenSplice DDS examples - Throughput</title>
+<title>OpenSplice examples - Throughput</title>
 <link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
 </head>
 
@@ -20,7 +20,6 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
   <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
   <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
-  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -28,8 +27,10 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li>Throughput</li>
 </ul>
 <h2> Throughput </h2>
+<span class="ex-lifecycle" data-timeout="10" style="display:none"></span>
 <ul>
   <li><a href ="#STANDALONE">Running of examples in Standalone Mode</a></li>
+  <li><a href ="#DEFAULTS">Running of examples with default values</a></li>
 </ul>
 
 <h3>1) Description</h3>
@@ -38,8 +39,8 @@ from a publisher.</p>
 
 <h3>2) Design</h3>
 <p>It consists of 2 units :</p>
- <ul><li> publisher : Sends samples at a specified size and rate</li>
-     <li> subscriber : Receives samples and outputs statistics about throughput</li></ul>
+ <ul><li class="ex-unit"><span class="ex-unit-key">publisher</span> : <span class="ex-unit-desc">Sends samples at a specified size and rate</span></li>
+     <li class="ex-unit"><span class="ex-unit-key">subscriber</span> : <span class="ex-unit-desc">Receives samples and outputs statistics about throughput</span></li></ul>
 
 <h3>3) Scenario</h3>
 
@@ -49,11 +50,11 @@ from a publisher.</p>
 
    <p>Configurable:</p>
       <ul>
-         <li>payloadSize:   the size of the payload in bytes</li>
-         <li>burstInterval: the time interval between each burst in ms</li>
-         <li>burstSize:     the number of samples to send each burst</li>
-         <li>timeOut:       the number of seconds the publisher should run for (0 infinite)</li>
-         <li>partitionName: the name of the partition</li>
+         <li class="ex-param"><span class="ex-param-name" data-ptype="Integer" data-pcategory="publisher">payloadSize</span>:   <span class="ex-param-desc">the size of the payload in bytes</span></li>
+         <li class="ex-param"><span class="ex-param-name" data-ptype="Integer" data-pcategory="publisher">burstInterval</span>: <span class="ex-param-desc">the time interval between each burst in ms</span></li>
+         <li class="ex-param"><span class="ex-param-name" data-ptype="Integer" data-pcategory="publisher">burstSize</span>:     <span class="ex-param-desc">the number of samples to send each burst</span></li>
+         <li class="ex-param"><span class="ex-param-name" data-ptype="Integer" data-pcategory="publisher">timeOut</span>:       <span class="ex-param-desc">the number of seconds the publisher should run for (0 infinite)</span></li>
+         <li class="ex-param"><span class="ex-param-name">partitionName</span>: <span class="ex-param-desc">the name of the partition</span></li>
       </ul>
 
    <p>The <b>subscriber</b> will receive data and output the total amount received and the
@@ -71,7 +72,8 @@ from a publisher.</p>
 
    <p>Configurable:</p>
       <ul>
-         <li>maxCycles:     the number of times to output statistics before terminating</li>
+         <li class="ex-param"><span class="ex-param-name" data-ptype="Integer" data-pcategory="subscriber">maxCycles</span>:     <span class="ex-param-desc">the number of times to output statistics before terminating</span></li>
+         <li class="ex-param"><span class="ex-param-name" data-ptype="Integer" data-pcategory="subscriber">pollingDelay</span>:     <span class="ex-param-desc"></span></li>
          <li>partitionName: the name of the partition</li>
       </ul>
 
@@ -85,18 +87,23 @@ from a publisher.</p>
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
-<p>The OpenSpliceDDS environment variables must be set in order for the examples to build/run correctly.
+<p>The OpenSplice environment variables must be set in order for the examples to build/run correctly.
 To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.com</i>" script supplied with the distribution.</p>
 
-<h4><balise id="C_C++">C, C++ and ISO C++ Executables</balise></h4>
+<ul>
+  <li><a href ="#C_C++">C/C++ ISO C++ 2 Examples </a></li>
+  <li><a href ="#Java">Java examples</a></li>
+</ul>
+
+<h4><balise id="C_C++">C, C++ and ISO C++ 2 Executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
 <p>Two executables and a two libraries are generated in the example directory when the example is built:</p>
-<p>For ISO C++</p>
+<p>For ISO C++ 2</p>
 <ul>
   <li>publisher</li>
   <li>subscriber</li>
-  <li>libISO_Cxx_Throughput_Impl.so</li>
-  <li>libISO_Cxx_Throughput_Types.so</li>
+  <li>libISO_Cxx_V2_Throughput_Impl.so</li>
+  <li>libISO_Cxx_V2_Throughput_Types.so</li>
 </ul>
 
 <p>For C++</p>
@@ -115,20 +122,37 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
   <li>libISO_C_Throughput_Types.so</li>
 </ul>
 
+<h4><balise id = "Java">Java executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a>
+<p>Three jars are generated in the example directory when the example is built:</p>
+<p>For Java</p>
+                <ul>
+                    <li>Saj_Throughput_Publisher.jar</li>
+                    <li>Saj_Throughput_Subscriber.jar</li>
+                    <li>Saj_Throughput_Types.jar</li>
+                </ul>
+
+<p>For Java5</p>
+                <ul>
+                    <li>Saj5_Throughput_Publisher.jar</li>
+                    <li>Saj5_Throughput_Subscriber.jar</li>
+                    <li>Saj5_Throughput_Types.jar</li>
+                </ul>
+
+
 <h4>Running the example</h4>
- <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new terminal used.  If running the C, C++ or ISO C++ examples, ensure that
-    . is added to the LD_LIBRARY_PATH.</p>
+ <p>Ensure that the environment for OpenSplice is set up correctly as described above for each new terminal used.</p>
  <p>It is recommended that you run the subscriber and publisher in separate terminals to avoid mixing the output</p>
 
-   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSplice middleware</b></p>
    <ul>
-     <li>OpenSpliceDDS is deployed in this mode by default.</li>
-     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>OpenSplice is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSplice middleware and optional services are implicitly started by the single process applications as required</li>
      <li>Open 2 terminals. Set up the environment and go to the example directory as described above</li>
    </ul>
 
    <p><b>Running in multiple process shared memory configuration</b></p>
-   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>
+   <p>To enable deployment in this mode, an OpenSplice configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>
     <ul>
           <li>Open 2 terminals.  In each terminal:</li>
           <li>Setup the environment and go to the example directory as described above</li>
@@ -138,20 +162,35 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
 
    <p><b>Starting the publisher and subscriber</b></p>
 
-   <p>In the first terminal start the publisher by running the publisher.exe executable</p>
+   <ul>
+     <li> In the first terminal start the publisher by running either
+        <ul>
+          <li><b><i>publisher</i></b> for C/C++/ISO C++ 2</li>
+          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes publisher</i></b> for Java</li>
+          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes publisher</i></b> for Java5</li>
+        </ul>
+     </li>
+    </ul>
 
     <pre>
     publisher usage (parameters must be supplied in order):
-      ./publisher [payloadSize (bytes)] [burstInterval (ms)] [burstSize (samples)] [timeOut (seconds)] [partitionName]
+      <span class="ex-unit-detail" data-unitkey="publisher">./publisher [<span class="ex-unit-param" data-default="8192">payloadSize</span> (bytes)] [<span class="ex-unit-param" data-default="0">burstInterval</span> (ms)] [<span class="ex-unit-param" data-default="1">burstSize</span> (samples)] [<span class="ex-unit-param" data-default="0">timeOut</span> (seconds)] [<span class="ex-unit-param" data-default="Throughput example">partitionName</span>]</span>
     defaults:
       ./publisher 8192 0 1 0 "Throughput example"
     </pre>
 
-   <p>In the second terminal start the subscriber by the subscriber.exe executable</p>
+   <ul>
+     <li> In the second terminal start the subscriber by running either
+       <ul>
+          <li><b><i>subscriber</i></b> for C/C++  </li>
+          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes subscriber</i></b> for Java</li>
+          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes subscriber</i></b> for Java5</li>
+        </ul>
+    </ul>
 
     <pre>
     subscriber usage:
-      ./subscriber [maxCycles (0 = infinite)] [pollingDelay (ms, 0 = event based)] [partitionName]
+      <span class="ex-unit-detail" data-unitkey="subscriber">./subscriber [<span class="ex-unit-param" data-default="0">maxCycles</span> (0 = infinite)] [<span class="ex-unit-param" data-default="0">pollingDelay</span> (ms, 0 = event based)] [<span class="ex-unit-param" data-default="Throughput example">partitionName</span>]</span>
     defaults:
       ./subscriber 0 0 "Throughput example"
     </pre>
@@ -166,60 +205,93 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
       taskset -c 1 chrt -f 80 ./subscriber [maxCycles (0 = infinite)] [pollingDelay (ms, 0 = event based)] [partitionName]
     </pre>
 
-<h3><balise id="VS">Running C/C++/ISO C++ on Windows</balise></h3>
+<h3><balise id="VS">Running C/C++/ISO C++ 2/Java on Windows</balise></h3>
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
-<p>The OpenSpliceDDS environment variables must be set in order for the examples to run correctly.
-To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the environment variables for OpenSpliceDDS automatically.  The <i>OpenSpliceDDS Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
+<p>The OpenSplice environment variables must be set in order for the examples to run correctly.
+To do this open an <i>OpenSplice Command Prompt</i> which will set up the environment variables for OpenSplice automatically.  The <i>OpenSplice Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
 
-<h4><balise id="C_C++_CS_Win">C/C++/ISO C++</balise></h4>
+<h4><balise id="C_C++_CS_Win">C/C++/ISO C++ 2</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
 <p>Two executables are generated in the example directory when the example is built:
-<p>For C, C++ and C#</p>
+<p>For C and C++</p>
 <ul>
     <li>publisher.exe</li>
     <li>subscriber.exe</li>
 </ul>
 
-<h4><balise id="C_C++_ISO C++_Win">Running the C/C++/ISO C++ Examples</balise></h4>
-   <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new command prompt used.</p>
+<h4><balise id = "Java_Win">Java executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a>
+<p>Three jars are generated in the example directory when the example is built:</p>
+<p>For Java</p>
+                <ul>
+                    <li>Saj_Throughput_Publisher.jar</li>
+                    <li>Saj_Throughput_Subscriber.jar</li>
+                    <li>Saj_Throughput_Types.jar</li>
+                </ul>
+
+<p>For Java5</p>
+                <ul>
+                    <li>Saj5_Throughput_Publisher.jar</li>
+                    <li>Saj5_Throughput_Subscriber.jar</li>
+                    <li>Saj5_Throughput_Types.jar</li>
+                </ul>
+
+
+<h4><balise id="C_C++_ISO C++_Win">Running the C/C++/ISO C++ 2 Examples</balise></h4>
+   <p>Ensure that the environment for OpenSplice is set up correctly as described above for each new command prompt used.</p>
    <p>The following steps describe how to run the examples:</p>
 
-   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSplice middleware</b></p>
    <ul>
-     <li>OpenSpliceDDS is deployed in this mode by default.</li>
-     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
-     <li>Open 2 OpenSpliceDDS Command Prompts and go to directory <b>standalone</b> as described above</li>
+     <li>OpenSplice is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSplice middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 OpenSplice Command Prompts and go to directory example as described above</li>
    </ul>
 
    <p><b>Running in multiple process shared memory configuration</b></p>
-   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>
+   <p>To enable deployment in this mode, an OpenSplice configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>
     <ul>
-          <li>Open 2 OpenSpliceDDS Command Prompts.  In each window:</li>
+          <li>Open 2 OpenSplice Command Prompts.  In each window:</li>
           <li>Go to directory <b>standalone</b> as described above</li>
-          <li>Set the required configuraton file e.g. <i>set OSPL_URI="file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml"</i></li>
+          <li>Set the required configuraton file e.g. <i>set OSPL_URI=file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml</i></li>
           <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
     </ul>
 
     <p><b>Starting the publisher and subscriber</b></p>
 
-   <p>In the first terminal start the publisher by running the publisher.exe executable</p>
+   <ul>
+     <li> In the first terminal start the publisher by running either
+        <ul>
+          <li><b><i>publisher.exe</i></b> for C/C++</li>
+          <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes publisher</i></b> for Java</li>
+          <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj5.jar";classes publisher</i></b> for Java5</li>
+        </ul>
+    </li>
+   </ul>
 
     <pre>
     publisher usage (parameters must be supplied in order):
-      ./publisher [payloadSize (bytes)] [burstInterval (ms)] [burstSize (samples)] [timeOut (seconds)] [partitionName]
+      publisher.exe [payloadSize (bytes)] [burstInterval (ms)] [burstSize (samples)] [timeOut (seconds)] [partitionName]
     defaults:
-      ./publisher 8192 0 1 0 "Throughput example"
+      publisher.exe 8192 0 1 0 "Throughput example"
     </pre>
 
-   <p>In the second terminal start the subscriber by the subscriber.exe executable</p>
+   <ul>
+     <li> In the second terminal start the subscriber by running either
+       <ul>
+          <li><b><i>subscriber.exe</i></b> for C/C++  </li>
+          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes subscriber</i></b> for Java</li>
+          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj5.jar:classes subscriber</i></b> for Java5</li>
+        </ul>
+    </ul>
 
     <pre>
     subscriber usage:
-      ./subscriber [maxCycles (0 = infinite)] [pollingDelay (ms, 0 = event based)] [partitionName]
+      subscriber.exe [maxCycles (0 = infinite)] [pollingDelay (ms, 0 = event based)] [partitionName]
     defaults:
-      ./subscriber 0 0 "Throughput example"
+      subscriber.exe 0 0 "Throughput example"
     </pre>
 
     <p>To achieve optimal performance it is recommended to set the CPU affinity so that the publisher
@@ -231,5 +303,49 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
     subscriber usage:
       START /affinity 2 /high cmd /k "subscriber.exe" [maxCycles (0 = infinite)] [pollingDelay (ms, 0 = event based)] [partitionName]
     </pre>
+
+    <h2><balise id="DEFAULTS">Running of examples with default values</balise></h2>
+    <p> There is a binary executable in examples/dcps/PerfomanceScripts which aims to run the selected ping and pong executables without prior configuration or command line arguments. </p>
+
+    <p>The executable by default will - </p>
+    <ul>
+        <li>Test a range of iterating payload values 0-64KB</li>
+        <li>Test across APIs (c, sacpp, isocpp2)</li>
+        <li>Log all results per API
+           <ul><li>Write all results to API/ping.csv </li></ul>
+        </li>
+        <li>Log averages
+            <ul><li>Write timestamped averages to averages.csv in current directory</li></ul>
+        </li>
+        <li>Set maximum process priority and set CPU affinity</li>
+    </ul>
+
+    <p>The executable requires - </p>
+    <ul>
+        <li>Administrator or root privileges</li>
+        <li>The example be compiled for the particular API being tested</li>
+    </ul>
+    <p>Its also recommended that for best results the benchmark is run on a shared memory multiple process configuration.</p>
+    <p>The Throughput executable provides several command line options to manipulate the ping and pong processes, a short description of each is provided in the executable options -</p>
+    <pre># Throughput --help</pre>
+
+    <p>Some common examples -</p>
+    <ul>
+        <li>Running with defaults
+            <pre># Throughput</pre>
+        </li>
+        <li>Running against isocpp2 api only
+            <pre># Throughput -I</pre>
+        </li>
+        <li>Running against the sacpp and isocpp api
+            <pre># Throughput -S -I</pre>
+        </li>
+        <li>Write to a different averages file
+            <pre># Throughput -o somefile.csv</pre>
+        </li>
+        <li>Use two separate cores/processors <i>note: best performance is achieved by using separate physical cores</i>
+            <pre># Throughput --pingaffinity=0 --pongaffinity=4</pre>
+        </li>
+    </ul>
 </body>
 </html>

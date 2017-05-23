@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -33,44 +41,6 @@
 #include "idl_dependencies.h"
 #include "idl_genLanguageHelper.h"
 
-static void idl_arrayDimensions(idl_typeArray typeArray);
-
-/** @brief generate name which will be used as a macro to prevent multiple inclusions
- *
- * From the specified basename create a macro which will
- * be used to prevent multiple inclusions of the generated
- * header file. The basename characters are translated
- * into uppercase characters and the append string is
- * appended to the macro.
- */
-static c_char *
-idl_macroFromBasename(
-    const char *basename,
-    const char *append)
-{
-    static c_char macro[200];
-    c_long i;
-
-    for (i = 0; i < (c_long)strlen(basename); i++) {
-        macro[i] = toupper (basename[i]);
-        macro[i+1] = '\0';
-    }
-    os_strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
-
-    return macro;
-}
-
-static os_equality
-defName(
-    void *iterElem,
-    void *arg)
-{
-    if (strcmp((char *)iterElem, (char *)arg) == 0) {
-        return OS_EQ;
-    }
-    return OS_NE;
-}
-
 /* @brief callback function called on opening the IDL input file.
  *
  * Generate standard file header consisting of:
@@ -87,6 +57,9 @@ idl_fileOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
     /* return idl_explore to indicate that the rest of the file needs to be processed */
     return idl_explore;
 }
@@ -117,6 +90,9 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
     /* return idl_explore to indicate that the rest of the module needs to be processed */
     return idl_explore;
 }
@@ -143,8 +119,13 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
-    int nameLen = strlen(idl_javaId(name)) + strlen("Holder") + 1;
+    os_size_t nameLen = strlen(idl_javaId(name)) + strlen("Holder") + 1;
     char *holderName;
+    OS_UNUSED_ARG(structSpec);
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(structSpec);
+    OS_UNUSED_ARG(userData);
 
     holderName = os_malloc(nameLen);
     snprintf(holderName, nameLen, "%sHolder", idl_javaId(name));
@@ -154,13 +135,7 @@ idl_structureOpen(
     if (idl_fileCur() == NULL) {
         return idl_abort;
     }
-    if (idl_scopeStackSize(scope) > 0) {
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "package %s;\n",
-            idl_scopeStackJava(scope, ".", NULL));
-        idl_fileOutPrintf(idl_fileCur(), "\n");
-    }
+
     idl_fileOutPrintf(idl_fileCur(), "public final class %s\n{\n\n", holderName);
     idl_fileOutPrintf(
         idl_fileCur(),
@@ -211,8 +186,13 @@ idl_unionOpen(
     idl_typeUnion unionSpec,
     void *userData)
 {
-    int nameLen = strlen(idl_javaId(name)) + strlen("Holder") + 1;
+    os_size_t nameLen = strlen(idl_javaId(name)) + strlen("Holder") + 1;
     char *holderName;
+    OS_UNUSED_ARG(unionSpec);
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(unionSpec);
+    OS_UNUSED_ARG(userData);
 
     holderName = os_malloc(nameLen);
     snprintf(holderName, nameLen, "%sHolder", idl_javaId(name));
@@ -221,11 +201,6 @@ idl_unionOpen(
     idl_openJavaPackage(scope, holderName);
     if (idl_fileCur() == NULL) {
         return idl_abort;
-    }
-    if (idl_scopeStackSize(scope) > 0) {
-        idl_fileOutPrintf(idl_fileCur(), "package %s;\n",
-	    idl_scopeStackJava(scope, ".", NULL));
-        idl_fileOutPrintf(idl_fileCur(), "\n");
     }
     idl_fileOutPrintf(idl_fileCur(), "public final class %s\n{\n\n", holderName);
     idl_fileOutPrintf(
@@ -271,8 +246,13 @@ idl_enumerationOpen(
     idl_typeEnum enumSpec,
     void *userData)
 {
-    int nameLen = strlen(idl_javaId(name)) + strlen("Holder") + 1;
+    os_size_t nameLen = strlen(idl_javaId(name)) + strlen("Holder") + 1;
     char *holderName;
+    OS_UNUSED_ARG(enumSpec);
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(enumSpec);
+    OS_UNUSED_ARG(userData);
 
     holderName = os_malloc(nameLen);
     snprintf(holderName, nameLen, "%sHolder", idl_javaId(name));
@@ -281,10 +261,6 @@ idl_enumerationOpen(
     idl_openJavaPackage(scope, holderName);
     if (idl_fileCur() == NULL) {
         return idl_abort;
-    }
-    if (idl_scopeStackSize(scope) > 0) {
-        idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
-        idl_fileOutPrintf(idl_fileCur(), "\n");
     }
     idl_fileOutPrintf(idl_fileCur(), "public final class %s\n{\n\n", holderName);
     idl_fileOutPrintf(
@@ -308,32 +284,6 @@ idl_enumerationOpen(
     return idl_abort;
 }
 
-/* @brief generate dimension of an array
- *
- * arrayDimensions is a local support function to generate
- * the array dimensions of an array
- *
- * @param typeArray Specifies the type of the array
- */
-static void
-idl_arrayDimensions(
-    idl_typeArray typeArray)
-{
-}
-
-/* @brief generate dimension of an array slice
- *
- * arraySliceDimensions is a local support function to generate
- * the array dimensions of an array slice
- *
- * @param typeArray Specifies the type of the array
- */
-static void
-idl_arraySliceDimensions(
-    idl_typeArray typeArray)
-{
-}
-
 /** @brief callback function called on definition of a named type in the IDL input file.
  *
  * Generate code for the following IDL construct:
@@ -352,9 +302,10 @@ idl_typedefOpenClose(
     idl_typeDef defSpec,
     void *userData)
 {
-    int nameLen = strlen(idl_javaId(name)) + strlen("Holder") + 1;
+    os_size_t nameLen = strlen(idl_javaId(name)) + strlen("Holder") + 1;
     char *holderName;
 
+    OS_UNUSED_ARG(userData);
 
     if (idl_typeSpecType(idl_typeDefRefered (defSpec)) == idl_tseq) {
         holderName = os_malloc(nameLen);
@@ -363,13 +314,6 @@ idl_typedefOpenClose(
         idl_openJavaPackage(scope, holderName);
         if (idl_fileCur() == NULL) {
             return;
-        }
-        if (idl_scopeStackSize(scope) > 0) {
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "package %s;\n",
-                idl_scopeStackJava(scope, ".", NULL));
-            idl_fileOutPrintf(idl_fileCur(), "\n");
         }
         idl_fileOutPrintf(idl_fileCur(), "public final class %s\n{\n\n", holderName);
         idl_fileOutPrintf(
@@ -397,13 +341,6 @@ idl_typedefOpenClose(
         idl_openJavaPackage(scope, holderName);
         if (idl_fileCur() == NULL) {
             return;
-        }
-        if (idl_scopeStackSize(scope) > 0) {
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "package %s;\n",
-                idl_scopeStackJava(scope, ".", NULL));
-            idl_fileOutPrintf(idl_fileCur(), "\n");
         }
         idl_fileOutPrintf(idl_fileCur(), "public final class %s\n{\n\n", holderName);
         idl_fileOutPrintf(
@@ -433,6 +370,9 @@ idl_sequenceOpenClose(
     idl_typeSeq typeSeq,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(typeSeq);
+    OS_UNUSED_ARG(userData);
 }
 
 static void
@@ -441,6 +381,9 @@ idl_constantOpenClose(
     idl_constSpec constantSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(constantSpec);
+    OS_UNUSED_ARG(userData);
 }
 
 /**
@@ -458,6 +401,7 @@ static idl_programControl *
 idl_getControl(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     return &idl_genSajLoadControl;
 }
 

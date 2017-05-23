@@ -1,16 +1,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "os_stdlib.h"
 #include "os_heap.h"
+#include "os_errno.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,7 +27,6 @@
 #include <strings.h>
 #endif
 #include <string.h>
-#include <errno.h>
 #include <ctype.h>
 
 
@@ -100,14 +108,12 @@ char *
 os_strdup(
     const char *s1)
 {
-    int len;
+    os_size_t len;
     char *dup;
 
     len = strlen (s1) + 1;
     dup = os_malloc (len);
-    if (dup) {
-        os_strcpy (dup, s1);
-    }
+    memcpy (dup, s1, len);
 
     return dup;
 }
@@ -117,7 +123,7 @@ os_strcat(
     char *s1,
     const char *s2)
 {
-   return strcat(s1, s2);
+    return strcat(s1, s2);
 }
 
 char *
@@ -175,259 +181,40 @@ os_vsnprintf(
    return vsnprintf(str, size, format, args);
 }
 
-static long long
-digit_value(
-    char digit,
-    os_int32 base)
+int
+os_vfprintfnosigpipe(
+    FILE *file,
+    const char *format,
+    va_list args)
 {
-    signed char val;
+   int result;
 
-    if (digit >= '0' && digit <= '9') {
-        val = digit - '0';
-        if (val >= base) {
-            val = -1;
-        }
-    } else if (digit >= 'a' && digit <= 'z') {
-        val = digit - 'a' + 10;
-        if (val >= base) {
-            val = -1;
-        }
-    } else if (digit >= 'A' && digit <= 'Z') {
-        val = digit - 'A' + 10;
-        if (val >= base) {
-            val = -1;
-        }
-    } else {
-        val = -1;
-    }
+   sigset_t sset_before, sset_omask, sset_pipe, sset_after;
 
-    return (long long)val;
-}
-
-long long
-os_strtoll(
-    const char *str,
-    char **endptr,
-    os_int32 base)
-{
-    long long value = 0LL;
-    long long sign = 1LL;
-    long long radix;
-    long long dvalue;
-
-    errno = 0;
-
-    if (endptr) {
-        *endptr = (char *)str;
-    }
-    while (isspace ((int)*str)) {
-        str++;
-    }
-    if (*str == '-') {
-        sign = -1LL;
-        str++;
-    } else if (*str == '+') {
-        sign = 1LL;
-        str++;
-    }
-    if (base == 0) {
-        /* determine radix from string str */
-        if (*str == '\0') {
-            errno = EINVAL;
-            return value;
-        }
-        if (*str == '0') {
-            str++;
-            /* base = 8, 10 or 16 */
-            if (*str == '\0') {
-                base = 10;
-            } else if (*str == 'x' || *str == 'X') {
-                base = 16;
-                str++;
-            } else if (*str >= '0' || *str <= '7') {
-                base = 8;
-            } else {
-                errno = EINVAL;
-                return value;
-            }
-        } else if (*str >= '1' || *str <= '9') {
-            base = 10;
-        }
-    } else if (base < 2) {
-        /* invalid radix */
-        errno = EINVAL;
-        return value;
-    } else if (base > 36) {
-        /* invalid radix */
-        errno = EINVAL;
-        return value;
-    } else if (base == 16) {
-        /* Check if prefixed by 0x or 0X */
-        if (*str == '0' && (*(str+1) == 'x' || *(str+1) == 'X')) {
-            str++;
-            str++;
-        }
-    }
-    radix = (long long)base;
-    dvalue = digit_value (*str, base);
-    while (dvalue >= 0) {
-        value = value * radix + dvalue;
-        str++;
-        dvalue = digit_value (*str, base);
-    }
-    if (endptr) {
-        *endptr = (char *)str;
-    }
-
-    return value*sign;
-}
-
-unsigned long long
-os_strtoull(
-    const char *str,
-    char **endptr,
-    os_int32 base)
-{
-    unsigned long long value = 0LL;
-    long long sign = 1LL;
-    unsigned long long radix;
-    long long dvalue;
-
-    errno = 0;
-
-    if (endptr) {
-        *endptr = (char *)str;
-    }
-    while (isspace ((int)*str)) {
-        str++;
-    }
-    if (*str == '-') {
-        sign = -1LL;
-        str++;
-    } else if (*str == '+') {
-        sign = 1LL;
-        str++;
-    }
-    if (base == 0) {
-        /* determine radix from string str */
-        if (*str == '\0') {
-            errno = EINVAL;
-            return value;
-        }
-        if (*str == '0') {
-            str++;
-            /* base = 8, 10 or 16 */
-            if (*str == '\0') {
-                base = 10;
-            } else if (*str == 'x' || *str == 'X') {
-                base = 16;
-                str++;
-            } else if (*str >= '0' || *str <= '7') {
-                base = 8;
-            } else {
-                errno = EINVAL;
-                return value;
-            }
-        } else if (*str >= '1' || *str <= '9') {
-            base = 10;
-        }
-    } else if (base < 2) {
-        /* invalid radix */
-        errno = EINVAL;
-        return value;
-    } else if (base > 36) {
-        /* invalid radix */
-        errno = EINVAL;
-        return value;
-    } else if (base == 16) {
-        /* Check if prefixed by 0x or 0X */
-        if (*str == '0' && (*(str+1) == 'x' || *(str+1) == 'X')) {
-            str++;
-            str++;
-        }
-    }
-    radix = (unsigned long long)base;
-    dvalue = digit_value (*str, base);
-    while (dvalue >= 0) {
-        value = value * radix + dvalue;
-        str++;
-        dvalue = digit_value (*str, base);
-    }
-    if (endptr) {
-        *endptr = (char *)str;
-    }
-
-    return value*sign;
-}
-
-long long
-os_atoll(
-    const char *str)
-{
-    return os_strtoll (str, NULL, 10);
-}
-
-unsigned long long
-os_atoull(
-    const char *str)
-{
-    return os_strtoull (str, NULL, 10);
-}
-
-char *
-os_lltostr(
-    long long value,
-    char *endptr)
-{
-    long long lval;
-    long long sign;
-
-    if (value < 0LL) {
-        sign = -1LL;
-    } else {
-        sign = 1LL;
-    }
-    lval = value / 10LL;
-    if (sign < 0) {
-        endptr--;
-        *endptr = '0' + (char)((lval * 10LL) - value);
-    } else {
-        endptr--;
-        *endptr = '0' + (char)(value - (lval * 10LL));
-    }
-    value = lval * sign;
-    while (value > 0LL) {
-        lval = value / 10LL;
-        endptr--;
-        *endptr = '0' + (char)(value - (lval * 10LL));
-        value = lval;
-    }
-    if (sign < 0) {
-        endptr--;
-        *endptr = '-';
-    }
-
-    return endptr;
-}
-
-char *
-os_ulltostr(
-    unsigned long long value,
-    char *endptr)
-{
-    long long lval;
-
-    lval = value / 10ULL;
-    endptr--;
-    *endptr = '0' + (value - (lval * 10ULL));
-    value = lval;
-    while (value > 0ULL) {
-        lval = value / 10ULL;
-        endptr--;
-        *endptr = '0' + (value - (lval * 10ULL));
-        value = lval;
-    }
-    return endptr;
+   sigemptyset(&sset_pipe);
+   sigaddset(&sset_pipe, SIGPIPE);
+   sigpending(&sset_before);
+   pthread_sigmask(SIG_BLOCK, &sset_pipe, &sset_omask);
+   result = vfprintf(file, format, args);
+   sigpending(&sset_after);
+   if (!sigismember(&sset_before, SIGPIPE) && sigismember(&sset_after, SIGPIPE)) {
+       /* sigtimedwait appears to be fairly well supported, just not by Mac OS. If other platforms prove to be a problem, we can do a proper indication of platform support in the os defs. The advantage of sigtimedwait is that it protects against a deadlock when SIGPIPE is sent from outside the program and all threads have it blocked. In any case, when SIGPIPE is sent in this manner and we consume the signal here, the signal is lost. Nobody should be abusing system-generated signals in this manner. */
+#ifndef __APPLE__
+       struct timespec timeout = { 0, 0 };
+       sigtimedwait(&sset_pipe, NULL, &timeout);
+#else
+       int sig;
+       sigwait(&sset_pipe, &sig);
+#endif
+#ifndef NDEBUG
+       sigpending(&sset_after);
+       assert(!sigismember(&sset_after, SIGPIPE));
+#endif
+       os_setErrno(EPIPE);
+       result = -1;
+   }
+   pthread_sigmask(SIG_SETMASK, &sset_omask, NULL);
+   return result;
 }
 
 int
@@ -453,7 +240,7 @@ int
 os_strncasecmp(
     const char *s1,
     const char *s2,
-    os_uint32 n)
+    size_t n)
 {
     int cr = 0;
 
@@ -484,9 +271,8 @@ os_stat(
     r = stat(path, &_buf);
     if (r == 0) {
         buf->stat_mode = _buf.st_mode;
-        buf->stat_size = _buf.st_size;
-        buf->stat_mtime.tv_sec = _buf.st_mtime;
-        buf->stat_mtime.tv_nsec = 0;
+        buf->stat_size = (os_size_t) _buf.st_size;
+        buf->stat_mtime = OS_TIMEW_INIT(_buf.st_mtime, 0);
         result = os_resultSuccess;
     } else {
         result = os_resultFail;
@@ -611,7 +397,7 @@ os_fsync(
     return r;
 }
 
-char *
+const char *
 os_getTempDir()
 {
     char * dir_name = NULL;
@@ -628,5 +414,5 @@ os_getTempDir()
 
 os_ssize_t os_write(int fd, const void *buf, size_t count)
 {
-  return write(fd, buf, count);
+    return write(fd, buf, count);
 }

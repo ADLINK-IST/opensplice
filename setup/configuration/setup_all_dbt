@@ -10,128 +10,150 @@ set_undefined_var INCLUDE_DBT_DATABASE yes
 set_undefined_var INCLUDE_DBT_UTILITIES yes
 set_undefined_var INCLUDE_DBT_INSTALLER yes
 
-if [ -n "$INCLUDE_SERVICES" ]
+if [ "_$INCLUDE_SERVICES" = "_yes" ]
 then
     set_undefined_var INCLUDE_DBT_SERVICES yes
     set_undefined_var INCLUDE_DBT_SERVICES_SERIALIZATION yes
-    if [ -n "$INCLUDE_SERVICES_NETWORKING" ]; then
+    if [ "_$INCLUDE_SERVICES_NETWORKING" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_SERVICES_NETWORKING yes
     else
-    unset_var INCLUDE_DBT_SERVICES_NETWORKING
+        unset_var INCLUDE_DBT_SERVICES_NETWORKING
     fi
-    if [ -n "$INCLUDE_SERVICES_DDSI" ]; then
+    if [ "_$INCLUDE_SERVICES_DDSI" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_SERVICES_DDSI yes
     else
-    unset_var INCLUDE_DBT_SERVICES_DDSI
+        unset_var INCLUDE_DBT_SERVICES_DDSI
     fi
-    if [ -n "$INCLUDE_SERVICES_COMMON" ]; then
+    if [ "_$INCLUDE_SERVICES_COMMON" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_SERVICES_COMMON yes
     else
-	unset_var INCLUDE_DBT_SERVICES_COMMON
+        unset_var INCLUDE_DBT_SERVICES_COMMON
     fi
-    if [ -n "$INCLUDE_SERVICES_SPLICED" ]; then
+    if [ "_$INCLUDE_SERVICES_SPLICED" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_SERVICES_SPLICED yes
     else
-	unset_var INCLUDE_DBT_SERVICES_SPLICED
+        unset_var INCLUDE_DBT_SERVICES_SPLICED
     fi
-    if [ -n "$INCLUDE_SERVICES_DURABILITY" ]; then
-        set_undefined_var INCLUDE_DBT_SERVICES_DURABILITY yes
-    else
-	unset_var INCLUDE_DBT_SERVICES_DURABILITY
-    fi
-    if [ -n "$INCLUDE_SERVICES_DBMS" ]; then
+    if [ "_$INCLUDE_SERVICES_DBMS" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_SERVICES_DBMS yes
     else
-	unset_var INCLUDE_DBT_SERVICES_DBMS
+        unset_var INCLUDE_DBT_SERVICES_DBMS
     fi
-    if [ -n "$INCLUDE_SERVICES_RNR" ]; then
+    if [ "_$INCLUDE_SERVICES_RNR" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_SERVICES_RNR yes
     else
-    unset_var INCLUDE_DBT_SERVICES_RNR
+        unset_var INCLUDE_DBT_SERVICES_RNR
+    fi
+    if [ "_$INCLUDE_SERVICES_CMAGENT" = "_yes" ]; then
+        set_undefined_var INCLUDE_DBT_SERVICES_CMAGENT yes
+    else
+        unset_var INCLUDE_DBT_SERVICES_CMAGENT
     fi
 else
     unset_var INCLUDE_DBT_SERVICES
 fi
 
-if [ -n "$INCLUDE_TOOLS" ]
+if [ "_$INCLUDE_TOOLS" = "_yes" ]
 then
-set_undefined_var INCLUDE_DBT_TOOLS yes
-    if [ -n "$INCLUDE_TOOLS_TUNER" ]; then
+    set_undefined_var INCLUDE_DBT_TOOLS yes
+    if [ "_$INCLUDE_TOOLS_TUNER" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_TOOLS_TUNER yes
     else
-	unset_var INCLUDE_DBT_TOOLS_TUNER
+        unset_var INCLUDE_DBT_TOOLS_TUNER
     fi
-    if [ -n "$INCLUDE_TOOLS_TESTER" ]; then
+    if [ "_$INCLUDE_TOOLS_TESTER" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_TOOLS_TESTER yes
     else
-	unset_var INCLUDE_DBT_TOOLS_TESTER
+        unset_var INCLUDE_DBT_TOOLS_TESTER
     fi
-    if [ -n "$INCLUDE_TOOLS_IDLPP" ]; then
+    if [ "_$INCLUDE_TOOLS_IDLPP" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_TOOLS_IDLPP yes
     else
-	unset_var INCLUDE_DBT_TOOLS_IDLPP
+        unset_var INCLUDE_DBT_TOOLS_IDLPP
     fi
-    if [ -n "$INCLUDE_TOOLS_SHMDUMP" ]; then
+    if [ "_$INCLUDE_TOOLS_SHMDUMP" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_TOOLS_SHMDUMP yes
     else
-	unset_var INCLUDE_DBT_TOOLS_SHMDUMP
+        unset_var INCLUDE_DBT_TOOLS_SHMDUMP
     fi
 else
     unset_var INCLUDE_DBT_TOOLS
 fi
 
-if [ -n "$INCLUDE_API" ]
+if [ "_$INCLUDE_API" = "_yes" ]
 then
     set_undefined_var INCLUDE_DBT_API yes
-    if [ -n "$INCLUDE_API_DCPS" ]; then
+    if [ "_$INCLUDE_API_DCPS" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_API_DCPS yes
-	if  [ -n "$INCLUDE_API_DCPS_GAPI" ]; then
-        set_undefined_var INCLUDE_DBT_API_DCPS_GAPI yes
-	    if  [ -n "$INCLUDE_API_DCPS_SAC" ]; then
+        if  [ "_$INCLUDE_API_DCPS_SAC" = "_yes" ]; then
             set_undefined_var INCLUDE_DBT_API_DCPS_SAC yes
-	    else
-		unset_var INCLUDE_DBT_API_DCPS_SAC
-	    fi
-	    if  [ -n "$INCLUDE_API_DCPS_SAJ" ]; then
+        else
+            unset_var INCLUDE_DBT_API_DCPS_SAC
+        fi
+        if  [ "_$INCLUDE_API_DCPS_SAJ" = "_yes" ]; then
             set_undefined_var INCLUDE_DBT_API_DCPS_SAJ yes
-	    else
-		unset_var INCLUDE_DBT_API_DCPS_SAJ
-	    fi
-	    if  [ -n "$INCLUDE_API_DCPS_CJ" ]; then
+        else
+            unset_var INCLUDE_DBT_API_DCPS_SAJ
+        fi
+        if  [ "_$INCLUDE_API_DCPS_CJ" = "_yes" ]; then
             set_undefined_var INCLUDE_DBT_API_DCPS_CJ yes
-	    else
-		unset_var INCLUDE_DBT_API_DCPS_CJ
-	    fi
-	    if  [ -n "$INCLUDE_API_DCPS_CCPP" ]; then
+        else
+            unset_var INCLUDE_DBT_API_DCPS_CJ
+        fi
+        if  [ "_$INCLUDE_API_DCPS_CCPP" = "_yes" ]; then
             set_undefined_var INCLUDE_DBT_API_DCPS_CCPP yes
-	    else
-		unset_var INCLUDE_DBT_API_DCPS_CCPP
-	    fi
-	    if  [ "$INCLUDE_API_DCPS_ISOCPP" = "yes" ]; then
+        else
+            unset_var INCLUDE_DBT_API_DCPS_CCPP
+        fi
+        if  [ "_$INCLUDE_API_DCPS_SACPP" = "_yes" ]; then
+            set_undefined_var INCLUDE_DBT_API_DCPS_SACPP yes
+        else
+            unset_var INCLUDE_DBT_API_DCPS_SACPP
+        fi
+        if  [ "_$INCLUDE_API_DCPS_ISOCPP" = "_yes" ]; then
             set_undefined_var INCLUDE_DBT_API_DCPS_ISOCPP yes
-	    else
+            if  [ "_$INCLUDE_API_STREAMS_ISOCPP" = "_yes" ]; then
+                set_undefined_var INCLUDE_DBT_API_STREAMS_ISOCPP yes
+            else
+                unset_var INCLUDE_DBT_API_STREAMS_ISOCPP
+            fi
+        else
             unset_var INCLUDE_DBT_API_DCPS_ISOCPP
-	    fi
-	else
-	    unset_var INCLUDE_DBT_API_DCPS_SAC
-	fi
-	if  [ -n "$INCLUDE_API_DCPS_JAVA" ]; then
-        set_undefined_var INCLUDE_DBT_API_DCPS_JAVA yes
-	else
-	    unset_var INCLUDE_DBT_API_DCPS_JAVA
-	fi
-	if  [ -n "$INCLUDE_API_DCPS_JNI" ]; then
-        set_undefined_var INCLUDE_DBT_API_DCPS_JNI yes
-	else
-	    unset_var INCLUDE_DBT_API_DCPS_JNI
-	fi
+        fi
+        if  [ "_$INCLUDE_API_DCPS_ISOCPP2" = "_yes" ]; then
+            set_undefined_var INCLUDE_DBT_API_DCPS_ISOCPP2 yes
+        else
+            unset_var INCLUDE_DBT_API_DCPS_ISOCPP2
+        fi
+        if [ "_$INCLUDE_API_DCPS_SACS" = "_yes" ] ; then
+            set_undefined_var INCLUDE_DBT_API_DCPS_SACS yes
+        else
+            unset_var INCLUDE_DBT_API_DCPS_SACS
+        fi
+        if  [ "_$INCLUDE_API_DCPS_SAJ5" = "_yes" ]; then
+            set_undefined_var INCLUDE_DBT_API_DCPS_JAVA5 yes
+        else
+            unset_var INCLUDE_DBT_API_DCPS_JAVA5
+        fi
+        if  [ "_$INCLUDE_API_DCPS_JNI" = "_yes" ]; then
+            set_undefined_var INCLUDE_DBT_API_DCPS_JNI yes
+        else
+            unset_var INCLUDE_DBT_API_DCPS_JNI
+        fi
+        if [ "_$INCLUDE_API_DCPS_C99" = "_yes" ] ; then
+            set_undefined_var INCLUDE_DBT_API_DCPS_C99 yes
+        else
+            unset_var INCLUDE_DBT_API_DCPS_C99
+        fi
+
     else
-	unset_var INCLUDE_DBT_API_DCPS_JNI
+        unset_var INCLUDE_DBT_API_DCPS
     fi
-    if  [ -n "$INCLUDE_API_CM" ]; then
+
+    if  [ "_$INCLUDE_API_CM" = "_yes" ]; then
         set_undefined_var INCLUDE_DBT_API_CM yes
     else
-	unset_var INCLUDE_DBT_API_CM
+    unset_var INCLUDE_DBT_API_CM
     fi
 else
     unset_var INCLUDE_DBT_API

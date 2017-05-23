@@ -1,19 +1,28 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #ifndef V__LEASE_H
 #define V__LEASE_H
 
-#include "kernelModule.h"
+#include "kernelModuleI.h"
+#include "v__leaseTime.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -37,7 +46,34 @@ extern "C" {
 #define v_lease(o) (C_CAST(o,v_lease))
 
 /**
+ * \brief The <code>v_leaseGetKind</code> cast method.
+ *
+ * This method returns the kind of the lease which indicates
+ * if the lease is associated with a MONOTONIC or an ELAPSED clock.
+ */
+#define v_leaseGetKind(l) (v_leaseTimeKind((l)->expiryTime))
+
+/**
  * \brief This operation creates a new lease object and inits it.
+ *
+ * \param k The kernel pointer so we know in which shared memory segment to
+ *          allocate the new lease in
+ * \param kind The kind of the lease (MONONIC or ELAPSED)
+ * \param leaseDuration The duration time that the lease is valid, used to
+ *                      calculate the expiry time of the lease.
+ *
+ * \return The newly allocated lease object, or NULL if not enough
+ *         memory was available to complete the operation.
+ */
+v_lease
+v_leaseNew (
+    v_kernel k,
+    v_leaseKind kind,
+    os_duration leaseDuration);
+
+/**
+ * \brief This operation creates a new lease object associated with
+ * the MONOTONIC clock and inits it.
  *
  * \param k The kernel pointer so we know in which shared memory segment to
  *          allocate the new lease in
@@ -48,9 +84,26 @@ extern "C" {
  *         memory was available to complete the operation.
  */
 v_lease
-v_leaseNew (
+v_leaseMonotonicNew(
     v_kernel k,
-    v_duration leaseDuration);
+    os_duration leaseDuration);
+
+/**
+ * \brief This operation creates a new lease object associated with
+ * the ELAPSED clock and inits it.
+ *
+ * \param k The kernel pointer so we know in which shared memory segment to
+ *          allocate the new lease in
+ * \param leaseDuration The duration time that the lease is valid, used to
+ *                      calculate the expiry time of the lease.
+ *
+ * \return The newly allocated lease object, or NULL if not enough
+ *         memory was available to complete the operation.
+ */
+v_lease
+v_leaseElapsedNew(
+    v_kernel k,
+    os_duration leaseDuration);
 
 /**
  * \brief This operation deinits the lease
@@ -75,19 +128,14 @@ v_leaseDeinit (
 void
 v_leaseRenew (
     v_lease _this,
-    v_duration* leaseDuration);
-
-void
-v_leaseRenewInternal(
-    v_lease _this,
-    v_duration* leaseDuration);
+    os_duration leaseDuration);
 
 /**
  * \brief This operation returns the expiry time of this lease.
  *
  * \param _this The lease object of which to get the expiry time . (!= NULL)
  */
-OS_API c_time
+OS_API v_leaseTime
 v_leaseExpiryTime (
     v_lease _this);
 
@@ -97,12 +145,8 @@ v_leaseExpiryTime (
  *
  * \param _this The lease object of which to get the expiry time . (!= NULL)
  */
-c_time
+v_leaseTime
 v_leaseExpiryTimeNoLock(
-    v_lease _this);
-
-c_bool
-v_leaseLastRenewInternalNoLock(
     v_lease _this);
 
 /**
@@ -110,7 +154,7 @@ v_leaseLastRenewInternalNoLock(
  *
  * \param _this The lease object of which to get the duration. (!= NULL)
  */
-v_duration
+os_duration
 v_leaseDuration(
     v_lease _this);
 
@@ -120,7 +164,7 @@ v_leaseDuration(
  *
  * \param _this The lease object of which to get the duration. (!= NULL)
  */
-v_duration
+os_duration
 v_leaseDurationNoLock(
     v_lease _this);
 

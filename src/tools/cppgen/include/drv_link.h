@@ -110,7 +110,7 @@ typedef AST_Generator * (* DRV_PF_BE_init)();
 typedef void (* DRV_PF_BE_usage)();
 typedef void (* DRV_PF_BE_produce)();
 typedef void (* DRV_PF_BE_abort)();
-typedef void (* DRV_PF_BE_prep_arg)(char *, idl_bool);
+typedef void (* DRV_PF_BE_prep_arg)(char *, bool);
 typedef void (* DRV_PF_BE_version)();
 
 extern DRV_PF_BE_init DRV_BE_init;

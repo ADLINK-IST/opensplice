@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /****************************************************************
@@ -91,7 +99,7 @@ c_char *idl_streamGet (const idl_stream stream);
 c_char *idl_streamCurGet (const idl_stream stream);
 
 /* Get stream length */
-c_long idl_streamLength (const idl_stream stream);
+os_size_t idl_streamLength (const idl_stream stream);
 
 /****************************************************************
  * Stream Exp Input Stream Class                                *
@@ -109,8 +117,8 @@ void idl_streamInFree (const idl_streamIn stream);
 /* Get character under stream pointer */
 c_char idl_streamInCur (const idl_streamIn stream);
 
-/* Get character relative to current stream pointer */
-c_char idl_streamInRel (const idl_streamIn stream, c_long offset);
+/* Get character relative to current stream pointer (lookahead only) */
+c_char idl_streamInRel (const idl_streamIn stream, os_size_t offset);
 
 /* Increment stream pointer */
 void idl_streamInWind (const idl_streamIn stream);
@@ -126,13 +134,13 @@ C_CLASS(idl_streamOut);
 #define idl_streamOut(o)	((idl_streamOut)(o))
 
 /* Constructor, max_length 0 identifies extendable stream */
-idl_streamOut idl_streamOutNew (c_long max_length);
+idl_streamOut idl_streamOutNew (os_size_t max_length);
 
 /* Destructor */
 void idl_streamOutFree (const idl_streamOut stream);
 
 /* Put character at current position and increment pointer and length */
-c_long idl_streamOutPut (const idl_streamOut stream, c_char character);
+os_size_t idl_streamOutPut (const idl_streamOut stream, c_char character);
 
 /****************************************************************
  * File Output Stream Class                                     *
@@ -153,11 +161,14 @@ idl_fileOut idl_fileOutNew (const c_char *fileName, const c_char *mode);
 /* Destructor */
 void idl_fileOutFree (const idl_fileOut stream);
 
+void
+idl_fileOpenError(const c_char *name);
+
 /* Put character at current position and increment pointer and length */
 c_long idl_fileOutPut (const idl_fileOut stream, c_char character);
 
 /* Print formatted to output stream */
-void idl_fileOutPrintf (const idl_fileOut stream, const c_char *format, ...);
+void idl_fileOutPrintf (const idl_fileOut stream, const c_char *format, ...) __attribute_format__((printf,2,3));
 
 void idl_fileSetCur (const idl_fileOut fileOut);
 

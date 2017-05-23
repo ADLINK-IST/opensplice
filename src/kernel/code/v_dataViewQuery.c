@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v_dataViewQuery.h"
@@ -25,17 +33,16 @@
 #include "v__collection.h"
 #include "v__deadLineInstanceList.h"
 #include "v__dataView.h"
-#include "v__dataViewSample.h"
 #include "q_helper.h"
 #include "v__statCat.h"
 #include "v__kernel.h"
-#include "v_statistics.h"
+#include "v_listener.h"
 #include "v_queryStatistics.h"
-#include "v__statistics.h"
+#include "v_kernelParser.h"
 
 #include "c_stringSupport.h"
 
-#include "os.h"
+#include "vortex_os.h"
 #include "os_report.h"
 
 #define V_STATE_INITIAL        (0x00000000U)       /* 0 */
@@ -49,7 +56,7 @@ resolveField(
 {
     c_field field;
     c_array path;
-    c_long i, length;
+    c_ulong i, length;
     q_list list;
 
     c_char *metaName;
@@ -62,7 +69,8 @@ resolveField(
     path = c_fieldPath(field);
     length = c_arraySize(path);
     list = NULL;
-    for (i=(length-1);i>=0;i--) {
+    i = length;
+    while (i-- > 0) {
         metaName = c_metaName(path[i]);
         list = q_insert(list,q_newId(metaName));
         c_free(metaName);
@@ -90,8 +98,8 @@ resolveFields (
             name = q_propertyName(e);
             p = resolveField(type,name);
             if (p == NULL) {
-                OS_REPORT_1(OS_ERROR,
-                            "v_dataViewQueryNew failed",0,
+                OS_REPORT(OS_ERROR,
+                            "v_dataViewQueryNew failed",V_RESULT_ILL_PARAM,
                             "field %s undefined",
                             name);
                 os_free(name);
@@ -115,8 +123,8 @@ resolveFields (
         name = q_getId(e);
         p = resolveField(type,name);
         if (p == NULL) {
-            OS_REPORT_1(OS_ERROR,
-                        "v_dataViewQueryNew failed",0,
+            OS_REPORT(OS_ERROR,
+                        "v_dataViewQueryNew failed",V_RESULT_ILL_PARAM,
                         "field %s undefined",
                         name);
             return FALSE;
@@ -135,57 +143,93 @@ resolveFields (
 
 v_dataViewQuery
 v_dataViewQueryNew (
-    v_dataView _this,
-    const c_char *name,
-    q_expr predicate,
-    c_value params[])
+    v_dataView view,
+    const os_char *name,
+    const os_char *expression,
+    const os_char *params[],
+    const os_uint32 nrOfParams,
+    const os_uint32 sampleMask)
 {
     v_kernel kernel;
     v_dataViewQuery query,found;
-    v_queryStatistics queryStatistics;
-    c_long i,len;
+    v_result result;
+    c_ulong i,len;
     q_expr e,subExpr,keyExpr,progExpr;
+    q_expr predicate;
     c_iter list;
     c_type type, subtype;
     c_array keyList;
+    c_value *values;
 
-    assert(C_TYPECHECK(_this,v_dataView));
+    assert(C_TYPECHECK(view,v_dataView));
+
+    kernel = v_objectKernel(view);
+
+    query = NULL;
+    if (!expression) {
+        OS_REPORT(OS_ERROR,
+                      "DataReaderView SQL Parser",V_RESULT_ILL_PARAM,
+                      "Parse Query expression failed. Query is <NULL>");
+    } else {
+        predicate = v_parser_parse(expression);
+        if (!predicate) {
+            OS_REPORT(OS_ERROR,
+                        "DataReaderView SQL Parser",V_RESULT_ILL_PARAM,
+                        "Parse Query expression failed. Query: \"%s\"",
+                        expression);
+        } else {
+            query = v_dataViewQuery(v_objectNew(kernel,K_DATAVIEWQUERY));
+            result = v_queryInit(v_query(query), v_collection(view), name, expression);
+            if (result != V_RESULT_OK) {
+                c_free(query);
+                q_dispose(predicate);
+                query = NULL;
+            }
+        }
+    }
+    if (query == NULL) {
+        return NULL;
+    }
+    if (q_getLastVar(predicate) > nrOfParams)
+    {
+        c_free(query);
+        q_dispose(predicate);
+        return NULL;
+    }
+
+    v_queryEnableStatistics(v_query(query), v_isEnabledStatistics(kernel, V_STATCAT_READER));
+    query->triggerValue = NULL;
+    query->walkRequired = TRUE;
+    query->sampleMask = sampleMask;
 
     q_prefixFieldNames(&predicate,"sample.sample.message.userData");
 
-    kernel = v_objectKernel(_this);
-    if (q_getTag(predicate) !=  Q_EXPR_PROGRAM) {
-        assert(FALSE);
-        return NULL;
-    }
     e = q_takePar(predicate,0);
-    subtype = c_subType(_this->instances);
+
+    if (nrOfParams > 0) {
+        values = (c_value *)os_malloc(nrOfParams * sizeof(c_value));
+        for (i=0; i<nrOfParams; i++) {
+            values[i] = c_stringValue((const c_string)params[i]);
+        }
+    } else {
+        values = NULL;
+    }
+
+    v_dataViewLock(view);
+    subtype = c_subType(view->instances);
     if (!resolveFields(subtype,e)) {
+        v_dataViewUnlock(view);
         q_dispose(e);
+        q_dispose(predicate);
         c_free(subtype);
+        c_free(query);
+        v_dataViewQueryFree(query);
+        if (values) {
+            os_free(values);
+        }
         return NULL;
     }
     c_free(subtype);
-
-    v_dataViewLock(_this);
-    query = v_dataViewQuery(v_objectNew(kernel,K_DATAVIEWQUERY));
-
-    if (v_isEnabledStatistics(kernel, V_STATCAT_READER)) {
-        queryStatistics = v_queryStatisticsNew(kernel);
-    } else {
-        queryStatistics = NULL;
-    }
-    v_queryInit(v_query(query), name, v_statistics(queryStatistics),
-                v_collection(_this), predicate, params);
-    query->expression   = c_stringNew(c_getBase(_this),
-                                      q_exprGetText(predicate));
-    query->params       = NULL;
-    query->instanceMask = q_exprGetInstanceState(predicate);
-    query->sampleMask   = q_exprGetSampleState(predicate);
-    query->viewMask     = q_exprGetViewState(predicate);
-    query->triggerValue = NULL;
-    query->walkRequired = TRUE;
-    query->updateCnt    = 0;
 
 #if PRINT_QUERY
     printf("v_datyaReaderQueryNew\n");
@@ -208,7 +252,7 @@ v_dataViewQueryNew (
     for (i=0;i<len;i++) {
         subExpr = c_iterTakeFirst(list);
         assert(subExpr != NULL);
-        keyList = v_dataViewKeyList(_this);
+        keyList = v_dataViewKeyList(view);
         keyExpr = q_takeKey(&subExpr, keyList);
         c_free(keyList);
         if (keyExpr != NULL) {
@@ -218,7 +262,7 @@ v_dataViewQueryNew (
             printf("\n");
 #endif
             progExpr = F1(Q_EXPR_PROGRAM,keyExpr);
-            query->instanceQ[i] = c_queryNew(_this->instances,progExpr,params);
+            query->instanceQ[i] = c_queryNew(view->instances,progExpr,values);
             q_dispose(progExpr);
         } else {
 #if PRINT_QUERY
@@ -233,7 +277,7 @@ v_dataViewQueryNew (
             printf("\n");
 #endif
             progExpr = F1(Q_EXPR_PROGRAM,subExpr);
-            query->sampleQ[i]   = c_queryNew(_this->instances,progExpr,params);
+            query->sampleQ[i]   = c_queryNew(view->instances,progExpr,values);
             q_dispose(progExpr);
         } else {
 #if PRINT_QUERY
@@ -243,9 +287,16 @@ v_dataViewQueryNew (
         }
     }
     c_iterFree(list);
-    found = c_insert(v_collection(_this)->queries,query);
+    q_dispose(predicate);
+
+    found = ospl_c_insert(v_collection(view)->queries,query);
     assert(found == query);
-    v_dataViewUnlock(_this);
+    OS_UNUSED_ARG(found);
+    v_dataViewUnlock(view);
+    if (values) {
+        os_free(values);
+    }
+
 #if PRINT_QUERY
     printf("End v_dataViewQueryNew\n\n");
 #endif
@@ -257,8 +308,30 @@ void
 v_dataViewQueryFree (
     v_dataViewQuery _this)
 {
+    v_collection src;
+    v_dataView v;
+
     assert(C_TYPECHECK(_this,v_dataViewQuery));
-    v_queryFree(v_query(_this));
+    src = v_querySource(v_query(_this));
+    if (src != NULL) {
+        assert(v_objectKind(src) == K_DATAVIEW);
+        if (v_objectKind(src) == K_DATAVIEW) {
+            v = v_dataView(src);
+            v_dataViewLock(v);
+            if (_this->triggerValue) {
+                v_dataViewTriggerValueFree(_this->triggerValue);
+                _this->triggerValue = NULL;
+            }
+            v_dataViewUnlock(v);
+            v_queryFree(v_query(_this));
+        } else {
+            OS_REPORT(OS_ERROR, "v_dataViewQueryFree failed", 0,
+                      "source is not a dataView");
+        }
+    } else {
+        OS_REPORT(OS_ERROR, "v_dataViewQueryFree failed", 0,
+                  "no source");
+    }
 }
 
 void
@@ -287,16 +360,46 @@ v_dataViewQueryDeinit (
                 v_dataViewUnlock(v);
             } else {
                 OS_REPORT(OS_ERROR,
-                          "v_dataViewQueryDeinit failed", 0,
+                          "v_dataViewQueryDeinit failed", V_RESULT_ILL_PARAM,
                           "source is not datareader");
             }
             c_free(src);
         } else {
             OS_REPORT(OS_ERROR,
-                      "v_dataViewQueryDeinit failed", 0,
+                      "v_dataViewQueryDeinit failed", V_RESULT_ILL_PARAM,
                       "no source");
         }
     }
+}
+
+c_bool
+v_dataViewQueryTestSample(
+    v_dataViewQuery _this,
+    v_dataViewSample sample)
+{
+    c_bool pass = FALSE;
+    c_ulong len, i;
+
+    assert(C_TYPECHECK(_this,v_dataViewQuery));
+
+    pass = v_sampleMaskPass(_this->sampleMask, sample);
+    if (pass) {
+        len = c_arraySize(_this->instanceQ);
+        if (len > 0) {
+            pass = FALSE;
+            for (i=0; (i<len) && !pass; i++)
+            {
+                if (_this->instanceQ[i] != NULL)
+                {
+                    pass = c_queryEval(_this->instanceQ[i],v_readerSample(sample)->instance);
+                }
+                if (pass && _this->sampleQ[i] != NULL) {
+                    pass = c_queryEval(_this->sampleQ[i],v_readerSample(sample)->instance);
+                }
+            }
+        }
+    }
+    return pass;
 }
 
 C_STRUCT(testActionArg) {
@@ -304,6 +407,7 @@ C_STRUCT(testActionArg) {
     c_bool result;
     v_queryAction *action;
     c_voidp args;
+    v_state sampleMask;
 };
 
 C_CLASS(testActionArg);
@@ -316,7 +420,7 @@ testAction(
     v_dataViewInstance inst = v_dataViewInstance(o);
     testActionArg a = (testActionArg)arg;
 
-    a->result = v_dataViewInstanceTest(inst,a->query, a->action, a->args);
+    a->result = v_dataViewInstanceTest(inst, a->query, a->sampleMask, a->action, a->args);
     return (!a->result);
 }
 
@@ -328,7 +432,7 @@ v_dataViewQueryTest(
 {
     v_collection src;
     v_dataView v;
-    c_long len,i;
+    c_ulong len,i;
     C_STRUCT(testActionArg) argument;
     c_table instanceSet;
     c_bool pass = FALSE;
@@ -372,26 +476,27 @@ v_dataViewQueryTest(
                          * same term.
                          * TODO: Check whether masks are evaluated correctly.
                          */
-                        for (i=0; (i<len) && !pass; i++)
-                        {
-                            pass = TRUE;
-                            if (_this->instanceQ[i] != NULL)
+                        if (v_sampleMaskPass(_this->sampleMask, _this->triggerValue)) {
+                            for (i=0; (i<len) && !pass; i++)
                             {
-                                pass = c_queryEval(_this->instanceQ[i],instance);
-                            }
-                            if (pass && (_this->sampleQ[i] != NULL)) {
-                                v_dataViewSample firstSample;
-                                firstSample = v_dataViewInstanceTemplate(instance)->sample;
-                                if (_this->triggerValue != firstSample) {
-                                    v_dataViewInstanceTemplate(instance)->sample = _this->triggerValue;
+                                pass = TRUE;
+                                if (_this->instanceQ[i] != NULL)
+                                {
+                                    pass = c_queryEval(_this->instanceQ[i],instance);
                                 }
-                                pass = c_queryEval(_this->sampleQ[i],instance);
-                                if (_this->triggerValue != firstSample) {
-                                    v_dataViewInstanceTemplate(instance)->sample = firstSample;
+                                if (pass && (_this->sampleQ[i] != NULL)) {
+                                    v_dataViewSample firstSample;
+                                    firstSample = v_dataViewInstanceTemplate(instance)->sample;
+                                    if (_this->triggerValue != firstSample) {
+                                        v_dataViewInstanceTemplate(instance)->sample = _this->triggerValue;
+                                    }
+                                    pass = c_queryEval(_this->sampleQ[i],instance);
+                                    if (_this->triggerValue != firstSample) {
+                                        v_dataViewInstanceTemplate(instance)->sample = firstSample;
+                                    }
                                 }
                             }
                         }
-
 
                         /* If the sample passed the query, then check whether
                          * it passes the action routine as well.
@@ -429,6 +534,8 @@ v_dataViewQueryTest(
                     argument.result = FALSE;
                     argument.action = action;
                     argument.args = args;
+                    argument.sampleMask = _this->sampleMask;
+
                     len = c_arraySize(_this->instanceQ);
                     i = 0;
                     while ((i<len) && (pass == FALSE)) {
@@ -455,14 +562,14 @@ v_dataViewQueryTest(
             }
             v_dataViewUnlock(v);
         } else {
-            OS_REPORT(OS_ERROR,
-                      "v_dataViewQueryTest failed", 0,
+            OS_REPORT(OS_CRITICAL,
+                      "v_dataViewQueryTest failed", V_RESULT_ILL_PARAM,
                       "source is not datareader");
         }
         c_free(src);
     } else {
-        OS_REPORT(OS_ERROR,
-                  "v_dataViewQueryTest failed", 0,
+        OS_REPORT(OS_CRITICAL,
+                  "v_dataViewQueryTest failed", V_RESULT_ILL_PARAM,
                   "no source");
     }
     return pass;
@@ -474,11 +581,22 @@ C_STRUCT(walkQueryArg) {
     v_readerSampleAction action;
     c_voidp arg;
     c_iter emptyList;
+    v_state sampleMask;
+    c_long count;
 };
 C_CLASS(walkQueryArg);
 
-
 /* Read functions */
+
+static v_actionResult
+instanceSampleAction(
+    c_object sample,
+    c_voidp arg)
+{
+    walkQueryArg a = (walkQueryArg)arg;
+    a->count++;
+    return a->action(sample,a->arg);
+}
 
 static c_bool
 instanceReadSamples(
@@ -490,21 +608,48 @@ instanceReadSamples(
     assert(!v_dataViewInstanceEmpty(instance));
     return v_dataViewInstanceReadSamples(instance,
                                          a->query,
-                                         a->action,
-                                         a->arg);
+                                         a->sampleMask,
+                                         instanceSampleAction,
+                                         arg);
 }
 
-c_bool
+static v_result
+waitForData(
+    v_dataViewQuery _this,
+    os_duration *delay)
+{
+    v_result result = V_RESULT_OK;
+    /* If no data read then wait for data or timeout.
+     */
+    if (*delay > 0) {
+        c_ulong flags = 0;
+        os_timeE time = os_timeEGet();
+        v__observerSetEvent(v_observer(_this), V_EVENT_DATA_AVAILABLE);
+        flags = v__observerTimedWait(v_observer(_this), *delay);
+        if (flags & V_EVENT_TIMEOUT) {
+            result = V_RESULT_TIMEOUT;
+        } else {
+            *delay -= os_timeEDiff(os_timeEGet(), time);
+        }
+    } else {
+        result = V_RESULT_NO_DATA;
+    }
+    return result;
+}
+
+v_result
 v_dataViewQueryRead (
     v_dataViewQuery _this,
     v_readerSampleAction action,
-    c_voidp arg)
+    c_voidp arg,
+    os_duration timeout)
 {
     c_bool proceed = TRUE;
     v_collection src;
     v_dataView v;
-    int i,len;
+    c_ulong i,len;
     C_STRUCT(walkQueryArg) argument;
+    v_result result = V_RESULT_OK;
 
     src = v_querySource(v_query(_this));
     if (src != NULL) {
@@ -512,39 +657,49 @@ v_dataViewQueryRead (
         if (v_objectKind(src) == K_DATAVIEW) {
             v = v_dataView(src);
             v_dataViewLock(v);
-            if (_this->walkRequired == FALSE) {
-                if (_this->triggerValue != NULL) {
-                   if (!v_dataViewSampleTestState(_this->triggerValue, L_REMOVED)) {
-                       proceed = v_actionResultTest(v_dataViewSampleReadTake(_this->triggerValue,action,arg, FALSE), V_PROCEED);
-                   } else {
-                       proceed = FALSE;
-                   }
-                   /* The trigger_value no longer satisfies the Query or
-                    * has been taken. It can therefore be reset.
-                    */
-                   v_dataViewTriggerValueFree(_this->triggerValue);
-                   _this->triggerValue = NULL;
+            argument.action = action;
+            argument.arg = arg;
+            argument.sampleMask = _this->sampleMask;
+            argument.count = 0;
 
-                } else {
-                    proceed = FALSE;
-                }
-            } else {
-                argument.action = action;
-                argument.arg = arg;
-
-                v_dataReaderUpdatePurgeLists(v_dataReader(v->reader));
-                len = c_arraySize(_this->instanceQ);
-                for (i=0;(i<len) && proceed;i++) {
-                    argument.query = _this->sampleQ[i];
-                    if (_this->instanceQ[i] != NULL) {
-                        proceed = c_walk(_this->instanceQ[i],
-                                         (c_action)instanceReadSamples,
-                                         &argument);
+            while ((argument.count == 0) && (result == V_RESULT_OK))
+            {
+                if (_this->walkRequired == FALSE) {
+                    if (_this->triggerValue != NULL) {
+                       if (!v_dataViewSampleTestState(_this->triggerValue, L_REMOVED)) {
+                           proceed = v_actionResultTest(v_dataViewSampleReadTake(_this->triggerValue,
+                                                        instanceSampleAction, &argument, FALSE), V_PROCEED);
+                       } else {
+                           proceed = FALSE;
+                       }
+                       /* The trigger_value may no longer satisfies the Query if the query addresses the
+                        * read state, therefore reset the trigger value.
+                        * A more optimal approach is to make this conditional depending whether the query
+                        * addresses the read state.
+                        */
+                       v_dataViewTriggerValueFree(_this->triggerValue);
+                       _this->triggerValue = NULL;
                     } else {
-                        proceed = c_tableWalk(v->instances,
-                                              (c_action)instanceReadSamples,
-                                              &argument);
+                        proceed = FALSE;
                     }
+                } else {
+                    v_dataReaderUpdatePurgeLists(v_dataReader(v->reader));
+                    len = c_arraySize(_this->instanceQ);
+                    for (i=0;(i<len) && proceed;i++) {
+                        argument.query = _this->sampleQ[i];
+                        if (_this->instanceQ[i] != NULL) {
+                            proceed = c_walk(_this->instanceQ[i],
+                                             (c_action)instanceReadSamples,
+                                             &argument);
+                        } else {
+                            proceed = c_tableWalk(v->instances,
+                                                  (c_action)instanceReadSamples,
+                                                  &argument);
+                        }
+                    }
+                }
+                if (argument.count == 0) {
+                    result = waitForData(_this, &timeout);
                 }
             }
             /* This triggers the action routine that the last sample is read.
@@ -552,70 +707,85 @@ v_dataViewQueryRead (
             action(NULL,arg);
             v_dataViewUnlock(v);
         } else {
+            result = V_RESULT_ILL_PARAM;
             proceed = FALSE;
-            OS_REPORT(OS_ERROR,
-                      "v_dataViewQueryRead failed", 0,
-                      "source is not datareader");
+            OS_REPORT(OS_CRITICAL, "v_dataViewQueryRead failed", result, "source is not dataview");
         }
         c_free(src);
     } else {
+        result = V_RESULT_ILL_PARAM;
         proceed = FALSE;
-        OS_REPORT(OS_ERROR,
-                  "v_dataViewQueryRead failed", 0,
-                  "no source");
+        OS_REPORT(OS_CRITICAL, "v_dataViewQueryRead failed", result, "no source");
     }
 
     if (!proceed) {
         _this->state = _this->state & ~V_STATE_DATA_AVAILABLE;
     }
     /* Should fall within a lock on _this */
-    v_statisticsULongValueInc(v_query, numberOfReads, _this);
-    return proceed;
+    if (v_query(_this)->statistics) {
+        v_query(_this)->statistics->numberOfReads++;
+    }
+    return result;
 }
 
-c_bool
+v_result
 v_dataViewQueryReadInstance(
     v_dataViewQuery _this,
     v_dataViewInstance instance,
     v_readerSampleAction action,
-    c_voidp arg)
+    c_voidp arg,
+    os_duration timeout)
 {
     c_bool proceed = TRUE;
     v_collection src;
     v_dataView v;
-    int i,len;
+    c_ulong i,len;
+    v_result result = V_RESULT_OK;
 
     if (instance == NULL) {
-        return FALSE;
+        return V_RESULT_ILL_PARAM;
     }
     src = v_querySource(v_query(_this));
     if (src != NULL) {
         assert(v_objectKind(src) == K_DATAVIEW);
         if (v_objectKind(src) == K_DATAVIEW) {
+            C_STRUCT(walkQueryArg) argument;
             v = v_dataView(src);
             v_dataViewLock(v);
             v_dataReaderUpdatePurgeLists(v_dataReader(v->reader));
 
-            if (!v_dataViewInstanceEmpty(instance)) {
-                len = c_arraySize(_this->instanceQ);
-                i=0;
-                while ((i<len) && proceed) {
-                    if (_this->instanceQ[i] != NULL) {
-                        if (c_queryEval(_this->instanceQ[i],instance)) {
+            argument.action = action;
+            argument.arg = arg;
+            argument.count = 0;
+
+            while ((argument.count == 0) && (result == V_RESULT_OK))
+            {
+                if (!v_dataViewInstanceEmpty(instance)) {
+                    len = c_arraySize(_this->instanceQ);
+                    i=0;
+                    while ((i<len) && proceed) {
+                        if (_this->instanceQ[i] != NULL) {
+                            if (c_queryEval(_this->instanceQ[i],instance)) {
+                                proceed = v_dataViewInstanceReadSamples(
+                                              instance,
+                                              _this->sampleQ[i],
+                                              _this->sampleMask,
+                                              instanceSampleAction,
+                                              &argument);
+                            }
+                        } else {
                             proceed = v_dataViewInstanceReadSamples(
                                           instance,
                                           _this->sampleQ[i],
-                                          action,
-                                          arg);
+                                          _this->sampleMask,
+                                          instanceSampleAction,
+                                          &argument);
                         }
-                    } else {
-                        proceed = v_dataViewInstanceReadSamples(
-                                      instance,
-                                      _this->sampleQ[i],
-                                      action,
-                                      arg);
+                        i++;
                     }
-                    i++;
+                }
+                if (argument.count == 0) {
+                    result = waitForData(_this, &timeout);
                 }
             }
             /* This triggers the action routine that the last sample is read.
@@ -623,17 +793,15 @@ v_dataViewQueryReadInstance(
             action(NULL,arg);
             v_dataViewUnlock(v);
         } else {
+            result = V_RESULT_ILL_PARAM;
             proceed = FALSE;
-            OS_REPORT(OS_ERROR,
-                      "v_dataViewQueryReadInstance failed", 0,
-                      "source is not datareader");
+            OS_REPORT(OS_CRITICAL, "v_dataViewQueryReadInstance failed", result, "source is not dataview");
         }
         c_free(src);
     } else {
+        result = V_RESULT_ILL_PARAM;
         proceed = FALSE;
-        OS_REPORT(OS_ERROR,
-                  "v_dataViewQueryReadInstance failed", 0,
-                  "no source");
+        OS_REPORT(OS_CRITICAL, "v_dataViewQueryReadInstance failed", result, "no source");
     }
 
     if (!proceed) {
@@ -641,8 +809,10 @@ v_dataViewQueryReadInstance(
     }
 
     /* Should fall within a lock on _this */
-    v_statisticsULongValueInc(v_query, numberOfInstanceReads, _this);
-    return proceed;
+    if (v_query(_this)->statistics) {
+        v_query(_this)->statistics->numberOfInstanceReads++;
+    }
+    return result;
 }
 
 struct nextInstanceActionArg {
@@ -663,25 +833,27 @@ nextInstanceAction(
     return result;
 }
 
-c_bool
+v_result
 v_dataViewQueryReadNextInstance(
     v_dataViewQuery _this,
     v_dataViewInstance instance,
     v_readerSampleAction action,
-    c_voidp arg)
+    c_voidp arg,
+    os_duration timeout)
 {
     c_bool proceed = TRUE;
     v_collection src;
     v_dataView v;
-    int i,len;
+    c_ulong i,len;
     v_dataViewInstance nextInstance;
     struct nextInstanceActionArg a;
-
+    v_result result = V_RESULT_OK;
 
     src = v_querySource(v_query(_this));
     if (src != NULL) {
         assert(v_objectKind(src) == K_DATAVIEW);
         if (v_objectKind(src) == K_DATAVIEW) {
+            C_STRUCT(walkQueryArg) argument;
             v = v_dataView(src);
             v_dataViewLock(v);
             v_dataReaderUpdatePurgeLists(v_dataReader(v->reader));
@@ -692,44 +864,55 @@ v_dataViewQueryReadNextInstance(
             a.action = action;
             a.arg = arg;
             a.hasData = FALSE;
-            while ((nextInstance != NULL) && (a.hasData == FALSE)) {
-                i=0;
-                while ((i<len) && proceed) {
-                    if (_this->instanceQ[i] != NULL) {
-                        if (c_queryEval(_this->instanceQ[i],nextInstance)) {
+
+            argument.action = nextInstanceAction;
+            argument.arg = &a;
+            argument.count = 0;
+
+            while ((argument.count == 0) && (result == V_RESULT_OK))
+            {
+                while ((nextInstance != NULL) && (a.hasData == FALSE)) {
+                    i=0;
+                    while ((i<len) && proceed) {
+                        if (_this->instanceQ[i] != NULL) {
+                            if (c_queryEval(_this->instanceQ[i],nextInstance)) {
+                                proceed = v_dataViewInstanceReadSamples(
+                                              nextInstance,
+                                              _this->sampleQ[i],
+                                              _this->sampleMask,
+                                              instanceSampleAction,
+                                              &argument);
+                            }
+                        } else {
                             proceed = v_dataViewInstanceReadSamples(
                                           nextInstance,
                                           _this->sampleQ[i],
-                                          nextInstanceAction,
-                                          &a);
+                                          _this->sampleMask,
+                                          instanceSampleAction,
+                                          &argument);
                         }
-                    } else {
-                        proceed = v_dataViewInstanceReadSamples(
-                                      nextInstance,
-                                      _this->sampleQ[i],
-                                      nextInstanceAction,
-                                      &a);
+                        i++;
                     }
-                    i++;
+                    nextInstance = c_tableNext(v->instances,nextInstance);
                 }
-                nextInstance = c_tableNext(v->instances,nextInstance);
+                if (argument.count == 0) {
+                    result = waitForData(_this, &timeout);
+                }
             }
             /* This triggers the action routine that the last sample is read.
              */
             action(NULL,arg);
             v_dataViewUnlock(v);
         } else {
+            result = V_RESULT_ILL_PARAM;
             proceed = FALSE;
-            OS_REPORT(OS_ERROR,
-                      "v_dataViewQueryReadNextInstance failed", 0,
-                      "source is not datareader");
+            OS_REPORT(OS_CRITICAL, "v_dataViewQueryReadNextInstance failed", result, "source is not dataview");
         }
         c_free(src);
     } else {
+        result = V_RESULT_ILL_PARAM;
         proceed = FALSE;
-        OS_REPORT(OS_ERROR,
-                  "v_dataViewQueryReadNextInstance failed", 0,
-                  "no source");
+        OS_REPORT(OS_CRITICAL, "v_dataViewQueryReadNextInstance failed", result, "no source");
     }
 
     if (!proceed) {
@@ -737,8 +920,10 @@ v_dataViewQueryReadNextInstance(
     }
 
     /* Should fall within a lock on _this */
-    v_statisticsULongValueInc(v_query, numberOfNextInstanceReads, _this);
-    return proceed;
+    if (v_query(_this)->statistics) {
+        v_query(_this)->statistics->numberOfNextInstanceReads++;
+    }
+    return result;
 }
 
 
@@ -754,27 +939,30 @@ instanceTakeSamples(
 
     proceed = v_dataViewInstanceTakeSamples(instance,
                                             a->query,
-                                            a->action,
-                                            a->arg);
+                                            a->sampleMask,
+                                            instanceSampleAction,
+                                            arg);
     if (v_dataViewInstanceEmpty(instance)) {
         a->emptyList = c_iterInsert(a->emptyList,instance);
     }
     return proceed;
 }
 
-c_bool
+v_result
 v_dataViewQueryTake(
     v_dataViewQuery _this,
     v_readerSampleAction action,
-    c_voidp arg)
+    c_voidp arg,
+    os_duration timeout)
 {
     c_bool proceed = TRUE;
     v_collection src;
     v_dataView v;
     v_dataViewInstance emptyInstance;
     v_dataViewInstance found;
-    int len, i;
+    c_ulong len, i;
     C_STRUCT(walkQueryArg) argument;
+    v_result result = V_RESULT_OK;
 
     assert(C_TYPECHECK(_this,v_dataViewQuery));
 
@@ -787,51 +975,60 @@ v_dataViewQueryTake(
             v_dataViewLock(v);
             v_dataReaderUpdatePurgeLists(v_dataReader(v->reader));
 
-            if (_this->walkRequired == FALSE) {
-                if (_this->triggerValue != NULL) {
-                   if (!v_dataViewSampleTestState(_this->triggerValue, L_REMOVED)) {
-                       proceed = v_actionResultTest(v_dataViewSampleReadTake(_this->triggerValue,action,arg, TRUE), V_PROCEED);
-                   } else {
-                       proceed = FALSE;
-                   }
-                   /* The trigger_value no longer satisfies the Query or
-                    * has been taken. It can therefore be reset.
-                    */
-                   v_dataViewTriggerValueFree(_this->triggerValue);
-                   _this->triggerValue = NULL;
+            argument.dataView = v;
+            argument.action = action;
+            argument.arg = arg;
+            argument.emptyList = NULL;
+            argument.sampleMask = _this->sampleMask;
+            argument.count = 0;
 
-                } else {
-                    proceed = FALSE;
-                }
-            } else {
-                argument.dataView = v;
-                argument.action = action;
-                argument.arg = arg;
-                argument.emptyList = NULL;
+            while ((argument.count == 0) && (result == V_RESULT_OK))
+            {
+                if (_this->walkRequired == FALSE) {
+                    if (_this->triggerValue != NULL) {
+                       if (!v_dataViewSampleTestState(_this->triggerValue, L_REMOVED)) {
+                           proceed = v_actionResultTest(v_dataViewSampleReadTake(_this->triggerValue,
+                                                        instanceSampleAction, &argument, TRUE), V_PROCEED);
+                       } else {
+                           proceed = FALSE;
+                       }
+                       /* The trigger_value no longer satisfies the Query or
+                        * has been taken. It can therefore be reset.
+                        */
+                       v_dataViewTriggerValueFree(_this->triggerValue);
+                       _this->triggerValue = NULL;
 
-                len = c_arraySize(_this->instanceQ);
-                for (i=0;(i<len) && proceed;i++) {
-                    argument.query = _this->sampleQ[i];
-                    if (_this->instanceQ[i] != NULL) {
-                        proceed = c_walk(_this->instanceQ[i],
-                                         (c_action)instanceTakeSamples,
-                                         &argument);
                     } else {
-                        proceed = c_tableWalk(v->instances,
-                                              (c_action)instanceTakeSamples,
-                                              &argument);
+                        proceed = FALSE;
+                    }
+                } else {
+                    len = c_arraySize(_this->instanceQ);
+                    for (i=0;(i<len) && proceed;i++) {
+                        argument.query = _this->sampleQ[i];
+                        if (_this->instanceQ[i] != NULL) {
+                            proceed = c_walk(_this->instanceQ[i],
+                                             (c_action)instanceTakeSamples,
+                                             &argument);
+                        } else {
+                            proceed = c_tableWalk(v->instances,
+                                                  (c_action)instanceTakeSamples,
+                                                  &argument);
+                        }
+                    }
+                    if (argument.emptyList != NULL) {
+                        emptyInstance = c_iterTakeFirst(argument.emptyList);
+                        while (emptyInstance != NULL) {
+                            found = c_remove(v->instances,emptyInstance,NULL,NULL);
+                            assert(found == emptyInstance);
+                            v_publicFree(v_public(found));
+                            c_free(found);
+                            emptyInstance = c_iterTakeFirst(argument.emptyList);
+                        }
+                        c_iterFree(argument.emptyList);
                     }
                 }
-                if (argument.emptyList != NULL) {
-                    emptyInstance = c_iterTakeFirst(argument.emptyList);
-                    while (emptyInstance != NULL) {
-                        found = c_remove(v->instances,emptyInstance,NULL,NULL);
-                        assert(found == emptyInstance);
-                        v_publicFree(v_public(found));
-                        c_free(found);
-                        emptyInstance = c_iterTakeFirst(argument.emptyList);
-                    }
-                    c_iterFree(argument.emptyList);
+                if (argument.count == 0) {
+                    result = waitForData(_this, &timeout);
                 }
             }
             /* This triggers the action routine that the last sample is read.
@@ -839,17 +1036,15 @@ v_dataViewQueryTake(
             action(NULL,arg);
             v_dataViewUnlock(v);
         } else {
+            result = V_RESULT_ILL_PARAM;
             proceed = FALSE;
-            OS_REPORT(OS_ERROR,
-                      "v_dataViewQueryTake failed", 0,
-                      "source is not datareader");
+            OS_REPORT(OS_CRITICAL, "v_dataViewQueryTake failed", result, "source is not dataview");
         }
         c_free(src);
     } else {
+        result = V_RESULT_ILL_PARAM;
         proceed = FALSE;
-        OS_REPORT(OS_ERROR,
-                  "v_dataViewQueryTake failed", 0,
-                  "no source");
+        OS_REPORT(OS_CRITICAL, "v_dataViewQueryTake failed", result, "no source");
     }
 
     if (!proceed) {
@@ -857,63 +1052,84 @@ v_dataViewQueryTake(
     }
 
     /* Should fall within a lock on _this */
-    v_statisticsULongValueInc(v_query, numberOfTakes, _this);
-    return proceed;
+    if (v_query(_this)->statistics) {
+        v_query(_this)->statistics->numberOfTakes++;
+    }
+    return result;
 }
 
-c_bool
+v_result
 v_dataViewQueryTakeInstance(
     v_dataViewQuery _this,
     v_dataViewInstance instance,
     v_readerSampleAction action,
-    c_voidp arg)
+    c_voidp arg,
+    os_duration timeout)
 {
     c_bool proceed = TRUE;
     v_collection src;
     v_dataView v;
     v_dataViewInstance found;
-    int len, i;
+    c_ulong len, i;
+    v_result result = V_RESULT_OK;
 
     assert(C_TYPECHECK(_this,v_dataViewQuery));
 
     if (instance == NULL) {
         /* Should fall within a lock on _this */
-        v_statisticsULongValueInc(v_query, numberOfInstanceTakes, _this);
-        return FALSE;
+        if (v_query(_this)->statistics) {
+            v_query(_this)->statistics->numberOfInstanceTakes++;
+        }
+        return V_RESULT_ILL_PARAM;
     }
     src = v_querySource(v_query(_this));
     if (src != NULL) {
         assert(v_objectKind(src) == K_DATAVIEW);
         if (v_objectKind(src) == K_DATAVIEW) {
+            C_STRUCT(walkQueryArg) argument;
             v = v_dataView(src);
             v_dataViewLock(v);
             v_dataReaderUpdatePurgeLists(v_dataReader(v->reader));
 
-            if (!v_dataViewInstanceEmpty(instance)) {
-                len = c_arraySize(_this->instanceQ);
-                i=0;
-                while ((i<len) && proceed) {
-                    if (_this->instanceQ[i] != NULL) {
-                        if (c_queryEval(_this->instanceQ[i],instance)) {
-                            proceed = v_dataViewInstanceTakeSamples(
-                                           instance,
-                                           _this->sampleQ[i],
-                                           action,arg);
+            argument.dataView = v;
+            argument.action = action;
+            argument.arg = arg;
+            argument.emptyList = NULL;
+            argument.sampleMask = _this->sampleMask;
+            argument.count = 0;
 
+            while ((argument.count == 0) && (result == V_RESULT_OK))
+            {
+                if (!v_dataViewInstanceEmpty(instance)) {
+                    len = c_arraySize(_this->instanceQ);
+                    i=0;
+                    while ((i<len) && proceed) {
+                        if (_this->instanceQ[i] != NULL) {
+                            if (c_queryEval(_this->instanceQ[i],instance)) {
+                                proceed = v_dataViewInstanceTakeSamples(
+                                               instance,
+                                               _this->sampleQ[i],
+                                               _this->sampleMask,
+                                               instanceSampleAction, &argument);
+                            }
+                        } else {
+                            proceed = v_dataViewInstanceTakeSamples(
+                                               instance,
+                                               _this->sampleQ[i],
+                                               _this->sampleMask,
+                                               instanceSampleAction, &argument);
                         }
-                    } else {
-                        proceed = v_dataViewInstanceTakeSamples(
-                                           instance,
-                                           _this->sampleQ[i],
-                                           action,arg);
+                        i++;
                     }
-                    i++;
+                    if (v_dataViewInstanceEmpty(instance)) {
+                        found = c_remove(v->instances,instance,NULL,NULL);
+                        assert(found == instance);
+                        v_publicFree(v_public(found));
+                        c_free(found);
+                    }
                 }
-                if (v_dataViewInstanceEmpty(instance)) {
-                    found = c_remove(v->instances,instance,NULL,NULL);
-                    assert(found == instance);
-                    v_publicFree(v_public(found));
-                    c_free(found);
+                if (argument.count == 0) {
+                    result = waitForData(_this, &timeout);
                 }
             }
             /* The call to the actioni routine with a NULL parameter
@@ -922,17 +1138,15 @@ v_dataViewQueryTakeInstance(
             action(NULL,arg);
             v_dataViewUnlock(v);
         } else {
+            result = V_RESULT_ILL_PARAM;
             proceed = FALSE;
-            OS_REPORT(OS_ERROR,
-                      "v_dataViewQueryTakeInstance failed", 0,
-                      "source is not datareader");
+            OS_REPORT(OS_CRITICAL, "v_dataViewQueryTakeInstance failed", result, "source is not dataview");
         }
         c_free(src);
     } else {
+        result = V_RESULT_ILL_PARAM;
         proceed = FALSE;
-        OS_REPORT(OS_ERROR,
-                  "v_dataViewQueryTakeInstance failed", 0,
-                  "no source");
+        OS_REPORT(OS_CRITICAL, "v_dataViewQueryTakeInstance failed", result, "no source");
     }
 
     if (!proceed) {
@@ -940,25 +1154,29 @@ v_dataViewQueryTakeInstance(
     }
 
     /* Should fall within a lock on _this */
-    v_statisticsULongValueInc(v_query, numberOfInstanceTakes, _this);
-    return proceed;
+    if (v_query(_this)->statistics) {
+        v_query(_this)->statistics->numberOfInstanceTakes++;
+    }
+    return result;
 }
 
-c_bool
+v_result
 v_dataViewQueryTakeNextInstance(
     v_dataViewQuery _this,
     v_dataViewInstance instance,
     v_readerSampleAction action,
-    c_voidp arg)
+    c_voidp arg,
+    os_duration timeout)
 {
     c_bool proceed = TRUE;
     v_collection src;
     v_dataView v;
-    int len, i;
+    c_ulong len, i;
     v_dataViewInstance nextInstance;
     v_dataViewInstance savedInstance;
     v_dataViewInstance found;
     struct nextInstanceActionArg a;
+    v_result result = V_RESULT_OK;
 
     assert(C_TYPECHECK(_this,v_dataViewQuery));
 
@@ -966,6 +1184,7 @@ v_dataViewQueryTakeNextInstance(
     if (src != NULL) {
         assert(v_objectKind(src) == K_DATAVIEW);
         if (v_objectKind(src) == K_DATAVIEW) {
+            C_STRUCT(walkQueryArg) argument;
             v = v_dataView(src);
             v_dataViewLock(v);
             v_dataReaderUpdatePurgeLists(v_dataReader(v->reader));
@@ -975,32 +1194,46 @@ v_dataViewQueryTakeNextInstance(
             a.action = action;
             a.arg = arg;
             a.hasData = FALSE;
-            while ((nextInstance != NULL) && (a.hasData == FALSE)) {
-                i=0;
-                while ((i<len) && proceed) {
-                    if (_this->instanceQ[i] != NULL) {
-                        if (c_queryEval(_this->instanceQ[i],nextInstance)) {
+
+            argument.action = nextInstanceAction;
+            argument.arg = &a;
+            argument.sampleMask = _this->sampleMask;
+            argument.count = 0;
+
+            while ((argument.count == 0) && (result == V_RESULT_OK))
+            {
+                while ((nextInstance != NULL) && (a.hasData == FALSE)) {
+                    i=0;
+                    while ((i<len) && proceed) {
+                        if (_this->instanceQ[i] != NULL) {
+                            if (c_queryEval(_this->instanceQ[i],nextInstance)) {
+                                proceed = v_dataViewInstanceTakeSamples(
+                                              nextInstance,
+                                              _this->sampleQ[i],
+                                               _this->sampleMask,
+                                              instanceSampleAction,&argument);
+                            }
+                        } else {
                             proceed = v_dataViewInstanceTakeSamples(
-                                          nextInstance,
-                                          _this->sampleQ[i],
-                                          nextInstanceAction,&a);
+                                              nextInstance,
+                                              _this->sampleQ[i],
+                                               _this->sampleMask,
+                                              instanceSampleAction,&argument);
                         }
-                    } else {
-                        proceed = v_dataViewInstanceTakeSamples(
-                                          nextInstance,
-                                          _this->sampleQ[i],
-                                          nextInstanceAction,&a);
+                        i++;
                     }
-                    i++;
+                    savedInstance = c_tableNext(v->instances,nextInstance);
+                    if (v_dataViewInstanceEmpty(nextInstance)) {
+                        found = c_remove(v->instances,nextInstance,NULL,NULL);
+                        assert(found == nextInstance);
+                        v_publicFree(v_public(found));
+                        c_free(found);
+                    }
+                    nextInstance = savedInstance;
                 }
-                savedInstance = c_tableNext(v->instances,nextInstance);
-                if (v_dataViewInstanceEmpty(nextInstance)) {
-                    found = c_remove(v->instances,nextInstance,NULL,NULL);
-                    assert(found == nextInstance);
-                    v_publicFree(v_public(found));
-                    c_free(found);
+                if (argument.count == 0) {
+                    result = waitForData(_this, &timeout);
                 }
-                nextInstance = savedInstance;
             }
             /* The call to the actioni routine with a NULL parameter
              * triggers the action routine that the last sample is read.
@@ -1008,17 +1241,15 @@ v_dataViewQueryTakeNextInstance(
             action(NULL,arg);
             v_dataViewUnlock(v);
         } else {
+            result = V_RESULT_ILL_PARAM;
             proceed = FALSE;
-            OS_REPORT(OS_ERROR,
-                      "v_dataViewQueryTakeNextInstance failed", 0,
-                      "source is not dataView");
+            OS_REPORT(OS_CRITICAL, "v_dataViewQueryTakeNextInstance failed", result, "source is not dataView");
         }
         c_free(src);
     } else {
+        result = V_RESULT_ILL_PARAM;
         proceed = FALSE;
-        OS_REPORT(OS_ERROR,
-                  "v_dataViewQueryTakeNextInstance failed", 0,
-                  "no source");
+        OS_REPORT(OS_CRITICAL, "v_dataViewQueryTakeNextInstance failed", result, "no source");
     }
 
     if (!proceed) {
@@ -1026,8 +1257,10 @@ v_dataViewQueryTakeNextInstance(
     }
 
     /* Should fall within a lock on _this */
-    v_statisticsULongValueInc(v_query, numberOfNextInstanceTakes, _this);
-    return proceed;
+    if (v_query(_this)->statistics) {
+        v_query(_this)->statistics->numberOfNextInstanceTakes++;
+    }
+    return result;
 }
 
 c_bool
@@ -1038,86 +1271,80 @@ v_dataViewQueryNotifyDataAvailable(
     assert(_this);
     assert(C_TYPECHECK(_this,v_dataViewQuery));
     assert(e);
-    assert(C_TYPECHECK(e->userData,v_dataViewSample));
+    assert(C_TYPECHECK(e->data,v_dataViewSample));
 
-    if ((_this->state & V_STATE_DATA_AVAILABLE) == 0) {
+    v_observerLock(v_observer(_this));
 
-        v_observerLock(v_observer(_this));
-
-        if (e->userData) {
-            if (_this->triggerValue == NULL) {
-                _this->triggerValue = v_dataViewTriggerValueKeep(e->userData);
-            } else {
-                _this->walkRequired = TRUE;
-            }
-            _this->state |= V_STATE_DATA_AVAILABLE;
-
-            v_observerNotify(v_observer(_this), e, NULL);
-            v_observableNotify(v_observable(_this),e);
+    if (e->data) {
+        if (_this->triggerValue == NULL) {
+            _this->triggerValue = v_dataReaderTriggerValueKeep(e->data);
         } else {
-            OS_REPORT(OS_WARNING,
-                      "v_dataViewQueryNotifyDataAvailable failed", 0,
-                      "No triggerValue provided");
-            assert(FALSE);
+            _this->walkRequired = TRUE;
         }
-        v_observerUnlock(v_observer(_this));
+        _this->state |= V_STATE_DATA_AVAILABLE;
+        v_observableNotify(v_observable(_this),e);
+        /* Notify for internal use only, result can be ignored */
+        (void)v_entityNotifyListener(v_entity(_this), e);
+    } else {
+        OS_REPORT(OS_WARNING,
+                  "v_dataViewQueryNotifyDataAvailable failed", V_RESULT_ILL_PARAM,
+                  "No triggerValue provided");
+        assert(FALSE);
     }
+    v_observerUnlock(v_observer(_this));
+
     return TRUE;
 }
 
 c_bool
 v_dataViewQuerySetParams(
     v_dataViewQuery _this,
-    q_expr expression,
-    c_value params[])
+    const os_char *params[],
+    const os_uint32 nrOfParams)
 {
     v_collection src;
     v_dataView v;
     v_kernel kernel;
-    c_long i,len;
+    os_uint32 i,len;
     q_expr e,subExpr,keyExpr,progExpr;
     q_expr predicate;
     c_iter list;
     c_type type;
     c_bool result = TRUE;
     c_array keyList;
-    c_char *tmp;
-    c_base base;
     c_type subtype;
-#if 0
-    c_long size, strSize, curSize, exprSize, count;
-    c_char *paramString;
-    c_char character, prevCharacter;
-    c_char number[32];
-    c_bool inNumber;
-#endif
+    c_value *values;
 
     assert(C_TYPECHECK(_this,v_dataViewQuery));
-
-    if (q_getTag(expression) !=  Q_EXPR_PROGRAM) {
-        assert(FALSE);
-        return FALSE;
-    }
 
     src = v_querySource(v_query(_this));
     if (src != NULL) {
         assert(v_objectKind(src) == K_DATAVIEW);
         if (v_objectKind(src) == K_DATAVIEW) {
+
+            if (nrOfParams > 0) {
+                values = os_malloc(nrOfParams * sizeof(c_value));
+                for (i=0; i<nrOfParams; i++) {
+                    values[i] = c_stringValue((const c_string)params[i]);
+                }
+            } else {
+                values = NULL;
+            }
+
             kernel = v_objectKernel(_this);
-            base = c_getBase(c_object(_this));
             v = v_dataView(src);
 
             v_dataViewLock(v);
 
             len = c_arraySize(_this->instanceQ);
             for (i=0; (i<len) && (result == TRUE); i++) {
-                result = c_querySetParams(_this->instanceQ[i],params) &&
-                         c_querySetParams(_this->sampleQ[i],params);
+                result = c_querySetParams(_this->instanceQ[i],values) &&
+                         c_querySetParams(_this->sampleQ[i],values);
             }
             if (result) {
                 v_dataViewUnlock(v);
             } else {
-                predicate = q_exprCopy(expression);
+                predicate = v_queryGetPredicate(v_query(_this));
                 q_prefixFieldNames(&predicate,"sample.sample.message.userData");
 
 #if PRINT_QUERY
@@ -1130,15 +1357,12 @@ v_dataViewQuerySetParams(
                 if (!resolveFields(subtype,e)) {
                     v_dataViewUnlock(v);
                     q_dispose(e);
-                    q_dispose(expression);
+                    q_dispose(predicate);
                     c_free(subtype);
+                    os_free(values);
                     return FALSE;
                 }
                 c_free(subtype);
-
-                _this->instanceMask = q_exprGetInstanceState(predicate);
-                _this->sampleMask   = q_exprGetSampleState(predicate);
-                _this->viewMask     = q_exprGetViewState(predicate);
 
                 /* Normilize the query to the disjunctive form. */
                 q_disjunctify(e);
@@ -1168,7 +1392,7 @@ v_dataViewQuerySetParams(
                         progExpr = F1(Q_EXPR_PROGRAM,keyExpr);
                         _this->instanceQ[i] = c_queryNew(v->instances,
                                                          progExpr,
-                                                         params);
+                                                         values);
                         q_dispose(progExpr);
                     } else {
 #if PRINT_QUERY
@@ -1194,7 +1418,7 @@ v_dataViewQuerySetParams(
                         progExpr = F1(Q_EXPR_PROGRAM,subExpr);
                         _this->sampleQ[i] = c_queryNew(v->instances,
                                                        progExpr,
-                                                       params);
+                                                       values);
                         q_dispose(progExpr);
                     } else {
 #if PRINT_QUERY
@@ -1208,116 +1432,25 @@ v_dataViewQuerySetParams(
 #if PRINT_QUERY
                 printf("End v_dataViewQuerySetParams\n\n");
 #endif
-                if(_this->expression){
-                    c_free(_this->expression);
-                    _this->expression = NULL;
-                }
-                tmp = q_exprGetText(predicate);
-
-                if(tmp){
-                    _this->expression = c_stringNew(base, tmp);
-                    os_free(tmp);
-                } else {
-                    _this->expression = NULL;
-                }
                 q_dispose(predicate);
             }
             result = TRUE;
-#if 0
-            if(_this->params){
-                c_free(_this->params);
-                _this->params = NULL;
+            _this->walkRequired = TRUE;
+            if (values) {
+                os_free(values);
             }
-
-            if(params){
-                exprSize = strlen(_this->expression);
-                prevCharacter = '\0';
-                memset(number, 0, 32);
-                size = -1;
-                count = 0;
-                inNumber = FALSE;
-
-                /* Get the highest parameter number in the expression string.
-                 * This number determines the the maximum index value to be
-                 * used in the parameter array.
-                 */
-                for(i=0; i<exprSize; i++){
-                    character = _this->expression[i];
-
-                    if(character == '%'){
-                        if(prevCharacter != '%'){
-                            inNumber = TRUE;
-                        }
-                    } else if((character == ' ') && (inNumber == TRUE)){
-                        curSize = atoi(number);
-
-                        if(curSize > size){
-                            size = curSize;
-                        }
-                        memset(number, 0, 32);
-                        inNumber = FALSE;
-                        count = 0;
-                    } else if(inNumber == TRUE){
-                        number[count++] = character;
-                    }
-                    prevCharacter = character;
-                }
-                if(inNumber == TRUE){
-                    curSize = atoi(number);
-
-                    if(curSize > size){
-                        size = curSize;
-                    }
-                }
-                size += 1;
-
-                if(size > 0){
-                    strSize = 0;
-
-                    /* Determine the string size of a comma sepparated
-                     * parameter list.
-                     */
-                    for(i=0; i<size; i++){
-                        tmp = c_valueImage(params[i]);
-                        strSize += strlen(tmp) + 1;
-                        os_free(tmp);
-                    }
-                    /* Allocate and create a comma sepparated parameter list.
-                     */
-                    paramString = (c_char*)os_malloc(strSize);
-                    memset(paramString, 0, strSize);
-
-                    for(i=0; i<size; i++){
-                        tmp = c_valueImage(params[i]);
-                        os_strcat(paramString, tmp);
-                        os_free(tmp);
-
-                        if(i+1 != size){
-                            os_strcat(paramString, ",");
-                        }
-                    }
-                    _this->params = c_stringNew(base, paramString);
-                    os_free(paramString);
-                } else {
-                    _this->params = NULL;
-                }
-            } else {
-                _this->params = NULL;
-            }
-#endif
         } else {
             OS_REPORT(OS_ERROR,
-                      "v_dataViewQuerySetParams failed", 0,
+                      "v_dataViewQuerySetParams failed", V_RESULT_ILL_PARAM,
                       "source is not dataView");
             result = FALSE;
         }
         c_free(src);
     } else {
         OS_REPORT(OS_ERROR,
-                  "v_dataViewQuerySetParams failed", 0,
+                  "v_dataViewQuerySetParams failed", V_RESULT_ILL_PARAM,
                   "no source");
         result = FALSE;
     }
-
     return result;
 }

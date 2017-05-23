@@ -12,8 +12,8 @@ endif
 
 # Compiler flags
 CFLAGS_OPT       = -Z7 -O2 -DNDEBUG -MD
-CFLAGS_DEBUG     = 
-LDFLAGS          += -MANIFEST -NODEFAULTLIB:MSVCRTD
-JCFLAGS          = -g:none
+CFLAGS_DEBUG     =
+LDFLAGS          += -DEBUG -MANIFEST -NODEFAULTLIB:MSVCRTD
+JCFLAGS          = -g
 #Csc compiler flags
-CSFLAGS_DEBUG    = 
+CSFLAGS_DEBUG    =

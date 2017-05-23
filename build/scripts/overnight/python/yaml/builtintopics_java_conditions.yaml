@@ -1,0 +1,27 @@
+parseconditions:
+    desc: HelloWorld LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: sub_waiting
+          type: line
+          inst: 1
+          required: yes
+          line: "Waiting for historical data... done"
+
+        - name: subnode_started
+          type: line
+          inst: 1
+          required: yes
+          line: "Node * started (Total nodes running: 1)"
+
+        - name: subnode_hostname
+          type: line
+          inst: 1
+          required: yes
+          line: "Hostname for node * is *."

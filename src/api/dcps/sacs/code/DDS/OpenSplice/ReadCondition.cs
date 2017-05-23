@@ -1,24 +1,25 @@
-﻿// The OpenSplice DDS Community Edition project.
-//
-// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
-// Copyright (C) 2009  L-3 Communications / IS
-// 
-//  This library is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License Version 3 dated 29 June 2007, as published by the
-//  Free Software Foundation.
-// 
-//  This library is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-// 
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
 
 using System;
 using DDS;
+using DDS.OpenSplice.Kernel;
 
 namespace DDS.OpenSplice
 {
@@ -37,10 +38,27 @@ namespace DDS.OpenSplice
     /// </summary>
     public class ReadCondition : Condition, IReadCondition
     {
-        internal ReadCondition(IntPtr gapiPtr)
-            : base(gapiPtr)
+        private DataReader dataReader;
+        private SampleStateKind sampleState;
+        private ViewStateKind viewState;
+        private InstanceStateKind instanceState;
+
+        internal ReadCondition(
+                DataReader dataReader,
+                SampleStateKind sampleState,
+                ViewStateKind viewState,
+                InstanceStateKind instanceState)
         {
-            // Base class handles everything.
+            this.dataReader = dataReader;
+            this.sampleState = sampleState;
+            this.viewState = viewState;
+            this.instanceState = instanceState;
+            this.MyDomainId = dataReader.MyDomainId;
+        }
+
+        internal virtual ReturnCode init(IntPtr query)
+        {
+            return base.init(query, false);
         }
 
         /// <summary>
@@ -50,7 +68,21 @@ namespace DDS.OpenSplice
         /// <returns>The sample_states specified when the ReadCondition was created.</returns>
         public SampleStateKind GetSampleStateMask()
         {
-            return Gapi.ReadCondition.get_sample_state_mask(GapiPeer);
+            bool isAlive;
+            SampleStateKind ssk = 0;
+
+            ReportStack.Start();
+            lock(this)
+            {
+                isAlive = this.rlReq_isAlive;
+                if (isAlive)
+                {
+                    ssk = sampleState;
+                }
+            }
+            ReportStack.Flush(this, !isAlive);
+
+            return ssk;
         }
 
         /// <summary>
@@ -60,7 +92,21 @@ namespace DDS.OpenSplice
         /// <returns>The view_states specified when the ReadCondition was created.</returns>
         public ViewStateKind GetViewStateMask()
         {
-            return Gapi.ReadCondition.get_view_state_mask(GapiPeer);
+            bool isAlive;
+            ViewStateKind vsk = 0;
+
+            ReportStack.Start();
+            lock(this)
+            {
+                isAlive = this.rlReq_isAlive;
+                if (isAlive)
+                {
+                    vsk = viewState;
+                }
+            }
+            ReportStack.Flush(this, !isAlive);
+
+            return vsk;
         }
 
         /// <summary>
@@ -70,7 +116,21 @@ namespace DDS.OpenSplice
         /// <returns>The instance_states specified when the ReadCondition was created.</returns>
         public InstanceStateKind GetInstanceStateMask()
         {
-            return Gapi.ReadCondition.get_instance_state_mask(GapiPeer);
+            bool isAlive;
+            InstanceStateKind isk = 0;
+
+            ReportStack.Start();
+            lock(this)
+            {
+                isAlive = this.rlReq_isAlive;
+                if (isAlive)
+                {
+                    isk = instanceState;
+                }
+            }
+            ReportStack.Flush(this, !isAlive);
+
+            return isk;
         }
 
         /// <summary>
@@ -79,9 +139,86 @@ namespace DDS.OpenSplice
         /// <returns>The DataReader associated with the ReadCondition.</returns>
         public IDataReader GetDataReader()
         {
-            IntPtr gapiPtr = Gapi.ReadCondition.get_datareader(GapiPeer);
-            IDataReader dataReader = SacsSuperClass.fromUserData(gapiPtr) as IDataReader;
-            return dataReader;
+            bool isAlive;
+            IDataReader dr = null;
+
+            ReportStack.Start();
+            lock(this)
+            {
+                isAlive = this.rlReq_isAlive;
+                if (isAlive)
+                {
+                    dr = dataReader;
+                }
+            }
+            ReportStack.Flush(this, !isAlive);
+
+            return dr;
+        }
+
+        internal static byte AlwaysTrue(IntPtr o, IntPtr arg)
+        {
+            return 1;
+        }
+
+        public override bool GetTriggerValue()
+        {
+            bool triggerValue = false;
+            lock(this)
+            {
+                if (this.rlReq_isAlive)
+                {
+                    byte result = User.Query.Test(rlReq_UserPeer, AlwaysTrue, IntPtr.Zero);
+                    triggerValue = (result != 0);
+                }
+            }
+            return triggerValue;
+        }
+
+        internal virtual ReturnCode Read(IntPtr sampleList)
+        {
+            uint mask = DataReader.StateMask(sampleState, viewState, instanceState);
+            return SacsSuperClass.uResultToReturnCode(
+                User.Reader.Read(
+                    dataReader.rlReq_UserPeer,
+                    mask,
+                    Common.SampleList.ReaderAction,
+                    sampleList, Duration.Zero.OsDuration));
+        }
+
+        internal virtual ReturnCode Take(IntPtr sampleList)
+        {
+            uint mask = DataReader.StateMask(sampleState, viewState, instanceState);
+            return SacsSuperClass.uResultToReturnCode(
+                    User.Reader.Take(
+                            dataReader.rlReq_UserPeer,
+                            mask,
+                            Common.SampleList.ReaderAction,
+                            sampleList, DDS.Duration.Zero.OsDuration));
+        }
+
+        internal virtual ReturnCode ReadNextInstance(InstanceHandle handle, IntPtr sampleList)
+        {
+            uint mask = DataReader.StateMask(sampleState, viewState, instanceState);
+            return SacsSuperClass.uResultToReturnCode(
+                    User.Reader.ReadNextInstance(
+                            dataReader.rlReq_UserPeer,
+                            handle,
+                            mask,
+                            Common.SampleList.ReaderAction,
+                            sampleList, DDS.Duration.Zero.OsDuration));
+        }
+
+        internal virtual ReturnCode TakeNextInstance(InstanceHandle handle, IntPtr sampleList)
+        {
+            uint mask = DataReader.StateMask(sampleState, viewState, instanceState);
+            return SacsSuperClass.uResultToReturnCode(
+                    User.Reader.TakeNextInstance(
+                            dataReader.rlReq_UserPeer,
+                            handle,
+                            mask,
+                            Common.SampleList.ReaderAction,
+                            sampleList, DDS.Duration.Zero.OsDuration));
         }
     }
 }

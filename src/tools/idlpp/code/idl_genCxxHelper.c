@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_genCxxHelper.h"
@@ -40,18 +48,18 @@ c_char *
 idl_cxxId(
     const char *identifier)
 {
-    c_long i;
+    size_t i;
     char *cxxId;
 
     /* search through the C++ keyword list */
     /* QAC EXPECT 5003; Bypass qactools error, why is this a violation */
-    for (i = 0; i < (c_long)(sizeof(cxx_keywords)/sizeof(c_char *)); i++) {
+    for (i = 0; i < sizeof(cxx_keywords)/sizeof(c_char *); i++) {
 	/* QAC EXPECT 5007, 3416; will not use wrapper, no side effects here */
 	if (strcmp(cxx_keywords[i], identifier) == 0) {
 	    /* If a keyword matches the specified identifier, prepend _cxx_ */
 	    /* QAC EXPECT 5007; will not use wrapper */
-	    cxxId = os_malloc((size_t)((int)strlen(identifier)+1+5));
-	    snprintf(cxxId, (size_t)((int)strlen(identifier)+1+5), "_cxx_%s", identifier);
+	    cxxId = os_malloc(strlen(identifier)+1+5);
+	    snprintf(cxxId, strlen(identifier)+1+5, "_cxx_%s", identifier);
 	    return cxxId;
 	}
     }
@@ -83,10 +91,7 @@ idl_scopeStackCxx(
         /* Copy the first scope element name */
         scopeStack = os_strdup(scopeSepp);/* start with the seperator */
         Id = idl_cxxId(idl_scopeElementName(idl_scopeIndexed(scope, si)));
-        scopeStack = os_realloc(scopeStack, (size_t)(
-                         (int)strlen(scopeStack)+
-                         (int)strlen(scopeSepp)+
-                         (int)strlen(Id)+1));
+        scopeStack = os_realloc(scopeStack, strlen(scopeStack)+strlen(scopeSepp)+strlen(Id)+1);
         os_strcat(scopeStack, Id);
         si++;
         while (si < sz) {
@@ -96,10 +101,7 @@ idl_scopeStackCxx(
                and the next scope name
              */
             /* QAC EXPECT 5007; will not use wrapper */
-            scopeStack = os_realloc(scopeStack, (size_t)(
-                             (int)strlen(scopeStack)+
-                             (int)strlen(scopeSepp)+
-                             (int)strlen(Id)+1));
+            scopeStack = os_realloc(scopeStack, strlen(scopeStack)+strlen(scopeSepp)+strlen(Id)+1);
            /* Concatenate the separator */
            /* QAC EXPECT 5007; will not use wrapper */
            os_strcat(scopeStack, scopeSepp);
@@ -116,10 +118,7 @@ idl_scopeStackCxx(
                and the user identifier
              */
             /* QAC EXPECT 5007; will not use wrapper */
-            scopeStack = os_realloc(scopeStack, (size_t)(
-                             (int)strlen(scopeStack)+
-                             (int)strlen(scopeSepp)+
-                             (int)strlen(Id)+1));
+            scopeStack = os_realloc(scopeStack, strlen(scopeStack)+strlen(scopeSepp)+strlen(Id)+1);
             /* Concatenate the separator */
             /* QAC EXPECT 5007; will not use wrapper */
             os_strcat(scopeStack, scopeSepp);
@@ -192,6 +191,7 @@ standaloneTypeFromTypeSpec(
     return typeName;
 }
 
+#if 0
 static c_char *
 corbaTypeFromTypeSpec(
     idl_typeBasic t)
@@ -242,39 +242,37 @@ corbaTypeFromTypeSpec(
     }
     return typeName;
 }
+#endif
 
 /* Return the C++ specific type identifier for the
    specified type specification
 */
 c_char *
 idl_corbaCxxTypeFromTypeSpec(
-    idl_typeSpec typeSpec)
+        idl_typeSpec typeSpec)
 {
     c_char *typeName;
 
     /* QAC EXPECT 3416; No side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
         /* if the specified type is a basic type */
-        if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
-           typeName = standaloneTypeFromTypeSpec(idl_typeBasic(typeSpec));
-        } else {
-            typeName = corbaTypeFromTypeSpec(idl_typeBasic(typeSpec));
-        }
+        typeName = standaloneTypeFromTypeSpec(idl_typeBasic(typeSpec));
     } else if ((idl_typeSpecType(typeSpec) == idl_tseq) ||
-	(idl_typeSpecType(typeSpec) == idl_tarray)) {
-	/* sequence does not have an identification */
-	typeName = os_strdup ("");
-	printf ("idl_corbaCxxTypeFromTypeSpec: Unexpected type handled\n");
+            (idl_typeSpecType(typeSpec) == idl_tarray)) {
+        /* sequence does not have an identification */
+        typeName = os_strdup ("");
+        printf ("idl_corbaCxxTypeFromTypeSpec: Unexpected type handled\n");
+        (void)typeName;
         assert(0);
     } else {
         /* if a user type is specified build it from its scope and its name.
 	   The type should be one of idl_ttypedef, idl_tenum, idl_tstruct,
            idl_tunion.
-	*/
+         */
         typeName = idl_scopeStackCxx(
-            idl_typeUserScope(idl_typeUser(typeSpec)),
-            "::",
-            idl_typeSpecName(typeSpec));
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "::",
+                idl_typeSpecName(typeSpec));
     }
     return typeName;
     /* QAC EXPECT 5101; The switch statement is simple, therefor the total complexity is low */

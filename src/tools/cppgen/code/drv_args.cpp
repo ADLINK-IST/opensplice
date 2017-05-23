@@ -101,11 +101,12 @@ static void DRV_push_file(const char *s)
 static void DRV_prep_cpp_arg(char *s)
 {
    char *newarg = new char[512];
+   char *saveptr;
    char *farg;
 
    newarg[0] = '\0';
 
-   for (farg = strtok(s, ","); farg != NULL; farg = strtok(NULL, ","))
+   for (farg = os_strtok_r(s, ",", &saveptr); farg != NULL; farg = os_strtok_r(NULL, ",", &saveptr))
       os_strcat(newarg, farg);
 
    DRV_cpp_putarg(newarg);
@@ -275,7 +276,7 @@ void DRV_parse_args(int ac, char **av)
                           exit(99);
                        // JOEY - These args should be handled in DDS_BE_parse_args
                        //
-                         // (*DRV_BE_prep_arg)(s + 2, I_TRUE);
+                         // (*DRV_BE_prep_arg)(s + 2, true);
                        // cerr << "Error: -Wb,<option> no longer supported.  Use -<option> instead." << endl;
                        // exit(99);
                        }
@@ -342,9 +343,9 @@ void DRV_parse_args(int ac, char **av)
                idl_global->set_compile_flags(idl_global->compile_flags() |
                                              IDL_CF_NOIMPORT);
 
-               idl_global->IncludeFileMerge(I_TRUE);
+               idl_global->IncludeFileMerge(true);
 
-               //idl_global->set_OneBigFile(I_TRUE);
+               //idl_global->set_OneBigFile(true);
                break;
 
                case '-':

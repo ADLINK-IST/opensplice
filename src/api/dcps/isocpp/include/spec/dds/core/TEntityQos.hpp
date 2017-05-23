@@ -34,6 +34,9 @@ class TEntityQos;
 /**
  * Acts as a container for Qos policies allowing all the policies of
  * an entity to be set and retrieved as a unit.
+ *
+ * For more information see \ref DCPS_Modules_Infrastructure "Infrastructure Module"
+ * and \ref DCPS_QoS "Supported Quality of Service"
  */
 template <typename DELEGATE>
 class dds::core::TEntityQos : public dds::core::Value<DELEGATE>

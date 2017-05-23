@@ -1,18 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cpp_malloc.h"
 #include "is.h"
 #include "if.h"
-#include "io.h"
+#include "cpp_io.h"
 #include "accum.h"
 #include "symtbl.h"
 #include "include.h"
@@ -25,11 +33,12 @@ static void read_include_file (char *, int, int);
 void init_include (void)
 {
    nIfiles = 0;
-   Ifiles = (char **) os_malloc(0);
+   /* The following malloc will be realloced later! */
+   Ifiles = (char **) os_malloc(1);
    check_os_malloc(Ifiles);
 }
 
-void Ifile (char * f)
+void Ifile (const char * f)
 {
    Ifiles = (char **) os_realloc((char *)Ifiles, (nIfiles + 1) * sizeof(char *));
    check_os_malloc(Ifiles);
@@ -146,7 +155,7 @@ static void read_include_file (char * name, int dohere, int sharp)
 {
    FILE *f;
    char *n;
-   char temp[1024];
+   char * temp = os_malloc (1024);
    char *cp;
    extern int incldep;
    extern char *incldep_o;
@@ -155,7 +164,7 @@ static void read_include_file (char * name, int dohere, int sharp)
    if (dohere)
    {
       if ((strcmp(curdir(), ".") != 0) &&
-         ((name[0] != CPP_FILESEPCHAR_1) && (name[0] != CPP_FILESEPCHAR_2)))
+          ((name[0] != CPP_FILESEPCHAR_1) && (name[0] != CPP_FILESEPCHAR_2)))
       {
          os_sprintf(temp, "%s%c%s", curdir(), CPP_FILESEPCHAR_DEF, name);
          n = temp;
@@ -193,8 +202,7 @@ static void read_include_file (char * name, int dohere, int sharp)
    {
       err_head();
       fprintf(stderr, "can't find include file %s\n", name);
-      os_free(name);
-      return ;
+      goto done;
    }
    if (incldep)
    {
@@ -221,6 +229,9 @@ static void read_include_file (char * name, int dohere, int sharp)
    }
    check_os_malloc(cp);
    *Curdir() = cp;
-   os_free(name);
-   return ;
+
+done:
+
+   os_free (name);
+   os_free (temp);
 }

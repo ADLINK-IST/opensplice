@@ -1,15 +1,23 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#include "os.h"
+#include "vortex_os.h"
 #include "os_report.h"
 #include "c__metabase.h"
 #include "c__base.h"
@@ -24,15 +32,20 @@
 #include "c_module.h"
 #include "ut_collection.h"
 
-extern c_type c_getMetaType(c_base base, c_metaKind kind);
-
-#define MINSTRUCTALIGNMENT (C_ALIGNMENT(struct{c_char c;}))
+C_ALIGNMENT_TYPE (c_object);
+C_ALIGNMENT_TYPE (c_mutex);
+C_ALIGNMENT_TYPE (c_lock);
+C_ALIGNMENT_TYPE (c_cond);
 
 _TYPE_CACHE_(c_member)
 _TYPE_CACHE_(c_literal)
 _TYPE_CACHE_(c_constant)
 _TYPE_CACHE_(c_unionCase)
 _TYPE_CACHE_(c_property)
+
+c_literal
+c_expressionValue(
+    c_expression expr);
 
 static c_scope
 metaClaim(
@@ -84,6 +97,44 @@ metaRelease(
 }
 
 static c_metaObject
+metaScopeInsertEnum(
+    c_metaObject scope,
+    c_metaObject object)
+{
+    c_metaObject o = NULL;
+    c_char *name = NULL;
+    c_ulong i, length;
+    c_bool redeclared = FALSE;
+    c_array elements;
+    c_scope s;
+
+    s = metaClaim(scope);
+    elements = c_enumeration(object)->elements;
+    length = c_arraySize(elements);
+    for (i=0; i<length; i++) {
+        assert(elements[i] != NULL);
+        name = c_metaName(elements[i]);
+        if (c_scopeExists(s, name)) {
+            redeclared = TRUE;
+        }
+        c_free(name);
+    }
+    if (!redeclared) {
+        o = c_scopeInsert(s,object);
+        if (o == object) {
+            c_metaObject element;
+            for (i=0; i<length; i++ ) {
+                element = c_scopeInsert(s, elements[i]);
+                assert(element == elements[i]);
+                element->definedIn = scope;
+            }
+        }
+    }
+    metaRelease(scope);
+    return o;
+}
+
+static c_metaObject
 metaScopeInsert(
     c_metaObject scope,
     c_metaObject object)
@@ -91,9 +142,24 @@ metaScopeInsert(
     c_scope s;
     c_metaObject o;
 
-    s = metaClaim(scope);
-    o = c_scopeInsert(s,object);
-    metaRelease(scope);
+    if (c_baseObjectKind(object) == M_ENUMERATION) {
+        /* Inserting a type in a scope only succeeds if the name of the type
+         * does not already exist in the scope.
+         * For Enumerations this also applies to the names of each enum value.
+         * The following operation verifies if none of the enumeration names
+         * already exists and if not it will insert all names to the scope.
+         */
+        o = metaScopeInsertEnum(scope,object);
+        if (o == NULL) {
+            c_char *name = c_metaName(object);
+            o = c_metaResolveType(scope,name);
+            c_free(name);
+        }
+    } else {
+        s = metaClaim(scope);
+        o = c_scopeInsert(s,object);
+        metaRelease(scope);
+    }
     return o;
 }
 
@@ -101,13 +167,17 @@ static c_metaObject
 metaScopeLookup(
     c_metaObject scope,
     const c_char *name,
-    c_long metaFilter)
+    c_ulong metaFilter)
 {
     c_scope s;
     c_metaObject o;
 
     s = metaClaim(scope);
-    o = c_metaObject(c_scopeResolve(s,name,metaFilter));
+    if (s != NULL) {
+        o = c_metaObject(c_scopeResolve(s,name,metaFilter));
+    } else {
+        o = NULL;
+    }
     metaRelease(scope);
     return o;
 }
@@ -127,12 +197,29 @@ metaScopeWalk(
     metaRelease(scope);
 }
 
-static c_long
+static c_bool
+metaScopeWalkBool(
+    c_metaObject scope,
+    c_scopeWalkBoolAction action,
+    c_scopeWalkActionArg actionArg)
+{
+    c_scope s;
+    c_bool r = TRUE;
+
+    s = metaClaim(scope);
+    if(s != NULL){
+        r = c_scopeWalkBool(s, action, actionArg);
+    }
+    metaRelease(scope);
+    return r;
+}
+
+static c_ulong
 metaScopeCount(
     c_metaObject scope)
 {
     c_scope s;
-    c_long n = 0;
+    c_ulong n = 0;
 
     s = metaClaim(scope);
     if(s != NULL){
@@ -142,24 +229,34 @@ metaScopeCount(
     return n;
 }
 
-c_metaObject
-c_metaBind(
+static c_metaObject
+c__metaBindCommon(
     c_metaObject scope,
     const c_char *name,
-    c_metaObject object)
+    c_metaObject object,
+    c_bool check)
 {
     c_metaObject found;
     c_metaEquality equality;
+    c_char *scopedName;
 
     assert(name != NULL);
     assert(object != NULL);
 
     if (object->name != NULL) {
-        OS_REPORT_1(OS_ERROR,"c_metaObject::c_metaBind",0,
+        OS_REPORT(OS_ERROR,"c_metaObject::c_metaBind",0,
                     "Object already bound to \"%s\"",object->name);
         return NULL;
     }
-    object->name = c_stringNew(c__getBase(scope),name);
+    if (check) {
+        object->name = c_stringNew_s(c__getBase(scope),name);
+        if (!object->name) {
+            goto err_alloc_name;
+        }
+    } else {
+        object->name = c_stringNew(c__getBase(scope),name);
+    }
+
     found = metaScopeInsert(scope,object);
 
     if (found == object) {
@@ -168,6 +265,11 @@ c_metaBind(
     } else {
         equality = c_metaCompare(found,object);
         if (equality != E_EQUAL) {
+            scopedName = c_metaScopedName(found);
+            OS_REPORT(OS_ERROR, "c_metaObject::c_metaBind", 0,
+                "Redeclaration of '%s' doesn't match existing declaration",
+                scopedName);
+            os_free(scopedName);
             c_free(found);
             return NULL;
         }
@@ -175,7 +277,31 @@ c_metaBind(
         object->name = NULL;
         return found;
     }
+
+err_alloc_name:
+    return NULL;
 }
+
+c_metaObject
+c_metaBind(
+    c_metaObject scope,
+    const c_char *name,
+    c_metaObject object)
+{
+    return c__metaBindCommon(scope, name, object, FALSE);
+}
+
+
+
+c_metaObject
+c_metaBind_s(
+    c_metaObject scope,
+    const c_char *name,
+    c_metaObject object)
+{
+    return c__metaBindCommon(scope, name, object, TRUE);
+}
+
 
 typedef enum c_token {
     TK_ERROR,
@@ -292,20 +418,30 @@ c_metaWalk(
     metaScopeWalk(scope,action,actionArg);
 }
 
+c_bool
+c_metaWalkBool(
+    c_metaObject scope,
+    c_metaWalkBoolAction action,
+    c_metaWalkActionArg actionArg)
+{
+    return metaScopeWalkBool(scope,action,actionArg);
+}
+
 /*
  * Returns the number of elements in the c_scope of the given c_metaObject.
  */
-c_long
+c_ulong
 c_metaCount(
     c_metaObject scope)
 {
     return metaScopeCount(scope);
 }
 
-c_object
-c_metaDefine(
+static c_object
+c__metaDefineCommon(
     c_metaObject scope,
-    c_metaKind kind)
+    c_metaKind kind,
+    c_bool check)
 {
     c_baseObject o;
     c_base base;
@@ -325,75 +461,151 @@ c_metaDefine(
     case M_PARAMETER:
     case M_RELATION:
     case M_UNIONCASE:
-        o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        if (o) {
-            o->kind = kind;
+        if (check) {
+            o = (c_baseObject)c_new_s(c_getMetaType(base,kind));
+            if (!o) {
+                goto err_alloc_object;
+            }
+        } else {
+            o = (c_baseObject)c_new(c_getMetaType(base,kind));
         }
+        assert(o);
+        o->kind = kind;
     break;
     case M_COLLECTION:
     case M_ENUMERATION:
     case M_PRIMITIVE:
     case M_TYPEDEF:
     case M_BASE:
-        o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        if (o) {
-            o->kind = kind;
-            c_type(o)->base = base; /* REMARK c_keep(base); */
+        if (check) {
+            o = (c_baseObject)c_new_s(c_getMetaType(base,kind));
+            if (!o) {
+                goto err_alloc_object;
+            }
+        } else {
+            o = (c_baseObject)c_new(c_getMetaType(base,kind));
         }
+        assert(o);
+        o->kind = kind;
+        c_type(o)->base = base; /* REMARK c_keep(base); */
     break;
     case M_UNION:
-        o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        if (o) {
-            o->kind = kind;
+        if (check) {
+            o = (c_baseObject)c_new_s(c_getMetaType(base,kind));
+            if (!o) {
+                goto err_alloc_object;
+            }
+            c_union(o)->scope = c_scopeNew_s(base);
+            if (!c_union(o)->scope) {
+                goto err_alloc_scope;
+            }
+        } else {
+            o = (c_baseObject)c_new(c_getMetaType(base,kind));
             c_union(o)->scope = c_scopeNew(base);
-            c_type(o)->base = base; /* REMARK c_keep(base); */
         }
+        assert(o);
+        o->kind = kind;
+        c_type(o)->base = base; /* REMARK c_keep(base); */
     break;
     case M_STRUCTURE:
     case M_EXCEPTION:
-        o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        if (o) {
-            o->kind = kind;
+        if (check) {
+            o = (c_baseObject)c_new_s(c_getMetaType(base,kind));
+            if (!o) {
+                goto err_alloc_object;
+            }
+            c_structure(o)->scope = c_scopeNew_s(base);
+            if (!c_structure(o)->scope) {
+                goto err_alloc_scope;
+            }
+        } else {
+            o = (c_baseObject)c_new(c_getMetaType(base,kind));
             c_structure(o)->scope = c_scopeNew(base);
-            c_type(o)->base = base; /* REMARK c_keep(base); */
         }
+        assert(o);
+        o->kind = kind;
+        c_type(o)->base = base; /* REMARK c_keep(base); */
     break;
     case M_MODULE:
-        o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        if (o) {
-            o->kind = kind;
+        if (check) {
+            o = (c_baseObject)c_new_s(c_getMetaType(base,kind));
+            if (!o) {
+                goto err_alloc_object;
+            }
+            c_module(o)->scope = c_scopeNew_s(base);
+            if (!c_module(o)->scope) {
+                goto err_alloc_scope;
+            }
+        } else {
+            o = (c_baseObject)c_new(c_getMetaType(base,kind));
             c_module(o)->scope = c_scopeNew(base);
-            c_mutexInit(&c_module(o)->mtx, c_baseGetMutexAttr(base));
         }
+        assert(o);
+        o->kind = kind;
+        c_mutexInit(base, &c_module(o)->mtx);
     break;
     case M_ANNOTATION:
     case M_CLASS:
     case M_INTERFACE:
-        o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        if (o) {
-            o->kind = kind;
-            if (kind == M_CLASS) {
-                c_class(o)->extends = NULL;
-            }else if (kind == M_ANNOTATION) {
-                c_annotation(o)->extends = NULL;
+        if (check) {
+            o = (c_baseObject)c_new_s(c_getMetaType(base,kind));
+            if (!o) {
+                goto err_alloc_object;
+            }
+            c_interface(o)->scope = c_scopeNew_s(base);
+        } else {
+            o = (c_baseObject)c_new(c_getMetaType(base,kind));
+            if (!o) {
+                goto err_alloc_object;
             }
             c_interface(o)->scope = c_scopeNew(base);
-            c_type(o)->base = base; /* REMARK c_keep(base); */
+            if (!c_interface(o)->scope) {
+                goto err_alloc_scope;
+            }
         }
+        o->kind = kind;
+        if (kind == M_CLASS) {
+            c_class(o)->extends = NULL;
+        }else if (kind == M_ANNOTATION) {
+            c_annotation(o)->extends = NULL;
+        }
+        c_type(o)->base = base; /* REMARK c_keep(base); */
     break;
     default:
         o = NULL;
     }
     return c_object(o);
+
+err_alloc_scope:
+    c_free(o);
+err_alloc_object:
+    return NULL;
 }
 
-c_metaObject
-c_metaDeclare(
+c_object
+c_metaDefine(
     c_metaObject scope,
-    const c_char *name,
     c_metaKind kind)
 {
-    c_metaObject o,found;
+    return c__metaDefineCommon(scope, kind, FALSE);
+}
+
+c_object
+c_metaDefine_s(
+    c_metaObject scope,
+    c_metaKind kind)
+{
+    return c__metaDefineCommon(scope, kind, TRUE);
+}
+
+static c_metaObject
+c__metaDeclareCommon(
+    c_metaObject scope,
+    const c_char *name,
+    c_metaKind kind,
+    c_bool check)
+{
+    c_metaObject o,found = NULL;
 
     assert(scope != NULL);
     assert(name != NULL);
@@ -416,13 +628,22 @@ c_metaDeclare(
         case M_TYPEDEF:
         case M_UNION:
         case M_ANNOTATION:
-            o = c_metaDefine(scope,kind);
-            found = c_metaBind(scope,name,o);
-            c_free(o);
+            if (check) {
+                o = c_metaDefine_s(scope,kind);
+                if (o) {
+                    found = c_metaBind_s(scope,name,o);
+                    c_free(o);
+                }
+            } else {
+                o = c_metaDefine(scope,kind);
+                assert(o);
+                found = c_metaBind(scope,name,o);
+                c_free(o);
+            }
             o = found;
             break;
         default:
-            OS_REPORT_1(OS_WARNING,"c_metaDeclare failed",0,
+            OS_REPORT(OS_WARNING,"c_metaDeclare failed",0,
                         "illegal meta kind (%d) specified",kind);
             assert(FALSE);
             o = NULL;
@@ -436,11 +657,29 @@ c_metaDeclare(
     return o;
 }
 
+c_metaObject
+c_metaDeclare(
+    c_metaObject scope,
+    const c_char *name,
+    c_metaKind kind)
+{
+    return c__metaDeclareCommon(scope, name, kind, FALSE);
+}
+
+c_metaObject
+c_metaDeclare_s(
+    c_metaObject scope,
+    const c_char *name,
+    c_metaKind kind)
+{
+    return c__metaDeclareCommon(scope, name, kind, TRUE);
+}
+
 static void
 c_typeInit(
     c_metaObject o,
-    c_long alignment,
-    c_long size)
+    os_size_t alignment,
+    os_size_t size)
 {
     c_type(o)->base = c__getBase(o);
     c_type(o)->alignment = alignment;
@@ -451,7 +690,7 @@ c_typeInit(
 static void
 getProperties(
     c_metaObject o,
-    c_iter iter)
+    c_scopeWalkActionArg iter)
 {
     assert(iter);
     switch(c_baseObjectKind(o)) {
@@ -459,7 +698,7 @@ getProperties(
     case M_RELATION:
     case M_MEMBER:
     case M_UNIONCASE:
-        (void)c_iterInsert(iter,o);
+        (void)c_iterInsert((c_iter)iter,o);
     break;
     default:
     break;
@@ -568,7 +807,7 @@ c_typeIsRef (
     break;
     case M_COLLECTION:
         switch(c_collectionType(type)->kind) {
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             if (c_collectionType(type)->maxSize == 0) {
                 result = TRUE;
             } else {
@@ -590,16 +829,16 @@ c_typeIsRef (
     return result;
 }
 
-c_long
+os_size_t
 c_typeSize(
     c_type type)
 {
     c_type subType;
-    c_long size;
+    os_size_t size;
 
     if (c_baseObjectKind(type) == M_COLLECTION) {
         switch(c_collectionTypeKind(type)) {
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             subType = c_collectionTypeSubType(type);
             switch(c_baseObjectKind(subType)) {
             case M_INTERFACE:
@@ -615,28 +854,28 @@ c_typeSize(
             break;
             }
         break;
-        case C_LIST:
+        case OSPL_C_LIST:
             size = c_listSize;
         break;
-        case C_BAG:
+        case OSPL_C_BAG:
             size = c_bagSize;
         break;
-        case C_SET:
+        case OSPL_C_SET:
             size = c_setSize;
         break;
-        case C_DICTIONARY:
+        case OSPL_C_DICTIONARY:
             size = c_tableSize;
         break;
-        case C_QUERY:
+        case OSPL_C_QUERY:
             size = c_querySize;
         break;
-        case C_SCOPE:
+        case OSPL_C_SCOPE:
             size = C_SIZEOF(c_scope);
         break;
-        case C_STRING:
+        case OSPL_C_STRING:
             size = sizeof(c_char *);
         break;
-        case C_SEQUENCE:
+        case OSPL_C_SEQUENCE:
             size = sizeof(c_address);
         break;
         default:
@@ -644,7 +883,7 @@ c_typeSize(
                       "c_typeSize failed",0,
                       "illegal type specified");
             assert(FALSE);
-            size = -1;
+            size = ~(os_size_t)0;
         break;
         }
     } else {
@@ -665,7 +904,7 @@ c_typeHasRef (
         return TRUE;
     case M_COLLECTION:
         switch(c_collectionType(type)->kind) {
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             if (c_collectionType(type)->maxSize == 0) {
                 return TRUE;
             } else {
@@ -709,27 +948,28 @@ c_typeHasRef (
     return FALSE;
 }
 
-static c_long
+static os_size_t
 alignSize(
-    c_long size,
-    c_long alignment)
+    os_size_t size,
+    os_size_t alignment)
 {
-    c_long gap;
+    os_size_t gap;
 
     if (size == 0) return 0;
+    assert(alignment > 0);
 
     gap = size % alignment;
     if (gap != 0) gap = alignment - gap;
     return (size + gap);
 }
 
-static c_long
+static os_size_t
 propertySize(
     c_type type)
 {
     switch(c_baseObjectKind(type)) {
     case M_COLLECTION:
-        if ((c_collectionType(type)->kind == C_ARRAY) &&
+        if ((c_collectionType(type)->kind == OSPL_C_ARRAY) &&
             (c_collectionType(type)->maxSize != 0)) {
             assert(type->size > 0);
             return type->size;
@@ -751,7 +991,7 @@ _c_metaCompare (
     c_metaObject obj,
     ut_collection adm)
 {
-    c_long i, length;
+    c_ulong i, length;
     c_metaEquality result;
     c_metaObject o = obj;
 
@@ -764,7 +1004,7 @@ _c_metaCompare (
     }
     else if(object && o)
     {
-        ut_tableInsert(ut_table(adm), object, o);
+        (void) ut_tableInsert(ut_table(adm), object, o);
     }
 
     if (object == o) {
@@ -788,7 +1028,6 @@ _c_metaCompare (
     case M_STRUCTURE:
     {
         c_member member,m;
-        c_long length;
 
         length = c_arraySize(c_structure(object)->members);
 
@@ -964,18 +1203,31 @@ c_metaCompare(
         c_metaObject object,
         c_metaObject obj)
 {
-    ut_collection adm;
+    ut_table adm;
     c_metaEquality result;
-    adm = ut_tableNew(comparePointers, NULL);
+    adm = ut_tableNew(comparePointers, NULL, NULL, NULL, NULL, NULL);
 
     result = _c_metaCompare(
             object,
             obj,
-            adm);
+            ut_collection(adm));
 
-    ut_tableFree(ut_table(adm), NULL, NULL, NULL, NULL);
+    ut_tableFree(adm);
 
     return result;
+}
+
+c_constant
+c_metaDeclareEnumElement(
+    c_metaObject scope,
+    const c_char *name)
+{
+    c_metaObject object;
+    object = c_metaDefine(scope,M_CONSTANT);
+    if (object) {
+        object->name = c_stringNew(c__getBase(scope),name);
+    }
+    return (c_constant)object;
 }
 
 c_result
@@ -983,9 +1235,10 @@ c__metaFinalize(
     c_metaObject o,
     c_bool normalize)
 {
-    c_address i, alignment, size;
-    c_address objectAlignment = C_ALIGNMENT(c_object);
-    c_address ps;
+    c_ulong i;
+    os_size_t alignment, size;
+    os_size_t objectAlignment = C_ALIGNMENT(c_object);
+    os_size_t ps;
 
 #define _TYPEINIT_(o,t) c_typeInit(o,C_ALIGNMENT(t),sizeof(t))
 
@@ -1009,6 +1262,9 @@ c__metaFinalize(
         case P_MUTEX:     _TYPEINIT_(o,c_mutex);     break;
         case P_LOCK:      _TYPEINIT_(o,c_lock);      break;
         case P_COND:      _TYPEINIT_(o,c_cond);      break;
+        case P_PA_UINT32: _TYPEINIT_(o,pa_uint32_t); break;
+        case P_PA_UINTPTR:_TYPEINIT_(o,pa_uintptr_t); break;
+        case P_PA_VOIDP:  _TYPEINIT_(o,pa_voidp_t); break;
         default:          c_typeInit(o,0,0);         break;
         }
     break;
@@ -1018,7 +1274,7 @@ c__metaFinalize(
         c_member member;
         c_type type;
         c_iter refList;
-        c_address length;
+        c_ulong length;
 
         alignment = 0; size = 0; refList = NULL;
         if (c_structure(o)->members != NULL) {
@@ -1057,14 +1313,12 @@ c__metaFinalize(
             }
             if (refList != NULL) {
                 i=0;
-                type = c_member_t(c__getBase(o));
                 length = c_iterLength(refList);
-                c_structure(o)->references = c_arrayNew(type,length);
+                c_structure(o)->references = c_arrayNew(c_member_t(c__getBase(o)), length);
                 while ((member = c_iterTakeFirst(refList)) != NULL) {
                     c_structure(o)->references[i++] = c_keep(member);
                 }
                 c_iterFree(refList);
-                c_free(type);
             }
         }
         if (!c_isFinal(o)) {
@@ -1078,7 +1332,7 @@ c__metaFinalize(
         c_unionCase unCase;
         c_type type;
         c_iter refList;
-        c_address length;
+        c_ulong length;
 
         /*
          * A union has the following C syntax:
@@ -1147,13 +1401,11 @@ c__metaFinalize(
             size += alignSize(c_union(o)->switchType->size, alignment);
             if (refList != NULL) {
                 i=0;
-                type = c_unionCase_t(c__getBase(o));
-                c_union(o)->references = c_arrayNew(type,c_iterLength(refList));
+                c_union(o)->references = c_arrayNew(c_unionCase_t(c__getBase(o)),c_iterLength(refList));
                 while ((unCase = c_iterTakeFirst(refList)) != NULL) {
                     c_union(o)->references[i++] = c_keep(unCase);
                 }
                 c_iterFree(refList);
-                c_free(type);
             }
         }
         if (!c_isFinal(o)) {
@@ -1164,7 +1416,7 @@ c__metaFinalize(
     break;
     case M_COLLECTION:
         switch (c_collectionType(o)->kind) {
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             if (c_collectionType(o)->maxSize != 0) {
                 ps = propertySize(c_collectionType(o)->subType);
                 if (ps == 0) {
@@ -1174,68 +1426,64 @@ c__metaFinalize(
                 alignment = c_collectionType(o)->subType->alignment;
                 c_typeInit(o,alignment,size);
             } else {
-                _TYPEINIT_(o,void *);
+                _TYPEINIT_(o,c_voidp);
             }
         break;
         default:
-            _TYPEINIT_(o,void *);
+            _TYPEINIT_(o,c_voidp);
         break;
         }
     break;
     case M_ENUMERATION:
     {
         c_constant c;
-        c_result status = S_COUNT;
-        c_address length;
-        c_string metaName;
+        c_ulong length;
+        c_long value;
 
         length = c_arraySize(c_enumeration(o)->elements);
-        for (i=0; i<length; i++) {
-            /* This loop is added to avoid that an enumeration will affect
-               existing constants. Existing constants originate from either
-               a previous definition of the enumeration or from another
-               definition. If originating from another definition then this
-               must lead to an application notification of an incompatible
-               type.
-            */
+
+        for (i=0, value=(c_long)i; i<length; i++, value++) {
             c = c_constant(c_enumeration(o)->elements[i]);
-            if (c->type != NULL) {
-                if (c_baseObjectKind(c_metaObject(c->type)) != M_ENUMERATION) {
-                    metaName = c_metaName(c_metaObject(c));
-                    OS_REPORT_1(OS_WARNING,"c_metaFinalize",0,
-                                "Enum value <%s> already defined",
-                                metaName);
-                    c_free(metaName);
-                    return S_REDEFINED;
-                }
-                if (status == S_COUNT) {
-                    status = S_REDECLARED;
-                }
-                if (status != S_REDECLARED) {
-                    return S_REDEFINED;
-                }
+            c->type = c_type(o); /* The constant has an un-managed ref. to the enum type, _c_freeReferences will deal with this */
+            if (c->operand == NULL) { /* typical in the odlpp */
+                c->operand = (c_operand)c_metaDefine(c_metaObject(o), M_LITERAL);
+                c_literal(c->operand)->value.kind = V_LONG;
+                c_literal(c->operand)->value.is.Long = (c_long)value;
             } else {
-                if (status == S_COUNT) {
-                    status = S_ACCEPTED;
+                c_literal literal = NULL;
+
+                switch (c_baseObjectKind (c->operand)) {
+                case M_EXPRESSION:
+                    literal = c_expressionValue(c_expression(c->operand));
+                    c_free(c->operand);
+                    c->operand = c_operand(literal);
+                break;
+                case M_LITERAL:
+                    literal = c_literal(c->operand);
+                break;
+                default:
+                break;
                 }
-                if (status != S_ACCEPTED) {
-                    return S_REDEFINED;
+
+                if (literal == NULL) {
+                    return S_ILLEGALRECURSION;
+                }
+
+                switch (literal->value.kind) {
+                case V_LONGLONG:
+                    value = (c_long)literal->value.is.LongLong;
+                    literal->value.kind = V_LONG;
+                    literal->value.is.Long = value;
+                break;
+                case V_LONG:
+                    value = (c_long)literal->value.is.Long;
+                break;
+                default:
+                    return S_ILLEGALRECURSION;
                 }
             }
         }
-        if (status != S_REDECLARED) {
-            for (i=0; i<length; i++) {
-                c = c_constant(c_enumeration(o)->elements[i]);
-                c->type = c_keep(o); /* The constant has a managed ref. to type */
-                if (c->operand == NULL) { /* typical in the odlpp */
-                    c->operand = (c_operand)c_metaDefine(c_metaObject(o),
-                                                         M_LITERAL);
-                    c_literal(c->operand)->value.kind = V_LONG;
-                    c_literal(c->operand)->value.is.Long = i;
-                }
-            }
-            _TYPEINIT_(o,c_metaKind);
-        }
+        _TYPEINIT_(o,c_metaKind);
     }
     break;
     case M_INTERFACE:
@@ -1246,7 +1494,8 @@ c__metaFinalize(
         c_iter iter;
         c_type type;
         c_property *properties;
-        c_address length,offset;
+        os_size_t offset;
+        c_ulong length;
         c_iter refList;
 
         alignment = 0; size = 0;
@@ -1259,7 +1508,6 @@ c__metaFinalize(
                 assert(alignment > 0);
             }
         }
-
         iter = c_iterNew(NULL);
         metaScopeWalk(c_metaObject(o), getPropertiesScopeWalkAction, iter);
         if (c_interface(o)->inherits != NULL) {
@@ -1338,11 +1586,20 @@ if ((offset != 0) && (offset != property->offset)) {
     c_free(propertyMetaName);
     c_free(objectMetaName);
 }
+#else
+    OS_UNUSED_ARG(offset);
 #endif
 
                 }
             }
             os_free(properties);
+        }
+
+        /* c_any and c_object have no properties and therefore alignment has
+         * not been calculated.
+         */
+        if (alignment == 0) {
+            alignment = objectAlignment;
         }
 
         if (!c_isFinal(o)) {
@@ -1352,13 +1609,11 @@ if ((offset != 0) && (offset != property->offset)) {
 
         if (refList != NULL) {
             i=0;
-            type = c_property_t(c__getBase(o));
-            c_interface(o)->references = c_arrayNew(type,c_iterLength(refList));
+            c_interface(o)->references = c_arrayNew(c_property_t(c__getBase(o)),c_iterLength(refList));
             while ((property = c_iterTakeFirst(refList)) != NULL) {
                 c_interface(o)->references[i++] = c_keep(property);
             }
             c_iterFree(refList);
-            c_free(type);
         }
     }
     break;
@@ -1476,12 +1731,12 @@ c_metaName(
     }
 }
 
-c_long
+size_t
 c_metaNameLength(
     c_metaObject o)
 {
     c_char *name;
-    c_long length;
+    size_t length;
 
     name = c_metaName(o);
     if (name == NULL) {
@@ -1498,7 +1753,7 @@ c_metaScopedName(
     c_metaObject o)
 {
     c_char *scopedName, *ptr;
-    c_long length;
+    size_t length;
     c_iter path = NULL;
     c_metaObject scope,previous;
     c_char *name;
@@ -1580,7 +1835,7 @@ c_expressionValue(
     result = (c_literal)c_metaDefine(scope,M_LITERAL);
 
 #define _CASE_(l,o) \
-    case l: result->value = c_valueCalculate(left->value,right->value,o); \
+    case l: assert(left && right); result->value = c_valueCalculate(left->value,right->value,o); \
     break
 
     switch(expr->kind) {
@@ -1594,40 +1849,45 @@ c_expressionValue(
     _CASE_(E_MOD,O_MOD);
     case E_PLUS:
         if (c_arraySize(expr->operands) > 1) {
+            assert(left && right);
             result->value = c_valueCalculate(left->value,right->value,O_ADD);
         } else {
+            assert(left);
             result->value = left->value;
         }
     break;
     case E_MINUS:
         if (c_arraySize(expr->operands) > 1) {
+            assert(left && right);
             result->value = c_valueCalculate(left->value,right->value,O_SUB);
         } else {
-#define _MINUS_(d,s,t) d.is.t = -s.is.t
+#define _MINUS_(d,s,t,ct) d.is.t = (ct) -s.is.t
+            assert(left);
             result->value.kind = left->value.kind;
             switch (left->value.kind) {
-            case V_OCTET: _MINUS_(result->value,left->value,Octet); break;
-            case V_SHORT: _MINUS_(result->value,left->value,Short); break;
-            case V_LONG: _MINUS_(result->value,left->value,Long); break;
-            case V_LONGLONG: _MINUS_(result->value,left->value,LongLong); break;
-            case V_FLOAT: _MINUS_(result->value,left->value,Float); break;
-            case V_DOUBLE: _MINUS_(result->value,left->value,Double); break;
+            case V_OCTET: _MINUS_(result->value,left->value,Octet,c_octet); break;
+            case V_SHORT: _MINUS_(result->value,left->value,Short,c_short); break;
+            case V_LONG: _MINUS_(result->value,left->value,Long,c_long); break;
+            case V_LONGLONG: _MINUS_(result->value,left->value,LongLong,c_longlong); break;
+            case V_FLOAT: _MINUS_(result->value,left->value,Float,c_float); break;
+            case V_DOUBLE: _MINUS_(result->value,left->value,Double,c_double); break;
             default : assert(FALSE);
             }
 #undef _MINUS_
         }
     break;
     case E_NOT:
-#define _NOT_(d,s,t) d.is.t = ~s.is.t
+#define _NOT_(d,s,t,ct) d.is.t = (ct) ~s.is.t
+        assert(left);
         result->value.kind = left->value.kind;
         switch (left->value.kind) {
-        case V_OCTET: _NOT_(result->value,left->value,Octet); break;
-        case V_SHORT: _NOT_(result->value,left->value,Short); break;
-        case V_USHORT: _NOT_(result->value,left->value,UShort); break;
-        case V_LONG: _NOT_(result->value,left->value,Long); break;
-        case V_ULONG: _NOT_(result->value,left->value,ULong); break;
-        case V_LONGLONG: _NOT_(result->value,left->value,LongLong); break;
-        case V_ULONGLONG: _NOT_(result->value,left->value,ULongLong); break;
+        case V_OCTET: _NOT_(result->value,left->value,Octet,c_octet); break;
+        case V_SHORT: _NOT_(result->value,left->value,Short,c_short); break;
+        case V_USHORT: _NOT_(result->value,left->value,UShort,c_ushort); break;
+        case V_LONG: _NOT_(result->value,left->value,Long,c_long); break;
+        case V_ULONG: _NOT_(result->value,left->value,ULong,c_ulong); break;
+        case V_LONGLONG: _NOT_(result->value,left->value,LongLong,c_longlong); break;
+        case V_ULONGLONG: _NOT_(result->value,left->value,ULongLong,c_ulonglong); break;
         default : assert(FALSE);
         }
 #undef _NOT_
@@ -1664,7 +1924,7 @@ c_enumValue (
     c_enumeration e,
     const c_char *label)
 {
-    c_long i,length;
+    c_ulong i,length;
     c_string metaName;
 
     if (e == NULL) {
@@ -1685,7 +1945,7 @@ c_enumValue (
     return NULL;
 }
 
-int
+os_size_t
 c_alignment(
     c_baseObject o)
 {
@@ -1726,7 +1986,7 @@ c_alignment(
     }
 }
 
-int
+os_size_t
 c_getSize(
     c_baseObject o)
 {
@@ -1813,7 +2073,7 @@ c_metaValueKind(
     case M_UNIONCASE:
         return c_metaValueKind(c_metaObject(c_specifier(o)->type));
     case M_COLLECTION:
-        if (c_collectionType(o)->kind == C_STRING) return V_STRING;
+        if (c_collectionType(o)->kind == OSPL_C_STRING) return V_STRING;
     case M_CLASS:
     case M_INTERFACE:
     case M_ANNOTATION:
@@ -1838,7 +2098,7 @@ c_metaAttributeNew(
     c_metaObject scope,
     const c_char *name,
     c_type type,
-    c_address offset)
+    os_size_t offset)
 {
     c_metaObject o,found;
 
@@ -1857,7 +2117,7 @@ c_metaArrayTypeNew(
     c_metaObject scope,
     const c_char *name,
     c_type subType,
-    c_long maxSize)
+    c_ulong maxSize)
 {
     c_metaObject _this = NULL;
     c_metaObject found;
@@ -1867,7 +2127,7 @@ c_metaArrayTypeNew(
     }
     if (_this == NULL) {
         _this = c_metaDefine(c_metaObject(c__getBase(scope)),M_COLLECTION);
-        c_collectionType(_this)->kind = C_ARRAY;
+        c_collectionType(_this)->kind = OSPL_C_ARRAY;
         c_collectionType(_this)->subType = c_keep(subType);
         c_collectionType(_this)->maxSize = maxSize;
         c_metaFinalize(_this);
@@ -1884,11 +2144,46 @@ c_metaArrayTypeNew(
 }
 
 c_type
+c_metaArrayTypeNew_s(
+    c_metaObject scope,
+    const c_char *name,
+    c_type subType,
+    c_ulong maxSize)
+{
+    c_metaObject _this = NULL;
+    c_metaObject found;
+
+    if (name) {
+        _this = c_metaResolve(scope, name);
+    }
+    if (_this == NULL) {
+        _this = c_metaDefine_s(c_metaObject(c__getBase(scope)),M_COLLECTION);
+        c_collectionType(_this)->kind = OSPL_C_ARRAY;
+        c_collectionType(_this)->subType = c_keep(subType);
+        c_collectionType(_this)->maxSize = maxSize;
+        c_metaFinalize(_this);
+        if (name) {
+            found = c_metaBind_s(scope, name, _this);
+            if (found) {
+                c_free(_this);
+                if (found != _this) {
+                    _this = found;
+                }
+            } else {
+                c_free(_this);
+                _this = NULL;
+            }
+        }
+    }
+    return c_type(_this);
+}
+
+c_type
 c_metaSequenceTypeNew(
     c_metaObject scope,
     const c_char *name,
     c_type subType,
-    c_long maxSize)
+    c_ulong maxSize)
 {
     c_metaObject _this = NULL;
     c_metaObject found;
@@ -1898,7 +2193,7 @@ c_metaSequenceTypeNew(
     }
     if (_this == NULL) {
         _this = c_metaDefine(c_metaObject(c__getBase(scope)),M_COLLECTION);
-        c_collectionType(_this)->kind = C_SEQUENCE;
+        c_collectionType(_this)->kind = OSPL_C_SEQUENCE;
         c_collectionType(_this)->subType = c_keep(subType);
         c_collectionType(_this)->maxSize = maxSize;
         c_metaFinalize(_this);
@@ -1914,11 +2209,46 @@ c_metaSequenceTypeNew(
     return c_type(_this);
 }
 
+c_type
+c_metaSequenceTypeNew_s(
+    c_metaObject scope,
+    const c_char *name,
+    c_type subType,
+    c_ulong maxSize)
+{
+    c_metaObject _this = NULL;
+    c_metaObject found;
+
+    if (name) {
+        _this = c_metaResolve(scope, name);
+    }
+    if (_this == NULL) {
+        _this = c_metaDefine_s(c_metaObject(c__getBase(scope)),M_COLLECTION);
+        c_collectionType(_this)->kind = OSPL_C_SEQUENCE;
+        c_collectionType(_this)->subType = c_keep(subType);
+        c_collectionType(_this)->maxSize = maxSize;
+        c_metaFinalize(_this);
+        if (name) {
+            found = c_metaBind_s(scope, name, _this);
+            if (found) {
+                c_free(_this);
+                if (found != _this) {
+                    _this = found;
+                }
+            } else {
+                c_free(_this);
+                _this = NULL;
+            }
+        }
+    }
+    return c_type(_this);
+}
+
 void
 c_metaTypeInit(
     c_object o,
-    c_long size,
-    c_long alignment)
+    os_size_t size,
+    os_size_t alignment)
 {
     c_type(o)->base = c__getBase(o);
     c_type(o)->alignment = alignment;
@@ -1947,11 +2277,11 @@ c_typeCopy(
 static void
 copyScopeObject(
     c_metaObject o,
-    c_metaObject scope)
+    c_scopeWalkActionArg scope)
 {
     c_metaObject found;
 
-    found = metaScopeInsert(scope,o);
+    found = metaScopeInsert((c_metaObject)scope,o);
     assert(found == o);
     c_free(found);
 }
@@ -2037,6 +2367,16 @@ c_metaCopy(
     }
 }
 
+#if 0
+static void
+c_metaPrintWalk(
+    c_metaObject o,
+    c_scopeWalkActionArg actionArg)
+{
+    OS_UNUSED_ARG(actionArg);
+    c_metaPrint(o);
+}
+
 void
 c_metaPrint(
     c_metaObject o,
@@ -2062,7 +2402,7 @@ c_metaPrint(
         } else {
             printf("class %s {\n",name);
         }
-        c_scopeWalk(c_interface(o)->scope, c_metaPrint, NULL);
+        c_scopeWalk(c_interface(o)->scope,c_metaPrintWalk,NULL);
         printf("};\n\n");
     break;
     case M_ANNOTATION:
@@ -2091,6 +2431,7 @@ c_metaPrint(
     break;
     }
 }
+#endif
 
 #define metaNameCompare(scope,name,filter) \
         _metaNameCompare (c_baseObject(scope),name,filter)
@@ -2099,7 +2440,7 @@ static c_metaEquality
 _metaNameCompare (
     c_baseObject baseObject,
     const char *name,
-    c_long metaFilter)
+    c_ulong metaFilter)
 {
     c_metaEquality equality = E_UNEQUAL;
     char *objName;
@@ -2134,12 +2475,12 @@ static c_baseObject
 _metaResolveName(
     c_metaObject scope,
     const char *name,
-    c_long metaFilter)
+    c_ulong metaFilter)
 {
     c_baseObject o;
     c_specifier sp;
     c_unionCase uc;
-    c_long i,length;
+    c_ulong i,length;
 
     if (scope == NULL) {
         return NULL;
@@ -2191,12 +2532,12 @@ c_baseObject
 c_metaFindByComp (
     c_metaObject scope,
     const char *name,
-    c_long metaFilter)
+    c_ulong metaFilter)
 {
     c_baseObject o = NULL;
     const c_char *head,*tail;
     c_char *str;
-    c_long length;
+    c_size length;
     c_state state;
     c_token tok;
 
@@ -2265,9 +2606,9 @@ c_metaFindByComp (
             }
         break;
         case TK_IDENT:
-            length = abs((c_address)tail - (c_address)head)+1;
+            length = (c_size) (tail - head + 1);
             str = (char *)os_malloc(length);
-            os_strncpy(str,head,length);
+            memcpy(str,head,length-1);
             str[length-1]=0;
 
             switch (state) {
@@ -2334,7 +2675,7 @@ c_baseObject
 c_metaFindByName (
     c_metaObject scope,
     const char *name,
-    c_long metaFilter)
+    c_ulong metaFilter)
 {
     return c_metaFindByComp (scope, name, metaFilter);
 }

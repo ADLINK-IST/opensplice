@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -27,16 +35,21 @@ static c_bool
 v_participantQosValidValues(
     v_participantQos qos)
 {
-    int valuesOk;
+    c_ulong valuesNok;
 
     /* no typechecking, since qos might be allocated on heap! */
-    valuesOk = 1;
+    valuesNok = 0;
     if (qos != NULL) {
-        valuesOk &= v_entityFactoryPolicyValid(qos->entityFactory);
-        valuesOk &= v_userDataPolicyValid(qos->userData);
-        valuesOk &= v_schedulingPolicyValid(qos->watchdogScheduling);
+        valuesNok |= (c_ulong) (!v_entityFactoryPolicyIValid(qos->entityFactory)) << V_ENTITYFACTORYPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_userDataPolicyIValid(qos->userData)) << V_USERDATAPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_schedulingPolicyIValid(qos->watchdogScheduling)) << V_SCHEDULINGPOLICY_ID;
     }
-    return (valuesOk?TRUE:FALSE);
+
+    if (valuesNok) {
+        v_policyReportInvalid(valuesNok);
+    }
+
+    return (valuesNok) ? FALSE : TRUE;
 }
 
 /**************************************************************
@@ -48,45 +61,39 @@ v_participantQosNew(
     v_participantQos template)
 {
     v_participantQos q;
-    c_type type;
     c_base base;
 
     assert(kernel != NULL);
     assert(C_TYPECHECK(kernel,v_kernel));
 
-    if (v_participantQosValidValues(template)) {
-        base = c_getBase(c_object(kernel));
-        q = v_participantQos(v_qosCreate(kernel,V_PARTICIPANT_QOS));
-        if (q != NULL) {
-            if (template != NULL) {
-
-                q->userData.size = template->userData.size;
-                if (template->userData.size > 0) {
-                    type = c_octet_t(base);
-                    q->userData.value = c_arrayNew(type,template->userData.size);
-                    c_free(type);
-                    memcpy(q->userData.value,template->userData.value,template->userData.size);
+    base = c_getBase(c_object(kernel));
+    q = v_participantQos(v_qosCreate(base,V_PARTICIPANT_QOS));
+    if (q != NULL) {
+        if (template != NULL) {
+            q->userData.v.size = template->userData.v.size;
+            if (template->userData.v.size > 0) {
+                q->userData.v.value = c_arrayNew_s(c_octet_t(base),(c_ulong)template->userData.v.size);
+                if (q->userData.v.value) {
+                    memcpy(q->userData.v.value,template->userData.v.value,(c_ulong)template->userData.v.size);
                 } else {
-                    q->userData.value = NULL;
+                    OS_REPORT(OS_ERROR, "v_participantQosNew", V_RESULT_OUT_OF_MEMORY,
+                              "Failed to allocate user_data policy of participant QoS.");
+                    c_free(q);
+                    return NULL;
                 }
-                q->entityFactory = template->entityFactory;
-                q->watchdogScheduling.kind = template->watchdogScheduling.kind;
-                q->watchdogScheduling.priorityKind = template->watchdogScheduling.priorityKind;
-                q->watchdogScheduling.priority = template->watchdogScheduling.priority;
             } else {
-                q->userData.value                            = NULL;
-                q->userData.size                             = 0;
-                q->entityFactory.autoenable_created_entities = TRUE;
-		q->watchdogScheduling.kind = V_SCHED_DEFAULT;
-                q->watchdogScheduling.priorityKind = V_SCHED_PRIO_RELATIVE;
-		q->watchdogScheduling.priority = 0;
-;
+                q->userData.v.value = NULL;
             }
+            q->entityFactory = template->entityFactory;
+            q->watchdogScheduling = template->watchdogScheduling;
+        } else {
+            q->userData.v.value                            = NULL;
+            q->userData.v.size                             = 0;
+            q->entityFactory.v.autoenable_created_entities = TRUE;
+            q->watchdogScheduling.v.kind = V_SCHED_DEFAULT;
+            q->watchdogScheduling.v.priorityKind = V_SCHED_PRIO_RELATIVE;
+            q->watchdogScheduling.v.priority = 0;
         }
-    } else {
-        OS_REPORT(OS_ERROR, "v_participantQosNew", 0,
-            "ParticipantQos not create: inconsistent qos");
-        q = NULL;
     }
 
     return q;
@@ -103,62 +110,56 @@ v_participantQosFree(
  * Protected functions
  **************************************************************/
 v_result
-v_participantQosSet(
+v_participantQosCompare(
     v_participantQos q,
     v_participantQos tmpl,
     v_qosChangeMask *changeMask)
 {
     v_qosChangeMask cm;
     v_result result;
-    c_type type;
 
     cm = 0;
-    if ((q != NULL) && (tmpl != NULL)) {
-        /* no consistency checking needed */
-        if (v_participantQosValidValues(tmpl)) {
-            /* built change mask */
-            if (!v_entityFactoryPolicyEqual(q->entityFactory, tmpl->entityFactory)) {
-                cm |= V_POLICY_BIT_ENTITYFACTORY;
-            }
-            if (!v_userDataPolicyEqual(q->userData, tmpl->userData)) {
-                cm |= V_POLICY_BIT_USERDATA;
-            }
-            if (!v_schedulingPolicyEqual(q->watchdogScheduling, tmpl->watchdogScheduling)) {
-                cm |= V_POLICY_BIT_SCHEDULING;
-            }
-            /* check whether immutable policies are changed */
-            if (cm & immutableMask) {
-                result = V_RESULT_IMMUTABLE_POLICY;
-            } else {
-                /* set new policies */
-                q->entityFactory = tmpl->entityFactory;
-                if (cm & V_POLICY_BIT_USERDATA) {
-                    c_free(q->userData.value);
-                    q->userData.size = tmpl->userData.size;
-                    if (tmpl->userData.size > 0) {
-                        type = c_octet_t(c_getBase(c_object(q)));
-                        q->userData.value = c_arrayNew(type,tmpl->userData.size);
-                        memcpy(q->userData.value,tmpl->userData.value,tmpl->userData.size);                
-                    } else {
-                        q->userData.value = NULL;
-                    }
-                }
-                result = V_RESULT_OK;
-            }
+    if ((q != NULL) && (tmpl != NULL) && (changeMask != NULL)) {
+        /* built change mask */
+            if (!v_entityFactoryPolicyIEqual(q->entityFactory, tmpl->entityFactory)) {
+            cm |= V_POLICY_BIT_ENTITYFACTORY;
+        }
+            if (!v_userDataPolicyIEqual(q->userData, tmpl->userData)) {
+            cm |= V_POLICY_BIT_USERDATA;
+        }
+            if (!v_schedulingPolicyIEqual(q->watchdogScheduling, tmpl->watchdogScheduling)) {
+            cm |= V_POLICY_BIT_SCHEDULING;
+        }
+        /* check whether immutable policies are changed */
+        if (cm & immutableMask) {
+            v_policyReportImmutable(cm, immutableMask);
+            result = V_RESULT_IMMUTABLE_POLICY;
         } else {
-            result = V_RESULT_ILL_PARAM;
+            *changeMask = cm;
+            result = V_RESULT_OK;
         }
     } else {
         result = V_RESULT_ILL_PARAM;
     }
-
-    if (changeMask != NULL) {
-        *changeMask = cm;
-    }
-
     return result;
 }
 
 /**************************************************************
  * Public functions
  **************************************************************/
+v_result
+v_participantQosCheck(
+    v_participantQos _this)
+{
+    v_result result = V_RESULT_OK;
+
+    if (_this) {
+        if (!v_participantQosValidValues(_this)) {
+            result = V_RESULT_ILL_PARAM;
+            OS_REPORT(OS_ERROR, "v_participantQosCheck", result,
+                "ParticipantQoS is invalid.");
+        }
+    }
+
+    return result;
+}

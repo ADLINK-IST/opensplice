@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #ifndef NN_RADMIN_H
 #define NN_RADMIN_H
 
@@ -38,7 +57,7 @@ struct nn_rmsg_chunk {
   os_uint32 size;
   union {
     /* payload array stretched to whatever it really is */
-    char payload[1];
+    unsigned char payload[1];
 
     /* to ensure reasonable alignment of payload[] */
     os_int64 l;
@@ -61,7 +80,7 @@ struct nn_rmsg {
      decrementing of refcounts until after a sample has been added to
      all radmins even though be delivery of it may take place in
      concurrently. */
-  os_uint32 refcount;
+  pa_uint32_t refcount;
 
   /* Worst-case memory requirement is gigantic (64kB UDP packet, only
      1-byte final fragments, each of one a new interval, or maybe 1
@@ -91,10 +110,12 @@ struct receiver_state {
   nn_guid_prefix_t src_guid_prefix;       /* 12 */
   nn_guid_prefix_t dst_guid_prefix;       /* 12 */
   struct addrset *reply_locators;         /* 4/8 */
+  int forme;                              /* 4 */
   nn_vendorid_t vendor;                   /* 2 */
-  nn_protocol_version_t protocol_version; /* 2 => 40/44 */
+  nn_protocol_version_t protocol_version; /* 2 => 44/48 */
   ddsi_tran_conn_t conn;                  /* Connection for request */
 };
+
 
 struct nn_rsample_info {
   os_int64 seq;
@@ -103,7 +124,7 @@ struct nn_rsample_info {
   os_uint32 size;
   os_uint32 fragsize;
   nn_ddsi_time_t timestamp;
-  os_int64 reception_timestamp; /* OpenSplice extension -- but we get it essentially for free, so why not? */
+  nn_wctime_t reception_timestamp; /* OpenSplice extension -- but we get it essentially for free, so why not? */
   unsigned statusinfo: 2;       /* just the two defined bits from the status info */
   unsigned pt_wr_info_zoff: 16; /* PrismTech writer info offset */
   unsigned bswap: 1;            /* so we can extract well formatted writer info quicker */
@@ -117,7 +138,7 @@ struct nn_rdata {
   os_ushort submsg_zoff;        /* offset to submessage from packet start, or 0 */
   os_ushort payload_zoff;       /* offset to payload from packet start */
 #ifndef NDEBUG
-  os_uint32 refcount_bias_added;
+  pa_uint32_t refcount_bias_added;
 #endif
 };
 
@@ -132,11 +153,11 @@ struct nn_rdata {
    the maximum size of the inline QoS ...  Defining the macros now, so
    we have the option to do wild things. */
 #ifndef NDEBUG
-#define NN_ZOFF_TO_OFF(zoff) (zoff)
-#define NN_OFF_TO_ZOFF(off) (assert ((unsigned) (off) < 65536 && ((off) % 4) == 0), (off))
+#define NN_ZOFF_TO_OFF(zoff) ((unsigned) (zoff))
+#define NN_OFF_TO_ZOFF(off) (assert ((off) < 65536 && ((off) % 4) == 0), ((unsigned short) (off)))
 #else
-#define NN_ZOFF_TO_OFF(zoff) (zoff)
-#define NN_OFF_TO_ZOFF(off) (off)
+#define NN_ZOFF_TO_OFF(zoff) ((unsigned) (zoff))
+#define NN_OFF_TO_ZOFF(off) ((unsigned short) (off))
 #endif
 #define NN_SAMPLEINFO_HAS_WRINFO(rsi) ((rsi)->pt_wr_info_zoff != NN_OFF_TO_ZOFF (0))
 #define NN_SAMPLEINFO_WRINFO_OFF(rsi) NN_ZOFF_TO_OFF ((rsi)->pt_wr_info_zoff)
@@ -181,7 +202,7 @@ typedef os_int32 nn_reorder_result_t;
 
 typedef void (*nn_dqueue_callback_t) (void *arg);
 
-struct nn_rbufpool *nn_rbufpool_new (int rbuf_size, int max_rmsg_size);
+struct nn_rbufpool *nn_rbufpool_new (os_uint32 rbuf_size, os_uint32 max_rmsg_size);
 void nn_rbufpool_setowner (struct nn_rbufpool *rbp, os_threadId tid);
 void nn_rbufpool_free (struct nn_rbufpool *rbp);
 
@@ -209,7 +230,7 @@ struct nn_rdata *nn_rsample_fragchain (struct nn_rsample *rsample);
 nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_reorder *reorder, struct nn_rsample *rsampleiv, int *refcount_adjust, int delivery_queue_full_p);
 nn_reorder_result_t nn_reorder_gap (struct nn_rsample_chain *sc, struct nn_reorder *reorder, struct nn_rdata *rdata, os_int64 min, os_int64 maxp1, int *refcount_adjust);
 int nn_reorder_wantsample (struct nn_reorder *reorder, os_int64 seq);
-int nn_reorder_nackmap (struct nn_reorder *reorder, os_int64 base, os_int64 maxseq, struct nn_sequence_number_set *map, os_uint32 maxsz, int notail);
+unsigned nn_reorder_nackmap (struct nn_reorder *reorder, os_int64 base, os_int64 maxseq, struct nn_sequence_number_set *map, os_uint32 maxsz, int notail);
 os_int64 nn_reorder_next_seq (const struct nn_reorder *reorder);
 
 struct nn_dqueue *nn_dqueue_new (const char *name, os_uint32 max_samples, nn_dqueue_handler_t handler, void *arg);

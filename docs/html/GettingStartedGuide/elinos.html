@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>17. ELinOS &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="18. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="16. UNIX ARM platform" href="unixarm.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="18. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="unixarm.html" title="16. UNIX ARM platform"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="elinos">
+<span id="id1"></span><h1>17. ELinOS<a class="headerlink" href="#elinos" title="Permalink to this headline">¶</a></h1>
+<p><em>This chapter provides notes about deploying OpenSplice DDS on ELinOS.</em></p>
+<div class="section" id="deployment-notes">
+<h2>17.1. Deployment notes<a class="headerlink" href="#deployment-notes" title="Permalink to this headline">¶</a></h2>
+<p>OpenSplice may be deployed in an ELinOS system.</p>
+<p>The following ELinOS features should be enabled:</p>
+<ul class="simple">
+<li>Kernel support for System-V IPC</li>
+<li>Use full <tt class="docutils literal"><span class="pre">shmem</span></tt> filesystem</li>
+<li><tt class="docutils literal"><span class="pre">tmpfs</span></tt></li>
+</ul>
+<p>The following system libraries are required:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">stdc++</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">pthread</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">rt</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">dl</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">z</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">m</span></tt></li>
+</ul>
+<blockquote>
+<div>?</div></blockquote>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>We do not recommend running with less than <strong>32M</strong> of system memory.</dd>
+</dl>
+</div>
+<div class="section" id="limitations">
+<h2>17.2. Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>ELinOS partitions within PikeOS are supported, but DDSI networking will
+not function as it requires a multicast-capable interface.</dd>
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>The native networking service is supported in a <em>broadcast</em> configuration.</dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">17. ELinOS</a><ul>
+<li><a class="reference internal" href="#deployment-notes">17.1. Deployment notes</a></li>
+<li><a class="reference internal" href="#limitations">17.2. Limitations</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="unixarm.html"
+                        title="previous chapter">16. UNIX ARM platform</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">18. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/elinos.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="18. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="unixarm.html" title="16. UNIX ARM platform"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

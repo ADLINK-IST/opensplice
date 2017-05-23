@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file
@@ -16,16 +24,38 @@
  */
 #include <stdio.h>
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0502
+/* Minimum Windows Server 2003 SP1, Windows XP SP2 == _WIN32_WINNT_WS03 (0x0502) */
+#error _WIN32_WINNT should be at least _WIN32_WINNT_WS03 (0x0502)
+#endif
+
+#include <winsock2.h>
+#include <Windows.h>
+#include <iphlpapi.h>
+
 #include "code/os__socket.h"
 
 #include "os_report.h"
 #include "os_heap.h"
 #include "os_stdlib.h"
-#include <iphlpapi.h>
-#pragma comment(lib, "IPHLPAPI.lib")
 
 #define WORKING_BUFFER_SIZE 15000
 #define MAX_TRIES 3
+
+static FARPROC qwaveQOSCreateHandleFunc = NULL;
+static FARPROC qwaveQOSCloseHandleFunc = NULL;
+static FARPROC qwaveQOSAddSocketToFlowFunc = NULL;
+static FARPROC qwaveQOSSetFlowFunc = NULL;
+static HANDLE qwaveDLLModuleHandle = NULL;
+static HANDLE qwaveDLLModuleLock = NULL;
 
 void
 os_socketModuleInit()
@@ -58,19 +88,26 @@ os_socketModuleInit()
         WSACleanup();
         return;
     }
+
+    qwaveDLLModuleLock = CreateMutex(NULL, FALSE, NULL);
+    if (qwaveDLLModuleLock == NULL) {
+        OS_REPORT (OS_ERROR, "os_socketModuleInit", 0, "Failed to create mutex");
+    }
 }
 
 void
 os_socketModuleExit(void)
 {
+    if (qwaveDLLModuleHandle) {
+        FreeLibrary(qwaveDLLModuleHandle);
+    }
+
+    if (qwaveDLLModuleLock) {
+        CloseHandle(qwaveDLLModuleLock);
+    }
+
     WSACleanup();
     return;
-}
-
-int
-os_sockError(void)
-{
-    return WSAGetLastError();
 }
 
 os_socket
@@ -89,7 +126,7 @@ os_sockBind(
 {
     os_result result = os_resultSuccess;
 
-    if (bind(s, (struct sockaddr *)name, namelen) == -1) {
+    if (bind(s, (struct sockaddr *)name, namelen) == SOCKET_ERROR) {
         result = os_resultFail;
     }
     return result;
@@ -104,7 +141,7 @@ os_sockGetsockname(
     os_result result = os_resultSuccess;
     int len = namelen;
 
-    if (getsockname(s, (struct sockaddr *)name, &len) == -1) {
+    if (getsockname(s, (struct sockaddr *)name, &len) == SOCKET_ERROR) {
         result = os_resultFail;
     }
     return result;
@@ -173,7 +210,7 @@ os_sockGetsockopt(
     {
        int dwoptlen = sizeof( DWORD );
        DWORD dwoptval = *((os_uchar *)optval);
-       if (getsockopt(s, level, optname, (char *)&dwoptval, &dwoptlen) == -1)
+       if (getsockopt(s, level, optname, (char *)&dwoptval, &dwoptlen) == SOCKET_ERROR)
        {
           result = os_resultFail;
        }
@@ -184,7 +221,7 @@ os_sockGetsockopt(
     }
     else
     {
-       if (getsockopt(s, level, optname, optval, (int *)optlen) == -1)
+       if (getsockopt(s, level, optname, optval, (int *)optlen) == SOCKET_ERROR)
        {
           result = os_resultFail;
        }
@@ -192,6 +229,259 @@ os_sockGetsockopt(
 
     return result;
 }
+
+
+static os_result
+os_sockSetDscpValueWithTos(
+    os_socket sock,
+    DWORD value)
+{
+    os_result result = os_resultSuccess;
+
+    if (setsockopt(sock, IPPROTO_IP, IP_TOS, (char *)&value, (int)sizeof(value)) == SOCKET_ERROR) {
+        int errNo = os_getErrno();
+        char *errorMessage = os_strError(errNo);
+        OS_REPORT(OS_WARNING, "os_sockSetDscpValue", 0,
+                   "Failed to set diffserv value to %ld: %d %s", value, errNo, errorMessage);
+        result = os_resultFail;
+    }
+
+    return result;
+}
+
+
+static os_result
+os_sockLoadQwaveLibrary(void)
+{
+    if (qwaveDLLModuleLock == NULL) {
+        OS_REPORT(OS_WARNING, "os_sockLoadQwaveLibrary", 0,
+                "Failed to load QWAVE.DLL for using diffserv on outgoing IP packets");
+        goto err_lock;
+    }
+
+    WaitForSingleObject(qwaveDLLModuleLock, INFINITE);
+    if (qwaveDLLModuleHandle == NULL) {
+        if ((qwaveDLLModuleHandle = LoadLibrary("QWAVE.DLL")) == NULL) {
+            OS_REPORT(OS_WARNING, "os_sockLoadQwaveLibrary", 0,
+                    "Failed to load QWAVE.DLL for using diffserv on outgoing IP packets");
+            goto err_load_lib;
+        }
+
+        qwaveQOSCreateHandleFunc = GetProcAddress(qwaveDLLModuleHandle, "QOSCreateHandle");
+        qwaveQOSCloseHandleFunc = GetProcAddress(qwaveDLLModuleHandle, "QOSCloseHandle");
+        qwaveQOSAddSocketToFlowFunc = GetProcAddress(qwaveDLLModuleHandle, "QOSAddSocketToFlow");
+        qwaveQOSSetFlowFunc = GetProcAddress(qwaveDLLModuleHandle, "QOSSetFlow");
+
+        if ((qwaveQOSCreateHandleFunc == NULL) || (qwaveQOSCloseHandleFunc == NULL) ||
+                (qwaveQOSAddSocketToFlowFunc == NULL) || (qwaveQOSSetFlowFunc == NULL)) {
+            OS_REPORT(OS_WARNING, "os_sockLoadQwaveLibrary", 0,
+                    "Failed to resolve entry points for using diffserv on outgoing IP packets");
+            goto err_find_func;
+        }
+    }
+    ReleaseMutex(qwaveDLLModuleLock);
+
+    return os_resultSuccess;
+
+err_find_func:
+err_load_lib:
+    ReleaseMutex(qwaveDLLModuleLock);
+err_lock:
+
+    return os_resultFail;
+}
+
+struct qos_version {
+    USHORT MajorVersion;
+    USHORT MinorVersion;
+};
+
+/* To set the DSCP value on Windows 7 or higher the following functions are used.
+ *
+ * - BOOL QOSCreateHandle(PQOS_VERSION Version, PHANDLE QOSHandle)
+ * - BOOL QOSCloseHandle(HANDLE QOSHandle)
+ * - BOOL WINAPI QOSAddSocketToFlow(HANDLE QOSHandle, SOCKET Socket,
+ *                                  PSOCKADDR DestAddr, QOS_TRAFFIC_TYPE TrafficType,
+ *                                  DWORD Flags, PQOS_FLOWID FlowId)
+ * - BOOL WINAPI QOSSetFlow(HANDLE QOSHandle, QOS_FLOWID FlowId,
+ *                          QOS_SET_FLOW Operation, ULONG Size, PVOID Buffer,
+ *                          DWORD Flags, LPOVERLAPPED Overlapped)
+ */
+
+
+/* QOS_TRAFFIC_TYPE
+ *  - QOSTrafficTypeBestEffort      = 0
+ *  - QOSTrafficTypeBackground      = 1
+ *  - QOSTrafficTypeExcellentEffort = 2
+ *  - QOSTrafficTypeAudioVideo      = 3
+ *  - QOSTrafficTypeVoice           = 4
+ *  - QOSTrafficTypeControl         = 5
+ */
+#define OS_SOCK_QOS_TRAFFIC_TYPE_BEST_EFFORT      0
+#define OS_SOCK_QOS_TRAFFIC_TYPE_BACKGROUND       1
+#define OS_SOCK_QOS_TRAFFIC_TYPE_EXCELLENT_EFFORT 2
+#define OS_SOCK_QOS_TRAFFIC_TYPE_AUDIO_VIDEO      3
+#define OS_SOCK_QOS_TRAFFIC_TYPE_VOICE            4
+#define OS_SOCK_QOS_TRAFFIC_TYPE_CONTROL          5
+
+/* Default DSCP values set by QOSAddSocketToFlow
+ *  0      : QOSTrafficTypeBestEffort      dscp  0
+ *  1 -  8 : QOSTrafficTypeBackground      dscp  8
+ *  9 - 40 : QOSTrafficTypeExcellentEffort dscp 40
+ * 41 - 55 : QOSTrafficTypeAudioVideo      dscp 40
+ * 56      : QOSTrafficTypeVoice           dscp 56
+ * 57 - 63 : QOSTrafficTypeControl         dscp 56
+ */
+#define OS_SOCK_BESTEFFORT_DSCP_VALUE         0
+#define OS_SOCK_BACKGROUND_DSCP_VALUE         8
+#define OS_SOCK_EXCELLENT_EFFORT_DSCP_VALUE  40
+#define OS_SOCK_VOICE_DSCP_VALUE             56
+
+/* QOS_NON_ADAPTIVE_FLOW */
+#define OS_SOCK_QOS_NON_ADAPTIVE_FLOW 0x00000002
+/* QOSSetOutgoingDSCPValue */
+#define OS_SOCK_QOS_SET_OUTGOING_DSCP_VALUE 2
+
+static void
+os_sockGetTrafficType(
+    DWORD value,
+    PLONG trafficType,
+    PLONG defaultValue)
+{
+    if (value == 0) {
+        *trafficType = OS_SOCK_QOS_TRAFFIC_TYPE_BEST_EFFORT;
+        *defaultValue = OS_SOCK_BESTEFFORT_DSCP_VALUE;
+    } else if (value <= OS_SOCK_BACKGROUND_DSCP_VALUE) {
+        *trafficType = OS_SOCK_QOS_TRAFFIC_TYPE_BACKGROUND;
+        *defaultValue = OS_SOCK_BACKGROUND_DSCP_VALUE;
+    } else if (value <= OS_SOCK_EXCELLENT_EFFORT_DSCP_VALUE) {
+        *trafficType = OS_SOCK_QOS_TRAFFIC_TYPE_EXCELLENT_EFFORT;
+        *defaultValue = OS_SOCK_EXCELLENT_EFFORT_DSCP_VALUE;
+    } else if (value < OS_SOCK_VOICE_DSCP_VALUE) {
+        *trafficType = OS_SOCK_QOS_TRAFFIC_TYPE_AUDIO_VIDEO;
+        *defaultValue = OS_SOCK_EXCELLENT_EFFORT_DSCP_VALUE;
+    } else if (value == OS_SOCK_VOICE_DSCP_VALUE) {
+        *trafficType = OS_SOCK_QOS_TRAFFIC_TYPE_VOICE;
+        *defaultValue = OS_SOCK_VOICE_DSCP_VALUE;
+    } else {
+        *trafficType = OS_SOCK_QOS_TRAFFIC_TYPE_CONTROL;
+        *defaultValue = OS_SOCK_VOICE_DSCP_VALUE;
+    }
+}
+
+
+static os_result
+os_sockSetDscpValueWithQos(
+    os_socket sock,
+    DWORD value,
+    BOOL setDscpSupported)
+{
+    os_result result = os_resultSuccess;
+    struct qos_version version;
+    HANDLE qosHandle = NULL;
+    ULONG qosFlowId = 0; /* Flow Id must be 0. */
+    BOOL qosResult;
+    LONG trafficType;
+    LONG defaultDscp;
+    char* errorMessage;
+    int errNo;
+    SOCKADDR_IN sin;
+
+    memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
+
+    /* version must be 1.0 */
+    version.MajorVersion = 1;
+    version.MinorVersion = 0;
+
+    /* Get a handle to the QoS subsystem. */
+    qosResult = (BOOL)qwaveQOSCreateHandleFunc(&version, &qosHandle);
+    if (!qosResult) {
+        errNo = os_getErrno();
+        errorMessage = os_strError(errNo);
+        OS_REPORT(OS_ERROR, "os_sockSetDscpValue", 0,
+                "QOSCreateHandle failed: %d %s", errNo, errorMessage);
+        goto err_create_handle;
+    }
+
+    os_sockGetTrafficType(value, &trafficType, &defaultDscp);
+
+    /*  Add socket to flow. */
+    qosResult = (BOOL)qwaveQOSAddSocketToFlowFunc(qosHandle, sock, (PSOCKADDR)&sin,
+            trafficType, OS_SOCK_QOS_NON_ADAPTIVE_FLOW, &qosFlowId);
+    if (!qosResult) {
+        errNo = os_getErrno();
+        errorMessage = os_strError(errNo);
+        OS_REPORT(OS_ERROR, "os_sockSetDscpValue", 0,
+                "QOSAddSocketToFlow failed: %d %s", errNo, errorMessage);
+        qwaveQOSCloseHandleFunc(qosHandle);
+        goto err_add_flow;
+    }
+
+    if (value != defaultDscp) {
+
+        if (!setDscpSupported) {
+            OS_REPORT(OS_WARNING, "os_sockSetDscpValue", 0,
+                    "Failed to set diffserv value to %ld value used is %d, not supported on this platform",
+                    value, defaultDscp);
+            goto err_set_flow;
+        }
+
+        /* Try to set DSCP value. Requires administrative rights to succeed */
+        qosResult = (BOOL)qwaveQOSSetFlowFunc(qosHandle, qosFlowId, OS_SOCK_QOS_SET_OUTGOING_DSCP_VALUE,
+                sizeof(value), &value, 0, NULL);
+        if (!qosResult) {
+            errNo = os_getErrno();
+            if ((errNo == ERROR_ACCESS_DENIED) || (errNo == ERROR_ACCESS_DISABLED_BY_POLICY)) {
+                OS_REPORT(OS_WARNING, "os_sockSetDscpValue", 0,
+                        "Failed to set diffserv value to %ld value used is %d, not enough privileges",
+                        value, defaultDscp);
+            } else {
+                errorMessage = os_strError(errNo);
+                OS_REPORT(OS_ERROR, "os_sockSetDscpValue", 0,
+                        "QOSSetFlow failed: %d %s", errNo, errorMessage);
+            }
+            goto err_set_flow;
+        }
+    }
+
+    return result;
+
+err_set_flow:
+err_add_flow:
+err_create_handle:
+
+    return result;
+}
+
+
+static os_result
+os_sockSetDscpValue(
+    os_socket sock,
+    DWORD value)
+{
+    os_result result = os_resultFail;
+    OSVERSIONINFO version;
+
+    version.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+
+    if (GetVersionEx(&version)) {
+        if (version.dwMajorVersion >= 6) {
+            if (os_sockLoadQwaveLibrary() == os_resultSuccess) {
+                result = os_sockSetDscpValueWithQos(sock, value, (version.dwMinorVersion != 0));
+            }
+        } else {
+            result = os_sockSetDscpValueWithTos(sock, value);
+        }
+    } else {
+        OS_REPORT(OS_WARNING, "os_sockSetDscpValue", 0,
+                  "Failed to get version information");
+        result = os_sockSetDscpValueWithTos(sock, value);
+    }
+
+    return result;
+}
+
 
 os_result
 os_sockSetsockopt(
@@ -204,19 +494,26 @@ os_sockSetsockopt(
     os_result result = os_resultSuccess;
     DWORD dwoptval;
 
-    /* On win32 IP_MULTICAST_TTL and IP_MULTICAST_LOOP take DWORD * param
-       rather than char * */
-    if ( level == IPPROTO_IP
-     && ( optname == IP_MULTICAST_TTL
-          || optname == IP_MULTICAST_LOOP ) )
-    {
-       dwoptval = *((os_uchar *)optval);
-       optval = &dwoptval;
-       optlen = sizeof( DWORD );
+    if ((level == IPPROTO_IP) && (optname == IP_TOS)) {
+        dwoptval = *((os_uchar *)optval);
+        if (dwoptval != 0) {
+            result = os_sockSetDscpValue(s, dwoptval);
+        }
+    } else if ((optname == IP_MULTICAST_TTL) || (optname == IP_MULTICAST_LOOP)) {
+        /* On win32 IP_MULTICAST_TTL and IP_MULTICAST_LOOP take DWORD * param
+           rather than char * */
+        dwoptval = *((os_uchar *)optval);
+        optval = &dwoptval;
+        optlen = sizeof( DWORD );
+        if (setsockopt(s, level, optname, optval, (int)optlen) == SOCKET_ERROR) {
+            result = os_resultFail;
+        }
+    } else {
+        if (setsockopt(s, level, optname, optval, (int)optlen) == SOCKET_ERROR) {
+            result = os_resultFail;
+        }
     }
-    if (setsockopt(s, level, optname, optval, (int)optlen) == -1) {
-        result = os_resultFail;
-    }
+
     return result;
 }
 
@@ -239,7 +536,7 @@ os_sockSetNonBlocking(
     if (result != SOCKET_ERROR){
         r = os_resultSuccess;
     } else {
-        switch(WSAGetLastError()){
+        switch(os_getErrno()){
             case WSAEINPROGRESS:
                 r = os_resultBusy;
                 break;
@@ -275,13 +572,15 @@ os_sockSelect(
     fd_set *readfds,
     fd_set *writefds,
     fd_set *errorfds,
-    os_time *timeout)
+    os_duration timeout)
 {
     struct timeval t;
     int r;
 
-    t.tv_sec = (long)timeout->tv_sec;
-    t.tv_usec = (long)(timeout->tv_nsec / 1000);
+    assert(OS_DURATION_ISPOSITIVE(timeout));
+
+    t.tv_sec = (long)OS_DURATION_GET_SECONDS(timeout);
+    t.tv_usec = (long)(OS_DURATION_GET_NANOSECONDS(timeout) / 1000);
     r = select(nfds, readfds, writefds, errorfds, &t);
 
     return r;
@@ -327,18 +626,15 @@ addressToIndexAndMask(struct sockaddr *addr, unsigned int *ifIndex, struct socka
     PMIB_IPADDRTABLE pIPAddrTable = NULL;
     DWORD dwSize = 0;
     DWORD i;
-    char* errorMessage;
     int errNo;
 
     if (GetIpAddrTable(pIPAddrTable, &dwSize, 0) == ERROR_INSUFFICIENT_BUFFER) {
         pIPAddrTable = (MIB_IPADDRTABLE *) os_malloc(dwSize);
         if (pIPAddrTable != NULL) {
             if (GetIpAddrTable(pIPAddrTable, &dwSize, 0) != NO_ERROR) {
-                errNo = os_sockError();
-                errorMessage = os_reportErrnoToString(errNo);
+                errNo = os_getErrno();
                 os_report(OS_ERROR, "addressToIndexAndMask", __FILE__, __LINE__, 0,
-                      "GetIpAddrTable failed: %d %s", errNo, errorMessage);
-                os_free(errorMessage);
+                      "GetIpAddrTable failed: %d %s", errNo, os_strError (errNo));
                 result = os_resultFail;
             }
         } else {
@@ -347,11 +643,9 @@ addressToIndexAndMask(struct sockaddr *addr, unsigned int *ifIndex, struct socka
             result = os_resultFail;
         }
     } else {
-        errNo = os_sockError();
-        errorMessage = os_reportErrnoToString(errNo);
+        errNo = os_getErrno();
         os_report(OS_ERROR, "addressToIndexAndMask", __FILE__, __LINE__, 0,
-                    "GetIpAddrTable failed: %d %s", errNo, errorMessage);
-        os_free(errorMessage);
+                    "GetIpAddrTable failed: %d %s", errNo, os_strError (errNo));
         result = os_resultFail;
     }
 
@@ -455,7 +749,7 @@ os_sockQueryInterfaces(
 
             snprintf(ifList[listIndex].name, OS_IFNAMESIZE, "%wS", pCurrAddress->FriendlyName);
 
-            // Get interface flags.
+            /* Get interface flags. */
             ifList[listIndex].flags = getInterfaceFlags(pCurrAddress);
             ifList[listIndex].interfaceIndexNo = ipv4Index;
 
@@ -475,7 +769,7 @@ os_sockQueryInterfaces(
         if (pCurrAddress->OperStatus != IfOperStatusUp) {
             snprintf(ifList[listIndex].name, OS_IFNAMESIZE, "%wS", pCurrAddress->FriendlyName);
 
-            // Get interface flags.
+            /* Get interface flags. */
             ifList[listIndex].flags = getInterfaceFlags(pCurrAddress);
             ifList[listIndex].interfaceIndexNo = 0;
             memset (&ifList[listIndex].address, 0, sizeof(ifList[listIndex].address));
@@ -570,7 +864,7 @@ os_sockQueryIPv6Interfaces (
 
             snprintf(ifList[listIndex].name, OS_IFNAMESIZE, "%wS", pCurrAddress->FriendlyName);
 
-            // Get interface flags.
+            /* Get interface flags. */
             ifList[listIndex].flags = getInterfaceFlags(pCurrAddress);
             ifList[listIndex].interfaceIndexNo = (os_uint) pCurrAddress->Ipv6IfIndex;
 
@@ -615,7 +909,7 @@ os_sockQueryIPv6Interfaces (
         if (pCurrAddress->OperStatus != IfOperStatusUp) {
             snprintf(ifList[listIndex].name, OS_IFNAMESIZE, "%wS", pCurrAddress->FriendlyName);
 
-              // Get interface flags.
+              /* Get interface flags. */
               ifList[listIndex].flags = getInterfaceFlags(pCurrAddress);
               ifList[listIndex].interfaceIndexNo = 0;
               memset (&ifList[listIndex].address, 0, sizeof(ifList[listIndex].address));
@@ -688,6 +982,7 @@ os_sockGetInterfaceStatus (
 typedef struct os_sockQueryInterfaceStatusInfo_s {
     char *ifName;
     OVERLAPPED overlap;
+    HANDLE hHandle;
 } os_sockQueryInterfaceStatusInfo;
 
 
@@ -702,6 +997,7 @@ os_sockQueryInterfaceStatusDeinit(
             os_free(info->ifName);
         }
         CancelIPChangeNotify(&info->overlap);
+        CloseHandle(info->hHandle);
         os_free(info);
     }
 }
@@ -717,7 +1013,7 @@ os_sockQueryInterfaceStatusReset(
     (void)CancelIPChangeNotify(&info->overlap);
     ret = NotifyAddrChange(&hand, &info->overlap);
     if (ret != NO_ERROR) {
-        if (WSAGetLastError() != WSA_IO_PENDING) {
+        if (os_getErrno() != WSA_IO_PENDING) {
             os_report(OS_ERROR, "os_sockQueryInterfaceStatusReset", __FILE__, __LINE__, 0,
                           "Failed to reset notifications for network interface address changes");
         }
@@ -747,13 +1043,22 @@ os_sockQueryInterfaceStatusInit(
     if (info) {
         info->overlap.hEvent = WSACreateEvent();
         ret = NotifyAddrChange(&hand, &info->overlap);
-        if (ret != NO_ERROR) {
-            if (WSAGetLastError() != WSA_IO_PENDING) {
-                os_free(info->ifName);
-                os_free(info);
-                info = NULL;
+        if ((ret != NO_ERROR) && (os_getErrno() != WSA_IO_PENDING)) {
+            os_free(info->ifName);
+            os_free(info);
+            info = NULL;
+            os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                      "Failed to administer for network interface address changes");
+        } else {
+            info->hHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
+            if (info->hHandle == NULL) {
+                int errNo = os_getErrno();
+                char *errorMessage = os_strError(errNo);
                 os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
-                          "Failed to administer for network interface address changes");
+                          "CreateEvent failed: %d %s", errNo, errorMessage);
+
+                os_sockQueryInterfaceStatusDeinit(info);
+                info = NULL;
             }
         }
     }
@@ -765,29 +1070,61 @@ os_sockQueryInterfaceStatusInit(
 os_result
 os_sockQueryInterfaceStatus(
     void *handle,
-    os_time timeout,
+    os_duration timeout,
     os_boolean *status)
 {
     os_sockQueryInterfaceStatusInfo *info = (os_sockQueryInterfaceStatusInfo *) handle;
     os_result result = os_resultFail;
     DWORD t;
+    DWORD r;
+    HANDLE hHandles[2];
 
     *status = OS_FALSE;
 
     if (info) {
-        assert(timeout.tv_sec >= 0);
-        t = (DWORD)timeout.tv_sec;
-        t = t * 1000 + timeout.tv_nsec / 1000000;
+        assert(timeout >= 0);
+        t = (DWORD)(timeout / OS_DURATION_MILLISECOND);
 
-        if (WaitForSingleObject(info->overlap.hEvent, t) == WAIT_OBJECT_0) {
+        hHandles[0] = info->overlap.hEvent;
+        hHandles[1] = info->hHandle;
+        r = WaitForMultipleObjects(2, hHandles, FALSE, t);
+        if (r == WAIT_OBJECT_0) {
             result = os_sockGetInterfaceStatus(info->ifName, status);
             os_sockQueryInterfaceStatusReset(info);
-        } else {
+        } else if ((r - WAIT_OBJECT_0) == 1) {
+            /* (Mis)using os_resultTimeout to indicate that woken from
+             * WaitForMultipleObjects and no status update is available */
             result = os_resultTimeout;
+        } else if (r == WAIT_TIMEOUT) {
+            result = os_resultTimeout;
+        } else {
+            result = os_resultFail;
         }
     }
 
     return result;
 }
+
+os_result
+os_sockQueryInterfaceStatusSignal(
+    void *handle)
+{
+    os_sockQueryInterfaceStatusInfo *info = (os_sockQueryInterfaceStatusInfo *) handle;
+    os_result result = os_resultFail;
+
+    if (info) {
+        if (!SetEvent(info->hHandle)) {
+            int errNo = os_getErrno();
+            char *errorMessage = os_strError(errNo);
+            os_report(OS_WARNING, "os_sockQueryInterfaceStatusSignal", __FILE__, __LINE__, 0,
+                    "SetEvent failed: %d %s",
+                    errNo, errorMessage);
+        } else {
+            result = os_resultSuccess;
+        }
+    }
+    return result;
+}
+
 
 #undef MAX_INTERFACES

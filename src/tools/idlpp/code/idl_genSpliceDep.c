@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -18,6 +26,7 @@
 #include "idl_scope.h"
 #include "idl_dependencies.h"
 #include "idl_genSpliceDep.h"
+#include "os_heap.h"
 
 /* fileOpen callback
 
@@ -29,6 +38,10 @@ idl_fileOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -42,6 +55,10 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -56,6 +73,11 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(structSpec);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -81,7 +103,14 @@ idl_structureMemberOpenClose(
 {
     idl_typeSpec actualType;
     char *bn;
+    char *sn;
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
 
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
+    sn = idl_scopeBasename(scope);
     /* QAC EXPECT 3416; No unexpected side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tarray) {
         actualType = idl_typeArrayActual(idl_typeArray(typeSpec));
@@ -89,10 +118,11 @@ idl_structureMemberOpenClose(
         if (idl_typeSpecType(actualType) != idl_tbasic) {
             bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(actualType)));
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-            if (strlen(bn) && (strcmp(idl_scopeBasename(scope), bn) != 0)) {
+            if (strlen(bn) && (strcmp(sn, bn) != 0)) {
                 /* referenced type is in different scope */
                 idl_depAdd(idl_depDefGet(), bn);
             }
+            os_free(bn);
         }
         /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
@@ -101,22 +131,25 @@ idl_structureMemberOpenClose(
         if (idl_typeSpecType(actualType) != idl_tbasic) {
             bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(actualType)));
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-            if (strlen(bn) && (strcmp (idl_scopeBasename(scope), bn) != 0)) {
+            if (strlen(bn) && (strcmp (sn, bn) != 0)) {
                 /* referenced type is in different scope */
                 idl_depAdd(idl_depDefGet(), bn);
             }
+            os_free(bn);
         }
         /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) != idl_tbasic) {
         bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(typeSpec)));
         /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-        if (strlen(bn) && (strcmp(idl_scopeBasename(scope), bn) != 0)) {
+        if (strlen(bn) && (strcmp(sn, bn) != 0)) {
             /* referenced type is in different scope */
             idl_depAdd(idl_depDefGet(), bn);
         }
+        os_free(bn);
     } else {
         /* Do nothing, only to prevent dangling else-ifs QAC messages */
     }
+    os_free(sn);
 }
 
 /* typedefOpenClose callback
@@ -137,7 +170,14 @@ idl_typedefOpenClose(
     idl_typeSpec arrayActual;
     idl_typeSpec seqActual;
     char *bn;
+    char *sn;
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
 
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
+    sn = idl_scopeBasename(scope);
     /* QAC EXPECT 3416; No unexpected side effects here */
     if (idl_typeSpecType(idl_typeDefRefered(defSpec)) != idl_tbasic) {
         /* if the refered type is not basic */
@@ -150,10 +190,11 @@ idl_typedefOpenClose(
                 /* if the arrays actual type is not basic */
                 bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(arrayActual)));
                 /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-                if (strlen (bn) && (strcmp(idl_scopeBasename(scope), bn) != 0)) {
+                if (strlen (bn) && (strcmp(sn, bn) != 0)) {
                     /* referenced type is in different scope */
                     idl_depAdd(idl_depDefGet(), bn);
                 }
+                os_free(bn);
 	       }
 	       /* QAC EXPECT 3416; No unexpected side effects here */
         } else if (idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tseq) {
@@ -164,21 +205,55 @@ idl_typedefOpenClose(
                 /* if the sequence actual type is not basic */
                 bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(seqActual)));
                 /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-                if (strlen (bn) && (strcmp(idl_scopeBasename(scope), bn) != 0)) {
+                if (strlen (bn) && (strcmp(sn, bn) != 0)) {
                     /* referenced type is in different scope */
                     idl_depAdd(idl_depDefGet(), bn);
                 }
+                os_free(bn);
             }
         } else {
             /* the type is a structure or an union */
             bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(idl_typeDefRefered(defSpec))));
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-            if (strlen (bn) && (strcmp(idl_scopeBasename(scope), bn) != 0)) {
+            if (strlen (bn) && (strcmp(sn, bn) != 0)) {
                 /* referenced type is in different scope */
                 idl_depAdd(idl_depDefGet(), bn);
             }
+            os_free(bn);
         }
     }
+    os_free(sn);
+}
+
+/* constantOpenClose callback
+
+   Generate dependencies for the following IDL construct:
+   =>   const <type-name> <name>;
+   For <type-name> determine if it is specified in the same file as
+   this const definition self. If it is defined in another file, add
+   a dependency to the dependency list.
+*/
+static void
+idl_constantOpenClose(
+	idl_scope scope,
+	idl_constSpec constantSpec,
+	void *userData)
+{
+	idl_typeSpec typeSpec;
+    OS_UNUSED_ARG(userData);
+
+	typeSpec = idl_constSpecTypeGet(constantSpec);
+	if (idl_typeSpecType(typeSpec) != idl_tbasic) {
+		char *bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(typeSpec)));
+		char *sn = idl_scopeBasename(scope);
+        if (strlen (bn) && (strcmp(sn, bn) != 0)) {
+            /* referenced type is in different scope */
+            idl_depAdd(idl_depDefGet(), bn);
+        }
+        os_free(sn);
+        os_free(bn);
+	}
+
 }
 
 /* unionOpen callback
@@ -206,6 +281,12 @@ idl_unionOpen (
     void *userData)
 {
     char *bn;
+    char *sn;
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
 
     /* because the switch type is of integral type,
        if it is not basic type, it can only be an enumeration
@@ -215,10 +296,13 @@ idl_unionOpen (
     if ((idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) != idl_tbasic)) { 
         /* QAC EXPECT 5007; will not use wrapper */
         bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(idl_typeUnionSwitchKind(unionSpec))));
-        if (strlen (bn) && (strcmp(idl_scopeBasename(scope), bn) != 0)) {
+		sn = idl_scopeBasename(scope);
+		if (strlen (bn) && (strcmp(sn, bn) != 0)) {
             /* referenced type is in different scope */
             idl_depAdd(idl_depDefGet(), bn);
         }
+		os_free(sn);
+        os_free(bn);
     }
     return idl_explore;
 }
@@ -251,7 +335,14 @@ idl_unionCaseOpenClose (
 {
     idl_typeSpec actualType;
     char *bn;
+    char *sn;
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
 
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
+	sn = idl_scopeBasename(scope);
     /* QAC EXPECT 3416; No unexpected side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tarray) {
         actualType = idl_typeArrayActual(idl_typeArray(typeSpec));
@@ -259,10 +350,11 @@ idl_unionCaseOpenClose (
         if (idl_typeSpecType(actualType) != idl_tbasic) {
             bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(actualType)));
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-            if (strlen (bn) && (strcmp(idl_scopeBasename(scope), bn) != 0)) {
+            if (strlen (bn) && (strcmp(sn, bn) != 0)) {
                 /* referenced type is in different scope */
                 idl_depAdd(idl_depDefGet(), bn);
             }
+            os_free(bn);
         }
         /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
@@ -271,22 +363,25 @@ idl_unionCaseOpenClose (
         if (idl_typeSpecType(actualType) != idl_tbasic) {
             bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(actualType)));
             /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-            if (strlen (bn) && (strcmp(idl_scopeBasename(scope), bn) != 0)) {
+            if (strlen (bn) && (strcmp(sn, bn) != 0)) {
                 /* referenced type is in different scope */
                 idl_depAdd(idl_depDefGet(), bn);
             }
+            os_free(bn);
         }
         /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) != idl_tbasic) { 
         bn = idl_scopeBasename(idl_typeUserScope(idl_typeUser(typeSpec)));
         /* QAC EXPECT 3416, 5007; No unexpected side effects here, will not use wrapper */
-        if (strlen (bn) && (strcmp(idl_scopeBasename(scope), bn) != 0)) {
+        if (strlen (bn) && (strcmp(sn, bn) != 0)) {
             /* referenced type is in different scope */
             idl_depAdd(idl_depDefGet(), bn);
         }
+        os_free(bn);
     } else {
         /* Do nothing, only to prevent dangling else-ifs QAC messages */
     }
+	os_free(sn);
 }
 
 /* QAC EXPECT 5007; Bypass qactools bug */
@@ -305,6 +400,7 @@ static idl_programControl *
 idl_getControl(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     return &idl_genSpliceDepControl;
 }
 
@@ -336,7 +432,7 @@ idl_genSpliceDep = {
     idl_typedefOpenClose,
     NULL, /* idl_boundedStringOpenClose */
     NULL, /* idl_sequenceOpenClose */
-    NULL, /* idl_constantOpenClose */
+	idl_constantOpenClose,
     NULL, /* idl_artificialDefaultLabelOpenClose */
     NULL  /* userData */
 };

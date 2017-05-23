@@ -8,7 +8,7 @@ body
   color: black;
   background-color: white;
   margin: 5px;
-  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-family: Calibri, Arial, Helvetica, sans-serif;
   font-size: 100%;
 }
 
@@ -34,12 +34,6 @@ h4 /*inherits from body */
 {
   font-size: 110%;
   margin-left: 3em;
-}
-
-h5 /*inherits from body */
-{
-  font-size: 100%;
-  margin-left: 4em;
 }
 
 td h4 /*inherits from body */

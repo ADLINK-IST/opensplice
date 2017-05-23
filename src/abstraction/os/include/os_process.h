@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /****************************************************************
@@ -26,11 +34,6 @@ extern "C" {
 
 #include "os_defs.h"
 
-/* include OS specific header file				*/
-#include "include/os_process.h"
-#include "os_if.h"
-#include "os_time.h"
-
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
@@ -42,16 +45,12 @@ extern "C" {
  *
  * os_procId is a platform specific definition for a process identification.
  */
-typedef os_os_procId os_procId;
+typedef os_os_int32 os_procId;
 
 /**
 * A platform specific definition of an invalid os_procId value.
 */
-#if defined WIN32 || defined WIN64
-#define OS_INVALID_PID INVALID_HANDLE_VALUE
-#else
-#define OS_INVALID_PID (os_procId) -1
-#endif
+#define OS_INVALID_PID (-1)
 
 /** \brief Exit status definition
  */
@@ -77,33 +76,6 @@ typedef struct os_procAttr {
     os_uint32           activeRedirect;
 } os_procAttr;
 
-typedef enum {
-    OS_TERMINATION_NORMAL,
-    OS_TERMINATION_ERROR
-} os_terminationType;
-
-typedef os_int32 (*os_procTerminationHandler)(os_terminationType reason);
-
-/** \brief Register termination handler for the process
- *
- * The termination handler is called when the platform
- * detects a termination request. The value returned
- * by the registered termination handler determines
- * whether the OS layer should continue the termination
- * (return value != 0) or ignore it (return value == 0).
- *
- * The termination handler is called with a parameter
- * indicating the reason for termination:
- * - OS_TERMINATION_NORMAL: the application is requested
- *       to terminate by means of the platform (e.g. a
- *       term signal is send to the process)
- * - OS_TERMINATION_FATAL: an application problem is
- *         detected (e.g. segmentation fault, bus error, etc.)
- */
-OS_API os_procTerminationHandler
-os_procSetTerminationHandler(
-    os_procTerminationHandler handler);
-
 /** \brief Register an process exit handler
  *
  * Register an process exit handler. Multiple handlers may be
@@ -116,6 +88,16 @@ os_procSetTerminationHandler(
 OS_API os_result
 os_procAtExit(
     void (*function)(void));
+
+/** \brief Returns if threads are terminated by atexit
+ *
+ * Return values:
+ * TRUE - if threads are ungracefully terminated by atexit
+ * FALSE - all other situations
+ */
+OS_API os_boolean
+os_procAreThreadsTerminatedByAtExit(
+    void);
 
 /** \brief Terminate the process and return the status
  *         the the parent process
@@ -210,15 +192,6 @@ os_procCheckStatus(
     os_procId procId,
     os_int32 *status);
 
-/** \brief Return the integer representation of the given process ID
- *
- * Possible Results:
- * - returns the integer representation of the given process ID
- */
-OS_API os_int
-os_procIdToInteger(
-    os_procId id);
-
 /** \brief Return the process ID of the calling process
  *
  * Possible Results:
@@ -226,6 +199,8 @@ os_procIdToInteger(
  */
 OS_API os_procId
 os_procIdSelf(void);
+
+OS_API os_boolean os_procIdIsValid(os_procId);
 
 /** \brief Figure out the identity of the current process
  *
@@ -275,11 +250,11 @@ os_procGetProcessName(
  *
  * Possible Results:
  * - assertion failure: procAttr = NULL
- * - returns os_resultSuccess
  */
-OS_API os_result
+OS_API void
 os_procAttrInit(
-    os_procAttr *procAttr);
+        os_procAttr *procAttr)
+    __nonnull_all__;
 
 /** \brief Get the process effective scheduling class
  *
@@ -336,13 +311,6 @@ os_procMUnlock(
  */
 OS_API os_result
 os_procMUnlockAll(void);
-
-/** \brief enable\disable handling of signals by the abstraction layer.
- *
- */
-OS_API void
-os_procSetSignalHandlingEnabled(
-    os_uint enabled);
 
 /* Docced in impl file */
 OS_API void

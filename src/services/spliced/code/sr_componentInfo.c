@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -42,11 +50,9 @@ cfgGetCommand(
     u_cfElement info)
 {
     c_iter iter;
-    int      iterLength;
+    os_uint32 iterLength;
     c_bool r;
     u_cfData d;
-
-    r = TRUE;
 
     iter = u_cfElementXPath(info, "Command/#text");
     iterLength = c_iterLength(iter);
@@ -55,7 +61,7 @@ cfgGetCommand(
         r = u_cfDataStringValue(d, &ci->command);
         u_cfDataFree(d);
     } else {
-        OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED,
+        OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED,
             0, "One <Command> parameter expected for %s", ci->name);
         while (d != NULL) {
             u_cfDataFree(d);
@@ -75,7 +81,7 @@ cfgGetConfiguration(
     const char *defaultURI)
 {
     c_iter iter;
-    int    iterLength;
+    os_uint32 iterLength;
     c_bool r;
     u_cfData d;
 
@@ -89,7 +95,7 @@ cfgGetConfiguration(
     } else if (iterLength == 0) {
         ci->configuration = os_strdup(defaultURI);
     } else {
-        OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED,
+        OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED,
             0, "One <Configuration> parameter expected for %s", ci->name);
         ci->configuration = os_strdup(defaultURI);
         while (d != NULL) {
@@ -109,7 +115,7 @@ cfgGetArguments(
     u_cfElement info)
 {
     c_iter iter;
-    int    iterLength;
+    os_uint32 iterLength;
     c_bool r;
     u_cfData d;
 
@@ -123,7 +129,7 @@ cfgGetArguments(
     } else if (iterLength == 0) {
         ci->args = os_strdup("");
     } else {
-        OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED,
+        OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED,
             0, "One <Arguments> parameter expected for %s", ci->name);
         ci->args = os_strdup("");
         while (d != NULL) {
@@ -143,7 +149,7 @@ cfgGetLibrary(
     u_cfElement info)
 {
     c_iter iter;
-    int    iterLength;
+    os_uint32 iterLength;
     c_bool r;
     u_cfData d;
 
@@ -157,7 +163,7 @@ cfgGetLibrary(
     } else if (iterLength == 0) {
         ci->library = os_strdup("");
     } else {
-        OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED,
+        OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED,
             0, "One <Library> parameter expected for %s", ci->name);
         ci->library = os_strdup("");
         while (d != NULL) {
@@ -178,7 +184,7 @@ cfgGetSchedule(
     u_cfElement info)
 {
     c_iter iter;
-    int      iterLength;
+    os_uint32 iterLength;
     c_bool r;
     u_cfData d;
     c_char *str;
@@ -201,7 +207,7 @@ cfgGetSchedule(
                         ci->procAttr.schedClass = OS_SCHED_DEFAULT;
                     } else {
                         ci->procAttr.schedClass = OS_SCHED_DEFAULT;
-                        OS_REPORT_1(OS_WARNING, OSRPT_CNTXT_SPLICED,
+                        OS_REPORT(OS_WARNING, OSRPT_CNTXT_SPLICED,
                              0, "Incorrect <Scheduling/Class> parameter for %s -> default",
                              ci->name);
                          r = TRUE;
@@ -215,7 +221,7 @@ cfgGetSchedule(
         ci->procAttr.schedClass = OS_SCHED_DEFAULT;
         if (iterLength == 0) {
         } else {
-            OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED,
+            OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED,
                 0, "One <Scheduling/Class> parameter expected for %s", ci->name);
             r = FALSE;
         }
@@ -235,7 +241,7 @@ cfgGetPriority(
     u_cfElement info)
 {
     c_iter iter;
-    int      iterLength;
+    os_uint32 iterLength;
     c_bool r;
     u_cfData d;
     c_long prio;
@@ -250,7 +256,7 @@ cfgGetPriority(
         if (r == TRUE) {
             ci->procAttr.schedPriority = (os_int32)prio;
         } else {
-            OS_REPORT_1(OS_WARNING, OSRPT_CNTXT_SPLICED,
+            OS_REPORT(OS_WARNING, OSRPT_CNTXT_SPLICED,
                 0, "Incorrect <Scheduling/Priority> parameter for %s -> default", ci->name);
             r = TRUE;
         }
@@ -258,7 +264,7 @@ cfgGetPriority(
     } else {
         if (iterLength == 0) {
         } else {
-            OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED,
+            OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED,
                 0, "One <Scheduling/Priority> parameter expected for %s", ci->name);
             r = FALSE;
         }
@@ -279,7 +285,7 @@ cfgGetPriorityKind(
     u_cfElement info)
 {
     c_iter iter;
-    int      iterLength;
+    os_uint32 iterLength;
     c_bool r;
     u_cfElement d;
     c_char * str;
@@ -299,7 +305,7 @@ cfgGetPriorityKind(
                     ci->priorityKind = V_SCHED_PRIO_ABSOLUTE;
                 } else {
                     ci->priorityKind = V_SCHED_PRIO_RELATIVE;
-                    OS_REPORT_1(OS_WARNING, OSRPT_CNTXT_SPLICED,
+                    OS_REPORT(OS_WARNING, OSRPT_CNTXT_SPLICED,
                          0, "Incorrect <Scheduling/Priority[@priority_kind]> attribute for %s -> default",
                          ci->name);
                      r = TRUE;
@@ -312,7 +318,7 @@ cfgGetPriorityKind(
         if (iterLength == 0) {
             ci->priorityKind = V_SCHED_PRIO_RELATIVE;
         } else {
-            OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED,
+            OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED,
                 0, "One <Scheduling/Priority[@priority_kind]> parameter expected for %s", ci->name);
             r = FALSE;
         }
@@ -332,7 +338,7 @@ cfgGetRestartRule(
     u_cfElement info)
 {
     c_iter iter;
-    int iterLength;
+    os_uint32 iterLength;
     c_bool r;
     u_cfData d;
     c_char *str;
@@ -361,7 +367,7 @@ cfgGetRestartRule(
                 ci->restartRule = RR_SKIP;
             }
             if (ci->restartRule == RR_NONE) {
-                OS_REPORT_1(OS_WARNING, OSRPT_CNTXT_SPLICED,
+                OS_REPORT(OS_WARNING, OSRPT_CNTXT_SPLICED,
                             0,
                             "Incorrect <FailureAction> parameter for %s -> default",
                             ci->name);
@@ -374,7 +380,7 @@ cfgGetRestartRule(
         if (iterLength == 0) {
             ci->restartRule = RR_SKIP;
         } else {
-            OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED,
+            OS_REPORT(OS_ERROR, OSRPT_CNTXT_SPLICED,
                 0, "One <FailureAction> parameter expected for %s", ci->name);
             ci->restartRule = RR_SKIP;
             r = FALSE;
@@ -395,6 +401,7 @@ cfgComponentInfoInit(
 {
 #ifndef INTEGRITY
     os_procAttrInit(&ci->procAttr);
+    ci->procAttr.activeRedirect = TRUE;
 #endif
     ci->isService = OS_FALSE;
     ci->restartRule = RR_NONE;
@@ -404,6 +411,7 @@ cfgComponentInfoInit(
     ci->args = NULL;
     ci->library = NULL;
     ci->procId = OS_INVALID_PID;
+    ci->threadId = OS_THREAD_ID_NONE;
 }
 
 static int
@@ -436,7 +444,7 @@ cfgGetServiceComponentInfo(
             (void)cfgGetRestartRule(ci, info);
         }
     } else {
-        OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0, "Service %s disabled", ci->name);
+        OS_REPORT(OS_INFO, OSRPT_CNTXT_SPLICED, 0, "Service %s disabled", ci->name);
     }
 
     return !((int)r);
@@ -450,6 +458,9 @@ cfgGetApplicationComponentInfo(
 {
     c_bool r = FALSE;
     c_bool enabled = TRUE;
+    OS_UNUSED_ARG (defaultConfigURI);
+
+    OS_UNUSED_ARG(defaultConfigURI);
 
     cfgComponentInfoInit(ci);
 
@@ -464,7 +475,7 @@ cfgGetApplicationComponentInfo(
             (void)cfgGetLibrary(ci, info);
         }
     } else {
-        OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0, "Application %s disabled", ci->name);
+        OS_REPORT(OS_INFO, OSRPT_CNTXT_SPLICED, 0, "Application %s disabled", ci->name);
     }
 
     return !((int)r);
@@ -482,13 +493,11 @@ sr_componentInfoServiceNew(
     int result;
 
     if (info != NULL) {
-        ci = (sr_componentInfo)os_malloc((os_uint32)sizeof(C_STRUCT(sr_componentInfo)));
-        if (ci != NULL) {
-            result = cfgGetServiceComponentInfo(ci, info, defaultConfigURI);
-            if (result) {
-                sr_componentInfoFree(ci);
-                ci = NULL;
-            }
+        ci = os_malloc((os_uint32)sizeof(C_STRUCT(sr_componentInfo)));
+        result = cfgGetServiceComponentInfo(ci, info, defaultConfigURI);
+        if (result) {
+            sr_componentInfoFree(ci);
+            ci = NULL;
         }
     } else {
         ci = NULL;
@@ -506,13 +515,11 @@ sr_componentInfoApplicationNew(
     int result;
 
     if (info != NULL) {
-        ci = (sr_componentInfo)os_malloc((os_uint32)sizeof(C_STRUCT(sr_componentInfo)));
-        if (ci != NULL) {
-            result = cfgGetApplicationComponentInfo(ci, info, defaultConfigURI);
-            if (result) {
-                sr_componentInfoFree(ci);
-                ci = NULL;
-            }
+        ci = os_malloc((os_uint32)sizeof(C_STRUCT(sr_componentInfo)));
+        result = cfgGetApplicationComponentInfo(ci, info, defaultConfigURI);
+        if (result) {
+            sr_componentInfoFree(ci);
+            ci = NULL;
         }
     } else {
         ci = NULL;

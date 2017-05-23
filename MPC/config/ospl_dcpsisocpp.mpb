@@ -1,7 +1,7 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_dcpsgapi, ospl_base {
+project : ospl_ddsuser, ospl_base {
   libs += dcpsisocpp
   requires += ospl_dcpsisocpp
 
@@ -18,7 +18,7 @@ feature(!src_co) {
 feature(src_co) {
   includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/isocpp/include
   includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/common/include
-  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/ccpp/include
-  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sacpp/include
-  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sacpp/bld/$(SPLICE_TARGET)
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/common/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/sacpp/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/sacpp/bld/$(SPLICE_TARGET)
 }

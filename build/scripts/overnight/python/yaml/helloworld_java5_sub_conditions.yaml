@@ -1,0 +1,16 @@
+parseconditions:
+    desc: HelloWorld LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: hw_sub_rec
+          type: line
+          inst: 1
+          required: yes
+          line: "Received message : Hello World"
+

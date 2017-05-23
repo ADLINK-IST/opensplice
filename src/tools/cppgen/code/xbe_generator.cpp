@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 // xbe_generator.cc
@@ -90,25 +98,31 @@ AST_Root * be_generator::create_root(UTL_ScopedName *n,
 /*
  * Create a BE_Interface node
  */
-AST_Interface *
-be_generator::create_interface(idl_bool local,
-                               UTL_ScopedName *n,
-                               AST_Interface **ih,
-                               long nih,
-                               const UTL_Pragmas &p)
+AST_Interface * be_generator::create_interface
+(
+   bool local,
+   bool abstract,
+   UTL_ScopedName *n,
+   AST_Interface **ih,
+   long nih,
+   const UTL_Pragmas &p
+)
 {
-   return (AST_Interface *) new be_interface(local, n, ih, nih, p);
+   return (AST_Interface*) new be_interface (local, abstract, n, ih, nih, p);
 }
 
 /*
  * Create a BE_InterfaceFwd node
  */
-AST_InterfaceFwd *
-be_generator::create_interface_fwd(idl_bool local,
-                                   UTL_ScopedName *n,
-                                   const UTL_Pragmas &p)
+AST_InterfaceFwd * be_generator::create_interface_fwd
+(
+   bool local,
+   bool abstract,
+   UTL_ScopedName *n, 
+   const UTL_Pragmas &p
+)
 {
-   return (AST_InterfaceFwd *) new be_interface_fwd(local, n, p);
+   return (AST_InterfaceFwd*) new be_interface_fwd (local, abstract, n, p);
 }
 
 /*
@@ -175,7 +189,7 @@ be_generator::create_argument(AST_Argument::Direction d,
  * Create a BE_Attribute node
  */
 AST_Attribute *
-be_generator::create_attribute(idl_bool ro,
+be_generator::create_attribute(bool ro,
                                AST_Type *ft,
                                UTL_ScopedName *n,
                                const UTL_Pragmas &p)
@@ -186,12 +200,13 @@ be_generator::create_attribute(idl_bool ro,
 /*
  * Create a BE_Union node
  */
-AST_Union *
-be_generator::create_union(AST_ConcreteType *dt,
-                           UTL_ScopedName *n,
-                           const UTL_Pragmas &p)
+AST_Union * be_generator::create_union
+(
+   UTL_ScopedName *n,
+   const UTL_Pragmas &p
+)
 {
-   return (AST_Union *) new be_union(dt, n, p);
+   return (AST_Union *) new be_union(n, p);
 }
 
 /*
@@ -385,9 +400,9 @@ be_generator::create_opaque(UTL_ScopedName *n, const UTL_Pragmas& p)
 
 AST_Value *be_generator::create_valuetype
 (
-   idl_bool abstract,
-   idl_bool custom,
-   idl_bool truncatable,
+   bool abstract,
+   bool custom,
+   bool truncatable,
    UTL_ScopedName *n,
    AST_Value **ih,
    long nih,
@@ -412,7 +427,7 @@ AST_Value *be_generator::create_valuetype
 
 AST_ValueFwd *be_generator::create_valuetype_fwd
 (
-   idl_bool abstract,
+   bool abstract,
    UTL_ScopedName *n,
    const UTL_Pragmas &p
 )
@@ -422,7 +437,7 @@ AST_ValueFwd *be_generator::create_valuetype_fwd
 
 AST_StateMember *be_generator::create_state_member
 (
-   idl_bool public_access,
+   bool public_access,
    AST_Type *ft,
    UTL_ScopedName *n,
    const UTL_Pragmas &p

@@ -2,17 +2,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "common/example_error_sacpp.hpp"
-#include "ccpp_ThroughputData.h"
+#include "ccpp_Throughput.h"
 
 namespace examples { namespace dcps { namespace Throughput { namespace sacpp {
 
@@ -47,13 +55,14 @@ public:
         }
 
         /** The sample type is created and registered */
-        typeSupport = new ThroughputModule::SampleTypeSupport();
-        status = typeSupport.in()->register_type(participant.in(), typeSupport.in()->get_type_name());
+        typeSupport = new ThroughputModule::DataTypeTypeSupport();
+        DDS::String_var typeName = typeSupport.in()->get_type_name();
+        status = typeSupport.in()->register_type(participant.in(), typeName);
         CHECK_STATUS_MACRO(status);
 
         /** A DDS::Topic is created for our sample type on the domain participant. */
         topic = participant.in()->create_topic(
-            "Throughput", typeSupport.in()->get_type_name(), TOPIC_QOS_DEFAULT, 0, DDS::STATUS_MASK_NONE);
+            "Throughput", typeName, TOPIC_QOS_DEFAULT, 0, DDS::STATUS_MASK_NONE);
         CHECK_HANDLE_MACRO(topic.in());
 
         /** A DDS::Publisher is created on the domain participant. */
@@ -74,7 +83,7 @@ public:
         dwQos.history.kind = DDS::KEEP_ALL_HISTORY_QOS;
         dwQos.resource_limits.max_samples = 100;
         DDS::DataWriter_var tmpWriter = publisher->create_datawriter(topic.in(), dwQos, 0, DDS::STATUS_MASK_NONE);
-        writer = ThroughputModule::SampleDataWriter::_narrow(tmpWriter.in());
+        writer = ThroughputModule::DataTypeDataWriter::_narrow(tmpWriter.in());
         CHECK_HANDLE_MACRO(writer.in());
     }
 
@@ -96,13 +105,13 @@ public:
     /** The DomainParticipant used by the publisher */
     DDS::DomainParticipant_var participant;
     /** The TypeSupport for the sample */
-    ThroughputModule::SampleTypeSupport_var typeSupport;
+    ThroughputModule::DataTypeTypeSupport_var typeSupport;
     /** The Topic used by the publisher */
     DDS::Topic_var topic;
     /** The Publisher used by the publisher */
     DDS::Publisher_var publisher;
     /** The DataWriter used by the publisher */
-    ThroughputModule::SampleDataWriter_var writer;
+    ThroughputModule::DataTypeDataWriter_var writer;
 };
 
 /**
@@ -134,13 +143,14 @@ public:
         }
 
         /** The sample type is created and registered */
-        typeSupport = new ThroughputModule::SampleTypeSupport();
-        status = typeSupport.in()->register_type(participant.in(), typeSupport.in()->get_type_name());
+        typeSupport = new ThroughputModule::DataTypeTypeSupport();
+        DDS::String_var typeName = typeSupport.in()->get_type_name();
+        status = typeSupport.in()->register_type(participant.in(), typeName);
         CHECK_STATUS_MACRO(status);
 
         /** A DDS::Topic is created for our sample type on the domain participant. */
         topic = participant.in()->create_topic(
-            "Throughput", typeSupport.in()->get_type_name(), TOPIC_QOS_DEFAULT, 0, DDS::STATUS_MASK_NONE);
+            "Throughput", typeName, TOPIC_QOS_DEFAULT, 0, DDS::STATUS_MASK_NONE);
         CHECK_HANDLE_MACRO(topic.in());
 
         /** A DDS::Subscriber is created on the domain participant. */
@@ -161,7 +171,7 @@ public:
         drQos.history.kind = DDS::KEEP_ALL_HISTORY_QOS;
         drQos.resource_limits.max_samples = 400;
         DDS::DataReader_var tmpReader = subscriber->create_datareader(topic.in(), drQos, 0, DDS::STATUS_MASK_NONE);
-        reader = ThroughputModule::SampleDataReader::_narrow(tmpReader.in());
+        reader = ThroughputModule::DataTypeDataReader::_narrow(tmpReader.in());
         CHECK_HANDLE_MACRO(reader.in());
 
         /** A DDS::StatusCondition is created which is triggered when data is available to read */
@@ -201,12 +211,12 @@ public:
     /** The DomainParticipant used by the subscriber */
     DDS::DomainParticipant_var participant;
     /** The TypeSupport for the sample */
-    ThroughputModule::SampleTypeSupport_var typeSupport;
+    ThroughputModule::DataTypeTypeSupport_var typeSupport;
     /** The Topic used by the subscriber */
     DDS::Topic_var topic;
     DDS::Subscriber_var subscriber;
     /** The DataReader used by the subscriber */
-    ThroughputModule::SampleDataReader_var reader;
+    ThroughputModule::DataTypeDataReader_var reader;
     /** The WaitSet used by the subscriber */
     DDS::WaitSet_var waitSet;
     /** The StatusCondition used by the subscriber,

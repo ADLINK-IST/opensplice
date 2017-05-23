@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "os_diag.h"
@@ -14,6 +22,7 @@
 #include "os_stdlib.h"
 #include "os_process.h"
 #include "os_thread.h"
+#include "os_abstract.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -53,13 +62,13 @@ os_defaultDiag (
     const char   *description,
     va_list 	  args)
 {
-    os_time ostime;
+    os_timeW ostime;
     char extended_description[512];
     char procIdentity[64];
     char threadIdentity[64];
     char node[64];
 
-    ostime = os_timeGet();
+    ostime = os_timeWGet();
 
     os_vsnprintf (extended_description, sizeof(extended_description)-1, description, args);
     extended_description [sizeof(extended_description)-1] = '\0';
@@ -71,12 +80,11 @@ os_defaultDiag (
     procIdentity [sizeof (procIdentity)-1] = '\0';
 
     printf (
-	"Diag - %s:%s:%s - T:%d.%9.9d L:%s C:%s D:%s\n",
+	"Diag - %s:%s:%s - T:%" PA_PRItime " L:%s C:%s D:%s\n",
         node,
         procIdentity,
         threadIdentity,
-	ostime.tv_sec,
-	ostime.tv_nsec,
+        OS_TIMEW_PRINT(ostime),
 	os_diagLevelText[level],
 	cluster,
 	extended_description);

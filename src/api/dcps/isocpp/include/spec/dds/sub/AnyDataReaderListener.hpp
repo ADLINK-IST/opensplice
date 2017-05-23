@@ -29,7 +29,7 @@ namespace sub
 
 class AnyDataReader;
 
-class AnyDataReaderListener
+class OMG_DDS_API AnyDataReaderListener
 {
 public:
     typedef ::dds::core::smart_ptr_traits<AnyDataReaderListener>::ref_type ref_type;
@@ -285,7 +285,7 @@ public:
         const dds::core::status::SampleLostStatus& status) = 0;
 };
 
-class NoOpAnyDataReaderListener : public virtual AnyDataReaderListener
+class OMG_DDS_API NoOpAnyDataReaderListener : public virtual AnyDataReaderListener
 {
 public:
     virtual ~NoOpAnyDataReaderListener();

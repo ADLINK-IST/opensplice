@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl.h"
@@ -47,7 +55,7 @@ be_sequence::be_sequence (AST_Expression *v, AST_Type *t)
    AST_Decl
    (
       AST_Decl::NT_sequence,
-      new UTL_ScopedName (new Identifier ("sequence", 1, 0, I_FALSE), NULL)
+      new UTL_ScopedName (new Identifier ("sequence"), NULL)
    ),
    AST_Sequence(v, t),
    initialized (pbfalse),
@@ -408,7 +416,7 @@ be_sequence::init_type(const DDS_StdString& scope,
 
    m_tc_ctor_val = NoColons((DDS_StdString) Scope(localName) + "_ctor");
    m_tc_dtor_val = NoColons((DDS_StdString) Scope(localName) + "_dtor");
-   if (local() != I_TRUE)
+   if (local() != true)
    {
       m_tc_put_val = NoColons((DDS_StdString) Scope(localName) + "_put");
       m_tc_get_val = NoColons((DDS_StdString) Scope(localName) + "_get");
@@ -1415,8 +1423,6 @@ void be_sequence::GenerateSequence (be_ClientHeader & source)
 
       if (baseType->IsFixedLength())
       {
-         be_predefined_type * pdt = be_predefined_type::_narrow(base_type());
-
          os << tab << "typedef DDS_DCPSBFLSeq < " << elemName
             << ", " << FileClassname << ", " << maxSize << "> " << localName << ";" << nl;
       }
@@ -1521,8 +1527,6 @@ void be_sequence::GenerateSequence (be_ClientImplementation & source)
 
       if (baseType->IsFixedLength())
       {
-         be_predefined_type * pdt = be_predefined_type::_narrow(base_type());
-
          os << tab << "template class DDS_DCPSBFLSeq < " << elemName
             << ", " << FileClassname << ", " << maxSize << ">;" << nl;
       }

@@ -1,0 +1,458 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Secure Networking Tutorial &mdash; Secure Networking Configuration Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Secure Networking Configuration Guide" href="index.html" />
+    <link rel="next" title="5. Access Control" href="accesscontrol.html" />
+    <link rel="prev" title="3. Secure Networking Configuration" href="securenetconfig.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="accesscontrol.html" title="5. Access Control"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="securenetconfig.html" title="3. Secure Networking Configuration"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Secure Networking Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="secure-networking-tutorial">
+<span id="id1"></span><h1>4. Secure Networking Tutorial<a class="headerlink" href="#secure-networking-tutorial" title="Permalink to this headline">¶</a></h1>
+<p><em>This tutorial demonstrates secure networking features of
+Vortex OpenSplice.</em></p>
+<div class="section" id="prerequisites">
+<h2>4.1. Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>DDS applications on a single host use shared memory for inter
+process communication. Network communication is needed only in
+scenarios running DDS applications on multiple hosts. To follow
+the demonstration of OpenSplice’s secure networking features you
+will need at least two machines connected to the same IP network
+and OpenSplice installed. Please refer to OpenSplice Getting
+Started Guide to install OpenSplice on these hosts.</p>
+<p>This tutorial is based on the Chat Tutorial delivered with
+OpenSplice (see <tt class="docutils literal"><span class="pre">$OSPL_HOME/examples/dcps/standalone/*/Tutorial</span></tt>).</p>
+<p>To demonstrate OpenSplice’s secure networking features, no
+changes to the applications’ source code is necessary. Please
+refer to the Chat Tutorial <tt class="docutils literal"><span class="pre">README.txt</span></tt> file and be familiar with
+building and running the applications (of your preferred
+programming language) before continuing. Please build and run
+the Chat Tutorial applications on all hosts. A more in-depth
+description of the Chat Tutorial can be found in the
+<em>DCPS C Tutorial Guide</em>.</p>
+</div>
+<div class="section" id="preparation">
+<h2>4.2. Preparation<a class="headerlink" href="#preparation" title="Permalink to this headline">¶</a></h2>
+<p>The Chat Tutorial gave a brief introduction to a typical DDS
+application.</p>
+<p>Before activating any security configurations you should know
+how to start OpenSplice with a customized configuration.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Modifying the default configuration is not recommended
+because it might affect other users or applications.</p>
+<div class="section" id="customizing-opensplice-configuration">
+<span id="id2"></span><h3>4.2.1. Customizing OpenSplice Configuration<a class="headerlink" href="#customizing-opensplice-configuration" title="Permalink to this headline">¶</a></h3>
+<p>Default settings for OpenSplice are read from a
+configuration file located at <tt class="docutils literal"><span class="pre">&lt;OSPL_HOME&gt;/etc/configs/ospl.xml</span></tt>.</p>
+<p>To customize settings it is best to run OpenSplice using a
+<em>different</em> configuration file.</p>
+<p>Create a file named <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> with the content listed below in
+the Chat Tutorial’s directory:</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;OpenSplice&gt;
+    &lt;Domain&gt;
+        &lt;Name&gt;OpenSplice Security&lt;/Name&gt;
+        &lt;Database&gt;
+            &lt;Size&gt;10485670&lt;/Size&gt;
+        &lt;/Database&gt;
+        &lt;Lease&gt;
+            &lt;ExpiryTime update_factor=&quot;0.5&quot;&gt;5.0&lt;/ExpiryTime&gt;
+        &lt;/Lease&gt;
+        &lt;Service enabled=&quot;true&quot; name=&quot;networking&quot;&gt;
+            &lt;Command&gt;snetworking&lt;/Command&gt;
+        &lt;/Service&gt;
+    &lt;/Domain&gt;
+    &lt;NetworkService name=&quot;networking&quot;&gt;
+        &lt;Partitioning&gt;
+            &lt;GlobalPartition Address=&quot;broadcast&quot;/&gt;
+        &lt;/Partitioning&gt;
+        &lt;Channels&gt;
+            &lt;Channel default=&quot;true&quot; enabled=&quot;true&quot;
+               name=&quot;BestEffort&quot; reliable=&quot;false&quot;&gt;
+               &lt;PortNr&gt;3340&lt;/PortNr&gt;
+            &lt;/Channel&gt;
+            &lt;Channel enabled=&quot;true&quot; name=&quot;Reliable&quot;
+            reliable=&quot;true&quot;&gt;
+               &lt;PortNr&gt;3350&lt;/PortNr&gt;
+            &lt;/Channel&gt;
+        &lt;/Channels&gt;
+        &lt;Discovery enabled=&quot;true&quot;&gt;
+            &lt;PortNr&gt;3360&lt;/PortNr&gt;
+        &lt;/Discovery&gt;
+    &lt;/NetworkService&gt;
+&lt;/OpenSplice&gt;
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a>
+Windows users should change the value of the configuration
+element at <tt class="docutils literal"><span class="pre">OpenSplice/Domain/Service/Command</span></tt> to <tt class="docutils literal"><span class="pre">snetworking.exe</span></tt>.</p>
+<p>Stop OpenSplice if it is already running.</p>
+<p>To tell OpenSplice to use this file for configuration, the
+system variable <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> has to be set with a file URI pointing
+to the just-created configuration file. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>%   export OSPL_URI=file://ospl.xml
+</pre></div>
+</div>
+<p>will point to a file named <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> in the current working
+directory and</p>
+<div class="highlight-python"><div class="highlight"><pre>%   export OSPL_URI=file:///home/user/ospl.xml
+</pre></div>
+</div>
+<p>will point to <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> in a <tt class="docutils literal"><span class="pre">/home/user</span></tt> directory. Ensure that
+you have read and write permissions for the file pointed at.</p>
+<p>Now start OpenSplice again. You will see that the status message
+contains a new DDS domain name.</p>
+<div class="highlight-python"><div class="highlight"><pre>%  ospl start
+%  Starting up domain &quot;OpenSplice Security&quot; . Ready
+</pre></div>
+</div>
+<p>Note that when running OpenSplice with the configuration listed
+above, each OpenSplice node will broadcast heartbeat messages
+every second, targeting the UDP port 3360.</p>
+<p>These messages are used to discover other OpenSplice nodes in
+the network. Only when a second OpenSplice node has been
+discovered in the network by heartbeats ChatRoom messages will
+be broadcasted to the UDP target port 3340 (best effort) and
+3350 (reliable). So, do not expect any ChatRoom messages to show
+up in the network traces as long as you operate with a single
+OpenSplice node.</p>
+</div>
+<div class="section" id="running-chat-tutorial-without-security">
+<h3>4.2.2. Running Chat Tutorial Without Security<a class="headerlink" href="#running-chat-tutorial-without-security" title="Permalink to this headline">¶</a></h3>
+<p>Before securing the Chat Tutorial we will run the applications
+without security activated by using the configuration presented
+above. This way we can analyse network traffic and identify
+potential vulnerabilities.</p>
+<p>Run the MessageBoard application on one host by executing:</p>
+<div class="highlight-python"><div class="highlight"><pre>%  ./exec/MessageBoard
+</pre></div>
+</div>
+<p>On the other host run the Chatter application by executing:</p>
+<div class="highlight-python"><div class="highlight"><pre>%  ./exec/Chatter
+</pre></div>
+</div>
+<p>The MessageBoard application will print the following output:</p>
+<div class="highlight-python"><div class="highlight"><pre>%  Chatter 1: Hi there, I will send you 10 more messages.
+%  Chatter 1: Message no. 1
+%  Chatter 1: Message no. 2
+%  Chatter 1: Message no. 3
+%  …
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+If running the applications in another shell, ensure that the
+system variable <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> points to the same configuration file
+as indicated above when starting OpenSplice. Otherwise the
+applications won’t start up correctly.</p>
+<p>To analyse network traffic you may use a tool like Wireshark <a class="footnote-reference" href="#id4" id="id3">[1]</a>.
+Re-run the Chatter application with Wireshark capturing traffic
+from your network interface. You should see some UDP packets
+being captured. Analysing packets sent to UDP port 3350 shows
+the plain text content of our Chat Tutorial messages as you can
+see in the following screen:</p>
+<p class="centered" id="ospl-sniff-showing-unencrypted-traffic">
+<strong><strong>OSPL Sniff Showing Unencrypted Traffic</strong></strong></p><a class="reference internal image-reference" href="_images/OSPL_tutorial_sniff_unencrypted.png"><img alt="OSPL Sniff Showing Unencrypted Traffic" class="align-center" src="_images/OSPL_tutorial_sniff_unencrypted.png" style="width: 140mm;" /></a>
+</div>
+</div>
+<div class="section" id="activating-secure-networking">
+<h2>4.3. Activating Secure Networking<a class="headerlink" href="#activating-secure-networking" title="Permalink to this headline">¶</a></h2>
+<p>At this point the Chat Tutorial applications should work fine
+using your own configuration file on both hosts. Up to now all
+network traffic is sent unencrypted as you can see in the
+illustration above (<a class="reference internal" href="#ospl-sniff-showing-unencrypted-traffic">OSPL Sniff Showing Unencrypted Traffic</a>).</p>
+<div class="section" id="simple-setup-using-globalpartition">
+<h3>4.3.1. Simple Setup Using GlobalPartition<a class="headerlink" href="#simple-setup-using-globalpartition" title="Permalink to this headline">¶</a></h3>
+<p>To activate encryption, you must shut down the tutorial
+applications and OpenSplice before modifying the configuration file.</p>
+<p>Two steps have to be done for a simple setup.</p>
+<p><em>First</em>, add a new security profile to the network service
+configuration. This defines details of encryption, like the
+algorithm and the secret cipher key to be used.</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;NetworkService name=&quot;networking&quot;&gt;
+    …
+    &lt;Security enabled=&quot;true&quot; &gt;
+        &lt;SecurityProfile Name=&quot;GlobalProfile&quot;
+             Cipher=&quot;blowfish&quot;
+               CipherKey=&quot;000102030405060708090a0b0c0d0e0f&quot;
+               /&gt;
+    &lt;/Security&gt;
+    …
+&lt;/NetworkService&gt;
+</pre></div>
+</div>
+<p><em>Second</em>, you have to associate this security profile with a
+network partition. Enhance the existing global network partition
+with a new attribute: <tt class="docutils literal"><span class="pre">SecurityProfile=&quot;GlobalProfile&quot;</span></tt>. All
+network traffic sent by the global partition is encrypted using
+settings from the assigned security profile.</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;NetworkService name=&quot;networking&quot;&gt;
+     …
+     &lt;Partitioning&gt;
+         &lt;GlobalPartition Address=&quot;broadcast&quot;
+             SecurityProfile=&quot;GlobalProfile&quot;/&gt;
+         …
+     &lt;Partitioning&gt;
+    …
+&lt;/NetworkService&gt;
+</pre></div>
+</div>
+<p>As an alternative to modifying the configuration file as
+described above, you can use the complete example configuration
+listed below for setup. To avoid problems, ensure that all hosts
+use the same configuration. Restarting OpenSplice and the Chat
+Tutorial applications using the modified configuration will
+enable encrypted network traffic. Again, you may use Wireshark
+to analyse messages sent through the network. As you can see in
+the screen shown below, it is not possible to read plain text
+from chat messages exchanged.</p>
+<p class="centered" id="ospl-sniff-showing-encrypted-traffic">
+<strong><strong>OSPL Sniff Showing Encrypted Traffic</strong></strong></p><a class="reference internal image-reference" href="_images/OSPL_tutorial_sniff_encrypted.png"><img alt="OSPL Sniff Showing Encrypted Traffic" class="align-center" src="_images/OSPL_tutorial_sniff_encrypted.png" style="width: 140mm;" /></a>
+<div class="highlight-python"><div class="highlight"><pre>&lt;OpenSplice&gt;
+   &lt;Domain&gt;
+      &lt;Name&gt;OpenSplice Security&lt;/Name&gt;
+      &lt;Database&gt;
+         &lt;Size&gt;10485670&lt;/Size&gt;
+      &lt;/Database&gt;
+      &lt;Lease&gt;
+         &lt;ExpiryTime update_factor=&quot;0.5&quot;&gt;5.0&lt;/ExpiryTime&gt;
+      &lt;/Lease&gt;
+      &lt;Service enabled=&quot;true&quot; name=&quot;networking&quot;&gt;
+         &lt;Command&gt;networking&lt;/Command&gt;
+      &lt;/Service&gt;
+    &lt;/Domain&gt;
+    &lt;NetworkService name=&quot;networking&quot;&gt;
+        &lt;Partitioning&gt;
+            &lt;GlobalPartition Address=&quot;broadcast&quot;
+               SecurityProfile=&quot;GlobalProfile&quot;/&gt;
+        &lt;/Partitioning&gt;
+        &lt;Security enabled=&quot;true&quot; &gt;
+            &lt;SecurityProfile Name=&quot;GlobalProfile&quot;
+            Cipher=&quot;blowfish&quot;
+                CipherKey=&quot;000102030405060708090a0b0c0d0e0f&quot;/&gt;
+        &lt;/Security&gt;
+        &lt;Channels&gt;
+            &lt;Channel default=&quot;true&quot; enabled=&quot;true&quot;
+                name=&quot;BestEffort&quot; reliable=&quot;false&quot;&gt;
+                &lt;PortNr&gt;3340&lt;/PortNr&gt;
+            &lt;/Channel&gt;
+            &lt;Channel enabled=&quot;true&quot; name=&quot;Reliable&quot;
+            reliable=&quot;true&quot;&gt;
+                &lt;PortNr&gt;3350&lt;/PortNr&gt;
+            &lt;/Channel&gt;
+        &lt;/Channels&gt;
+        &lt;Discovery enabled=&quot;true&quot;&gt;
+            &lt;PortNr&gt;3360&lt;/PortNr&gt;
+        &lt;/Discovery&gt;
+    &lt;/NetworkService&gt;
+&lt;/OpenSplice&gt;
+</pre></div>
+</div>
+<p>If the cipher key is changed in the configuration of only one
+host (ensure that the key-length is kept the same) and
+OpenSplice and the Chat Tutorial applications are restarted you
+will notice that messages sent by the Chatter application won’t
+reach the MessageBoard running on the other host. On the
+receiving host a warning message will be logged in the
+<tt class="docutils literal"><span class="pre">ospl-info.log</span></tt> file. This file is located in the start-up
+directory, by default.</p>
+<div class="highlight-python"><div class="highlight"><pre>### Report Message ###
+Type        : WARNING
+Context           : networking
+nw_plugReceiveChannelReadSocketNonBlocking
+File        : ../../code/nw_plugReceiveChannel.c
+Line        : 1560
+Code        : 0
+Description : decoding failed
+Node        : shark1.de.prismtech.com
+Process     : networking (5338)
+Thread      : Discovery[@enabled!=&#39;false&#39;] b7d1dbb0
+Timestamp   : 1184225057.899220000 (Thu Jul 12 09:24:17 2007)
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Before following the instructions in the next section, please
+restore the correct cipher-keys and restart the OpenSplice
+services.</p>
+</div>
+<div class="section" id="advanced-setup-using-network-partitions">
+<h3>4.3.2. Advanced Setup Using Network Partitions<a class="headerlink" href="#advanced-setup-using-network-partitions" title="Permalink to this headline">¶</a></h3>
+<p>In OpenSplice, <tt class="docutils literal"><span class="pre">DDS</span> <span class="pre">topics</span></tt> and <tt class="docutils literal"><span class="pre">DDS</span> <span class="pre">partitions</span></tt> can be mapped
+onto additional network partitions. This allows the separation of
+network traffic between different applications sharing the same
+DDS domain. OpenSplice secure networking enables you to use
+different cipher keys for each network partition to enable
+confidentiality and integrity of the data exchanged between
+different applications. For example, the following declaration
+maps all topics from <em>ChatRoom</em> partition onto a dedicated
+<em>ChatRoom network partition</em> using an exclusive multicast address
+instead of using the <em>GlobalPartition</em>:</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;NetworkService name=&quot;networking&quot;&gt;
+   ...
+   &lt;Partitioning&gt;
+      &lt;GlobalPartition Address=&quot;broadcast&quot;
+         SecurityProfile=&quot;GlobalProfile&quot;/&gt;
+      &lt;NetworkPartitions&gt;
+          &lt;NetworkPartition Name=&quot;ChatRoomPartition&quot;
+             Address=&quot;230.230.230.1&quot;
+             SecurityProfile=&quot;ChatRoomProfile&quot; /&gt;
+      &lt;/NetworkPartitions&gt;
+      &lt;PartitionMappings&gt;
+          &lt;PartitionMapping DCPSPartitionTopic=&quot;ChatRoom.*&quot;
+             NetworkPartition=&quot;ChatRoomPartition&quot;/&gt;
+      &lt;/PartitionMappings&gt;
+  &lt;/Partitioning&gt;
+  &lt;Security enabled=&quot;true&quot;&gt;
+      &lt;SecurityProfile Name=&quot;GlobalProfile&quot; Cipher=&quot;null&quot;/&gt;
+      &lt;SecurityProfile Name=&quot;ChatRoomProfile&quot;
+      Cipher=&quot;aes128&quot;
+        CipherKey=&quot;file:///my/secrets/aes128-chatroom-key.txt&quot;/&gt;
+  &lt;/Security&gt;
+  ...
+&lt;/NetworkService&gt;
+</pre></div>
+</div>
+<p>With the security feature enabled, the global partition and each
+network partition can be associated with its own security
+profile. In our example we refer to <em>GlobalProfile</em> and
+<em>ChatRoomProfile</em>. Each security profile defines the cipher to be
+used. The <tt class="docutils literal"><span class="pre">NULL</span></tt> cipher used in <em>GlobalProfile</em> may be used for
+debugging purposes or for single topics/partitions that do not
+require protection.</p>
+<p>The configuration sample above also demonstrates the cipher keys
+may be stored in an external file too. The key within the file
+is encoded as a hexadecimal-string, in other words a 16-Byte key
+is formed of 32 characters, for example:
+<tt class="docutils literal"><span class="pre">0f0e0d0c0b0a09080706050403020100</span></tt>. External files are the
+preferred way to store keys, to keep them confidential.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+<strong>Permissions for the key files should be set so that nobody
+except the OpenSplice core services may read the files.</strong>
+Storing the keys in-place in the configuration file which is
+read by each DDS application on start up would be a potential
+leak of secret information.</p>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[1]</a></td><td>See <a class="reference external" href="http://www.wireshark.org">http://www.wireshark.org</a> for further information.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Secure Networking Tutorial</a><ul>
+<li><a class="reference internal" href="#prerequisites">4.1. Prerequisites</a></li>
+<li><a class="reference internal" href="#preparation">4.2. Preparation</a><ul>
+<li><a class="reference internal" href="#customizing-opensplice-configuration">4.2.1. Customizing OpenSplice Configuration</a></li>
+<li><a class="reference internal" href="#running-chat-tutorial-without-security">4.2.2. Running Chat Tutorial Without Security</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#activating-secure-networking">4.3. Activating Secure Networking</a><ul>
+<li><a class="reference internal" href="#simple-setup-using-globalpartition">4.3.1. Simple Setup Using GlobalPartition</a></li>
+<li><a class="reference internal" href="#advanced-setup-using-network-partitions">4.3.2. Advanced Setup Using Network Partitions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="securenetconfig.html"
+                        title="previous chapter">3. Secure Networking Configuration</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="accesscontrol.html"
+                        title="next chapter">5. Access Control</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/securenettutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="accesscontrol.html" title="5. Access Control"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="securenetconfig.html" title="3. Secure Networking Configuration"
+             >previous</a> |</li>
+        <li><a href="index.html">Secure Networking Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

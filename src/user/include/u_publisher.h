@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef U_PUBLISHER_H
@@ -25,30 +33,20 @@
  */
 
 /** Supported methods
- * u_publisher u_publisherNew           (u_participant p,
- *                                       const c_char *name,
- *                                       v_publisherQos qos);
- * u_result    u_publisherFree          (u_publisher p);
- * u_result    u_publisherPublish       (u_publisher p,
- *                                       const c_char *partitionExpr);
- * u_result    u_publisherUnPublish     (u_publisher p,
- *                                       const c_char *partitionExpr);
- * u_result    u_publisherSuspend       (u_publisher p);
- * u_result    u_publisherResume        (u_publisher p);
- * u_result    u_publisherCoherentBegin (u_publisher p);
- * u_result    u_publisherCoherentEnd   (u_publisher p);
+ * u_publisher u_publisherNew           (u_participant p, const os_char *name, u_publisherQos qos);
+ * u_result    u_publisherGetQos        (u_publisher _this, u_publisherQos *qos);
+ * u_result    u_publisherSetQos        (u_publisher _this, u_publisherQos qos);
+ * u_result    u_publisherSuspend       (u_publisher _this);
+ * u_result    u_publisherResume        (u_publisher _this);
+ * u_result    u_publisherCoherentBegin (u_publisher _this);
+ * u_result    u_publisherCoherentEnd   (u_publisher _this);
 */
+
+#include "u_types.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
-
-#include "u_types.h"
-
-typedef c_bool (*u_publisherAction)(u_publisher publisher, c_voidp arg);
-
-#include "u_writer.h"
-#include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -63,7 +61,7 @@ typedef c_bool (*u_publisherAction)(u_publisher publisher, c_voidp arg);
  * runtime type checking due to the lack of type information.
  */
 #define u_publisher(p) \
-        ((u_publisher)u_entityCheckType(u_entity(p), U_PUBLISHER))
+        ((u_publisher)u_objectCheckType(u_object(p), U_PUBLISHER))
 
 /** \brief The class constructor.
  *
@@ -79,58 +77,20 @@ typedef c_bool (*u_publisherAction)(u_publisher publisher, c_voidp arg);
  */
 OS_API u_publisher
 u_publisherNew (
-    u_participant _this,
-    const c_char *name,
-    v_publisherQos qos,
-    c_bool enable);
+    const u_participant _this,
+    const os_char *name,
+    const u_publisherQos qos,
+    u_bool enable);
 
-/** \brief The class destructor.
- *
- * The destructor notifies the kernel to destruct the kernel publisher
- * associated to this proxy. Also all kernel object owned by the deleted kernel
- * publisher are deleted.
- *
- * \param _this The publisher to operate on.
- * \return U_RESULT_OK on a succesful operation or
- *         U_RESULT_ILL_PARAM if the specified participant is incorrect.
- */
 OS_API u_result
-u_publisherFree (
-    u_publisher _this);
+u_publisherGetQos (
+    const u_publisher _this,
+    u_publisherQos *qos);
 
-/** \brief Specifies an additional data distribution scope.
- *
- * Data is always distributed in partition (dds: partitions).
- * This method specifies via a partition expression which currently
- * known partitions must be added to the publishers distribution scope.
- *
- * \param _this The publisher to operate on.
- * \param partitionExpr The expression specifying the namespace of the partitions that
- *        must be added to the publishers distribution scope. The expression
- *        specifies the partition name and may contain wildcards * and ?.
- * \return U_RESULT_OK on a succesful operation.
- */
 OS_API u_result
-u_publisherPublish (
-    u_publisher _this,
-    const c_char *partitionExpr);
-
-/** \brief Specifies a substractable data distribution scope.
- *
- * Data is always distributed in partition (dds: partitions).
- * This method specifies via a partition expression which currently
- * known partitions must be removed from the publishers distribution scope.
- *
- * \param _this The publisher to operate on.
- * \param partitionExpr The expression specifying the namespace of the partitions that
- *        must be removed from the publishers distribution scope. The expression
- *        specifies the partition name and may contain wildcards * and ?.
- * \return U_RESULT_OK on a succesful operation.
- */
-OS_API u_result
-u_publisherUnPublish (
-    u_publisher _this,
-    const c_char *partitionExpr);
+u_publisherSetQos (
+    const u_publisher _this,
+    const u_publisherQos qos);
 
 /** \brief Suspend data distribution until resume is called.
  *
@@ -145,7 +105,7 @@ u_publisherUnPublish (
  */
 OS_API u_result
 u_publisherSuspend (
-    u_publisher _this);
+    const u_publisher _this);
 
 /** \brief The resume method: resumes previously suspended data distribution.
  *
@@ -156,7 +116,7 @@ u_publisherSuspend (
  */
 OS_API u_result
 u_publisherResume (
-    u_publisher _this);
+    const u_publisher _this);
 
 /** \brief Set the beginning of a coherent set of data to be distributed.
  *
@@ -171,7 +131,7 @@ u_publisherResume (
  */
 OS_API u_result
 u_publisherCoherentBegin (
-    u_publisher _this);
+    const u_publisher _this);
 
 /** \brief Set the end of a coherent set of data to be distributed.
  *
@@ -186,33 +146,9 @@ u_publisherCoherentBegin (
  */
 OS_API u_result
 u_publisherCoherentEnd (
-    u_publisher _this);
+    const u_publisher _this);
 
-OS_API c_long
-u_publisherWriterCount(
-    u_publisher _this);
-
-OS_API c_iter
-u_publisherLookupWriters(
-    u_publisher _this,
-    const c_char *topic_name);
-
-OS_API c_bool
-u_publisherContainsWriter(
-    u_publisher _this,
-    u_writer writer);
-
-OS_API u_result
-u_publisherWalkWriters(
-    u_publisher _this,
-    u_writerAction action,
-    c_voidp actionArg);
-
-OS_API u_result
-u_publisherDeleteContainedEntities (
-    u_publisher _this);
-
-#undef OS_API 
+#undef OS_API
 
 #if defined (__cplusplus)
 }

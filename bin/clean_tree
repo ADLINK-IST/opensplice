@@ -1,4 +1,9 @@
 #
+if [ -d $OSPL_HOME/install/STE ]
+then
+    chmod -R 777 $OSPL_HOME/install/STE 2> /dev/null
+    rm -rf $OSPL_HOME/install/STE
+fi
 if [ -d $OSPL_HOME/install/HDE ]
 then
     chmod -R 777 $OSPL_HOME/install/HDE 2> /dev/null
@@ -20,7 +25,6 @@ then
     rm -rf $OSPL_HOME/install/VC
 fi
 rm -f `ls $OSPL_HOME/*.log 2> /dev/null`
-rm -f $OSPL_HOME/bin/filter_gcc
 
 remove_dir ()
 {

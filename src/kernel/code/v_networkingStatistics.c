@@ -1,18 +1,24 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "v_statistics.h"
-#include "v__statistics.h"
-
 #include "v_networkingStatistics.h"
 
 v_networkingStatistics
@@ -27,17 +33,16 @@ v_networkingStatisticsNew(
 
     /* not necessary to cache this type since it is looked up only once per process */
     networkingStatisticsType = c_resolve(c_getBase(k),
-                                         "kernelModule::v_networkingStatistics");
+                                         "kernelModuleI::v_networkingStatistics");
 
     _this = v_networkingStatistics(v_new(k, networkingStatisticsType));
-    v_networkingStatisticsInit(_this,k);
+    v_networkingStatisticsInit(_this);
     return _this;
 }
 
 void
 v_networkingStatisticsInit(
-    v_networkingStatistics _this,
-    v_kernel k)
+    v_networkingStatistics _this)
 {
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_networkingStatistics));
@@ -46,8 +51,8 @@ v_networkingStatisticsInit(
 
     _this->numberOfErrors = 0;
     _this->channelsCount = 0;
-    _this->channels = c_arrayNew(c_resolve(c_getBase(c_object(k)),
-                                 "kernelModule::v_networkChannelStatistics"),64);
+    _this->channels = c_arrayNew(c_resolve(c_getBase(c_object(_this)),
+                                 "kernelModuleI::v_networkChannelStatistics"),64);
 
 }
 
@@ -58,26 +63,6 @@ v_networkingStatisticsDeinit(
     assert(_this!=NULL);
     assert(C_TYPECHECK(_this, v_networkingStatistics));
     OS_UNUSED_ARG(_this);
-}
-
-c_bool
-v_networkingStatisticsReset(
-    v_networkingStatistics _this, const c_char* fieldName)
-{
-    c_bool result;
-
-    assert(_this!=NULL);
-    assert(C_TYPECHECK(_this, v_networkingStatistics));
-
-    result = FALSE;
-
-    if (fieldName != NULL) {
-        result = v_statisticsResetField(v_statistics(_this), fieldName);
-    } else {
-        _this->numberOfErrors = 0;
-        result = TRUE;
-    }
-    return result;
 }
 
 void

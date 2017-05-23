@@ -14,40 +14,41 @@ namespace test.sacs
             string sh;
             DDS.ErrorCode eh;
             DDS.ReturnCode ddsReturnCode;
+            DDS.ErrorInfo errInfo = new DDS.ErrorInfo();
 
-            if (DDS.ErrorInfo.Update() != DDS.ReturnCode.NoData)
+            if (errInfo.Update() != DDS.ReturnCode.NoData)
             {
                 return new Test.Framework.TestResult("Update returns NO_DATA prior to error", "Update did not return NO_DATA prior to error"
                     , expVerdict, Test.Framework.TestVerdict.Fail);
             }
             sh = "<>";
-            ddsReturnCode = DDS.ErrorInfo.GetLocation(out sh);
+            ddsReturnCode = errInfo.GetLocation(out sh);
             if ((ddsReturnCode != DDS.ReturnCode.NoData))// || (!sh.Equals("<>")))
             {
                 return new Test.Framework.TestResult("get_location returns NO_DATA and does not modify string"
                     , "Different result and/or string modified", expVerdict, Test.Framework.TestVerdict.Fail);
             }
-            ddsReturnCode = DDS.ErrorInfo.GetMessage(out sh);
+            ddsReturnCode = errInfo.GetMessage(out sh);
             if ((ddsReturnCode != DDS.ReturnCode.NoData))// || (!sh.Equals("<>")))
             {
                 return new Test.Framework.TestResult("get_message returns NO_DATA and does not modify string"
                     , "Different result and/or string modified", expVerdict, Test.Framework.TestVerdict.Fail);
             }
-            ddsReturnCode = DDS.ErrorInfo.GetStackTrace(out sh);
+            ddsReturnCode = errInfo.GetStackTrace(out sh);
             if ((ddsReturnCode != DDS.ReturnCode.NoData))// || (!sh.Equals("<>")))
             {
                 return new Test.Framework.TestResult("get_stack_trace returns NO_DATA and does not modify string"
                     , "Different result and/or string modified", expVerdict, Test.Framework.TestVerdict.Fail);
             }
-            ddsReturnCode = DDS.ErrorInfo.GetSourceLine(out sh);
+            ddsReturnCode = errInfo.GetSourceLine(out sh);
             if ((ddsReturnCode != DDS.ReturnCode.NoData))// || (!sh.Equals("<>")))
             {
                 return new Test.Framework.TestResult("get_source_line returns NO_DATA and does not modify string"
                     , "Different result and/or string modified", expVerdict, Test.Framework.TestVerdict.Fail);
             }
             eh = (DDS.ErrorCode)(-1);
-            ddsReturnCode = DDS.ErrorInfo.GetCode(out eh);
-            if ((ddsReturnCode != DDS.ReturnCode.NoData) || (eh != (DDS.ErrorCode)(-1)))
+            ddsReturnCode = errInfo.GetCode(out eh);
+            if ((ddsReturnCode != DDS.ReturnCode.NoData) || (eh != DDS.ErrorCode.Undefined))
             {
                 return new Test.Framework.TestResult("get_code returns NO_DATA and does not modify error code"
                     , "Different result and/or error code modified", expVerdict, Test.Framework.TestVerdict.Fail);

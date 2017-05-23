@@ -1,0 +1,9 @@
+#ifndef $upper($(basename))STREAMS_IMPL_H_
+#define $upper($(basename))STREAMS_IMPL_H_
+
+#include "streams_ccpp.h"
+#include "ccpp_StreamDataWriter_impl.h"
+#include "ccpp_StreamDataReader_impl.h"
+#include "ccpp_streamsT_impl.h"
+#include "ccpp_$(basename)Streams.h"
+$(DLL_IMPORTEXPORT_INCLUDE)

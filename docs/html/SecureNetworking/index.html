@@ -1,0 +1,264 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Secure Networking Configuration Guide &mdash; Secure Networking Configuration Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Secure Networking Configuration Guide" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">Secure Networking Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="secure-networking-configuration-guide">
+<h1>Secure Networking Configuration Guide<a class="headerlink" href="#secure-networking-configuration-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-secure-networking-configuration-guide">1.1. About The Secure Networking Configuration Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#intended-audience">1.2. Intended Audience</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#organisation">1.3. Organisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#conventions">1.4. Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">2. Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#vortex-opensplice-secure-networking-service">2.1. Vortex OpenSplice Secure Networking Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#getting-started">2.2. Getting Started</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="securenetconfig.html">3. Secure Networking Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="securenetconfig.html#activating-secure-networking">3.1. Activating Secure Networking</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="securenetconfig.html#configuring-the-secure-networking-service">3.1.1. Configuring the Secure Networking Service</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="securenetconfig.html#secure-networking-configuration-elements">3.2. Secure Networking Configuration Elements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="securenetconfig.html#element-globalpartition">3.2.1. Element GlobalPartition</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#attribute-securityprofile">3.2.1.1. Attribute SecurityProfile</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="securenetconfig.html#element-networkpartition">3.2.2. Element NetworkPartition</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#id2">3.2.2.1. Attribute SecurityProfile</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="securenetconfig.html#element-security">3.2.3. Element Security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#attribute-enabled">3.2.3.1. Attribute Enabled</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="securenetconfig.html#element-securityprofile">3.2.4. Element SecurityProfile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#attribute-name">3.2.4.1. Attribute Name</a></li>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#attribute-cipher">3.2.4.2. Attribute Cipher</a></li>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#attribute-cipherkey">3.2.4.3. Attribute CipherKey</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="securenetconfig.html#element-accesscontrol">3.2.5. Element AccessControl</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#id3">3.2.5.1. Attribute enabled</a></li>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#attribute-policy">3.2.5.2. Attribute policy</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="securenetconfig.html#element-accesscontrolmodule">3.2.6. Element AccessControlModule</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#id4">3.2.6.1. Attribute enabled</a></li>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#attribute-type">3.2.6.2. Attribute type</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="securenetconfig.html#element-authentication">3.2.7. Element Authentication</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#id5">3.2.7.1. Attribute enabled</a></li>
+<li class="toctree-l4"><a class="reference internal" href="securenetconfig.html#element-x509authentication">3.2.7.2. Element X509Authentication</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="securenetconfig.html#element-credentials">3.2.7.2.1. Element Credentials</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="securenetconfig.html#element-key">3.2.7.2.1.1. Element Key</a></li>
+<li class="toctree-l6"><a class="reference internal" href="securenetconfig.html#element-cert">3.2.7.2.1.2. Element Cert</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="securenetconfig.html#element-trustedcertificates">3.2.7.2.2. Element TrustedCertificates</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="securenetconfig.html#secure-networking-example-configuration">3.3. Secure Networking Example Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="securenettutorial.html">4. Secure Networking Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="securenettutorial.html#prerequisites">4.1. Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="securenettutorial.html#preparation">4.2. Preparation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="securenettutorial.html#customizing-opensplice-configuration">4.2.1. Customizing OpenSplice Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="securenettutorial.html#running-chat-tutorial-without-security">4.2.2. Running Chat Tutorial Without Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="securenettutorial.html#activating-secure-networking">4.3. Activating Secure Networking</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="securenettutorial.html#simple-setup-using-globalpartition">4.3.1. Simple Setup Using GlobalPartition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="securenettutorial.html#advanced-setup-using-network-partitions">4.3.2. Advanced Setup Using Network Partitions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="accesscontrol.html">5. Access Control</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="accesscontrol.html#overview">5.1. Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="accesscontrol.html#mandatory-access-control">5.2. Mandatory Access Control</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="accesscontrol.html#bell-lapadula-confidentiality-model">5.2.1. Bell-LaPadula Confidentiality Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="accesscontrol.html#biba-integrity-model">5.2.2. Biba Integrity Model</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="accesscontrol.html#access-control-in-opensplice">5.3. Access Control in OpenSplice</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="accesscontrol.html#objects-to-be-protected">5.3.1. Objects to be Protected</a></li>
+<li class="toctree-l3"><a class="reference internal" href="accesscontrol.html#secure-vs-insecure">5.3.2. Secure <em>vs.</em> Insecure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="accesscontrol.html#user-authentication">5.3.3. User Authentication</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="accesscontrol.html#mac-in-opensplice">5.4. MAC in OpenSplice</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="accessctrlconfig.html">6. Access Control Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="accessctrlconfig.html#access-control-policy-elements">6.1. Access Control Policy Elements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="accessctrlconfig.html#element-secrecylevels-secrecylevel">6.1.1. Element secrecyLevels/secrecyLevel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="accessctrlconfig.html#element-integritylevels-integritylevel">6.1.2. Element integrityLevels/integrityLevel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="accessctrlconfig.html#element-users-user">6.1.3. Element users/user</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="accessctrlconfig.html#element-id">6.1.3.1. Element id</a></li>
+<li class="toctree-l4"><a class="reference internal" href="accessctrlconfig.html#element-clearance">6.1.3.2. Element Clearance</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="accessctrlconfig.html#element-secrecylevel">6.1.3.2.1. Element secrecyLevel</a></li>
+<li class="toctree-l5"><a class="reference internal" href="accessctrlconfig.html#element-integritylevel">6.1.3.2.2. Element integrityLevel</a></li>
+<li class="toctree-l5"><a class="reference internal" href="accessctrlconfig.html#element-compartments-compartment">6.1.3.2.3. Element compartments/compartment</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="accessctrlconfig.html#element-authentication">6.1.3.3. Element authentication</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="accessctrlconfig.html#element-x509authentication">6.1.3.3.1. Element x509Authentication</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="accessctrlconfig.html#element-resources-resource">6.1.4. Element resources/resource</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="accessctrlconfig.html#element-type">6.1.4.1. Element type</a></li>
+<li class="toctree-l4"><a class="reference internal" href="accessctrlconfig.html#id3">6.1.4.2. Element id</a></li>
+<li class="toctree-l4"><a class="reference internal" href="accessctrlconfig.html#element-topics-topic">6.1.4.3. Element topics/topic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="accessctrlconfig.html#element-partitions-partition">6.1.4.4. Element partitions/partition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="accessctrlconfig.html#element-classification">6.1.4.5. Element classification</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="accessctrlconfig.html#id4">6.1.4.5.1. Element secrecyLevel</a></li>
+<li class="toctree-l5"><a class="reference internal" href="accessctrlconfig.html#id5">6.1.4.5.2. Element integrityLevel</a></li>
+<li class="toctree-l5"><a class="reference internal" href="accessctrlconfig.html#id6">6.1.4.5.3. Element compartments/compartment</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="accessctrlconfig.html#access-control-example-configuration">6.2. Access Control Example Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot.html">7. Troubleshooting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troubleshoot.html#known-issues">7.1. Known Issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshoot.html#how-to-diagnose-problems-logging">7.2. How to Diagnose Problems - Logging</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troubleshoot.html#error-messages">7.2.1. Error Messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshoot.html#warning-messages">7.2.2. Warning Messages</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">8. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">8.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">8.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Secure Networking Configuration Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">Secure Networking Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

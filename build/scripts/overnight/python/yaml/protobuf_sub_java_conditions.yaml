@@ -1,0 +1,27 @@
+parseconditions:
+    desc: protobuf LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: sub_valid_read
+          type: line
+          inst: 1
+          required: yes
+          line: "Subscriber: reading sample (NOT_READ, NEW, ALIVE):"
+
+        - name: sub_invalid_read
+          type: line
+          inst: 1
+          required: yes
+          line: "Subscriber: reading invalid sample (NOT_READ, NEW, NOT_ALIVE_DISPOSED):"
+
+        - name: sub_term
+          type: line
+          inst: 1
+          required: yes
+          line: "Subscriber: terminating..."

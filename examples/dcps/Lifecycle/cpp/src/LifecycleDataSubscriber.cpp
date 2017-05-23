@@ -3,12 +3,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -27,35 +35,80 @@
 #include <iostream>
 #include "DDSEntityManager.h"
 #include "ccpp_LifecycleData.h"
-#include "os.h"
+#include "vortex_os.h"
 
 #include "example_main.h"
 
 using namespace DDS;
 using namespace LifecycleData;
 
-char *sSampleState[] =
+
+const char *
+pSampleState(DDS::SampleStateKind k)
 {
-  (char*)"READ_SAMPLE_STATE", (char*)"NOT_READ_SAMPLE_STATE"
-};
-char *sViewState[] =
-{
-  (char*)"NEW_VIEW_STATE", (char*)"NOT_NEW_VIEW_STATE"
-};
-char *sInstanceState[] =
-{
-  (char*)"ALIVE_INSTANCE_STATE", (char*)"NOT_ALIVE_DISPOSED_INSTANCE_STATE",
-    (char*)"NOT_ALIVE_NO_WRITERS_INSTANCE_STATE"
-};
-int index(int i)
-{
-  int j = (int) (log10((float)i) / log10((float)2));
-  return j;
+    const char *r;
+
+    switch (k) {
+    case DDS::READ_SAMPLE_STATE:
+        r = "READ_SAMPLE_STATE";
+        break;
+    case DDS::NOT_READ_SAMPLE_STATE:
+        r = "NOT_READ_SAMPLE_STATE";
+        break;
+    default:
+        r = "INVALID_SAMPLE_STATE";
+        break;
+    }
+
+    return r;
 }
+
+const char *
+pViewState(DDS::ViewStateKind k)
+{
+    const char *r;
+
+    switch (k) {
+    case DDS::NEW_VIEW_STATE:
+        r = "NEW_VIEW_STATE";
+        break;
+    case DDS::NOT_NEW_VIEW_STATE:
+        r = "NOT_NEW_VIEW_STATE";
+        break;
+    default:
+        r = "INVALID_VIEW_STATE";
+        break;
+    }
+
+    return r;
+}
+
+const char *
+pInstanceState(DDS::ViewStateKind k)
+{
+    const char *r;
+
+    switch (k) {
+    case DDS::ALIVE_INSTANCE_STATE:
+        r = "ALIVE_INSTANCE_STATE";
+        break;
+    case DDS::NOT_ALIVE_DISPOSED_INSTANCE_STATE:
+        r = "NOT_ALIVE_DISPOSED_INSTANCE_STATE";
+        break;
+    case DDS::NOT_ALIVE_NO_WRITERS_INSTANCE_STATE:
+        r = "NOT_ALIVE_NO_WRITERS_INSTANCE_STATE";
+        break;
+    default:
+        r = "INVALID_INSTANCE_STATE";
+        break;
+    }
+
+    return r;
+}
+
 
 int OSPL_MAIN (int argc, char *argv[])
 {
-  os_time delay_20ms =  { 0, 20000000 };
   os_time delay_200ms = { 0, 200000000 };
   MsgSeq msgList;
   SampleInfoSeq infoSeq;
@@ -99,19 +152,21 @@ int OSPL_MAIN (int argc, char *argv[])
       status = LifecycleReader->read(msgList, infoSeq, LENGTH_UNLIMITED,
         ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
       checkStatus(status, "msgDataReader::read");
-      for (DDS::ULong j = 0; j < msgList.length(); j++)
+      if (msgList.length() > 0)
       {
-        cout << endl << " Message        : " <<  msgList[j].message.in() << endl;
-        cout << " writerStates   : " <<  msgList[j].writerStates.in() << endl;
-        cout << " valid_data     : " << (int)infoSeq[j].valid_data  << endl;
-        cout << "sample_state:" << sSampleState[index(infoSeq[j].sample_state)] << "-view_state:" << sViewState[index(infoSeq[j].view_state)] << "-instance_state:" << sInstanceState[index(infoSeq[j].instance_state)] << endl;
-        os_nanoSleep(delay_200ms);
-	closed = (strcmp(msgList[j].writerStates.in(), "STOPPING_SUBSCRIBER") == 0);
+          for (DDS::ULong j = 0; j < msgList.length(); j++)
+          {
+            cout << endl << " Message        : " <<  msgList[j].message.in() << endl;
+            cout << " writerStates   : " <<  msgList[j].writerStates.in() << endl;
+            cout << " valid_data     : " << (int)infoSeq[j].valid_data  << endl;
+            cout << "sample_state:" << pSampleState(infoSeq[j].sample_state) << "-view_state:" << pViewState(infoSeq[j].view_state) << "-instance_state:" << pInstanceState(infoSeq[j].instance_state) << endl;
+            closed = (strcmp(msgList[j].writerStates.in(), "STOPPING_SUBSCRIBER") == 0);
+          }
       }
+      nbIter++;
       status = LifecycleReader->return_loan(msgList, infoSeq);
       checkStatus(status, "MsgDataReader::return_loan");
-      os_nanoSleep(delay_20ms);
-      nbIter++;
+      os_nanoSleep(delay_200ms);
   }
   cout << "=== [Subscriber] stopping after "<< nbIter << " iterations - closed=" << closed << endl;
   if (nbIter == nbIterMax)  cout << "*** Error : max " << nbIterMax <<   "iterations reached" << endl;

@@ -1,11 +1,11 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_build_lib, dcps_typesupport_base, ospl_dcpsgapi {
-    dynamicflags = BUILD_OMG_DDS_API OPENSPLICE_ISOCXX_PSM OSPL_BUILD_DCPSCCPP
+project : ospl_build_lib, dcps_typesupport_base, ospl_base, ospl_ddsuser {
+    dynamicflags = BUILD_OMG_DDS_API OPENSPLICE_ISOCXX_PSM OSPL_BUILD_DCPSCPP
 
     specific(prop:windows) {
-        splice_ts_flags += -P SACPP_API,sacpp_if.h
+        splice_ts_flags += -P OS_API,cpp_dcps_if.h
     }
 
 
@@ -49,15 +49,15 @@ feature(!src_co) {
 }
 
 feature(src_co) {
+    includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/common/include
     includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/common/include
-    includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/ccpp/include
-    includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sacpp/include
-    includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sacpp/bld/$(SPLICE_TARGET)
+    includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/sacpp/include
+    includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/sacpp/bld/$(SPLICE_TARGET)
     includes += include
 
     // idlpp code generation
     TypeSupport_Files {
-        splice_ts_flags += -l cpp -d $(OSPL_HOME_NORMALIZED)/src/api/dcps/sacpp/bld/$(SPLICE_TARGET)
+        splice_ts_flags += -l cpp -d $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/sacpp/bld/$(SPLICE_TARGET)
         $(OSPL_HOME_NORMALIZED)/etc/idl/dds_builtinTopics.idl
         $(OSPL_HOME_NORMALIZED)/etc/idl/dds_dcps_builtintopics.idl
         $(OSPL_HOME_NORMALIZED)/etc/idl/dds_namedQosTypes.idl
@@ -65,14 +65,14 @@ feature(src_co) {
     recurse = 1
     Source_Files {
         code
-        $(OSPL_HOME_NORMALIZED)/src/api/dcps/ccpp/code
-        $(OSPL_HOME_NORMALIZED)/src/api/dcps/sacpp/code
+        $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/sacpp/code
+        $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/common/code
     }
 
     Header_Files {
         include
+        $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/common/include
         $(OSPL_HOME_NORMALIZED)/src/api/dcps/common/include
-        $(OSPL_HOME_NORMALIZED)/src/api/dcps/ccpp/include
-        $(OSPL_HOME_NORMALIZED)/src/api/dcps/sacpp/include
+        $(OSPL_HOME_NORMALIZED)/src/api/dcps/c++/sacpp/include
     }
 }

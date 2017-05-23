@@ -92,6 +92,109 @@ namespace test.sacs
                 result.Result = "Resolved topics do not match for DCPSTopic.";
                 return result;
             }
+            topic = (DDS.ITopic)participant.FindTopic("CMParticipant", DDS.Duration.Infinite);
+            if (topic == null)
+            {
+                result.Result = "Builtin Topic CMParticipant could not be found.";
+                return result;
+            }
+            topic2 = (DDS.ITopic)participant.LookupTopicDescription("CMParticipant");
+            if (topic2 == null)
+            {
+                result.Result = "Builtin Topic CMParticipant could not be found(2).";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Resolved topics do not match for CMParticipant.";
+                return result;
+            }
+            topic = (DDS.ITopic)participant.FindTopic("CMPublisher", DDS.Duration.Infinite);
+            if (topic == null)
+            {
+                result.Result = "Builtin Topic CMPublisher could not be found.";
+                return result;
+            }
+            topic2 = (DDS.ITopic)participant.LookupTopicDescription("CMPublisher");
+            if (topic2 == null)
+            {
+                result.Result = "Builtin Topic CMPublisher could not be found(2).";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Resolved topics do not match for CMPublisher.";
+                return result;
+            }
+            topic = (DDS.ITopic)participant.FindTopic("CMSubscriber", DDS.Duration.Infinite);
+            if (topic == null)
+            {
+                result.Result = "Builtin Topic CMSubscriber could not be found.";
+                return result;
+            }
+            topic2 = (DDS.ITopic)participant.LookupTopicDescription("CMSubscriber");
+            if (topic2 == null)
+            {
+                result.Result = "Builtin Topic CMSubscriber could not be found(2).";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Resolved topics do not match for CMSubscriber.";
+                return result;
+            }
+            topic = (DDS.ITopic)participant.FindTopic("CMDataWriter", DDS.Duration.Infinite);
+            if (topic == null)
+            {
+                result.Result = "Builtin Topic CMDataWriter could not be found.";
+                return result;
+            }
+            topic2 = (DDS.ITopic)participant.LookupTopicDescription("CMDataWriter");
+            if (topic2 == null)
+            {
+                result.Result = "Builtin Topic CMDataWriter could not be found(2).";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Resolved topics do not match for CMDataWriter.";
+                return result;
+            }
+            topic = (DDS.ITopic)participant.FindTopic("CMDataReader", DDS.Duration.Infinite);
+            if (topic == null)
+            {
+                result.Result = "Builtin Topic CMDataReader could not be found.";
+                return result;
+            }
+            topic2 = (DDS.ITopic)participant.LookupTopicDescription("CMDataReader");
+            if (topic2 == null)
+            {
+                result.Result = "Builtin Topic CMDataReader could not be found(2).";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Resolved topics do not match for CMDataReader.";
+                return result;
+            }
+
+            topic = (DDS.ITopic)participant.FindTopic("DCPSType", DDS.Duration.Infinite);
+            if (topic == null)
+            {
+                result.Result = "Builtin Topic DCPSType could not be found.";
+                return result;
+            }
+            topic2 = (DDS.ITopic)participant.LookupTopicDescription("DCPSType");
+            if (topic2 == null)
+            {
+                result.Result = "Builtin Topic DCPSType could not be found(2).";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Resolved topics do not match for DCPSType.";
+                return result;
+            }
             result.Result = expResult;
             result.Verdict = Test.Framework.TestVerdict.Pass;
             return result;

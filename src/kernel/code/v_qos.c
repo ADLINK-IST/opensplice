@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v_qos.h"
@@ -21,48 +29,42 @@
 
 v_qos
 v_qosCreate(
-    v_kernel kernel,
+    c_base base,
     v_qosKind kind)
 {
     v_qos qos;
-    c_base base;
     c_type type;
-
-    assert(kernel != NULL);
-    assert(C_TYPECHECK(kernel,v_kernel));
-
-    base = c_getBase(c_object(kernel));
 
 #define _CASE_(l,t) case l: type = c_resolve(base,t); break
 
     switch (kind) {
-    _CASE_(V_PARTITION_QOS,        "kernelModule::v_partitionQos");
-    _CASE_(V_PARTICIPANT_QOS,   "kernelModule::v_participantQos");
-    _CASE_(V_TOPIC_QOS,         "kernelModule::v_topicQos");
-    _CASE_(V_WRITER_QOS,        "kernelModule::v_writerQos");
-    _CASE_(V_READER_QOS,        "kernelModule::v_readerQos");
-    _CASE_(V_PUBLISHER_QOS,     "kernelModule::v_publisherQos");
-    _CASE_(V_SUBSCRIBER_QOS,    "kernelModule::v_subscriberQos");
-    _CASE_(V_INDEX_QOS,         "kernelModule::v_indexQos");
-    _CASE_(V_WRITERHISTORY_QOS, "kernelModule::v_writerHistoryQos");
-    _CASE_(V_GROUPHISTORY_QOS,  "kernelModule::v_groupHistoryQos");
-    _CASE_(V_VIEW_QOS,          "kernelModule::v_viewQos");
-    _CASE_(V_DATAVIEW_QOS,      "kernelModule::v_dataViewQos");
-    _CASE_(V_KERNEL_QOS,        "kernelModule::v_kernelQos");
+    _CASE_(V_PARTITION_QOS,     "kernelModuleI::v_partitionQos");
+    _CASE_(V_PARTICIPANT_QOS,   "kernelModuleI::v_participantQos");
+    _CASE_(V_TOPIC_QOS,         "kernelModuleI::v_topicQos");
+    _CASE_(V_WRITER_QOS,        "kernelModuleI::v_writerQos");
+    _CASE_(V_READER_QOS,        "kernelModuleI::v_readerQos");
+    _CASE_(V_PUBLISHER_QOS,     "kernelModuleI::v_publisherQos");
+    _CASE_(V_SUBSCRIBER_QOS,    "kernelModuleI::v_subscriberQos");
+    _CASE_(V_INDEX_QOS,         "kernelModuleI::v_indexQos");
+    _CASE_(V_WRITERHISTORY_QOS, "kernelModuleI::v_writerHistoryQos");
+    _CASE_(V_GROUPHISTORY_QOS,  "kernelModuleI::v_groupHistoryQos");
+    _CASE_(V_VIEW_QOS,          "kernelModuleI::v_viewQos");
+    _CASE_(V_DATAVIEW_QOS,      "kernelModuleI::v_dataViewQos");
+    _CASE_(V_KERNEL_QOS,        "kernelModuleI::v_kernelQos");
     default:
-        OS_REPORT_1(OS_ERROR,"v_qos::Create",0,
+        OS_REPORT(OS_CRITICAL,"v_qos::Create",V_RESULT_ILL_PARAM,
                     "Illegal Qos kind specified (%s)",
                     v_qosKindImage(kind));
         return NULL;
     }
 
-    qos = v_qos(c_new(type));
+    qos = v_qos(c_new_s(type));
     c_free(type);
     if (qos) {
         qos->kind = kind;
     } else {
-        OS_REPORT(OS_ERROR,
-                  "v_qosCreate",0,
+        OS_REPORT(OS_FATAL,
+                  "v_qosCreate",V_RESULT_INTERNAL_ERROR,
                   "Failed to allocate qos.");
         assert(FALSE);
     }

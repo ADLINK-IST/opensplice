@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "c__base.h"
@@ -16,7 +24,7 @@
 #include "c_collection.h"
 #include "c_iterator.h"
 #include "os_report.h"
-#include "os.h"
+#include "vortex_os.h"
 
 C_STRUCT(c_field) {
     c_valueKind kind;
@@ -31,40 +39,11 @@ c_type
 c_field_t (
     c_base _this)
 {
-    if (_this->baseCache.fieldCache.c_field_t == NULL) {
-        _this->baseCache.fieldCache.c_field_t = c_resolve(_this,"c_field");
-    }
     return _this->baseCache.fieldCache.c_field_t;
 }
 
-c_collectionType
-c_fieldPath_t (
-    c_base _this)
-{
-    if (_this->baseCache.fieldCache.c_fieldPath_t == NULL) {
-        _this->baseCache.fieldCache.c_fieldPath_t = c_collectionType(
-                             c_metaArrayTypeNew(c_metaObject(_this),
-                                                "C_ARRAY<c_base>",
-                                                c_getMetaType(_this,M_BASE),
-                                                0));
-    }
-    return _this->baseCache.fieldCache.c_fieldPath_t;
-}
-
-c_collectionType
-c_fieldRefs_t (
-    c_base _this)
-{
-    if (_this->baseCache.fieldCache.c_fieldRefs_t == NULL) {
-        _this->baseCache.fieldCache.c_fieldRefs_t = c_collectionType(
-                             c_metaArrayTypeNew(c_metaObject(_this),
-                                                "C_ARRAY<c_address>",
-                                                c_address_t(_this),
-                                                0));
-    }
-    return _this->baseCache.fieldCache.c_fieldRefs_t;
-}
-
+#define c_fieldPath_t(base) (base->baseCache.fieldCache.c_fieldPath_t)
+#define c_fieldRefs_t(base) (base->baseCache.fieldCache.c_fieldRefs_t)
 
 void
 c_fieldInit (
@@ -72,14 +51,26 @@ c_fieldInit (
 {
     c_object scope;
 
+    base->baseCache.fieldCache.c_fieldPath_t =
+         c_metaArrayTypeNew(c_metaObject(base),
+                            "C_ARRAY<c_base>",
+                            c_getMetaType(base,M_BASE),
+                            0);
+    base->baseCache.fieldCache.c_fieldRefs_t =
+         c_metaArrayTypeNew(c_metaObject(base),
+                            "C_ARRAY<c_address>",
+                            c_address_t(base),
+                            0);
+
     scope = c_metaDeclare((c_object)base,"c_field",M_CLASS);
         C_META_ATTRIBUTE_(c_field,scope,kind,c_valueKind_t(base));
         C_META_ATTRIBUTE_(c_field,scope,offset,c_address_t(base));
         C_META_ATTRIBUTE_(c_field,scope,name,c_string_t(base));
-        C_META_ATTRIBUTE_(c_field,scope,path,c_array_t(base));
-        C_META_ATTRIBUTE_(c_field,scope,refs,c_array_t(base));
+        C_META_ATTRIBUTE_(c_field,scope,path,c_fieldPath_t(base));
+        C_META_ATTRIBUTE_(c_field,scope,refs,c_fieldRefs_t(base));
         C_META_ATTRIBUTE_(c_field,scope,type,c_type_t(base));
     c__metaFinalize(scope,FALSE);
+    base->baseCache.fieldCache.c_field_t = scope;
     c_free(scope);
 }
 
@@ -119,7 +110,7 @@ c_fieldNew (
     c_array path;
     c_field field;
     c_metaObject o;
-    c_long n,length;
+    c_ulong n,length;
     c_address offset;
     c_iter nameList, refsList;
     c_string name;
@@ -148,7 +139,7 @@ c_fieldNew (
         o = NULL;
         offset = 0;
         refsList = NULL;
-        path = c_newArray(c_fieldPath_t(base),length);
+        path = c_newArray(c_collectionType(c_fieldPath_t(base)),length);
         if (path) {
             for (n=0;n<length;n++) {
                 name = c_iterTakeFirst(nameList);
@@ -205,9 +196,10 @@ c_fieldNew (
             if (refsList) {
                 length = c_iterLength(refsList);
                 if (length > 0) {
-                    field->refs = c_newArray(c_fieldRefs_t(base),length);
+                    field->refs = c_newArray(c_collectionType(c_fieldRefs_t(base)),length);
                     if (field->refs) {
-                        for (n=(length-1);n>=0;n--) {
+                        n = length;
+                        while (n-- > 0) {
                             field->refs[n] = c_iterTakeFirst(refsList);
                         }
                     } else {
@@ -225,11 +217,10 @@ c_fieldNew (
                       "c_fieldNew failed",0,
                       "failed to allocate field->path array");
             c_iterWalk(nameList,(c_iterWalkAction)os_free,NULL);
-            c_iterFree(nameList);
         }
         c_iterFree(nameList);
     } else {
-        OS_REPORT_1(OS_ERROR,
+        OS_REPORT(OS_ERROR,
                     "c_fieldNew failed",0,
                     "failed to process field name <%s>",
                     fieldName);
@@ -261,7 +252,7 @@ c_fieldConcat (
     if (field) {
         field->type = c_keep(tail->type);
         field->kind = tail->kind;
-        field->path = c_newArray(c_fieldPath_t(base),len1 + len2);
+        field->path = c_newArray(c_collectionType(c_fieldPath_t(base)), len1 + len2);
         for (i=0;i<len1;i++) {
             field->path[i] = c_keep(head->path[i]);
         }
@@ -269,25 +260,23 @@ c_fieldConcat (
             field->path[i+len1] = c_keep(tail->path[i]);
         }
 
-        len1 = (c_ulong) c_arraySize(head->refs);
-        len2 = (c_ulong) c_arraySize(tail->refs);
+        len1 = c_arraySize(head->refs);
+        len2 = c_arraySize(tail->refs);
 
         totlen = len1 + len2 + (headIsRef ? 1 : 0);
-        if (totlen > 0) {
-            field->refs = c_newArray(c_fieldRefs_t(base),totlen);
-        } else {
+        if (totlen == 0) {
             field->refs = NULL;
-        }
-        if (len1) {
+        } else {
+            field->refs = c_newArray(c_fieldRefs_t(base),totlen);
             for (i = 0; i < len1; i++) {
                 field->refs[i] = head->refs[i];
             }
-        }
-        if (headIsRef) {
-            field->refs[len1++] = (c_voidp)head->offset;
-        }
-        for (i = len1; i < totlen; i++) {
-            field->refs[i] = tail->refs[i - len1];
+            if (headIsRef) {
+                field->refs[len1++] = (c_voidp)head->offset;
+            }
+            for (i = len1; i < totlen; i++) {
+                field->refs[i] = tail->refs[i - len1];
+            }
         }
 
         /* If the tail does not add any additional refs (in which case
@@ -303,8 +292,8 @@ c_fieldConcat (
             field->offset = tail->offset;
         }
 
-        len1 = strlen(head->name);
-        len2 = strlen(tail->name);
+        len1 = (c_ulong) strlen(head->name);
+        len2 = (c_ulong) strlen(tail->name);
 
         field->name = c_stringMalloc(base,len1+len2+2);
         os_sprintf(field->name,"%s.%s",head->name,tail->name);
@@ -320,7 +309,7 @@ c_fieldConcat (
 static void *get_field_address (c_field field, c_object o)
 {
     void *p = o;
-    c_long i,n;
+    c_ulong i,n;
     c_array refs;
     if (field->refs) {
         refs = field->refs;
@@ -373,7 +362,7 @@ c_fieldFreeRef (
     case V_FIXED:
     case V_UNDEFINED:
     case V_COUNT:
-        OS_REPORT_1(OS_ERROR,"c_fieldFreeRef failed",0,
+        OS_REPORT(OS_ERROR,"c_fieldFreeRef failed",0,
                     "illegal field value kind (%d)", field->kind);
         assert(FALSE);
     break;
@@ -426,7 +415,7 @@ c_fieldAssign (
     case V_FIXED:
     case V_UNDEFINED:
     case V_COUNT:
-        OS_REPORT_1(OS_ERROR,"c_fieldAssign failed",0,
+        OS_REPORT(OS_ERROR,"c_fieldAssign failed",0,
                     "illegal field value kind (%d)", v.kind);
         assert(FALSE);
     break;
@@ -507,7 +496,7 @@ c_fieldValue(
     case V_FIXED:
     case V_UNDEFINED:
     case V_COUNT:
-        OS_REPORT_1(OS_ERROR,"c_fieldAssign failed",0,
+        OS_REPORT(OS_ERROR,"c_fieldAssign failed",0,
                     "illegal field value kind (%d)", v.kind);
         assert(FALSE);
     break;
@@ -567,6 +556,7 @@ c_fieldCompare (
     c_equality result;
 
     result = C_NE;
+    (void) result;
 
 #define _CMP_(t) ((*(t*)p1)<(*(t*)p2)?C_LT:((*(t*)p1)>(*(t*)p2)?C_GT:C_EQ))
 
@@ -590,7 +580,7 @@ c_fieldCompare (
     case V_WSTRING:
     case V_FIXED:     p1 = (p1?*(c_voidp*)p1:NULL);
                       p2 = (p2?*(c_voidp*)p2:NULL);
-                      if (((c_address)p1) == ((c_address)p2)) {
+                      if (p1 == p2) {
                           result = C_EQ;
                       } else if (p1 == NULL) {
                           result = C_LT;
@@ -609,7 +599,7 @@ c_fieldCompare (
     break;
     case V_UNDEFINED:
     case V_COUNT:
-        OS_REPORT_1(OS_ERROR,"c_fieldCompare failed",0,
+        OS_REPORT(OS_ERROR,"c_fieldCompare failed",0,
                     "illegal field value kind (%d)", field1->kind);
         assert(FALSE);
         result = C_NE;
@@ -630,6 +620,7 @@ c_fieldBlobSize(
     case V_LONGLONG: case V_OCTET: case V_USHORT: case V_ULONG:
     case V_ULONGLONG: case V_CHAR: case V_WCHAR:
     case V_FLOAT: case V_DOUBLE:
+    case V_OBJECT:
         return field->type->size;
     case V_STRING: case V_WSTRING:
         if ((p = get_field_address (field, o)) == NULL) {
@@ -638,11 +629,11 @@ c_fieldBlobSize(
             assert (FALSE);
             return 0;
         } else {
-            return 1 + (c_size) strlen (*((char **) p));
+            return 1 + strlen (*((char **) p));
         }
-    case V_OBJECT: case V_VOIDP: case V_FIXED:
+    case V_VOIDP: case V_FIXED:
     case V_UNDEFINED: case V_COUNT:
-        OS_REPORT_1(OS_ERROR,"c_fieldBlobSize failed",0,
+        OS_REPORT(OS_ERROR,"c_fieldBlobSize failed",0,
                     "illegal field value kind (%d)", field->kind);
         assert (FALSE);
         return 0;
@@ -669,15 +660,16 @@ c_fieldBlobCopy(
     case V_LONGLONG: case V_OCTET: case V_USHORT: case V_ULONG:
     case V_ULONGLONG: case V_CHAR: case V_WCHAR:
     case V_FLOAT: case V_DOUBLE:
+    case V_OBJECT:
         sz = field->type->size;
         break;
     case V_STRING: case V_WSTRING:
         p = *((char **) p);
-        sz = 1 + (c_size) strlen (p);
+        sz = 1 + strlen (p);
         break;
-    case V_OBJECT: case V_VOIDP: case V_FIXED:
+    case V_VOIDP: case V_FIXED:
     case V_UNDEFINED: case V_COUNT:
-        OS_REPORT_1(OS_ERROR,"c_fieldBlobCopy failed",0,
+        OS_REPORT(OS_ERROR,"c_fieldBlobCopy failed",0,
                     "illegal field value kind (%d)", field->kind);
         assert(FALSE);
         sz = 0;
@@ -685,4 +677,12 @@ c_fieldBlobCopy(
     }
     memcpy (dst, p, sz);
     return sz;
+}
+
+void *
+c_fieldGetAddress(
+    c_field field,
+    c_object o)
+{
+    return get_field_address (field, o);
 }

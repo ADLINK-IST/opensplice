@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -109,4 +117,62 @@ os_fptr(
     return u.fptr;
 }
 
+os_int
+os_resultToReturnCode(
+    os_result result)
+{
+    os_int code = OS_RETCODE_ERROR;
 
+    switch (result) {
+        case os_resultSuccess:
+            code = OS_RETCODE_OK;
+            break;
+        case os_resultUnavailable:
+            code = OS_RETCODE_PRECONDITION_NOT_MET;
+            break;
+        case os_resultTimeout:
+            code = OS_RETCODE_TIMEOUT;
+            break;
+        case os_resultBusy:
+            code = OS_RETCODE_PRECONDITION_NOT_MET;
+            break;
+        case os_resultInvalid:
+            code = OS_RETCODE_BAD_PARAMETER;
+            break;
+        default:
+            assert (result == os_resultFail);
+            break;
+    }
+
+    return code;
+}
+
+const os_char *
+os_returnCodeImage(
+    os_int32 code)
+{
+    const os_char *image;
+
+#define OS__CASE__(code) case code: image = # code; break;
+    switch (code) {
+        OS__CASE__(OS_RETCODE_OK)
+        OS__CASE__(OS_RETCODE_ERROR)
+        OS__CASE__(OS_RETCODE_UNSUPPORTED)
+        OS__CASE__(OS_RETCODE_BAD_PARAMETER)
+        OS__CASE__(OS_RETCODE_PRECONDITION_NOT_MET)
+        OS__CASE__(OS_RETCODE_OUT_OF_RESOURCES)
+        OS__CASE__(OS_RETCODE_NOT_ENABLED)
+        OS__CASE__(OS_RETCODE_IMMUTABLE_POLICY)
+        OS__CASE__(OS_RETCODE_INCONSISTENT_POLICY)
+        OS__CASE__(OS_RETCODE_ALREADY_DELETED)
+        OS__CASE__(OS_RETCODE_TIMEOUT)
+        OS__CASE__(OS_RETCODE_NO_DATA)
+        OS__CASE__(OS_RETCODE_ILLEGAL_OPERATION)
+        default:
+            image = "<undefined value>";
+            break;
+    }
+#undef OS__CASE__
+
+    return image;
+}

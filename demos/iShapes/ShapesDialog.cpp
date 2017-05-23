@@ -68,11 +68,14 @@ static std::string lexicalCast(int i)
 }
 
 ShapesDialog::ShapesDialog()
-    :   timer(this), dp_(DDS::DOMAIN_ID_DEFAULT)
+    :   timer(this), dp_(org::opensplice::domain::default_id())
 {
     mainWidget.setupUi(this);
     shapesWidget = new ShapesWidget(mainWidget.renderFrame);
     shapesWidget->resize(mainWidget.renderFrame->size());
+    shapesWidget->installEventFilter(this);
+    shapesWidget->setObjectName(QString("renderFrame"));
+    mainWidget.PausedLabel->setVisible(false);
     filterDialog_ = new FilterDialog(shapesWidget);
     connect(&timer, SIGNAL(timeout()),
             shapesWidget, SLOT(nextAnimationFrame()));
@@ -146,7 +149,7 @@ ShapesDialog::onPublishButtonClicked()
     QPen pen(QColor(0xff, 0xff, 0xff), 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
     ShapeType shape;
-    shape.color() = DDS::string_dup(colorString_[cIdx]);
+    shape.color() = colorString_[cIdx];
     shape.shapesize() = rect.width();
     shape.x() = x;
     shape.y() = y;
@@ -285,7 +288,7 @@ ShapesDialog::onSubscribeButtonClicked()
                 std::string colorStr(colorString_[i]);
 
                 DDSShapeDynamics::ref_type
-                dynamics(new DDSShapeDynamics(x, y, dr, colorStr, i));
+                dynamics(new DDSShapeDynamics(x, y, dr, colorStr, i, true));
 
                 Shape::ref_type
                 circle(new Circle(rect, dynamics, pen, brush, true));
@@ -299,8 +302,7 @@ ShapesDialog::onSubscribeButtonClicked()
         case SQUARE:
         {
             dds::topic::Topic<ShapeType> square_(dp_, squareTopicName, topicQos);
-            dds::sub::LoanedSamples<ShapeType>::iterator si;
-	        dds::topic::ContentFilteredTopic<ShapeType> cfsquare_(dds::core::null);
+            dds::topic::ContentFilteredTopic<ShapeType> cfsquare_(dds::core::null);
             dds::sub::DataReader<ShapeType> dr(sub, square_, readerQos_.get_qos());
 
             if (filterDialog_->isEnabled())
@@ -318,7 +320,7 @@ ShapesDialog::onSubscribeButtonClicked()
                 std::string colorStr(colorString_[i]);
 
                 DDSShapeDynamics::ref_type
-                dynamics(new DDSShapeDynamics(x, y, dr, colorStr, i));
+                dynamics(new DDSShapeDynamics(x, y, dr, colorStr, i, true));
 
                 Shape::ref_type
                 square(new Square(rect, dynamics, pen, brush, true));
@@ -332,8 +334,7 @@ ShapesDialog::onSubscribeButtonClicked()
         case TRIANGLE:
         {
             dds::topic::Topic<ShapeType> triangle_(dp_, triangleTopicName, topicQos);
-            dds::sub::LoanedSamples<ShapeType>::iterator si;
-	        dds::topic::ContentFilteredTopic<ShapeType> cftriangle_(dds::core::null);
+            dds::topic::ContentFilteredTopic<ShapeType> cftriangle_(dds::core::null);
             dds::sub::DataReader<ShapeType> dr(sub, triangle_, readerQos_.get_qos());
 
             if (filterDialog_->isEnabled())
@@ -351,7 +352,7 @@ ShapesDialog::onSubscribeButtonClicked()
                 std::string colorStr(colorString_[i]);
 
                 DDSShapeDynamics::ref_type
-                dynamics(new DDSShapeDynamics(x, y, dr, colorStr, i));
+                dynamics(new DDSShapeDynamics(x, y, dr, colorStr, i, true));
 
                 Shape::ref_type
                 triangle(new Triangle(rect, dynamics, pen, brush, true));

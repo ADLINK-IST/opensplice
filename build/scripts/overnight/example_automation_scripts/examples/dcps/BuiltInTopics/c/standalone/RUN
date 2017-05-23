@@ -6,7 +6,11 @@ startOSPL
 
 echo "=== Launching BuiltInTopics "
 
-./sac_builtintopics_sub > subResult.txt
+./sac_builtintopics_sub > subResult.txt &
+sleep 1
+
+echo === Waiting for processes to terminate
+waitForProcessTermination sac_builtintopics_sub 30
 
 builtintopicsCheckResult
 

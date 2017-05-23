@@ -4,7 +4,7 @@ IDL_FILES   ?= $(notdir $(wildcard $(IDL_DIR)/*.idl))
 vpath %.idl     $(IDL_DIR)
 
 # idl preprocessor
-IDLPP		?= idlpp
+IDLPP		?= $(WINCMD) idlpp
 
 # variables that can be used to extend/overrule the defaults for IDL_H and IDL_C
 IDL_CTYPE_FILES = $(IDL_FILES:%.idl=%CorbaType.h)
@@ -14,6 +14,8 @@ IDL_COPY_FILES = $(IDL_FILES:%.idl=%SplCopy.c)
 IDL_HELP_FILES = $(IDL_FILES:%.idl=%SplHelp.c)
 IDL_STDH_FILES = $(IDL_FILES:%.idl=%.h) $(IDL_FILES:%.idl=%Dcps.h) $(IDL_FILES:%.idl=%SplDcps.h) $(IDL_FILES:%.idl=%SacDcps.h)
 IDL_STDC_FILES = $(IDL_FILES:%.idl=%SplDcps.c) $(IDL_FILES:%.idl=%SacDcps.c)
+
+.PRECIOUS: $(IDL_STDC_FILES)
 
 # This determines what/how it will be processed
 # IDL_H will be generated before the actual compile  (may even include C-file like ..SplLoad.c)
@@ -43,4 +45,4 @@ IDLPPFLAGS	:= -S -l c
 	$(IDLPP) $(IDLPPFLAGS) -m SPLHELP $<
 
 %_register.c %_register.h : %.idl
-	$(IDLPP) -o dds-types $(IDLPPFLAGS) -m TYPES=$(IDLPPTYPES) $<
+	$(IDLPP) $(IDLPPFLAGS) -m TYPES=$(IDLPPTYPES) $(IDL_DIR)/$(notdir $<)

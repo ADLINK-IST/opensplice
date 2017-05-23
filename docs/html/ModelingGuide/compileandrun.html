@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>8. Compiling and Running &mdash; Modeling Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.5.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Modeling Guide" href="index.html" />
+    <link rel="next" title="9. Tutorial" href="tutorial.html" />
+    <link rel="prev" title="7. Creating Launch Configurations" href="launchconfig.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tutorial.html" title="9. Tutorial"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="launchconfig.html" title="7. Creating Launch Configurations"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="compiling-and-running">
+<span id="id1"></span><h1>8. Compiling and Running<a class="headerlink" href="#compiling-and-running" title="Permalink to this headline">¶</a></h1>
+<p><em>This section describes how Vortex OpenSplice Modeler
+and Eclipse Workbench are used to compile and run
+applications.</em></p>
+<div class="section" id="compiling">
+<h2>8.1. Compiling<a class="headerlink" href="#compiling" title="Permalink to this headline">¶</a></h2>
+<p>The Eclipse Workbench can be used to compile the native code by
+either</p>
+<ul class="simple">
+<li>manually invoking the Eclipse Builder by choosing <em>Project &gt;
+Build Project, Project &gt; Build All</em> from the <em>Menu Bar</em></li>
+</ul>
+<p>OR</p>
+<ul class="simple">
+<li>enabling the <em>Project &gt; Build Automatically</em> option (a tick mark
+is displayed)</li>
+</ul>
+</div>
+<div class="section" id="running">
+<h2>8.2. Running<a class="headerlink" href="#running" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="java">
+<h3>8.2.1. Java<a class="headerlink" href="#java" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p>Right-click on the Java source and choose <em>Run As &gt; Java
+Application</em> to run the application (a Vortex OpenSplice daemon is
+expected to be running).</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+The Java application must contain a <tt class="docutils literal"><span class="pre">main()</span></tt> method for this
+option to be available.</p>
+<p>This facility requires the environment to be configured for Vortex
+OpenSplice. If not, Vortex OpenSplice Modeler comes with a handy Java
+run configuration preset targeting Vortex OpenSplice deployments,
+according to the Vortex OpenSplice preferences
+(see Section on <em class="xref std std-ref">Setting Vortex OpenSplice Preferences</em>). To make use of it, choose <em>Run As
+&gt; OpenSplice Java Application</em>.</p>
+<p>If you need to have additional configuration settings for your
+run, simply create a Java run configuration for the specific
+Java source file containing the <tt class="docutils literal"><span class="pre">main()</span></tt> method, then edit the
+variables from the <em>Environment</em> tab (right-click on the source
+file, choose <em>Run As &gt; Run</em>, then create new run configuration).</p>
+</div>
+<div class="section" id="c">
+<h3>8.2.2. C++<a class="headerlink" href="#c" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p>Right-click on the C++ source and choose <em>Run As &gt; Local C++
+Application</em> to run the application against the selected target
+DDS platform. Note that if the target is Vortex OpenSplice, the
+Vortex OpenSplice daemon needs to be running.</p>
+<p>Additionally, for Vortex OpenSplice targets, this facility requires
+that the environment be configured.</p>
+<p>Otherwise, there is a handy C++ run configuration preset available
+under <em>Run As &gt; Vortex OpenSplice C++ Application</em>, which utilizes the
+values set in the Vortex OpenSplice preferences
+(see Section on <em class="xref std std-ref">Setting Vortex OpenSplice Preferences</em>).</p>
+<p>You can also create a C++ run configuration for the
+specific C++ executable, then edit the variables from the
+<em>Environment</em> tab (right-click on the source file, choose
+<em>Run As &gt; Run</em>, then create new run configuration).</p>
+<p>To run a C++ application targeting Vortex Lite, you can choose
+<em>Run As &gt; Local C++ Application</em>. However, you will need to
+manually configure the required environment variables.</p>
+<p>There is also a handy C++ run configuration preset available under
+<em>Run As &gt; Vortex Lite C++ Application</em>. Otherwise, You can also create
+a C++ run configuration for the specific C++ executable, then edit
+the variables from the <em>Environment</em> tab (right-click on the
+source file, choose <em>Run As &gt; Run</em>, then create new run
+configuration).</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">8. Compiling and Running</a><ul>
+<li><a class="reference internal" href="#compiling">8.1. Compiling</a></li>
+<li><a class="reference internal" href="#running">8.2. Running</a><ul>
+<li><a class="reference internal" href="#java">8.2.1. Java</a></li>
+<li><a class="reference internal" href="#c">8.2.2. C++</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="launchconfig.html"
+                        title="previous chapter">7. Creating Launch Configurations</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tutorial.html"
+                        title="next chapter">9. Tutorial</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/compileandrun.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tutorial.html" title="9. Tutorial"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="launchconfig.html" title="7. Creating Launch Configurations"
+             >previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

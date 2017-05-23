@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.model.sample;
@@ -26,13 +34,18 @@ import org.opensplice.cm.Reader;
 import org.opensplice.cm.Snapshot;
 import org.opensplice.cm.Topic;
 import org.opensplice.cm.data.Sample;
+import org.opensplice.cm.data.UserData;
+import org.opensplice.cm.meta.MetaType;
 import org.opensplice.cm.qos.TopicQoS;
 import org.opensplice.cm.transform.DataTransformerFactory;
 import org.opensplice.cm.transform.QoSSerializer;
 import org.opensplice.cm.transform.SampleSerializer;
 import org.opensplice.cm.transform.TransformationException;
+import org.opensplice.cmdataadapter.CmDataException;
+import org.opensplice.cmdataadapter.TypeInfo.TypeEvolution;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.SampleModelSizeException;
+import org.opensplice.common.model.TypeHandler;
 import org.opensplice.common.model.table.UserDataSingleTableModel;
 import org.opensplice.common.model.table.UserDataTableModel;
 
@@ -52,18 +65,23 @@ public abstract class SnapshotSampleModel extends SampleModel{
      * @param _snapshot The snapshot where data is read/taken from.
      * @throws CMException Thrown when the data type could not be retrieved.
      */
-    public SnapshotSampleModel(Snapshot _snapshot) throws CommonException{
+    public SnapshotSampleModel(Snapshot _snapshot, TypeEvolution _typeEvolution) throws CommonException{
         super();
         snapshot = _snapshot;
-        
+        typeEvolution = _typeEvolution;
+        Topic topic = null;
         try {
-            userDataModel = new UserDataTableModel(snapshot.getUserDataType());
-            singleUserDataModel = new UserDataSingleTableModel(
-                                            snapshot.getUserDataType(), false);
-        } catch(CMException e){
+            topic = getTopic();
+            typeInfo = TypeHandler.getTypeHandler().getTypeInfo(topic);
+            MetaType metaType = typeInfo.getMetaType(typeEvolution);
+            userDataModel = new UserDataTableModel(metaType);
+            singleUserDataModel = new UserDataSingleTableModel(metaType, false);
+        } catch(CmDataException e){
             throw new CommonException(e.getMessage());
-        } catch (DataTypeUnsupportedException e) {
-            throw new CommonException(e.getMessage());
+        } finally {
+            if (topic != null) {
+                topic.free();
+            }
         }
     }
 
@@ -84,9 +102,13 @@ public abstract class SnapshotSampleModel extends SampleModel{
             throw new CommonException(e.getMessage());
         }
         if(result != null){
+            try {
+                result = typeInfo.adaptDataForRead(typeEvolution, result);
+            } catch (CmDataException e) {
+                throw new CommonException(e.getMessage());
+            }
             boolean added = this.addSample(result);
-            
-            if(added && (result != null)){
+            if (added) {
                 this.notifyListeners("data_read");
             }
         } else {
@@ -112,8 +134,12 @@ public abstract class SnapshotSampleModel extends SampleModel{
             throw new CommonException(e.getMessage());
         }
         if(result != null){
+            try {
+                result = typeInfo.adaptDataForRead(typeEvolution, result);
+            } catch (CmDataException e) {
+                throw new CommonException(e.getMessage());
+            }
             boolean added = this.addSample(result);
-            
             while(!added && result != null){
                 try {
                     result = snapshot.take();
@@ -157,7 +183,7 @@ public abstract class SnapshotSampleModel extends SampleModel{
     
     @Override
     public synchronized int export(File file) throws CommonException{
-        Topic top;
+        Topic top = null;
         TopicQoS qos;
         QoSSerializer ser;
         String xmlQos;
@@ -206,13 +232,17 @@ public abstract class SnapshotSampleModel extends SampleModel{
                 fw.write("</keyList><qos>");
                 fw.write(xmlQos);
                 fw.write("</qos><metadata>");
-                fw.write(this.userDataModel.getUserDataType().toXML());
+                fw.write(this.typeInfo.getBareMetaType().toXML());
                 fw.write("</metadata></topic><data>");
 
                 do {
                     sample = userDataModel.getDataAt(i);
 
-                    if (sample != null) {
+                    if(sample != null){
+                        // Adapt the UserData if needed
+                        UserData exportData = sample.getMessage().getUserData();
+                        sample.getMessage().setUserData(
+                                typeInfo.adaptDataForWrite(typeInfo.getMostRecentEvolution(), exportData));
                         fw.write(sampleSer.serializeSample(sample));
                     }
                     i++;
@@ -230,12 +260,17 @@ public abstract class SnapshotSampleModel extends SampleModel{
             throw new CommonException(ce.getMessage());
         } catch (TransformationException te) {
             throw new CommonException(te.getMessage());
+        } catch (CmDataException de) {
+                throw new CommonException(de.getMessage());
         } finally {
             if (fw != null) {
                 try {
                     fw.close();
                 } catch (IOException ie) {
                     throw new CommonException(ie.getMessage());
+                }
+                if (top != null) {
+                    top.free();
                 }
             }
         }
@@ -292,7 +327,9 @@ public abstract class SnapshotSampleModel extends SampleModel{
         } catch (CMException e) {
             throw new CommonException(e.getMessage());
         }
-        
+        if (result == null) {
+            throw new CommonException("Unable to resolve Topic entity from selected Reader.");
+        }
         return result;
     }
 }

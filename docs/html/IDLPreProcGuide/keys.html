@@ -1,0 +1,311 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. Keys &mdash; IDL PreProcessor Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="IDL PreProcessor Guide" href="index.html" />
+    <link rel="next" title="8. Modes, Languages and Processing steps" href="modeslanguages.html" />
+    <link rel="prev" title="6. IDL Pre-processor Grammar" href="grammar.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modeslanguages.html" title="8. Modes, Languages and Processing steps"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="grammar.html" title="6. IDL Pre-processor Grammar"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="keys">
+<span id="id1"></span><h1>7. Keys<a class="headerlink" href="#keys" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="defining-keys">
+<span id="id2"></span><h2>7.1. Defining Keys<a class="headerlink" href="#defining-keys" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice IDL Pre-processor also provides a mechanism to define
+a list of keys (space- or comma-separated) with a specific data type. The
+syntax for that definition is:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#pragma keylist &lt;data-type-name&gt; &lt;key&gt;*</span>
+</pre></div>
+</div>
+<p>The identifier <tt class="docutils literal"><span class="pre">&lt;data-type-name&gt;</span></tt> is the identification of a struct
+or a union definition.</p>
+<p>The identifier <tt class="docutils literal"><span class="pre">&lt;key&gt;</span></tt> is the member of a struct. For a struct either no key list is
+defined, in which case no specialized interfaces (<tt class="docutils literal"><span class="pre">TypeSupport</span></tt>, <tt class="docutils literal"><span class="pre">DataReader</span></tt> and
+<tt class="docutils literal"><span class="pre">DataWriter</span></tt>) are generated for the struct, or a key list with or without keys is
+defined, in which case the specialized interfaces are generated for the struct. For a
+union either no key list is defined, in which case no specialized interfaces are
+generated for the union, or a key list without keys is defined, in which case the
+specialized interfaces are generated for the union. It is not possible to define keys
+for a union because a union case may only be addressed when the discriminant is set
+accordingly, nor is it possible to address the discriminant of a union. The keylist
+must be defined in the same name scope or module as the referred struct or union.</p>
+<div class="section" id="supported-types-for-keys">
+<span id="id3"></span><h3>7.1.1. Supported types for keys<a class="headerlink" href="#supported-types-for-keys" title="Permalink to this headline">¶</a></h3>
+<p>Vortex OpenSplice supports following types as keys:</p>
+<ul class="simple">
+<li>short</li>
+<li>long</li>
+<li>long long</li>
+<li>unsigned short</li>
+<li>unsigned long</li>
+<li>unsigned long long</li>
+<li>float</li>
+<li>double</li>
+<li>char</li>
+<li>boolean</li>
+<li>octet</li>
+<li>string</li>
+<li>bounded string</li>
+<li>enum</li>
+<li>char array (provided that <tt class="docutils literal"><span class="pre">#pragma</span> <span class="pre">cats</span></tt> is specified;
+see <a class="reference internal" href="#character-arrays-as-keys">Character arrays as Keys</a> below)</li>
+</ul>
+<p>Vortex OpenSplice also supports typedef for these types.</p>
+</div>
+<div class="section" id="character-arrays-as-keys">
+<span id="id4"></span><h3>7.1.2. Character arrays as Keys<a class="headerlink" href="#character-arrays-as-keys" title="Permalink to this headline">¶</a></h3>
+<p>By default Vortex OpenSplice does not support using a character array as a key. Using
+an (character) array as a key field is not desirable or supported, because:</p>
+<ol class="arabic simple">
+<li>Every index in the array must be considered a separate key in this situation.
+This is the only way that arrays can be compared to each other in a correct manner.
+An array of ten characters would have to be treated as a ten-dimensional storage
+structure, leading to poor performance compared with the processing of a
+(bounded) string of ten characters.</li>
+<li>An array always has a fixed length and therefore the whole array is sent over the
+wire even if only a small part of it is needed. When using a (bounded) string,
+only the actual string is sent and not the maximum length.</li>
+</ol>
+<p>However, in certain scenarios a character array is the logical key for a topic, either
+from an information modeling perspective or simply due to a legacy data model. To
+facilitate such scenarios Vortex OpenSplice introduces the following pragma which
+allows for character arrays to be used as a key.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#pragma cats &lt;data-type-name&gt; &lt;char-array-field-name&gt;*</span>
+</pre></div>
+</div>
+<p>The identifier <tt class="docutils literal"><span class="pre">&lt;data-type-name&gt;</span></tt> is the identification of a struct definition.
+The identifier <tt class="docutils literal"><span class="pre">&lt;char-array-field-name&gt;</span></tt> is the member of a struct with the type
+character array. The <tt class="docutils literal"><span class="pre">cats</span></tt> pragma <em>must</em> be defined in the same name scope or
+module as the referred struct.</p>
+<p>This pragma ensures that each character array listed for the specified struct
+definition is treated as a string type internally within Vortex OpenSplice and operates
+exactly like a regular string. This allows the character array to be used as a key for
+the data type, because as far as Vortex OpenSplice is concerned the character array is
+in fact a string. On the API level (<em>e.g.</em>, generated code) the character array is
+maintained so that applications will be able to use the field as a regular character
+array as normal. Be aware that listing a character array here does <em>not</em> promote the
+character array to a key of the data type; the regular keylist pragma must still be
+used for that. In effect this pragma can be used to let any character array be treated
+as a string internally, although that is not by definition desirable.</p>
+<p>When a character array is mapped to a string internally by using the cats pragma,
+the product behaves as follows:</p>
+<ol class="arabic simple">
+<li>If the character array does not have a &#8216;0&#8217; terminator, the middleware will add a
+<tt class="docutils literal"><span class="pre">\0</span></tt> terminator internally and then remove it again in the character array that
+is presented to a subscribing application. In other words, a character array used
+in combination with the cats pragma does not need to define a <tt class="docutils literal"><span class="pre">\0</span></tt> terminator as
+one of its elements.</li>
+<li>If the character array does have a <tt class="docutils literal"><span class="pre">\0</span></tt> terminator, the middleware will only
+process the characters up to the first element containing the <tt class="docutils literal"><span class="pre">\0</span></tt> character;
+all other characters are ignored. The middleware will present the character array
+with the same <tt class="docutils literal"><span class="pre">\0</span></tt> terminator to a subscribing application and any array
+elements following that <tt class="docutils literal"><span class="pre">\0</span></tt> terminator will contain <tt class="docutils literal"><span class="pre">\0</span></tt> terminators as well;
+<em>i.e.</em>, any array elements following a <tt class="docutils literal"><span class="pre">\0</span></tt> element are ignored.</li>
+</ol>
+<p>The following table shows some examples using the <em>cats</em> pragma for a character
+array with a size of <tt class="docutils literal"><span class="pre">4</span></tt>.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="34%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><em>Character array</em>
+<em>written</em></th>
+<th class="head"><em>Internal string</em>
+<em>representation</em></th>
+<th class="head"><em>Character array</em>
+<em>read</em></th>
+</tr>
+<tr class="row-even"><th class="head">(by publishing
+application)</th>
+<th class="head">(Internal OpenSplice
+data)</th>
+<th class="head">(By subscribing
+application)</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">['a','b','c','d']</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">&quot;abcd&quot;</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">['a','b','c','d']</span></tt></td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">['a','b','c','\0']</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">&quot;abc&quot;</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">['a','b','c','\0']</span></tt></td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">['a','b','\0','d']</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">&quot;ab&quot;</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">['a','b','\0','\0']</span></tt></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="bounded-strings-as-character-arrays">
+<span id="id5"></span><h2>7.2. Bounded strings as character arrays<a class="headerlink" href="#bounded-strings-as-character-arrays" title="Permalink to this headline">¶</a></h2>
+<p>In some use cases a large number of (relatively small) strings may be
+used in the data model, and because each string is a reference type, it
+means that it is not stored inline in the data model but instead as a
+pointer. This will result in separate allocations for each string (and
+thus a performance penalty when writing data) and a slight increase in
+memory usage due to pointers and (memory storage) headers for each
+string.</p>
+<p>The Vortex OpenSplice IDL Pre-Processor features a special pragma called
+<tt class="docutils literal"><span class="pre">stac</span></tt> which can be utilized in such use cases. This pragma enables you
+to indicate that Vortex OpenSplice should store strings internally as
+character arrays (but on the API level they are still bounded strings).
+Because a character array has a fixed size, the pragma <tt class="docutils literal"><span class="pre">stac</span></tt> only
+affects bounded strings. By storing the strings internally as a
+character array the number of allocations is reduced and less memory is
+used. This is most effective in a scenario where a typical string has a
+relatively small size, <em>i.e.</em> fewer than 100 characters.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div>Using the pragma <tt class="docutils literal"><span class="pre">stac</span></tt> on bounded strings results in the limitation
+that those strings can no longer be utilized in queries. It also results
+in the maximum size of the bounded string to be used each time,
+therefore the pragma <tt class="docutils literal"><span class="pre">stac</span></tt> is less suitable when the string has a large
+bound and does not always use up the maximum space when filled with
+data. A bounded string that is also mentioned in the pragma <tt class="docutils literal"><span class="pre">keylist</span></tt>
+can not be listed for pragma <tt class="docutils literal"><span class="pre">stac</span></tt>, as transforming those strings to
+an array would violate the rule that an array can not be a keyfield.</div></blockquote>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#pragma stac &lt;data-type-name&gt; [[!]bounded-string-fieldname]\*</span>
+</pre></div>
+</div>
+<p>The identifier <em>&lt;data-type-name&gt;</em> is the identification of a struct
+definition. The identifier <em>[[!]bounded-string-field-name]</em> is the
+member of a struct with the type bounded string. The <tt class="docutils literal"><span class="pre">stac</span></tt> pragma must
+be defined in the same name scope or module as the referred struct. If
+no field names are listed, then all bounded strings will be treated as
+character arrays internally. If only a subset of the struct members is
+targeted for transformation then these members can be listed explicitly
+one by one. Preceeding a field name with a <tt class="docutils literal"><span class="pre">!</span></tt> character indicates
+that the listed member should not be considered for transformation from
+bounded string to character array.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div>Member names with and without the <tt class="docutils literal"><span class="pre">!</span></tt> character may not be mixed
+within a <tt class="docutils literal"><span class="pre">stac</span></tt> pragma for a specific struct as this has no relevant
+meaning. This pragma ensures that each bounded string listed for the
+specified struct definition is treated as a character array type
+internally within Vortex OpenSplice and operates  exactly like a regular
+bounded string. On the API level ( <em>i.e.</em> , generated code) the bounded
+string is maintained so that applications will be able to use the
+field as a regular bounded string.</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">7. Keys</a><ul>
+<li><a class="reference internal" href="#defining-keys">7.1. Defining Keys</a><ul>
+<li><a class="reference internal" href="#supported-types-for-keys">7.1.1. Supported types for keys</a></li>
+<li><a class="reference internal" href="#character-arrays-as-keys">7.1.2. Character arrays as Keys</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#bounded-strings-as-character-arrays">7.2. Bounded strings as character arrays</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="grammar.html"
+                        title="previous chapter">6. IDL Pre-processor Grammar</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="modeslanguages.html"
+                        title="next chapter">8. Modes, Languages and Processing steps</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/keys.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modeslanguages.html" title="8. Modes, Languages and Processing steps"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="grammar.html" title="6. IDL Pre-processor Grammar"
+             >previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

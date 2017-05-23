@@ -1,0 +1,43 @@
+
+project (cj5*) : cj_typesupport, java_only, java_example, java_ospl_dcpscj5 {
+
+    TypeSupport_Files {
+        ../../idl/pingpong.idl
+    }
+
+    dcps_orb_compile += -I../../idl
+    JavaORBTypes_Files {
+        pingpongDcps.idl >> pingpong/*.java
+    }
+}
+
+
+project (cj5*ping) : java_only, java_example, java_ospl_dcpscj5 {
+    after += cj5*types
+    libs += cj5*types.jar
+
+    specific {
+        compile_flags += -sourcepath ..<%slash%>src
+        obj_dir_flat = 1
+    }
+    Source_Files {
+       ../src/ping.java
+       ../src/pinger.java
+       ../src/stats.java
+       ../src/time.java
+    }
+}
+
+project (cj5*pong) : java_only, java_example, java_ospl_dcpscj5 {
+    after += cj5*types
+    libs += cj5*types.jar
+
+    specific {
+        compile_flags += -sourcepath ..<%slash%>src
+        obj_dir_flat = 1
+    }
+    Source_Files {
+        ../src/pong.java
+        ../src/ponger.java
+    }
+}

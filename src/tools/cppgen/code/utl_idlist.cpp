@@ -131,7 +131,7 @@ UTL_IdList::last_component()
 long
 UTL_IdList::compare(UTL_IdList* that) const
 {
-   long result = I_FALSE;
+   long result = false;
    UTL_IdListActiveIterator ithis((UTL_IdList*)this);
    UTL_IdListActiveIterator ithat(that);
 
@@ -148,7 +148,7 @@ UTL_IdList::compare(UTL_IdList* that) const
       // they're the same to the last one
       if (ithis.is_done() && ithat.is_done())
       {
-         result = I_TRUE;
+         result = true;
          break;
       }
       else
@@ -181,24 +181,24 @@ void
 UTL_IdList::dump(ostream &o)
 {
    UTL_IdListActiveIterator *i = new UTL_IdListActiveIterator(this);
-   long first = I_TRUE;
-   long second = I_FALSE;
+   long first = true;
+   long second = false;
 
    while (!(i->is_done()))
    {
       if (!first)
          o << "::";
       else if (second)
-         first = second = I_FALSE;
+         first = second = false;
 
       i->item()->dump(o);
 
       if (first)
       {
          if (strcmp(i->item()->get_string(), "::") != 0)
-            first = I_FALSE;
+            first = false;
          else
-            second = I_TRUE;
+            second = true;
       }
 
       i->next();

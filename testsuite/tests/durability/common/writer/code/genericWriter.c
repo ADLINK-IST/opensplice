@@ -3,7 +3,7 @@
 #include <getopt.h>
 #include <signal.h>
 
-#include "os.h"
+#include "vortex_os.h"
 #include "dds_dcps.h"
 #include "dds_dcps_private.h"
 

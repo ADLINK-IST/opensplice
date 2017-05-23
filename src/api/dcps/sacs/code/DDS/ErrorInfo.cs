@@ -1,86 +1,184 @@
-﻿// The OpenSplice DDS Community Edition project.
-//
-// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
-// Copyright (C) 2009  L-3 Communications / IS
-// 
-//  This library is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License Version 3 dated 29 June 2007, as published by the
-//  Free Software Foundation.
-// 
-//  This library is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-// 
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
 
 using System;
 using DDS.OpenSplice;
+using System.Runtime.InteropServices;
+using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS
 {
-    public static class ErrorInfo
+    public class ErrorInfo : SacsSuperClass
     {
-        private readonly static SacsSuperClass super;
-        
-        static ErrorInfo()
+        private bool valid = false;
+        private string reportContext;
+        private string sourceLine;
+        private string callStack;
+        private int reportCode;
+        private string description;
+
+        public ErrorInfo()
         {
-            IntPtr ptr = OpenSplice.Gapi.ErrorInfo.alloc();
-            super = new SacsSuperClass();
-            if (ptr != IntPtr.Zero)
+            init();
+        }
+
+        internal ReturnCode init()
+        {
+            // Because there is no UserLayer ref to be stored, do NOT forward to SacsSuperClass.init()!!
+            // Parent class is only needed for its WriteLock and ReadLock calls...
+            return DDS.ReturnCode.Ok;
+        }
+        
+        internal override ReturnCode wlReq_deinit()
+        {
+            // Because there is no UserLayer ref to be stored, do NOT forward to SacsSuperClass.wlReq_deinit()!!
+            // Parent class is only needed for its WriteLock and ReadLock calls...
+            return DDS.ReturnCode.Ok;
+        }
+        
+        public ReturnCode Update()
+        {
+            ReturnCode result;
+            
+            IntPtr osInfoPtr = DDS.OpenSplice.OS.Report.GetApiInfo();
+            if (osInfoPtr != IntPtr.Zero)
             {
-                super.SetPeer(ptr, true);
+                DDS.OpenSplice.OS.ReportInfo osInfo;
+                Type osInfoType = typeof(DDS.OpenSplice.OS.ReportInfo);
+                
+                osInfo = (DDS.OpenSplice.OS.ReportInfo) Marshal.PtrToStructure(osInfoPtr, osInfoType);
+                reportContext = BaseMarshaler.ReadString(osInfo.reportContext);
+                sourceLine = BaseMarshaler.ReadString(osInfo.sourceLine);
+                callStack = BaseMarshaler.ReadString(osInfo.callStack);
+                reportCode = osInfo.reportCode;
+                description = BaseMarshaler.ReadString(osInfo.description);
+                valid = true;
+                result = DDS.ReturnCode.Ok;
             }
             else
             {
-                // Gapi already logged that the ErrorInfo has not been created 
-                // successfully. Now create a deliberate null pointer exception
-                // to let the current constructor fail.
-                throw new System.NullReferenceException("gapi_errorInfo__alloc returned a NULL pointer.");
+                result = DDS.ReturnCode.NoData;
+                valid = false;
             }
+            return result;
         }
 
-        public static ReturnCode Update()
+        public ReturnCode GetCode(out ErrorCode code)
         {
-            return OpenSplice.Gapi.ErrorInfo.update(super.GapiPeer);
+            ReturnCode result;
+            
+            if (valid)
+            {
+                code = (ErrorCode)this.reportCode;
+                result = DDS.ReturnCode.Ok;
+            }
+            else
+            {
+                code = ErrorCode.Undefined;
+                result = DDS.ReturnCode.NoData;
+            }
+            return result;
         }
 
-        public static ReturnCode GetCode(out ErrorCode code)
+        public ReturnCode GetCode(out ReturnCode code)
         {
-            return OpenSplice.Gapi.ErrorInfo.get_code(
-                super.GapiPeer,
-                out code);
+            ReturnCode result;
+            
+            if (valid)
+            {
+                code = (DDS.ReturnCode)DDS.OpenSplice.Common.ErrorInfo.ReportCodeToCode(this.reportCode);
+                result = DDS.ReturnCode.Ok;
+            }
+            else
+            {
+                code = ReturnCode.Error;
+                result = DDS.ReturnCode.NoData;
+            }
+            return result;
         }
 
-        public static ReturnCode GetMessage(out string message)
+        public ReturnCode GetMessage(out string message)
         {
-            return OpenSplice.Gapi.ErrorInfo.get_message(
-                super.GapiPeer,
-                out message);
+            ReturnCode result;
+            
+            if (valid)
+            {
+                message = this.description;
+                result = DDS.ReturnCode.Ok;
+            }
+            else
+            {
+                message = null;
+                result = DDS.ReturnCode.NoData;
+            }
+            return result;
         }
 
-        public static ReturnCode GetLocation(out string location)
+        public ReturnCode GetLocation(out string location)
         {
-            return OpenSplice.Gapi.ErrorInfo.get_location(
-                super.GapiPeer,
-                out location);
+            ReturnCode result;
+            
+            if (valid)
+            {
+                location = this.reportContext;
+                result = DDS.ReturnCode.Ok;
+            }
+            else
+            {
+                location = null;
+                result = DDS.ReturnCode.NoData;
+            }
+            return result;
         }
 
-        public static ReturnCode GetSourceLine(out string sourceLine)
+        public ReturnCode GetSourceLine(out string sourceLine)
         {
-            return OpenSplice.Gapi.ErrorInfo.get_source_line(
-                super.GapiPeer,
-                out sourceLine);
+            ReturnCode result;
+            
+            if (valid)
+            {
+                sourceLine = this.sourceLine;
+                result = DDS.ReturnCode.Ok;
+            }
+            else
+            {
+                sourceLine = null;
+                result = DDS.ReturnCode.NoData;
+            }
+            return result;
         }
 
-        public static ReturnCode GetStackTrace(out string stackTrace)
+        public ReturnCode GetStackTrace(out string stackTrace)
         {
-            return OpenSplice.Gapi.ErrorInfo.get_stack_trace(
-                super.GapiPeer,
-                out stackTrace);
+            ReturnCode result;
+            
+            if (valid)
+            {
+                stackTrace = this.callStack;
+                result = DDS.ReturnCode.Ok;
+            }
+            else
+            {
+                stackTrace = null;
+                result = DDS.ReturnCode.NoData;
+            }
+            return result;
         }
     }
 }

@@ -23,6 +23,6 @@ feature(!vc_scl_secure_warnings) {
 
 feature(vc_avoid_this_in_initializer_warnings) {
   specific(prop:microsoft) {
-    DisableSpecificWarnings += 4355
+    DisableSpecificWarnings += 4355;4251
   }
 }

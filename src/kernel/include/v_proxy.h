@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef V_PROXY_H
@@ -31,6 +39,7 @@
  * one of its subclasses.
  */
 #define v_proxy(_this) (C_CAST(_this,v_proxy))
+#define v_proxyUserData(_this) (v_proxy(_this)->userData)
 
 OS_API v_proxy
 v_proxyNew (
@@ -38,12 +47,16 @@ v_proxyNew (
     v_handle handle,
     c_voidp userData);
 
-OS_API v_entity
+OS_API v_object
 v_proxyClaim (
     v_proxy _this);
 
 OS_API void
 v_proxyRelease (
+    v_proxy _this);
+
+OS_API v_handle
+v_proxyHandle (
     v_proxy _this);
 
 #undef OS_API

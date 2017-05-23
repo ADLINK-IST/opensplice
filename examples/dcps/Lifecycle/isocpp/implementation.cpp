@@ -2,12 +2,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -283,11 +291,10 @@ int subscriber(int argc, char *argv[])
                 std::cout << "    sample_state:" << sampleStateToString(sample->info().state().sample_state());
                 std::cout << "-view_state:" << viewStateToString(sample->info().state().view_state());
                 std::cout << "-instance_state:" << instanceStateToString(sample->info().state().instance_state()) << std::endl;
-                exampleSleepMilliseconds(200);
                 closed = (sample->data().writerStates() == "STOPPING_SUBSCRIBER");
+                ++count;
             }
-            exampleSleepMilliseconds(20);
-            ++count;
+            exampleSleepMilliseconds(200);
         }
         while (!closed && count < maxCount);
 

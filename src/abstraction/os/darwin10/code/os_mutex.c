@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -20,7 +28,7 @@
 #include <../posix/code/os__mutex.h>
 #include <os_signature.h>
 #include <assert.h>
-#include <errno.h>
+#include "os_errno.h"
 #include <stddef.h>
 
 #include "os_init.h"
@@ -85,11 +93,15 @@ os_mutexSetPriorityInheritanceMode(
 os_result os_mutexInit (os_mutex *mutex, const os_mutexAttr *mutexAttr)
 {
   int shared;
+  os_mutexAttr defAttr;
   assert (mutex != NULL);
-  assert (mutexAttr != NULL);
 #ifdef OSPL_STRICT_MEM
   assert (mutex->signature != OS_MUTEX_MAGIC_SIG);
 #endif
+  if(!mutexAttr) {
+      os_mutexAttrInit(&defAttr);
+      mutexAttr = &defAttr;
+  }
   if (mutexAttr->scopeAttr != OS_SCOPE_SHARED || os_serviceGetSingleProcess ())
   {
     pthread_mutex_init (&mutex->mutex, NULL);
@@ -107,6 +119,8 @@ os_result os_mutexInit (os_mutex *mutex, const os_mutexAttr *mutexAttr)
 #if HAVE_LKST
   if (ospl_lkst_enabled)
     lkst_track_init (mutex, shared ? LKST_MF_SHARED : 0);
+#else
+    (void)shared;
 #endif
 #ifdef OSPL_STRICT_MEM
   mutex->signature = OS_MUTEX_MAGIC_SIG;
@@ -119,7 +133,7 @@ os_result os_mutexInit (os_mutex *mutex, const os_mutexAttr *mutexAttr)
  * \b os_mutexDestroy calls \b pthread_mutex_destroy to destroy the
  * posix \b mutex.
  */
-os_result os_mutexDestroy (os_mutex *mutex)
+void os_mutexDestroy (os_mutex *mutex)
 {
   assert (mutex != NULL);
 #if HAVE_LKST
@@ -129,11 +143,11 @@ os_result os_mutexDestroy (os_mutex *mutex)
 #ifdef OSPL_STRICT_MEM
   assert(mutex->signature == OS_MUTEX_MAGIC_SIG);
 #endif
-  pthread_mutex_destroy (&mutex->mutex);
+  if (pthread_mutex_destroy (&mutex->mutex) != 0)
+    abort();
 #ifdef OSPL_STRICT_MEM
   mutex->signature = 0;
 #endif
-  return os_resultSuccess;
 }
 
 /** \brief Acquire the mutex
@@ -141,7 +155,7 @@ os_result os_mutexDestroy (os_mutex *mutex)
  * \b os_mutexLock calls \b pthread_mutex_lock to acquire
  * the posix \b mutex.
  */
-os_result os_mutexLock (os_mutex *mutex)
+void os_mutexLock (os_mutex *mutex)
 {
   assert (mutex != NULL);
 #ifdef OSPL_STRICT_MEM
@@ -151,7 +165,8 @@ os_result os_mutexLock (os_mutex *mutex)
   if (!ospl_lkst_enabled)
 #endif
   {
-    pthread_mutex_lock (&mutex->mutex);
+    if (pthread_mutex_lock (&mutex->mutex) != 0)
+      abort();
   }
 #if HAVE_LKST
   else
@@ -161,13 +176,48 @@ os_result os_mutexLock (os_mutex *mutex)
       dt = 0;
     else
     {
-      pthread_mutex_lock (&mutex->mutex);
+      if (pthread_mutex_lock (&mutex->mutex) != 0)
+        abort();
       dt = 1 | (mach_absolute_time () - t);
     }
     lkst_track_op (mutex, LKST_LOCK, t, dt);
   }
 #endif
-  return os_resultSuccess;
+}
+
+/** \brief Acquire the mutex
+ *
+ * \b os_mutexLock_s calls \b pthread_mutex_lock to acquire
+ * the posix \b mutex.
+ */
+os_result os_mutexLock_s (os_mutex *mutex)
+{
+  int result;
+  assert (mutex != NULL);
+#ifdef OSPL_STRICT_MEM
+  assert(mutex->signature == OS_MUTEX_MAGIC_SIG);
+#endif
+#if HAVE_LKST
+  if (!ospl_lkst_enabled)
+#endif
+  {
+    result = pthread_mutex_lock (&mutex->mutex);
+  }
+#if HAVE_LKST
+  else
+  {
+    unsigned long long t = mach_absolute_time (), dt;
+    if ((result = pthread_mutex_trylock (&mutex->mutex)) == 0)
+      dt = 0;
+    else
+    {
+      result = pthread_mutex_lock (&mutex->mutex);
+      dt = 1 | (mach_absolute_time () - t);
+    }
+    lkst_track_op (mutex, LKST_LOCK, t, dt);
+  }
+#endif
+  return (result == 0) ? os_resultSuccess : os_resultFail;
 }
 
 /** \brief Try to acquire the mutex, immediately return if the mutex
@@ -184,6 +234,8 @@ os_result os_mutexTryLock (os_mutex *mutex)
   assert(mutex->signature == OS_MUTEX_MAGIC_SIG);
 #endif
   result = pthread_mutex_trylock (&mutex->mutex);
+  if (result != 0 && result != EBUSY)
+    abort();
 #if HAVE_LKST
   if (result == 0 && ospl_lkst_enabled)
     lkst_track_op (mutex, LKST_LOCK, mach_absolute_time (), 0);
@@ -196,7 +248,7 @@ os_result os_mutexTryLock (os_mutex *mutex)
  * \b os_mutexUnlock calls \b pthread_mutex_unlock to release
  * the posix \b mutex.
  */
-os_result os_mutexUnlock (os_mutex *mutex)
+void os_mutexUnlock (os_mutex *mutex)
 {
   assert (mutex != NULL);
 #ifdef OSPL_STRICT_MEM
@@ -206,8 +258,8 @@ os_result os_mutexUnlock (os_mutex *mutex)
   if (ospl_lkst_enabled)
     lkst_track_op (mutex, LKST_UNLOCK, mach_absolute_time (), 0);
 #endif
-  pthread_mutex_unlock (&mutex->mutex);
-  return os_resultSuccess;
+  if (pthread_mutex_unlock (&mutex->mutex) != 0)
+    abort();
 }
 
 #include <../common/code/os_mutex_attr.c>

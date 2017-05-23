@@ -1,7 +1,7 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_dcpsgapi, ospl_base {
+project : ospl_base, ospl_ddsuser {
   lit_libs += dcpssac
   requires += ospl_dcpssac
 }
@@ -12,6 +12,7 @@ feature(!src_co) {
 
 feature(src_co) {
   includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sac/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sac/bld/$(SPLICE_TARGET)
 }
 
 feature (!ospl_os_pikeos) {

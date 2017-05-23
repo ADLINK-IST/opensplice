@@ -167,7 +167,7 @@ public:
    AST_Expression (UTL_WString *s);
    AST_Expression (UTL_ScopedName *n);
 
-   virtual ~AST_Expression () {};
+   virtual ~AST_Expression ();
 
    // Data Accessors
 

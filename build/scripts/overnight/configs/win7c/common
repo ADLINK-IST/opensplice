@@ -7,7 +7,12 @@ export JAVA_HOME="c:/Program Files/Java/jdk1.6.0_37"
 export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
 export QTDIR=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_32bit
 export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/gsoap-v2.7
+export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
+export PROTOBUF_LIB_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0/src
+export LAUNCH4J_HOME=/home/dds/INSTALLED_FOR_DDS/Launch4j
+export PATH=/usr/local/bin:$PROTOBUF_HOME/bin:$PATH
 
 #There is no TAO for VS2013
 unset TAO_ROOT
 export OVERRIDE_STRICT_CHECKS=no
+export PATH=$PATH:$ZLIB_HOME

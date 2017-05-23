@@ -1,3 +1,7 @@
+
+%p 5000
+%option noyywrap
+%{
 /*
 
 COPYRIGHT
@@ -66,7 +70,6 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 /*
  * idl.ll - Lexical scanner for IDL 1.1
  */
-%{
 #include "os_stdlib.h"
 #include "os_heap.h"
 #include "idl.h"
@@ -88,13 +91,12 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 #define input() ((yytchar=yysptr>yysbuf?U(*--yysptr):preprocess_getc())==10?(yylineno++,yytchar):yytchar)
 
 #define YY_INPUT(buf,result,max_size) \
-    { \
-    int c = preprocess_getc(); \
-    result = (c == EOF) ? YY_NULL : (buf[0] = c, 1); \
-    }
+{ \
+   int c = preprocess_getc(); \
+   result = (c == EOF) ? YY_NULL : (buf[0] = c, 1); \
+}
 
 static char	idl_escape_reader(char *);
-static double	idl_atof(char *);
 static long	idl_atoi(char *, long);
 static void	idl_parse_line_and_file(char *);
 
@@ -106,7 +108,7 @@ extern int fstackdepth;
 
 // HPUX has yytext typed to unsigned char *. We make sure here that
 // we'll always use char *
-#define CPPGEN_YYTEXT ((char *)yytext)
+#define CPPGEN_YYTEXT ((char*) yytext)
 
 %}
 
@@ -123,7 +125,7 @@ extern int fstackdepth;
    version of flex we use does not support it. Should we upgrade to a newer
    version, please uncomment this option to remove the need for the
    lex_yy.cpp.patch file. */
-/* %option nounistd */
+%option nounistd
 
 %%
 
@@ -142,7 +144,7 @@ raises		return RAISES;
 readonly	return READONLY;
 attribute	return ATTRIBUTE;
 exception	return EXCEPTION;
-context		return CONTEXT;
+context		return IDL_CONTEXT;
 local   	return LOCAL;
 interface	return INTERFACE;
 const		return CONST;
@@ -150,29 +152,29 @@ typedef		return TYPEDEF;
 struct		return STRUCT;
 enum		return ENUM;
 string		return STRING;
-wstring	return WSTRING;
+wstring		return WSTRING;
 sequence	return SEQUENCE;
 union		return UNION;
 switch		return SWITCH;
 case		return CASE;
 default		return DEFAULT;
-float		return FLOAT;
-double		return DOUBLE;
-long		return LONG;
-short		return SHORT;
+float		return IDL_FLOAT;
+double		return IDL_DOUBLE;
+long		return IDL_LONG;
+short		return IDL_SHORT;
 unsigned	return UNSIGNED;
-char		return CHAR;
-wchar		return WCHAR;
-boolean		return BOOLEAN;
-octet		return OCTET;
+char		return IDL_CHAR;
+wchar		return IDL_WCHAR;
+boolean		return IDL_BOOLEAN;
+octet		return IDL_OCTET;
 void		return VOID;
 
 custom          return CUSTOM;
 valuetype       return VALUETYPE;
 truncatable     return TRUNCATABLE;
 supports        return SUPPORTS;
-public          return PUBLIC;
-private         return PRIVATE;
+public          return IDL_PUBLIC;
+private         return IDL_PRIVATE;
 factory         return FACTORY;
 abstract        return ABSTRACT;
 
@@ -191,25 +193,23 @@ opaque          return OPAQUE;
 \>\>		return RIGHT_SHIFT;
 
 \:\:		{
-		  yylval.strval = os_strdup ("::");
+		  yylval.strval = strdup ("::");
 		  return SCOPE_DELIMITOR;
 		}
 
 
 _?[a-zA-Z][a-zA-Z0-9_]*	{
-    char *z = (char *) os_malloc(strlen(CPPGEN_YYTEXT) + 1);
-    os_strcpy(z, CPPGEN_YYTEXT);
-    yylval.strval = z;
-    return IDENTIFIER;
+   yylval.strval = fe_cpp_keyword (CPPGEN_YYTEXT);
+   return IDENTIFIER;
 }
 
 <PRAGMA_STATE>-?[0-9]+"."[0-9]+ {
-							char *z = (char *) os_malloc(strlen(CPPGEN_YYTEXT) + 1);
-							strcpy(z, CPPGEN_YYTEXT);
-							yylval.strval = z;
-							BEGIN NORMAL_STATE;
-							return VERSION;
-					}
+   char *z = (char *) os_malloc(strlen(CPPGEN_YYTEXT) + 1);
+   strcpy (z, CPPGEN_YYTEXT);
+   yylval.strval = z;
+   BEGIN NORMAL_STATE;
+   return VERSION;
+}
 
 <NORMAL_STATE>-?[0-9]+"."[0-9]*([eE][+-]?[0-9]+)?[lLfF]? {
                   yylval.strval = CPPGEN_YYTEXT;
@@ -264,19 +264,27 @@ _?[a-zA-Z][a-zA-Z0-9_]*	{
 			return PRAGMA_ASYNC_SERVER;
 		}
 ^[ \t]*#[ \t]*pragma[ \t]*ID	{/* pragma ID */
+			BEGIN PRAGMA_STATE;
 			return PRAGMA_ID;
 		}
 ^[ \t]*#[ \t]*pragma[ \t]*prefix	{/* pragma prefix */
+			BEGIN PRAGMA_STATE;
 			return PRAGMA_PREFIX;
+		}
+^[ \t]*#[ \t]*pragma[ \t]*any	{/* pragma any */
+            BEGIN PRAGMA_STATE;
+			return PRAGMA_ANY;
 		}
 ^[ \t]*#[ \t]*pragma[ \t]*version	{/* pragma version */
 			BEGIN PRAGMA_STATE;
 			return PRAGMA_VERSION;
 		}
-^[ \t]*#[ \t]*pragma	{/* remember pragma */
-        /* error! unrecognized pragma */
-        return PRAGMA;
-		}
+^[ \t]*#[ \t]*pragma	{
+   /* unrecognized pragma */
+   BEGIN PRAGMA_STATE;
+   return PRAGMA;
+}
+
 ^#[ \t]*line[ \t]*[0-9]*[ \t].*\n {
             idl_parse_line_and_file(CPPGEN_YYTEXT);
       }
@@ -315,14 +323,17 @@ _?[a-zA-Z][a-zA-Z0-9_]*	{
 	          }
 	        }
 [ \t\r]*		;
+
 <PRAGMA_STATE>\n	{
-  		  idl_global->set_lineno(idl_global->lineno() + 1);
-			BEGIN NORMAL_STATE;
-			return PRAGMA_END;
-					}
+   idl_global->set_lineno (idl_global->lineno () + 1);
+   BEGIN NORMAL_STATE;
+   return PRAGMA_END;
+}
+
 <NORMAL_STATE>\n	{
-  		  idl_global->set_lineno(idl_global->lineno() + 1);
-		}
+   idl_global->set_lineno (idl_global->lineno () + 1);
+}
+
 .		return CPPGEN_YYTEXT[0];
 
 %%
@@ -349,15 +360,17 @@ stripped_name(UTL_String *fn)
 /*
  * Parse a #line statement generated by the C preprocessor
  */
-static void
-idl_parse_line_and_file(char *buf)
+
+static void idl_parse_line_and_file (char *buf)
 {
-  char		*r = buf;
-  char 		*h;
-  UTL_String	*nm;
+  char * r = buf;
+  char * h;
+  UTL_String * nm;
 
   /* Skip initial '#' */
-  if (*r != '#') {
+
+  if (*r != '#')
+  {
     return;
   }
 
@@ -369,39 +382,49 @@ idl_parse_line_and_file(char *buf)
   idl_global->set_lineno(idl_atoi(h, 10));
   
   /* Find file name, if present */
-  for (; *r != '"'; r++) {
+  for (; *r != '"'; r++)
+  {
     if (*r == '\n' || *r == '\0')
       return;
   }
   h = ++r;
   for (; *r != '"'; r++);
   *r = 0;
+
   if (*h == '\0')
-    idl_global->set_filename(new UTL_String("standard input"));
+  {
+    idl_global->set_filename (new UTL_String ("standard input"));
+  }
   else
   {
     // figure out whether to include this file...
-    UTL_String *new_file = new UTL_String(h);
+    UTL_String *new_file = new UTL_String (h);
 
-    idl_global->set_filename(new_file);
+    idl_global->set_filename (new_file);
     // hide that fact that we are dealing with a temp file
     if(idl_global->filename()->compare(idl_global->real_filename()))
     {
-      idl_global->set_filename(idl_global->main_filename());
-      idl_global->set_in_main_file(I_TRUE);
+      idl_global->set_filename (idl_global->main_filename());
+      idl_global->set_in_main_file (true);
     }
     else
     {
-      idl_global->set_in_main_file(I_FALSE);
+      idl_global->set_in_main_file (false);
     }
   }
 
   /*
    * If it's an import file store the stripped name for the BE to use
    */
-  if (!(idl_global->in_main_file()) && idl_global->imported() && fstackdepth < 2) {
-    nm = new UTL_String(stripped_name(idl_global->filename()));
-    idl_global->store_include_file_name(nm);
+  if 
+  (
+     !(idl_global->in_main_file ()) &&
+     idl_global->imported () &&
+     (fstackdepth < 2)
+  ) 
+  {
+    nm = new UTL_String (stripped_name (idl_global->filename ()));
+    idl_global->store_include_file_name (nm);
   }
 }
     
@@ -438,59 +461,6 @@ idl_atoi(char *s, long b)
 
 	return r;
 }
-
-/*
- * Convert a string to a float; atof doesn't seem to work, always.
- */
-static double
-idl_atof(char *s)
-{
-	double	d = 0.0;
-	double	e, k;
-	long	neg = 0, negexp = 0;
-
-	if (*s == '-') {
-	  neg = 1;
-	  s++;
-	}
-	while (*s >= '0' && *s <= '9') {
-		d = (d * 10) + *s - '0';
-		s++;
-	}
-	if (*s == '.') {
-		s++;
-		e = 10;
-		while (*s >= '0' && *s <= '9') {
-			d += (*s - '0') / (e * 1.0);
-			e *= 10;
-			s++;
-		}
-	}
-	if (*s == 'e' || *s == 'E') {
-		s++;
-		if (*s == '-') {
-			negexp = 1;
-			s++;
-		} else if (*s == '+')
-			s++;
-		e = 0;
-		while (*s >= '0' && *s <= '9') {
-			e = (e * 10) + *s - '0';
-			s++;
-		}
-		if (e > 0) {
-			for (k = 1; e > 0; k *= 10, e--);
-			if (negexp)
-				d /= k;
-			else
-				d *= k;
-		}
-	}
-
-	if (neg) d *= -1.0;
-
-	return d;
-}	
 
 /*
  * Convert (some) escaped characters into their ascii values

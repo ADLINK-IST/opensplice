@@ -1,0 +1,76 @@
+// -*- MPC -*-
+// $Id:$
+
+project (Build*Lib) : ospl_build_lib, taoidldefaults, taolib, dcps_typesupport_base, ospl_base, ospl_ddsuser, ospl_dcps_cpp_app_base_libs {
+    includes += $(OSPL_HOME)/include/dcps/C++/CCPP
+    includes += ccpp/generated
+    includes += $(OSPL_HOME)/include/dcps/C++/CCPP/$(SPLICE_ORB)
+    includes += $(TAO_ROOT)/include
+
+    // Generated library name.
+    sharedname = dcpsccpp
+
+    specific (make) {
+        obj_dir = ./obj/ccpp/
+    }
+
+    dynamicflags += OSPL_BUILD_DCPSCPP
+
+    // Extra macro define - don't know what we need this for.
+    macros += $(SPLICE_ORB)
+
+    prebuild = <%rm%>  $(OSPL_HOME)<%slash%>include<%slash%>dcps<%slash%>C++<%slash%>CCPP<%slash%>$(SPLICE_ORB)<%slash%>ccpp_* <%cmdsep%> \
+               <%rm%>  $(OSPL_HOME)<%slash%>include<%slash%>dcps<%slash%>C++<%slash%>CCPP<%slash%>$(SPLICE_ORB)<%slash%>dds_* \
+               <%rm%>  $(OSPL_HOME)<%slash%>include<%slash%>dcps<%slash%>C++<%slash%>CCPP<%slash%>dds_*
+
+    // Put the headers and inline code into the include dir
+    postbuild = <%cp%>  .<%slash%>ccpp<%slash%>generated<%slash%>*.h <%quote%>$(OSPL_HOME)<%slash%>include<%slash%>dcps<%slash%>C++<%slash%>CCPP<%slash%>$(SPLICE_ORB)<%quote%> <%cmdsep%> \
+                <%cp%>  .<%slash%>ccpp<%slash%>generated<%slash%>*.inl <%quote%>$(OSPL_HOME)<%slash%>include<%slash%>dcps<%slash%>C++<%slash%>CCPP<%slash%>$(SPLICE_ORB)<%quote%>
+
+    idlflags += -Wb,export_macro=OS_API \
+                        -Wb,export_include=cpp_dcps_if.h \
+                        $(OSPL_Y2038_READY_FLAG) -Sp -Sd -o ccpp/generated
+
+    idlflags += -I <%quote%>$(OSPL_HOME)<%slash%>etc<%slash%>idl<%quote%>
+
+     Modify_Custom(IDL) {
+        output_follows_input = 0
+    }
+
+    IDL_Files {
+        gendir = ccpp/generated
+        $(OSPL_HOME)/etc/idl/dds_builtinTopics.idl
+        $(OSPL_HOME)/etc/idl/dds_dcps_builtintopics.idl
+        $(OSPL_HOME)/etc/idl/dds_dcps_interfaces.idl
+        $(OSPL_HOME)/etc/idl/dds_dcps.idl
+        $(OSPL_HOME)/etc/idl/dds_namedQosTypes.idl
+        // + automatically the generated TypeSupport IDL
+    }
+
+    splice_ts_flags += -C -l cpp -d ccpp/generated -b CCPP<%slash%>$(SPLICE_ORB) $(OSPL_Y2038_READY_FLAG)
+
+    specific(prop:windows) {
+        splice_ts_flags += -P OS_API,cpp_dcps_if.h
+    }
+
+    Modify_Custom(IDL) {
+        output_follows_input = 1
+    }
+
+    TypeSupport_Files {
+        $(OSPL_HOME)/etc/idl/dds_builtinTopics.idl
+        $(OSPL_HOME)/etc/idl/dds_dcps_builtintopics.idl
+        $(OSPL_HOME)/etc/idl/dds_namedQosTypes.idl
+    }
+
+    Documentation_Files {
+        recurse = 1
+        ccpp
+    }
+
+    Source_Files {
+        ccpp/*.cpp
+    }
+
+    macros += OSPL_VERSION
+}

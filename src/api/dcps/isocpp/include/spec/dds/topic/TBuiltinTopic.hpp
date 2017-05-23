@@ -39,6 +39,21 @@ class TPublicationBuiltinTopicData;
 
 template <typename D>
 class TSubscriptionBuiltinTopicData;
+
+template <typename D>
+class TCMParticipantBuiltinTopicData;
+
+template <typename D>
+class TCMPublisherBuiltinTopicData;
+
+template <typename D>
+class TCMSubscriberBuiltinTopicData;
+
+template <typename D>
+class TCMDataWriterBuiltinTopicData;
+
+template <typename D>
+class TCMDataReaderBuiltinTopicData;
 }
 }
 
@@ -190,6 +205,83 @@ public:
     const ::dds::core::policy::TopicData&          topic_data() const;
     const ::dds::core::policy::GroupData&          group_data() const;
 
+};
+
+/**
+ * The CMParticipant topic...
+ */
+template <typename D>
+class dds::topic::TCMParticipantBuiltinTopicData  : public ::dds::core::Value<D>
+{
+public:
+    const dds::topic::BuiltinTopicKey&        key() const;
+    const ::dds::core::policy::ProductData&   product() const;
+};
+
+/**
+ * The CMPublisher topic...
+ */
+template <typename D>
+class dds::topic::TCMPublisherBuiltinTopicData  : public ::dds::core::Value<D>
+{
+public:
+    const dds::topic::BuiltinTopicKey&        key() const;
+    const ::dds::core::policy::ProductData&   product() const;
+    const dds::topic::BuiltinTopicKey&        participant_key() const;
+    const std::string&                        name() const;
+    const ::dds::core::policy::EntityFactory& entity_factory() const;
+    const ::dds::core::policy::Partition&     partition() const;
+};
+
+/**
+ * The CMSubscriber topic...
+ */
+template <typename D>
+class dds::topic::TCMSubscriberBuiltinTopicData  : public ::dds::core::Value<D>
+{
+public:
+    const dds::topic::BuiltinTopicKey&        key() const;
+    const ::dds::core::policy::ProductData&   product() const;
+    const dds::topic::BuiltinTopicKey&        participant_key() const;
+    const std::string&                        name() const;
+    const ::dds::core::policy::EntityFactory& entity_factory() const;
+    const ::dds::core::policy::Partition&     partition() const;
+    const ::dds::core::policy::Share&         share() const;
+};
+
+/**
+ * The CMDataWriter topic...
+ */
+template <typename D>
+class dds::topic::TCMDataWriterBuiltinTopicData  : public ::dds::core::Value<D>
+{
+public:
+    const dds::topic::BuiltinTopicKey&              key() const;
+    const ::dds::core::policy::ProductData&         product() const;
+    const dds::topic::BuiltinTopicKey&              publisher_key() const;
+    const std::string&                              name() const;
+    const ::dds::core::policy::History&             history() const;
+    const ::dds::core::policy::ResourceLimits&      resource_limits() const;
+    const ::dds::core::policy::WriterDataLifecycle& writer_data_lifecycle() const;
+};
+
+/**
+ * The CMDataReader topic...
+ */
+template <typename D>
+class dds::topic::TCMDataReaderBuiltinTopicData  : public ::dds::core::Value<D>
+{
+public:
+    const dds::topic::BuiltinTopicKey&              key() const;
+    const ::dds::core::policy::ProductData&         product() const;
+    const dds::topic::BuiltinTopicKey&              subscriber_key() const;
+    const std::string&                              name() const;
+    const ::dds::core::policy::History&             history() const;
+    const ::dds::core::policy::ResourceLimits&      resource_limits() const;
+    const ::dds::core::policy::ReaderDataLifecycle& reader_data_lifecycle() const;
+    const ::dds::core::policy::SubscriptionKey&     subscription_keys() const;
+    const ::dds::core::policy::Lifespan&            reader_lifespan() const;
+    const ::dds::core::policy::Share&               share() const;
 };
 
 #endif /* OMG_TDDS_TOPIC_BUILT_IN_TOPIC_HPP_ */

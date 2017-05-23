@@ -4,7 +4,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<title>OpenSplice DDS examples - Lifecycle</title>
+<title>OpenSplice examples - Lifecycle</title>
 <link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
 </head>
 
@@ -20,7 +20,6 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic</a></li>
   <li><a href ="../QueryCondition/README.html">QueryCondition</a></li>
   <li>Lifecycle</li>
-  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -28,7 +27,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../Throughput/README.html">Throughput</a></li>
 </ul>
 <h2> Lifecycle</h2>
-
+<span class="ex-lifecycle" data-timeout="10" style="display:none"></span>
 <ul>
   <li><a href ="#STANDALONE">Running of examples in Standalone Mode</a></li>
 </ul>
@@ -54,11 +53,9 @@ invocation of unregister_instance on this publisher will cause the instance to b
 <h3>2) Design</h3>
 <p>It consists of 4 units:</p>
         <ul><li> CheckStatus: provides return status checking
-        </li><li> DDSEntitiesManager: implements a class providing operations to setup DCPS
-entities
-                             (creation, deletion)
-        </li><li> LifecyclePublisher: implements the publisher's main (uses DDSEntitiesManager)
-        </li><li> LifecycleSubscriber: implements the subscriber's main (uses DDSEntitiesManager)
+        </li><li> DDSEntitiesManager: implements a class providing operations to setup DCPS entities (creation, deletion)
+        </li><li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_lifecycle_pub" data-langcpp="sacpp_lifecycle_pub" data-langjava="LifecycleDataPublisher" data-langisocpp="publisher" data-langcs="sacs_lifecycle_pub" data-langjava5="LifecycleDataPublisher" data-langisocpp2="publisher">LifecyclePublisher</span>: <span class="ex-unit-desc">implements the publisher's main</span> (uses DDSEntitiesManager)
+        </li><li class="ex-unit"> <span class="ex-unit-key" data-langc="sac_lifecycle_sub" data-langcpp="sacpp_lifecycle_sub" data-langjava="LifecycleDataSubscriber" data-langisocpp="subscriber" data-langcs="sacs_lifecycle_sub" data-langjava5="LifecycleDataSubscriber" data-langisocpp2="subscriber">LifecycleSubscriber</span>: <span class="ex-unit-desc">implements the subscriber's main</span> (uses DDSEntitiesManager)
 
 </li></ul><h3>3) Scenario</h3>
 
@@ -77,10 +74,11 @@ entities
         <li>"SAMPLE_SENT -> DATAWRITER_DELETED"</li></ul>
 
   <pre>
-  usage : LifecycleDataPublisher [autodispose_flag] [writer_action]
-          . autodispose_flag = false | true
-          . writer_action = dispose | unregister | stoppub
+  usage : <span class="ex-unit-detail" data-unitkey="LifecyclePublisher">LifecyclePublisher [<span class="ex-unit-param" data-default="false">autodispose_flag</span>] [<span class="ex-unit-param" data-default="dispose">writer_action</span>]</span>
+   <span class="ex-param"><span class="ex-param-name" data-ptype="Enum" data-pcategory="LifecyclePublisher">autodispose_flag</span> =  <span class="ex-param-option" data-paramkey="autodispose_flag"><span class="ex-value">false</span></span> | <span class="ex-param-option" data-paramkey="autodispose_flag"><span class="ex-value">true</span></span></span>
+   <span class="ex-param"><span class="ex-param-name" data-ptype="Enum" data-pcategory="LifecyclePublisher">writer_action</span> = <span class="ex-param-option" data-paramkey="writer_action"><span class="ex-value">dispose</span></span> | <span class="ex-param-option" data-paramkey="writer_action"><span class="ex-value">unregister</span></span> | <span class="ex-param-option" data-paramkey="writer_action"><span class="ex-value">stoppub</span></span></span>
   </pre>
+
 <table WIDTH="100%"><tr><td WIDTH="50%">
 <p> The LifecyclePublisher : <br/>Depending on the user's choice as the second parameter passed on command line (dispose | unregister | stoppub),
 it will either:</p>
@@ -151,12 +149,13 @@ it will either:</p>
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
-<p>The OpenSpliceDDS environment variables must be set in order for the examples to build/run correctly.
+<p>The OpenSplice environment variables must be set in order for the examples to build/run correctly.
 To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.com</i>" script supplied with the distribution.</p>
 
 <ul>
   <li><a href ="#C_C++">C/C++ Examples </a></li>
   <li><a href ="#Java">Java examples</a></li>
+  <li><a href ="#ISOCPP2">ISO C++ 2 examples</a></li>
 </ul>
 
 <h4><balise id="C_C++">C and C++ Executables</balise></h4>
@@ -176,29 +175,42 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
 
 <h4><balise id = "Java">Java executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a>
-<p>Two jars are generated in the <b>standalone</b> directory when the example is built:</p>
+<p>Three jars are generated in the <b>java\standalone</b> or <b>java5</b>  directory when the example is built:</p>
+<p>For Java</p>
+                <ul><li>saj_lifecycle_sub.jar </li>
+                        <li>saj_lifecycle_pub.jar </li>
+                        <li>saj_lifecycle_types.jar </li>
+                </ul>
 
-                <ul><li>saj_lifecycle_app.jar </li>
-                        <li>saj_lifecycle.jar </li>
+<p>For Java5</p>
+                <ul><li>saj5_lifecycle_sub.jar </li>
+                        <li>saj5_lifecycle_pub.jar </li>
+                        <li>saj5_lifecycle_types.jar </li>
+                </ul>
+
+<h4><balise id="ISOCPP2">ISO C++ 2 Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables are generated in the <b>isocpp2</b> directory when the example is built:</p>
+                <ul><li>publisher </li>
+                        <li>subscriber </li>
                 </ul>
 
 <h4>Running the example</h4>
- <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new terminal used.  If running the C or C++ examples ensure that
-    . is added to the LD_LIBRARY_PATH.</p>
+ <p>Ensure that the environment for OpenSplice is set up correctly as described above for each new terminal used.</p>
  <p>It is recommended that you run the subscriber and publisher in separate terminals to avoid mixing the output</p>
 
-   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSplice middleware</b></p>
    <ul>
-     <li>OpenSpliceDDS is deployed in this mode by default.</li>
-     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
-     <li>Open 2 terminals. Set up the environment and go to directory <b>standalone</b> as described above</li>
+     <li>OpenSplice is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSplice middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 terminals. Set up the environment and go to the example directory as described above</li>
    </ul>
 
    <p><b>Running in multiple process shared memory configuration</b></p>
-   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>
+   <p>To enable deployment in this mode, an OpenSplice configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>
     <ul>
           <li>Open 2 terminals.  In each terminal:</li>
-          <li>Setup the environment and go to directory <b>standalone</b> as described above</li>
+          <li>Setup the environment and go to the example directory as described above</li>
           <li>Set the required configuration file e.g. <i>OSPL_URI=file://$OSPL_HOME/etc/config/ospl_shmem_ddsi.xml</i></li>
           <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
     </ul>
@@ -208,16 +220,20 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
    <ul>
      <li> In the first terminal start the subscriber by running either
         <ul>
-          <li><b><i>sac_lifecycle_sub</i></b> for C OR  </li>
-          <li><b><i>sacpp_lifecycle_sub</i></b> for C++ OR </li>
-          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes LifecycleDataSubscriber</i></b> for Java </li>
+          <li><b><i>sac_lifecycle_sub</i></b> for C </li>
+          <li><b><i>sacpp_lifecycle_sub</i></b> for C++ </li>
+          <li><b><i>java -jar saj_lifecycle_sub.jar</i></b> for Java </li>
+          <li><b><i>java -jar saj5_lifecycle_sub.jar</i></b> for Java5 </li>
+          <li><b><i>subscriber</i></b> for ISO C++ 2 </li>
         </ul>
     </li>
      <li> In the second terminal start the publisher by running either
        <ul>
-          <li><b><i>sac_lifecycle_pub  [autodispose_flag] [writer_action]</i></b> for C OR  </li>
-          <li><b><i>sacpp_lifecycle_pub [autodispose_flag] [writer_action] </i></b> for C++ OR </li>
-          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes LifecycleDataPublisher  [autodispose_flag] [writer_action]</i></b> for Java </li></ul>
+          <li><b><i>sac_lifecycle_pub  [autodispose_flag] [writer_action]</i></b> for C </li>
+          <li><b><i>sacpp_lifecycle_pub [autodispose_flag] [writer_action] </i></b> for C++ </li>
+          <li><b><i>java -jar saj_lifecycle_pub.jar [autodispose_flag] [writer_action]</i></b> for Java </li>
+          <li><b><i>java -jar saj5_lifecycle_pub.jar [autodispose_flag] [writer_action]</i></b> for Java5 </li>
+          <li><b><i>publisher  [autodispose_flag] [writer_action]</i></b> for ISO C++ 2 </li>
            </ul>
     </ul>
 
@@ -232,12 +248,13 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
-<p>The OpenSpliceDDS environment variables must be set in order for the examples to run correctly.
-To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the environment variables for OpenSpliceDDS automatically.  The <i>OpenSpliceDDS Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
+<p>The OpenSplice environment variables must be set in order for the examples to run correctly.
+To do this open an <i>OpenSplice Command Prompt</i> which will set up the environment variables for OpenSplice automatically.  The <i>OpenSplice Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
 
 <ul>
   <li><a href ="#C_C++_CS_Win">C/C++/C# Examples </a></li>
   <li><a href ="#Java_Win">Java examples</a></li>
+  <li><a href ="#ISOCPP_Win">ISO C++ 2 examples</a></li>
 </ul>
 
 <h4><balise id="C_C++_CS_Win">C/C++/C# Executables</balise></h4>
@@ -253,32 +270,50 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
                         <li>sacpp_lifecycle_pub.exe </li>
                 </ul>
 
+<p>For C#</p>
+                <ul><li>sacs_lifecycle_sub.exe </li>
+                        <li>sacs_lifecycle_pub.exe </li>
+                </ul>
 
 <h4><balise id="Java_Win">Java Executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
-<p>The subscriber and publisher classes are generated in the <b>standalone</b> directory when the example is built:</p>
+<p>Three jars are generated in the <b>java\standalone</b> or <b>java5</b>  directory when the example is built:</p>
+<p>For Java</p>
+                <ul><li>saj_lifecycle_sub.jar </li>
+                        <li>saj_lifecycle_pub.jar </li>
+                        <li>saj_lifecycle_types.jar </li>
+                </ul>
 
-                <ul><li>LifecycleDataPublisher.class</li>
-                        <li>LifecycleDataSubscriber.class </li>
+<p>For Java5</p>
+                <ul><li>saj5_lifecycle_sub.jar </li>
+                        <li>saj5_lifecycle_pub.jar </li>
+                        <li>saj5_lifecycle_types.jar </li>
+                </ul>
+
+<h4><balise id="ISOCPP2_Win">ISO C++ 2 Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables are generated in the <b>isocpp2</b> directory when the example is built:</p>
+                <ul><li>publisher </li>
+                        <li>subscriber </li>
                 </ul>
 
 <h4><balise id="C_C++_CS_Java_Win">Running the C/C++/C#/Java Examples</balise></h4>
-   <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new command prompt used.</p>
+   <p>Ensure that the environment for OpenSplice is set up correctly as described above for each new command prompt used.</p>
    <p>The following steps describe how to run the examples:</p>
 
-   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSplice middleware</b></p>
    <ul>
-     <li>OpenSpliceDDS is deployed in this mode by default.</li>
-     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
-     <li>Open 2 OpenSpliceDDS Command Prompts and go to directory <b>standalone</b> as described above</li>
+     <li>OpenSplice is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSplice middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 OpenSplice Command Prompts and go to the example directory as described above</li>
    </ul>
 
    <p><b>Running in multiple process shared memory configuration</b></p>
-   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>
+   <p>To enable deployment in this mode, an OpenSplice configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>
     <ul>
-          <li>Open 2 OpenSpliceDDS Command Prompts.  In each window:</li>
-          <li>Go to directory <b>standalone</b> as described above</li>
-          <li>Set the required configuraton file e.g. <i>set OSPL_URI="file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml"</i></li>
+          <li>Open 2 OpenSplice Command Prompts.  In each window:</li>
+          <li>Go to the example directory as described above</li>
+          <li>Set the required configuraton file e.g. <i>set OSPL_URI=file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml</i></li>
           <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
     </ul>
 
@@ -287,16 +322,22 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
    <ul>
      <li> In the first terminal start the subscriber by running either
         <ul>
-          <li><b><i>sac_lifecycle_sub</i></b> for C OR  </li>
-          <li><b><i>sacpp_lifecycle_sub</i></b> for C++ OR </li>
-          <li><b><i>start java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes LifecycleDataSubscriber</i></b> for Java </li>
+          <li><b><i>sac_lifecycle_sub</i></b> for C </li>
+          <li><b><i>sacpp_lifecycle_sub</i></b> for C++ </li>
+          <li><b><i>sacs_lifecycle_sub</i></b> for C# </li>
+          <li><b><i>java -jar saj_lifecycle_sub.jar</i></b> for Java </li>
+          <li><b><i>java -jar saj5_lifecycle_sub.jar</i></b> for Java5 </li>   
+           <li><b><i>subscriber</i></b> for ISO C++ 2 </li>      
         </ul>
     </li>
      <li> In the second terminal start the publisher by running either
        <ul>
-          <li><b><i>sac_lifecycle_pub [autodispose_flag] [writer_action]</i></b> for C OR  </li>
-          <li><b><i>sacpp_lifecycle_pub [autodispose_flag] [writer_action] </i></b> for C++ OR </li>
-          <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes LifecycleDataPublisher [autodispose_flag] [writer_action]  </i></b> for Java </li></ul>
+          <li><b><i>sac_lifecycle_pub [autodispose_flag] [writer_action]</i></b> for C </li>
+          <li><b><i>sacpp_lifecycle_pub [autodispose_flag] [writer_action] </i></b> for C++ </li>
+          <li><b><i>sacs_lifecycle_pub [autodispose_flag] [writer_action]</i></b> for C# </li>
+          <li><b><i>java -jar saj_lifecycle_pub.jar [autodispose_flag] [writer_action]</i></b> for Java </li>
+          <li><b><i>java -jar saj5_lifecycle_pub.jar [autodispose_flag] [writer_action]</i></b> for Java5 </li>
+          <li><b><i>publisher [autodispose_flag] [writer_action]</i></b> for ISO C++ 2 </li>     
            </ul>
     </ul>
          <pre>

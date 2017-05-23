@@ -1,43 +1,99 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
   <head>
-  <title>OpenSplice DDS Release Notes - DDSI2 Release Notes</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
-  </head>
-  <body>
-    <p class="back">
-      <a href="changedV6.html">
-        Back to Fixed Bugs and Changes V6 series Page<img src="../images/back.gif" align="middle"
-        height="25" width="30" alt="Back">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Vortex OpenSplice - documentation index</title>
+    <style type="text/css" media="all">
+      @import url("../css/maven-base.css");
+      @import url("../css/maven-theme.css");
+      @import url("../css/site.css");
+    </style>
+    <link rel="stylesheet" href="./docs/css/print.css" type="text/css" media="print" />
+    <meta name="Date-Revision-yyyymmdd" content="20141002" />
+    <meta http-equiv="Content-Language" content="en" />
+        
+ </head>
+ <body class="composite">
+    <div id="banner">
+       <a href="http://www.prismtech.com" id="bannerLeft">
+          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       </a>
+       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       </a>
+       <div class="clear">
+          <hr/>
+       </div>
+    </div>
+    <div id="breadcrumbs">
+       <div class="xright">
+          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
+          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+       </div>
+       <div class="clear">
+         <hr/>
+       </div>
+    </div>
+    <div id="leftColumn">
+      <div id="navcolumn">
+         <h5>Vortex OpenSplice</h5>
+         <ul>
+            <li class="none">
+            <a href="../../index.html" title = "Intro">Introduction</a>
+            </li>
+            <li class="none">
+              <a href="guides.html" title="APIs">User Guides</a>
+            </li>
+            <li class="none">
+              <a href="changedV6.html" title="Changes">Changes</a><br>
+            </li>
+            <li class="none">
+              <a href="platforms.html" title="Supported Platforms">Supported Platforms</a><br>
+            </li>
+            <li class="none">
+              <a href="known_issues.html" title="Changes">Known Issues</a><br>
+            </li>
+            <li class="none">
+              <a href="ddsi2_release_notes.html" title="Changes"><strong>DDSI Release Notes</strong></a><br>
+            </li>
+            <li class="none">
+               <a href="rebuilding_APIs.html" title = "User Guide">Rebuilding the APIs</a><br>
+            </li>
+            <li class="none">
+               <a href="upgrading.html" title = "Upgrading">Upgrading OpenSplice</a><br>
+            </li>
+            <li class="none">
+               <a href="../../examples/dcps/README.html" title = "Examples">Examples</a><br>
+            </li>
+            <li class="none">
+               <a href="third_party_licenses.html" title = "Third Party Licenses">Third party licenses</a><br>
+            </li>
+            <li class="none">
+              <a href="./../../LICENSE" title="License">License</a>
+            </li>
+          </ul>
       </a>
-    </p>
-
-
-<h1> DDSI2 Service </h1>
-
-<h2> Contents </h2>
-
-<ul>
-  <li><a href="#Introduction">Introduction</a></li>
-  <li><a href="#Changes">Changes</a></li>
-  <li><a href="#Limitations">Limitations</a></li>
-  <li><a href="#QoS compliancy">QoS compliancy</a></li>
-  <li><a href="#Specification issues">Issues rooted in the standard</a></li>
-  <li><a href="#Open issues">Open issues</a></li>
-</ul>
+      </div>
+    </div>
+    <div id="bodyColumn">
+      <div id="contentBox">
 
 <h2> <a name="Introduction">Introduction</a> </h2>
 
-<p> These notes document the current state of release of the OpenSplice DDSI2 Service. The DDSI2 service is the new implementation of the OMG DDSI 2.1 specification for OpenSplice DDS. Much of the material that used to be in the DDSI2 release notes can now be found in the DDSI2 section of the Deployment Guide, which provides a wealth of information on the behaviour and configuration of DDSI2.</p>
+<p> These notes document the current state of release of the OpenSplice DDSI2 Service.
+The DDSI2 service is an implementation of the OMG DDSI 2.1 specification for
+Vortex OpenSplice. </p>
 
-<p> There is a solid body of evidence that there is real interoperability between OpenSplice DDS and other vendors' implementations, and in particular with RTI DDS. Nevertheless, there are still some areas that have seen minimal interoperability testing at best. We kindly invite anyone running into interoperability issues to contact us, either via the <a href="http://forums.opensplice.org/">OpenSplice forum</a>, or, for our commercial customers, via our support channels. </p>
+<p> There is a solid body of evidence that there is real interoperability between
+OpenSplice and other vendors' implementations, and in particular with RTI DDS.
+Nevertheless, there are still some areas that have seen minimal interoperability
+testing at best. We kindly invite anyone running into interoperability issues to
+contact us, either via the <a href="http://forums.opensplice.org/">OpenSplice forum</a>,
+or, for our commercial customers, via our support channels. </p>
 
-<p> Those interested in testing interoperability by running the same applications used at the &quot;OMG Interoperability Demonstrations&quot; can download the full package <a href="http://code.google.com/p/simd-cxx/downloads/list">here</a>. </p>
-
-<h2> <a name="Changes">Changes</a> </h2>
-
-<p> As DDSI2 and DDSI2E have no longer have beta status, please see the <a href="changedV6.html">regular release notes section on changes.</a> </p>
+<p> Those interested in testing interoperability by running the same applications
+used at the &quot;OMG Interoperability Demonstrations&quot; can download the
+full package <a href="http://code.google.com/p/simd-cxx/downloads/list">here</a>. </p>
 
 <h2> <a name="Limitations">Limitations</a> </h2>
 
@@ -45,17 +101,41 @@
 
 <ul>
   <li> <p> For an overview of QoS settings, see <a href="#QoS compliancy">QoS compliancy</a>. </li>
+  <li> <p> QoS changes are not supported. </p> </li>
   <li> <p> Limited influence on congestion-control behaviour. </p> </li>
-  <li> <p> If DDSI2 is operated in its default mode where each participant has its own UDP/IP port number, the maximum number of participants on a node serviced by an instance of the DDSI2 service is limited to approximately 60, exceeding this limit will cause the DDSI2 service to abort. It appears this mode is only required for interoperability with TwinOaks CoreDX DDS. There is never a limit on the number of remote participants. </p> </li>
-  <li> <p> No support for inlining QoS settings yet. DataReaders requesting inlined QoS will be ignored. </p> </li>
-  <li> <p> Running DDSI2 in parallel to the native networking may impact the performance of the native networking even when DDSI2 is not actually involved in the transmission of data, as DDSI2 still performs some processing on the data. </p> </li>
-  <li> <p> No more than 32 key fields, and the concatenated key fields may not require more than 32 bytes of storage, where strings count for 4 bytes. </p> </li>
-  <li> <p> When multicast is enabled and a participant is discovered that advertises a multicast address, it is assumed to be reachable via that multicast address. If it is not, then it must currently be operated in multicast-disabled mode with all possible peer nodes listed explicitly, as this will restrict the set of addresses advertised by the participant to its unicast address. </p> </li>
+  <li> <p> If DDSI2 is operated in its default mode where each participant has its
+           own UDP/IP port number, the maximum number of participants on a node serviced
+           by an instance of the DDSI2 service is limited to approximately 60, exceeding
+           this limit will cause the DDSI2 service to abort. It appears this mode
+           is only required for interoperability with TwinOaks CoreDX DDS. There
+           is never a limit on the number of remote participants. </p> </li>
+  <li> <p> No support for inlining QoS settings yet. DataReaders requesting inlined
+           QoS will be ignored. </p> </li>
+  <li> <p> Running DDSI2 in parallel to the native networking may impact the
+           performance of the native networking even when DDSI2 is not actually
+           involved in the transmission of data, as DDSI2 still performs some
+           processing on the data. </p> </li>
+  <li> <p> No more than 32 key fields, and the concatenated key fields may not
+           require more than 32 bytes of storage, where strings count for 4
+           bytes. </p> </li>
+  <li> <p> When multicast is enabled and a participant is discovered that
+           advertises a multicast address, it is assumed to be reachable via that
+           multicast address. If it is not, then it must currently be operated in
+           multicast-disabled mode with all possible peer nodes listed explicitly,
+           as this will restrict the set of addresses advertised by the
+           participant to its unicast address. </p> </li>
 </ul>
 
 <h2> <a name="QoS compliancy">QoS compliancy</a> </h2>
 
-<p> The following table lists the level of support for each QoS. In some cases, compliancy is better when the DDSI2 service is used to connect two OpenSplice nodes than when it used to connect an OpenSplice node with another vendor's DDS implementation. The OpenSplice kernel performs many aspects of DDS in ways independent of the underlying wire protocol, but interoperating with another vendor's DDS implementation requires the DDSI2 service to fully implement the mapping prescribed by the DDSI 2.1 specification. This work has not been completed yet. </p>
+<p> The following table lists the level of support for each QoS. In some cases,
+compliancy is better when the DDSI2 service is used to connect two OpenSplice
+nodes than when it used to connect an OpenSplice node with another vendor's DDS
+implementation. The OpenSplice kernel performs many aspects of DDS in ways
+independent of the underlying wire protocol, but interoperating with another
+vendor's DDS implementation requires the DDSI2 service to fully implement the
+mapping prescribed by the DDSI 2.1 specification. This work has not been completed
+yet. </p>
 
 <table border="0" cellspacing="5" cellpadding="5">
   <tr> <th> QoS </th>                   <th> OpenSplice </th>    <th> Other vendor </th> </tr>
@@ -70,20 +150,26 @@
   <tr> <td> DURABILITY_SERVICE </td>    <td> Compliant </td>     <td> Compliant </td> </tr>
   <tr>
     <td> PRESENTATION </td>
-    <td colspan="2"> All data treated as non-coherent, unordered INSTANCE. All presentation settings are correctly advertised and are accounted for when matching DataReaders and DataWriters. </td>
+    <td colspan="2"> All data treated as non-coherent, unordered INSTANCE. All presentation
+    settings are correctly advertised and are accounted for when matching DataReaders and DataWriters. </td>
   </tr>
   <tr> <td> DEADLINE </td>              <td> Compliant </td>     <td> Compliant </td> </tr>
   <tr> <td> LATENCY_BUDGET </td>        <td> Compliant </td>     <td> Compliant </td> </tr>
-  <tr> <td> OWNERSHIP </td>             <td> Compliant </td>     <td> Shared ownership: fully supported; exclusive ownership: partially supported, a higher-strength writer can take ownership but failover to a lower-strength one may not occur. </td> </tr>
+  <tr> <td> OWNERSHIP </td>             <td> Compliant </td>     <td> Shared ownership: 
+  fully supported; exclusive ownership: partially supported, a higher-strength writer
+  can take ownership but failover to a lower-strength one may not occur. </td> </tr>
   <tr> <td> OWNERSHIP_STRENGTH </td>    <td> Compliant </td>     <td> Compliant </td> </tr>
   <tr>
     <td> LIVELINESS </td>
     <td> Compliant </td>
-    <td> All entities treated as if liveliness is AUTOMATIC. For OpenSplice participants, the lease duration is fixed at 11s, for readers and writers at infinity. Lease durations of remote participants, readers and writers are honoured correctly. </td>
+    <td> All entities treated as if liveliness is AUTOMATIC. For OpenSplice participants,
+    the lease duration is fixed at 11s, for readers and writers at infinity. Lease
+    durations of remote participants, readers and writers are honoured correctly. </td>
   </tr>
   <tr>
     <td> TIME_BASED_FILTER </td>
-    <td colspan="2"> Compliant, except that all there is no filtering to limit the rate with which samples are delivered to the reader. </td>
+    <td colspan="2"> Compliant, except that all there is no filtering to limit the
+    rate with which samples are delivered to the reader. </td>
   </tr>
   <tr> <td> PARTITION </td>             <td> Compliant </td>     <td> Compliant </td> </tr>
   <tr> <td> RELIABILITY </td>           <td> Compliant </td>     <td> Compliant </td> </tr>
@@ -92,7 +178,8 @@
   <tr> <td> DESTINATION_ORDER </td>     <td> Compliant </td>     <td> Compliant </td> </tr>
   <tr>
     <td> HISTORY </td>
-    <td colspan="2"> Compliant, except that the writer history for a DataWriter of transient-local durability is always maintained as if the history setting is KEEP_LAST with depth 1 </td>
+    <td colspan="2"> Compliant, except that the writer history for a DataWriter of
+    transient-local durability is always maintained as if the history setting is KEEP_LAST with depth 1 </td>
   </tr>
   <tr> <td> RESOURCE_LIMITS </td>       <td> Compliant </td>     <td> Compliant </td> </tr>
   <tr> <td> ENTITY_FACTORY </td>        <td> Compliant </td>     <td> Compliant </td> </tr>
@@ -103,18 +190,31 @@
 <h2> <a name="Specification issues">Issues rooted in the standard</a> </h2>
 
 <ul>
-  <li> <p> The specification only deals with volatile and transient-local data, and leaves the behaviour for transient and persistent data undefined. Many OpenSplice applications follow the recommendation to use transient data and not transient-local data, and indeed, OpenSplice implements transient-local as transient. This evidently creates a complex situation for a DDSI implementation. </p>
+  <li> <p> The specification only deals with volatile and transient-local data,
+  and leaves the behaviour for transient and persistent data undefined. Many
+  OpenSplice applications follow the recommendation to use transient data and not
+  transient-local data, and indeed, OpenSplice implements transient-local as
+  transient. This evidently creates a complex situation for a DDSI implementation. </p>
 
-  <p> The following two tables aim to provide an overview of the expected behaviour when both sides are using OpenSplice, and when only one side is. <p>
+  <p> The following two tables aim to provide an overview of the expected behaviour
+   when both sides are using OpenSplice, and when only one side is. <p>
 
   <p> OpenSplice writer: </p>
   <table border="0" cellspacing="5" cellpadding="5">
     <tr> <th> Writer QoS </th> <th> Reader QoS </th> <th> Behaviour </th> </tr>
     <tr> <td> <em>all</em> </td> <td> volatile </td> <td> as expected </td> </tr>
-    <tr> <td> transient-local </td> <td> transient-local </td> <td> DDSI2 will internally manage a writer history cache containing the historical data for a history setting of KEEP_LAST with depth 1 (note that this is the default for writers). The data will be advertised in accordance with the specification and new readers receive the old data upon request. An OpenSplice reader will also receive the data maintained by the OpenSplice durability service. </td> </tr>
-    <tr> <td rowspan="2"> transient </td> <td> transient-local </td> <td> A remote reader on OpenSplice will receive transient data from the OpenSplice durability service, but a remote reader on another vendor's implementation will not. </td> </tr>
+    <tr> <td> transient-local </td> <td> transient-local </td> <td> DDSI2 will
+    internally manage a writer history cache containing the historical data for a
+    history setting of KEEP_LAST with depth 1 (note that this is the default for
+    writers). The data will be advertised in accordance with the specification
+    and new readers receive the old data upon request. An OpenSplice reader will
+    also receive the data maintained by the OpenSplice durability service. </td> </tr>
+    <tr> <td rowspan="2"> transient </td> <td> transient-local </td> <td> A remote
+    reader on OpenSplice will receive transient data from the OpenSplice durability
+    service, but a remote reader on another vendor's implementation will not. </td> </tr>
     <tr> <td> transient </td> <td> same as previous case </td> </tr>
-    <tr> <td> persistent </td> <td> <em>all</em> </td> <td> deviations from the expected behaviour are the same as for transient </td> </tr>
+    <tr> <td> persistent </td> <td> <em>all</em> </td> <td> deviations from the
+    expected behaviour are the same as for transient </td> </tr>
   </table>
 
   <p> Non-OpenSplice writer, OpenSplice reader: </p>
@@ -127,20 +227,113 @@
     <tr> <td> persistent </td> <td> <em>all</em> </td> <td> deviations from the expected behaviour are the same as for transient </td> </tr>
   </table>
 
-  <p> Once the specification is extended to cover transient data, the situation will become much more straightforward. In the meantime it may be possible to make more configurations work as expected. The specification process is currently actively exploring the alternatives. </p>
+  <p> Once the specification is extended to cover transient data, the situation will
+  become much more straightforward. In the meantime it may be possible to make more 
+  configurations work as expected. The specification process is currently actively
+  exploring the alternatives. </p>
   </li>
-  <li> <p> No verification of topic consistency between OpenSplice and other vendors' implementations. The specification leaves this undefined. OpenSplice-to-OpenSplice the kernel will detect inconsistencies. </p> </li>
+  <li> <p> No verification of topic consistency between OpenSplice and other vendors'
+  implementations. The specification leaves this undefined. OpenSplice-to-OpenSplice
+  the kernel will detect inconsistencies. </p> </li>
 
-  <li> <p> <a name="SharedDiscovery">DDSI2 uses a shared set of discovered participants, readers and writers on a single node. Consequently, a new OpenSplice participant learns of the readers and writers of remote participants and starts communicating with them, even before the remote participant has had a chance of discovering this new participant. This behaviour is believed to be allowed by the specification, but one other implementation has at one point been observed to malfunction because of this.</a> </p> </li>
-  <li> <p> The specification of the format of a KeyHash is ambiguous, in that one can argue whether or not padding should be used within a KeyHash to align the fields to their natural boundaries. The DDSI2 service currently does not insert padding, as this has the benefit of allowing more complex keys to be packed into the fixed-length key hash. It may be that this is not the intended interpretation. </p> </li>
+  <li> <p> <a name="SharedDiscovery">DDSI2 uses a shared set of discovered participants,
+  readers and writers on a single node. Consequently, a new OpenSplice participant
+  learns of the readers and writers of remote participants and starts communicating
+  with them, even before the remote participant has had a chance of discovering this
+  new participant. This behaviour is believed to be allowed by the specification, but
+  one other implementation has at one point been observed to malfunction because of this.</a> </p> </li>
+  <li> <p> The specification of the format of a KeyHash is ambiguous, in that one
+  can argue whether or not padding should be used within a KeyHash to align the
+  fields to their natural boundaries. The DDSI2 service currently does not insert
+  padding, as this has the benefit of allowing more complex keys to be packed into
+  the fixed-length key hash. It may be that this is not the intended interpretation. </p> </li>
 </ul>
-
-<h2> <a name="Open issues">Open issues</a> </h2>
-
+<h2><a name="SSM">Notes on DDSI2E support for SSM</a></h2>
 <ul>
+    <li>Configurable mapping of partition/topic combinations to SSM, using
+    the network partition mechanism. Until now, the writers would simply publish
+    to the addresses advertised by the readers, and the network partitions could
+    be used to advertise an alternative (ASM) multicast address. In this
+    prototype, the writers will look at the address set in the network
+    partition, and if the set happens to include SSM addresses, it will include
+    an arbitrarily selected SSM address in its discovery data. The presence of
+    an SSM address in the writer's discovery data is taken by the readers as an
+    indication that the writer is willing to serve data using SSM at that
+    address. Analogously, the readers will also look at the address set in the
+    network partition, and again, if it includes an SSM address, it will
+    advertise that it favours SSM over ASM. (Note that it favours SSM, not that
+    it requires it.) If an SSM-favouring reader discovers an SSM-capable writer,
+    DDSI2E on the reader side will join the writer's advertised SSM group.
+    An SSM-capable writer will preferentially use unicast, but if it decides to
+    use multicasting, it will include its SSM address if there is an
+    SSM-favouring reader. If there is a mixture of SSM-favouring and
+    non-SSM-favouring readers, and the SSM-favouring readers have also joined
+    one or more of the (ASM) multicast groups, they will currently receive the
+    data over both channels. The mappings need not be the same on all machines.
+    Note that SSM addresses are in the 232.x.y.z range for IPv4 and
+    ff3x::4000:1 to ff3x::ffff:ffff range for IPv6, according to RFC 4607
+    (but really ff3x::8000:0 onwards, as the lower half of the range is reserved
+    for allocation by IANA). This is also the criterion used by DDSI2E to
+    determine whether or not to use SSM.</li>
+    <li>Possibility of running without ASM but with SSM
+    There are really three categories of data in DDSI:
+    <ul>
+        <li>application data</li>
+        <li>participant discovery (SPDP) data</li>
+        <li>endpoint discovery (SEDP) data</li>
+   </ul>
 
-  <li> <p> Verification of incoming messages is quite strict, but enum values embedded in the data are not checked against the set of valid values. </p> </li>
-  <li> <p> The deserialisation code accepts a bounded sequence longer than the maximum allowed sequence length. </p> </li>
+    Application data is primarily covered by point 1 above. The SPDP data has to
+    use ASM or unicast — it is used to discover who is out there, so SSM is an
+    obvious impossibility. This has not changed. SEDP (as well as any
+    application data not mapped to a network partition) relies on the default
+    addresses advertised in the SPDP messages. To allow use of SSM for SEDP,
+    this version adds the option of independently setting the SPDP address and
+    those advertised default addresses, with the latter defaulting to the SPDP
+    address. If this default address is an SSM address, any reader or writer
+    relying on the default address will use SSM, as if it were mapped to a
+    networking partition specifying the use of SSM, as in point 1. Note that
+    there is no need for the default address to be different from any of the
+    other addresses. Now that DDSI2E supports two types of multicast, a simple
+    boolean switch "AllowMulticasting" is no longer sufficient. DDSI2E now
+    interprets this as a comma-separated list of the keywords: "spdp", "asm" and
+    "ssm". The first enables use of ASM for SPDP only, the others simply enable
+    full use of ASM and SSM, respectively. The old "true" enables all types of
+    multicasting, and "false" disables it altogether.</li>
+    <li>Example - The following basic configuration will rely on ASM for SPDP
+    and on SSM using group address 232.3.1.3 for all SEDP and user data not in
+    DCPS partition A; and on SSM using group address 232.3.1.4 for all user data
+    in DCPS partition A.
+<pre>
+&lt;DDSI2EService name="ddsi2e">
+    &lt;Discovery> 
+        &lt;DefaultMulticastAddress>232.3.1.3</DefaultMulticastAddress> 
+    &lt;/Discovery>
+    &lt;!-- this ensures that readers for data in partitions A and B will favour
+    SSM, and that writers for data in partitions A and B will provide data via
+    SSM, via addresses 232.3.1.4 and 232.3.1.5, respectively --&gt; 
+    &lt;Partitioning&gt;
+        &lt;NetworkPartitions&gt;
+            &lt;NetworkPartition name="ssmA" address="232.3.1.4"/&gt; 
+        &lt/NetworkPartitions&gt;
+        &ltPartitionMappings&gt;
+            &ltPartitionMapping DCPSPartitionTopic="A.*" NetworkPartition="ssmA" /&gt; 
+        &lt/PartitionMappings&gt; 
+    &lt/Partitioning&gt;
+&lt/DDSI2EService&gt;
+</pre>
+</li>
 </ul>
-
-</body> </html>
+    <div class="clear">
+    <hr/>
+    </div>
+    <div id="footer">
+      <div class="xright">
+       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.      
+      </div>
+     <div class="clear">
+     <hr/>
+     </div>
+    </div>
+  </body>
+</html>

@@ -51,8 +51,8 @@ Technical Data and Computer Software clause at DFARS 252.227-7013 and FAR
 Sun, Sun Microsystems and the Sun logo are trademarks or registered
 trademarks of Sun Microsystems, Inc.
 
-SunSoft, Inc.  
-2550 Garcia Avenue 
+SunSoft, Inc.
+2550 Garcia Avenue
 Mountain View, California  94043
 
 NOTE:
@@ -77,7 +77,7 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 // files defining the different units of the compiler
 
 #ifndef WIN32
-#include "os.h"
+#include "vortex_os.h"
 #endif
 
 #include "intlmacros.h"  // Define macros for intl'ion
@@ -95,14 +95,24 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 #include "idl_defines.h" // Constants for IDL compiler
 #include "idl_fwd.h"  // Forward decls of classes
 
-#include "idl_bool.h"  // Defines boolean for IDL
-
 #include "utl_string.h"  // Defines utility string class
 #include "utl_wstring.h"  // Defines utility wide string class
 #include "utl_identifier.h" // Defines utility identifier class
 #include "ast.h"  // AST classes
 #include <util.h>  // Utility classes
-#include "sacpp_DDS_DCPS.h"
+#include "sacpp_dds_basic_types.h"
 
+#ifdef _WIN32
+#undef CONST
+#undef INTERFACE
+#undef VOID
+#undef IN
+#undef OUT
+#undef OPAQUE
+#endif
+
+#ifdef __SUNPRO_CC
+#undef PRIVATE
+#endif
 
 #endif           // _IDL_IDL_HH

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -32,9 +40,11 @@
  *                 occurence of the external module a load method or
  *                 include statement will be generated.
  ***********************************************************************/
-#include "os.h"
-#include "os_if.h"
+#include "os_defs.h"
+#include "os_abstract.h"
+#include "os_heap.h"
 #include "c_genc.h"
+#include "c_gencommon.h"
 #include "c_base.h"
 #include "c_collection.h"
 #include "c_iterator.h"
@@ -45,252 +55,50 @@
  * Global function implementations
  *
  ***********************************************************************/
+static void c_genIncludesSpec(c_metaObject o, c_genArg context);
+static void c_genObjectSpec(c_metaObject o, c_genArg context);
 
-typedef struct c_genCArg {
-    c_metaObject scope;
-    FILE *stream;
-    int level;
-    c_bool scopedNames;
-    c_iter processing;
-    void (*action)(c_metaObject o, struct c_genCArg *context);
-} *c_genCArg;
+static void c_moduleSpec(c_module o, c_genArg context);
+static void c_classSpec(c_class o, c_genArg context);
+static void c_classFwdSpec(c_class o, c_genArg  context);
+static void c_attributeSpec(c_attribute o, c_genArg context);
+static void c_specifierSpec(c_string name, c_type type, c_genArg context);
+static void c_constantSpec(c_constant o, c_genArg context);
+static void c_enumerationSpec(c_enumeration o, c_genArg context);
+static void c_interfaceSpec(c_interface o, c_genArg context);
+static void c_operationSpec(c_operation o, c_genArg context);
+static void c_primitiveSpec(c_primitive o, c_genArg context);
+static void c_structureSpec(c_structure o, c_genArg context);
+static void c_typeDefSpec(c_typeDef o, c_genArg context);
+static void c_unionSpec(c_union o, c_genArg context);
 
-void c_moduleSpec         (c_module o,         c_genCArg context);
-void c_typeDefSpec        (c_typeDef o,        c_genCArg context);
-void c_attributeSpec      (c_attribute o,      c_genCArg context);
-void c_classSpec          (c_class o,          c_genCArg context);
-void c_interfaceSpec      (c_interface o,      c_genCArg context);
-void c_operandSpec        (c_operand o, c_type type, c_genCArg context);
-void c_constantSpec       (c_constant o,       c_genCArg context);
-void c_unionCaseSpec      (c_unionCase o,      c_genCArg context);
-void c_unionSpec          (c_union o,          c_genCArg context);
-void c_primitiveSpec      (c_primitive o,      c_genCArg context);
-void c_structureSpec      (c_structure o,      c_genCArg context);
-void c_enumerationSpec    (c_enumeration o,    c_genCArg context);
-void c_operationSpec      (c_operation o,      c_genCArg context);
+void c_operandSpec        (c_operand o, c_type type, c_genArg context);
 
-void c_moduleBody         (c_module o,         c_genCArg context);
-void c_typeDefBody        (c_typeDef o,        c_genCArg context);
-void c_attributeBody      (c_attribute o,      c_genCArg context);
-void c_classBody          (c_class o,          c_genCArg context);
-void c_unionCaseBody      (c_unionCase o,      c_genCArg context);
-void c_unionBody          (c_union o,          c_genCArg context);
-void c_collectionTypeBody (c_collectionType o, c_genCArg context);
-void c_structureBody      (c_structure o,      c_genCArg context);
-void c_enumerationBody    (c_enumeration o,    c_genCArg context);
+void c_moduleBody         (c_module o,         c_genArg context);
+void c_typeDefBody        (c_typeDef o,        c_genArg context);
+void c_attributeBody      (c_attribute o,      c_genArg context);
+void c_classBody          (c_class o,          c_genArg context);
+void c_unionBody          (c_union o,          c_genArg context);
+void c_collectionTypeBody (c_collectionType o, c_genArg context);
+void c_structureBody      (c_structure o,      c_genArg context);
+void c_enumerationBody    (c_enumeration o,    c_genArg context);
 
 static void operandPrint(c_operand operand, c_long scopePrecedence,
                          c_long negLevel, c_primKind primKind,
-                         c_genCArg context);
+                         c_genArg context);
 static void c_setLocale(struct lconv *aLocale);
 
 /***********************************************************************
  * Misc
  ***********************************************************************/
-static void
-c_indent(
-    c_genCArg context,
-    int subLevel)
-{
-    int i;
-    for (i=0; i<(context->level + subLevel); i++) {
-        fprintf(context->stream, "    ");
-    }
-}
+static const c_char *
+c_primitiveImageC(
+    c_primitive o)
+        __nonnull_all__
+        __attribute_returns_nonnull__
+        __attribute_pure__;
 
-static void
-c_out(
-    c_genCArg context,
-    const char *format, ...)
-{
-    va_list args;
-    va_start(args,format);
-    vfprintf(context->stream,format,args);
-    va_end(args);
-}
-
-static void
-c_outi(
-    c_genCArg context,
-    int indent,
-    const char *format, ...)
-{
-    va_list args;
-    int i;
-    for (i=0; i<(context->level + indent); i++) {
-        fprintf(context->stream, "    ");
-    }
-    va_start(args,format);
-    vfprintf(context->stream,format,args);
-    va_end(args);
-}
-
-int
-c_compareProperty(
-    const void *ptr1,
-    const void *ptr2)
-{
-    c_property *p1,*p2;
-
-    p1 = (c_property *)ptr1;
-    p2 = (c_property *)ptr2;
-
-    if (*p1 == *p2) {
-        return 0;
-    }
-    if (*p1 == NULL) {
-        return 1;
-    }
-    if (*p2 == NULL) {
-        return -1;
-    }
-
-    return (*p1)->offset - (*p2)->offset;
-}
-
-typedef enum c_objectStateKind {
-    G_UNKNOWN, G_UNDECLARED, G_DECLARED, G_EXTENDS, G_FINISHED
-} c_objectStateKind;
-
-typedef struct c_objectState {
-    c_objectStateKind kind;
-    c_object object;
-} *c_objectState;
-
-static c_equality
-c_collectCompare(
-    c_objectState o1, c_object o2)
-{
-    if (o1->object > o2) {
-        return C_GT;
-    }
-    if (o1->object < o2) {
-        return C_LT;
-    }
-    return C_EQ;
-}
-
-static c_objectStateKind
-c_getObjectState(
-    c_genCArg context,
-    c_object o)
-{
-    c_objectState found;
-
-    found = c_iterResolve(context->processing,(c_iterResolveCompare)c_collectCompare,o);
-    if (found == NULL) {
-        return G_UNKNOWN;
-    }
-    return found->kind;
-}
-
-static void
-c_setObjectState(
-    c_genCArg context,
-    c_object o,
-    c_objectStateKind kind)
-{
-    c_objectState template,found;
-
-    found = c_iterResolve(context->processing,(c_iterResolveCompare)c_collectCompare,o);
-    if (found != NULL) {
-        found->kind = kind;
-    } else {
-        template = (c_objectState)os_malloc(sizeof(struct c_objectState));
-        template->object = o;
-        template->kind = kind;
-        c_iterInsert(context->processing,template);
-    }
-}
-
-/** \brief This method will generate all dependencies of the given object.
- *
- *  Dependencies are only generated if not generated before, if generated
- *  the dependencies are added to a collection of the context.
- *  The context is consulted for the generation state of objects.
- */
-static void
-c_genDependancies(
-    c_baseObject o,
-    c_genCArg context)
-{
-    int i;
-    c_objectStateKind state;
-
-#define _TYPEGEN_(type) context->action(c_metaObject(type),context)
-
-    if (o == NULL) {
-        return;
-    }
-    switch(o->kind) {
-    case M_MODULE:
-        c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_genDependancies, context);
-    break;
-    case M_ATTRIBUTE:
-    case M_RELATION:
-        _TYPEGEN_(c_property(o)->type);
-    break;
-    case M_MEMBER:
-        _TYPEGEN_(c_specifier(o)->type);
-    break;
-    case M_CONSTANT:
-        _TYPEGEN_(c_constant(o)->type);
-    break;
-    case M_EXCEPTION:
-    case M_STRUCTURE:
-        if (c_structure(o)->members != NULL) {
-            for (i=0; i<c_arraySize(c_structure(o)->members); i++) {
-                _TYPEGEN_(c_specifier(c_structure(o)->members[i])->type);
-            }
-        }
-    break;
-    case M_CLASS:
-        state = c_getObjectState(context,c_class(o)->extends);
-        _TYPEGEN_(c_class(o)->extends);
-        if (c_interface(o)->inherits != NULL) {
-            for (i=0; i<c_arraySize(c_interface(o)->inherits); i++) {
-                _TYPEGEN_(c_interface(o)->inherits[i]);
-            }
-        }
-        c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_genDependancies, context);
-    break;
-    case M_INTERFACE:
-        if (c_interface(o)->inherits != NULL) {
-            for (i=0; i<c_arraySize(c_interface(o)->inherits); i++) {
-                _TYPEGEN_(c_interface(o)->inherits[i]);
-            }
-        }
-        c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_genDependancies, context);
-    break;
-    case M_COLLECTION:
-        _TYPEGEN_(c_collectionType(o)->subType);
-    break;
-    case M_OPERATION:
-        _TYPEGEN_(c_operation(o)->result);
-        if (c_operation(o)->parameters != NULL) {
-            for (i=0; i<c_arraySize(c_operation(o)->parameters); i++) {
-                _TYPEGEN_(c_specifier(c_operation(o)->parameters[i])->type);
-            }
-        }
-    break;
-    case M_UNION:
-        _TYPEGEN_(c_union(o)->switchType);
-        if (c_union(o)->cases != NULL) {
-            for (i=0; i<c_arraySize(c_union(o)->cases); i++) {
-                _TYPEGEN_(c_specifier(c_union(o)->cases[i])->type);
-            }
-        }
-    break;
-    case M_TYPEDEF:
-        _TYPEGEN_(c_typeDef(o)->alias);
-    break;
-    default:
-    break;
-    }
-#undef _TYPEGEN_
-}
-
-static c_char *
+static const c_char *
 c_primitiveImageC(
     c_primitive o)
 {
@@ -312,74 +120,22 @@ c_primitiveImageC(
     case P_LOCK:      return "c_lock";
     case P_COND:      return "c_cond";
     case P_VOIDP:     return "c_voidp";
-    default:
-        assert(FALSE);
+    case P_PA_UINT32: return "pa_uint32_t";
+    case P_PA_UINTPTR:return "pa_uintptr_t";
+    case P_PA_VOIDP:  return "pa_voidp_t";
+    case P_UNDEFINED: /* Fall-through on purpose */
+    case P_COUNT:
+        assert(o->kind != P_UNDEFINED && o->kind != P_COUNT);
     }
-    return NULL;
+
+    return "***ERROR***";
 }
-
-static c_char *
-c_getContextScopedTypeName(
-    c_type type,
-    c_char *separator,
-    c_bool smart,
-    c_genCArg context)
-{
-    c_metaObject scope;
-    c_char *result;
-    c_scopeWhen scopeWhen;
-
-    if (c_baseObject(context->scope)->kind == M_MODULE) {
-        scope = context->scope;
-    } else {
-        scope = c_metaModule(context->scope);
-    }
-
-    if (smart) {
-        scopeWhen = C_SCOPE_SMART;
-    } else {
-        scopeWhen = (context->scopedNames ? C_SCOPE_ALWAYS : C_SCOPE_NEVER);
-    }
-
-    result = c_getScopedTypeName(scope, type, separator, scopeWhen);
-
-    return result;
-}
-
-static c_char *
-c_getContextScopedConstName(
-    c_constant c,
-    c_char *separator,
-    c_bool smart,
-    c_genCArg context)
-{
-    c_metaObject scope;
-    c_char *result;
-    c_scopeWhen scopeWhen;
-
-    if (c_baseObject(context->scope)->kind == M_MODULE) {
-        scope = context->scope;
-    } else {
-        scope = c_metaModule(context->scope);
-    }
-
-    if (smart) {
-        scopeWhen = C_SCOPE_SMART;
-    } else {
-        scopeWhen = (context->scopedNames ? C_SCOPE_ALWAYS : C_SCOPE_NEVER);
-    }
-
-    result = c_getScopedTypeName(scope, c_type(c), separator, scopeWhen);
-
-    return result;
-}
-
 
 /* ------------------------------------- Type ---------------------------- */
-void
+static void
 c_genObjectSpec(
     c_metaObject o,
-    c_genCArg context)
+    c_genArg context)
 {
     c_metaObject scope, module, defIn;
     c_string name;
@@ -391,11 +147,10 @@ c_genObjectSpec(
         module = c_metaModule(context->scope);
     }
 
-        /* Get the module that contains the processed object. */
+    /* Get the module that contains the processed object. */
     scope = c_metaModule(o);
 
-    /* Check if this meta object is a c_base type, if true then skip
-       the generation */
+    /* Check if this meta object is a c_base type, if true then skip the generation */
     if (scope == NULL) {
         return;
     }
@@ -410,7 +165,6 @@ c_genObjectSpec(
         /* If this scope is not processed before then include it */
         if (c_getObjectState(context,scope) == G_UNKNOWN) {
             /* Do not output here, this has been done in c_genIncludesSpec */
-
             if (c_baseObject(o)->kind == M_MODULE) {
                 defIn = o->definedIn;
                 while (defIn && (defIn != context->scope)) {
@@ -425,58 +179,59 @@ c_genObjectSpec(
         return;
     }
 
-    switch (c_getObjectState(context,o)) {
-    case G_UNKNOWN:
-        c_setObjectState(context,o,G_UNDECLARED);
-        c_genDependancies(c_baseObject(o),context);
+    switch (c_getObjectState(context, o)) {
+        case G_UNKNOWN:
+            c_setObjectState(context,o,G_UNDECLARED);
+            c_genDependencies(c_baseObject(o),context);
 
-        /* Generate the definition for this meta object. */
+            /* Generate the definition for this meta object. */
 #define _CASE_(t,k) case k: t##Spec(t(o),context); break
-        switch(c_baseObject(o)->kind) {
-        _CASE_(c_attribute,       M_ATTRIBUTE);
-        _CASE_(c_class,           M_CLASS);
-        _CASE_(c_constant,        M_CONSTANT);
-        _CASE_(c_enumeration,     M_ENUMERATION);
-        _CASE_(c_interface,       M_INTERFACE);
-        _CASE_(c_module,          M_MODULE);
-        _CASE_(c_operation,       M_OPERATION);
-        _CASE_(c_primitive,       M_PRIMITIVE);
-        _CASE_(c_structure,       M_STRUCTURE);
-        _CASE_(c_typeDef,         M_TYPEDEF);
-        _CASE_(c_union,           M_UNION);
-        default:
-        break;
-        }
-#undef _CASE_
-        c_setObjectState(context,o,G_FINISHED);
-    break;
-    case G_UNDECLARED:
-        /* The second time this dependency occures => then generate a forward declaration. */
-        name = c_metaName(o);
-        if (name != NULL) {
             switch(c_baseObject(o)->kind) {
-            case M_CLASS:
-                c_outi(context,0,"C_CLASS(%s);\n\n",name);
-            break;
-            case M_TYPEDEF:
-                c_typeDefSpec(c_typeDef(o),context);
-                c_genObjectSpec(c_metaObject(c_typeDef(o)->alias),context);
-            break;
-            default:
-            break;
+                _CASE_(c_attribute, M_ATTRIBUTE);
+                _CASE_(c_class, M_CLASS);
+                _CASE_(c_constant, M_CONSTANT);
+                _CASE_(c_enumeration, M_ENUMERATION);
+                _CASE_(c_interface, M_INTERFACE);
+                _CASE_(c_module, M_MODULE);
+                _CASE_(c_operation, M_OPERATION);
+                _CASE_(c_primitive, M_PRIMITIVE);
+                _CASE_(c_structure, M_STRUCTURE);
+                _CASE_(c_typeDef, M_TYPEDEF);
+                _CASE_(c_union, M_UNION);
+                default:
+                    break;
             }
-        }
-        c_setObjectState(context,o,G_DECLARED);
-    break;
-    default:
-    break;
+#undef _CASE_
+            c_setObjectState(context, o, G_FINISHED);
+            break;
+        case G_UNDECLARED:
+            /* The second time this dependency occurs, generate a forward declaration. */
+            name = c_metaName(o);
+            if (name != NULL) {
+                switch(c_baseObject(o)->kind) {
+                    case M_CLASS:
+                        c_classFwdSpec(c_class(o), context);
+                        /* c_outi(context,0,"C_CLASS(%s);\n\n",name); */
+                        break;
+                    case M_TYPEDEF:
+                        c_typeDefSpec(c_typeDef(o),context);
+                        c_genObjectSpec(c_metaObject(c_typeDef(o)->alias),context);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            c_setObjectState(context,o,G_DECLARED);
+            break;
+        default:
+            break;
     }
 }
 
-void
+static void
 c_genObjectBody(
     c_metaObject o,
-    c_genCArg context)
+    c_genArg context)
 {
     c_metaObject scope, module;
     c_string name;
@@ -536,7 +291,7 @@ c_genObjectBody(
     break;
     case G_UNKNOWN:
         c_setObjectState(context,o,G_UNDECLARED);
-        c_genDependancies(c_baseObject(o),context);
+        c_genDependencies(c_baseObject(o),context);
 
         /* Generate the definition for this meta object. */
 #define _CASE_(t,k) case k: t##Body(t(o),context); break
@@ -560,11 +315,11 @@ c_genObjectBody(
     }
 }
 
-void
+static void
 c_specifierSpec(
     c_string name,
     c_type type,
-    c_genCArg context)
+    c_genArg context)
 {
     c_string typeName, commentName;
     c_string newName;
@@ -589,7 +344,7 @@ c_specifierSpec(
         break;
         case M_COLLECTION:
             switch (c_collectionType(type)->kind) {
-            case C_ARRAY:
+            case OSPL_C_ARRAY:
                 if (c_collectionType(type)->maxSize == 0) {
                     c_out(context,"c_array %s /*%s*/",name, commentName);
                 } else {
@@ -598,16 +353,16 @@ c_specifierSpec(
                           c_collectionType(type)->maxSize,commentName);
                 }
             break;
-            case C_SEQUENCE:
+            case OSPL_C_SEQUENCE:
                 c_out(context,"c_sequence %s /*%s*/",name, commentName);
             break;
-            case C_BAG:        c_out(context,"c_bag %s",name);  break;
-            case C_SET:        c_out(context,"c_set %s",name);  break;
-            case C_MAP:        c_out(context,"c_map %s",name);  break;
-            case C_QUERY:      c_out(context,"c_query %s",name);  break;
-            case C_LIST:       c_out(context,"c_list %s",name);  break;
-            case C_DICTIONARY: c_out(context,"c_table %s",name); break;
-            case C_STRING:
+            case OSPL_C_BAG:        c_out(context,"c_bag %s",name);  break;
+            case OSPL_C_SET:        c_out(context,"c_set %s",name);  break;
+            case OSPL_C_MAP:        c_out(context,"c_map %s",name);  break;
+            case OSPL_C_QUERY:      c_out(context,"c_query %s",name);  break;
+            case OSPL_C_LIST:       c_out(context,"c_list %s",name);  break;
+            case OSPL_C_DICTIONARY: c_out(context,"c_table %s",name); break;
+            case OSPL_C_STRING:
                 c_out(context,"c_string %s",name);
                 if (c_collectionType(type)->maxSize > 0) {
                     c_out(context, " /*%s*/", commentName);
@@ -639,7 +394,7 @@ c_specifierSpec(
         switch(c_baseObject(type)->kind) {
         case M_COLLECTION:
             switch (c_collectionType(type)->kind) {
-            case C_ARRAY:
+            case OSPL_C_ARRAY:
                 if (c_collectionType(type)->maxSize == 0) {
                     c_out(context,"c_array %s",name);
                 } else {
@@ -647,17 +402,17 @@ c_specifierSpec(
                     c_out(context,"[%d]",c_collectionType(type)->maxSize);
                 }
             break;
-            case C_SEQUENCE:   c_out(context,"c_sequence %s",name); break;
-            case C_BAG:        c_out(context,"c_bag %s",name);  break;
-            case C_SET:        c_out(context,"c_set %s",name);  break;
-            case C_MAP:        c_out(context,"c_map %s",name);  break;
-            case C_QUERY:      c_out(context,"c_query %s",name);  break;
-            case C_LIST:       c_out(context,"c_list %s",name);  break;
-            case C_DICTIONARY: c_out(context,"c_table %s",name); break;
-            case C_STRING:
+            case OSPL_C_SEQUENCE:   c_out(context,"c_sequence %s",name); break;
+            case OSPL_C_BAG:        c_out(context,"c_bag %s",name);  break;
+            case OSPL_C_SET:        c_out(context,"c_set %s",name);  break;
+            case OSPL_C_MAP:        c_out(context,"c_map %s",name);  break;
+            case OSPL_C_QUERY:      c_out(context,"c_query %s",name);  break;
+            case OSPL_C_LIST:       c_out(context,"c_list %s",name);  break;
+            case OSPL_C_DICTIONARY: c_out(context,"c_table %s",name); break;
+            case OSPL_C_STRING:
                 c_out(context,"char *%s",name);
             break;
-            case C_WSTRING:
+            case OSPL_C_WSTRING:
                 c_out(context,"short *%s",name);
             break;
             default:
@@ -678,7 +433,7 @@ void
 c_typeBody(
     c_string lh,
     c_type o,
-    c_genCArg context)
+    c_genArg context)
 {
     c_char *typeName;
 
@@ -696,12 +451,10 @@ c_gen_C(
     c_module topLevel,
     c_bool scopedNames)
 {
-    struct c_genCArg context;
-    c_type type;
+    struct c_genArg context;
 
     c_setLocale(localeconv());
 
-    type = c_type(c_metaResolve(c_metaObject(topLevel),"c_object"));
     context.scope       = NULL;
     context.stream      = NULL;
     context.action      = NULL;
@@ -717,10 +470,10 @@ c_gen_C(
     c_metaWalk(c_metaObject(topLevel), (c_metaWalkAction)c_moduleBody, &context);
 }
 
-void
+static void
 c_genIncludesSpec(
     c_metaObject o,
-    c_genCArg context)
+    c_genArg context)
 {
     c_metaObject scope, module;
     c_string name;
@@ -750,14 +503,14 @@ c_genIncludesSpec(
     }
 }
 
-void
+static void
 c_moduleSpec(
     c_module o,
-    c_genCArg context)
+    c_genArg context)
 {
     char *moduleName;
     char *streamName;
-    struct c_genCArg newContext;
+    struct c_genArg newContext;
 
     if (o == NULL) {
         return;
@@ -793,7 +546,7 @@ c_moduleSpec(
     /* A new iter is created for this */
     newContext.processing = c_iterNew(NULL);
     newContext.action = c_genIncludesSpec;
-    c_genDependancies(c_baseObject(o), &newContext);
+    c_genDependencies(c_baseObject(o), &newContext);
     c_out(&newContext,"\n");
 
     c_outi(&newContext,0,"\n#ifdef MODEL_%s_IMPLEMENTATION\n",moduleName);
@@ -822,11 +575,11 @@ c_moduleSpec(
 void
 c_moduleBody(
     c_module o,
-    c_genCArg context)
+    c_genArg context)
 {
     char *moduleName;
     char *streamName;
-    struct c_genCArg newContext;
+    struct c_genArg newContext;
 
     if (o == NULL) {
         return;
@@ -857,28 +610,6 @@ c_moduleBody(
     c_outi(&newContext,0,"#define ResolveType(s,t) c_type(c_metaResolve(c_metaObject(s),t))\n");
     c_outi(&newContext,0,"#define ResolveClass(s,c) c_class(c_metaResolve(c_metaObject(s),c))\n\n");
 
-    c_outi(&newContext, 0, "#if defined(__GNUC__)\n");
-    c_outi(&newContext, 0, "#if ((__GNUC__ * 100) + __GNUC_MINOR__) >= 402\n");
-    c_outi(&newContext, 0, "#define OSPL_GCC_DIAG_STR(s) #s\n");
-    c_outi(&newContext, 0, "#define OSPL_GCC_DIAG_JOINSTR(x,y) OSPL_GCC_DIAG_STR(x ## y)\n");
-    c_outi(&newContext, 0, "#define OSPL_GCC_DIAG_DO_PRAGMA(x) _Pragma (#x)\n");
-    c_outi(&newContext, 0, "#define OSPL_GCC_DIAG_PRAGMA(x) OSPL_GCC_DIAG_DO_PRAGMA(GCC diagnostic x)\n");
-    c_outi(&newContext, 0, "#if ((__GNUC__ * 100) + __GNUC_MINOR__) >= 406\n");
-    c_outi(&newContext, 0, "#define OSPL_DIAG_OFF(x) OSPL_GCC_DIAG_PRAGMA(push) OSPL_GCC_DIAG_PRAGMA(ignored OSPL_GCC_DIAG_JOINSTR(-W,x))\n");
-    c_outi(&newContext, 0, "#define OSPL_DIAG_ON(x) OSPL_GCC_DIAG_PRAGMA(pop)\n");
-    c_outi(&newContext, 0, "#else\n");
-    c_outi(&newContext, 0, "#define OSPL_DIAG_OFF(x) OSPL_GCC_DIAG_PRAGMA(ignored OSPL_GCC_DIAG_JOINSTR(-W,x))\n");
-    c_outi(&newContext, 0, "#define OSPL_DIAG_ON(x)  OSPL_GCC_DIAG_PRAGMA(warning OSPL_GCC_DIAG_JOINSTR(-W,x))\n");
-    c_outi(&newContext, 0, "#endif\n");
-    c_outi(&newContext, 0, "#else\n");
-    c_outi(&newContext, 0, "#define OSPL_DIAG_OFF(x)\n");
-    c_outi(&newContext, 0, "#define OSPL_DIAG_ON(x)\n");
-    c_outi(&newContext, 0, "#endif\n");
-    c_outi(&newContext, 0, "#else\n");
-    c_outi(&newContext, 0, "#define OSPL_DIAG_OFF(x)\n");
-    c_outi(&newContext, 0, "#define OSPL_DIAG_ON(x)\n");
-    c_outi(&newContext, 0, "#endif\n\n");
-
     c_outi(&newContext, 0, "OSPL_DIAG_OFF(unused-variable)\n\n");
 
     c_outi(&newContext,0,"c_bool\n");
@@ -892,6 +623,11 @@ c_moduleBody(
     c_outi(&newContext,1,"c_object *labels;\n");
     c_outi(&newContext,1,"c_bool result = FALSE;\n");
     c_outi(&newContext,1,"c_object o,found;\n\n");
+
+    c_outi(&newContext,1,"type = NULL; (void)type;\n");
+    c_outi(&newContext,1,"members = NULL; (void)members;\n");
+    c_outi(&newContext,1,"cases = NULL; (void)cases;\n");
+    c_outi(&newContext,1,"labels = NULL; (void)labels;\n\n");
 
     c_outi(&newContext,1,
           "module = c_metaDeclare(c_object(base),\"%s\",M_MODULE);\n\n",
@@ -911,7 +647,7 @@ c_moduleBody(
 void
 c_typeDefSpec(
     c_typeDef o,
-    c_genCArg context)
+    c_genArg context)
 {
     c_string name;
 
@@ -930,7 +666,7 @@ c_typeDefSpec(
 void
 c_typeDefBody(
     c_typeDef o,
-    c_genCArg context)
+    c_genArg context)
 {
     c_string name;
 
@@ -949,7 +685,7 @@ c_typeDefBody(
 void
 c_constantSpec(
     c_constant o,
-    c_genCArg context)
+    c_genArg context)
 {
     c_char *name;
 
@@ -968,9 +704,9 @@ c_constantSpec(
 void
 c_unionSpec(
     c_union o,
-    c_genCArg context)
+    c_genArg context)
 {
-    int i;
+    c_ulong i;
     c_specifier s;
     c_string unionName;
 
@@ -998,9 +734,9 @@ c_unionSpec(
 void
 c_unionBody(
     c_union o,
-    c_genCArg context)
+    c_genArg context)
 {
-    int i, j, nLabels, ie, index;
+    c_ulong i, j, nLabels, ie;
     c_specifier s;
     c_unionCase uc;
     c_literal l, l_enum;
@@ -1027,18 +763,20 @@ c_unionBody(
     break;
     default:
         enumSwitch = FALSE;
-        switchKind = NULL;
+        switchKind = 0;
+        (void)enumSwitch;
+        (void)switchKind;
         enumerationType = NULL;
         assert(0); /* Only primitives and enums as switch types */
     }
 
     switchTypeName = c_getContextScopedTypeName(sType, "::", TRUE, context);
 
-    c_outi(context,1,"o = c_metaDefine(scope,M_UNION);\n");
-    c_outi(context,2,"c_union(o)->switchType = ResolveType(scope,\"%s\");\n",
-                      switchTypeName);
-    c_outi(context,2,"cases = c_arrayNew(ResolveType(base,\"c_object\"),%d);\n",
-                      c_arraySize(o->cases));
+    c_outi(context,1,"o = c_metaDefine(scope, M_UNION);\n");
+    c_outi(context,2,"c_union(o)->switchType = ResolveType(scope, \"%s\");\n", switchTypeName);
+    c_outi(context,2,"cases = c_arrayNew(c_object_t(base), %d);\n", c_arraySize(o->cases));
+
+    os_free(switchTypeName);
     for (i=0; i<c_arraySize(o->cases); i++) {
         uc = o->cases[i];
         nLabels = c_arraySize(uc->labels);
@@ -1054,9 +792,9 @@ c_unionBody(
         c_out(context,"c_stringNew(base,\"%s\");\n",s->name);
         c_outi(context,2,"c_specifier(cases[%d])->type = ",i);
         c_out(context,"ResolveType(scope,\"%s\");\n",typeName);
+        os_free(typeName);
         if (nLabels > 0) {
-            c_outi(context,2,"labels = c_arrayNew(ResolveType(base,\"c_object\"),%d);\n",
-                              c_arraySize(uc->labels));
+            c_outi(context,3,"labels = c_arrayNew(c_object_t(base), %d);\n", c_arraySize(uc->labels));
             for (j=0; j<c_arraySize(uc->labels); j++) {
                 l = c_literal(uc->labels[j]);
                 c_outi(context,2,"labels[%d] = ",j);
@@ -1064,17 +802,16 @@ c_unionBody(
                 c_outi(context,2,"c_literal(labels[%d])->value = ",j);
                 if (enumSwitch) {
                     /* First determine the index of the enum-value */
-                    index = -1;
-                    for (ie=0; (ie<c_arraySize(enumerationType->elements)) && (index == -1); ie++) {
+                    for (ie=0; ie<c_arraySize(enumerationType->elements); ie++) {
                         l_enum = c_operandValue(c_constant(enumerationType->elements[ie])->operand);
                         assert(l_enum->value.kind == V_LONG);
                         if (c_valueCompare(l->value, l_enum->value) == C_EQ) {
-                            index = ie;
+                            break;
                         }
                         c_free(l_enum);
                     }
-                    assert (index != -1);
-                    c_out(context, "c_literal(c_constant(c_enumeration(c_union(o)->switchType)->elements[%d])->operand)->value;\n", index);
+                    assert (ie<c_arraySize(enumerationType->elements));
+                    c_out(context, "c_literal(c_constant(c_enumeration(c_union(o)->switchType)->elements[%d])->operand)->value;\n", ie);
                 } else {
                     switch (switchKind) {
                     case P_BOOLEAN: c_out(context,"c_boolValue"); break;
@@ -1112,7 +849,7 @@ c_unionBody(
 void
 c_collectionTypeBody(
     c_collectionType o,
-    c_genCArg context)
+    c_genArg context)
 {
     c_string name, kind;
 
@@ -1123,21 +860,21 @@ c_collectionTypeBody(
 
 #define _CASE_(k) case k: kind = #k; break
     switch(o->kind) {
-    _CASE_(C_ARRAY);
-    _CASE_(C_SEQUENCE);
-    _CASE_(C_SET);
-    _CASE_(C_LIST);
-    _CASE_(C_BAG);
-    _CASE_(C_MAP);
-    _CASE_(C_QUERY);
-    _CASE_(C_SCOPE);
-    _CASE_(C_DICTIONARY);
-    _CASE_(C_STRING);
-    _CASE_(C_WSTRING);
+    _CASE_(OSPL_C_ARRAY);
+    _CASE_(OSPL_C_SEQUENCE);
+    _CASE_(OSPL_C_SET);
+    _CASE_(OSPL_C_LIST);
+    _CASE_(OSPL_C_BAG);
+    _CASE_(OSPL_C_MAP);
+    _CASE_(OSPL_C_QUERY);
+    _CASE_(OSPL_C_SCOPE);
+    _CASE_(OSPL_C_DICTIONARY);
+    _CASE_(OSPL_C_STRING);
+    _CASE_(OSPL_C_WSTRING);
     default:
         assert(FALSE);
         c_outi(context,1,"assert(FALSE); /* Illegal collection kind: */\n");
-        kind = "C_UNDEFINED";
+        kind = "OSPL_C_UNDEFINED";
     break;
     }
 #undef _CASE_
@@ -1158,7 +895,7 @@ c_collectionTypeBody(
 void
 c_primitiveSpec(
     c_primitive o,
-    c_genCArg context)
+    c_genArg context)
 {
     c_string name = c_metaName(c_metaObject(o));
     c_outi(context,0,"%s %s;\n", c_primitiveImageC(o), name);
@@ -1167,15 +904,16 @@ c_primitiveSpec(
 void
 c_structureSpec(
     c_structure o,
-    c_genCArg context)
+    c_genArg context)
 {
-    int i;
+    c_ulong i;
     c_string structName;
     c_specifier s;
 
     structName = c_getContextScopedTypeName(c_type(o), "_", FALSE, context);
 
     c_outi(context,0,"struct %s {\n", structName);
+    os_free(structName);
     context->level++;
     for (i=0; i<c_arraySize(o->members); i++) {
         c_indent(context,0);
@@ -1190,9 +928,9 @@ c_structureSpec(
 void
 c_structureBody(
     c_structure o,
-    c_genCArg context)
+    c_genArg context)
 {
-    int i;
+    c_ulong i;
     c_string structName;
     c_char *typeName;
     c_specifier s;
@@ -1200,8 +938,7 @@ c_structureBody(
     structName = c_getContextScopedTypeName(c_type(o), "::", TRUE, context);
 
     c_outi(context,1,"o = c_metaDefine(scope,M_STRUCTURE);\n");
-    c_outi(context,2,"members = c_arrayNew(ResolveType(base,\"c_object\"),%d);\n",
-                      c_arraySize(o->members));
+    c_outi(context,2,"members = c_arrayNew(c_object_t(base), %d);\n", c_arraySize(o->members));
     for (i=0; i<c_arraySize(o->members); i++) {
         s = c_specifier(o->members[i]);
         typeName = c_getContextScopedTypeName(s->type, "::", TRUE, context);
@@ -1225,24 +962,46 @@ c_structureBody(
 void
 c_enumerationSpec(
     c_enumeration o,
-    c_genCArg context)
+    c_genArg context)
 {
-    int i,size;
+    c_ulong i,size;
+    char *comma;
     c_string label;
     c_string enumName;
+    c_literal literal;
+    c_longlong value;
 
     enumName = c_getContextScopedTypeName(c_type(o), "_", FALSE, context);
 
     c_outi(context,0,"typedef enum %s {\n",enumName);
     size = c_arraySize(o->elements);
-    for (i=0; i<size; i++) {
+    for (i=0, value=i; i<size; i++, value++) {
         label = c_getContextScopedConstName(c_constant(o->elements[i]),
                                             "_", FALSE, context);
         /* label = c_metaName(c_metaObject(o->elements[i])); */
-        if (i == (size-1)) {
-            c_outi(context,1,"%s\n", label);
+        literal = c_literal(c_constant(o->elements[i])->operand);
+
+        assert (literal->value.kind == V_LONG ||
+                literal->value.kind == V_LONGLONG);
+
+        if (i == (size - 1)) {
+            comma = "\n";
         } else {
-            c_outi(context,1,"%s,\n", label);
+            comma = ",\n";
+        }
+
+        if ((literal->value.kind == V_LONG &&
+             value != (c_longlong)literal->value.is.Long))
+        {
+            value = (c_longlong)literal->value.is.Long;
+            c_outi(context,1,"%s = %"PA_PRId64"%s", label, value, comma);
+        } else if ((literal->value.kind == V_LONGLONG &&
+                    value != (c_longlong)literal->value.is.LongLong))
+        {
+            value = (c_longlong)literal->value.is.LongLong;
+            c_outi(context,1,"%s = %"PA_PRId64"%s", label, value, comma);
+        } else {
+            c_outi(context,1,"%s%s", label, comma);
         }
     }
     c_outi(context,0,"} %s;\n\n",enumName);
@@ -1251,21 +1010,19 @@ c_enumerationSpec(
 void
 c_enumerationBody(
     c_enumeration o,
-    c_genCArg context)
+    c_genArg context)
 {
-    int i;
+    c_ulong i;
     c_string label;
     c_string enumName;
 
     enumName = c_getContextScopedTypeName(c_type(o), "::", TRUE, context);
     c_outi(context,1,"o = c_metaDefine(scope,M_ENUMERATION);\n");
-    c_outi(context,1,
-           "c_enumeration(o)->elements = c_arrayNew(ResolveType(base,\"c_object\"),%d);\n",
-            c_arraySize(o->elements));
+    c_outi(context,2,"c_enumeration(o)->elements = c_arrayNew(c_object_t(base), %d);\n", c_arraySize(o->elements));
     for (i=0; i<c_arraySize(o->elements); i++) {
         label = c_metaName(c_metaObject(o->elements[i]));
         c_outi(context,1,"c_enumeration(o)->elements[%d] =\n",i);
-        c_outi(context,2,"(c_voidp)c_metaDeclare(scope,\"%s\",M_CONSTANT);\n",label);
+        c_outi(context,2,"(c_voidp)c_metaDeclareEnumElement(scope,\"%s\");\n",label);
     }
     c_outi(context,1,"c_metaObject(o)->definedIn = scope;\n");
     c_outi(context,1,"if (c_metaFinalize(o) == S_ACCEPTED) {\n");
@@ -1281,10 +1038,10 @@ c_enumerationBody(
 void
 c_operationSpec(
     c_operation o,
-    c_genCArg context)
+    c_genArg context)
 {
     c_specifier s;
-    int i;
+    c_ulong i;
 
     if (c_baseObject(o)->kind != M_OPERATION) {
         return;
@@ -1311,7 +1068,7 @@ c_operationSpec(
 void
 c_attributeBody(
     c_attribute o,
-    c_genCArg context)
+    c_genArg context)
 {
     if (c_baseObject(o)->kind != M_ATTRIBUTE) {
         return;
@@ -1328,7 +1085,7 @@ c_attributeBody(
 void
 c_attributeSpec(
     c_attribute o,
-    c_genCArg context)
+    c_genArg context)
 {
     if (c_baseObject(o)->kind != M_ATTRIBUTE) {
         return;
@@ -1341,7 +1098,7 @@ c_attributeSpec(
 void
 c_propertyBody(
     c_property o,
-    c_genCArg context)
+    c_genArg context)
 {
     switch(c_baseObject(o)->kind) {
     case M_ATTRIBUTE: c_attributeBody(c_attribute(o),context); break;
@@ -1353,7 +1110,7 @@ c_propertyBody(
 void
 c_propertySpec(
     c_property o,
-    c_genCArg context)
+    c_genArg context)
 {
     switch(c_baseObject(o)->kind) {
     case M_ATTRIBUTE: c_attributeSpec(c_attribute(o),context); break;
@@ -1363,26 +1120,11 @@ c_propertySpec(
 }
 
 void
-getProperties(
-    c_metaObject o,
-    c_iter iter)
-{
-    switch(c_baseObject(o)->kind) {
-    case M_ATTRIBUTE:
-    case M_RELATION:
-        c_iterInsert(iter,o);
-    break;
-    default:
-    break;
-    }
-}
-
-void
 c_classBody(
     c_class o,
-    c_genCArg context)
+    c_genArg context)
 {
-    int i;
+    c_ulong i;
     c_string className;
     c_metaObject scope;
     c_type type;
@@ -1397,7 +1139,7 @@ c_classBody(
     type = c_type(o->extends);
     if (type != NULL) {
         if (c_getObjectState(context,type) == G_DECLARED) {
-            c_genDependancies(c_baseObject(type),context);
+            c_genDependencies(c_baseObject(type),context);
             c_classBody(c_class(type),context);
             c_setObjectState(context,type,G_FINISHED);
         }
@@ -1439,19 +1181,30 @@ c_classBody(
     c_outi(context,1,"c_free(found);\n\n");
 }
 
-
 void
+c_classFwdSpec(
+    c_class o,
+    c_genArg  context)
+{
+    c_string className;
+
+    assert(c_getObjectState(context, o) == G_UNDECLARED);
+
+    className = c_metaName(c_metaObject(o));
+    c_outi(context, 0, "C_CLASS(%s);\n\n", className);
+}
+
+static void
 c_classSpec(
     c_class o,
-    c_genCArg context)
+    c_genArg context)
 {
-    int i;
+    c_ulong i;
     c_string className;
     c_metaObject scope;
     c_type type;
-    c_iter iter;
-    c_long length;
-    c_property *properties;
+    c_ulong len;
+    c_property p, *properties = NULL;
 
     className = c_metaName(c_metaObject(o));
 
@@ -1485,7 +1238,7 @@ c_classSpec(
     if (o->keys != NULL) {
         c_outi(context,0,"/* Keys: ");
         for (i=0; i<c_arraySize(o->keys); i++) {
-            c_out(context," %s",o->keys[i]);
+            c_out(context," %s", (c_string)o->keys[i]);
         }
         c_out(context," */\n");
     }
@@ -1496,21 +1249,12 @@ c_classSpec(
         c_outi(context,0,"C_EXTENDS(%s);\n",c_metaName(c_metaObject(type)));
     }
 
-    iter = c_iterNew(NULL);
-    c_metaWalk(c_metaObject(o),(c_metaWalkAction)getProperties,iter);
-    length = c_iterLength(iter);
-    if (length > 0) {
-        properties = (c_property *)os_malloc(sizeof(c_property) * length);
-        for (i=0; i<length; i++) {
-            properties[i] = c_iterTakeFirst(iter);
-        }
-        qsort(properties,length,sizeof(c_property),c_compareProperty);
-        for (i=0; i<length; i++) {
-             c_propertySpec(c_property(properties[i]),context);
-        }
-        os_free(properties);
+    len = c_getClassProperties(o, &properties);
+    for (i = 0; i < len; i++) {
+        p = properties[i];
+        c_propertySpec(p, context);
     }
-
+    os_free(properties);
     context->level--;
     c_outi(context,0,"};\n\n");
 
@@ -1521,7 +1265,7 @@ c_classSpec(
 void
 c_interfaceSpec(
     c_interface o,
-    c_genCArg context)
+    c_genArg context)
 {
     c_string name;
 
@@ -1549,7 +1293,7 @@ void
 c_operandSpec(
     c_operand operand,
     c_type type,
-    c_genCArg context)
+    c_genArg context)
 {
     c_type actualType;
 
@@ -1559,7 +1303,7 @@ c_operandSpec(
         operandPrint(operand, 0, 0, c_primitive(actualType)->kind, context);
     } else {
         if ((c_baseObject(actualType)->kind == M_COLLECTION) &&
-            (c_collectionType(actualType)->kind == C_STRING)) {
+            (c_collectionType(actualType)->kind == OSPL_C_STRING)) {
             operandPrint(operand, 0, 0, P_UNDEFINED, context);
        } else {
            assert(0);
@@ -1646,7 +1390,7 @@ operandPrint(
     int scopePrecedence,
     int negLevel,
     c_primKind primKind,
-    c_genCArg context)
+    c_genArg context)
 {
     c_string s;
     int currentPrecedence;
@@ -1674,20 +1418,20 @@ operandPrint(
             switch(primKind) {
             case P_OCTET:
                 s = c_valueImage(c_octetValue((c_octet)value.is.LongLong));
-                c_out(context, s);
+                c_out(context, "%s", s);
             break;
             break;
             case P_SHORT:
                 s = c_valueImage(c_shortValue((c_short)value.is.LongLong));
-                c_out(context, s);
+                c_out(context, "%s", s);
             break;
             case P_USHORT:
                 s = c_valueImage(c_ushortValue((c_ushort)value.is.LongLong));
-                c_out(context, s);
+                c_out(context, "%s", s);
             break;
             case P_LONG:
-                s = c_valueImage(c_ulongValue((c_long)value.is.LongLong));
-                c_out(context, s);
+                s = c_valueImage(c_longValue((c_long)value.is.LongLong));
+                c_out(context, "%s", s);
             break;
             case P_ULONG:
                 s = c_valueImage(c_ulongValue((c_ulong)value.is.LongLong));
@@ -1705,7 +1449,7 @@ operandPrint(
                 switch (value.kind) {
                 case V_DOUBLE:
                     s = c_valueImage(c_floatValue((c_float)value.is.Double));
-                    c_out(context, s);
+                    c_out(context, "%s", s);
                     if (isDigitsOnly(s)) {
                         c_out(context, "%s0", c_getLocale()->decimal_point);
                     }
@@ -1721,7 +1465,7 @@ operandPrint(
                 switch (value.kind) {
                 case V_DOUBLE:
                     s = c_valueImage(value);
-                    c_out(context, s);
+                    c_out(context, "%s", s);
                     if (isDigitsOnly(s)) {
                         c_out(context, "%s0", c_getLocale()->decimal_point);
                     }
@@ -1734,7 +1478,7 @@ operandPrint(
             break;
             case P_BOOLEAN:
                 s = c_valueImage(value);
-                c_out(context, s);
+                c_out(context, "%s", s);
             break;
             default:
                 assert(0);
@@ -1866,7 +1610,7 @@ operandPrint(
         case E_MOD:
             operandPrint(c_operand(expression->operands[0]),
                 currentPrecedence, negLevel, primKind, context);
-            c_out(context, " % ");
+            c_out(context, " %% ");
             operandPrint(c_operand(expression->operands[1]),
                 currentPrecedence, 1, primKind, context);
         break;

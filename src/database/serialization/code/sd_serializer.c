@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file services/serialization/code/sd_serializer.c
@@ -31,7 +39,7 @@
 #include "sd__serializer.h"
 
 /* implementation */
-#include "os.h"
+#include "vortex_os.h"
 #include "c_base.h"
 #include "sd__confidence.h"
 #include "sd__resultCodes.h"
@@ -47,7 +55,7 @@
  *  calculates the size of the header in bytes.
  */
 
-#define SD_HEADER_SIZE ((os_uint32)sizeof(struct sd_serializedData_s) - 1U)
+#define SD_HEADER_SIZE (sizeof(struct sd_serializedData_s) - 1)
 
 /** \brief Protected constructor for serialized data.
  *
@@ -71,27 +79,23 @@ sd_serializedData
 sd_serializedDataNew(
     c_ushort formatID,
     c_ushort formatVersion,
-    c_ulong dataSize)
+    os_size_t dataSize)
 {
     sd_serializedData result;
-    c_ulong calcSize = dataSize;
-
-    result = (sd_serializedData)os_malloc(dataSize + SD_HEADER_SIZE);
-
-    if (result) {
-       result->formatID[0] = (c_octet)((c_ulong)formatID >> 8);
-       result->formatID[1] = (c_octet)((c_ulong)formatID & 0xFFU);
-       result->formatVersion[0] = (c_octet)((c_ulong)formatVersion >> 8);
-       result->formatVersion[1] = (c_octet)((c_ulong)formatVersion & 0xFFU);
-       result->dataSize[3] = (c_octet)((c_ulong)calcSize & 0xFFU);
-       calcSize >>= 8;
-       result->dataSize[2] = (c_octet)(calcSize & 0xFFU);
-       calcSize >>= 8;
-       result->dataSize[1] = (c_octet)(calcSize & 0xFFU);
-       calcSize >>= 8;
-       result->dataSize[0] = (c_octet)(calcSize & 0xFFU);
-    }
-
+    os_size_t calcSize = dataSize;
+    result = os_malloc(dataSize + SD_HEADER_SIZE);
+    result->formatID[0] = (c_octet)((c_ulong)formatID >> 8);
+    result->formatID[1] = (c_octet)((c_ulong)formatID & 0xFFU);
+    result->formatVersion[0] = (c_octet)((c_ulong)formatVersion >> 8);
+    result->formatVersion[1] = (c_octet)((c_ulong)formatVersion & 0xFFU);
+    result->dataSize[3] = (c_octet)((c_ulong)calcSize & 0xFFU);
+    calcSize >>= 8;
+    result->dataSize[2] = (c_octet)(calcSize & 0xFFU);
+    calcSize >>= 8;
+    result->dataSize[1] = (c_octet)(calcSize & 0xFFU);
+    calcSize >>= 8;
+    result->dataSize[0] = (c_octet)(calcSize & 0xFFU);
+    assert (calcSize == 0);
     return result;
 }
 
@@ -118,7 +122,7 @@ sd_serializedDataGetFormatID(
 
     result = serData->formatID[0];
     result = (c_ushort)((int)result << 8);
-    result =  (c_ushort)((int)result + (int)serData->formatID[1]);
+    result = (c_ushort)((int)result + (int)serData->formatID[1]);
 
     return result;
 }
@@ -147,7 +151,7 @@ sd_serializedDataGetFormatVersion(
 
     result = serData->formatVersion[0];
     result = (c_ushort)((int)result << 8);
-    result =  (c_ushort)((int)result + (int)serData->formatVersion[1]);
+    result = (c_ushort)((int)result + (int)serData->formatVersion[1]);
 
     return result;
 }
@@ -194,7 +198,7 @@ c_ulong
 sd_serializedDataGetTotalSize(
     sd_serializedData serData)
 {
-    return (sd_serializedDataGetDataSize(serData) + SD_HEADER_SIZE);
+    return (sd_serializedDataGetDataSize(serData) + (c_ulong) SD_HEADER_SIZE);
 }
 
 #undef SD_HEADER_SIZE
@@ -219,49 +223,42 @@ sd_serializedDataFree(
  * performed */
 
 /** \brief Private constructor for the validation class */
-static sd_validationInfo
-sd_validationInfoNew(
-    void)
+static void
+sd_validationInfoInit(
+    sd_validationInfo info)
 {
-    sd_validationInfo result;
-    
-    result = (sd_validationInfo)os_malloc((os_uint32)sizeof(*result));
-    result->message = NULL;
-    
-    return result;
+    info->errorNumber = SD_SUCCESS;
+    info->message = NULL;
+    info->location = NULL;
 }
+
+static void sd_validationInfoReset(sd_validationInfo validationInfo) __nonnull_all__;
 
 /** \brief Private function for clearing the validation state */
 static void
 sd_validationInfoReset(
     sd_validationInfo validationInfo)
 {
-    if (validationInfo) {
-        validationInfo->errorNumber = SD_SUCCESS;
-        if (validationInfo->message) {
-            os_free(validationInfo->message);
-            validationInfo->message = NULL;
-        }
-        validationInfo->location = NULL;
+    if (validationInfo->message) {
+        os_free(validationInfo->message);
     }
+    sd_validationInfoInit(validationInfo);
 }
 
 /** \brief Private destructor for freeing a validation object */
+static void sd_validationInfoDeinit(sd_validationInfo validationInfo) __nonnull_all__;
+
 static void
-sd_validationInfoFree(
+sd_validationInfoDeinit(
     sd_validationInfo validationInfo)
 {
-    if (validationInfo) {
-        if (validationInfo->message) {
-            os_free(validationInfo->message);
-        }
-        if (validationInfo->location) {
-            os_free(validationInfo->location);
-        }
-
-        os_free(validationInfo);
+    if (validationInfo->message) {
+        os_free(validationInfo->message);
     }
-}    
+    if (validationInfo->location) {
+        os_free(validationInfo->location);
+    }
+}
 
 /* --------------------------------- serializer  --------------------------- */
 
@@ -353,16 +350,9 @@ sd_serializerNew(
     struct sd_serializerVMT VMT)
 {
     sd_serializer result;
-
     SD_CONFIDENCE((type == NULL) || (base == c_getBase(type)));
-
-    result = (sd_serializer)os_malloc((os_uint32)sizeof(*result));
-
-    if (result) {
-        sd_serializerInitialize(result, formatID, formatVersion,
-            base, type, VMT);
-    }
-
+    result = os_malloc(sizeof(*result));
+    sd_serializerInitialize(result, formatID, formatVersion, base, type, VMT);
     return result;
 }
 
@@ -376,15 +366,13 @@ sd_serializerInitialize(
     c_type type,
     struct sd_serializerVMT VMT)
 {
-     if (serializer) {
-        serializer->formatID = formatID;
-        serializer->formatVersion = formatVersion;
-        serializer->base = base;
-        serializer->type = type;
-        serializer->validationInfo = NULL;
-        serializer->VMT = VMT;
-     }
-}    
+    serializer->formatID = formatID;
+    serializer->formatVersion = formatVersion;
+    serializer->base = base;
+    serializer->type = type;
+    sd_validationInfoInit(&serializer->validationInfo);
+    serializer->VMT = VMT;
+}
                                
 
 /** \brief Protected function used by \b sd_serializer descendants for
@@ -401,18 +389,10 @@ sd_serializerInitialize(
  *                       is to be maintained or not
  */
 void
-sd_serializerSetValidationState(
-    sd_serializer serializer,
-    c_bool doValidation)
+sd_serializerResetValidationState(
+    sd_serializer serializer)
 {
-    if (doValidation) {
-        if (!serializer->validationInfo) {
-            serializer->validationInfo = sd_validationInfoNew();
-        }
-        sd_validationInfoReset(serializer->validationInfo);
-    } else {
-        sd_validationInfoFree(serializer->validationInfo);
-    }
+    sd_validationInfoReset(&serializer->validationInfo);
 }    
 
 /** \brief Protected function used by \b sd_serializer descendants for setting
@@ -438,13 +418,15 @@ sd_serializerSetValidationInfo(
     c_char *location)
 {
     SD_CONFIDENCE(serializer);
-    SD_CONFIDENCE(serializer->validationInfo);
-    
-    if (serializer && serializer->validationInfo) {
-        serializer->validationInfo->errorNumber = errorNumber;
-        serializer->validationInfo->message = message;
-        serializer->validationInfo->location = location;
-    }
+
+    serializer->validationInfo.errorNumber = errorNumber;
+    serializer->validationInfo.message = message;
+    serializer->validationInfo.location = location;
+}
+
+void sd_serializerSetOutOfMemory(sd_serializer serializer)
+{
+    sd_serializerSetValidationInfo(serializer, SD_ERRNO_OUT_OF_MEMORY, os_strdup(SD_MESSAGE_OUT_OF_MEMORY), NULL);
 }
 
 /* ------------------ public (de)serialization functions ----------------------- */
@@ -479,38 +461,6 @@ sd_serializerSerialize(
     return result;
 }
 
-/** \brief Deserialize into newly created database object
- *
- *  By default, this virtual function returns NULL. In general, descending
- *  classes will implement it.
- *
- *  Before deserialization, the serialized data is checked for format ID
- *  and version. This has to correspond with the serializer format ID and
- *  version.
- *
- *  \param serializer The serializer object (self).
- *  \param serData The serialized data to be deserialized
- *  \return A object resulting from the deserialization. This object
- *          resides in the database as given at construction of the
- *          serializer. To be released using \b c_free.
- */
-
-c_object
-sd_serializerDeserialize(
-   sd_serializer serializer,
-   sd_serializedData serData)
-{
-    c_object result = NULL;
-    
-    SD_CONFIDENCE(sd_serializerCheckDataFormat(serializer, serData));
-    
-    if (serializer->VMT.deserialize) {
-        result = serializer->VMT.deserialize(serializer, serData, FALSE);
-    }
-    
-    return result;
-}
-
 /** \brief Deserialize into newly created database object, validating the input
  *  during the deserialization process.
  *
@@ -532,7 +482,7 @@ sd_serializerDeserialize(
  */
 
 c_object
-sd_serializerDeserializeValidated(
+sd_serializerDeserialize(
    sd_serializer serializer,
    sd_serializedData serData)
 {
@@ -541,44 +491,16 @@ sd_serializerDeserializeValidated(
     SD_CONFIDENCE(sd_serializerCheckDataFormat(serializer, serData));
     
     if (serializer->VMT.deserialize) {
-        result = serializer->VMT.deserialize(serializer, serData, TRUE);
+        result = serializer->VMT.deserialize(serializer, serData);
+        if (result == NULL && serializer->validationInfo.errorNumber == SD_SUCCESS) {
+            OS_REPORT(OS_WARNING, "sd_serializerDeserialize", 0, "failure, but no error description set");
+            sd_serializerSetValidationInfo(serializer, SD_ERRNO_ERROR, os_strdup(SD_MESSAGE_ERROR), NULL);
+        }
     }
     
     return result;
 }
 
-/** \brief Deserialize into an existing database object.
- *
- *  By default, this virtual function does nothing. In general, descending
- *  classes will implement it.
- *
- *  Before deserialization, the serialized data is checked for format ID
- *  and version. This has to correspond with the serializer format ID and
- *  version.
- * 
- *  This is function serves the special requirement for processes which have
- *  to serialize into an already created object. Note that this is possible
- *  only for types which have a fixed base size. For example, stretchy arrays
- *  are not allowed, but structs containing a stretchy array are.
- *
- *  \param serializer The serializer object (self).
- *  \param serData The serialized data to be deserialized
- *  \param object The object to deserialize the data into.
- */
-
-void
-sd_serializerDeserializeInto(
-    sd_serializer serializer,
-    sd_serializedData serData,
-    c_object object)
-{
-    SD_CONFIDENCE(sd_serializerCheckDataFormat(serializer, serData));
-    
-    if (serializer->VMT.deserializeInto) {
-        serializer->VMT.deserializeInto(serializer, serData, object, FALSE);
-    }
-}
-    
 /** \brief Deserialize into an existing database object, validating the input
  *  during the deserialization process.
  *
@@ -601,8 +523,8 @@ sd_serializerDeserializeInto(
  *  \param serData The serialized data to be deserialized
  *  \param object The object to deserialize the data into.
  */
-void
-sd_serializerDeserializeIntoValidated(
+c_bool
+sd_serializerDeserializeInto(
     sd_serializer serializer,
     sd_serializedData serData,
     c_object object)
@@ -610,9 +532,16 @@ sd_serializerDeserializeIntoValidated(
     SD_CONFIDENCE(sd_serializerCheckDataFormat(serializer, serData));
     
     if (serializer->VMT.deserializeInto) {
-        serializer->VMT.deserializeInto(serializer, serData, object, TRUE);
+        c_bool result = serializer->VMT.deserializeInto(serializer, serData, object);
+        if (!result && serializer->validationInfo.errorNumber == SD_SUCCESS) {
+            OS_REPORT(OS_WARNING, "sd_serializerDeserializeInto", 0, "failure, but no error description set");
+            sd_serializerSetValidationInfo(serializer, SD_ERRNO_ERROR, os_strdup(SD_MESSAGE_ERROR), NULL);
+        }
+        return result;
+    } else {
+        return FALSE;
     }
-}    
+}
 
 /** \brief Convert serialized data to a string representation.
  *
@@ -680,41 +609,13 @@ void
 sd_serializerFree(
     sd_serializer serializer)
 {
-    if (serializer) {
-        sd_validationInfoFree(serializer->validationInfo);
-        os_free(serializer);
-    }
+    sd_validationInfoDeinit(&serializer->validationInfo);
+    os_free(serializer);
 }
 
 /* --------------- public validation-related functions ----------------------- */
 
 
-/** \brief Query the result of the last executed deserialization
- *
- *  Some \b sd_serializer descendants implement validation of the data they
- *  deserialize. The result of this validation can be queried using this
- *  function.
- *
- *  \param serializer The serializer object (self).
- */
-sd_validationResult
-sd_serializerLastValidationResult(
-    sd_serializer serializer)
-{
-    sd_validationResult result = SD_VAL_NOT_DONE;
-    
-    if (serializer && serializer->validationInfo) {
-        if (serializer->validationInfo->errorNumber == SD_SUCCESS) {
-           result = SD_VAL_SUCCESS;
-        } else {
-           result = SD_VAL_ERROR;
-        }
-    }
-    
-    return result;
-}
-   
-    
 /** \brief Query the error message generated by the last executed
  *         deserialization
  *
@@ -728,13 +629,7 @@ c_char *
 sd_serializerLastValidationMessage(
     sd_serializer serializer)
 {
-    c_char *result = NULL;
-    
-    if (serializer && serializer->validationInfo) {
-         result = serializer->validationInfo->message;
-    }
-    
-    return result;
+    return serializer->validationInfo.message;
 }
    
     
@@ -751,11 +646,5 @@ c_char *
 sd_serializerLastValidationLocation(
     sd_serializer serializer)
 {
-    c_char *result = NULL;
-    
-    if (serializer && serializer->validationInfo) {
-         result = serializer->validationInfo->location;
-    }
-    
-    return result;
+    return serializer->validationInfo.location;
 }

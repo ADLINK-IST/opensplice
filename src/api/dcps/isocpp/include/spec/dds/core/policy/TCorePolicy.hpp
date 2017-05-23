@@ -35,16 +35,7 @@ namespace policy
 
 //==============================================================================
 /**
- * The purpose of this QoS is to allow the application to attach additional
- * information to the created Entity objects such that when a remote application
- * discovers their existence it can access that information and use it for its
- * own purposes. One possible use of this QoS is to attach security credentials
- * or some other information that can be used by the remote application to
- * authenticate the source. In combination with operations such as
- * dds::domain::ignore, dds::pub::ignore, dds::sub::ignore,
- * and dds::topic::ignore, this QoS can assist an application to define and
- * enforce its own security policies. The use of this QoS is not limited to
- * security, rather it offers a simple yet flexible extensibility mechanism.
+ * \copydoc DCPS_QoS_UserData
  */
 template <typename D>
 class TUserData : public dds::core::Value<D>
@@ -122,16 +113,7 @@ public:
 //==============================================================================
 
 /**
- * The purpose of this QoS is to allow the application to attach additional
- * information to the created Publisher or Subscriber.
- * The value of the GroupData is available to the application on the
- * DataReader and DataWriter entities and is propagated by means of the
- * built-in topics.
- *
- * This QoS can be used by an application in combination with the
- * DataReaderListener and DataWriterListener to implement matching policies
- * similar to those of the Partition QoS, except that the decision can be made
- * based on an application-defined policy.
+ * \copydoc DCPS_QoS_GroupData
  */
 template <typename D>
 class TGroupData : public dds::core::Value<D>
@@ -209,12 +191,7 @@ public:
 //==============================================================================
 
 /**
- * The purpose of this QoS is to allow the application to attach additional
- * information to the created Topic such that when a remote application
- * discovers their existence it can examine the information and use it in
- * an application-defined way. In combination with the listeners on the
- * DataReader and DataWriter, as well as by means of operations such as
- * dds::topic::ignore, this QoS can assist an application to extend the provided QoS.
+ * \copydoc DCPS_QoS_TopicData
  */
 template <typename D>
 class TTopicData : public dds::core::Value<D>
@@ -293,16 +270,7 @@ public:
 //==============================================================================
 
 /**
- * This policy is mutable. A change in the policy affects only the entities
- * created AFTER the change, not the previously-created entities.
- * The setting of autoenable_created_entities to true indicates that the
- * newly-created object will be enabled by default.
- *
- * A setting of false indicates that the Entity will not be automatically
- * enabled. The application will need to enable it explicitly by means of the
- * enable operation (see Section 7.1.2.1.1.7, "enable"). The default setting
- * of autoenable_created_entities = true means that, by default, it is not
- * necessary to explicitly call enable on newly-created entities.
+ * \copydoc DCPS_QoS_EntityFactory
  */
 template <typename D>
 class TEntityFactory : public dds::core::Value<D>
@@ -358,21 +326,7 @@ public:
 //==============================================================================
 
 /**
- * The purpose of this QoS is to allow the application to take advantage of
- * transports capable of sending messages with different priorities.
- *
- * This policy is considered a hint. The policy depends on the ability of the
- * underlying transports to set a priority on the messages they send.
- * Any value within the range of a 32-bit signed integer may be chosen;
- * higher values indicate higher priority. However, any further interpretation
- * of this policy is specific to a particular transport and a particular
- * implementation of the Service. For example, a particular transport is
- * permitted to treat a range of priority values as equivalent to one another.
- * It is expected that during transport configuration the application would
- * provide a mapping between the values of the TransportPriority set on
- * DataWriter and the values meaningful to each transport. This mapping would
- * then be used by the infrastructure when propagating the data written by
- * the DataWriter.
+ * \copydoc DCPS_QoS_TransportPriority
  */
 template <typename D>
 class TTransportPriority : public dds::core::Value<D>
@@ -411,23 +365,7 @@ public:
 //==============================================================================
 
 /**
- * The purpose of this QoS is to avoid delivering "stale" data to the
- * application. Each data sample written by the DataWriter has an associated
- * expiration time beyond which the data should not be delivered to any
- * application. Once the sample expires, the data will be removed from the
- * DataReader caches as well as from the transient and persistent
- * information caches.
- *
- * The expiration time of each sample is computed by adding the duration specified
- * by the Lifespan QoS to the source timestamp. The source timestamp is either
- * automatically computed by the Service each time the DataWriter write operation
- * is called, or else supplied by the application by means of the
- * write(const T& sample, const dds::core::Time& timestamp); operation.
- *
- * This QoS relies on the sender and the receiving applications having their
- * clocks sufficiently synchronized. If this is not the case and the Service can
- * detect it, the DataReader is allowed to use the reception timestamp instead
- * of the source timestamp in its computation of the expiration time.
+ * \copydoc DCPS_QoS_Lifespan
  */
 template <typename D>
 class TLifespan : public dds::core::Value<D>
@@ -466,29 +404,7 @@ public:
 //==============================================================================
 
 /**
- * This policy is useful for cases where a Topic is expected to have each
- * instance updated periodically. On the publishing side this setting
- * establishes a contract that the application must meet. On the subscribing
- * side the setting establishes a minimum requirement for the remote publishers
- * that are expected to supply the data values.
- *
- * When the Service matches a DataWriter and a DataReader it checks whether the
- * settings are compatible (i.e., offered deadline period<= requested deadline
- * period) if they are not, the two entities are informed (via the listener or
- * condition mechanism) of the incompatibility of the QoS settings and
- * communication will not occur.
- *
- * Assuming that the reader and writer ends have compatible settings, the
- * fulfillment of this contract is monitored by the Service and the application
- * is informed of any violations by means of the proper listener or condition.
- *
- * The value offered is considered compatible with the value requested if and
- * only if the inequality "offered deadline period <= requested deadline period"
- * evaluates to true.
- *
- * The setting of the Deadline policy must be set consistently with that of the
- * TimeBasedFilter policy. For these two policies to be consistent the settings
- * must be such that "deadline period >= minimum_separation".
+ * \copydoc DCPS_QoS_Deadline
  */
 template <typename D>
 class TDeadline : public dds::core::Value<D>
@@ -527,15 +443,7 @@ public:
 //==============================================================================
 
 /**
- * This policy provides a means for the application to indicate to the middleware
- * the 'urgency' of the data-communication. By having a non-zero duration the
- * Service can optimize its internal operation.
- *
- * This policy is considered a hint. There is no specified mechanism as to how the
- * service should take advantage of this hint.
- *
- * The value offered is considered compatible with the value requested if and only
- * if the inequality "offered duration <= requested duration" evaluates to TRUE.
+ * \copydoc DCPS_QoS_LatencyBudget
  */
 template <typename D>
 class TLatencyBudget : public dds::core::Value<D>
@@ -574,39 +482,7 @@ public:
 //==============================================================================
 
 /**
- * This policy allows a DataReader to indicate that it does not necessarily want
- * to see all values of each instance published under the Topic. Rather, it wants
- * to see at most one change every minimum_separation period.
- *
- * The TimeBasedFilter applies to each instance separately, that is, the constraint
- * is that the DataReader does not want to see more than one sample of each
- * instance per minumum_separation period.
- *
- * This setting allows a DataReader to further decouple itself from the DataWriter
- * objects. It can be used to protect applications that are running on a
- * heterogeneous network where some nodes are capable of generating data much
- * faster than others can consume it. It also accommodates the fact that for
- * fast-changing data different subscribers may have different requirements as
- * to how frequently they need to be notified of the most current values.
- *
- * The setting of a TimeBasedFilter (that is, the selection of a minimum_separation
- * with a value greater than zero) is compatible with all settings of the History
- * and Reliability QoS. The TimeBasedFilter specifies the samples that are of
- * interest to the DataReader. The History and Reliability QoS affect the behavior
- * of the middleware with respect to the samples that have been determined to be
- * of interest to the DataReader; that is, they apply after the TimeBasedFilter
- * has been applied.
- *
- * In the case where the reliability QoS kind is Reliable then in steady-state,
- * defined as the situation where the DataWriter does not write new samples for a
- * period 'long' compared to the minimum_separation, the system should guarantee
- * delivery of the last sample to the DataReader.
- *
- * The setting of the TimeBasedFilter minimum_separation must be consistent with
- * the Deadline period. For these two QoS policies to be consistent they must verify
- * that "period >= minimum_separation". An attempt to set these policies in an
- * inconsistent manner when an entity is created via a set qos operation will
- * cause the operation to fail.
+ * \copydoc DCPS_QoS_TimeBasedFilter
  */
 template <typename D>
 class TTimeBasedFilter : public dds::core::Value<D>
@@ -647,38 +523,7 @@ public:
 //==============================================================================
 
 /**
- * This policy allows the introduction of a logical partition concept inside the
- * "physical" partition induced by a domain. For a DataReader to see the changes
- * made to an instance by a DataWriter, not only the Topic must match, but also
- * they must share a common partition. Each string in the list that defines this
- * QoS policy defines a partition name. A partition name may contain wildcards.
- * Sharing a common partition means that one of the partition names matches.
- * Failure to match partitions is not considered an "incompatible" QoS and does
- * not trigger any listeners or conditions.
- *
- * This policy is changeable. A change of this policy can potentially modify
- * the "match" of existing DataReader and DataWriter entities. It may establish
- * new "matches" that did not exist before, or break existing matches.
- *
- * Partition names can be regular expressions and include wildcards as defined by
- * the POSIX fnmatch API (1003.2-1992 section B.6). Either Publisher or Subscriber
- * may include regular expressions in partition names, but no two names that both
- * contain wildcards will ever be considered to match. This means that although
- * regular expressions may be used both at publisher as well as subscriber side,
- * the service will not try to match two regular expressions (between publishers
- * and subscribers).
- *
- * Partitions are different from creating Entity objects in different domains in
- * several ways. First, entities belonging to different domains are completely
- * isolated from each other; there is no traffic, meta-traffic or any other way
- * for an application or the Service itself to see entities in a domain it does
- * not belong to. Second, an Entity can only belong to one domain whereas an
- * Entity can be in multiple partitions. Finally, as far as the DDS Service is
- * concerned, each unique data instance is identified by the tuple
- * (domainId, Topic, key). Therefore two Entity objects in different domains
- * cannot refer to the same data instance. On the other hand, the same
- * data-instance can be made available (published) or requested (subscribed) on
- * one or more partitions.
+ * \copydoc DCPS_QoS_Partition
  */
 template <typename D>
 class TPartition : public dds::core::Value<D>
@@ -732,31 +577,7 @@ public:
 #ifdef OMG_DDS_OWNERSHIP_SUPPORT
 
 /**
- * This policy controls whether the Service allows multiple DataWriter objects
- * to update the same instance (identified by Topic + key) of a data-object.
- * There are two kinds of OWNERSHIP selected by the setting of the kind: SHARED
- * and EXCLUSIVE.
- *
- * The SHARED kind indicates that the Service does not enforce unique ownership
- * for each instance. In this case, multiple writers can update the same
- * data-object instance. The subscriber to the Topic will be able to access
- * modifications from all DataWriter objects, subject to the settings of other
- * QoS that may filter particular samples (e.g., the TimeBasedFilter or History
- * QoS policy). In any case there is no "filtering" of modifications made based
- * on the identity of the DataWriter that causes the modification.
- *
- * The EXCLUSIVE kind indicates that each instance of a data-object can only be
- * modified by one DataWriter. In other words, at any point in time a single
- * DataWriter "owns" each instance and is the only one whose modifications will
- * be visible to the DataReader objects. The owner is determined by selecting the
- * DataWriter with the highest value of the strength that is both "alive" (as
- * defined by the Liveliness QoS policy) and has not violated its Deadline contract
- * with regard to the data-instance. Ownership can therefore change as a result
- * of (a) a DataWriter in the system with a higher value of the strength that
- * modifies the instance, (b) a change in the strength value of the DataWriter
- * that owns the instance, (c) a change in the liveliness of the DataWriter that
- * owns the instance, and (d) a deadline with regard to the instance that is
- * missed by the DataWriter that owns the instance.
+ * \copydoc DCPS_QoS_Ownership
  */
 template <typename D>
 class TOwnership : public dds::core::Value<D>
@@ -811,13 +632,7 @@ public:
 //==============================================================================
 
 /**
- * This QoS policy should be used in combination with the Ownership policy. It
- * only applies to the situation case where Ownership kind is set to EXCLUSIVE.
- *
- * The value of the OwnershipStrength is used to determine the ownership of a
- * data-instance (identified by the key). The arbitration is performed by the
- * DataReader. The rules used to perform the arbitration are described in
- * Section 7.1.3.9.2, EXCLUSIVE kind.
+ * \copydoc DCPS_QoS_OwnershipStrength
  */
 template <typename D>
 class TOwnershipStrength : public dds::core::Value<D>
@@ -857,26 +672,7 @@ public:
 //==============================================================================
 
 /**
- * This policy controls the behavior of the DataWriter with regard to the
- * lifecycle of the data-instances it manages, that is, the data-instances that
- * have been either explicitly registered with the DataWriter using the register
- * operations (see Section 7.1.2.4.2.5 and Section 7.1.2.4.2.6) or implicitly by
- * directly writing the data (see Section 7.1.2.4.2.11 and Section 7.1.2.4.2.12).
- *
- * The autodispose_unregistered_instances flag controls the behavior when the
- * DataWriter unregisters an instance by means of the unregister operations (see
- * Section 7.1.2.4.2.7, and Section 7.1.2.4.2.8):
- *
- * * The setting "autodispose_unregistered_instances = TRUE" causes the DataWriter
- * to dispose the instance each time it is unregistered. The behavior is identical
- * to explicitly calling one of the dispose operations (Section 7.1.2.4.2.13,
- * and Section 7.1.2.4.2.14) on the instance prior to calling the unregister
- * operation.
- *
- * * The setting "autodispose_unregistered_instances = FALSE" will not cause this
- * automatic disposition upon unregistering. The application can still call one
- * of the dispose operations prior to unregistering the instance and accomplish
- * the same effect.
+ * \copydoc DCPS_QoS_WriterDataLifecycle
  */
 template <typename D>
 class TWriterDataLifecycle : public dds::core::Value<D>
@@ -887,7 +683,7 @@ public:
      *
      * @param autodispose_unregistered_instances ownership strength
      */
-    explicit TWriterDataLifecycle(bool autodispose_unregistered_instances = 0);
+    explicit TWriterDataLifecycle(bool autodispose_unregistered_instances = false);
 
     /**
      * Copies a WriterDataLifecycle QoS instance
@@ -930,41 +726,7 @@ public:
 //==============================================================================
 
 /**
- * This policy controls the behavior of the DataReader with regard to the
- * lifecycle of the data-instances it manages; that is, the data-instances
- * that have been received and for which the DataReader maintains some internal
- * resources.
- *
- * The DataReader internally maintains the samples that have not been taken by
- * the application, subject to the constraints imposed by other QoS policies
- * such as History and ResourceLimits.
- *
- * The DataReader also maintains information regarding the identity, view_state
- * and instance_state of data-instances even after all samples have been "taken".
- * This is needed to properly compute the states when future samples arrive.
- *
- * Under normal circumstances the DataReader can only reclaim all resources for
- * instances for which there are no writers and for which all samples have been
- * "taken". The last sample the DataReader will have taken for that instance will
- * have an instance_state of either not_alive_no_writers or not_alive_disposed
- * depending on whether the last writer that had ownership of the instance
- * disposed it or not. Refer to Figure 7.11 for a statechart describing the
- * transitions possible for the instance_state. In the absence of the
- * ReaderDataLifecycle QoS this behavior could cause problems if the application
- * "forgets" to "take" those samples. The "untaken" samples will prevent the
- * DataReader from reclaiming the resources and they would remain in the DataReader
- * indefinitely.
- *
- * The autopurge_nowriter_samples_delay defines the maximum duration for which the
- * DataReader will maintain information regarding an instance once its instance_state
- * becomes not_alive_no_writers. After this time elapses, the DataReader will purge
- * all internal information regarding the instance, any untaken samples will also
- * be lost.
- *
- * The autopurge_disposed_samples_delay defines the maximum duration for which
- * the DataReader will maintain samples for an instance once its instance_state
- * becomes not_alive_disposed. After this time elapses, the DataReader will purge
- * all samples for the instance.
+ * \copydoc DCPS_QoS_ReaderDataLifecycle
  */
 template <typename D>
 class TReaderDataLifecycle : public dds::core::Value<D>
@@ -1036,55 +798,7 @@ public:
 //==============================================================================
 
 /**
- * The decoupling between DataReader and DataWriter offered by the Publish/
- * Subscribe paradigm allows an application to write data even if there are no
- * current readers on the network. Moreover, a DataReader that joins the network
- * after some data has been written could potentially be interested in accessing
- * the most current values of the data as well as potentially some history. This
- * QoS policy controls whether the Service will actually make data available to
- * late-joining readers. Note that although related, this does not strictly
- * control what data the Service will maintain internally. That is, the Service
- * may choose to maintain some data for its own purposes (e.g., flow control)
- * and yet not make it available to late-joining readers if the DURABILITY QoS
- * policy is set to VOLATILE.
- *
- * The value offered is considered compatible with the value requested if and
- * only if the inequality "offered kind >= requested kind" evaluates to TRUE.
- * For the purposes of this inequality, the values of DURABILITY kind are
- * considered ordered such that VOLATILE < TRANSIENT_LOCAL < TRANSIENT < PERSISTENT.
- *
- * For the purpose of implementing the DURABILITY QoS kind TRANSIENT or PERSISTENT,
- * the service behaves AS IF for each Topic that has TRANSIENT or PERSISTENT
- * durability kind there was a corresponding "built-in" DataReader and DataWriter
- * configured to have the same durability kind. In other words, it is AS IF
- * somewhere in the system (possibly on a remote node) there was a "built-in
- * durability DataReader" that subscribed to that Topic and a "built-in durability
- * DataWriter" that published that Topic as needed for the new subscribers that
- * join the system.
- *
- * For each Topic, the built-in fictitious "persistence service" DataReader and
- * DataWriter has its QoS configured from the Topic QoS of the corresponding Topic.
- * In other words, it is AS IF the service first did find_topic to access the
- * Topic, and then used the QoS from the Topic to configure the fictitious
- * built-in entities.
- *
- * A consequence of this model is that the transient or persistence serviced can
- * be configured by means of setting the proper QoS on the Topic.
- *
- * For a given Topic, the usual request/offered semantics apply to the matching
- * between any DataWriter in the system that writes the Topic and the built-in
- * transient/persistent DataReader for that Topic; similarly for the built-in
- * transient/persistent DataWriter for a Topic and any DataReader for the Topic.
- * As a consequence, a DataWriter that has an incompatible QoS with respect to
- * what the Topic specified will not send its data to the transient/persistent
- * service, and a DataReader that has an incompatible QoS with respect to the
- * specified in the Topic will not get data from it.
- *
- * Incompatibilities between local DataReader/DataWriter entities and the
- * corresponding fictitious "built-in transient/persistent entities" cause the
- * requested_incompatible_qos/offered_incompatible_qos status to change and the
- * corresponding Listener invocations and/or signaling of Condition and WaitSet
- * objects as they would with non-fictitious entities.
+ * \copydoc DCPS_QoS_Durability
  */
 template <typename D>
 class TDurability : public dds::core::Value<D>
@@ -1145,79 +859,7 @@ public:
 //==============================================================================
 
 /**
- * This QoS policy controls the extent to which changes to data-instances can be
- * made dependent on each other and also the kind of dependencies that can be
- * propagated and maintained by the Service.
- *
- * The setting of coherent_access controls whether the Service will preserve the
- * groupings of changes made by the publishing application by means of the
- * operations begin_coherent_change and end_coherent_change.
- *
- * The setting of ordered_access controls whether the Service will preserve the
- * order of changes.
- *
- * The granularity is controlled by the setting of the access_scope.
- *
- * If coherent_access is set, then the access_scope controls the maximum extent
- * of coherent changes. The behavior is as follows:
- *
- * * If access_scope is set to INSTANCE, the use of begin_coherent_change and
- * end_coherent_change has no effect on how the subscriber can access the data
- * because with the scope limited to each instance, changes to separate instances
- * are considered independent and thus cannot be grouped by a coherent change.
- *
- * * If access_scope is set to TOPIC, then coherent changes (indicated by their
- * enclosure within calls to begin_coherent_change and end_coherent_change) will
- * be made available as such to each remote DataReader independently. That is,
- * changes made to instances within each individual DataWriter will be available
- * as coherent with respect to other changes to instances in that same DataWriter,
- * but will not be grouped with changes made to instances belonging to a different
- * DataWriter.
- *
- * * If access_scope is set to GROUP, then coherent changes made to instances
- * through a DataWriter attached to a common Publisher are made available as a
- * unit to remote subscribers.
- *
- * If ordered_access is set, then the access_scope controls the maximum extent
- * for which order will be preserved by the Service.
- *
- * * If access_scope is set to INSTANCE (the lowest level), then changes to each
- * instance are considered unordered relative to changes to any other instance.
- * That means that changes (creations, deletions, modifications) made to two
- * instances are not necessarily seen in the order they occur. This is the case
- * even if it is the same application thread making the changes using the same
- * DataWriter.
- *
- * * If access_scope is set to TOPIC, changes (creations, deletions, modifications)
- * made by a single DataWriter are made available to subscribers in the same order
- * they occur. Changes made to instances through different DataWriter entities
- * are not necessarily seen in the order they occur. This is the case, even if the
- * changes are made by a single application thread using DataWriter objects
- * attached to the same Publisher.
- *
- * * Finally, if access_scope is set to GROUP, changes made to instances via
- * DataWriter entities attached to the same Publisher object are made available
- * to subscribers on the same order they occur.
- *
- * Note that this QoS policy controls the scope at which related changes are made
- * available to the subscriber. This means the subscriber can access the changes
- * in a coherent manner and in the proper order; however, it does not necessarily
- * imply that the Subscriber will indeed access the changes in the correct order.
- * For that to occur, the application at the subscriber end must use the proper
- * logic in reading the DataReader objects, as described in "Access to the data".
- *
- * The value offered is considered compatible with the value requested if and
- * only if the following conditions are met:
- *
- * 1. The inequality "offered access_scope >= requested access_scope" evaluates to
- * TRUE. For the purposes of this inequality, the values of Presentation
- * access_scope are considered ordered such that INSTANCE < TOPIC < GROUP.
- *
- * 2. Requested coherent_access is FALSE, or else both offered and requested
- * coherent_access are TRUE.
- *
- * 3. Requested ordered_access is FALSE, or else both offered and requested
- * ordered _access are TRUE.
+ * \copydoc DCPS_QoS_Presentation
  */
 template <typename D>
 class TPresentation : public dds::core::Value<D>
@@ -1318,36 +960,7 @@ public:
 //==============================================================================
 
 /**
- * This policy indicates the level of reliability requested by a DataReader or
- * offered by a DataWriter. These levels are ordered, BEST_EFFORT being lower
- * than RELIABLE. A DataWriter offering a level is implicitly offering all levels
- * below.
- *
- * The setting of this policy has a dependency on the setting of the ResourceLimits
- * policy. In case the Reliability kind is set to RELIABLE the write operation on
- * the DataWriter may block if the modification would cause data to be lost or
- * else cause one of the limits specified in the ResourceLimits to be exceeded.
- * Under these circumstances, the Reliability max_blocking_time configures the
- * maximum duration the write operation may block.
- *
- * If the Reliability kind is set to RELIABLE, data-samples originating from a
- * single DataWriter cannot be made available to the DataReader if there are
- * previous data-samples that have not been received yet due to a communication
- * error. In other words, the service will repair the error and retransmit
- * data-samples as needed in order to reconstruct a correct snapshot of the
- * DataWriter history before it is accessible by the DataReader.
- *
- * If the Reliability kind is set to BEST_EFFORT, the service will not retransmit
- * missing data-samples. However for data-samples originating from any one DataWriter
- * the service will ensure they are stored in the DataReader history in the same
- * order they originated in the DataWriter. In other words, the DataReader may miss
- * some data-samples but it will never see the value of a data-object change from
- * a newer value to an order value.
- *
- * The value offered is considered compatible with the value requested if and only
- * if the inequality "offered kind >= requested kind" evaluates to TRUE. For the
- * purposes of this inequality, the values of Reliability kind are considered
- * ordered such that BEST_EFFORT < RELIABLE.
+ * \copydoc DCPS_QoS_Reliability
  */
 template <typename D>
 class TReliability : public dds::core::Value<D>
@@ -1361,7 +974,7 @@ public:
      */
     TReliability(
         dds::core::policy::ReliabilityKind::Type kind = dds::core::policy::ReliabilityKind::BEST_EFFORT,
-        const dds::core::Duration& max_blocking_time = dds::core::Duration::zero());
+        const dds::core::Duration& max_blocking_time = dds::core::Duration::from_millisecs(100));
 
     /**
      * Copies a Reliability QoS instance
@@ -1405,36 +1018,18 @@ public:
      * @return a Reliability QoS instance with the kind set to RELIABLE and the max_blocking_time
      * set to the supplied value
      */
-    static TReliability Reliable(const dds::core::Duration& max_blocking_time = dds::core::Duration(0, 100000000));
+    static TReliability Reliable(const dds::core::Duration& max_blocking_time = dds::core::Duration::from_millisecs(100));
 
     /**
      * @return a Reliability QoS instance with the kind set to BEST_EFFORT
      */
-    static TReliability BestEffort();
+    static TReliability BestEffort(const dds::core::Duration& max_blocking_time = dds::core::Duration::from_millisecs(100));
 };
 
 //==============================================================================
 
 /**
- * This policy controls how each subscriber resolves the final value of a data
- * instance that is written by multiple DataWriter objects (which may be
- * associated with different Publisher objects) running on different nodes.
- *
- * The setting BY_RECEPTION_TIMESTAMP indicates that, assuming the OWNERSHIP
- * policy allows it, the latest received value for the instance should be the
- * one whose value is kept. This is the default value.
- *
- * The setting BY_SOURCE_TIMESTAMP indicates that, assuming the OWNERSHIP
- * policy allows it, a timestamp placed at the source should be used. This is
- * the only setting that, in the case of concurrent same-strength DataWriter
- * objects updating the same instance, ensures all subscribers will end up with
- * the same final value for the instance. The mechanism to set the source
- * timestamp is middleware dependent.
- *
- * The value offered is considered compatible with the value requested if and
- * only if the inequality "offered kind >= requested kind" evaluates to TRUE.
- * For the purposes of this inequality, the values of DESTINATION_ORDER kind are
- * considered ordered such that BY_RECEPTION_TIMESTAMP < BY_SOURCE_TIMESTAMP.
+ * \copydoc DCPS_QoS_DestinationOrder
  */
 template <typename D>
 class TDestinationOrder : public dds::core::Value<D>
@@ -1486,29 +1081,7 @@ public:
 //==============================================================================
 
 /**
- * 1. This policy controls the behavior of the Service when the value of an
- * instance changes before it is finally communicated to some of its existing
- * DataReader entities.
- *
- * 2. If the kind is set to KEEP_LAST, then the Service will only attempt to keep
- * the latest values of the instance and discard the older ones. In this case,
- * the value of depth regulates the maximum number of values (up to and including
- * the most current one) the Service will maintain and deliver. The default (and
- * most common setting) for depth is one, indicating that only the most recent
- * value should be delivered.
- *
- * 3. If the kind is set to KEEP_ALL, then the Service will attempt to maintain
- * and deliver all the values of the instance to existing subscribers. The
- * resources that the Service can use to keep this history are limited by the
- * settings of the RESOURCE_LIMITS QoS. If the limit is reached, then the behavior
- * of the Service will depend on the Reliability QoS. If the reliability kind is
- * BEST_EFFORT, then the old values will be discarded. If reliability is RELIABLE,
- * then the Service will block the DataWriter until it can deliver the necessary
- * old values to all subscribers.
- *
- * The setting of History depth must be consistent with the RESOURCE_LIMITS
- * max_samples_per_instance. For these two QoS to be consistent, they must verify
- * that depth <= max_samples_per_instance.
+ * \copydoc DCPS_QoS_History
  */
 template <typename D>
 class THistory : public dds::core::Value<D>
@@ -1576,32 +1149,7 @@ public:
 //==============================================================================
 
 /**
- * This policy controls the resources that the Service can use in order to meet
- * the requirements imposed by the application and other QoS settings.
- *
- * If the DataWriter objects are communicating samples faster than they are
- * ultimately taken by the DataReader objects, the middleware will eventually
- * hit against some of the QoS-imposed resource limits. Note that this may occur
- * when just a single DataReader cannot keep up with its corresponding DataWriter.
- * The behavior in this case depends on the setting for the RELIABILITY QoS. If
- * reliability is BEST_EFFORT, then the Service is allowed to drop samples. If
- * the reliability is RELIABLE, the Service will block the DataWriter or discard
- * the sample at the DataReader in order not to lose existing samples.
- *
- * The constant LENGTH_UNLIMITED may be used to indicate the absence of a
- * particular limit. For example setting max_samples_per_instance to
- * LENGH_UNLIMITED will cause the middleware to not enforce this particular limit.
- *
- * The setting of RESOURCE_LIMITS max_samples must be consistent with the
- * max_samples_per_instance. For these two values to be consistent they must
- * verify that "max_samples >= max_samples_per_instance".
- *
- * The setting of RESOURCE_LIMITS max_samples_per_instance must be consistent with
- * the HISTORY depth. For these two QoS to be consistent, they must verify that
- * "depth <= max_samples_per_instance".
- *
- * An attempt to set this policy to inconsistent values when an entity is created
- * via a set_qos operation will cause the operation to fail.
+ * \copydoc DCPS_QoS_ResourceLimits
  */
 template <typename D>
 class TResourceLimits : public dds::core::Value<D>
@@ -1672,55 +1220,7 @@ public:
 //==============================================================================
 
 /**
- * This policy controls the mechanism and parameters used by the Service to
- * ensure that particular entities on the network are still "alive". The
- * liveliness can also affect the ownership of a particular instance, as
- * determined by the Ownership QoS policy.
- *
- * This policy has several settings to support both data-objects that are updated
- * periodically as well as those that are changed sporadically. It also allows
- * customizing for different application requirements in terms of the kinds of
- * failures that will be detected by the liveliness mechanism.
- *
- * The AUTOMATIC liveliness setting is most appropriate for applications that
- * only need to detect failures at the process-level, but not application-logic
- * failures within a process. The Service takes responsibility for renewing the
- * leases at the required rates and thus, as long as the local process where a
- * DomainParticipant is running and the link connecting it to remote participants
- * remains connected, the entities within the DomainParticipant will be
- * considered alive. This requires the lowest overhead.
- *
- * The MANUAL settings (MANUAL_BY_PARTICIPANT, MANUAL_BY_TOPIC) require the
- * application on the publishing side to periodically assert the liveliness
- * before the lease expires to indicate the corresponding Entity is still alive.
- * The action can be explicit by calling the assert_liveliness operations, or
- * implicit by writing some data.
- *
- * The two possible manual settings control the granularity at which the
- * application must assert liveliness.
- *
- * * The setting MANUAL_BY_PARTICIPANT requires only that one Entity within the
- * publisher is asserted to be alive to deduce all other Entity objects within
- * the same DomainParticipant are also alive.
- *
- * * The setting MANUAL_BY_TOPIC requires that at least one instance within the
- * DataWriter is asserted.
- *
- * The value offered is considered compatible with the value requested if and
- * only if the following conditions are met:
- *
- * 1. the inequality "offered kind >= requested kind" evaluates to TRUE. For
- * the purposes of this inequality, the values of Liveliness kind are considered
- * ordered such that: AUTOMATIC < MANUAL_BY_PARTICIPANT < MANUAL_BY_TOPIC.
- *
- * 2. the inequality "offered lease_duration <= requested lease_duration" evaluates
- * to TRUE.
- *
- * Changes in Liveliness must be detected by the Service with a time-granularity
- * greater or equal to the lease_duration. This ensures that the value of the
- * LivelinessChangedStatus is updated at least once during each lease_duration and
- * the related Listeners and WaitSets are notified within a lease_duration from
- * the time the Liveliness changed.
+ * \copydoc DCPS_QoS_Liveliness
  */
 template <typename D>
 class TLiveliness : public dds::core::Value<D>
@@ -1796,33 +1296,7 @@ public:
 #ifdef OMG_DDS_PERSISTENCE_SUPPORT
 
 /**
- * This policy is used to configure the HISTORY QoS and the ResourceLimits QoS
- * used by the DataReader and DataWriter used by the "persistence service".
- * The "persistence service" is the one responsible for implementing the
- * Durability kinds TRANSIENT and PERSISTENT. See Section 7.1.3.4, DURABILITY.
- *
- * The setting of the service_cleanup_delay controls when the TRANSIENT or
- * PERSISTENT service is able to remove all information regarding a data-instances.
- * Information on a data-instance is maintained until the following conditions are
- * met:
- *
- * 1. the instance has been explicitly disposed (instance_state =
- * not_alive_disposed),
- *
- * 2. and while in the not_alive_disposed state the system detects that there
- * are no more "alive" DataWriter entities writing the instance, that is, all
- * existing writers either unregister the instance (call unregister) or lose their
- * liveliness,
- *
- * 3. and a time interval longer that service_cleanup_delay has elapsed since the
- * moment the service detected that the previous two conditions were met.
- *
- * The utility of the service_cleanup_delay is apparent in the situation where an
- * application disposes an instance and it crashes before it has a chance to
- * complete additional tasks related to the disposition. Upon restart the application
- * may ask for initial data to regain its state and the delay introduced by the
- * service_cleanup_delay will allow the restarted application to receive the
- * information on the disposed instance and complete the interrupted tasks.
+ * \copydoc DCPS_QoS_DurabilityService
  */
 template <typename D>
 class TDurabilityService : public dds::core::Value<D>
@@ -1939,6 +1413,166 @@ public:
 };
 
 #endif  // OMG_DDS_PERSISTENCE_SUPPORT
+
+//==============================================================================
+
+/**
+ */
+template <typename D>
+class TShare : public dds::core::Value<D>
+{
+public:
+    /**
+     * Creates a Share QoS instance
+     *
+     * @param name the name
+     * @param enable state
+     */
+    TShare(const std::string& name = "", bool enable = false);
+
+    /**
+     * Copies a Share QoS instance
+     *
+     * @param other the TShare QoS instance to copy
+     */
+    TShare(const TShare& other);
+
+public:
+    /**
+     * Sets the name
+     *
+     * @param name the name
+     */
+    TShare& name(const std::string& name);
+
+    /**
+     * Gets the name
+     *
+     * @return the name
+     */
+    std::string name() const;
+
+    /**
+     * Sets enable state
+     *
+     * @param enable state
+     */
+    TShare& enable(bool enable);
+
+    /**
+     * Gets enable state
+     *
+     * @return enable state
+     */
+    bool enable() const;
+};
+
+//==============================================================================
+
+/**
+ */
+template <typename D>
+class TProductData : public dds::core::Value<D>
+{
+public:
+    /**
+     * Creates a ProductData QoS instance
+     *
+     * @param value the value
+     */
+    TProductData(const std::string& value = "");
+
+    /**
+     * Copies a ProductData QoS instance
+     *
+     * @param other the TProductData QoS instance to copy
+     */
+    TProductData(const TProductData& other);
+
+public:
+    /**
+     * Sets the value
+     *
+     * @param value the value
+     */
+    TProductData& value(const std::string& value);
+
+    /**
+     * Gets the value
+     *
+     * @return the value
+     */
+    std::string value() const;
+};
+
+//==============================================================================
+
+/**
+ */
+template <typename D>
+class TSubscriptionKey : public dds::core::Value<D>
+{
+public:
+    /**
+     * Creates a SubscriptionKey QoS instance
+     *
+     * @param use_key_list use the key list or not
+     * @param key a single key
+     */
+    explicit TSubscriptionKey(bool use_key_list = false, const std::string& key = "");
+
+    /**
+     * Creates a SubscriptionKey QoS instance
+     *
+     * @param use_key_list use the key list or not
+     * @param keys a sequence containing multiple keys
+     */
+    explicit TSubscriptionKey(bool use_key_list, const dds::core::StringSeq& keys);
+
+    /**
+     * Copies a SubscriptionKey QoS instance
+     *
+     * @param other the TSubscriptionKey QoS instance to copy
+     */
+    TSubscriptionKey(const TSubscriptionKey& other);
+
+public:
+    /**
+     * Sets the key
+     *
+     * @param key the key
+     */
+    TSubscriptionKey& key(const std::string& key);
+
+    /**
+     * Sets multiple keys
+     *
+     * @param names a sequence containing multiple keys
+     */
+    TSubscriptionKey& key(const dds::core::StringSeq& keys);
+
+    /**
+     * Gets the keys
+     *
+     * @return a sequence containing the keys
+     */
+    const dds::core::StringSeq key() const;
+
+    /**
+     * Sets use_key_list state
+     *
+     * @param use_key_list state
+     */
+    TSubscriptionKey& use_key_list(bool use_key_list);
+
+    /**
+     * Gets use_key_list state
+     *
+     * @return use_key_list state
+     */
+    bool use_key_list() const;
+};
+
 //============================================================================
 
 #ifdef OMG_DDS_EXTENSIBLE_AND_DYNAMIC_TOPIC_TYPE_SUPPORT

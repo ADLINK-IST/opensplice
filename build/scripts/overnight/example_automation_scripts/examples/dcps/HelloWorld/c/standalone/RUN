@@ -11,7 +11,9 @@ sleep 5
 
 ./sac_helloworld_pub > pubResult.txt 
 
-sleep 15
+echo "=== Waiting for processes to terminate"
+waitForProcessTermination sac_helloworld_pub 30
+waitForProcessTermination sac_helloworld_sub 30
 
 helloworldCheckResult
 

@@ -81,12 +81,12 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * Constructor(s) and destructor
  */
 AST_Attribute::AST_Attribute()
-      : pd_readonly(I_TRUE)
+      : pd_readonly(true)
 {}
 
 AST_Attribute::AST_Attribute
 (
-   idl_bool ro,
+   bool ro,
    AST_Type *ft,
    UTL_ScopedName *n,
    const UTL_Pragmas &p
@@ -115,7 +115,7 @@ AST_Attribute::AST_Attribute
 void
 AST_Attribute::dump(ostream &o)
 {
-   o << (pd_readonly == I_TRUE ? "readonly" : "") << " attribute ";
+   o << (pd_readonly == true ? "readonly" : "") << " attribute ";
    AST_Field::dump(o);
 }
 
@@ -123,7 +123,7 @@ AST_Attribute::dump(ostream &o)
  * Data accessors
  */
 
-idl_bool AST_Attribute::readonly ()
+bool AST_Attribute::readonly ()
 {
    return pd_readonly;
 }

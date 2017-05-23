@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef UT_CRC_H
@@ -27,23 +35,8 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-OS_CLASS(ut_crc);
-
-#define UT_CRC_KEY 0x04c11db7
-
-OS_API ut_crc
-ut_crcNew(
-        os_uint32 key);
-
-OS_API os_uint32
-ut_crcCalculate(
-    ut_crc _this,
-    void *buf,
-    os_uint32 length);
-
-OS_API void
-ut_crcFree(
-    ut_crc _this);
+OS_API os_uint32 ut_crcCalculate (const void *buf, os_size_t length) __nonnull_all__
+                                                                     __attribute_pure__;
 
 #undef OS_API
 

@@ -1,17 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "u_partition.h"
 #include "u__types.h"
+#include "u__object.h"
+#include "u__observable.h"
 #include "u__entity.h"
 #include "u__participant.h"
 #include "u__domain.h"
@@ -22,137 +32,62 @@
 #include "v_entity.h"
 #include "os_report.h"
 
+static u_result u__partitionDeinitW(void *_this)
+{
+    return u__observableProxyDeinitW(_this);
+}
+
+static void u__partitionFreeW(void *_this)
+{
+    u__observableProxyFreeW(_this);
+}
+
 u_partition
 u_partitionNew(
     u_participant p,
-    const c_char *name,
-    v_partitionQos qos)
+    const os_char *name,
+    u_partitionQos qos)
 {
+    u_domain domain;
     u_partition _this = NULL;
     v_kernel ke = NULL;
     v_partition kd;
     u_result result;
 
+    assert(p != NULL);
+
     if (name == NULL) {
         name = "No partition specified";
     }
-    if (p != NULL) {
-        result = u_entityWriteClaim(u_entity(u_participantDomain(p)),(v_entity*)(&ke));
-        if ((result == U_RESULT_OK) && (ke != NULL)) {
-            kd = v_partitionNew(ke,name,qos);
-            if (kd != NULL) {
-                _this = u_entityAlloc(p,u_partition,kd,FALSE);
-                if (_this != NULL) {
-                    result = u_partitionInit(_this);
-                    if (result != U_RESULT_OK) {
-                        OS_REPORT_1(OS_ERROR, "u_partitionNew", 0,
-                                    "Initialisation failed. "
-                                    "For Partition: <%s>.", name);
-                        u_partitionFree(_this);
-                    }
-                } else {
-                    OS_REPORT_1(OS_ERROR, "u_partitionNew", 0,
-                                "Create proxy failed. "
-                                "For Partition: <%s>.", name);
+    domain = u_observableDomain(u_observable(p));
+    result = u_observableWriteClaim(u_observable(domain),(v_public *)(&ke), C_MM_RESERVATION_LOW);
+    if ((result == U_RESULT_OK) && (ke != NULL)) {
+        kd = v_partitionNew(ke,name,qos);
+        if (kd != NULL) {
+            _this = u_objectAlloc(sizeof(*_this), U_PARTITION, u__partitionDeinitW, u__partitionFreeW);
+            if (_this != NULL) {
+                result = u_observableInit(u_observable(_this), v_public(kd), domain);
+                if (result != U_RESULT_OK) {
+                    OS_REPORT(OS_ERROR, "u_partitionNew", result,
+                              "Initialisation failed. For Partition: <%s>.", name);
+                    u_objectFree (u_object (_this));
+                    _this = NULL;
                 }
-                c_free(kd);
             } else {
-                OS_REPORT_1(OS_ERROR, "u_partitionNew", 0,
-                            "Create kernel entity failed. "
-                            "For Partition: <%s>", name);
+                OS_REPORT(OS_ERROR, "u_partitionNew", U_RESULT_INTERNAL_ERROR,
+                          "Create proxy failed. For Partition: <%s>.", name);
             }
-            result = u_entityRelease(u_entity(u_participantDomain(p)));
+            c_free(kd);
         } else {
-            OS_REPORT_1(OS_WARNING, "u_partitionNew", 0,
-                        "Claim Participant failed. "
-                        "For Partition: <%s>", name);
+            OS_REPORT(OS_ERROR, "u_partitionNew", U_RESULT_INTERNAL_ERROR,
+                      "Create kernel entity failed. For Partition: <%s>", name);
         }
+        u_observableRelease(u_observable(domain), C_MM_RESERVATION_LOW);
     } else {
-        OS_REPORT_1(OS_ERROR,"u_partitionNew",0,
-                    "No Participant specified. "
+        OS_REPORT(OS_WARNING, "u_partitionNew", U_RESULT_INTERNAL_ERROR,
+                    "Claim Participant failed. "
                     "For Partition: <%s>", name);
     }
     return _this;
-}
-
-u_result
-u_partitionInit(
-    u_partition _this)
-{
-    u_result result;
-
-    if (_this != NULL) {
-        result = U_RESULT_OK;
-    } else {
-        OS_REPORT(OS_ERROR,"u_partitionInit",0, "Illegal parameter.");
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_partitionFree(
-    u_partition _this)
-{
-    u_result result;
-    c_bool destroy;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        destroy = u_entityDereference(u_entity(_this));
-        /* if refCount becomes zero then this call
-         * returns true and destruction can take place
-         */
-        if (destroy) {
-            if (u_entityOwner(u_entity(_this))) {
-                result = u_partitionDeinit(_this);
-            } else {
-                /* This user entity is a proxy, meaning that it is not fully
-                 * initialized, therefore only the entity part of the object
-                 * can be deinitialized.
-                 * It would be better to either introduce a separate proxy
-                 * entity for clarity or fully initialize entities and make
-                 * them robust against missing information.
-                 */
-                result = u_entityDeinit(u_entity(_this));
-            }
-            if (result == U_RESULT_OK) {
-                u_entityDealloc(u_entity(_this));
-            } else {
-                OS_REPORT_2(OS_WARNING,
-                            "u_partitionFree",0,
-                            "Operation u_partitionDeinit failed: "
-                            "Partition = 0x%x, result = %s.",
-                            _this, u_resultImage(result));
-                u_entityUnlock(u_entity(_this));
-            }
-        } else {
-            u_entityUnlock(u_entity(_this));
-        }
-    } else {
-        OS_REPORT_2(OS_WARNING,
-                    "u_partitionFree",0,
-                    "Operation u_entityLock failed: "
-                    "Partition = 0x%x, result = %s.",
-                    _this, u_resultImage(result));
-    }
-    return result;
-}
-
-u_result
-u_partitionDeinit (
-    u_partition _this)
-{
-    u_result result;
-
-    if (_this != NULL) {
-        result = U_RESULT_OK;
-    } else {
-        OS_REPORT(OS_ERROR,
-                  "u_partitionDeinit",0,
-                   "Illegal parameter.");
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
 }
 

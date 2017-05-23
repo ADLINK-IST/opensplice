@@ -86,22 +86,22 @@ IDL_GlobalData::IDL_GlobalData()
       pd_filename(NULL),
       pd_main_filename(NULL),
       pd_real_filename(NULL),
-      pd_in_main_file(I_TRUE),
+      pd_in_main_file(true),
       pd_prog_name(NULL),
       pd_cpp_location(NULL),
       pd_compile_flags(0),
       pd_be(NULL),
       pd_local_escapes(NULL),
       pd_indent(NULL),
-      pd_read_from_stdin(I_FALSE),
-      pd_warn(I_TRUE),
+      pd_read_from_stdin(false),
+      pd_warn(true),
       pd_include_file_names(NULL),
       pd_n_include_file_names(0),
       pd_n_alloced_file_names(0),
-      pd_merge_includes(I_FALSE),
+      pd_merge_includes(false),
       pd_parse_state(PS_NoState),
-      pd_case_sensitive(I_FALSE),
-      pd_ignore_interfaces(I_FALSE)
+      pd_case_sensitive(false),
+      pd_ignore_interfaces(false)
 
 {
    // empty
@@ -172,14 +172,14 @@ IDL_GlobalData::set_err_count(long c)
    pd_err_count = c;
 }
 
-idl_bool
+bool
 IDL_GlobalData::warn()
 {
    return pd_warn;
 }
 
 void
-IDL_GlobalData::set_warn(idl_bool warn)
+IDL_GlobalData::set_warn(bool warn)
 {
    pd_warn = warn;
 }
@@ -238,38 +238,38 @@ IDL_GlobalData::set_real_filename(UTL_String *n)
 }
 
 // Get or set indicator whether import is on
-idl_bool
+bool
 IDL_GlobalData::imported()
 {
    if (pd_merge_includes)
-      return I_FALSE;
+      return false;
    else if (pd_in_main_file)
-      return I_FALSE;
+      return false;
    else
       return pd_import;
 }
 
-idl_bool
+bool
 IDL_GlobalData::import()
 {
    return pd_import;
 }
 
 void
-IDL_GlobalData::set_import(idl_bool is_in)
+IDL_GlobalData::set_import(bool is_in)
 {
    pd_import = is_in;
 }
 
 // Get or set indicator whether we're reading the main file now
-idl_bool
+bool
 IDL_GlobalData::in_main_file()
 {
    return pd_in_main_file;
 }
 
 void
-IDL_GlobalData::set_in_main_file(idl_bool is_in)
+IDL_GlobalData::set_in_main_file(bool is_in)
 {
    pd_in_main_file = is_in;
 }
@@ -326,14 +326,14 @@ IDL_GlobalData::set_compile_flags(long cf)
    pd_compile_flags = cf;
 }
 
-idl_bool
+bool
 IDL_GlobalData::IncludeFileMerge()
 {
    return pd_merge_includes;
 }
 
 void
-IDL_GlobalData::IncludeFileMerge(idl_bool yes_or_no)
+IDL_GlobalData::IncludeFileMerge(bool yes_or_no)
 {
    pd_compile_flags = (yes_or_no) ? pd_compile_flags | IDL_CF_NOIMPORT
                       : pd_compile_flags & (~IDL_CF_NOIMPORT);
@@ -379,14 +379,14 @@ IDL_GlobalData::set_indent(UTL_Indenter *i)
 }
 
 // Get or set indicator whether we're reading from stdin
-idl_bool
+bool
 IDL_GlobalData::read_from_stdin()
 {
    return pd_read_from_stdin;
 }
 
 void
-IDL_GlobalData::set_read_from_stdin(idl_bool r)
+IDL_GlobalData::set_read_from_stdin(bool r)
 {
    pd_read_from_stdin = r;
 }
@@ -399,9 +399,9 @@ IDL_GlobalData::seen_include_file_before(UTL_String *n)
 
    for (i = 0; i < pd_n_include_file_names; i++)
       if (n->compare(pd_include_file_names[i]))
-         return I_TRUE;
+         return true;
 
-   return I_FALSE;
+   return false;
 }
 
 // Store a name of an #include file
@@ -498,24 +498,24 @@ IDL_GlobalData::compilation_stage()
 }
 
 void
-IDL_GlobalData::set_case_sensitive(idl_bool val)
+IDL_GlobalData::set_case_sensitive(bool val)
 {
    pd_case_sensitive = val;
 }
 
-idl_bool
+bool
 IDL_GlobalData::case_sensitive()
 {
    return pd_case_sensitive;
 }
 
 void
-IDL_GlobalData::set_ignore_interfaces(idl_bool val)
+IDL_GlobalData::set_ignore_interfaces(bool val)
 {
    pd_ignore_interfaces = val;
 }
 
-idl_bool
+bool
 IDL_GlobalData::ignore_interfaces()
 {
    return pd_ignore_interfaces;
@@ -571,7 +571,7 @@ IDL_GlobalData::PredefinedTypeToExprType(AST_PredefinedType::PredefinedType pt)
    }
 }
 
-idl_bool IDL_GlobalData::valid_identifier (const char *id)
+bool IDL_GlobalData::valid_identifier (const char *id)
 {
    // Object, any and abstract deliberately missing from idl_keywords
    static const char *idl_keywords[] =
@@ -594,7 +594,7 @@ idl_bool IDL_GlobalData::valid_identifier (const char *id)
 
    char *id1 = os_strdup (id);
    char *tmp = id1;
-   idl_bool result = I_TRUE;
+   bool result = true;
 
    while (*tmp)
    {
@@ -607,7 +607,7 @@ idl_bool IDL_GlobalData::valid_identifier (const char *id)
       if (strcmp (id1, idl_keywords[i]) == 0)
       {
          err ()->illegal_identifier (id);
-         result = I_FALSE;
+         result = false;
          break;
       }
    }

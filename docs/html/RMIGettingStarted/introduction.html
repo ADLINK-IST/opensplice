@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Introduction &mdash; RMI User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RMI User Guide" href="index.html" />
+    <link rel="next" title="3. Vortex OpenSplice RMI over DDS" href="rmi-over-dds.html" />
+    <link rel="prev" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="rmi-over-dds.html" title="3. Vortex OpenSplice RMI over DDS"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="introduction">
+<span id="id1"></span><h1>2. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="features">
+<h2>2.1. Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
+<p>Vortex OpenSplice RMI provides an implementation of the general concept of
+invoking a remote method over DDS. It enhances Vortex OpenSplice with a
+service-oriented interaction pattern that can be used with combination
+with the native data-centric pattern. Vortex OpenSplice RMI is a service
+invocation framework on top of DDS DCPS that uses DDS mechanisms to
+export, find and invoke services. It maps all the application-exchanged
+requests/replies into DDS data exchanges, and gives the ability to
+configure the associated QoS policies according to the application
+needs. Finally, Vortex OpenSplice RMI enables the definition of a distributed
+services space over a DDS data space with all the known DDS benefits,
+such as discovery, fault tolerance, performance and real-time features.</p>
+<div class="figure" id="rmi-communication-scheme">
+<a class="reference internal image-reference" href="_images/RMI-diag-01.png"><img alt="RMI Communication Scheme" src="_images/RMI-diag-01.png" style="height: 85mm;" /></a>
+</div>
+<p><strong>RMI Communication Scheme</strong></p>
+<p>Vortex OpenSplice RMI targets service-oriented applications needing a
+request/reply communication scheme while they need to have a very
+fine control over the data and the underlying network quality of
+service. Typically, Vortex OpenSplice RMI can be used in systems to issue
+commands. Commands are a kind of stimulus that express the ability of
+the system to do something. As commands have the `do-something&#8217;
+connotation, it is often useful to be informed synchronously that the
+command has been executed. Thanks to the various DDS QoSs, applications
+can associate expiration time, prioritities, persistency and so on to
+those commands.</p>
+</div>
+<div class="section" id="benefits">
+<h2>2.2. Benefits<a class="headerlink" href="#benefits" title="Permalink to this headline">¶</a></h2>
+<p>As a complementary paradigm to data centricity, Vortex OpenSplice RMI provides
+these benefits:</p>
+<ul class="simple">
+<li>A more productive and higher abstraction level than can be achieved
+manually through topic exchanges and applications synchronization.</li>
+<li>A unique middleware technology for mixing Global Services and Data
+Spaces with an easy and dynamic services registration, data declaration,
+and the same discovery mechanisms.</li>
+<li>Enables data-centric applications to use RMI without the burden of an
+additional middleware technology (<em>e.g.</em> CORBA).</li>
+<li>Strong services location transparency. Thanks to the connectionless
+nature of DDS, service identities do not need to include any
+network-related information. In Vortex OpenSplice RMI, a service is identified
+by a simple name. Services&#8217; identities are exported naturally <em>via</em> a
+DDS publication on specific topics. Services can even move from one
+location to another without any impact on client applications.</li>
+<li>Simple API.</li>
+<li>Easy deployment process.</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Introduction</a><ul>
+<li><a class="reference internal" href="#features">2.1. Features</a></li>
+<li><a class="reference internal" href="#benefits">2.2. Benefits</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="previous chapter">1. Preface</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="rmi-over-dds.html"
+                        title="next chapter">3. Vortex OpenSplice RMI over DDS</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/introduction.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="rmi-over-dds.html" title="3. Vortex OpenSplice RMI over DDS"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

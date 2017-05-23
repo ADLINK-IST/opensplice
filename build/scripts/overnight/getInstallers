@@ -1,0 +1,431 @@
+#Type = heads or tags
+
+if [ "$JENKINS" != "true" ]
+then
+   TYPE=heads
+   TAG=OSPL_V6_6-01-branch
+   YEAR=2016
+   MONTH=05
+   DAY=06
+   VERSION=6.6.3
+else
+   TYPE=$1
+   TAG=$2
+   YEAR=$3
+   MONTH=$4
+   DAY=$5
+   VERSION=$6
+fi
+
+REL_DIR=""
+
+if [ "$TEST" == "true" ]
+then
+   REL_DIR="TEST"
+   echo $REL_DIR
+else
+   REL_DIR=$VERSION
+fi
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; mkdir ' ${REL_DIR} ''
+
+echo "This script retrieves most of the installers and logs that are required for a release from the overnight scoreboard.\n"
+echo "It is retrieving using the following linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG\n"
+echo "Edit this file to retrieve from a different configuration .... note not all installers will necessarily be there\n "
+echo "Sleeping for 5 then I'm off\n"
+sleep 5
+
+linux64Bit=("rhel54/rhel54-64c/x86_64.linux-release/distro/P615-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.1.2-glibc2.5-installer-eval.run"
+ "rhel54/rhel54-64c/x86_64.linux-release/distro/P615-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.1.2-glibc2.5-installer-lgpl.run"
+ "rhel54/rhel54-64c/x86_64.linux-release/distro/P615-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.1.2-glibc2.5-installer.run"
+ "rhel54/rhel54-64c/x86_64.linux-release/distro/P615-VortexOpenSplice-$VERSION-RTS-x86_64.linux-gcc4.1.2-glibc2.5-installer-lgpl.run"
+ "rhel54/rhel54-64c/x86_64.linux-release/distro/P615-VortexOpenSplice-$VERSION-RTS-x86_64.linux-gcc4.1.2-glibc2.5-installer.run"
+ "rhel6/rhel62-64b/x86_64.linux-release/distro/P642-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.4.6-glibc2.12-installer-eval.run"
+ "rhel6/rhel62-64b/x86_64.linux-release/distro/P642-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.4.6-glibc2.12-installer-lgpl.run"
+ "rhel6/rhel62-64b/x86_64.linux-release/distro/P642-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.4.6-glibc2.12-installer.run"
+ "rhel6/rhel62-64b/x86_64.linux-release/distro/P642-VortexOpenSplice-$VERSION-RTS-x86_64.linux-gcc4.4.6-glibc2.12-installer-lgpl.run"
+ "rhel6/rhel62-64b/x86_64.linux-release/distro/P642-VortexOpenSplice-$VERSION-RTS-x86_64.linux-gcc4.4.6-glibc2.12-installer.run"
+ "ubuntu1204/ubuntu1204-64b/x86_64.linux-gcc482-release/distro/P674-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.8.2-glibc2.15-installer-eval.run"
+ "ubuntu1204/ubuntu1204-64b/x86_64.linux-gcc482-release/distro/P674-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.8.2-glibc2.15-installer-lgpl.run"
+ "ubuntu1204/ubuntu1204-64b/x86_64.linux-gcc482-release/distro/P674-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.8.2-glibc2.15-installer.run"
+ "ubuntu1204/ubuntu1204-64b/x86_64.linux-gcc482-release/distro/P674-VortexOpenSplice-$VERSION-RTS-x86_64.linux-gcc4.8.2-glibc2.15-installer-lgpl.run"
+ "ubuntu1204/ubuntu1204-64b/x86_64.linux-gcc482-release/distro/P674-VortexOpenSplice-$VERSION-RTS-x86_64.linux-gcc4.8.2-glibc2.15-installer.run"
+ "ubuntu1204/ubuntu1204-64/x86_64.linux-release-notest/distro/P665-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.6-glibc2.15-installer-eval.run"
+ "ubuntu1204/ubuntu1204-64/x86_64.linux-release-notest/distro/P665-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.6-glibc2.15-installer-lgpl.run"
+ "ubuntu1204/ubuntu1204-64/x86_64.linux-release-notest/distro/P665-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.6-glibc2.15-installer.run"
+ "ubuntu1204/ubuntu1204-64/x86_64.linux-release-notest/distro/P665-VortexOpenSplice-$VERSION-RTS-x86_64.linux-gcc4.6-glibc2.15-installer-lgpl.run"
+ "ubuntu1204/ubuntu1204-64/x86_64.linux-release-notest/distro/P665-VortexOpenSplice-$VERSION-RTS-x86_64.linux-gcc4.6-glibc2.15-installer.run")
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir LINUX-64Bit'
+
+for instName in "${linux64Bit[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd LINUX-64Bit; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir LINUX-32Bit'
+
+
+linux32Bit=("rhel6/rhel62a/x86.linux-release/distro/P641-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc4.4.6-glibc2.12-installer-eval.run"
+"rhel6/rhel62a/x86.linux-release/distro/P641-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc4.4.6-glibc2.12-installer-lgpl.run"
+"rhel6/rhel62a/x86.linux-release/distro/P641-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc4.4.6-glibc2.12-installer.run"
+"rhel6/rhel62a/x86.linux-release/distro/P641-VortexOpenSplice-$VERSION-RTS-x86.linux-gcc4.4.6-glibc2.12-installer-lgpl.run"
+"rhel6/rhel62a/x86.linux-release/distro/P641-VortexOpenSplice-$VERSION-RTS-x86.linux-gcc4.4.6-glibc2.12-installer.run"
+"ubuntu1204/ubuntu1204b/x86.linux-gcc482-release/distro/P673-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc4.8.2-glibc2.15-installer-eval.run"
+"ubuntu1204/ubuntu1204b/x86.linux-gcc482-release/distro/P673-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc4.8.2-glibc2.15-installer-lgpl.run"
+"ubuntu1204/ubuntu1204b/x86.linux-gcc482-release/distro/P673-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc4.8.2-glibc2.15-installer.run"
+"ubuntu1204/ubuntu1204b/x86.linux-gcc482-release/distro/P673-VortexOpenSplice-$VERSION-RTS-x86.linux-gcc4.8.2-glibc2.15-installer-lgpl.run"
+"ubuntu1204/ubuntu1204b/x86.linux-gcc482-release/distro/P673-VortexOpenSplice-$VERSION-RTS-x86.linux-gcc4.8.2-glibc2.15-installer.run"
+"ubuntu1204/ubuntu1204/x86.linux-release-notest/distro/P664-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc4.6-glibc2.15-installer-eval.run"
+"ubuntu1204/ubuntu1204/x86.linux-release-notest/distro/P664-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc4.6-glibc2.15-installer-lgpl.run"
+"ubuntu1204/ubuntu1204/x86.linux-release-notest/distro/P664-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc4.6-glibc2.15-installer.run"
+"ubuntu1204/ubuntu1204/x86.linux-release-notest/distro/P664-VortexOpenSplice-$VERSION-RTS-x86.linux-gcc4.6-glibc2.15-installer-lgpl.run"
+"ubuntu1204/ubuntu1204/x86.linux-release-notest/distro/P664-VortexOpenSplice-$VERSION-RTS-x86.linux-gcc4.6-glibc2.15-installer.run"
+"rhel4/rhel4g/x86.linux-release/distro/P611-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc3.4.6-glibc2.3.4-installer-eval.run"
+"rhel4/rhel4g/x86.linux-release/distro/P611-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc3.4.6-glibc2.3.4-installer-lgpl.run"
+"rhel4/rhel4g/x86.linux-release/distro/P611-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc3.4.6-glibc2.3.4-installer.run"
+"rhel4/rhel4g/x86.linux-release/distro/P611-VortexOpenSplice-$VERSION-RTS-x86.linux-gcc3.4.6-glibc2.3.4-installer-lgpl.run"
+"rhel4/rhel4g/x86.linux-release/distro/P611-VortexOpenSplice-$VERSION-RTS-x86.linux-gcc3.4.6-glibc2.3.4-installer.run"
+"debian6/debian6a-32/x86.linux_perc-release/distro/P692-VortexOpenSplice-$VERSION-HDE-x86.linux_perc-release-installer-eval.run"
+"debian6/debian6a-32/x86.linux_perc-release/distro/P692-VortexOpenSplice-$VERSION-HDE-x86.linux_perc-release-installer-lgpl.run"
+"debian6/debian6a-32/x86.linux_perc-release/distro/P692-VortexOpenSplice-$VERSION-HDE-x86.linux_perc-release-installer.run"
+"debian6/debian6a-32/x86.linux_perc-release/distro/P692-VortexOpenSplice-$VERSION-RTS-x86.linux_perc-release-installer-lgpl.run"
+"debian6/debian6a-32/x86.linux_perc-release/distro/P692-VortexOpenSplice-$VERSION-RTS-x86.linux_perc-release-installer.run")
+
+for instName in "${linux32Bit[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd LINUX-32Bit; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir WINDOWS-2008'
+
+win2008=("Win2003/dds3-win2k3/x86.win32-release/distro/P616-VortexOpenSplice-$VERSION-HDE-x86.win-vs2008-installer-eval.exe"
+"Win2003/dds3-win2k3/x86.win32-release/distro/P616-VortexOpenSplice-$VERSION-HDE-x86.win-vs2008-installer-lgpl.exe"
+"Win2003/dds3-win2k3/x86.win32-release/distro/P616-VortexOpenSplice-$VERSION-HDE-x86.win-vs2008-installer.exe"
+"Win2003/dds3-win2k3/x86.win32-release/distro/P616-VortexOpenSplice-$VERSION-RTS-x86.win-vs2008-installer-lgpl.exe"
+"Win2003/dds3-win2k3/x86.win32-release/distro/P616-VortexOpenSplice-$VERSION-RTS-x86.win-vs2008-installer.exe")
+
+for instName in "${win2008[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd WINDOWS-2008; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir WINDOWS-2010'
+
+win2010=("Windows7/win7-32-ospl-4/x86.win32-release-vs10/distro/P637-VortexOpenSplice-$VERSION-HDE-x86.win-vs2010-installer-eval.exe"
+"Windows7/win7-32-ospl-4/x86.win32-release-vs10/distro/P637-VortexOpenSplice-$VERSION-HDE-x86.win-vs2010-installer-lgpl.exe"
+"Windows7/win7-32-ospl-4/x86.win32-release-vs10/distro/P637-VortexOpenSplice-$VERSION-HDE-x86.win-vs2010-installer.exe"
+"Windows7/win7-32-ospl-4/x86.win32-release-vs10/distro/P637-VortexOpenSplice-$VERSION-RTS-x86.win-vs2010-installer-lgpl.exe"
+"Windows7/win7-32-ospl-4/x86.win32-release-vs10/distro/P637-VortexOpenSplice-$VERSION-RTS-x86.win-vs2010-installer.exe"
+"Windows7-64/win7-64-ospl-2/x86_64.win64-release-notest/distro/P638-VortexOpenSplice-$VERSION-HDE-x86_64.win-vs2010-installer-eval.exe"
+"Windows7-64/win7-64-ospl-2/x86_64.win64-release-notest/distro/P638-VortexOpenSplice-$VERSION-HDE-x86_64.win-vs2010-installer-lgpl.exe"
+"Windows7-64/win7-64-ospl-2/x86_64.win64-release-notest/distro/P638-VortexOpenSplice-$VERSION-HDE-x86_64.win-vs2010-installer.exe"
+"Windows7-64/win7-64-ospl-2/x86_64.win64-release-notest/distro/P638-VortexOpenSplice-$VERSION-RTS-x86_64.win-vs2010-installer-lgpl.exe"
+"Windows7-64/win7-64-ospl-2/x86_64.win64-release-notest/distro/P638-VortexOpenSplice-$VERSION-RTS-x86_64.win-vs2010-installer.exe")
+
+for instName in "${win2010[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd WINDOWS-2010; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir WINDOWS-2012'
+
+win2012=("Windows7/win7b/x86.win32-release-vs11/distro/P669-VortexOpenSplice-$VERSION-HDE-x86.win-vs2012-installer-eval.exe"
+"Windows7/win7b/x86.win32-release-vs11/distro/P669-VortexOpenSplice-$VERSION-HDE-x86.win-vs2012-installer-lgpl.exe"
+"Windows7/win7b/x86.win32-release-vs11/distro/P669-VortexOpenSplice-$VERSION-HDE-x86.win-vs2012-installer.exe"
+"Windows7/win7b/x86.win32-release-vs11/distro/P669-VortexOpenSplice-$VERSION-RTS-x86.win-vs2012-installer.exe"
+"Windows7/win7b/x86.win32-release-vs11/distro/P669-VortexOpenSplice-$VERSION-RTS-x86.win-vs2012-installer-lgpl.exe"
+"Windows7-64/win7d/x86_64.win64-release-vs11/distro/P670-VortexOpenSplice-$VERSION-HDE-x86_64.win-vs2012-installer-eval.exe"
+"Windows7-64/win7d/x86_64.win64-release-vs11/distro/P670-VortexOpenSplice-$VERSION-HDE-x86_64.win-vs2012-installer-lgpl.exe"
+"Windows7-64/win7d/x86_64.win64-release-vs11/distro/P670-VortexOpenSplice-$VERSION-HDE-x86_64.win-vs2012-installer.exe"
+"Windows7-64/win7d/x86_64.win64-release-vs11/distro/P670-VortexOpenSplice-$VERSION-RTS-x86_64.win-vs2012-installer-lgpl.exe"
+"Windows7-64/win7d/x86_64.win64-release-vs11/distro/P670-VortexOpenSplice-$VERSION-RTS-x86_64.win-vs2012-installer.exe")
+
+for instName in "${win2012[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd WINDOWS-2012; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir WINDOWS-2013'
+
+
+win2013=("Windows7/win7c/x86.win32-release-vs12/distro/P671-VortexOpenSplice-$VERSION-HDE-x86.win-vs2013-installer-eval.exe"
+"Windows7/win7c/x86.win32-release-vs12/distro/P671-VortexOpenSplice-$VERSION-HDE-x86.win-vs2013-installer-lgpl.exe"
+"Windows7/win7c/x86.win32-release-vs12/distro/P671-VortexOpenSplice-$VERSION-HDE-x86.win-vs2013-installer.exe"
+"Windows7/win7c/x86.win32-release-vs12/distro/P671-VortexOpenSplice-$VERSION-RTS-x86.win-vs2013-installer.exe"
+"Windows7/win7c/x86.win32-release-vs12/distro/P671-VortexOpenSplice-$VERSION-RTS-x86.win-vs2013-installer-lgpl.exe"
+"Windows7-64/win7e/x86_64.win64-release-vs12/distro/P672-VortexOpenSplice-$VERSION-HDE-x86_64.win-vs2013-installer-eval.exe"
+"Windows7-64/win7e/x86_64.win64-release-vs12/distro/P672-VortexOpenSplice-$VERSION-HDE-x86_64.win-vs2013-installer-lgpl.exe"
+"Windows7-64/win7e/x86_64.win64-release-vs12/distro/P672-VortexOpenSplice-$VERSION-HDE-x86_64.win-vs2013-installer.exe"
+"Windows7-64/win7e/x86_64.win64-release-vs12/distro/P672-VortexOpenSplice-$VERSION-RTS-x86_64.win-vs2013-installer-lgpl.exe"
+"Windows7-64/win7e/x86_64.win64-release-vs12/distro/P672-VortexOpenSplice-$VERSION-RTS-x86_64.win-vs2013-installer.exe")
+
+for instName in "${win2013[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd WINDOWS-2013; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir SOLARIS-10'
+
+sol10=("Solaris10/v240a/studio12-release/distro/P610-VortexOpenSplice-$VERSION-HDE-solaris10_studio12.2-installer-eval.run"
+"Solaris10/v240a/studio12-release/distro/P610-VortexOpenSplice-$VERSION-HDE-solaris10_studio12.2-installer-lgpl.run"
+"Solaris10/v240a/studio12-release/distro/P610-VortexOpenSplice-$VERSION-HDE-solaris10_studio12.2-installer.run"
+"Solaris10/v240a/studio12-release/distro/P610-VortexOpenSplice-$VERSION-RTS-solaris10_studio12.2-installer-lgpl.run"
+"Solaris10/v240a/studio12-release/distro/P610-VortexOpenSplice-$VERSION-RTS-solaris10_studio12.2-installer.run"
+"Solaris10/ultra4/gcc-release/distro/P663-VortexOpenSplice-$VERSION-HDE-sparc.solaris10_gcc-release-installer-eval.run"
+"Solaris10/ultra4/gcc-release/distro/P663-VortexOpenSplice-$VERSION-HDE-sparc.solaris10_gcc-release-installer-lgpl.run"
+"Solaris10/ultra4/gcc-release/distro/P663-VortexOpenSplice-$VERSION-HDE-sparc.solaris10_gcc-release-installer.run"
+"Solaris10/ultra4/gcc-release/distro/P663-VortexOpenSplice-$VERSION-RTS-sparc.solaris10_gcc-release-installer-lgpl.run"
+"Solaris10/ultra4/gcc-release/distro/P663-VortexOpenSplice-$VERSION-RTS-sparc.solaris10_gcc-release-installer.run")
+
+for instName in "${sol10[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd SOLARIS-10; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir LINUX-32Bit-TAO161'
+
+cof32bit=("rhel4/rhel4g/x86.linux-release/distro/P611-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc3.4.6-glibc2.3.4-installer.run"
+"rhel4/rhel4g/x86.linux-release/distro/P611-VortexOpenSplice-$VERSION-RTS-x86.linux-gcc3.4.6-glibc2.3.4-installer.run"
+"rhel54/rhel54b/x86.linux-release-notest-TAO161/distro/P614-VortexOpenSplice-$VERSION-HDE-x86.linux-gcc4.1.2-glibc2.5-installer.run"
+"rhel54/rhel54b/x86.linux-release-notest-TAO161/distro/P614-VortexOpenSplice-$VERSION-RTS-x86.linux-gcc4.1.2-glibc2.5-installer.run")
+
+for instName in "${cof32bit[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd LINUX-32Bit-TAO161; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir LINUX-64Bit-TAO161'
+
+cof64bit=("rhel54/rhel54-64b/x86_64.linux-release-notest-TAO161/distro/P615-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.1.2-glibc2.5-installer.run"
+"rhel54/rhel54-64b/x86_64.linux-release-notest-TAO161/distro/P615-VortexOpenSplice-$VERSION-RTS-x86_64.linux-gcc4.1.2-glibc2.5-installer.run"
+"rhel6/rhel62-64c/x86_64.linux-debug-TAO161/distro/P642-VortexOpenSplice-$VERSION-HDE-x86_64.linux-gcc4.4.6-glibc2.12-debug-installer.run"
+"rhel6/rhel62-64c/x86_64.linux-debug-TAO161/distro/P642-VortexOpenSplice-$VERSION-RTS-x86_64.linux-gcc4.4.6-glibc2.12-debug-installer.run")
+
+for instName in "${cof64bit[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd LINUX-64Bit-TAO161; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir RTE'
+
+rte=("WinXP/winxp13-new/E500v2.vxworks6.9.4.1-release/distro/P655-VortexOpenSpliceRTE-$VERSION-HDE-x86.win-vs2005-RTS-E500v2.vxworks6.9-gcc-installer-lgpl.exe"
+"WinXP/winxp13-new/E500v2.vxworks6.9.4.1-release/distro/P655-VortexOpenSpliceRTE-$VERSION-HDE-x86.win-vs2005-RTS-E500v2.vxworks6.9-gcc-installer.exe"
+"WinXP/winxp13-new/E500v2.vxworks6.9.4.1-release/distro/P655-VortexOpenSpliceRTE-$VERSION-RTS-E500v2.vxworks6.9-gcc-installer-lgpl.exe"
+"WinXP/winxp13-new/E500v2.vxworks6.9.4.1-release/distro/P655-VortexOpenSpliceRTE-$VERSION-RTS-E500v2.vxworks6.9-gcc-installer.exe"
+"rhel53/rhel53a/E500mc.linux-release/distro/P667-VortexOpenSpliceRTE-$VERSION-HDE-x86.linux-release-RTS-E500mc.linux-release-installer-lgpl.run"
+"rhel53/rhel53a/E500mc.linux-release/distro/P667-VortexOpenSpliceRTE-$VERSION-HDE-x86.linux-release-RTS-E500mc.linux-release-installer.run"
+"rhel53/rhel53a/E500mc.linux-release/distro/P667-VortexOpenSpliceRTE-$VERSION-RTS-E500mc.linux-release-installer-lgpl.run"
+"rhel53/rhel53a/E500mc.linux-release/distro/P667-VortexOpenSpliceRTE-$VERSION-RTS-E500mc.linux-release-installer.run"
+"WinXP/winxp13-new/atom.vxworks6.9.4.1-release/distro/P696-VortexOpenSpliceRTE-$VERSION-HDE-x86.win-vs2005-RTS-Atom.vxworks6.9-release-installer-lgpl.exe"
+"WinXP/winxp13-new/atom.vxworks6.9.4.1-release/distro/P696-VortexOpenSpliceRTE-$VERSION-HDE-x86.win-vs2005-RTS-Atom.vxworks6.9-release-installer.exe"
+"WinXP/winxp13-new/atom.vxworks6.9.4.1-release/distro/P696-VortexOpenSpliceRTE-$VERSION-RTS-Atom.vxworks6.9-release-installer-lgpl.exe"
+"WinXP/winxp13-new/atom.vxworks6.9.4.1-release/distro/P696-VortexOpenSpliceRTE-$VERSION-RTS-Atom.vxworks6.9-release-installer.exe"
+"WinXP/winxp13-new/atom.vxworks6.9.4.1-shlib-release/distro/P697-VortexOpenSpliceRTE-$VERSION-HDE-x86.win-vs2005-RTS-Atom.vxworks6.9-release-installer-lgpl.exe"
+"WinXP/winxp13-new/atom.vxworks6.9.4.1-shlib-release/distro/P697-VortexOpenSpliceRTE-$VERSION-HDE-x86.win-vs2005-RTS-Atom.vxworks6.9-release-installer.exe"
+"WinXP/winxp13-new/atom.vxworks6.9.4.1-shlib-release/distro/P697-VortexOpenSpliceRTE-$VERSION-RTS-Atom.vxworks6.9-release-installer-lgpl.exe"
+"WinXP/winxp13-new/atom.vxworks6.9.4.1-shlib-release/distro/P697-VortexOpenSpliceRTE-$VERSION-RTS-Atom.vxworks6.9-release-installer.exe"
+"WinXP/winxp13-new/E500v2.vxworks6.9.4.1-shlib-release/distro/P699-VortexOpenSpliceRTE-$VERSION-HDE-x86.win-vs2005-RTS-E500v2.vxworks6.9-gcc-installer-lgpl.exe"
+"WinXP/winxp13-new/E500v2.vxworks6.9.4.1-shlib-release/distro/P699-VortexOpenSpliceRTE-$VERSION-HDE-x86.win-vs2005-RTS-E500v2.vxworks6.9-gcc-installer.exe"
+"WinXP/winxp13-new/E500v2.vxworks6.9.4.1-shlib-release/distro/P699-VortexOpenSpliceRTE-$VERSION-RTS-E500v2.vxworks6.9-gcc-installer-lgpl.exe"
+"WinXP/winxp13-new/E500v2.vxworks6.9.4.1-shlib-release/distro/P699-VortexOpenSpliceRTE-$VERSION-RTS-E500v2.vxworks6.9-gcc-installer.exe")
+
+for instName in "${rte[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd RTE; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir DEMOS'
+
+demos=("Windows7-64/win7-64-ospl-2/x86_64.win64-release-notest/distro/P638-VortexOpenSplice-$VERSION-DEMOS-x86_64.win-vs2010-installer.zip"
+"Windows7/win7-32-ospl-4/x86.win32-release-vs10/distro/P637-VortexOpenSplice-$VERSION-DEMOS-x86.win-vs2010-installer.zip"
+"rhel6/rhel62-64b/x86_64.linux-release/distro/P642-VortexOpenSplice-$VERSION-DEMOS-x86_64.linux-gcc4.4.6-glibc2.12-installer.tar"
+"rhel6/rhel62a/x86.linux-release/distro/P641-VortexOpenSplice-$VERSION-DEMOS-x86.linux-gcc4.4.6-glibc2.12-installer.tar")
+
+for instName in "${demos[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd DEMOS; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir STE'
+
+ste=("Windows7-64/win7-64-ospl-2/x86_64.win64-release-notest/distro/P638-VortexOpenSplice-$VERSION-STE-x86_64.win-vs2010-installer.exe"
+"Windows7/win7-32-ospl-4/x86.win32-release-vs10/distro/P637-VortexOpenSplice-$VERSION-STE-x86.win-vs2010-installer.exe"
+"rhel6/rhel62-64b/x86_64.linux-release/distro/P642-VortexOpenSplice-$VERSION-STE-x86_64.linux-gcc4.4.6-glibc2.12-installer.run"
+"rhel6/rhel62a/x86.linux-release/distro/P641-VortexOpenSplice-$VERSION-STE-x86.linux-gcc4.4.6-glibc2.12-installer.run")
+
+for instName in "${ste[@]}"
+do
+   fullInstName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$instName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; cd STE; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fullInstName} '; chmod 755 *; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${instName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR} '; mkdir logs; cd logs; mkdir LINUX32BitLogs; mkdir LINUX64BitLogs'
+
+logs64bit=("rhel6/rhel62-64b/x86_64.linux-release/logs/build.txt"
+"rhel6/rhel62-64b/x86_64.linux-release/logs/DBT-Results/dbt.log"
+"rhel6/rhel62-64b/x86_64.linux-release/logs/DBT-Results/dbt_summary.log"
+"rhel6/rhel62-64b/x86_64.linux-release/logs/DBT-Results/management_summary.txt"
+"rhel6/rhel62-64b/x86_64.linux-release/logs/RBT-Results-SHM/RBT_$YEAR$MONTH$DAY.log"
+"rhel6/rhel62-64b/x86_64.linux-release/logs/RBT-Results-SHM/RBTmetrics_$YEAR$MONTH$DAY.txt"
+"rhel6/rhel62-64b/x86_64.linux-release/logs/RBT-Results-SHM/RBTtestinfo_$YEAR$MONTH$DAY.txt"
+"rhel6/rhel62-64b/x86_64.linux-release/logs/examples/run_shm/examples.log")
+
+for logName in "${logs64bit[@]}"
+do
+   fulllogName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$logName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR}'/logs/LINUX64BitLogs; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fulllogName} '; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${logName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+date=$YEAR$MONTH$DAY
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR}'/logs/LINUX64BitLogs; mv RBT_'${date}'.log SHM-RBT_'${date}'.log; mv RBTmetrics_'${date}'.txt SHM-RBTmetrics_'${date}'.txt ; mv RBTtestinfo_'${date}'.txt SHM-RBTtestinfo_'${date}'.txt ; mv examples.log SHM-examples.log'
+
+logssp64bit=("rhel6/rhel62-64b/x86_64.linux-release/logs/RBT-Results-SP/RBT_$YEAR$MONTH$DAY.log"
+"rhel6/rhel62-64b/x86_64.linux-release/logs/RBT-Results-SP/RBTmetrics_$YEAR$MONTH$DAY.txt"
+"rhel6/rhel62-64b/x86_64.linux-release/logs/RBT-Results-SP/RBTtestinfo_$YEAR$MONTH$DAY.txt"
+"rhel6/rhel62-64b/x86_64.linux-release/logs/examples/run_sp/examples.log")
+
+for logName in "${logssp64bit[@]}"
+do
+   fulllogName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$logName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR}'/logs/LINUX64BitLogs; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fulllogName} '; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${logName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR}'/logs/LINUX64BitLogs; mv RBT_'${date}'.log SP-RBT_'${date}'.log; mv RBTmetrics_'${date}'.txt SP-RBTmetrics_'${date}'.txt ; mv RBTtestinfo_'${date}'.txt SP-RBTtestinfo_'${date}'.txt; mv examples.log SP-examples.log'
+
+logs32bit=("rhel6/rhel62a/x86.linux-release/logs/build.txt"
+"rhel6/rhel62a/x86.linux-release/logs/DBT-Results/dbt.log"
+"rhel6/rhel62a/x86.linux-release/logs/DBT-Results/dbt_summary.log"
+"rhel6/rhel62a/x86.linux-release/logs/DBT-Results/management_summary.txt"
+"rhel6/rhel62a/x86.linux-release/logs/RBT-Results-SHM/RBT_$YEAR$MONTH$DAY.log"
+"rhel6/rhel62a/x86.linux-release/logs/RBT-Results-SHM/RBTmetrics_$YEAR$MONTH$DAY.txt"
+"rhel6/rhel62a/x86.linux-release/logs/RBT-Results-SHM/RBTtestinfo_$YEAR$MONTH$DAY.txt"
+"rhel6/rhel62a/x86.linux-release/logs/examples/run_shm/examples.log")
+
+for logName in "${logs32bit[@]}"
+do
+   fulllogName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$logName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR}'/logs/LINUX32BitLogs; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fulllogName} '; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${logName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR}'/logs/LINUX32BitLogs; mv RBT_'${date}'.log SHM-RBT_'${date}'.log; mv RBTmetrics_'${date}'.txt SHM-RBTmetrics_'${date}'.txt ; mv RBTtestinfo_'${date}'.txt SHM-RBTtestinfo_'${date}'.txt; mv examples.log SHM-examples.log'
+
+logssp32bit=("rhel6/rhel62a/x86.linux-release/logs/RBT-Results-SP/RBT_$YEAR$MONTH$DA.log"
+"rhel6/rhel62a/x86.linux-release/logs/RBT-Results-SP/RBTmetrics_$YEAR$MONTH$DAY.txt"
+"rhel6/rhel62a/x86.linux-release/logs/RBT-Results-SP/RBTtestinfo_$YEAR$MONTH$DAY.txt"
+"rhel6/rhel62a/x86.linux-release/logs/examples/run_sp/examples.log")
+
+for logName in "${logssp32bit[@]}"
+do
+   fulllogName=http://linux6.prismtech.com:81/results/overnight/osplo/$YEAR/$MONTH/$DAY/$TYPE/$TAG/"$logName"
+
+   ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR}'/logs/LINUX32BitLogs; wget -q http://linux6.prismtech.com:81/results/overnight/osplo/' ${fulllogName} '; rm index.html'
+
+   if [ $? != 0 ]
+   then
+      echo "${logName}" >> $WORKSPACE/MissingBuilds.txt
+   fi
+done
+
+ssh -i ~/.ssh/id_rsa_releases releases@repository2 'cd Vortex/OpenSplice/; cd' ${REL_DIR}'/logs/LINUX32BitLogs; mv RBT_'${date}'.log SP-RBT_'${date}'.log; mv RBTmetrics_'${date}'.txt SP-RBTmetrics_'${date}'.txt ; mv RBTtestinfo_'${date}'.txt SP-RBTtestinfo_'${date}'.txt; mv examples.log SP-examples.log'

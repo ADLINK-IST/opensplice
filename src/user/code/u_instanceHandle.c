@@ -1,18 +1,29 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
+#include "u__instanceHandle.h"
+#include "u__handle.h"
 #include "u__types.h"
 #include "u__domain.h"
 #include "u__user.h"
 #include "v_dataView.h"
+#include "v_handle.h"
 #include "v_public.h"
 #include "v_dataReader.h"
 #include "v_reader.h"
@@ -26,18 +37,11 @@
 
 typedef union {
     struct {
-        c_long lifecycleId;
-        c_long localId;
+        c_ulong lifecycleId;
+        c_ulong localId;
     } lid;
     u_instanceHandle handle;
 } u_instanceHandleTranslator;
-
-static int u__handleResult (v_handleResult result)
-{
-    return ((result == V_HANDLE_OK) ? U_RESULT_OK :
-            (result == V_HANDLE_EXPIRED) ? U_RESULT_ALREADY_DELETED :
-            U_RESULT_ILL_PARAM);
-}
 
 u_instanceHandle
 u_instanceHandleNew(
@@ -45,19 +49,19 @@ u_instanceHandleNew(
 {
     v_handle handle;
     u_instanceHandleTranslator translator;
-    c_long id;
+    c_ulong id;
 
     if (object) {
         handle = v_publicHandle(object);
         if (handle.serial != (handle.serial & HANDLE_SERIAL_MASK)) {
             handle.serial = (handle.serial & HANDLE_SERIAL_MASK);
-            OS_REPORT(OS_ERROR,"u_instanceHandleNew",0,
+            OS_REPORT(OS_CRITICAL,"u_instanceHandleNew", U_RESULT_ILL_PARAM,
                       "handle.serial exceeds HANDLE_SERIAL_MASK");
         }
         id = u_userServerId(v_public(object));
         if (id != (id & HANDLE_SERVER_MASK)) {
             id = (id & HANDLE_SERVER_MASK);
-            OS_REPORT(OS_ERROR,"u_instanceHandleNew",0,
+            OS_REPORT(OS_CRITICAL,"u_instanceHandleNew", U_RESULT_ILL_PARAM,
                       "ServerId exceeds HANDLE_SERVER_MASK");
         }
         translator.lid.lifecycleId = (handle.serial | id);
@@ -105,7 +109,7 @@ u_instanceHandleToGID (
 u_result
 u_instanceHandleClaim (
     u_instanceHandle _this,
-    c_voidp instance)
+    void *instance)
 {
     u_result result;
     v_handleResult vresult;
@@ -114,8 +118,12 @@ u_instanceHandleClaim (
 
     if (instance == NULL) {
         result = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_ERROR, "u_instanceHandleClaim", result,
+                  "Bad parameter: instance = NULL");
     } else if (_this == 0) {
         result = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_ERROR, "u_instanceHandleClaim", result,
+                  "Bad Parameter: instance handle = DDS_HANDLE_NIL");
     } else {
         translator.handle = _this;
 
@@ -125,6 +133,10 @@ u_instanceHandleClaim (
 
         vresult = v_handleClaim(handle, instance);
         result = u__handleResult(vresult);
+        if ((result != U_RESULT_OK) && (result != U_RESULT_HANDLE_EXPIRED)) {
+            OS_REPORT(OS_WARNING, "u_instanceHandleClaim", U_RESULT_ILL_PARAM,
+                      "Bad parameter: Instance handle is invalid");
+        }
     }
 
     return result;
@@ -148,38 +160,28 @@ u_instanceHandleRelease (
         handle.server = u_userServer(translator.lid.lifecycleId & HANDLE_SERVER_MASK);
 
         result = u__handleResult(v_handleRelease(handle));
+        if (result != U_RESULT_OK) {
+            OS_REPORT(OS_WARNING, "u_instanceHandleRelease", result,
+                      "Bad parameter: Instance handle is invalid");
+        }
     }
 
     return result;
 }
 
-c_bool
+u_bool
 u_instanceHandleIsNil (
     u_instanceHandle _this)
 {
     return (_this == 0);
 }
 
-c_bool
+u_bool
 u_instanceHandleIsEqual (
     u_instanceHandle h1,
     u_instanceHandle h2)
 {
     return (h1 == h2);
-}
-
-/* Depricated : only for GID publication_handle legacy. */
-
-static void
-copyBuiltinTopicKey(
-    c_type type,
-    void *data,
-    void *to)
-{
-    struct v_publicationInfo *from = (struct v_publicationInfo *)data;
-    struct v_publicationInfo *copyIn = (struct v_publicationInfo *)to;
-
-    copyIn->key = from->key;
 }
 
 u_instanceHandle
@@ -201,13 +203,14 @@ u_instanceHandleFix(
                v_objectKind(v_entity(reader)) == K_DATAVIEWQUERY) {
             /* If the entity derives from a query entity it can be cast to a v_query */
             reader = v_querySource(v_query(reader));
+            c_free(reader);
         }
         while (v_objectKind(v_entity(reader)) == K_DATAVIEW) {
             reader = v_collection(v_dataViewGetReader(v_dataView(reader)));
         }
         topic = v_dataReaderGetTopic(v_dataReader(reader));
         message = v_topicMessageNew(topic);
-        data = (c_voidp)C_DISPLACE(message, v_topicDataOffset(topic));
+        data = (void *) (message + 1);
         data->key = u_instanceHandleToGID(_this);
         instance = (v_public)v_dataReaderLookupInstance(v_dataReader(reader),
                                                         message);

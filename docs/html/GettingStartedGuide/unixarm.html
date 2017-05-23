@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>16. UNIX ARM platform &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="17. ELinOS" href="elinos.html" />
+    <link rel="prev" title="15. PikeOS POSIX" href="pikeos-posix.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="elinos.html" title="17. ELinOS"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pikeos-posix.html" title="15. PikeOS POSIX"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="unix-arm-platform">
+<span id="id1"></span><h1>16. UNIX ARM platform<a class="headerlink" href="#unix-arm-platform" title="Permalink to this headline">¶</a></h1>
+<p><em>This chapter provides a brief description of how to deploy Vortex OpenSplice
+on a UNIX ARM platform</em></p>
+<div class="section" id="installation-for-unix-arm-platform">
+<h2>16.1. Installation for UNIX ARM platform<a class="headerlink" href="#installation-for-unix-arm-platform" title="Permalink to this headline">¶</a></h2>
+<p>The installation of the Vortex OpenSplice HDE or RTS on a UNIX ARM platform is depended
+on the type of installer that has been provided. Dependent on the platform the installer
+is either an executable or a tar file. An executable installer has either the extension
+.run or .exe. A tar file installer has the extension .tar.</p>
+<p>The following combinations may be provided
+- both the HDE and RTS installers are executables
+- the HDE installer is an executable and the RTS is an tar file
+- both the HDE and RTS installers are tar files.</p>
+<p>When the installer is provided as an executable follow the normal install procedure as
+described in section <a class="reference internal" href="install-configure.html#installation-for-unix-and-windows-platforms"><em>Installation for UNIX and Windows Platforms</em></a>.</p>
+<p>When the installer is provided as an tar file follow the procedure described below.</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><p><em>Untar the installer tar file,</em></p>
+<p>go to the directory where Vortex OpenSplice has to be installed.</p>
+<p>untar the tar file in this directory</p>
+<p><tt class="docutils literal"><span class="pre">tar</span> <span class="pre">xf</span> <span class="pre">P&lt;code&gt;-VortexOpenSplice&lt;version&gt;-&lt;E&gt;-&lt;platform&gt;.&lt;os&gt;-&lt;comp&gt;-&lt;type&gt;-&lt;target&gt;-installer.tar</span></tt></p>
+<p>where, some being optional,</p>
+<p><em>&lt;code&gt;</em> - PrismTech&#8217;s code for the platform
+<em>&lt;version&gt;</em> - the Vortex OpenSplice version number,
+for example <tt class="docutils literal"><span class="pre">V6.0</span></tt></p>
+<p><em>&lt;E&gt;</em> - the environment, either <tt class="docutils literal"><span class="pre">HDE</span></tt> or <tt class="docutils literal"><span class="pre">RTS</span></tt></p>
+<p><em>&lt;platform&gt;</em> - the platform architecture,
+for example <tt class="docutils literal"><span class="pre">sparc</span></tt> or <tt class="docutils literal"><span class="pre">x86</span></tt></p>
+<p><em>&lt;os&gt;</em> - the operating system
+for example <tt class="docutils literal"><span class="pre">solaris8</span></tt> or <tt class="docutils literal"><span class="pre">linux2.6</span></tt></p>
+<p><em>&lt;comp&gt;</em> - the compiler or glibc version</p>
+<p><em>&lt;type&gt;</em> - release, debug or dev, which is release with symbols</p>
+<p><em>&lt;target&gt;</em> - the target architecture for host/target builds.</p>
+</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div><p><em>Configure the Vortex OpenSplice environment.</em></p>
+<p>Go to the <em>&lt;install_dir&gt;/&lt;E&gt;/&lt;platform&gt;</em> directory, where <em>&lt;E&gt;</em> is <tt class="docutils literal"><span class="pre">HDE</span></tt> of <tt class="docutils literal"><span class="pre">RTS</span></tt>
+and &lt;platform is for example <tt class="docutils literal"><span class="pre">armv7l.linux</span></tt>.</p>
+<p>When bash is used as shell:</p>
+<p>Source the release.com file from the shell command line.</p>
+<p>Otherwise:</p>
+<p>First set the OSPL_HOME variable to the directory in which OpenSplice was installed
+and then source the release.com file.</p>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">16. UNIX ARM platform</a><ul>
+<li><a class="reference internal" href="#installation-for-unix-arm-platform">16.1. Installation for UNIX ARM platform</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pikeos-posix.html"
+                        title="previous chapter">15. PikeOS POSIX</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="elinos.html"
+                        title="next chapter">17. ELinOS</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/unixarm.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="elinos.html" title="17. ELinOS"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pikeos-posix.html" title="15. PikeOS POSIX"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

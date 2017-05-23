@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. OpenSplice Architectural Modes &mdash; OpenSplice Evaluation and Benchmarking Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Evaluation and Benchmarking Guide" href="index.html" />
+    <link rel="next" title="5. OpenSplice Networking Options" href="networking.html" />
+    <link rel="prev" title="3. OpenSplice Enterprise Basics" href="basics.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="networking.html" title="5. OpenSplice Networking Options"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="basics.html" title="3. OpenSplice Enterprise Basics"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="opensplice-architectural-modes">
+<span id="id1"></span><h1>4. OpenSplice Architectural Modes<a class="headerlink" href="#opensplice-architectural-modes" title="Permalink to this headline">¶</a></h1>
+<p>OpenSplice Enterprise provides two main architectural modes. These
+are the <strong>Single Process</strong> deployment mode, which provides a <strong>Standalone</strong>
+architecture, and, unique to OpenSplice, the <strong>Shared Memory</strong> deployment
+mode which provides a <strong>Federated</strong> architecture.</p>
+<div class="section" id="the-single-process-or-standalone-deployment">
+<h2>4.1. The Single Process or Standalone deployment<a class="headerlink" href="#the-single-process-or-standalone-deployment" title="Permalink to this headline">¶</a></h2>
+<p>Features of this mode are:</p>
+<ul class="simple">
+<li>Simplest to run and get started with.</li>
+<li>Each DDS application process contains the entire DDS infrastructure.</li>
+<li>Uses in-process heap memory for the DDS database.</li>
+<li>OpenSplice Enterprise services run as threads within the
+application process.</li>
+<li>When there are multiple DDS application processes on a single
+machine, the communication between them must be done <em>via</em> a
+networking service; this introduces additional overhead so
+performance in this scenario is not optimal.</li>
+</ul>
+<div class="figure" id="single-process-or-standalone-deployment">
+<a class="reference internal image-reference" href="_images/SingleProcess.png"><img alt="Single Process or Standalone deployment" src="_images/SingleProcess.png" style="height: 60mm;" /></a>
+<p class="caption"><strong>Single Process or Standalone deployment</strong></p>
+</div>
+</div>
+<div class="section" id="the-shared-memory-or-federated-deployment">
+<h2>4.2. The Shared Memory or Federated deployment<a class="headerlink" href="#the-shared-memory-or-federated-deployment" title="Permalink to this headline">¶</a></h2>
+<p>Features of this mode are:</p>
+<ul class="simple">
+<li>The DDS infrastructure is started once per machine.</li>
+<li>Uses shared memory for the DDS database.</li>
+<li>Each DDS application process interfaces with the shared
+memory rather than creating the DDS infrastructure itself.</li>
+<li>Allows the data to be physically present only once on any machine.</li>
+<li>Reading and writing directly to locally-mapped memory is far
+more efficient than having to actually move the data <em>via</em> a
+networking service, allowing for improved performance and scalability.</li>
+<li>OpenSplice Enterprise services are able to arbitrate over all of the
+DDS data on the node, and so can make smart decisions with respect
+to data delivery so that priority QoS values (for example) are
+respected; this is not possible when there are multiple standalone
+deployments on a machine.</li>
+</ul>
+<div class="figure" id="shared-memory-or-federated-deployment">
+<a class="reference internal image-reference" href="_images/SharedMemory.png"><img alt="Shared Memory or Federated deployment" src="_images/SharedMemory.png" style="height: 60mm;" /></a>
+<p class="caption"><strong>Shared Memory or Federated deployment</strong></p>
+</div>
+<p><strong>When there are multiple DDS applications running on a single
+computing node, the use of OpenSplice&#8217;s unique Shared Memory
+architecture can provide greater performance, smaller footprint and
+better scalability than other DDS deployment options.</strong></p>
+</div>
+<div class="section" id="how-to-select-the-architectural-mode">
+<span id="id2"></span><h2>4.3. How to select the Architectural Mode<a class="headerlink" href="#how-to-select-the-architectural-mode" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>For a Single Process deployment, set the OSPL_URI variable to
+refer to a single process (sp) xml file such as <tt class="docutils literal"><span class="pre">ospl_sp_ddsi.xml</span></tt>
+or <tt class="docutils literal"><span class="pre">ospl_sp_nativeRT.xml</span></tt>. Note that a networking service (such
+as ddsi or nativeRT) is required for two DDS application processes
+to communicate even if they are running on the same physical machine.
+See the next section for more details on networking options.</li>
+</ul>
+<p><strong>A single process deployment is enabled when the Domain section of the
+XML configuration contains a &#8216;&lt;SingleProcess&gt; TRUE&#8217; attribute.</strong></p>
+<p>NOTE for VxWorks kernel mode builds of OpenSplice the single process feature of the OpenSplice domain must not be enabled. i.e. &#8220;&lt;SingleProcess&gt;true&lt;/SingleProcess&gt;&#8221; must not be included in the OpenSplice Configuration xml. The model used on VxWorks kernel builds is always that an area of kernel memory is allocated to store the domain database ( the size of which is controlled by the size option in the Database configuration for opensplice as is used on other platforms for the shared memory model. ) This can then be accessed by any task on the same VxWorks node.</p>
+<ul class="simple">
+<li>For a Shared Memory deployment, set the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable to
+refer to a shared memory (<em>shmem</em>) xml file such as
+<tt class="docutils literal"><span class="pre">ospl_shmem_no_network.xml</span></tt>, <tt class="docutils literal"><span class="pre">ospl_shmem_ddsi.xml</span></tt>, or
+<tt class="docutils literal"><span class="pre">ospl_shmem_nativeRT.xml</span></tt>. Note that two or more DDS applications
+running on the same physical machine are able to communicate
+<em>via</em> the shared memory so a networking service (such as ddsi
+or nativeRT) is not necessarily required.</li>
+</ul>
+<p><strong>A shared memory deployment is enabled when the Domain section of
+the XML configuration does not contain a &#8216;&lt;SingleProcess&gt; TRUE&#8217;
+attribute but does contain a &#8216;&lt;Database&gt;&#8217; attribute.</strong></p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Note that by default the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> environment variable refers to a
+<em>Single Process</em> configuration, so to see the extra performance and
+scalability benefits of OpenSplice DDS&#8217;s Shared Memory
+architecture it is necessary to switch from the default.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. OpenSplice Architectural Modes</a><ul>
+<li><a class="reference internal" href="#the-single-process-or-standalone-deployment">4.1. The Single Process or Standalone deployment</a></li>
+<li><a class="reference internal" href="#the-shared-memory-or-federated-deployment">4.2. The Shared Memory or Federated deployment</a></li>
+<li><a class="reference internal" href="#how-to-select-the-architectural-mode">4.3. How to select the Architectural Mode</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="basics.html"
+                        title="previous chapter">3. OpenSplice Enterprise Basics</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="networking.html"
+                        title="next chapter">5. OpenSplice Networking Options</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/architectural.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="networking.html" title="5. OpenSplice Networking Options"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="basics.html" title="3. OpenSplice Enterprise Basics"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

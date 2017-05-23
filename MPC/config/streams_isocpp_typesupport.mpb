@@ -1,0 +1,6 @@
+// -*- MPC -*-
+// $Id:$
+
+project : streams_typesupport_base, ospl_streamsisocpp, ospl_dcpsisocpp {
+  streams_ts_flags += -l isocpp
+}

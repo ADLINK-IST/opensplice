@@ -2,12 +2,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -89,7 +97,7 @@ namespace PingPong
         private time postWriteTime = new time();
         private time preTakeTime = new time();
         private time postTakeTime = new time();
-        
+
         /*
          * P I N G
          */
@@ -137,7 +145,7 @@ namespace PingPong
                 write_partition = args[3];
                 read_partition = args[4];
             }
-                
+
 
             /*
              * Create WaitSet
@@ -160,7 +168,7 @@ namespace PingPong
              */
             dpf = DDS.DomainParticipantFactory.Instance;
             dpf.GetDefaultParticipantQos(ref dpQos);
-            
+
             ErrorHandler.checkHandle(dpf, "DDS.DomainParticipantFactory.Instance");
 
             dp = dpf.CreateParticipant(myDomain, dpQos);
@@ -416,11 +424,11 @@ namespace PingPong
                                 PPdata.quit = true;
                                 terminate = true;
                                 finish_flag = true;
-                                System.Threading.Thread.Sleep(1000); 
+                                System.Threading.Thread.Sleep(1000);
                                 preWriteTime.timeGet();
                                 result = PP_quit_writer.Write(PPdata);
                                 postWriteTime.timeGet();
-                                System.Threading.Thread.Sleep(1000);           
+                                System.Threading.Thread.Sleep(1000);
                             }
                             break;
                         default:
@@ -473,7 +481,9 @@ namespace PingPong
 											else
 											{
 												System.Console.WriteLine("PING: unexpected condition triggered: "
-																+ conditionList[i]);
+																+ conditionList[i] + ", terminating");
+												finish_flag = true;
+                                                terminate = true;
 											}
 										}
 									}

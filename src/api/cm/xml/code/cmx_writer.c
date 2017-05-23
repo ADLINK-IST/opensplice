@@ -1,30 +1,37 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cmx__writer.h"
 #include "cmx_writer.h"
 #include "cmx__entity.h"
 #include "cmx__factory.h"
-#include "cmx__qos.h"
 #include "sd_serializerXML.h"
 #include "sd_serializerXMLMetadata.h"
 #include "u_publisher.h"
 #include "u_topic.h"
 #include "u_writer.h"
 #include "u_entity.h"
+#include "u_observable.h"
 #include "v_kernel.h"
 #include "v_writer.h"
 #include "v_writerQos.h"
 #include "v_topic.h"
-#include "v_time.h"
 #include "os_report.h"
 #include "os_heap.h"
 #include "os_stdlib.h"
@@ -40,52 +47,51 @@ cmx_writerNew(
     u_publisher pub;
     u_topic top;
     u_writer wri;
-    c_char* result;
-    cmx_entityArg arg;
     u_result ur;
-    cmx_entityKernelArg kernelArg;
-    v_writerQos wQos;
-    
+    cmx_entity pce, tce;
+    c_char* result;
+    c_char* context;
+
+    top = NULL;
+    wri = NULL;
+    ur = U_RESULT_UNDEFINED;
     result = NULL;
-    pub = u_publisher(cmx_entityUserEntity(publisher));
-    
-    if(pub != NULL){
-        top = u_topic(cmx_entityUserEntity(topic));
-        
-        if(top != NULL){
-            kernelArg = cmx_entityKernelArg(os_malloc(C_SIZEOF(cmx_entityKernelArg)));
-            u_entityAction(u_entity(pub), cmx_entityKernelAction, (c_voidp)kernelArg);
-            
-            if(qos != NULL){
-                wQos = v_writerQos(cmx_qosKernelQosFromKind(qos, K_WRITER, c_getBase(c_object(kernelArg->kernel))));
-                
-                if(wQos == NULL){
-                    wQos = v_writerQosNew(kernelArg->kernel, NULL);
-                    wQos->reliability.kind = V_RELIABILITY_RELIABLE;
+
+    pce = cmx_entityClaim(publisher);
+    if(pce != NULL){
+        pub = u_publisher(pce->uentity);
+        if(pub != NULL){
+            tce = cmx_entityClaim(topic);
+            if(tce != NULL){
+                top = u_topic(tce->uentity);
+                if(top != NULL){
+                    wri = u_writerNew(pub, name, top, NULL);
                 }
-            } else {
-                wQos = v_writerQosNew(kernelArg->kernel, NULL);
-                wQos->reliability.kind = V_RELIABILITY_RELIABLE;
-            }
-            wri = u_writerNew(pub, name, top, NULL, wQos, TRUE);
-            os_free(kernelArg);
-            c_free(wQos);
-            
-            if(wri != NULL){
-                cmx_registerEntity(u_entity(wri));
-                arg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-                arg->entity = u_entity(wri);
-                arg->create = FALSE;
-                arg->participant = NULL;
-                arg->result = NULL;
-                ur = u_entityAction(u_entity(wri), cmx_entityNewFromAction, (c_voidp)(arg));
-                
-                if(ur == U_RESULT_OK){
-                    result = arg->result;
-                    os_free(arg);
-                }
+                cmx_entityRelease(tce);
             }
         }
+        if(wri != NULL){
+            ur = U_RESULT_OK;
+            if ((qos != NULL) && (strlen(qos) > 0)) {
+                ur = u_entitySetXMLQos(u_entity(wri), qos);
+                context = "u_entitySetXMLQos";
+            }
+            if(ur == U_RESULT_OK){
+                ur = u_entityEnable(u_entity(wri));
+                context = "u_entityEnable";
+            }
+            if(ur == U_RESULT_OK){
+                ur = cmx_entityRegister(u_object(wri), pce->participant, &result);
+                context = "cmx_entityRegister";
+            }
+            if (ur != U_RESULT_OK) {
+                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                            "cmx_writerNew failed (reason: %s returned %u).",
+                            context, ur);
+                u_objectFree(u_object(wri));
+            }
+        }
+        cmx_entityRelease(pce);
     }
     return result;
 }
@@ -95,6 +101,7 @@ cmx_writerInit(
     v_writer entity)
 {
     assert(C_TYPECHECK(entity, v_writer));
+    OS_UNUSED_ARG(entity);
 
     return (c_char*)(os_strdup("<kind>WRITER</kind>"));
 }
@@ -108,21 +115,24 @@ c_char*
 cmx_writerDataType(
     const c_char* writer)
 {
-    u_entity entity;
+    cmx_entity ce;
     struct cmx_writerTypeArg arg;
-    
-    entity = cmx_entityUserEntity(writer);
+
     arg.result = NULL;
-    
-    if(entity != NULL){
-        u_entityAction(entity, cmx_writerDataTypeAction, &arg);
+    ce = cmx_entityClaim(writer);
+
+    if(ce != NULL){
+        if (u_observableAction(u_observable(ce->uentity), cmx_writerDataTypeAction, &arg) != U_RESULT_OK){
+            arg.success = CMX_RESULT_FAILED;
+        }
+        cmx_entityRelease(ce);
     }
     return arg.result;
 }
 
 void
 cmx_writerDataTypeAction(
-    v_entity entity,
+    v_public entity,
     c_voidp args)
 {
     sd_serializer ser;
@@ -130,19 +140,19 @@ cmx_writerDataTypeAction(
     c_type type;
     struct cmx_writerTypeArg *arg;
     arg = (struct cmx_writerTypeArg *)args;
-    
+
     type = NULL;
-    
+
     switch(v_object(entity)->kind){
     case K_WRITER:
-        type = v_topicDataType(v_writer(entity)->topic);      
+        type = v_topicDataType(v_writer(entity)->topic);
     break;
     default:
         OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0, "Trying to resolve dataType of writer that is not a writer.\n");
         assert(FALSE);
     break;
     }
-    
+
     if(type != NULL){
         ser = sd_serializerXMLMetadataNew(c_getBase(type));
         data = sd_serializerSerialize(ser, type);
@@ -159,309 +169,336 @@ struct cmx_writerArg {
 
 const c_char*
 cmx_writerWrite(
-    const c_char* writer, 
+    const c_char* writer,
     const c_char* data)
 {
-    u_entity entity;
+    cmx_entity ce;
     struct cmx_writerArg arg;
-    
+
     arg.success = CMX_RESULT_ENTITY_NOT_AVAILABLE;
 
-    entity = cmx_entityUserEntity(writer);
+    ce = cmx_entityClaim(writer);
 
-    if(entity != NULL){
+    if(ce != NULL){
         arg.result = data;
 
-        u_entityWriteAction(entity, cmx_writerCopy, &arg);
+        if (u_observableWriteAction(u_observable(ce->uentity), cmx_writerCopy, &arg) != U_RESULT_OK){
+            arg.success = CMX_RESULT_FAILED;
+        }
+        cmx_entityRelease(ce);
     }
     return arg.success;
 }
 
 void
 cmx_writerCopy(
-    v_entity entity,
+    v_public public,
     c_voidp args)
 {
+    v_entity entity;
     v_writer kw;
     v_message message;
     void *to;
     sd_serializer ser;
     sd_serializedData data;
-    sd_validationResult valResult;
     struct cmx_writerArg *arg;
-    
+
+    entity = v_entity(public);
     arg = (struct cmx_writerArg *)args;
-    
+
     kw = v_writer(entity);
-    message = v_topicMessageNew(kw->topic);
-    to = C_DISPLACE(message,v_topicDataOffset(kw->topic));
-    
-    ser = sd_serializerXMLNewTyped(v_topicDataType(kw->topic));
-    data = sd_serializerFromString(ser, arg->result);
-    sd_serializerDeserializeIntoValidated(ser, data, to);
-    valResult = sd_serializerLastValidationResult(ser);
-        
-    if(valResult != SD_VAL_SUCCESS){
-        OS_REPORT_2(OS_ERROR, CM_XML_CONTEXT, 0, 
+    message = v_topicMessageNew_s(kw->topic);
+    if (message) {
+        to = (void *) (message + 1);
+
+        ser = sd_serializerXMLNewTyped(v_topicDataType(kw->topic));
+        data = sd_serializerFromString(ser, arg->result);
+        if (!sd_serializerDeserializeInto(ser, data, to)) {
+            OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                     "Write of userdata failed.\nReason: %s\nError: %s\n",
                     sd_serializerLastValidationMessage(ser),
-                    sd_serializerLastValidationLocation(ser));           
-        arg->success = CMX_RESULT_FAILED;
+                    sd_serializerLastValidationLocation(ser));
+            arg->success = CMX_RESULT_FAILED;
+        } else {
+            arg->success = CMX_RESULT_OK;
+            if (v_writerWrite(kw,message,os_timeWGet(),NULL) != V_WRITE_SUCCESS) {
+                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                          "Write of userdata failed.\nReason: write failed\n");
+                arg->success = CMX_RESULT_FAILED;                
+            }
+        }
+        sd_serializedDataFree(data);
+        sd_serializerFree(ser);
+        c_free(message);
     } else {
-        arg->success = CMX_RESULT_OK;
+        OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                  "Write of userdata failed.\nReason: Out of resources\n");
+        arg->success = CMX_RESULT_FAILED;
     }
-    sd_serializedDataFree(data);
-    sd_serializerFree(ser);
-
-    /* Note that the last param of v_writerWrite is NULL,
-       performance can be improved if the instance is provided. */    
-    v_writerWrite(kw,message,v_timeGet(),NULL);
-    c_free(message);
 }
 
 const c_char*
 cmx_writerDispose(
-    const c_char* writer, 
+    const c_char* writer,
     const c_char* data)
 {
-    u_entity entity;
+    cmx_entity ce;
     struct cmx_writerArg arg;
-    
+
     arg.success = CMX_RESULT_ENTITY_NOT_AVAILABLE;
 
-    entity = cmx_entityUserEntity(writer);
+    ce = cmx_entityClaim(writer);
 
-    if(entity != NULL){
+    if(ce != NULL){
         arg.result = data;
 
-        u_entityWriteAction(entity, cmx_writerDisposeCopy, &arg);
+        if (u_observableWriteAction(u_observable(ce->uentity), cmx_writerDisposeCopy, &arg) != U_RESULT_OK){
+            arg.success = CMX_RESULT_FAILED;
+        }
+        cmx_entityRelease(ce);
     }
     return arg.success;
 }
 
 void
 cmx_writerDisposeCopy(
-    v_entity entity,
+    v_public public,
     c_voidp args)
 {
+    v_entity entity;
     v_writer kw;
     v_message message;
     void *to;
     sd_serializer ser;
     sd_serializedData data;
-    sd_validationResult valResult;
     struct cmx_writerArg *arg;
-    
+
+    entity = v_entity(public);
     arg = (struct cmx_writerArg *)args;
-    
+
     kw = v_writer(entity);
-    message = v_topicMessageNew(kw->topic);
-    to = C_DISPLACE(message,v_topicDataOffset(kw->topic));
-    
-    ser = sd_serializerXMLNewTyped(v_topicDataType(kw->topic));
-    data = sd_serializerFromString(ser, arg->result);
-    sd_serializerDeserializeIntoValidated(ser, data, to);
-    valResult = sd_serializerLastValidationResult(ser);
-        
-    if(valResult != SD_VAL_SUCCESS){
-        OS_REPORT_2(OS_ERROR, CM_XML_CONTEXT, 0, 
+    message = v_topicMessageNew_s(kw->topic);
+    if (message) {
+        to = (void *) (message + 1);
+
+        ser = sd_serializerXMLNewTyped(v_topicDataType(kw->topic));
+        data = sd_serializerFromString(ser, arg->result);
+        if (!sd_serializerDeserializeInto(ser, data, to)) {
+            OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                     "Write of userdata failed.\nReason: %s\nError: %s\n",
                     sd_serializerLastValidationMessage(ser),
-                    sd_serializerLastValidationLocation(ser));           
-        arg->success = CMX_RESULT_FAILED;
+                    sd_serializerLastValidationLocation(ser));
+            arg->success = CMX_RESULT_FAILED;
+        } else {
+            arg->success = CMX_RESULT_OK;
+            v_writerDispose(kw,message,os_timeWGet(),NULL);
+        }
+        sd_serializedDataFree(data);
+        sd_serializerFree(ser);
+        c_free(message);
     } else {
-        arg->success = CMX_RESULT_OK;
+        OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                  "Write of userdata failed.\nReason: Out of resources\n");
+        arg->success = CMX_RESULT_FAILED;
     }
-    sd_serializedDataFree(data);
-    sd_serializerFree(ser);
-    
-    /* Note that the last param of v_writerDispose is NULL,
-       performance can be improved if the instance is provided. */    
-    v_writerDispose(kw,message,v_timeGet(),NULL);
-    c_free(message);
 }
 
 const c_char*
 cmx_writerWriteDispose(
-    const c_char* writer, 
+    const c_char* writer,
     const c_char* data)
 {
-    u_entity entity;
+    cmx_entity ce;
     struct cmx_writerArg arg;
-    
+
     arg.success = CMX_RESULT_ENTITY_NOT_AVAILABLE;
 
-    entity = cmx_entityUserEntity(writer);
+    ce = cmx_entityClaim(writer);
 
-    if(entity != NULL){
+    if(ce != NULL){
         arg.result = data;
-        u_entityWriteAction(entity, cmx_writerWriteDisposeCopy, &arg);
+
+        if (u_observableWriteAction(u_observable(ce->uentity), cmx_writerWriteDisposeCopy, &arg) != U_RESULT_OK){
+            arg.success = CMX_RESULT_FAILED;
+        }
+        cmx_entityRelease(ce);
     }
     return arg.success;
 }
 
 void
 cmx_writerWriteDisposeCopy(
-    v_entity entity,
+    v_public public,
     c_voidp args)
 {
+    v_entity entity;
     v_writer kw;
     v_message message;
     void *to;
     sd_serializer ser;
     sd_serializedData data;
-    sd_validationResult valResult;
     struct cmx_writerArg *arg;
-    
+
+    entity = v_entity(public);
     arg = (struct cmx_writerArg *)args;
-    
+
     kw = v_writer(entity);
-    message = v_topicMessageNew(kw->topic);
-    to = C_DISPLACE(message,v_topicDataOffset(kw->topic));
-    
-    ser = sd_serializerXMLNewTyped(v_topicDataType(kw->topic));
-    data = sd_serializerFromString(ser, arg->result);
-    sd_serializerDeserializeIntoValidated(ser, data, to);
-    valResult = sd_serializerLastValidationResult(ser);
-        
-    if(valResult != SD_VAL_SUCCESS){
-        OS_REPORT_2(OS_ERROR, CM_XML_CONTEXT, 0, 
+    message = v_topicMessageNew_s(kw->topic);
+    if (message) {
+        to = (void *) (message + 1);
+
+        ser = sd_serializerXMLNewTyped(v_topicDataType(kw->topic));
+        data = sd_serializerFromString(ser, arg->result);
+        if (!sd_serializerDeserializeInto(ser, data, to)) {
+            OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                     "Write of userdata failed.\nReason: %s\nError: %s\n",
                     sd_serializerLastValidationMessage(ser),
-                    sd_serializerLastValidationLocation(ser));           
-        arg->success = CMX_RESULT_FAILED;
+                    sd_serializerLastValidationLocation(ser));
+            arg->success = CMX_RESULT_FAILED;
+        } else {
+            arg->success = CMX_RESULT_OK;
+            v_writerWriteDispose(kw,message,os_timeWGet(),NULL);
+        }
+        sd_serializedDataFree(data);
+        sd_serializerFree(ser);
+        c_free(message);
     } else {
-        arg->success = CMX_RESULT_OK;
+        OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                  "Write of userdata failed.\nReason: Out of resources\n");
+        arg->success = CMX_RESULT_FAILED;
     }
-    sd_serializedDataFree(data);
-    sd_serializerFree(ser);
-    
-    /* Note that the last param of v_writerWriteDispose is NULL,
-       performance can be improved if the instance is provided. */    
-    v_writerWriteDispose(kw,message,v_timeGet(),NULL);
-    c_free(message);
 }
 
 const c_char*
 cmx_writerRegister(
-    const c_char* writer, 
+    const c_char* writer,
     const c_char* data)
 {
-    u_entity entity;
+    cmx_entity ce;
     struct cmx_writerArg arg;
-    
+
     arg.success = CMX_RESULT_ENTITY_NOT_AVAILABLE;
 
-    entity = cmx_entityUserEntity(writer);
+    ce = cmx_entityClaim(writer);
 
-    if(entity != NULL){
+    if(ce != NULL){
         arg.result = data;
 
-        u_entityWriteAction(entity, cmx_writerRegisterCopy, &arg);
+        if (u_observableWriteAction(u_observable(ce->uentity), cmx_writerRegisterCopy, &arg) != U_RESULT_OK){
+            arg.success = CMX_RESULT_FAILED;
+        }
+        cmx_entityRelease(ce);
     }
     return arg.success;
 }
 
 void
 cmx_writerRegisterCopy(
-    v_entity entity,
+    v_public public,
     c_voidp args)
 {
+    v_entity entity;
     v_writer kw;
     v_message message;
     v_writerInstance instance;
     void *to;
     sd_serializer ser;
     sd_serializedData data;
-    sd_validationResult valResult;
     struct cmx_writerArg *arg;
-    
+
+    entity = v_entity(public);
     arg = (struct cmx_writerArg *)args;
-    
+
     kw = v_writer(entity);
-    message = v_topicMessageNew(kw->topic);
-    to = C_DISPLACE(message,v_topicDataOffset(kw->topic));
-    
-    ser = sd_serializerXMLNewTyped(v_topicDataType(kw->topic));
-    data = sd_serializerFromString(ser, arg->result);
-    sd_serializerDeserializeIntoValidated(ser, data, to);
-    valResult = sd_serializerLastValidationResult(ser);
-        
-    if(valResult != SD_VAL_SUCCESS){
-        OS_REPORT_2(OS_ERROR, CM_XML_CONTEXT, 0, 
+    message = v_topicMessageNew_s(kw->topic);
+    if (message) {
+        to = (void *) (message + 1);
+
+        ser = sd_serializerXMLNewTyped(v_topicDataType(kw->topic));
+        data = sd_serializerFromString(ser, arg->result);
+        if (!sd_serializerDeserializeInto(ser, data, to)) {
+            OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                     "Register of userdata failed.\nReason: %s\nError: %s\n",
                     sd_serializerLastValidationMessage(ser),
-                    sd_serializerLastValidationLocation(ser));           
-        arg->success = CMX_RESULT_FAILED;
+                    sd_serializerLastValidationLocation(ser));
+            arg->success = CMX_RESULT_FAILED;
+        } else {
+            arg->success = CMX_RESULT_OK;
+            v_writerRegister(kw,message,os_timeWGet(),&instance);
+            c_free(instance);
+        }
+        sd_serializedDataFree(data);
+        sd_serializerFree(ser);
+        c_free(message);
     } else {
-        arg->success = CMX_RESULT_OK;
+        OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                  "Write of userdata failed.\nReason: Out of resources\n");
+        arg->success = CMX_RESULT_FAILED;
     }
-    sd_serializedDataFree(data);
-    sd_serializerFree(ser);
-    
-    v_writerRegister(kw,message,v_timeGet(),&instance);
-    c_free(message);
-    c_free(instance);
 }
 
 const c_char*
 cmx_writerUnregister(
-    const c_char* writer, 
+    const c_char* writer,
     const c_char* data)
 {
-    u_entity entity;
+    cmx_entity ce;
     struct cmx_writerArg arg;
-    
+
     arg.success = CMX_RESULT_ENTITY_NOT_AVAILABLE;
 
-    entity = cmx_entityUserEntity(writer);
+    ce = cmx_entityClaim(writer);
 
-    if(entity != NULL){
+    if(ce != NULL){
         arg.result = data;
 
-        u_entityWriteAction(entity, cmx_writerUnregisterCopy, &arg);
+        if (u_observableWriteAction(u_observable(ce->uentity), cmx_writerUnregisterCopy, &arg) != U_RESULT_OK){
+            arg.success = CMX_RESULT_FAILED;
+        }
+        cmx_entityRelease(ce);
     }
     return arg.success;
 }
 
 void
 cmx_writerUnregisterCopy(
-    v_entity entity,
+    v_public public,
     c_voidp args)
 {
+    v_entity entity;
     v_writer kw;
     v_message message;
     void *to;
     sd_serializer ser;
     sd_serializedData data;
-    sd_validationResult valResult;
     struct cmx_writerArg *arg;
-    
+
+    entity = v_entity(public);
     arg = (struct cmx_writerArg *)args;
-    
+
     kw = v_writer(entity);
-    message = v_topicMessageNew(kw->topic);
-    to = C_DISPLACE(message,v_topicDataOffset(kw->topic));
-    
-    ser = sd_serializerXMLNewTyped(v_topicDataType(kw->topic));
-    data = sd_serializerFromString(ser, arg->result);
-    sd_serializerDeserializeIntoValidated(ser, data, to);
-    valResult = sd_serializerLastValidationResult(ser);
-        
-    if(valResult != SD_VAL_SUCCESS){
-        OS_REPORT_2(OS_ERROR, CM_XML_CONTEXT, 0, 
+    message = v_topicMessageNew_s(kw->topic);
+    if (message) {
+        to = (void *) (message + 1);
+
+        ser = sd_serializerXMLNewTyped(v_topicDataType(kw->topic));
+        data = sd_serializerFromString(ser, arg->result);
+        if (!sd_serializerDeserializeInto(ser, data, to)) {
+            OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                     "Unregister of userdata failed.\nReason: %s\nError: %s\n",
                     sd_serializerLastValidationMessage(ser),
-                    sd_serializerLastValidationLocation(ser));           
-        arg->success = CMX_RESULT_FAILED;
+                    sd_serializerLastValidationLocation(ser));
+            arg->success = CMX_RESULT_FAILED;
+        } else {
+            arg->success = CMX_RESULT_OK;
+            v_writerUnregister(kw,message,os_timeWGet(),NULL);
+        }
+        sd_serializedDataFree(data);
+        sd_serializerFree(ser);
+        c_free(message);
     } else {
-        arg->success = CMX_RESULT_OK;
+        OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                  "Write of userdata failed.\nReason: Out of resources\n");
+        arg->success = CMX_RESULT_FAILED;
     }
-    sd_serializedDataFree(data);
-    sd_serializerFree(ser);
-    
-    /* Note that the last param of v_writerWriteDispose is NULL,
-       performance can be improved if the instance is provided. */    
-    v_writerUnregister(kw,message,v_timeGet(),NULL);
-    c_free(message);
 }

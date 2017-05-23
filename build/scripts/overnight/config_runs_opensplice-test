@@ -37,11 +37,17 @@ E   opensplice-test/ubuntu1204/x86.linux-release 25 #First# none
 E   opensplice-test/ubuntu1204-64/x86_64.linux-dev 25 #First# none
 E   opensplice-test/ubuntu1204-64/x86_64.linux-release 25 #First# none
 
-E   opensplice/raspberry1/armv6l.linux-dev 25 #First# none
-E   opensplice/raspberry1/armv6l.linux-release 25 #First# none
+E   opensplice-test/raspberry1/armv6l.linux-dev 25 #First# none
+E   opensplice-test/raspberry1/armv6l.linux-release 25 #First# none
 
-E   opensplice/bone1/armv7l.linux-dev 25 #First# none 
-E   opensplice/bone1/armv7l.linux-release 25 #First# none 
+E   opensplice-test/pi3a/armv7l.linux-dev 25 #First# none
+E   opensplice-test/pi3a/armv7l.linux-release 25 #First# none
+
+E   opensplice-test/bone1/armv7l.linux-dev 25 #First# none
+E   opensplice-test/bone1/armv7l.linux-release 25 #First# none
+
+E   opensplice-test/jetson1/armv7l.linux-dev 25 #First# none
+E   opensplice-test/jetson1/armv7l.linux-release 25 #First# none
 
 E   opensplice-test/win7b/x86.win32-dev-vs11 30 #First# none
 E   opensplice-test/win7b/x86.win32-release-vs11 30 #First# none
@@ -54,3 +60,15 @@ E   opensplice-test/win7d/x86_64.win64-release-vs11 30 #First# none
 
 E   opensplice-test/win7e/x86_64.win64-dev-vs12 30 #First# none
 E   opensplice-test/win7e/x86_64.win64-release-vs12 30 #First# none
+
+E   opensplice-test/rhel72a/x86_64.linux-dev 25 #First# none
+E   opensplice-test/rhel72a/x86_64.linux-release 25 #First# none
+
+E   opensplice-test/ubuntu1604-32a/x86.linux-dev 25 #First# none
+E   opensplice-test/ubuntu1604-32a/x86.linux-release 25 #First# none
+
+E   opensplice-test/ubuntu1604-64a/x86_64.linux-dev 25 #First# none
+E   opensplice-test/ubuntu1604-64a/x86_64.linux-release 25 #First# none
+
+E   opensplice-test/win10-64-vor-b/x86_64.win64-dev-vs14 30 #First# none
+E   opensplice-test/win10-64-vor-b/x86_64.win64-release-vs14 30 #First# none

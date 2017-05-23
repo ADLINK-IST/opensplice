@@ -1,0 +1,913 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. IDL Pre-processor Grammar &mdash; IDL PreProcessor Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="IDL PreProcessor Guide" href="index.html" />
+    <link rel="next" title="7. Keys" href="keys.html" />
+    <link rel="prev" title="5. OpenSplice Modes and Languages" href="ddsmodes.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="keys.html" title="7. Keys"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ddsmodes.html" title="5. OpenSplice Modes and Languages"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="idl-pre-processor-grammar">
+<span id="id1"></span><h1>6. IDL Pre-processor Grammar<a class="headerlink" href="#idl-pre-processor-grammar" title="Permalink to this headline">¶</a></h1>
+<p><em>The Vortex OpenSplice IDL Pre-processor accepts the grammar which complies with
+the CORBA Specification. The Vortex OpenSplice IDL Pre-processor accepts the
+complete grammar, but it will ignore elements not relevant to the definition
+of data types.</em></p>
+<p>In the following specification of the grammar (similar to EBNF), elements
+that are processed by the Vortex OpenSplice IDL Pre-processor are highlighted
+in <strong>bold</strong>. Note that Vortex OpenSplice does not support all base types that
+are specified by the OMG.</p>
+<p>The <tt class="docutils literal"><span class="pre">idlpp</span></tt> also takes into account all C pre-processor directives that
+are common to ANSI-C, like <tt class="docutils literal"><span class="pre">#include</span></tt>, <tt class="docutils literal"><span class="pre">#define</span></tt>, <tt class="docutils literal"><span class="pre">#ifdef</span></tt>, <em>etc.</em>.</p>
+<p class="centered">
+<strong><strong>The OMG&#8217;s IDL Grammar</strong></strong></p><table border="1" class="docutils">
+<colgroup>
+<col width="30%" />
+<col width="8%" />
+<col width="62%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>&lt;specification&gt;</td>
+<td>::=</td>
+<td>&lt;import&gt;* <strong>&lt;definition&gt;+</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;definition&gt;</td>
+<td>::=</td>
+<td>&lt;type_dcl&gt; &#8221;;&#8221; &lt;ann_appl_post&gt; |
+<strong>&lt;type_dcl&gt;</strong> &#8221;;&#8221; | <strong>&lt;const_dcl&gt;</strong>
+&#8221;;&#8221; | &lt;except_dcl&gt; &#8221;;&#8221; | &lt;interface&gt;
+&#8221;;&#8221; | <strong>&lt;module&gt;</strong> &#8221;;&#8221; | &lt;value&gt; &#8221;;&#8221; |
+&lt;type_id_dcl&gt; &#8221;;&#8221; | &lt;type_prefix_dcl&gt;
+&#8221;;&#8221; | &lt;event&gt; &#8221;;&#8221; | &lt;component&gt; &#8221;;&#8221; |
+&lt;home_dcl&gt; &#8221;;&#8221; |
+&lt;annotation&gt; &#8221;;&#8221; &lt;ann_appl_post&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;annotation&gt;</td>
+<td>::=</td>
+<td>&lt;ann_dcl&gt; | &lt;ann_fwd_dcl&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;ann_dcl&gt;</td>
+<td>::=</td>
+<td>&lt;ann_header&gt; &#8220;{&#8221; &lt;ann_body&gt; &#8220;}&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;ann_fwd_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;&#64;Annotation [ &#8220;(&#8221; &#8221;)&#8221; ] local
+interface&#8221; &lt;identifier&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;ann_header&gt;</td>
+<td>::=</td>
+<td>&#8220;&#64;Annotation [ &#8220;(&#8221; &#8221;)&#8221; ] local
+interface&#8221; &lt;identifier&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;ann_body&gt;</td>
+<td>::=</td>
+<td>&lt;ann_attr&gt;*</td>
+</tr>
+<tr class="row-even"><td>&lt;ann_inheritance_spec&gt;</td>
+<td>::=</td>
+<td>&#8221;:&#8221; &lt;annotation_name&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;annotation_name&gt;</td>
+<td>::=</td>
+<td>&lt;scoped_name&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;ann_attr&gt;</td>
+<td>::=</td>
+<td>&lt;ann_appl&gt; &#8220;attribute&#8221; &lt;param_type_spec&gt;
+&lt;simple_declarator&gt; [ &#8220;default&#8221;
+&lt;const_exp&gt; ] &#8221;;&#8221; &lt;ann_appl_post&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;ann_appl&gt;</td>
+<td>::=</td>
+<td>{ &#8220;&#64;&#8221; &lt;ann_appl_dcl&gt; }*</td>
+</tr>
+<tr class="row-even"><td>&lt;ann_appl_post&gt;</td>
+<td>::=</td>
+<td>{ &#8220;//&#64;&#8221; &lt;ann_appl_dcl&gt; }*</td>
+</tr>
+<tr class="row-odd"><td>&lt;ann_appl_dcl&gt;</td>
+<td>::=</td>
+<td>&lt;annotation_name&gt; [ &#8220;(&#8221; [
+&lt;ann_appl_params&gt; ] &#8221;)&#8221; ]</td>
+</tr>
+<tr class="row-even"><td>&lt;ann_appl_params&gt;</td>
+<td>::=</td>
+<td>&lt;const_exp&gt; | &lt;ann_appl_param&gt; { &#8221;,&#8221;
+&lt;ann_appl_param&gt; }*</td>
+</tr>
+<tr class="row-odd"><td>&lt;ann_appl_param&gt;</td>
+<td>::=</td>
+<td>&lt;identifier&gt; &#8220;=&#8221;
+&lt;const_exp&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;struct_header&gt;</td>
+<td>::=</td>
+<td>&lt;ann_appl&gt; &#8220;struct&#8221; &lt;identifier&gt; [ &#8221;:&#8221;
+&lt;scoped_name&gt; ]</td>
+</tr>
+<tr class="row-odd"><td>&lt;switch_type</td>
+<td>::=</td>
+<td>&lt;integer_type&gt; | &lt;char_type&gt; |
+&lt;wide_char_type&gt; | &lt;boolean_type&gt; |
+&lt;enum_type&gt; | &lt;octet_type&gt; |
+&lt;scoped_name&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;map_type&gt;</td>
+<td>::=</td>
+<td>&#8220;map&#8221; &#8220;&lt;&#8221; &lt;simple_type_spec&gt; &#8221;,&#8221;
+&lt;ann_appl&gt; &lt;simple_type_spec&gt; &#8221;,&#8221;
+&lt;ann_appl_post&gt; &lt;positive_int_const&gt;
+&#8220;&gt;&#8221; | &#8220;map&#8221; &#8220;&lt;&#8221; &lt;simple_type_spec&gt; &#8221;,&#8221;
+&lt;ann_appl&gt; &lt;simple_type_spec&gt;
+&lt;ann_appl_post&gt; &#8220;&gt;&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;module&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;module&#8221; &lt;identifier&gt; &#8220;{&#8221;
+&lt;definition&gt;+ &#8220;}&#8221;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;interface&gt;</td>
+<td>::=</td>
+<td>&lt;interface_dcl&gt; | &lt;forward_dcl&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;interface_dcl&gt;</td>
+<td>::=</td>
+<td>&lt;interface_header&gt; &#8220;{&#8221;
+&lt;interface_body&gt; &#8220;}&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;forward_dcl&gt;</td>
+<td>::=</td>
+<td>[ &#8220;abstract&#8221; | &#8220;local&#8221;
+] &#8220;interface&#8221; &lt;identifier&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;interface_header&gt;</td>
+<td>::=</td>
+<td>[ &#8220;abstract&#8221; | &#8220;local&#8221; ] &#8220;interface&#8221;
+&lt;identifier&gt;
+[ &lt;interface_inheritance_spec&gt; ]</td>
+</tr>
+<tr class="row-even"><td>&lt;interface_body&gt;</td>
+<td>::=</td>
+<td>&lt;export&gt;*</td>
+</tr>
+<tr class="row-odd"><td>&lt;export&gt;</td>
+<td>::=</td>
+<td>&lt;type_dcl&gt; &#8221;;&#8221; | &lt;const_dcl&gt; &#8221;;&#8221; |
+&lt;except_dcl&gt; &#8221;;&#8221; | &lt;attr_dcl&gt; &#8221;;&#8221; |
+&lt;op_dcl&gt; &#8221;;&#8221; | &lt;type_id_dcl&gt; &#8221;;&#8221; |
+&lt;type_prefix_dcl&gt; &#8221;;&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;interface_inheritance_spec&gt;</td>
+<td>::=</td>
+<td>&#8221;:&#8221; &lt;interface_name&gt; {
+&#8221;,&#8221; &lt;interface_name&gt;
+}*</td>
+</tr>
+<tr class="row-odd"><td>&lt;interface_name&gt;</td>
+<td>::=</td>
+<td>&lt;scoped_name&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;scoped_name&gt;</td>
+<td>::=</td>
+<td><strong>&lt;identifier&gt;</strong> | <strong>&#8221;::&#8221;
+&lt;identifier&gt;</strong> | <strong>&lt;scoped_name&gt; &#8221;::&#8221;
+&lt;identifier&gt;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;value&gt;</td>
+<td>::=</td>
+<td>(&lt;value_dcl&gt; | &lt;value_abs_dcl&gt; |
+&lt;value_box_dcl&gt; | &lt;value_forward_dcl&gt;)</td>
+</tr>
+<tr class="row-even"><td>&lt;value_forward_dcl&gt;</td>
+<td>::=</td>
+<td>[ &#8220;abstract&#8221; ] &#8220;valuetype&#8221;
+&lt;identifier&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;value_box_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;valuetype&#8221; &lt;identifier&gt; &lt;type_spec&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;value_abs_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;abstract&#8221; &#8220;valuetype&#8221; &lt;identifier&gt; [
+&lt;value_inheritance_spec&gt; ]
+&#8220;{&#8221; &lt;export&gt;* &#8220;}&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;value_dcl&gt;</td>
+<td>::=</td>
+<td>&lt;value_header&gt; &#8220;{&#8221; &lt;
+value_element&gt;* &#8220;}&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;value_header&gt;</td>
+<td>::=</td>
+<td>[&#8220;custom&#8221; ] &#8220;valuetype&#8221; &lt;identifier&gt; [
+&lt;value_inheritance_spec&gt; ]</td>
+</tr>
+<tr class="row-odd"><td>&lt;value_inheritance_spec&gt;</td>
+<td>::=</td>
+<td>[ &#8221;:&#8221; [ &#8220;truncatable&#8221; ] &lt;value_name&gt; {
+&#8221;,&#8221; &lt;value_name&gt; }* ] [ &#8220;supports&#8221;
+&lt;interface_name&gt; { &#8221;,&#8221;
+&lt;interface_name&gt; }* ]</td>
+</tr>
+<tr class="row-even"><td>&lt;value_name&gt;</td>
+<td>::=</td>
+<td>&lt;scoped_name&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;value_element&gt;</td>
+<td>::=</td>
+<td>&lt;export&gt; | &lt; state_member&gt; | &lt;init_dcl&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;state_member&gt;</td>
+<td>::=</td>
+<td>(&#8220;public&#8221; | &#8220;private&#8221;)&lt;type_spec&gt;
+&lt;declarators&gt;&#8221;;&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;init_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;factory&#8221; &lt;identifier&gt; &#8220;(&#8221; [
+&lt;init_param_decls&gt; ] &#8221;)&#8221; [
+&lt;raises_expr&gt; ] &#8221;;&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;init_param_decls&gt;</td>
+<td>::=</td>
+<td>&lt;init_param_decl&gt; { &#8221;,&#8221;
+&lt;init_param_decl&gt; }*</td>
+</tr>
+<tr class="row-odd"><td>&lt;init_param_decl&gt;</td>
+<td>::=</td>
+<td>&lt;init_param_attribute&gt; &lt;param_type_spec&gt;
+&lt;simple_declarator&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;init_param_attribute&gt;</td>
+<td>::=</td>
+<td>&#8220;in&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;const_dcl&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;const&#8221; &lt;const_type&gt; &lt;identifier&gt;
+&#8220;=&#8221; &lt;const_exp&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;const_type&gt;</td>
+<td>::=</td>
+<td><strong>&lt;integer_type&gt;</strong> | <strong>&lt;char_type&gt;</strong> |
+&lt;wide_char_type&gt; | <strong>&lt;boolean_type&gt;</strong> |
+<strong>&lt;floating_pt_type&gt;</strong> |
+<strong>&lt;string_type&gt; | &lt;wide_string_type&gt; |
+&lt;fixed_pt_const_type&gt; |
+**&lt;scoped_name&gt;</strong> | <strong>&lt;octet_type&gt;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;const_exp&gt;</td>
+<td>::=</td>
+<td><strong>&lt;or_expr&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;or_expr&gt;</td>
+<td>::=</td>
+<td><strong>&lt;xor_expr&gt;</strong> | <strong>&lt;or_expr&gt; &#8220;|&#8221;
+&lt;xor_expr&gt;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;xor_expr&gt;</td>
+<td>::=</td>
+<td><strong>&lt;and_expr&gt;</strong> | <strong>&lt;xor_expr&gt; &#8220;^&#8221;
+&lt;and_expr&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;and_expr&gt;</td>
+<td>::=</td>
+<td><strong>&lt;shift_expr&gt;</strong> | <strong>&lt;and_expr&gt; &#8220;&amp;&#8221;
+&lt;shift_expr&gt;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;shift_expr&gt;</td>
+<td>::=</td>
+<td><strong>&lt;add_expr&gt;</strong> | <strong>&lt;shift_expr&gt; &#8220;&gt;&gt;&#8221;
+&lt;add_expr&gt;</strong> | <strong>&lt;shift_expr&gt; &#8220;&lt;&lt;&#8221;
+&lt;add_expr&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;add_expr&gt;</td>
+<td>::=</td>
+<td><strong>&lt;mult_expr&gt;</strong> | <strong>&lt;add_expr&gt; &#8220;+&#8221;
+&lt;mult_expr&gt;</strong> | <strong>&lt;add_expr&gt; &#8220;-&#8221;
+&lt;mult_expr&gt;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;mult_expr&gt;</td>
+<td>::=</td>
+<td><strong>&lt;unary_expr&gt;</strong> | <strong>&lt;mult_expr&gt; &#8220;*&#8221;
+&lt;unary_expr&gt;</strong> | <strong>&lt;mult_expr&gt; &#8220;/&#8221;
+&lt;unary_expr&gt;</strong> | <strong>&lt;mult_expr&gt; &#8220;%&#8221;
+&lt;unary_expr&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;unary_expr&gt;</td>
+<td>::=</td>
+<td><strong>&lt;unary_operator&gt; &lt;primary_expr&gt;</strong> |
+<strong>&lt;primary_expr&gt;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;unary_operator&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;-&#8220;</strong> | <strong>&#8220;+&#8221;</strong> | <strong>&#8220;~&#8221;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;primary_expr&gt;</td>
+<td>::=</td>
+<td><strong>&lt;scoped_name&gt;</strong> | <strong>&lt;literal&gt;</strong> |
+<strong>&#8220;(&#8221; &lt;const_exp&gt; &#8221;)&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;literal&gt;</td>
+<td>::=</td>
+<td><strong>&lt;integer_literal&gt;</strong> |
+<strong>&lt;string_literal&gt;</strong> |
+&lt;wide_string_literal&gt; |
+<strong>&lt;character_literal&gt;</strong> |
+&lt;wide_character_literal&gt; |
+&lt;fixed_pt_literal&gt; |
+<strong>&lt;floating_pt_literal&gt;</strong> |
+&lt;boolean_literal&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;boolean_literal&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;TRUE&#8221;</strong> | <strong>&#8220;FALSE&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;positive_int_const&gt;</td>
+<td>::=</td>
+<td><strong>&lt;const_exp&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;type_dcl&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;typedef&#8221; &lt;type_declarator&gt;</strong> |
+<strong>&lt;struct_type&gt;</strong> | <strong>&lt;union_type&gt;</strong> |
+<strong>&lt;enum_type&gt;</strong> | &#8220;native&#8221;
+&lt;simple_declarator&gt; |
+&lt;constr_forward_decl&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;type_declarator&gt;</td>
+<td>::=</td>
+<td><strong>&lt;type_spec&gt; &lt;declarators&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;type_spec&gt;</td>
+<td>::=</td>
+<td><strong>&lt;simple_type_spec&gt;</strong> |
+<strong>&lt;constr_type_spec&gt;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;simple_type_spec&gt;</td>
+<td>::=</td>
+<td><strong>&lt;base_type_spec&gt;</strong> |
+<strong>&lt;template_type_spec&gt;</strong> |
+<strong>&lt;scoped_name&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;base_type_spec&gt;</td>
+<td>::=</td>
+<td><strong>&lt;floating_pt_type&gt;</strong> |
+<strong>&lt;integer_type&gt;</strong> | <strong>&lt;char_type&gt;</strong> |
+&lt;wide_char_type&gt; | <strong>&lt;boolean_type&gt;</strong> |
+<strong>&lt;octet_type&gt;</strong> | &lt;any_type&gt; |
+&lt;object_type&gt; | &lt;value_base_type&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;template_type_spec&gt;</td>
+<td>::=</td>
+<td><strong>&lt;sequence_type&gt;</strong> |
+<strong>&lt;string_type&gt;</strong> | &lt;wide_string_type&gt; |
+&lt;fixed_pt_type&gt; | &lt;map_type&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;constr_type_spec&gt;</td>
+<td>::=</td>
+<td><strong>&lt;struct_type&gt;</strong> | <strong>&lt;union_type&gt;</strong> |
+<strong>&lt;enum_type&gt;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;declarators&gt;</td>
+<td>::=</td>
+<td><strong>&lt;declarator&gt; { &#8221;,&#8221; &lt;declarator&gt; }*</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;declarator&gt;</td>
+<td>::=</td>
+<td><strong>&lt;simple_declarator&gt;</strong> |
+<strong>&lt;complex_declarator&gt;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;simple_declarator&gt;</td>
+<td>::=</td>
+<td><strong>&lt;identifier&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;complex_declarator&gt;</td>
+<td>::=</td>
+<td><strong>&lt;array_declarator&gt;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;floating_pt_type&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;float&#8221;</strong> | <strong>&#8220;double&#8221;</strong> |
+&#8220;long&#8221; &#8220;double&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;integer_type&gt;</td>
+<td>::=</td>
+<td><strong>&lt;signed_int&gt;</strong> | <strong>&lt;unsigned_int&gt;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;signed_int&gt;</td>
+<td>::=</td>
+<td><strong>&lt;signed_short_int&gt;</strong> |
+<strong>&lt;signed_long_int&gt;</strong> |
+<strong>&lt;signed_longlong_int&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;signed_short_int&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;short&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;signed_long_int&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;long&#8221;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;signed_longlong_int&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;long&#8221; &#8220;long&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;unsigned_int&gt;</td>
+<td>::=</td>
+<td><strong>&lt;unsigned_short_int&gt;</strong> |
+<strong>&lt;unsigned_long_int&gt; |
+**&lt;unsigned_longlong_int&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;unsigned_short_int&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;unsigned&#8221; &#8220;short&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;unsigned_long_int&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;unsigned&#8221; &#8220;long&#8221;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;unsigned_longlong_int&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;unsigned&#8221; &#8220;long&#8221; &#8220;long&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;char_type&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;char&#8221;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;wide_char_type&gt;</td>
+<td>::=</td>
+<td>&#8220;wchar&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;boolean_type&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;boolean&#8221;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;octet_type&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;octet&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;any_type&gt;</td>
+<td>::=</td>
+<td>&#8220;any&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;object_type&gt;</td>
+<td>::=</td>
+<td>&#8220;Object&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;struct_type&gt;</td>
+<td>::=</td>
+<td><strong>&lt;struct_header&gt; &#8220;{&#8221;
+&lt;member_list&gt; &#8220;}&#8221;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;member_list&gt;</td>
+<td>::=</td>
+<td><strong>&lt;member&gt;+</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;member&gt;</td>
+<td>::=</td>
+<td><strong>&lt;type_spec&gt; &lt;declarators&gt; &#8221;;&#8221; |
+&lt;ann_appl&gt; &lt;type_spec&gt; &lt;declarator&gt; &#8221;;&#8221;
+&lt;ann_appl_post&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;union_type&gt;</td>
+<td>::=</td>
+<td><strong>&lt;ann_appl&gt; &#8220;union&#8221; &lt;identifier&gt;
+&#8220;switch&#8221; &#8220;(&#8221; &lt;switch_type_spec&gt; &#8221;)&#8221;
+&#8220;{&#8221; &lt;switch_body&gt; &#8220;}&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;switch_type_spec&gt;</td>
+<td>::=</td>
+<td><strong>&lt;ann_appl&gt; &lt;switch_type_name&gt;
+&lt;ann_appl_post&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;switch_body&gt;</td>
+<td>::=</td>
+<td><strong>&lt;case&gt;+</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;case&gt;</td>
+<td>::=</td>
+<td><strong>&lt;case_label&gt;+ &lt;element_spec&gt; &#8221;;&#8221;
+&lt;ann_appl_post</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;case_label&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;case&#8221; &lt;const_exp&gt; &#8221;:&#8221; |
+&#8220;default&#8221; &#8221;:&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;element_spec&gt;</td>
+<td>::=</td>
+<td><strong>&lt;ann_appl&gt; &lt;type_spec&gt; &lt;declarator&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;enum_type&gt;</td>
+<td>::=</td>
+<td><strong>&lt;ann_appl&gt; &#8220;enum&#8221; &lt;identifier&gt; &#8220;{&#8221;
+&lt;enumerator&gt; { &#8221;,&#8221; &lt;ann_appl_post&gt;
+&lt;enumerator&gt; }* &lt;ann_appl_post&gt; &#8220;}&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;enumerator&gt;</td>
+<td>::=</td>
+<td><strong>&lt;ann_appl&gt; &lt;identifier&gt;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;sequence_type&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;sequence&#8221; &#8220;&lt;&#8221; &lt;ann_appl&gt;
+&lt;simple_type_spec&gt; &#8221;,&#8221; &lt;ann_appl_post&gt;
+&lt;positive_int_const&gt; &#8220;&gt;&#8221; | &#8220;sequence&#8221;
+&#8220;&lt;&#8221; &lt;ann_appl&gt; &lt;simple_type_spec&gt;
+&lt;ann_appl_post&gt; &#8220;&gt;&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;string_type&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;string&#8221; &#8220;&lt;&#8221; &lt;positive_int_const&gt;
+&#8220;&gt;&#8221;</strong> | <strong>&#8220;string&#8221;</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;wide_string_type&gt;</td>
+<td>::=</td>
+<td>&#8220;wstring&#8221; &#8220;&lt;&#8221; &lt;positive_int_const&gt;
+&#8220;&gt;&#8221; | &#8220;wstring&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;array_declarator&gt;</td>
+<td>::=</td>
+<td><strong>&lt;identifier&gt; &lt;ann_appl&gt;
+&lt;ann_appl_post&gt; &lt;fixed_array_size&gt;+</strong></td>
+</tr>
+<tr class="row-even"><td>&lt;fixed_array_size&gt;</td>
+<td>::=</td>
+<td><strong>&#8220;[&#8221; &lt;positive_int_const&gt; &#8220;]&#8221;</strong></td>
+</tr>
+<tr class="row-odd"><td>&lt;attr_dcl&gt;</td>
+<td>::=</td>
+<td>&lt;readonly_attr_spec&gt; | &lt;attr_spec&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;except_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;exception&#8221; &lt;identifier&gt; &#8220;{&#8221;
+&lt;member&gt;* &#8220;}&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;op_dcl&gt;</td>
+<td>::=</td>
+<td>[ &lt;op_attribute&gt; ] &lt;op_type_spec&gt;
+&lt;identifier&gt; &lt;parameter_dcls&gt;
+[ &lt;raises_expr&gt; ] [ &lt;context_expr&gt; ]</td>
+</tr>
+<tr class="row-even"><td>&lt;op_attribute&gt;</td>
+<td>::=</td>
+<td>&#8220;oneway&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;op_type_spec&gt;</td>
+<td>::=</td>
+<td>&lt;param_type_spec&gt; | &#8220;void&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;parameter_dcls&gt;</td>
+<td>::=</td>
+<td>&#8220;(&#8221; &lt;param_dcl&gt; { &#8221;,&#8221; &lt;param_dcl&gt; }*
+&#8221;)&#8221; | &#8220;(&#8221; &#8221;)&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;param_dcl&gt;</td>
+<td>::=</td>
+<td>&lt;param_attribute&gt; &lt;param_type_spec&gt;
+&lt;simple_declarator&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;param_attribute&gt;</td>
+<td>::=</td>
+<td>&#8220;in&#8221; | &#8220;out&#8221; | &#8220;inout&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;raises_expr&gt;</td>
+<td>::=</td>
+<td>&#8220;raises&#8221; &#8220;(&#8221; &lt;scoped_name&gt; { &#8221;,&#8221;
+&lt;scoped_name&gt; }* &#8221;)&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;context_expr&gt;</td>
+<td>::=</td>
+<td>&#8220;context&#8221; &#8220;(&#8221; &lt;string_literal&gt; { &#8221;,&#8221;
+&lt;string_literal&gt; }* &#8221;)&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;param_type_spec&gt;</td>
+<td>::=</td>
+<td>&lt;base_type_spec&gt; | &lt;string_type&gt; |
+&lt;wide_string_type&gt; | &lt;scoped_name&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;fixed_pt_type&gt;</td>
+<td>::=</td>
+<td>&#8220;fixed&#8221; &#8220;&lt;&#8221; &lt;positive_int_const&gt; &#8221;,&#8221;
+&lt;positive_int_const&gt; &#8220;&gt;&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;fixed_pt_const_type&gt;</td>
+<td>::=</td>
+<td>&#8220;fixed&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;value_base_type&gt;</td>
+<td>::=</td>
+<td>&#8220;ValueBase&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;constr_forward_decl&gt;</td>
+<td>::=</td>
+<td>&#8220;struct&#8221; &lt;identifier&gt; | &#8220;union&#8221;
+&lt;identifier&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;import&gt;</td>
+<td>::=</td>
+<td>&#8220;import&#8221;
+&lt;imported_scope&gt; &#8221;;&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;imported_scope&gt;</td>
+<td>::=</td>
+<td>&lt;scoped_name&gt; | &lt;string_literal&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;type_id_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;typeid&#8221; &lt;scoped_name&gt; &lt;string_literal&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;type_prefix_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;typeprefix&#8221; &lt;scoped_name&gt;
+&lt;string_literal&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;readonly_attr_spec&gt;</td>
+<td>::=</td>
+<td>&#8220;readonly&#8221; &#8220;attribute&#8221; &lt;param_type_spec&gt;
+&lt;readonly_attr_declarator&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;readonly_attr_declarator&gt;</td>
+<td>::=</td>
+<td>&lt;simple_declarator&gt; &lt;raises_expr&gt; |
+&lt;simple_declarator&gt; { &#8221;,&#8221;
+&lt;simple_declarator&gt; }*</td>
+</tr>
+<tr class="row-even"><td>&lt;attr_spec&gt;</td>
+<td>::=</td>
+<td>&#8220;attribute&#8221; &lt;param_type_spec&gt;
+&lt;attr_declarator&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;attr_declarator&gt;</td>
+<td>::=</td>
+<td>&lt;simple_declarator&gt;
+&lt;attr_raises_expr&gt; | &lt;simple_declarator&gt;
+{ &#8221;,&#8221; &lt;simple_declarator&gt; }*</td>
+</tr>
+<tr class="row-even"><td>&lt;attr_raises_expr&gt;</td>
+<td>::=</td>
+<td>&lt;get_excep_expr&gt; [ &lt;set_excep_expr&gt; ] |
+&lt;set_excep_expr&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;get_excep_expr&gt;</td>
+<td>::=</td>
+<td>&#8220;getraises&#8221; &lt;exception_list&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;set_excep_expr&gt;</td>
+<td>::=</td>
+<td>&#8220;setraises&#8221; &lt;exception_list&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;exception_list&gt;</td>
+<td>::=</td>
+<td>&#8220;(&#8221; &lt;scoped_name&gt; { &#8221;,&#8221; &lt;scoped_name&gt;
+} * &#8221;)&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;component&gt;</td>
+<td>::=</td>
+<td>&lt;component_dcl&gt; |
+&lt;component_forward_dcl&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;component_forward_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;component&#8221; &lt;identifier&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;component_dcl&gt;</td>
+<td>::=</td>
+<td>&lt;component_header&gt; &#8220;{&#8221;
+&lt;component_body&gt; &#8220;}&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;component_header&gt;</td>
+<td>::=</td>
+<td>&#8220;component&#8221; &lt;identifier&gt;
+[ &lt;component_inheritance_spec&gt; ]
+[ &lt;supported_interface_spec&gt; ]</td>
+</tr>
+<tr class="row-even"><td>&lt;supported_interface_spec&gt;</td>
+<td>::=</td>
+<td>&#8220;supports&#8221; &lt;scoped_name&gt; { &#8221;,&#8221;
+&lt;scoped_name&gt; }*</td>
+</tr>
+<tr class="row-odd"><td>&lt;component_inheritance_spec&gt;</td>
+<td>::=</td>
+<td>&#8221;:&#8221; &lt;scoped_name&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;component_body&gt;</td>
+<td>::=</td>
+<td>&lt;component_export&gt;*</td>
+</tr>
+<tr class="row-odd"><td>&lt;component_export&gt;</td>
+<td>::=</td>
+<td>&lt;provides_dcl&gt; &#8221;;&#8221; | &lt;uses_dcl&gt; &#8221;;&#8221; |
+&lt;emits_dcl&gt; &#8221;;&#8221; | &lt;publishes_dcl&gt; &#8221;;&#8221; |
+&lt;consumes_dcl&gt; &#8221;;&#8221; | &lt;attr_dcl&gt; &#8221;;&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;provides_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;provides&#8221; &lt;interface_type&gt;
+&lt;identifier&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;interface_type&gt;</td>
+<td>::=</td>
+<td>&lt;scoped_name&gt; | &#8220;Object&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;uses_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;uses&#8221; [ &#8220;multiple&#8221; ] &lt; interface_type&gt;
+&lt;identifier&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;emits_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;emits&#8221; &lt;scoped_name&gt; &lt;identifier&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;publishes_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;publishes&#8221; &lt;scoped_name&gt; &lt;identifier&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;consumes_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;consumes&#8221; &lt;scoped_name&gt; &lt;identifier&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;home_dcl&gt;</td>
+<td>::=</td>
+<td>&lt;home_header&gt; &lt;home_body&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;home_header&gt;</td>
+<td>::=</td>
+<td>&#8220;home&#8221; &lt;identifier&gt; [
+&lt;home_inheritance_spec&gt; ] [
+&lt;supported_interface_spec&gt; ] &#8220;manages&#8221;
+&lt;scoped_name&gt; [ &lt;primary_key_spec&gt; ]</td>
+</tr>
+<tr class="row-even"><td>&lt;home_inheritance_spec&gt;</td>
+<td>::=</td>
+<td>&#8221;:&#8221; &lt;scoped_name&gt;</td>
+</tr>
+<tr class="row-odd"><td>&lt;primary_key_spec&gt;</td>
+<td>::=</td>
+<td>&#8220;primarykey&#8221; &lt;scoped_name&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;home_body&gt;</td>
+<td>::=</td>
+<td>&#8220;{&#8221; &lt;home_export&gt;* &#8220;}&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;home_export&gt;</td>
+<td>::=</td>
+<td>&lt;export&gt; | &lt;factory_dcl&gt; &#8221;;&#8221; |
+&lt;finder_dcl&gt; &#8221;;&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;factory_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;factory&#8221; &lt;identifier&gt; &#8220;(&#8221; [
+&lt;init_param_decls&gt; ] &#8221;)&#8221; [
+&lt;raises_expr&gt; ]</td>
+</tr>
+<tr class="row-odd"><td>&lt;finder_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;finder&#8221; &lt;identifier&gt; &#8220;(&#8221; [
+&lt;init_param_decls&gt; ] &#8221;)&#8221; [
+&lt;raises_expr&gt; ]</td>
+</tr>
+<tr class="row-even"><td>&lt;event&gt;</td>
+<td>::=</td>
+<td>(&lt;event_dcl&gt; | &lt;event_abs_dcl&gt; |
+&lt;event_forward_dcl&gt;)</td>
+</tr>
+<tr class="row-odd"><td>&lt;event_forward_dcl&gt;</td>
+<td>::=</td>
+<td>[ &#8220;abstract&#8221; ] &#8220;eventtype&#8221;
+&lt;identifier&gt;</td>
+</tr>
+<tr class="row-even"><td>&lt;event_abs_dcl&gt;</td>
+<td>::=</td>
+<td>&#8220;abstract&#8221; &#8220;eventtype&#8221; &lt;identifier&gt; [
+&lt;value_inheritance_spec&gt; ] &#8220;{&#8221;
+&lt;export&gt;* &#8220;}&#8221;</td>
+</tr>
+<tr class="row-odd"><td>&lt;event_dcl&gt;</td>
+<td>::=</td>
+<td>&lt;event_header&gt; &#8220;{&#8221; &lt;value_element&gt;* &#8220;}&#8221;</td>
+</tr>
+<tr class="row-even"><td>&lt;event_header&gt;</td>
+<td>::=</td>
+<td>[ &#8220;custom&#8221; ] &#8220;eventtype&#8221; &lt;identifier&gt; [
+&lt;value_inheritance_spec&gt; ]</td>
+</tr>
+<tr class="row-odd"><td>&lt;identifier&gt;</td>
+<td>::=</td>
+<td>Arbitrarily long sequence of ASCII
+alphabetic, numeric and underscore
+characters. The first character must
+be ASCII alphabetic. All characters
+are significant. An identifier may be
+escaped with a prepended underscore
+character to prevent collisions with
+new IDL keywords. The underscore does
+not appear in the generated output.</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ddsmodes.html"
+                        title="previous chapter">5. OpenSplice Modes and Languages</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="keys.html"
+                        title="next chapter">7. Keys</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/grammar.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="keys.html" title="7. Keys"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ddsmodes.html" title="5. OpenSplice Modes and Languages"
+             >previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

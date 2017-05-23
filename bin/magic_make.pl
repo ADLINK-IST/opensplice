@@ -25,6 +25,7 @@ my $make = '';
 my $check_mpc = '';
 my $clean = '';
 my $debug_override = '';
+my $incdeb = 0;
 my $carryon = '';
 my $exhaustive = 0;
 my $squeaky = 0;
@@ -33,10 +34,12 @@ my $ret;
 my $type = "make";
 my $ospl_home = '';
 my $is_gcov = 0;
+my $ndebug = 0;
 ($ret, $left_over_args) = GetOptions('clean!' => \$clean,
                                      'check-mpc!' => \$check_mpc,
                                      'carryon!' => \$carryon,
                                      'debug!' => \$debug_override,
+                                     'incdeb' => \$incdeb,
                                      'exhaustive' => \$exhaustive,
                                      'make!' => \$make,
                                      'ospl-home=s' => \$ospl_home,
@@ -56,6 +59,15 @@ if ($debug_override == '')
 else
 {
   $config = ($debug_override ? 'Debug' : 'Release');
+}
+
+if ($incdeb == 1)
+{
+    if ($config == 'Release')
+    {
+        $config = '"Release Debug"';
+        $ndebug = 1;
+    }
 }
 
 $is_gcov = 1 if $splice_target =~ 'gcov';
@@ -367,6 +379,10 @@ sub do_mpc
   #{
   #  unshift(@mpc_args, '--value_template', 'coverage=1');
   #}
+  if ($ndebug)
+  {
+    unshift(@mpc_args, '--features', "ndebug=1");
+  }
   if ($ospl_home ne '')
   {
     unshift(@mpc_args, '--ospl-home', "$ospl_home");
@@ -454,6 +470,7 @@ magic_make.pl - Makes, cleans, or remakes your shizzle, whatever the weather.
   --clean                     Clean the project file or directory
   --carryon / --nocarryon     If a build error is encountered, stop dead or keep going.
   --debug / --nodebug         Override the default for this build, whatever that is (--nodebug == Release)
+  --incdeb                    When generating a Release configuration add also a Debug configuration
   --exhaustive                Build or clean every damn thing in sight.
   --make                      Build the project file or directory.
   --squeaky                   Try and clean up all generated files for the build type. Exercise extreme caution.

@@ -1,4 +1,3 @@
-
 /*
  
 COPYRIGHT
@@ -76,8 +75,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * main file or an #include'd file.
  */
 
-#include "idl.h"
-#include "idl_extern.h"
+#include <idl.h>
+#include <idl_extern.h>
 
 /*
  * Constructor(s) and destructor
@@ -85,15 +84,16 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 AST_Decl::AST_Decl ()
 : 
-   pd_imported (I_FALSE),
-   pd_in_main_file (I_FALSE),
+   pd_imported (false),
+   pd_in_main_file (false),
    pd_defined_in (NULL),
    pd_node_type (NT_module),
    pd_line (-1),
    pd_file_name (NULL),
    pd_name (NULL),
    pd_local_name (NULL),
-   pd_added (I_FALSE)
+   pd_added (false),
+   pd_gen_any (false)
 {}
 
 AST_Decl::AST_Decl (NodeType nt, UTL_ScopedName *n)
@@ -110,7 +110,8 @@ AST_Decl::AST_Decl (NodeType nt, UTL_ScopedName *n)
    pd_line (idl_global->lineno()),
    pd_file_name (idl_global->filename()),
    pd_local_name (n == NULL ? NULL : n->last_component()),
-   pd_added (I_FALSE)
+   pd_added (false),
+   pd_gen_any (false)
 {
    compute_full_name (n);
 }
@@ -129,7 +130,8 @@ AST_Decl::AST_Decl (NodeType nt, UTL_ScopedName *n, const UTL_Pragmas &p)
    pd_line (idl_global->lineno()),
    pd_file_name (idl_global->filename()),
    pd_local_name (n == NULL ? NULL : n->last_component()),
-   pd_added (I_FALSE),
+   pd_added (false),
+   pd_gen_any (false),
    pd_pragmas (p)
 {
    compute_full_name (n);
@@ -189,122 +191,93 @@ AST_Decl::compute_full_name(UTL_ScopedName *n)
  * Return TRUE if one of my ancestor scopes is "s"
  * and FALSE otherwise
  */
-idl_bool
-AST_Decl::has_ancestor(AST_Decl *s)
+bool AST_Decl::has_ancestor(AST_Decl *s)
 {
    if (this == s)
-      return I_TRUE;
+      return true;
 
    if (pd_defined_in == NULL)
-      return I_FALSE;
+      return false;
 
    return ScopeAsDecl(pd_defined_in)->has_ancestor(s);
 }
 
-/*
- * Dump this AST_Decl to the ostream o
- */
-void
-AST_Decl::dump(ostream &o)
+void AST_Decl::dump (ostream &o)
 {
    pd_local_name->dump(o);
 }
 
-/*
- * Redefinition of inherited virtual operations
- */
-
-/*
- * Data accessors
- */
-
-idl_bool
-AST_Decl::imported()
+bool AST_Decl::imported ()
 {
-   //if(idl_global->OneBigFile()) return 0;
    return pd_imported;
 }
 
-void
-AST_Decl::set_imported(idl_bool is_it)
+void AST_Decl::set_imported (bool is_it)
 {
    pd_imported = is_it;
 }
 
-idl_bool
-AST_Decl::in_main_file()
+bool AST_Decl::in_main_file ()
 {
    return pd_in_main_file;
 }
 
-void
-AST_Decl::set_in_main_file(idl_bool is_it)
+void AST_Decl::set_in_main_file (bool is_it)
 {
    pd_in_main_file = is_it;
 }
 
-idl_bool
-AST_Decl::added()
+bool AST_Decl::added()
 {
    return pd_added;
 }
 
-void
-AST_Decl::set_added(idl_bool is_it)
+void AST_Decl::set_added (bool is_it)
 {
    pd_added = is_it;
 }
 
-UTL_Scope *
-AST_Decl::defined_in()
+UTL_Scope * AST_Decl::defined_in ()
 {
    return pd_defined_in;
 }
 
-void
-AST_Decl::set_defined_in(UTL_Scope *s)
+void AST_Decl::set_defined_in (UTL_Scope *s)
 {
    pd_defined_in = s;
 }
 
-AST_Decl::NodeType
-AST_Decl::node_type()
+AST_Decl::NodeType AST_Decl::node_type ()
 {
    return pd_node_type;
 }
 
-long
-AST_Decl::line()
+long AST_Decl::line ()
 {
    return pd_line;
 }
 
-void
-AST_Decl::set_line(long l)
+void AST_Decl::set_line (long l)
 {
    pd_line = l;
 }
 
-UTL_String *
-AST_Decl::file_name()
+UTL_String * AST_Decl::file_name ()
 {
    return pd_file_name;
 }
 
-void
-AST_Decl::set_file_name(UTL_String *s)
+void AST_Decl::set_file_name (UTL_String *s)
 {
    pd_file_name = s;
 }
 
-UTL_ScopedName *
-AST_Decl::name()
+UTL_ScopedName * AST_Decl::name ()
 {
    return pd_name;
 }
 
-void
-AST_Decl::set_name(UTL_ScopedName *n)
+void AST_Decl::set_name (UTL_ScopedName *n)
 {
    pd_name = n;
 
@@ -312,19 +285,37 @@ AST_Decl::set_name(UTL_ScopedName *n)
       pd_local_name = n->last_component();
 }
 
-Identifier *
-AST_Decl::local_name()
+Identifier * AST_Decl::local_name ()
 {
    return pd_local_name;
 }
 
-/*
- * Narrowing methods for AST_Decl
- */
-IMPL_NARROW_METHODS0(AST_Decl)
-IMPL_NARROW_FROM_DECL(AST_Decl)
+bool AST_Decl::get_gen_any (void)
+{
+// printf ("AST_Decl::get_gen_any: %d\n", pd_gen_any || all_gen_any);
+   return pd_gen_any || all_gen_any;
+}
 
-/*
-** Narrowing methods for COMMON_Base
-*/
-IMPL_NARROW_METHODS0(COMMON_Base)
+void AST_Decl::virt_set_gen_any (void)
+{
+   // Reimplemented by types that need to propagate any generation flag
+}
+
+// Whether any generation flag used for anything
+
+bool AST_Decl::some_gen_any = false;
+
+// Whether any generation flag used for everything
+
+bool AST_Decl::all_gen_any = false;
+
+void AST_Decl::set_gen_any (void)
+{
+   pd_gen_any = true;
+   some_gen_any = true;
+   virt_set_gen_any ();
+}
+
+IMPL_NARROW_METHODS0 (AST_Decl)
+IMPL_NARROW_FROM_DECL (AST_Decl)
+IMPL_NARROW_METHODS0 (COMMON_Base)

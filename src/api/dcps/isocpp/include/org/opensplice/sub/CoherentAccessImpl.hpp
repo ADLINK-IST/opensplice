@@ -1,12 +1,20 @@
 /*
 *                         OpenSplice DDS
 *
-*   This software and documentation are Copyright 2006 to 2012 PrismTech
-*   Limited and its licensees. All rights reserved. See file:
-*
-*                     $OSPL_HOME/LICENSE
-*
-*   for full copyright notice and license terms.
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
 *
 */
 
@@ -18,6 +26,8 @@
 #ifndef ORG_OPENSPLICE_SUB_COHERENT_ACCESS_IMPL_HPP_
 #define ORG_OPENSPLICE_SUB_COHERENT_ACCESS_IMPL_HPP_
 
+#include <org/opensplice/core/exception_helper.hpp>
+
 namespace org
 {
 namespace opensplice
@@ -25,23 +35,34 @@ namespace opensplice
 namespace sub
 {
 
-/** @internal @bug OSPL-2476 No implementation
-* @todo Implementation required - see OSPL-2476
-* @see http://jira.prismtech.com:8080/browse/OSPL-2476 */
 class CoherentAccessImpl
 {
 public:
-    CoherentAccessImpl()
+    CoherentAccessImpl() : sub(dds::core::null), ended(true) {}
+
+    CoherentAccessImpl(const dds::sub::Subscriber sub) : sub(sub), ended(false)
     {
-        throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-                                              OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+        DDS::ReturnCode_t result = sub->sub_->begin_access();
+        org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::begin_access"));
+    }
+
+    void end()
+    {
+        if(!ended)
+        {
+            DDS::ReturnCode_t result = sub->sub_->end_access();
+            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::end_access"));
+            ended = true;
+        }
     }
 
     bool operator==(const CoherentAccessImpl& other) const
     {
-        //Temporary compilation fix
-        return false;
+        return sub == other.sub && ended == other.ended;
     }
+
+    dds::sub::Subscriber sub;
+    bool ended;
 };
 
 }

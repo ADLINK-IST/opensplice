@@ -78,29 +78,26 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 class AST_Typedef : public virtual AST_Type
 {
-
 public:
-   // Operations
 
-   // Constructor(s)
-   AST_Typedef();
-   AST_Typedef(AST_Type *base_type, UTL_ScopedName *n, const UTL_Pragmas &p);
-   virtual ~AST_Typedef()
-   {}
+   AST_Typedef ();
+   AST_Typedef (AST_Type *base_type, UTL_ScopedName *n, const UTL_Pragmas &p);
+   virtual ~AST_Typedef () {}
 
-   // Data Accessors
-   AST_Type *base_type();
+   AST_Type * base_type ();
 
-   // Narrowing
-   DEF_NARROW_METHODS1(AST_Typedef, AST_Type);
-   DEF_NARROW_FROM_DECL(AST_Typedef);
+   virtual void dump (ostream &o);
 
-   // AST Dumping
-   virtual void dump(ostream &o);
+   DEF_NARROW_METHODS1 (AST_Typedef, AST_Type);
+   DEF_NARROW_FROM_DECL (AST_Typedef);
+
+protected:
+
+   virtual void virt_set_gen_any (void);
 
 private:
-   // Data
+
    AST_Type *pd_base_type; // typedef base type
 };
 
-#endif           // _AST_TYPEDEF_AST_TYPEDEF_HH
+#endif

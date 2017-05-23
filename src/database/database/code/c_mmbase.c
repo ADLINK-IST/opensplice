@@ -3,12 +3,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -29,9 +37,11 @@ c_mmCreate(
     c_size threshold)
 {
     c_mm mm;
-    if ((mm = os_malloc(sizeof(*mm))) != NULL) {
-        mm->dummy = 0;
-    }
+    OS_UNUSED_ARG(address);
+    OS_UNUSED_ARG(size);
+    OS_UNUSED_ARG(threshold);
+    mm = os_malloc(sizeof(*mm));
+    mm->dummy = 0;
     return mm;
 }
 
@@ -41,6 +51,8 @@ c_mmState (
     c_ulong flags)
 {
     c_mmStatus s;
+    OS_UNUSED_ARG(mm);
+    OS_UNUSED_ARG(flags);
 
     s.size = 0;
     s.used = 0;
@@ -55,10 +67,18 @@ c_mmState (
     return s;
 }
 
+c_mm_mode
+c_mmMode (
+    c_mm mm)
+{
+    return MM_HEAP;
+}
+
 os_int64
 c_mmGetUsedMem (
     c_mm mm)
 {
+    OS_UNUSED_ARG(mm);
     return 0;
 }
 
@@ -80,9 +100,10 @@ c_mmAddress(
 void *
 c_mmMalloc(
     c_mm mm,
-    c_long size)
+    os_size_t size)
 {
     void* retVal;
+    OS_UNUSED_ARG(mm);
 
     if(size != 0)
     {
@@ -94,11 +115,20 @@ c_mmMalloc(
     return retVal;
 }
 
+void *
+c_mmMallocThreshold (
+    c_mm mm,
+    os_size_t size)
+{
+    return c_mmMalloc(mm, size);
+}
+
 void
 c_mmFree(
     c_mm mm,
     void *memory)
 {
+    OS_UNUSED_ARG(mm);
     if(memory != NULL)
     {
         os_free(memory);
@@ -112,6 +142,8 @@ c_mmBind(
     const c_char *name,
     void *memory)
 {
+    OS_UNUSED_ARG(mm);
+    OS_UNUSED_ARG(name);
     return memory;
 }
 
@@ -130,6 +162,8 @@ c_mmLookup(
     c_mm mm,
     const c_char *name)
 {
+    OS_UNUSED_ARG(mm);
+    OS_UNUSED_ARG(name);
     return NULL;
 }
 
@@ -137,6 +171,7 @@ void
 c_mmSuspend(
     c_mm mm)
 {
+    OS_UNUSED_ARG(mm);
     /* do nothing */
 }
 
@@ -144,6 +179,7 @@ int
 c_mmResume(
     c_mm mm)
 {
+    OS_UNUSED_ARG(mm);
     return 0;
 }
 
@@ -151,7 +187,27 @@ c_memoryThreshold
 c_mmbaseGetMemThresholdStatus(
     c_mm mm)
 {
+    OS_UNUSED_ARG(mm);
     return C_MEMTHRESHOLD_OK;
+}
+
+c_bool
+c_mmbaseMakeReservation (
+    c_mm mm,
+    os_address amount)
+{
+    OS_UNUSED_ARG(mm);
+    OS_UNUSED_ARG(amount);
+    return 1;
+}
+
+void
+c_mmbaseReleaseReservation (
+    c_mm mm,
+    os_address amount)
+{
+    OS_UNUSED_ARG(mm);
+    OS_UNUSED_ARG(amount);
 }
 
 void *
@@ -159,17 +215,34 @@ c_mmCheckPtr(
     c_mm mm,
     void *ptr)
 {
+    OS_UNUSED_ARG(mm);
+    OS_UNUSED_ARG(ptr);
     return NULL;
+}
+
+c_size
+c_mmSize (c_mm mm)
+{
+    OS_UNUSED_ARG(mm);
+    return 0;
 }
 
 void c_mmTrackObject (struct c_mm_s *mm, const void *ptr, os_uint32 code)
 {
+    OS_UNUSED_ARG(mm);
+    OS_UNUSED_ARG(ptr);
+    OS_UNUSED_ARG(code);
 }
 
 void c_mmPrintObjectHistory(FILE *fp, c_mm mm, void *ptr)
 {
+    OS_UNUSED_ARG(mm);
+    OS_UNUSED_ARG(ptr);
     fprintf (fp, "no object history tracing available\n");
 }
 #else
+/*
+ * warning: ISO C forbids an empty translation unit [-pedantic]
+ */
 typedef int EhWasHere; /* Avoid compiler warning for empty file. */
 #endif /* !defined USE_ADV_MEM_MNG */

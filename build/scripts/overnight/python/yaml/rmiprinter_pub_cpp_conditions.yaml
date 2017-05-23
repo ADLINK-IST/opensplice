@@ -1,0 +1,19 @@
+parseconditions:
+    desc: RMI Printer LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    conditions: 
+        - name: manager_proxy
+          type: line
+          inst: 1
+          required: yes
+          line: "=== Succeeded in getting the PrinterManager proxy named"
+
+        - name: print_succeed
+          type: line
+          inst: 4
+          required: yes
+          line: "message : Succeeded in printing the document !"

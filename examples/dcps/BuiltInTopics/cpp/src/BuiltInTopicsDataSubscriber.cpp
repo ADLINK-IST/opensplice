@@ -1,12 +1,20 @@
 /*************************************************************************
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -148,7 +156,9 @@ public:
 int OSPL_MAIN (int argc, char *argv[])
 {
   bool automatic = true;
+  const DDS::Duration_t TenSeconds = {10, 0};
   int result = 0;
+  
   if (argc > 1)
   {
     automatic = (strcmp(argv[1], "true") == 0);
@@ -180,7 +190,12 @@ int OSPL_MAIN (int argc, char *argv[])
   cout << "=== [BuiltInTopicsDataSubscriber] : Waiting for historical data ... " << std::endl;
 
   /* Make sure all historical data is delivered in the DataReader. */
-  participantReader->wait_for_historical_data(DDS::DURATION_INFINITE);
+  ReturnCode_t status = participantReader->wait_for_historical_data(TenSeconds);
+  if(status == DDS::RETCODE_TIMEOUT)
+  {
+      cout << "=== [BuiltInTopicsDataSubscriber] : WARNING: No historical data (durability probably not running) ..." << endl;
+  }
+  checkStatus(status, "DDS::DataReader::wait_for_historical_data");
 
   cout << "=== [BuiltInTopicsDataSubscriber] : done" << std::endl;
 
@@ -191,7 +206,7 @@ int OSPL_MAIN (int argc, char *argv[])
 
   /* Create a waitset and add the  ReadCondition created above */
   WaitSet_var aWaitSet = new WaitSet();
-  ReturnCode_t status = aWaitSet->attach_condition(readCond.in());
+  status = aWaitSet->attach_condition(readCond.in());
   checkStatus(status, "DDS::WaitSet::attach_condition");
 
   /* Initialize and pre-allocate the seq used to obtain the triggered Conditions. */

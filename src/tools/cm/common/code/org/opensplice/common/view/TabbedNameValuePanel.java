@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.view;
@@ -31,7 +39,7 @@ public class TabbedNameValuePanel extends JTabbedPane {
         this.controller = controller;
         this.action = action;
         this.fieldDim = new Dimension(0,0);
-        this.fieldNameMapping = new HashMap();
+        this.fieldNameMapping = new HashMap<String, NameValuePanel>();
     }
     
     public void addTab(String tabName, NameValuePanel[] tabFields){
@@ -63,10 +71,13 @@ public class TabbedNameValuePanel extends JTabbedPane {
                     ((JTextField)editor).addActionListener(controller);
                     editor.addFocusListener(new FocusListener() {
 
+                        @Override
                         public void focusGained(FocusEvent e) {
                             JTextField source = (JTextField)(e.getSource());
                             source.selectAll();
                         }
+
+                        @Override
                         public void focusLost(FocusEvent e) {
                             JTextField source = (JTextField)(e.getSource());
                             source.select(0, 0);
@@ -94,13 +105,13 @@ public class TabbedNameValuePanel extends JTabbedPane {
      * 
      * @return The map of values. The key is the name of the field <fieldName, value>.
      */
-    public HashMap getValues(){
+    public HashMap<String, NameValuePanel> getValues() {
         String key;
-        HashMap values = new HashMap();
+        HashMap<String, NameValuePanel> values = new HashMap<String, NameValuePanel>();
         
-        Iterator ki = fieldNameMapping.keySet().iterator();
+        Iterator<String> ki = fieldNameMapping.keySet().iterator();
         while(ki.hasNext()){
-            key = (String)ki.next();
+            key = ki.next();
             values.put(key, fieldNameMapping.get(key));
         }
         return values;
@@ -113,7 +124,7 @@ public class TabbedNameValuePanel extends JTabbedPane {
      * @return The value of the field.
      */
     public Object getValue(String fieldName){
-        NameValuePanel nv = (NameValuePanel)(fieldNameMapping.get(fieldName));
+        NameValuePanel nv = fieldNameMapping.get(fieldName);
         
         if(nv == null){
             return "";
@@ -127,13 +138,13 @@ public class TabbedNameValuePanel extends JTabbedPane {
      * @return true if all fields have a compatible value, false otherwise.
      */
     public boolean isInputValid(){
-        NameValuePanel nvp  = null;
-        Object test         = null;
-        Collection f        = fieldNameMapping.values();
-        Iterator fIter      = f.iterator();
+        NameValuePanel nvp = null;
+        Object test = null;
+        Collection<NameValuePanel> f = fieldNameMapping.values();
+        Iterator<NameValuePanel> fIter = f.iterator();
         
         while(fIter.hasNext()){
-            nvp = (NameValuePanel)fIter.next();
+            nvp = fIter.next();
             test = nvp.getValue();
             if(test == null || test.equals("")){
                 if(!(nvp.isEmptyInputAllowed())){
@@ -145,11 +156,12 @@ public class TabbedNameValuePanel extends JTabbedPane {
     }
 
     public NameValuePanel getField(String name){
-        return (NameValuePanel)fieldNameMapping.get(name);
+        return fieldNameMapping.get(name);
     }
     
     public NameValuePanel[] getFields(){
-        return (NameValuePanel[])fieldNameMapping.values().toArray(new NameValuePanel[fieldNameMapping.size()]);
+        return fieldNameMapping.values().toArray(
+                new NameValuePanel[fieldNameMapping.size()]);
     }
     
     protected Dimension fieldDim = null;
@@ -162,5 +174,5 @@ public class TabbedNameValuePanel extends JTabbedPane {
     /**
      * Fields in the tabs of window <String, NameValuePanel>
      */
-    private HashMap fieldNameMapping = null;
+    private HashMap<String, NameValuePanel> fieldNameMapping = null;
 }

@@ -1,17 +1,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**
  * @file api/cm/xml/code/cmx__writer.h
- * 
+ *
  * Offers internal routines on a writer.
  */
 #ifndef CMX__WRITER_H
@@ -26,10 +34,10 @@ extern "C" {
 #include "cmx_writer.h"
 
 /**
- * Initializes the writer specific part of the XML representation of the 
- * supplied kernel writer. This function should only be used by the 
+ * Initializes the writer specific part of the XML representation of the
+ * supplied kernel writer. This function should only be used by the
  * cmx_entityNewFromWalk function.
- * 
+ *
  * @param entity The entity to create a XML representation of.
  * @return The writer specific part of the XML representation of the entity.
  */
@@ -37,69 +45,69 @@ c_char* cmx_writerInit              (v_writer entity);
 
 /**
  * Entity action routine to resolve the data type of the writer.
- * 
+ *
  * @param entity The writer kernel entity.
- * @param args Must be of type struct cmx_writerTypeArg. This will be filled 
- *             with the XML representation of the data type during the execution 
+ * @param args Must be of type struct cmx_writerTypeArg. This will be filled
+ *             with the XML representation of the data type during the execution
  *             of this function.
  */
-void    cmx_writerDataTypeAction    (v_entity entity,
+void    cmx_writerDataTypeAction    (v_public entity,
                                      c_voidp args);
 
 /**
  * Copy routine which copies the supplied XML data into a c_object and writes
  * it into the system.
- * 
+ *
  * @param entity The writer entity.
- * @param args Must be of type struct cmx_writerArg. It must contain the XML 
+ * @param args Must be of type struct cmx_writerArg. It must contain the XML
  *             data that needs to be written.
  */
-void    cmx_writerCopy              (v_entity entity,
+void    cmx_writerCopy              (v_public entity,
                                      c_voidp args);
 
 /**
  * Copy routine which copies the supplied XML data into a c_object and disposes
  * it in the system.
- * 
+ *
  * @param entity The writer entity.
- * @param args Must be of type struct cmx_writerArg. It must contain the XML 
+ * @param args Must be of type struct cmx_writerArg. It must contain the XML
  *             data that needs to be disposed.
  */
-void    cmx_writerDisposeCopy       (v_entity entity,
+void    cmx_writerDisposeCopy       (v_public entity,
                                      c_voidp args);
 
 
 /**
  * Copy routine which copies the supplied XML data into a c_object and writes
  * it into the system.
- * 
+ *
  * @param entity The writer entity.
- * @param args Must be of type struct cmx_writerArg. It must contain the XML 
+ * @param args Must be of type struct cmx_writerArg. It must contain the XML
  *             data that needs to be written.
  */
-void    cmx_writerWriteDisposeCopy  (v_entity entity,
+void    cmx_writerWriteDisposeCopy  (v_public entity,
                                      c_voidp args);
 
 /**
  * Copy routine which copies the supplied XML data into a c_object and writes
  * it into the system.
- * 
+ *
  * @param entity The writer entity.
- * @param args Must be of type struct cmx_writerArg. It must contain the XML 
+ * @param args Must be of type struct cmx_writerArg. It must contain the XML
  *             data that needs to be written.
  */
-void    cmx_writerRegisterCopy      (v_entity entity,
+void    cmx_writerRegisterCopy      (v_public entity,
                                      c_voidp args);
 
 /**
  * Copy routine which copies the supplied XML data into a c_object and writes
  * it into the system.
- * 
+ *
  * @param entity The writer entity.
- * @param args Must be of type struct cmx_writerArg. It must contain the XML 
+ * @param args Must be of type struct cmx_writerArg. It must contain the XML
  *             data that needs to be written.
  */
-void    cmx_writerUnregisterCopy    (v_entity entity,
+void    cmx_writerUnregisterCopy    (v_public entity,
                                      c_voidp args);
 #if defined (__cplusplus)
 }

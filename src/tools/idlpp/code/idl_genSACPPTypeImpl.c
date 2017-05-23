@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -31,7 +39,7 @@
 #include "idl_genLanguageHelper.h"
 #include "idl_dll.h"
 
-#include "os.h"
+#include "vortex_os.h"
 #include <ctype.h>
 #include "c_typebase.h"
 
@@ -68,11 +76,9 @@ idl_arrayTypeImpl(
     struct idl_genSACPPData *arg)
 {
     idl_typeSpec actualType;
-    idl_typeSpec subType;
     c_ulong totalDim;
 
     actualType = idl_typeArrayActual(typeArray);
-    subType = idl_typeArrayType(typeArray);
     /* determine total buffer len, by multiplying all dimensions */
     totalDim = idl_genArrayTotalDimension(typeArray);
 
@@ -129,7 +135,7 @@ idl_arrayTypeImpl(
         idl_printIndent(arg->indent_level);
         idl_fileOutPrintf(idl_fileCur(),"}\n");
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"return (%s_slice *)ret;\n");
+        idl_fileOutPrintf(idl_fileCur(),"return (%s_slice *)ret;\n", name);
     } else {
         if (idl_typeSpecType(actualType) == idl_tseq) {
             /* \TODO */
@@ -247,42 +253,6 @@ idl_arrayTypeImpl(
     idl_fileOutPrintf(idl_fileCur(),"}\n\n");
 }
 
-/** @brief generate name which will be used as a macro to prevent multiple inclusions
- *
- * From the specified basename create a macro which will
- * be used to prevent multiple inclusions of the generated
- * header file. The basename characters are translated
- * into uppercase characters and the append string is
- * appended to the macro.
- */
-static c_char *
-idl_macroFromBasename(
-    const char *basename,
-    const char *append)
-{
-    static c_char macro[200];
-    c_long i;
-
-    for (i = 0; i < (c_long)strlen(basename); i++) {
-        macro[i] = toupper(basename[i]);
-        macro[i+1] = '\0';
-    }
-    os_strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
-
-    return macro;
-}
-
-static os_equality
-defName(
-    void *iterElem,
-    void *arg)
-{
-    if (strcmp((char *)iterElem, (char *)arg) == 0) {
-        return OS_EQ;
-    }
-    return OS_NE;
-}
-
 /* @brief callback function called on opening the IDL input file.
  *
  * Generate standard file header consisting of:
@@ -300,6 +270,9 @@ idl_fileOpen(
     void *userData)
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     /* First initialize userData */
     arg->indent_level = 0;
@@ -321,6 +294,8 @@ static void
 idl_fileClose (
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     /* \TODO: deinit userData */
 }
 
@@ -344,6 +319,10 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -351,6 +330,7 @@ static void
 idl_moduleClose(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
 }
 
 /** @brief callback function called on structure definition in the IDL input file.
@@ -375,6 +355,11 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(structSpec);
+    OS_UNUSED_ARG(userData);
+
     /* return idl_explore to indicate that the rest of the structure needs to be processed */
     return idl_explore;
 }
@@ -402,6 +387,8 @@ idl_structureClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
 }
 
 /** @brief callback function called on definition of a structure member in the IDL input file.
@@ -485,6 +472,11 @@ idl_unionOpen(
     idl_typeUnion unionSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(unionSpec);
+    OS_UNUSED_ARG(userData);
+
     /* return idl_explore to indicate that the rest of the union needs to be processed */
     return idl_explore;
 }
@@ -517,6 +509,8 @@ idl_unionClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
 }
 
 /** @brief callback function called on definition of a union case in the IDL input file.
@@ -548,6 +542,9 @@ idl_unionCaseOpenClose(
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
     char *seqName;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     switch (idl_typeSpecType(typeSpec)) {
     case idl_tbasic:
@@ -594,6 +591,11 @@ idl_typedefOpenClose(
     idl_typeSpec refType;
     const char *refName;
     char *scopedName;
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
 
     actualType = idl_typeDefActual(defSpec);
     refType = idl_typeDefRefered(defSpec);
@@ -640,7 +642,7 @@ idl_typedefOpenClose(
             /* Generate implementation _dup() method */
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"%s_slice *%s_dup(const %s_slice *from)\n",
-                scopedName, scopedName);
+                scopedName, scopedName, scopedName);
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"{\n");
             arg->indent_level++;
@@ -672,6 +674,7 @@ static idl_programControl *
 idl_getControl(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     return &idl_genSACPPLoadControl;
 }
 

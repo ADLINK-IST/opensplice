@@ -1,0 +1,18 @@
+export OPENORB_HOME=/home/dds/INSTALLED_FOR_DDS/openorb-v1.4.0
+export OPENORB_VERSION=1.4.0e
+export VS_HOME='/cygdrive/C/Program Files (x86)/Microsoft Visual Studio 14.0'
+export WINDOWSSDKDIR='/cygdrive/C/Program Files (x86)/Windows Kits/10'
+export JACORB_HOME=/home/dds/INSTALLED_FOR_DDS/JacORB-v2.3.1.0
+export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/gsoap-v2.7
+export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-vs2015
+export LAUNCH4J_HOME=/home/dds/INSTALLED_FOR_DDS/Launch4j
+export PATH=/usr/local/bin:$PATH
+
+#Winxp combined with new cygwin does not set TMP or TEMP even when in the windows settings
+#as the native calls done via TAO ask for a temp directory and windows fallback to using
+#USERPROFILE which has spaces in and does not work, unsetting solves the problem
+unset USERPROFILE
+
+#There is no TAO for VS2015
+unset TAO_ROOT
+export OVERRIDE_STRICT_CHECKS=no

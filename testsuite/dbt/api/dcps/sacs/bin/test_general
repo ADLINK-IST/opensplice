@@ -14,29 +14,28 @@ printTestHeader ()
 
 run_testcases ()
 {
-    printTestDirHeader $TESTCASESDIR
+    printTestDirHeader ${TESTCASESDIR}
 
     curdir=`pwd`
-    cd $TESTCASESDIR
-    for d in $TESTCASES; do
-	    run_testcase
+    cd ${TESTCASESDIR}
+    for TESTCASE in ${TESTCASES}; do
+        run_testcase
     done
     cd $curdir
 }
 
 run_testcase ()
 {
-    printTestHeader $TESTCASE
+    printTestHeader ${TESTCASE}
     ospl start
-    sleep 2
     if [ `uname | awk '/_NT-/'` ]; then 
-        ./$d;
+        ./${TESTCASE}
     else
-        mono $d.exe;
+        mono ${TESTCASE}.exe
     fi
     ospl stop
 }
 
 unset OSPL_URI
-#API_TEST_DIR=${OSPL_OUTER_HOME}/testsuite/dbt/api/dcps/ccpp
-#export API_TEST_DIR
+API_TEST_DIR=${OSPL_HOME}/testsuite/dbt/api/dcps/sacs
+export API_TEST_DIR

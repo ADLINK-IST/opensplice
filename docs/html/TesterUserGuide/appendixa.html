@@ -1,0 +1,391 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>10. Appendix A &mdash; Test Tool User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Test Tool User Guide" href="index.html" />
+    <link rel="next" title="11. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="9. Python Scripting Engine" href="pythonscripting.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="11. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pythonscripting.html" title="9. Python Scripting Engine"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="appendix-a">
+<span id="id1"></span><h1>10. Appendix A<a class="headerlink" href="#appendix-a" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="scripting-bnf">
+<span id="id2"></span><h2>10.1. Scripting BNF<a class="headerlink" href="#scripting-bnf" title="Permalink to this headline">¶</a></h2>
+<p><em>This Appendix gives the formal description of the Tester Scripting language.</em></p>
+<div class="section" id="tokens">
+<h3>10.1.1. TOKENS<a class="headerlink" href="#tokens" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><div class="highlight"><pre>TOKENS
+&lt;DEFAULT&gt; SKIP : {
+&quot; &quot;
+| &quot;\t&quot;
+| &quot;\n&quot;
+| &quot;\r&quot;
+| &lt;&quot;//&quot; (~[&quot;\n&quot;,&quot;\r&quot;])* (&quot;\n&quot; | &quot;\r&quot; | &quot;\r\n&quot;)&gt;
+| &lt;&quot;--&quot; (~[&quot;\n&quot;,&quot;\r&quot;])* (&quot;\n&quot; | &quot;\r&quot; | &quot;\r\n&quot;)&gt;
+| &lt;&quot;/*&quot; (~[&quot;*&quot;])* &quot;*&quot; (&quot;*&quot; | ~[&quot;*&quot;,&quot;/&quot;] (~[&quot;*&quot;])* &quot;*&quot;)* &quot;/&quot;&gt;
+}
+
+&lt;DEFAULT&gt; TOKEN : {
+&lt;INTEGER_LITERAL: &lt;DECIMAL_LITERAL&gt; ([&quot;l&quot;,&quot;L&quot;])?
+| &lt;HEX_LITERAL&gt; ([&quot;l&quot;,&quot;L&quot;])?
+| &lt;OCTAL_LITERAL&gt; ([&quot;l&quot;,&quot;L&quot;])?&gt;
+| &lt;#DECIMAL_LITERAL: ([&quot;+&quot;,&quot;-&quot;])? [&quot;0&quot;-&quot;9&quot;] ([&quot;0&quot;-&quot;9&quot;])*&gt;
+| &lt;#HEX_LITERAL: &quot;0&quot; [&quot;x&quot;,&quot;X&quot;] ([&quot;0&quot;-&quot;9&quot;,&quot;a&quot;-&quot;f&quot;,&quot;A&quot;-&quot;F&quot;])+&gt;
+| &lt;#OCTAL_LITERAL: &quot;0&quot; ([&quot;0&quot;-&quot;7&quot;])*&gt;
+| &lt;FLOATING_POINT_LITERAL: ([&quot;+&quot;,&quot;-&quot;])? ([&quot;0&quot;-&quot;9&quot;])+ &quot;.&quot; ([&quot;0&quot;-&quot;9&quot;])*
+        (&lt;EXPONENT&gt;)? ([&quot;f&quot;,&quot;F&quot;,&quot;d&quot;,&quot;D&quot;])?
+| &quot;.&quot; ([&quot;0&quot;-&quot;9&quot;])+ (&lt;EXPONENT&gt;)? ([&quot;f&quot;,&quot;F&quot;,&quot;d&quot;,&quot;D&quot;])?
+| ([&quot;0&quot;-&quot;9&quot;])+ &lt;EXPONENT&gt; ([&quot;f&quot;,&quot;F&quot;,&quot;d&quot;,&quot;D&quot;])?
+| ([&quot;0&quot;-&quot;9&quot;])+ (&lt;EXPONENT&gt;)? [&quot;f&quot;,&quot;F&quot;,&quot;d&quot;,&quot;D&quot;]&gt;
+| &lt;#EXPONENT: [&quot;e&quot;,&quot;E&quot;] ([&quot;+&quot;,&quot;-&quot;])? ([&quot;0&quot;-&quot;9&quot;])+&gt;
+| &lt;CHARACTER_LITERAL: &quot;\&#39;&quot; (~[&quot;\&#39;&quot;,&quot;\\&quot;,&quot;\n&quot;,&quot;\r&quot;]
+| &quot;\\&quot; ([&quot;n&quot;,&quot;t&quot;,&quot;b&quot;,&quot;r&quot;,&quot;f&quot;,&quot;\\&quot;,&quot;\&#39;&quot;,&quot;\&quot;&quot;]
+| [&quot;0&quot;-&quot;7&quot;] ([&quot;0&quot;-&quot;7&quot;])?
+| [&quot;0&quot;-&quot;3&quot;] [&quot;0&quot;-&quot;7&quot;] [&quot;0&quot;-&quot;7&quot;])) &quot;\&#39;&quot;&gt;
+| &lt;STRING_LITERAL: &quot;\&quot;&quot; (~[&quot;\&quot;&quot;,&quot;\\&quot;,&quot;\n&quot;,&quot;\r&quot;]
+| &quot;\\&quot; ([&quot;n&quot;,&quot;t&quot;,&quot;b&quot;,&quot;r&quot;,&quot;f&quot;,&quot;\\&quot;,&quot;\&#39;&quot;,&quot;\&quot;&quot;]
+| [&quot;0&quot;-&quot;7&quot;] ([&quot;0&quot;-&quot;7&quot;])?
+| [&quot;0&quot;-&quot;3&quot;] [&quot;0&quot;-&quot;7&quot;] [&quot;0&quot;-&quot;7&quot;]
+| [&quot;\n&quot;,&quot;\r&quot;]
+| &quot;\r\n&quot;))* &quot;\&quot;&quot;&gt;
+| &lt;HASH_LITERAL: &quot;#&quot;([&quot;0&quot;-&quot;9&quot;])+&gt;
+| &lt;JAVASCRIPT: &quot;`&quot; (~[&quot;`&quot;])* &quot;`&quot;&gt;
+}
+
+&lt;DEFAULT&gt; TOKEN : {
+&lt;SEND: &quot;send&quot;&gt;
+| &lt;REPEAT: &quot;repeat&quot;&gt;
+| &lt;PERIODIC: &quot;periodic&quot;&gt;
+| &lt;MACRO: &quot;macro&quot;&gt;
+| &lt;DISPOSE: &quot;dispose&quot;&gt;
+| &lt;WRITEDISPOSE: &quot;writedispose&quot;&gt;
+| &lt;WAIT: &quot;wait&quot;&gt;
+| &lt;WAITABS: &quot;waitabs&quot;&gt;
+| &lt;CALL: &quot;call&quot;&gt;
+| &lt;RUN: &quot;run&quot;&gt;
+| &lt;CHECK: &quot;check&quot;&gt;
+| &lt;CHECK_LAST: &quot;check_last&quot;&gt;
+| &lt;CHECK_ANY: &quot;check_any&quot;&gt;
+| &lt;RECHECK_LAST: &quot;recheck_last&quot;&gt;
+| &lt;DISPOSED: &quot;disposed&quot;&gt;
+| &lt;MARK: &quot;mark&quot;&gt;
+| &lt;MISS: &quot;miss&quot;&gt;
+| &lt;MARKMSG: &quot;markmsg&quot;&gt;
+| &lt;MISSMSG: &quot;missmsg&quot;&gt;
+| &lt;SCENARIO: &quot;scenario&quot;&gt;
+| &lt;UNIQID: &quot;uniqid&quot;&gt;
+| &lt;VAR: &quot;var&quot;&gt;
+| &lt;END: &quot;end&quot;&gt;
+| &lt;MSG: &quot;message&quot;&gt;
+| &lt;LOG: &quot;log&quot;&gt;
+| &lt;FAIL: &quot;fail&quot;&gt;
+| &lt;CLEAR: &quot;clear&quot;&gt;
+| &lt;IF: &quot;if&quot;&gt;
+| &lt;THEN: &quot;then&quot;&gt;
+| &lt;ELSE: &quot;else&quot;&gt;
+| &lt;ENDIF: &quot;endif&quot;&gt;
+| &lt;FOR: &quot;for&quot;&gt;
+| &lt;IN: &quot;in&quot;&gt;
+| &lt;LOOP: &quot;loop&quot;&gt;
+| &lt;ENDLOOP: &quot;endloop&quot;&gt;
+| &lt;WHILE: &quot;while&quot;&gt;
+| &lt;READER: &quot;reader&quot;&gt;
+| &lt;WRITE: &quot;write&quot;&gt;
+| &lt;READ: &quot;read&quot;&gt;
+| &lt;CONNECT: &quot;connect&quot;&gt;
+| &lt;DISCONNECT: &quot;disconnect&quot;&gt;
+| &lt;EXEC: &quot;execute&quot;&gt;
+| &lt;CONTROL: &quot;control&quot;&gt;
+| &lt;SET: &quot;set&quot;&gt;
+| &lt;COLUMN: &quot;column&quot;&gt;
+| &lt;GRAPH: &quot;graph&quot;&gt;
+| &lt;REVERSE_FAIL: &quot;reverse_fail&quot;&gt;
+| &lt;EXIT: &quot;exit&quot;&gt;
+}
+
+&lt;DEFAULT&gt; TOKEN : {
+&lt;IDENTIFIER: &lt;LETTER&gt; (&lt;LETTER&gt; | &lt;DIGIT&gt;)*&gt;
+| &lt;#LETTER: [&quot;$&quot;,&quot;A&quot;-&quot;Z&quot;,&quot;_&quot;,&quot;a&quot;-&quot;z&quot;]&gt;
+| &lt;DIGIT: [&quot;0&quot;-&quot;9&quot;]&gt;
+}
+</pre></div>
+</div>
+</div>
+<div class="section" id="non-terminals">
+<h3>10.1.2. NON-TERMINALS<a class="headerlink" href="#non-terminals" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><div class="highlight"><pre>NON-TERMINALS
+   Scenario := &lt;SCENARIO&gt; &lt;IDENTIFIER&gt; ( InstructionList )? &lt;END&gt;
+                &lt;SCENARIO&gt;
+   Macro := &lt;MACRO&gt; &lt;IDENTIFIER&gt; &quot;(&quot; ( ArgumentList )? &quot;)&quot;
+                ( InstructionList )? &lt;END&gt; &lt;MACRO&gt;
+      |  &lt;SCENARIO&gt; &lt;IDENTIFIER&gt; ( InstructionList )? &lt;END&gt; &lt;SCENARIO&gt;
+   InstructionList   := ( Instruction )+
+   Instruction := SendInstruction
+      |  RepeatInstruction
+      |  PeriodicInstruction
+      |  DisposeInstruction
+      |  WriteDisposeInstruction
+      |  WaitInstruction
+      |  WaitabsInstruction
+      |  CheckInstruction
+      |  CheckLastInstruction
+      |  CheckAnyInstruction
+      |  RecheckLastInstruction
+      |  DisposedInstruction
+      |  MarkInstruction
+      |  MarkMsgInstruction
+      |  MissInstruction
+      |  MissMsgInstruction
+      |  CallInstruction
+      |  ForInstruction
+      |  WhileInstruction
+      |  SetInstruction
+      |  VarDeclaration
+      |  IfInstruction
+      |  MessageInstruction
+      |  ClearInstruction
+      |  LogInstruction
+      |  FailInstruction
+      |  ReaderInstruction
+      |  WriteInstruction
+      |  ReadInstruction
+      |  ConnectInstruction
+      |  DisconnectInstruction
+      |  ExecuteInstruction
+      |  ControlInstruction
+      |  ColumnInstruction
+      |  GraphInstruction
+      |  ReverseFailInstruction
+      |  ExitInstruction
+      |  ScriptInvocation
+   ReaderInstruction := &lt;READER&gt; ( &lt;DISPOSE&gt; )? &quot;(&quot; Constant
+                (&lt;HASH_LITERAL&gt;)? ( &quot;,&quot; &lt;IDENTIFIER&gt; ( &quot;,&quot; Constant
+                     ( &quot;,&quot; Constant )? )? )? &quot;);&quot;
+   ColumnInstruction := &lt;COLUMN&gt; ( &lt;CLEAR&gt; )? &quot;(&quot; Constant
+                ( &quot;,&quot; Constant )? &quot;);&quot;
+   GraphInstruction  := &lt;GRAPH&gt; &quot;(&quot; ParameterList &quot;);&quot;
+   MessageInstruction   := &lt;MSG&gt; &quot;(&quot; &lt;STRING_LITERAL&gt; ( Constant )? &quot;);&quot;
+   LogInstruction := &lt;LOG&gt; &quot;(&quot; &lt;STRING_LITERAL&gt; ( Constant )? &quot;);&quot;
+   FailInstruction   := &lt;FAIL&gt; &quot;(&quot; &lt;STRING_LITERAL&gt; ( Constant )? &quot;);&quot;
+   ControlInstruction   := &lt;CONTROL&gt; &lt;IDENTIFIER&gt; &quot;.&quot; &lt;IDENTIFIER&gt; (
+                ( &quot;(&quot; ParameterList ( ( &quot;);&quot; ) | ( &quot;)&quot; &quot;;&quot; ) ) ) | ( &quot;;&quot; ) )
+   ClearInstruction  := &lt;CLEAR&gt; &quot;;&quot;
+   ExitInstruction   := &lt;EXIT&gt; ( &lt;IF&gt; &lt;FAIL&gt; )? &quot;;&quot;
+   ScriptInvocation  := Script &quot;;&quot;
+   SendInstruction   := &lt;SEND&gt; &lt;IDENTIFIER&gt; ( ( &quot;.&quot; &lt;IDENTIFIER&gt; ) )?
+                &quot;(&quot; ( ParameterList )? &quot;);&quot;
+   RepeatInstruction := &lt;REPEAT&gt; &lt;IDENTIFIER&gt; FloatValue IntValue &quot;(&quot;
+                ( ParameterList )? &quot;);&quot;
+   PeriodicInstruction  := &lt;PERIODIC&gt; &lt;IDENTIFIER&gt; &lt;IDENTIFIER&gt;
+                FloatValue IntValue &quot;(&quot; ( ParameterList )? &quot;);&quot;
+   WriteInstruction  := &lt;WRITE&gt; &lt;IDENTIFIER&gt; &quot;.&quot; &lt;IDENTIFIER&gt; &quot;(&quot;
+                ( ParameterList )? &quot;);&quot;
+   VarDeclaration := &lt;VAR&gt; FieldName &quot;=&gt;&quot; Constant &quot;;&quot;
+   DisposeInstruction   := &lt;DISPOSE&gt; &lt;IDENTIFIER&gt; ( ( &quot;.&quot;
+                &lt;IDENTIFIER&gt; ) )? &quot;(&quot; ( ParameterList )? &quot;);&quot;
+   WriteDisposeInstruction := &lt;WRITEDISPOSE&gt; &lt;IDENTIFIER&gt; ( ( &quot;.&quot;
+                &lt;IDENTIFIER&gt; ) )? &quot;(&quot; ( ParameterList )? &quot;);&quot;
+   CheckInstruction  := &lt;CHECK&gt; &lt;IDENTIFIER&gt; ( ( &quot;.&quot; &lt;IDENTIFIER&gt; ) )?
+                &quot;(&quot; ( ChkParameterList )? &quot;);&quot;
+   CheckLastInstruction := &lt;CHECK_LAST&gt; &lt;IDENTIFIER&gt; ( ( &quot;.&quot;
+                &lt;IDENTIFIER&gt; ) )? &quot;(&quot; ( ChkParameterList )? &quot;);&quot;
+   CheckAnyInstruction  := &lt;CHECK_ANY&gt; &lt;IDENTIFIER&gt; ( ( &quot;.&quot;
+                &lt;IDENTIFIER&gt; ) )? &quot;(&quot; ( ChkParameterList )? &quot;);&quot;
+   RecheckLastInstruction  := &lt;RECHECK_LAST&gt; &lt;IDENTIFIER&gt; ( ( &quot;.&quot;
+                &lt;IDENTIFIER&gt; ) )? &quot;(&quot; ( ChkParameterList )? &quot;);&quot;
+   ReadInstruction   := &lt;READ&gt; &lt;IDENTIFIER&gt; &quot;.&quot; &lt;IDENTIFIER&gt; &quot;(&quot;
+                ( ChkParameterList )? &quot;);&quot;
+   MarkMsgInstruction   := &lt;MARKMSG&gt; &lt;IDENTIFIER&gt; &quot;.&quot; &lt;IDENTIFIER&gt; &quot;(&quot;
+                ( ChkParameterList )? &quot;);&quot;
+   MissMsgInstruction   := &lt;MISSMSG&gt; &lt;IDENTIFIER&gt; &quot;.&quot; &lt;IDENTIFIER&gt; &quot;(&quot;
+                ( ChkParameterList )? &quot;);&quot;
+   ConnectInstruction   := &lt;CONNECT&gt; &lt;IDENTIFIER&gt; ( Constant )? &quot;;&quot;
+   DisconnectInstruction   := &lt;DISCONNECT&gt; &lt;IDENTIFIER&gt; &quot;;&quot;
+   DisposedInstruction  := &lt;DISPOSED&gt; &lt;IDENTIFIER&gt; ( ( &quot;.&quot;
+                &lt;IDENTIFIER&gt; ) )? &quot;(&quot; ( ChkParameterList )? &quot;);&quot;
+   MissInstruction   := &lt;MISS&gt; &lt;IDENTIFIER&gt; ( ( &quot;.&quot; &lt;IDENTIFIER&gt; ) )?
+                &quot;(&quot; ( ChkParameterList )? &quot;);&quot;
+   MarkInstruction   := &lt;MARK&gt; &lt;IDENTIFIER&gt; ( ( &quot;.&quot; &lt;IDENTIFIER&gt; ) )?
+                &quot;(&quot; ( ChkParameterList )? &quot;);&quot;
+   CallInstruction   := &lt;CALL&gt; &lt;IDENTIFIER&gt; ( ( &quot;.&quot; &lt;IDENTIFIER&gt; ) )?
+                &quot;(&quot; ( ParameterList )? &quot;);&quot;
+   SetInstruction := &lt;SET&gt; &lt;IDENTIFIER&gt; &quot;(&quot; ( ParameterList )? &quot;)&quot;
+                &quot;(&quot; &quot;(&quot; ParamHeaderList &quot;)&quot; ParamSetList &quot;);&quot;
+   ParamHeaderList   := &lt;IDENTIFIER&gt; ( &quot;,&quot; ParamHeaderList )?
+   ParamSetList   := &quot;,&quot; ParamSet ( ParamSetList )?
+   ParamSet := &quot;(&quot; ParamValueList &quot;)&quot;
+   ParamValueList := Constant ( &quot;,&quot; ParamValueList )?
+   IfInstruction  := &lt;IF&gt; &quot;(&quot; CompareExpression &quot;)&quot; &lt;THEN&gt;
+                InstructionList ( &lt;ELSE&gt; InstructionList )? &lt;ENDIF&gt; &quot;;&quot;
+   CompareExpression := CalcExpression ( CompareOperator
+                CompareExpression )?
+   CalcExpression := PrimaryExpression ( CalcOperator CalcExpression )?
+   PrimaryExpression := Constant
+      |  &quot;(&quot; CompareExpression &quot;)&quot;
+   CompareOperator   := &quot;==&quot;
+      |  &quot;!=&quot;
+      |  &quot;&gt;&quot;
+      |  &quot;&lt;&quot;
+      |  &quot;&gt;=&quot;
+      |  &quot;&lt;=&quot;
+      |  &quot;||&quot;
+      |  &quot;&amp;&amp;&quot;
+   CalcOperator   := &quot;|&quot;
+      |  &quot;&amp;&quot;
+      |  &quot;+&quot;
+      |  &quot;-&quot;
+      |  &quot;*&quot;
+      |  &quot;/&quot;
+   ForInstruction := &lt;FOR&gt; &lt;IDENTIFIER&gt; &lt;IN&gt; (
+                ( IntValue &quot;..&quot; IntValue )
+      | &quot;(&quot; VarList &quot;)&quot; ) &lt;LOOP&gt; InstructionList &lt;ENDLOOP&gt; &quot;;&quot;
+   WhileInstruction  := &lt;WHILE&gt; &quot;(&quot; CompareExpression &quot;)&quot; &lt;LOOP&gt;
+                InstructionList &lt;ENDLOOP&gt; &quot;;&quot;
+   VarList  := Constant ( &quot;,&quot; VarList )?
+   WaitInstruction   := &lt;WAIT&gt; &quot;(&quot; Constant &quot;);&quot;
+   WaitabsInstruction   := &lt;WAITABS&gt; &quot;(&quot; Constant &quot;);&quot;
+   ExecuteInstruction   := &lt;EXEC&gt; ( &lt;WAIT&gt; )? ( &lt;LOG&gt; )?
+                &lt;STRING_LITERAL&gt; &quot;;&quot;
+   ReverseFailInstruction  := &lt;REVERSE_FAIL&gt; &quot;;&quot;
+   ParameterList  := Parameter ( &quot;,&quot; Parameter )* ( &quot;,&quot; )?
+   Parameter   := FieldName &quot;=&gt;&quot; Constant
+   ChkParameterList  := ChkParameter ( &quot;,&quot; ChkParameter )* ( &quot;,&quot; )?
+   ChkParameter   := FieldName &quot;=&gt;&quot; ( &quot;!&quot; )? Constant ( &quot;:&quot; Constant )?
+   ArgumentList   := Argument ( Argument )*
+   Argument := FieldName &quot;:&quot; FieldName ( &quot;:=&quot; Constant )? &quot;;&quot;
+   FieldName   := &lt;IDENTIFIER&gt; ( &quot;[&quot; &lt;INTEGER_LITERAL&gt; &quot;]&quot; )?
+      ( ( &quot;.&quot; FieldName ) )?
+   IntValue := &lt;INTEGER_LITERAL&gt;
+      |  &quot;&lt;&lt;&quot; &lt;IDENTIFIER&gt;
+      |  &lt;IDENTIFIER&gt;
+   FloatValue  := &lt;FLOATING_POINT_LITERAL&gt;
+      |  &quot;&lt;&lt;&quot; &lt;IDENTIFIER&gt;
+      |  &lt;IDENTIFIER&gt;
+   Constant := &lt;INTEGER_LITERAL&gt;
+      |  &lt;FLOATING_POINT_LITERAL&gt;
+      |  &lt;CHARACTER_LITERAL&gt;
+      |  &lt;STRING_LITERAL&gt;
+      |  &quot;&gt;&gt;&quot; &lt;IDENTIFIER&gt;
+      |  &quot;&gt;&gt;&quot; &lt;JAVASCRIPT&gt;
+      |  &quot;&lt;&lt;&quot; &lt;IDENTIFIER&gt; ( &quot;.&quot; &lt;IDENTIFIER&gt; )?
+      |  &lt;IDENTIFIER&gt;
+      |  &lt;UNIQID&gt;
+      |  &lt;JAVASCRIPT&gt;
+   Script   := &lt;JAVASCRIPT&gt;
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">10. Appendix A</a><ul>
+<li><a class="reference internal" href="#scripting-bnf">10.1. Scripting BNF</a><ul>
+<li><a class="reference internal" href="#tokens">10.1.1. TOKENS</a></li>
+<li><a class="reference internal" href="#non-terminals">10.1.2. NON-TERMINALS</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pythonscripting.html"
+                        title="previous chapter">9. Python Scripting Engine</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">11. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/appendixa.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="11. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pythonscripting.html" title="9. Python Scripting Engine"
+             >previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

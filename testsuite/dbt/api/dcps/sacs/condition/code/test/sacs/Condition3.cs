@@ -297,6 +297,7 @@ namespace test.sacs
                 return result;
             }
             tstHolder = new mod.tst[0];
+            sampleInfoHolder = new DDS.SampleInfo[0];
 
             rc = reader.TakeWithCondition(ref tstHolder, ref sampleInfoHolder, 1, condition);
             if (rc != DDS.ReturnCode.Ok)
@@ -383,6 +384,8 @@ namespace test.sacs
             if (rc == DDS.ReturnCode.Ok)
             {
                 result.Result = "QueryCondition.set_query_parameters does not work properly (2).";
+                this.testFramework.TestMessage(Test.Framework.TestMessage.Note, "See OSPL-2628: Query parameter checking should be added.");
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
             rc = reader.DeleteReadCondition(condition);

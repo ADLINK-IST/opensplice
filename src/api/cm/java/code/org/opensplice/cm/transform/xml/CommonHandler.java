@@ -1,19 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.transform.xml;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -170,75 +177,36 @@ abstract class CommonHandler extends DefaultHandler {
             UserData data, ArrayList<FlatElement> elements) {
         int size;
         String typeName = field.getTypeName();
-        FlatElement fe;
+        FlatElement element = null;
         if ((typeName.equals("c_string")) ||
-                (typeName.equals("c_wstring")) ||
-                (typeName.startsWith("C_STRING<")) ||
-                (typeName.startsWith("C_WSTRING<"))) {
-            fe = this.getFirstMatchingElement(elements, nestedElementName, ENDTOKEN_DUMMY);
+            (typeName.equals("c_wstring")) ||
+            (typeName.startsWith("C_STRING<")) ||
+            (typeName.startsWith("C_WSTRING<")))
+        {
+            element = this.getFirstMatchingElement(elements, nestedElementName);
 
-            if (fe != null) {
-                data.setData(nestedFieldName, fe.flatValue);
+            if (element != null) {
+                data.setData(nestedFieldName, element.flatValue);
             }
         } else { // Not a String collection.
             size = field.getMaxSize();
 
-            if (size == 0) {
-                // get the size as provided in the elements
-                FlatElement sizeElement = getFirstMatchingElement(elements,
-                        nestedElementName + ENDTOKEN_COLLECTION_SIZE, ENDTOKEN_COLLECTION_SIZE);
-                if (sizeElement != null) {
-                    size = Integer.parseInt(sizeElement.flatValue);
-                }
-                if (size != 0) {
-                    for (int i = 0; i < size; i++) {
-                        // elements have to be removed to ensure that the next
-                        // element is taken for the next iteration
-                        this.fillType(
-                                getCollectionFieldName(nestedFieldName, i),
-                                nestedElementName + ".element",
-                                field.getSubType(), data, elements);
-                    }
-                } else {
-                    boolean found = true;
-                    String fieldName;
+            element = getFirstMatchingElement(elements, nestedElementName, "size");
+            if (element != null) {
+                size = Integer.parseInt(element.flatValue);
+            }
 
-                    for (int i = 0; found; i++) {
-                        fieldName = getCollectionFieldName(nestedFieldName, i);
-                        fe = this.getFirstMatchingElement(elements, fieldName, ENDTOKEN_DUMMY);
-
-                        if (fe != null) {
-                            if (!fe.flatValue.equals("<NULL>")) {
-                                data.setData(fieldName, fe.flatValue);
-                            } else {
-                                found = false;
-                            }
-                        } else {
-                            found = false;
-                        }
-                    }
-                }
-            } else {
-                /*
-                 * A bounded sequence has a maxSize and will get us here. But the
-                 * sequence doesn't have to be completely filled.
-                 * A bounded sequence also has the size element, which contains the
-                 * actual number of elements that the sequence contains.
-                 * Get the size as provided in the elements. If there isn't a size
-                 * element, then we're currently handling an array.
-                 */
-                FlatElement sizeElement = getFirstMatchingElement(elements,
-                        nestedElementName + ENDTOKEN_COLLECTION_SIZE, ENDTOKEN_COLLECTION_SIZE);
-                if (sizeElement != null) {
-                    size = Integer.parseInt(sizeElement.flatValue);
-                }
-
+            if (size != 0) {
                 for (int i = 0; i < size; i++) {
-                    this.fillType(getCollectionFieldName(nestedFieldName, i),
-                            getCollectionFieldName(nestedElementName, i),
+                    this.fillType(
+                            getCollectionFieldName(nestedFieldName, i),
+                            nestedElementName + ".element",
                             field.getSubType(), data, elements);
                 }
             }
+
+            /* Collection must remove it's own terminating element */
+            element = getFirstMatchingElement(elements, nestedElementName);
         }
     }
 
@@ -290,7 +258,7 @@ abstract class CommonHandler extends DefaultHandler {
     protected void fillPrimitive(String nestedFieldName,
             String nestedElementFieldName, UserData data, ArrayList<FlatElement> elements) {
         FlatElement element;
-        element = getFirstMatchingElement(elements, nestedElementFieldName, ENDTOKEN_DUMMY);
+        element = getFirstMatchingElement(elements, nestedElementFieldName);
 
         if (element != null) {
             data.setData(nestedFieldName, element.flatValue);
@@ -304,7 +272,7 @@ abstract class CommonHandler extends DefaultHandler {
             String nestedElementFieldName,
             UserData data, ArrayList<FlatElement> elements) {
         FlatElement element;
-        element = getFirstMatchingElement(elements, nestedElementFieldName, ENDTOKEN_DUMMY);
+        element = getFirstMatchingElement(elements, nestedElementFieldName);
 
         if (element != null) {
             data.setData(nestedFieldName, element.flatValue);
@@ -318,8 +286,8 @@ abstract class CommonHandler extends DefaultHandler {
             String nestedElementFieldName, MetaUnion field, UserData data,
             ArrayList<FlatElement> elements) {
         FlatElement element;
-        element = getFirstMatchingElement(elements,
-                nestedElementFieldName + ".switch", ENDTOKEN_DUMMY);
+        element = getFirstMatchingElement(
+            elements, nestedElementFieldName + ".switch");
 
         if (element != null) {
             data.setData(nestedFieldName + ".switch", element.flatValue);
@@ -334,103 +302,66 @@ abstract class CommonHandler extends DefaultHandler {
         }
     }
 
-    protected FlatElement getFirstMatchingElement(ArrayList<FlatElement> elements, String name, String ignoreByEndToken) {
-        FlatElement element, result;
-        int i, index;
-        StringTokenizer st;
-        String elementName, token;
-        boolean proceed;
-        char[] ta;
+    private static final int FIND = -3;
+    private static final int LOOP = -2;
+    private static final int BAIL = -1;
 
-        result = null;
+    protected FlatElement getFirstMatchingElement(
+        ArrayList<FlatElement> elements,
+        String path)
+    {
+        return getFirstMatchingElement(elements, path, null);
+    }
 
-        for (i = 0; (i < elements.size()) && (result == null); i++) {
-            element = elements.get(i);
+    protected FlatElement getFirstMatchingElement(
+        ArrayList<FlatElement> elements,
+        String base,
+        String name)
+    {
+        FlatElement element;
+        int found = FIND;
+        int index = 0;
+        int length = elements.size();
+        int range = 0;
+        String path;
 
-            if (element.flatName.equals(name)) {
-                result = element;
+        if (name != null) {
+            path = base + "." + name;
+        } else {
+            path = base;
+        }
+
+        for (index = 0; index < length && found < BAIL; index++) {
+            element = elements.get(index);
+            if (element.flatName.equals(path)) {
+                range = index;
+                found = index;
+            } else if (element.flatName.startsWith(base)) {
+                /* Finding the base element first (base equals flatName) or
+                   (flatName startsWith path) could be considered a grave bug */
+                if (found == FIND) {
+                    range = index;
+                    found = LOOP;
+                }
             } else {
-                st = new StringTokenizer(name, ".");
-                elementName = element.flatName;
-                proceed = true;
-
-                while (st.hasMoreTokens() && proceed) {
-                    token = st.nextToken();
-
-                    if (elementName.startsWith(token)
-                            && (!elementName.endsWith(ignoreByEndToken))) {
-                        if (elementName.equals(token) && (!st.hasMoreTokens())) {
-                            result = element;
-                            proceed = false;
-                        } else {
-                            elementName = elementName.substring(elementName
-                                    .indexOf('.') + 1);
-                        }
-
-                    } else {
-                        index = token.indexOf('[');
-
-                        if ((index != -1) && (!elementName.endsWith(ignoreByEndToken))) {
-                            if (elementName.startsWith(token
-                                    .substring(0, index))) {
-                                if ((token.indexOf('.') == -1)
-                                        && ("<NULL>".equals(element.flatValue))) {
-                                    result = element;
-                                    proceed = false;
-                                } else if (elementName.length() > (index + 1)) {
-                                    elementName = elementName
-                                            .substring(index + 1);
-                                    token = token.substring(index);
-
-                                    if (token.startsWith("[")) {
-                                        ta = token.toCharArray();
-
-                                        for (int j = 0; j < ta.length
-                                                && proceed; j++) {
-                                            if (ta[j] == '[') {
-                                                if (elementName
-                                                        .startsWith("element.")) {
-                                                    elementName = elementName
-                                                            .substring(8);
-                                                } else if (elementName
-                                                        .startsWith("element")) {
-                                                    if (!st.hasMoreTokens()
-                                                            && proceed
-                                                            && token.lastIndexOf('[') == j) {
-                                                        result = element;
-                                                        proceed = false;
-                                                    } else {
-                                                        j = ta.length;
-                                                    }
-                                                } else {
-                                                    proceed = false;
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        proceed = false;
-                                    }
-                                } else {
-                                    proceed = false;
-                                }
-                            } else {
-                                proceed = false;
-                            }
-                        } else {
-                            proceed = false;
-                        }
-                    }
+                if (found == LOOP) {
+                    found = BAIL;
                 }
             }
         }
-        if (result != null) {
-            for (int j = 0; j < i; j++) {
-                elements.remove(0);
-            }
-        }
-        return result;
-    }
 
+        if (found < 0) {
+            element = null;
+        } else {
+            element = elements.remove(found);
+        }
+
+        for (index = 0; index < range; index++) {
+            elements.remove(0);
+        }
+
+        return element;
+    }
 
     /**
      * Triggered by the parser when data has been found. Data is added to the
@@ -541,10 +472,4 @@ abstract class CommonHandler extends DefaultHandler {
     protected final Logger                       logger;
 
     protected String                           dataBuffer;
-
-    /**
-     * Few helper token strings to call getFirstMatchingElement() with.
-     */
-    protected static final String ENDTOKEN_COLLECTION_SIZE = ".size";
-    protected static final String ENDTOKEN_DUMMY           = ".....";
 }

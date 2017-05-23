@@ -23,5 +23,7 @@
 #include <dds/pub/AnyDataWriter.hpp>
 #include <dds/pub/find.hpp>
 #include <dds/pub/discovery.hpp>
+#include <dds/pub/SuspendedPublication.hpp>
+#include <dds/pub/CoherentSet.hpp>
 
 #endif /* OMG_DDS_PUB_PACKAGE_INCLUDE_HPP_ */

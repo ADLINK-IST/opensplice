@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.impl;
@@ -21,19 +29,22 @@ import org.opensplice.cm.meta.MetaType;
 /**
  * Implementation of the WriterSnapshot interface.
  * 
- * @date May 18, 2005 
+ * @date May 18, 2005
  */
 public class WriterSnapshotImpl extends SnapshotImpl implements WriterSnapshot {
     private Writer writer;
-    
+
     /**
      * Creates a new WriterSnapshot from the supplied arguments. This
-     * constructor is for internal use only.  
+     * constructor is for internal use only.
      *
-     * @param _id The heap address of the snapshot.
-     * @param _reader The Writer, which contents are in the snapshot.
+     * @param _id
+     *            The heap address of the snapshot.
+     * @param _reader
+     *            The Writer, which contents are in the snapshot.
      */
-    public WriterSnapshotImpl(Communicator communicator, String _id, Writer _writer) {
+    public WriterSnapshotImpl(Communicator communicator, String _id,
+            Writer _writer) {
         super(communicator, _id);
         writer = _writer;
     }
@@ -45,8 +56,10 @@ public class WriterSnapshotImpl extends SnapshotImpl implements WriterSnapshot {
      * @throws CMException
      * @throws DataTypeUnsupportedException
      */
-    public MetaType getUserDataType() throws DataTypeUnsupportedException, CMException {
-        if(type == null){
+    @Override
+    public MetaType getUserDataType() throws DataTypeUnsupportedException,
+            CMException {
+        if (type == null) {
             type = writer.getDataType();
         }
         return type;
@@ -57,6 +70,7 @@ public class WriterSnapshotImpl extends SnapshotImpl implements WriterSnapshot {
      * 
      * @return Returns the writer.
      */
+    @Override
     public Writer getWriter() {
         return writer;
     }

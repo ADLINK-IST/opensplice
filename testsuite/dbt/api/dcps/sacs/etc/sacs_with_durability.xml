@@ -1,0 +1,28 @@
+<OpenSplice>
+   <Domain>
+      <Name>sacs_with_durablity</Name>
+      <Id>0</Id>
+      <Database>
+          <Size>10485760</Size>
+      </Database>
+      <Service name="durability">
+         <Command>durability</Command>
+      </Service>
+   </Domain>
+   <DurabilityService name="durability">
+      <Network>
+         <Alignment>
+            <RequestCombinePeriod>
+               <Initial>2.5</Initial>
+               <Operational>0.1</Operational>
+            </RequestCombinePeriod>
+         </Alignment>
+      </Network>
+      <NameSpaces>
+         <NameSpace name="defaultNamespace">
+            <Partition>*</Partition>
+         </NameSpace>
+         <Policy nameSpace="defaultNamespace" durability="Durable" alignee="Initial" aligner="True"/>
+      </NameSpaces>
+   </DurabilityService>
+</OpenSplice>

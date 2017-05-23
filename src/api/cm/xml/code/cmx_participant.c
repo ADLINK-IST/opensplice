@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cmx__participant.h"
@@ -14,9 +22,10 @@
 #include "cmx__entity.h"
 #include "cmx__factory.h"
 #include "cmx_factory.h"
-#include "cmx__qos.h"
+#include "u_serviceManager.h"
 #include "u_participant.h"
 #include "u_entity.h"
+#include "u_observable.h"
 #include "v_participant.h"
 #include "v_serviceState.h"
 #include "v_observable.h"
@@ -24,83 +33,67 @@
 #include "v__serviceManager.h"
 #include "v_event.h"
 #include "v_participantQos.h"
-#include "u_entity.h"
 #include "sd_serializerXMLMetadata.h"
-#include "os.h"
+#include "vortex_os.h"
 #include <stdio.h>
 
 c_char*
 cmx_participantNew(
     const c_char* uri,
+    const c_char* domainId,
     c_long timeout,
     const c_char* name,
     const c_char* qos)
 {
     u_participant p;
-    c_char* result;
     u_result ur;
-    v_participantQos pqos;
-    cmx_entityKernelArg kernelArg;
-    os_int32 domainId = -1;
-    c_char *tempUri = NULL;
-    c_char buf[100] = {0};
+    u_domainId_t did;
+    int pos;
+    c_char* result;
+    const c_char* context;
 
-    if (strstr(uri,"file://") == uri) {
-        /* uri starts with file:// so valid */
-    } else if (sscanf (uri,"%d%s",&domainId,buf) != 0) {
-        /* uri contains an integer, convert to valid string uri*/
-        if (buf[0]) {
-            /* string after integer no valid integer domain */
-        } else {
-            tempUri = u_userDomainIdToDomainName(domainId);
-            if (tempUri) {
-               uri = tempUri;
-            }
-        }
-    } /* else uri is a name */
-
-    p = u_participantNew(uri, timeout, name, NULL, TRUE);
-    if (tempUri) {
-        os_free(tempUri);
+    if (*domainId == '\0') {
+        did = U_DOMAIN_ID_ANY;
+    } else if (sscanf (domainId,"%d%n", &did, &pos) != 1 || domainId[pos] != '\0') {
+        OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+                   "cmx_participantNew failed (reason: illegal argument: domainId \"%s\").",
+                   domainId);
+        return NULL;
     }
-    result = NULL;
 
-    if(p != NULL){
-        kernelArg = cmx_entityKernelArg(os_malloc(C_SIZEOF(cmx_entityKernelArg)));
-        if (kernelArg) {
-            u_entityAction(u_entity(p), cmx_entityKernelAction, (c_voidp)kernelArg);
-            ur = U_RESULT_OK;
+    p = u_participantNew(uri, did, timeout > 0 ? (unsigned)timeout : 0, name, NULL, TRUE);
+    if(p == NULL){
+        /* Error reported by u_participantNew() */
+        goto err_u_participantNew;
+    }
 
-            if(qos != NULL){
-                pqos = v_participantQos(cmx_qosKernelQosFromKind(qos, K_PARTICIPANT, c_getBase(c_object(kernelArg->kernel))));
-                ur = u_entitySetQoS(u_entity(p), (v_qos)pqos);
-                c_free(pqos);
-                os_free(kernelArg);
-            }
-
-            if(ur == U_RESULT_OK){
-                C_STRUCT(cmx_entityArg) arg;
-
-                cmx_registerEntity(u_entity(p));
-                arg.entity = u_entity(p);
-                arg.participant = NULL;
-                arg.create = FALSE;
-                arg.result = NULL;
-
-                ur = u_entityAction(u_entity(p), cmx_entityNewFromAction, &arg);
-
-                if(ur == U_RESULT_OK){
-                    result = arg.result; /* Transfer string content to return result. */
-                }
-            } else {
-                OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0, "Could not set supplied qos to newly created participant (reason: %u).", ur);
-                u_participantFree(p);
-            }
-        } else {
-            u_participantFree(p);
+    if(qos && *qos){
+        if((ur = u_entitySetXMLQos(u_entity(p), qos)) != U_RESULT_OK) {
+            context = "u_entitySetXMLQos";
+            goto err_entity;
         }
+    }
+
+    if((ur = u_entityEnable(u_entity(p))) != U_RESULT_OK) {
+        context = "u_entityEnable";
+        goto err_entity;
+    }
+
+
+    if((ur = cmx_entityRegister(u_object(p), NULL, &result)) != U_RESULT_OK) {
+        context = "cmx_entityRegister";
+        goto err_entity;
     }
     return result;
+
+/* Error handling */
+err_entity:
+    OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
+            "cmx_participantNew failed (reason: %s returned %u).",
+            context, ur);
+    u_objectFree(u_object(p));
+err_u_participantNew:
+    return NULL;
 }
 
 c_char*
@@ -108,6 +101,7 @@ cmx_participantInit(
     v_participant entity)
 {
     assert(C_TYPECHECK(entity, v_participant));
+    OS_UNUSED_ARG(entity);
 
     return (c_char*)(os_strdup("<kind>PARTICIPANT</kind>"));
 }
@@ -117,34 +111,38 @@ cmx_participantAllParticipants(
     const c_char* participant)
 {
     cmx_walkEntityArg arg;
-    u_participant p;
+    u_result ur;
     c_char* result;
+    cmx_entity ce;
 
     result = NULL;
-    p = u_participant(cmx_entityUserEntity(participant));
+    ce = cmx_entityClaim(participant);
 
-    if(p != NULL){
+    if(ce != NULL){
         arg = cmx_walkEntityArg(os_malloc(C_SIZEOF(cmx_walkEntityArg)));
-        arg->length = 0;
-        arg->list = NULL;
+        if (arg != NULL) {
+            arg->length = 0;
+            arg->list = NULL;
+            arg->entityArg.entity = ce;
+            arg->entityArg.create = TRUE;
+            arg->entityArg.result = NULL;
 
-        arg->entityArg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-        arg->entityArg->participant = u_entityParticipant(u_entity(p));
-        arg->entityArg->create = TRUE;
-        arg->entityArg->result = NULL;
-
-        u_entityAction(u_entity(p), cmx_participantParticipantsAction, (c_voidp)arg);
-        result = cmx_convertToXMLList(arg->list, arg->length);
-
-        os_free(arg->entityArg);
-        os_free(arg);
+            ur = u_observableAction(u_observable(ce->uentity),
+                                    cmx_participantParticipantsAction,
+                                    (c_voidp)arg);
+            if (ur == U_RESULT_OK) {
+                result = cmx_convertToXMLList(arg->list, arg->length);
+            }
+            os_free(arg);
+        }
+        cmx_entityRelease(ce);
     }
     return result;
 }
 
 void
 cmx_participantParticipantsAction(
-    v_entity e,
+    v_public p,
     c_voidp args)
 {
     cmx_walkEntityArg arg;
@@ -154,14 +152,13 @@ cmx_participantParticipantsAction(
     c_char* xmlEntity;
 
     arg = cmx_walkEntityArg(args);
-    participants = v_resolveParticipants(v_objectKernel(e), "*");
+    participants = v_resolveParticipants(v_objectKernel(p), "*");
     participant = v_entity(c_iterTakeFirst(participants));
 
     while(participant != NULL){
-        proceed = cmx_entityNewFromWalk(participant, arg->entityArg);
-
+        proceed = cmx_entityNewFromWalk(v_public(participant), &arg->entityArg);
         if(proceed == TRUE){
-            xmlEntity = arg->entityArg->result;
+            xmlEntity = arg->entityArg.result;
             arg->list = c_iterInsert(arg->list, xmlEntity);
             arg->length += strlen(xmlEntity);
         }
@@ -170,39 +167,44 @@ cmx_participantParticipantsAction(
     }
     c_iterFree(participants);
 }
+
 c_char*
 cmx_participantAllTopics(
     const c_char* participant)
 {
+    u_result ur;
     cmx_walkEntityArg arg;
-    u_participant p;
     c_char* result;
+    cmx_entity ce;
 
     result = NULL;
-    p = u_participant(cmx_entityUserEntity(participant));
+    ce = cmx_entityClaim(participant);
 
-    if(p != NULL){
+    if (ce != NULL) {
         arg = cmx_walkEntityArg(os_malloc(C_SIZEOF(cmx_walkEntityArg)));
-        arg->length = 0;
-        arg->list = NULL;
+        if (arg != NULL){
+            arg->length = 0;
+            arg->list = NULL;
+            arg->entityArg.entity = ce;
+            arg->entityArg.create = TRUE;
+            arg->entityArg.result = NULL;
 
-        arg->entityArg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-        arg->entityArg->participant = u_entityParticipant(u_entity(p));
-        arg->entityArg->create = TRUE;
-        arg->entityArg->result = NULL;
-
-        u_entityAction(u_entity(p), cmx_participantTopicsAction, (c_voidp)arg);
-        result = cmx_convertToXMLList(arg->list, arg->length);
-
-        os_free(arg->entityArg);
-        os_free(arg);
+            ur = u_observableAction(u_observable(ce->uentity),
+                                    cmx_participantTopicsAction,
+                                    (c_voidp)arg);
+            if (ur == U_RESULT_OK) {
+                result = cmx_convertToXMLList(arg->list, arg->length);
+            }
+            os_free(arg);
+        }
+        cmx_entityRelease(ce);
     }
     return result;
 }
 
 void
 cmx_participantTopicsAction(
-    v_entity e,
+    v_public p,
     c_voidp args)
 {
     cmx_walkEntityArg arg;
@@ -212,14 +214,14 @@ cmx_participantTopicsAction(
     c_char* xmlEntity;
 
     arg = cmx_walkEntityArg(args);
-    topics = v_resolveTopics(v_objectKernel(e), "*");
+    topics = v_resolveTopics(v_objectKernel(p), "*");
     topic = v_entity(c_iterTakeFirst(topics));
 
     while(topic != NULL){
-        proceed = cmx_entityNewFromWalk(topic, arg->entityArg);
+        proceed = cmx_entityNewFromWalk(v_public(topic), &arg->entityArg);
 
         if(proceed == TRUE){
-            xmlEntity = arg->entityArg->result;
+            xmlEntity = arg->entityArg.result;
             arg->list = c_iterInsert(arg->list, xmlEntity);
             arg->length += strlen(xmlEntity);
         }
@@ -233,35 +235,39 @@ c_char*
 cmx_participantAllDomains(
     const c_char* participant)
 {
+    u_result ur;
     cmx_walkEntityArg arg;
-    u_participant p;
     c_char* result;
+    cmx_entity ce;
 
     result = NULL;
-    p = u_participant(cmx_entityUserEntity(participant));
+    ce = cmx_entityClaim(participant);
 
-    if(p != NULL){
+    if(ce != NULL){
         arg = cmx_walkEntityArg(os_malloc(C_SIZEOF(cmx_walkEntityArg)));
-        arg->length = 0;
-        arg->list = NULL;
+        if (arg != NULL) {
+            arg->length = 0;
+            arg->list = NULL;
+            arg->entityArg.entity = ce;
+            arg->entityArg.create = TRUE;
+            arg->entityArg.result = NULL;
 
-        arg->entityArg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-        arg->entityArg->participant = u_entityParticipant(u_entity(p));
-        arg->entityArg->create = TRUE;
-        arg->entityArg->result = NULL;
-
-        u_entityAction(u_entity(p), cmx_participantDomainsAction, (c_voidp)arg);
-        result = cmx_convertToXMLList(arg->list, arg->length);
-
-        os_free(arg->entityArg);
-        os_free(arg);
+            ur = u_observableAction(u_observable(ce->uentity),
+                                    cmx_participantDomainsAction,
+                                    (c_voidp)arg);
+            if (ur == U_RESULT_OK) {
+                result = cmx_convertToXMLList(arg->list, arg->length);
+            }
+            os_free(arg);
+        }
+        cmx_entityRelease(ce);
     }
     return result;
 }
 
 void
 cmx_participantDomainsAction(
-    v_entity e,
+    v_public p,
     c_voidp args)
 {
     cmx_walkEntityArg arg;
@@ -271,14 +277,14 @@ cmx_participantDomainsAction(
     c_char* xmlEntity;
 
     arg = cmx_walkEntityArg(args);
-    partitions = v_resolvePartitions(v_objectKernel(e), "*");
+    partitions = v_resolvePartitions(v_objectKernel(p), "*");
     partition = v_entity(c_iterTakeFirst(partitions));
 
     while(partition != NULL){
-        proceed = cmx_entityNewFromWalk(partition, arg->entityArg);
+        proceed = cmx_entityNewFromWalk(v_public(partition), &arg->entityArg);
 
         if(proceed == TRUE){
-            xmlEntity = arg->entityArg->result;
+            xmlEntity = arg->entityArg.result;
             arg->list = c_iterInsert(arg->list, xmlEntity);
             arg->length += strlen(xmlEntity);
         }
@@ -295,51 +301,54 @@ cmx_participantRegisterType(
 {
     sd_serializer serializer;
     sd_serializedData meta_data;
-    u_entity ue;
     cmx_entityKernelArg kernelArg;
     c_type topicType;
+    cmx_entity ce;
     const c_char* result;
     const c_char* msg;
 
-    ue = cmx_entityUserEntity(participant);
-
-    if(ue != NULL){
+    ce = cmx_entityClaim(participant);
+    if(ce != NULL){
         kernelArg = cmx_entityKernelArg(os_malloc(C_SIZEOF(cmx_entityKernelArg)));
-        u_entityAction(ue, cmx_entityKernelAction, (c_voidp)kernelArg);
-        serializer = sd_serializerXMLMetadataNew(c_getBase(c_object(kernelArg->kernel)));
-        os_free(kernelArg);
+        if (u_observableAction(u_observable(ce->uentity),
+                               cmx_entityKernelAction,
+                               (c_voidp)kernelArg) == U_RESULT_OK)
+        {
+            serializer = sd_serializerXMLMetadataNew(c_getBase(c_object(kernelArg->kernel)));
 
-        if(serializer != NULL){
-            meta_data = sd_serializerFromString(serializer, type);
+            if(serializer != NULL){
+                meta_data = sd_serializerFromString(serializer, type);
 
-            if (meta_data != NULL) {
-                topicType = c_type(sd_serializerDeserializeValidated(serializer, meta_data));
+                if (meta_data != NULL) {
+                    topicType = c_type(sd_serializerDeserialize(serializer, meta_data));
 
-                if (topicType == NULL) {
-                    if (sd_serializerLastValidationResult(serializer) == SD_VAL_ERROR) {
+                    if (topicType == NULL) {
                         msg = sd_serializerLastValidationMessage(serializer);
-                        OS_REPORT_1(OS_ERROR,
-                                    CM_XML_CONTEXT, 0,
-                                    "Data type could not be registered, "
-                                    "because it is not valid: %s",
-                                    msg);
+                        OS_REPORT(OS_ERROR,
+                                  CM_XML_CONTEXT, 0,
+                                  "Data type could not be registered, "
+                                  "because it is not valid: %s",
+                                  msg);
                         result = CMX_RESULT_FAILED;
                     } else {
                         result = CMX_RESULT_OK;
                     }
+                    sd_serializedDataFree(meta_data);
                 } else {
-                    result = CMX_RESULT_OK;
+                    OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0, "Construction of serialized data failed.");
+                    result = CMX_RESULT_FAILED;
                 }
-                sd_serializedDataFree(meta_data);
+                sd_serializerFree(serializer);
             } else {
-                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0, "Construction of serialized data failed.");
+                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0, "Serializer could not be initialized");
                 result = CMX_RESULT_FAILED;
             }
-            sd_serializerFree(serializer);
         } else {
-            OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0, "Serializer could not be initialized");
+            OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0, "Kernel object could not be retrieved");
             result = CMX_RESULT_FAILED;
         }
+        os_free(kernelArg);
+        cmx_entityRelease(ce);
     } else {
         result = CMX_RESULT_FAILED;
     }
@@ -351,36 +360,41 @@ cmx_participantFindTopic(
     const c_char* participant,
     const c_char* topicName)
 {
-    u_participant up;
+    u_result ur;
     c_char* topics;
     cmx_walkEntityArg arg;
+    cmx_entity ce;
 
     topics = NULL;
-    up = u_participant(cmx_entityUserEntity(participant));
 
-    if(up != NULL){
+    ce = cmx_entityClaim(participant);
+
+    if(ce != NULL){
         arg = cmx_walkEntityArg(os_malloc(C_SIZEOF(cmx_walkParticipantArg)));
-        arg->length = 0;
-        arg->list = NULL;
+        if (arg != NULL){
+            arg->length = 0;
+            arg->list = NULL;
+            arg->entityArg.entity = ce;
+            arg->entityArg.create = TRUE;
+            arg->entityArg.result = NULL;
+            cmx_walkParticipantArg(arg)->topicName = topicName;
 
-        arg->entityArg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-        arg->entityArg->participant = u_entityParticipant(u_entity(up));
-        arg->entityArg->create = TRUE;
-        arg->entityArg->result = NULL;
-        cmx_walkParticipantArg(arg)->topicName = topicName;
-
-        u_entityAction(u_entity(up), cmx_participantFindTopicAction, (c_voidp)arg);
-        topics = cmx_convertToXMLList(arg->list, arg->length);
-
-        os_free(arg->entityArg);
-        os_free(arg);
+            ur = u_observableAction(u_observable(ce->uentity),
+                                    cmx_participantFindTopicAction,
+                                    (c_voidp)arg);
+            if (ur == U_RESULT_OK) {
+                topics = cmx_convertToXMLList(arg->list, arg->length);
+            }
+            os_free(arg);
+        }
+        cmx_entityRelease(ce);
     }
     return topics;
 }
 
 void
 cmx_participantFindTopicAction(
-    v_entity e,
+    v_public p,
     c_voidp args)
 {
     cmx_walkEntityArg arg;
@@ -390,14 +404,14 @@ cmx_participantFindTopicAction(
     c_char* xmlEntity;
 
     arg = cmx_walkEntityArg(args);
-    topics = v_resolveTopics(v_objectKernel(e), cmx_walkParticipantArg(arg)->topicName);
+    topics = v_resolveTopics(v_objectKernel(p), cmx_walkParticipantArg(arg)->topicName);
     topic = v_entity(c_iterTakeFirst(topics));
 
     while(topic != NULL){
-        proceed = cmx_entityNewFromWalk(topic, arg->entityArg);
+        proceed = cmx_entityNewFromWalk(v_public(topic), &arg->entityArg);
 
         if(proceed == TRUE){
-            xmlEntity = arg->entityArg->result;
+            xmlEntity = arg->entityArg.result;
             arg->list = c_iterInsert(arg->list, xmlEntity);
             arg->length += strlen(xmlEntity);
         }
@@ -409,12 +423,14 @@ cmx_participantFindTopicAction(
 
 static void
 cmx_participantInitDetach(
-    v_entity entity,
+    v_public entity,
     c_voidp args)
 {
     v_kernel k;
     v_serviceManager m;
     v_serviceState splicedState;
+
+    OS_UNUSED_ARG(args);
 
     k = v_objectKernel(entity);
     m = v_getServiceManager(k);
@@ -424,27 +440,33 @@ cmx_participantInitDetach(
 
 static c_ulong
 cmx_participantDetach(
-    u_dispatcher o,
+    u_observable o,
     c_ulong event,
     c_voidp usrData)
 {
     v_serviceStateKind kind;
     u_serviceManager manager;
 
-    if(cmx_isInitialized() == TRUE){
-        manager = (u_serviceManager)usrData;
+    OS_UNUSED_ARG(o);
+    OS_UNUSED_ARG(event);
+    OS_UNUSED_ARG(usrData);
 
-        if(manager != NULL){
-            kind = u_serviceManagerGetServiceStateKind(manager, V_SPLICED_NAME);
+    if ((event & V_EVENT_SERVICESTATE_CHANGED) == V_EVENT_SERVICESTATE_CHANGED) {
+        if(cmx_isInitialized() == TRUE){
+            manager = (u_serviceManager)usrData;
 
-            if ((kind != STATE_INITIALISING) && (kind != STATE_OPERATIONAL)) {
-                cmx_internalDetach();
-                u_serviceManagerFree(manager);
-                manager = NULL;
+            if(manager != NULL){
+                kind = u_serviceManagerGetServiceStateKind(manager, V_SPLICED_NAME);
+
+                if ((kind != STATE_INITIALISING) && (kind != STATE_OPERATIONAL)) {
+                    cmx_internalDetach();
+                    u_objectFree(manager);
+                    manager = NULL;
+                }
             }
         }
     }
-    return V_EVENT_SERVICESTATE_CHANGED;
+    return event;
 }
 
 const c_char*
@@ -455,43 +477,79 @@ cmx_participantAutoDetach(
     c_ulong mask;
     u_participant up;
     u_result result;
+    cmx_entity ce;
 
-    up = u_participant(cmx_entityUserEntity(participant));
+    ce = cmx_entityClaim(participant);
 
-    if (up == NULL) {
+    if (ce == NULL) {
         goto errorGetEntity;
     }
+    up = u_participant(ce->uentity);
+    result = u_observableGetListenerMask(u_observable(up), &mask);
 
-    result = u_dispatcherGetEventMask(u_dispatcher(up), &mask);
     if (result != U_RESULT_OK) {
         goto errorGetMask;
     }
-
     if (enable == FALSE) {
         mask &= ~V_EVENT_SERVICESTATE_CHANGED;
-        result = u_dispatcherRemoveListener(u_dispatcher(up), cmx_participantDetach);
+        result = u_observableRemoveListener(u_observable(up), cmx_participantDetach);
         if (result != U_RESULT_OK) {
             goto errorRemoveListener;
         }
     } else {
         mask |= V_EVENT_SERVICESTATE_CHANGED;
-        result = u_entityAction(u_entity(up), cmx_participantInitDetach, NULL);
+        result = u_observableAction(u_observable(up), cmx_participantInitDetach, NULL);
         if (result != U_RESULT_OK) {
             goto errorEntityAction;
         }
-
-        result = u_dispatcherInsertListener(u_dispatcher(up), cmx_participantDetach, u_serviceManagerNew(up));
+        result = u_observableAddListener(u_observable(up),
+                                         cmx_participantDetach,
+                                         u_serviceManagerNew(up));
         if (result != U_RESULT_OK) {
             goto errorInsertListener;
         }
     }
-    u_dispatcherSetEventMask(u_dispatcher(up), mask);
-    return CMX_RESULT_OK;
+    result = u_observableSetListenerMask(u_observable(up), mask);
+    if ( result != U_RESULT_OK) {
+        goto errorSetListenerMark;
+    }
+    
+    cmx_entityRelease(ce);
 
+    return CMX_RESULT_OK;
+    
+errorSetListenerMark:
 errorInsertListener:
 errorEntityAction:
 errorRemoveListener:
 errorGetMask:
 errorGetEntity:
     return CMX_RESULT_FAILED;
+}
+
+c_char*
+cmx_participantDomainId(
+    const c_char* participant)
+{
+    cmx_entity ce;
+    u_participant up;
+    c_char* result;
+    u_domainId_t did;
+    int written;
+
+    ce = cmx_entityClaim(participant);
+
+    if (ce == NULL) {
+        did = U_DOMAIN_ID_INVALID;
+    } else {
+        up = u_participant(ce->uentity);
+        did = u_participantGetDomainId(up);
+        cmx_entityRelease(ce);
+    }
+    /* worst-case DOMAIN_ID_ANY: 2147483647  */
+    result = os_malloc(sizeof(char) * 10 + 1);
+    written = os_sprintf(result, "%d", did);
+    assert(written > 0 && written <= 11);
+
+    return result;
 }

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cmsoap.h"
@@ -33,7 +41,9 @@
 #include "cmx_storage.h"
 #include "cmx_factory.h"
 
+#include "u_observable.h"
 #include "u_entity.h"
+#include "u_types.h"
 #include "os_time.h"
 #include "os_heap.h"
 #include "os_report.h"
@@ -44,45 +54,53 @@
 
 /*static cms_uri_cache uri_cache = NULL;*/
 
+static void cmsoapAtExit(u_service service, void *privateData);
 
-OPENSPLICE_ENTRYPOINT (ospl_cmsoap)
+static os_result
+exitRequestHandler(
+        os_callbackArg ignore,
+        void * arg)
+{
+    cms_service cms = (cms_service)arg;
+
+    OS_UNUSED_ARG(ignore);
+
+    assert(cms);
+    /* Terminate cmsoap */
+    cms->terminate = TRUE;
+
+    return os_resultFail; /* Don't invoke further handlers; main thread will take care of termination. */
+}
+
+
+OPENSPLICE_SERVICE_ENTRYPOINT (ospl_cmsoap, cmsoap)
 {
     cms_service cms;
-    os_time sleepTime;
     cms_client client;
     c_bool success;
-    char* name;
+    char* name = NULL;
     char* config;
     c_long slave;
     struct soap* soap;
-
-#ifdef INTEGRITY
-    Error err;
-    Semaphore soapSvcStartSem = SemaphoreObjectNumber(13);
-#endif
     slave = -1;
     soap = NULL;
 
-#ifdef INTEGRITY
-       name = "cmsoap";
-       config = "file:///ospl.xml";
-
-       err = WaitForSemaphore(soapSvcStartSem);
-       assert ( err == Success );
-       argc = 3;
-#endif
-
        if(argc == 3)
        {
-#ifndef INTEGRITY
           name = argv[1];
           config = argv[2];
-#endif
           cms = cms_serviceNew(name,config);
 
           if(cms != NULL){
-             sleepTime.tv_sec=0;
-             sleepTime.tv_nsec=10*1000L*1000L;
+             os_signalHandlerExitRequestHandle erh = os_signalHandlerExitRequestHandleNil;
+             if (u_serviceAtExit(cms->uservice, cmsoapAtExit, cms) != U_RESULT_OK) {
+                 OS_REPORT(OS_ERROR, CMS_CONTEXT, 0,
+                           "Could not register atExit.");
+                 cms->terminate = TRUE;
+             }
+             if(!os_serviceGetSingleProcess()){
+                  erh = os_signalHandlerRegisterExitRequestCallback(exitRequestHandler, cms);
+             }
 
              while(cms->terminate == FALSE){
                 while( (slave < 0) && (cms->terminate == FALSE)){
@@ -99,7 +117,7 @@ OPENSPLICE_ENTRYPOINT (ospl_cmsoap)
                    cms->terminate = TRUE;
                 } else {
                    if(cms->configuration->verbosity > 6){
-                      OS_REPORT_5(OS_INFO, CMS_CONTEXT, 0,
+                      OS_REPORT(OS_INFO, CMS_CONTEXT, 0,
                                   "Thread %d accepts connection from IP %d.%d.%d.%d\n",
                                   slave,
                                   (int)(cms->soap->ip>>24)&0xFF,
@@ -107,7 +125,7 @@ OPENSPLICE_ENTRYPOINT (ospl_cmsoap)
                                   (int)(cms->soap->ip>>8)&0xFF,
                                   (int)(cms->soap->ip&0xFF));
                    }
-                   client = cms_serviceLookupClient(cms, cms->soap, config);
+                   client = cms_serviceLookupClient(cms);
 
                    if(client != NULL){
                       soap = soap_copy(cms->soap);
@@ -161,6 +179,7 @@ OPENSPLICE_ENTRYPOINT (ospl_cmsoap)
                    }
                 }
              }
+             os_signalHandlerUnregisterExitRequestCallback(erh);
              cms_serviceFree(cms);
 
           }
@@ -168,6 +187,16 @@ OPENSPLICE_ENTRYPOINT (ospl_cmsoap)
           printf("Usage: %s <name> <uri>\n", argv[0]);
        }
     return 0;
+}
+
+static void
+cmsoapAtExit(
+    u_service service,
+    void *privateData)
+{
+    cms_service cms = cms_service(privateData);
+    OS_UNUSED_ARG(service);
+    cms->terminate = TRUE;
 }
 
 static c_bool
@@ -192,10 +221,10 @@ validateInitialization(
         os_condSignal(&client->condition);
         os_mutexUnlock(&client->conditionMutex);
     } else {
-        client->leaseTime = os_timeGet();
-        u_entityAction( u_entity(client->service->uservice),
-                            cms_soapThreadStatisticsRequestHandledAdd,
-                            client->service);
+        client->leaseTime = os_timeMGet();
+        (void)u_observableAction( u_observable(client->service->uservice),
+                              cms_soapThreadStatisticsRequestHandledAdd,
+                              client->service);
     }
     return result;
 }
@@ -215,10 +244,13 @@ int cms__updateLease(
 {
     cms_thread it;
     cms_client client;
+    OS_UNUSED_ARG(dummy);
+
+    OS_UNUSED_ARG(dummy);
 
     it = cms_thread(soap->user);
     client = cms_soapThread(it)->client;
-    client->leaseTime = os_timeGet();
+    client->leaseTime = os_timeMGet();
     *result = os_strdup("<result>OK</result>");
 
     storeResultInThread(it, (c_char*)(*result));
@@ -234,6 +266,9 @@ cms__initialise(
 {
     cms_thread it;
     cms_client client;
+    OS_UNUSED_ARG(dummy);
+
+    OS_UNUSED_ARG(dummy);
 
     it = cms_thread(soap->user);
 
@@ -253,6 +288,9 @@ cms__detach(
 {
     cms_thread it;
     cms_client client;
+    OS_UNUSED_ARG(dummy);
+
+    OS_UNUSED_ARG(dummy);
 
     it = cms_thread(soap->user);
 
@@ -287,11 +325,13 @@ cms__participantNew(
     cms_thread it;
     int code;
 
+    OS_UNUSED_ARG(uri);
+
     code = SOAP_FAULT;
 
     if(validateInitialization(soap) == TRUE){
         it = cms_thread(soap->user);
-        *result = cmx_participantNew(it->uri, timeout, name, qos);
+        *result = cmx_participantNew(it->uri, it->did.id, timeout, name, qos);
         storeResultInThread(it, *result);
         code = SOAP_OK;
     }
@@ -394,6 +434,26 @@ cms__participantRegisterType(
     if(validateInitialization(soap) == TRUE){
         it = cms_thread(soap->user);
         *result = os_strdup(cmx_participantRegisterType(participant, type));
+        storeResultInThread(it, *result);
+        code = SOAP_OK;
+    }
+    return code;
+}
+
+int
+cms__participantGetDomainId(
+    struct soap* soap,
+    char* participant,
+    char** result)
+{
+    cms_thread it;
+    int code;
+
+    code = SOAP_FAULT;
+
+    if(validateInitialization(soap) == TRUE){
+        it = cms_thread(soap->user);
+        *result = cmx_participantDomainId(participant);
         storeResultInThread(it, *result);
         code = SOAP_OK;
     }
@@ -566,6 +626,28 @@ cms__entityOwnedEntities(
     if(validateInitialization(soap) == TRUE){
         it = cms_thread(soap->user);
         *result = cmx_entityOwnedEntities(entity, filter);
+        storeResultInThread(it, *result);
+        code = SOAP_OK;
+    }
+    return code;
+}
+
+int
+cms__entityGetEntityTree(
+    struct soap *soap,
+    char* entity,
+    char* childIndex,
+    char* childSerial,
+    char** result)
+{
+    cms_thread it;
+    int code;
+
+    code = SOAP_FAULT;
+
+    if(validateInitialization(soap) == TRUE){
+        it = cms_thread(soap->user);
+        *result = cmx_entityGetEntityTree(entity, childIndex, childSerial);
         storeResultInThread(it, *result);
         code = SOAP_OK;
     }
@@ -964,6 +1046,46 @@ cms__publisherNew(
 }
 
 int
+cms__publisherBeginCoherentChanges(
+    struct soap* soap,
+    char* publisher,
+    char** result)
+{
+    cms_thread it;
+    int code;
+
+    code = SOAP_FAULT;
+
+    if(validateInitialization(soap) == TRUE){
+        it = cms_thread(soap->user);
+        *result = os_strdup(cmx_publisherCoherentBegin(publisher));
+        storeResultInThread(it, *result);
+        code = SOAP_OK;
+    }
+    return code;
+}
+
+int
+cms__publisherEndCoherentChanges(
+    struct soap* soap,
+    char* publisher,
+    char** result)
+{
+    cms_thread it;
+    int code;
+
+    code = SOAP_FAULT;
+
+    if(validateInitialization(soap) == TRUE){
+        it = cms_thread(soap->user);
+        *result = os_strdup(cmx_publisherCoherentEnd(publisher));
+        storeResultInThread(it, *result);
+        code = SOAP_OK;
+    }
+    return code;
+}
+
+int
 cms__subscriberNew(
     struct soap* soap,
     char* participant,
@@ -979,6 +1101,67 @@ cms__subscriberNew(
     if(validateInitialization(soap) == TRUE){
         it = cms_thread(soap->user);
         *result = cmx_subscriberNew(participant, name, qos);
+        storeResultInThread(it, *result);
+        code = SOAP_OK;
+    }
+    return code;
+}
+
+int
+cms__subscriberGetDataReaders(
+    struct soap* soap,
+    char* subscriber,
+    int mask,
+    char** result)
+{
+    cms_thread it;
+    int code;
+
+    code = SOAP_FAULT;
+
+    if(validateInitialization(soap) == TRUE){
+        it = cms_thread(soap->user);
+        *result = cmx_subscriberGetDataReaders(subscriber, (u_sampleMask)mask);
+        storeResultInThread(it, *result);
+        code = SOAP_OK;
+    }
+    return code;
+}
+
+int
+cms__subscriberBeginAccess(
+    struct soap* soap,
+    char* subscriber,
+    char** result)
+{
+    cms_thread it;
+    int code;
+
+    code = SOAP_FAULT;
+
+    if(validateInitialization(soap) == TRUE){
+        it = cms_thread(soap->user);
+        *result = os_strdup(cmx_subscriberBeginAccess(subscriber));
+        storeResultInThread(it, *result);
+        code = SOAP_OK;
+    }
+    return code;
+}
+
+int
+cms__subscriberEndAccess(
+    struct soap* soap,
+    char* subscriber,
+    char** result)
+{
+    cms_thread it;
+    int code;
+
+    code = SOAP_FAULT;
+
+    if(validateInitialization(soap) == TRUE){
+        it = cms_thread(soap->user);
+        *result = os_strdup(cmx_subscriberEndAccess(subscriber));
         storeResultInThread(it, *result);
         code = SOAP_OK;
     }
@@ -1062,14 +1245,13 @@ cms__dataReaderWaitForHistoricalData(
 {
     cms_thread it;
     int code;
-    c_time waitTime;
+    os_duration waitTime;
 
     code = SOAP_FAULT;
 
     if(validateInitialization(soap) == TRUE){
         it = cms_thread(soap->user);
-        waitTime.seconds = (c_long)seconds;
-        waitTime.nanoseconds = (c_ulong)nanoseconds;
+        waitTime = OS_DURATION_INIT(seconds, nanoseconds);
         *result = os_strdup(cmx_dataReaderWaitForHistoricalData(dataReader, waitTime));
         storeResultInThread(it, *result);
         code = SOAP_OK;
@@ -1117,48 +1299,6 @@ cms__topicNew(
     if(validateInitialization(soap) == TRUE){
         it = cms_thread(soap->user);
         *result = cmx_topicNew(participant, name, typeName, keyList, qos);
-        storeResultInThread(it, *result);
-        code = SOAP_OK;
-    }
-    return code;
-}
-
-int
-cms__publisherPublish(
-    struct soap* soap,
-    char* publisher,
-    char* expression,
-    char** result)
-{
-    cms_thread it;
-    int code;
-
-    code = SOAP_FAULT;
-
-    if(validateInitialization(soap) == TRUE){
-        it = cms_thread(soap->user);
-        *result = os_strdup(cmx_publisherPublish(publisher, expression));
-        storeResultInThread(it, *result);
-        code = SOAP_OK;
-    }
-    return code;
-}
-
-int
-cms__subscriberSubscribe(
-    struct soap* soap,
-    char* subscriber,
-    char* expression,
-    char** result)
-{
-    cms_thread it;
-    int code;
-
-    code = SOAP_FAULT;
-
-    if(validateInitialization(soap) == TRUE){
-        it = cms_thread(soap->user);
-        *result = os_strdup(cmx_subscriberSubscribe(subscriber, expression));
         storeResultInThread(it, *result);
         code = SOAP_OK;
     }
@@ -1257,14 +1397,13 @@ cms__waitsetTimedWait(
 {
     cms_thread it;
     int code;
-    c_time waitTime;
+    os_duration waitTime;
 
     code = SOAP_FAULT;
 
     if(validateInitialization(soap) == TRUE){
         it = cms_thread(soap->user);
-        waitTime.seconds = (c_long)seconds;
-        waitTime.nanoseconds = (c_ulong)nanoseconds;
+        waitTime = OS_DURATION_INIT(seconds, nanoseconds);
         *result = cmx_waitsetTimedWait(waitset, waitTime);
         storeResultInThread(it, *result);
         code = SOAP_OK;
@@ -1278,13 +1417,11 @@ cms__waitsetGetEventMask(
     char* waitset,
     unsigned int* result)
 {
-    cms_thread it;
     int code;
 
     code = SOAP_FAULT;
 
     if(validateInitialization(soap) == TRUE){
-        it = cms_thread(soap->user);
         *result = cmx_waitsetGetEventMask(waitset);
         code = SOAP_OK;
     }
@@ -1428,6 +1565,9 @@ cms__getVersion(
 {
     cms_thread it;
     int code;
+    OS_UNUSED_ARG(dummy);
+
+    OS_UNUSED_ARG(dummy);
 
     code = SOAP_FAULT;
 

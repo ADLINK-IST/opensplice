@@ -1,0 +1,223 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Introduction &mdash; Test Tool User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Test Tool User Guide" href="index.html" />
+    <link rel="next" title="3. Getting Started" href="getstarted.html" />
+    <link rel="prev" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="getstarted.html" title="3. Getting Started"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <span class="target" id="introduction"></span><div class="section" id="id1">
+<h1>2. Introduction<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p><em>This section provides a brief introduction to the Vortex OpenSplice Tester.</em></p>
+<div class="section" id="features">
+<h2>2.1. Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice Automated Testing and Debugging Tool provides an easy way
+of displaying messages produced in Vortex OpenSplice and also provides means to
+publish messages manually or with a script.</p>
+<p>(The OpenSplice Automated Testing and Debugging Tool is usually referred
+to as <em>Tester</em>; the name <tt class="docutils literal"><span class="pre">ospltest</span></tt> is used when referring to the
+executable program.)</p>
+<p>This tool is made with the software tester, and the way he performs his
+job, in mind. A pre-defined list of topics of interest can be provided.
+For all topics a reader is created in the correct partition. Once
+started, the tool receives all instances of the topics of interest and
+will display them in the sample list in the order they were produced
+(using the source time stamp). This makes it very easy to see when
+topics are produced and in what order. It also provides feedback about
+unexpected updates.</p>
+<p>Other features of Tester include the ability to:</p>
+<ul class="simple">
+<li>dump a selection of topic(s) to a file</li>
+<li>dump all logged topic instances to a file</li>
+<li>filter the sample list based on key</li>
+<li>filter the sample list based on key and topic name</li>
+<li>filter the sample list based on key</li>
+<li>create a script with a selection of previously sent or received topics</li>
+<li>compare topic samples</li>
+<li>edit topic samples and then write them or dispose the topic instance</li>
+<li>create new topic samples and write them or dispose the topic instances</li>
+</ul>
+</div>
+<div class="section" id="location-of-tester-in-the-opensplice-architecture">
+<h2>2.2. Location of Tester in the OpenSplice architecture<a class="headerlink" href="#location-of-tester-in-the-opensplice-architecture" title="Permalink to this headline">¶</a></h2>
+<p>Tester is complementary to OpenSplice Tuner (<tt class="docutils literal"><span class="pre">ospltun</span></tt>). Tuner
+supports ‘white box’ application monitoring and tuning, and Tester
+supports ‘black box’ system testing, debugging, data capture, analysis,
+and visualization.</p>
+</div>
+<div class="section" id="things-to-know">
+<h2>2.3. Things to Know<a class="headerlink" href="#things-to-know" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><strong>NOTE</strong>: Tester uses the internal Control &amp; Monitoring (C&amp;M) API
+for access to OpenSplice. At this time Tester only supports
+Vortex OpenSplice systems.</dd>
+</dl>
+<p>Tester can be used both locally (<em>via</em> shared memory or single process)
+and/or remotely (<em>via</em> a SOAP connection to the SOAP service).</p>
+<p>Tester uses a periodic poll to read data (the default poll period is
+250 ms). The normal restrictions for storage scope apply (only keys defined
+with the topic separate topics for reading, if topics with the same key
+are produced within a polling period, then only the last topic is read).</p>
+<p>Tester uses the default QoS for writing (as provided by the first
+application which registers the topic) and the weakest QoS for reading.
+However when specifying the topic in <tt class="docutils literal"><span class="pre">add</span> <span class="pre">topic</span></tt> (or <tt class="docutils literal"><span class="pre">add</span> <span class="pre">topics</span></tt>)
+or in the topic file the QoS can be given, this QoS must be compatible
+with the topic QoS as defined when the topic was registered.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><strong>NOTE</strong>: In order for the Tester system browser to correctly show the
+complete system, OpenSplice Durability services have to be properly
+configured so that the transient ‘built-in-topics’ are properly aligned
+when new nodes join the system. Monitoring the built-in topic sample set
+on different nodes will quickly reveal any failure in correct lining-up
+of transient data (in which case there will be different sets visible on
+different nodes). Monitoring the <tt class="docutils literal"><span class="pre">DCPSHeartbeat</span></tt> built-in topic will
+reveal fundamental connectivity issues in your system (you should see as
+many unique heartbeats as there are interconnected nodes in the system).</dd>
+</dl>
+</div>
+<div class="section" id="prerequisites">
+<h2>2.4. Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>Tester is included in the standard OpenSplice installation.</p>
+<p>Tester’s minimum system requirements are the same as for OpenSplice
+itself; please refer to the <em>Release Notes</em> for both Tester and OpenSplice
+for details. The Vortex OpenSplice <em>Getting Started Guide</em> contains
+additional information about installation and configuration on various
+systems.</p>
+<p>Note that to compile plugins you will also need to have <tt class="docutils literal"><span class="pre">ant</span></tt> and
+JDK1.6 installed (see
+<a class="reference internal" href="messageinterfaces.html#start-with-message-interface"><em>Getting Started with a Message Interface</em></a>).
+Tester has been implemented in the Java Language, and it uses
+the Vortex OpenSplice Command and Management (C&amp;M) API.</p>
+<p>Although Tester uses the C&amp;M API, it doesn’t depend on a locally
+installed or running instantiation of OpenSplice. It can operate either
+‘co-located’ with a running DDS target system, or it can operate in
+‘remote-connection’ mode (like the Tuner).</p>
+<p>When Tester is run on the same platform as Vortex OpenSplice, it uses the
+<tt class="docutils literal"><span class="pre">OSPL_HOME</span></tt> environment variable to find the necessary OpenSplice library
+files. It also uses <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> as its default OpenSplice configuration.</p>
+<p>When Tester connects to a remote ‘target’ platform using SOAP it doesn’t
+use any local environment variables, it just needs to be installed on
+the machine where you run it.</p>
+<p>(Note that the Vortex OpenSplice Tuner can be started with a <tt class="docutils literal"><span class="pre">-uri</span></tt> command-line
+parameter (see how to <a class="reference internal" href="getstarted.html#starting-remote-connection"><em>start a remote connection</em></a>
+). This is a new feature that is actually used by the Tester in the system browser,
+where you can spawn a Tuner (see how to
+<a class="reference internal" href="familiarization.html#spawn-tuner-from-system-browser"><em>spawn a tuner from the system browser</em></a>)
+that then connects to the
+node/application that the browser is pointing to.)</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Introduction</a><ul>
+<li><a class="reference internal" href="#features">2.1. Features</a></li>
+<li><a class="reference internal" href="#location-of-tester-in-the-opensplice-architecture">2.2. Location of Tester in the OpenSplice architecture</a></li>
+<li><a class="reference internal" href="#things-to-know">2.3. Things to Know</a></li>
+<li><a class="reference internal" href="#prerequisites">2.4. Prerequisites</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="previous chapter">1. Preface</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="getstarted.html"
+                        title="next chapter">3. Getting Started</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/introduction.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="getstarted.html" title="3. Getting Started"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #ifndef Q_THREAD_H
 #define Q_THREAD_H
 
@@ -70,7 +89,7 @@ struct thread_state1 {
 
 struct thread_states {
   os_mutex lock;
-  int nthreads;
+  unsigned nthreads;
   struct thread_state1 *ts; /* [nthreads] */
 };
 
@@ -79,7 +98,7 @@ extern struct thread_states thread_states;
 extern __thread struct thread_state1 *tsd_thread_state;
 #endif
 
-int thread_states_init (int maxthreads);
+void thread_states_init (unsigned maxthreads);
 void thread_states_fini (void);
 
 void upgrade_main_thread (void);
@@ -88,6 +107,11 @@ const struct config_thread_properties_listelem *lookup_thread_properties (const 
 struct thread_state1 *create_thread (const char *name, void * (*f) (void *arg), void *arg);
 struct thread_state1 *lookup_thread_state_real (void);
 int join_thread (struct thread_state1 *ts1, void **ret);
+void log_stack_traces (void);
+struct thread_state1 *get_thread_state (os_threadId id);
+struct thread_state1 * init_thread_state (const char *tname);
+void reset_thread_state (struct thread_state1 *ts1);
+int thread_exists (const char *name);
 
 #if defined (__cplusplus)
 }

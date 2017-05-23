@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Overview &mdash; IDL PreProcessor Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="IDL PreProcessor Guide" href="index.html" />
+    <link rel="next" title="3. Prerequisites" href="prerequisites.html" />
+    <link rel="prev" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="prerequisites.html" title="3. Prerequisites"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="overview">
+<span id="id1"></span><h1>2. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<p><em>The Vortex OpenSplice IDL Pre-processor plays a role in generating code for
+DDS/DCPS specialized interfaces (TypeSupport, DataReader and DataWriter) from
+application data definitions defined in IDL for all supported languages.</em></p>
+<div class="section" id="introduction">
+<h2>2.1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice IDL Pre-processor supports two modes:</p>
+<ul class="simple">
+<li><strong>Standalone</strong> mode where the application is only used with Vortex OpenSplice</li>
+<li><strong>ORB-integrated</strong> mode where the application is used with an ORB as well
+as with Vortex OpenSplice</li>
+</ul>
+<p>In a <em>standalone</em> context, Vortex OpenSplice provides, apart from the DDS/DCPS
+related artifacts, all of the artifacts implied by the lDL language-specific mapping.
+In this case the name space used is <tt class="docutils literal"><span class="pre">DDS</span></tt> instead of the name space implied by the
+IDL language-specific mapping.</p>
+<p>In an <em>ORB-integrated</em> context, the ORB pre-processor will provide for the artifacts
+implied by the lDL language-specific mapping, while Vortex OpenSplice only
+provides the DDS/DCPS-related artifacts. The application data type representation
+provided by the ORB is also used within the Vortex OpenSplice context. In this way
+application data types can be shared between the ORB and Vortex OpenSplice within
+one application program.</p>
+<p>The Vortex OpenSplice IDL Pre-processor accepts IDL which complies with the
+OMG CORBA specification to specify application data types. Additionally it
+allows specifying keys on data types.</p>
+<p>A number of DDS data types defined in the DCPS API (for example, <tt class="docutils literal"><span class="pre">Time_t</span></tt>) are
+available for use with application IDL data types and can be seen as OpenSplice
+DDS IDL Pre-processor “built-in” definitions.</p>
+<p>The diagram <a class="reference internal" href="#opensplice-idl-pre-processor-high-level-processes">OpenSplice IDL Pre-processor High Level Processes</a>
+shows the Vortex OpenSplice IDL Pre-processor high-level processing.</p>
+<p>The Vortex OpenSplice IDL Pre-processor scans and parses the IDL input file
+containing the application data type definitions.</p>
+<p>For the selected language, the Vortex OpenSplice IDL Pre-processor generates the
+specialized interfaces for <em>TypeSupport</em>, the <em>DataReader</em> and the <em>DataWriter</em>
+from specialized class template files which are provided by OpenSplice. Note that
+the Vortex OpenSplice IDL Pre-processor will only generate specialized interfaces for
+application data types for which a key list is defined. If it is not, the OpenSplice
+DDS IDL Pre-processor assumes that the data type will only be used enclosed in
+other data types.</p>
+<p>The Vortex OpenSplice IDL Pre-processor also generates language-specific support
+functions, which are needed to allow the Vortex OpenSplice system to handle the
+application data types.</p>
+<p>For the <em>standalone</em> context the Vortex OpenSplice IDL Pre-processor generates the
+language-specific application data types according the OMG IDL language mapping
+that is applicable for the specific target language.</p>
+<p class="centered" id="opensplice-idl-pre-processor-high-level-processes">
+<strong><strong>OpenSplice IDL Pre-processor High Level Processes</strong></strong></p><a class="reference internal image-reference" href="_images/HighLevelProcesses.png"><img alt="OpenSplice IDL Pre-processor High Level Processes" class="align-center" src="_images/HighLevelProcesses.png" style="width: 150mm;" /></a>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Overview</a><ul>
+<li><a class="reference internal" href="#introduction">2.1. Introduction</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="previous chapter">1. Preface</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="prerequisites.html"
+                        title="next chapter">3. Prerequisites</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/overview.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="prerequisites.html" title="3. Prerequisites"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

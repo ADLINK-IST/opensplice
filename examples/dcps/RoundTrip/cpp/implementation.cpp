@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -102,13 +110,14 @@ public:
         }
 
         /** The sample type is created and registered */
-        typeSupport = new RoundTripModule::SampleTypeSupport();
-        status = typeSupport.in()->register_type(participant.in(), typeSupport.in()->get_type_name());
+        typeSupport = new RoundTripModule::DataTypeTypeSupport();
+        DDS::String_var typeName = typeSupport.in()->get_type_name();
+        status = typeSupport.in()->register_type(participant.in(), typeName);
         CHECK_STATUS_MACRO(status);
 
         /** A DDS::Topic is created for our sample type on the domain participant. */
         topic = participant.in()->create_topic(
-            "RoundTrip", typeSupport.in()->get_type_name(), TOPIC_QOS_DEFAULT, 0, DDS::STATUS_MASK_NONE);
+            "RoundTrip", typeName, TOPIC_QOS_DEFAULT, 0, DDS::STATUS_MASK_NONE);
         CHECK_HANDLE_MACRO(topic.in());
 
         /** A DDS::Publisher is created on the domain participant. */
@@ -126,10 +135,9 @@ public:
         CHECK_STATUS_MACRO(status);
         dwQos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
         dwQos.reliability.max_blocking_time.sec = 10;
-        dwQos.history.kind = DDS::KEEP_ALL_HISTORY_QOS;
         dwQos.writer_data_lifecycle.autodispose_unregistered_instances = false;
         DDS::DataWriter_var tmpWriter = publisher->create_datawriter(topic.in(), dwQos, 0, DDS::STATUS_MASK_NONE);
-        writer = RoundTripModule::SampleDataWriter::_narrow(tmpWriter.in());
+        writer = RoundTripModule::DataTypeDataWriter::_narrow(tmpWriter.in());
         CHECK_HANDLE_MACRO(writer.in());
 
         /** A DDS::Subscriber is created on the domain participant. */
@@ -147,9 +155,8 @@ public:
         CHECK_STATUS_MACRO(status);
         drQos.reliability.kind = DDS::RELIABLE_RELIABILITY_QOS;
         drQos.reliability.max_blocking_time.sec = 10;
-        drQos.history.kind = DDS::KEEP_ALL_HISTORY_QOS;
         DDS::DataReader_var tmpReader = subscriber->create_datareader(topic.in(), drQos, 0, DDS::STATUS_MASK_NONE);
-        reader = RoundTripModule::SampleDataReader::_narrow(tmpReader.in());
+        reader = RoundTripModule::DataTypeDataReader::_narrow(tmpReader.in());
         CHECK_HANDLE_MACRO(reader.in());
 
         /** A DDS::StatusCondition is created which is triggered when data is available to read */
@@ -199,6 +206,8 @@ public:
         exampleDeleteTimeStats(roundTripOverall);
         exampleDeleteTimeStats(writeAccessOverall);
         exampleDeleteTimeStats(readAccessOverall);
+
+        exampleSleepMilliseconds(1000);
     }
 
 public:
@@ -207,17 +216,17 @@ public:
     /** The DomainParticipant used by ping and pong */
     DDS::DomainParticipant_var participant;
     /** The TypeSupport for the sample */
-    RoundTripModule::SampleTypeSupport_var typeSupport;
+    RoundTripModule::DataTypeTypeSupport_var typeSupport;
     /** The Topic used by ping and pong */
     DDS::Topic_var topic;
     /** The Publisher used by ping and pong */
     DDS::Publisher_var publisher;
     /** The DataWriter used by ping and pong */
-    RoundTripModule::SampleDataWriter_var writer;
+    RoundTripModule::DataTypeDataWriter_var writer;
     /** The Subscriber used by ping and pong */
     DDS::Subscriber_var subscriber;
     /** The DataReader used by ping and pong */
-    RoundTripModule::SampleDataReader_var reader;
+    RoundTripModule::DataTypeDataReader_var reader;
     /** The WaitSet used by ping and pong */
     DDS::WaitSet_var waitSet;
     /** The StatusCondition used by ping and pong,
@@ -239,7 +248,7 @@ public:
 int ping(int argc, char *argv[])
 {
     int result = 0;
-	setbuf(stdout, NULL);
+    setbuf(stdout, NULL);
 
     try
     {
@@ -256,18 +265,22 @@ int ping(int argc, char *argv[])
             /** Wait for pong to run */
             std::cout << "Waiting for pong to run..." << std::endl;
             bool pongRunning = false;
+            DDS::PublicationMatchedStatus pms;
             while(!pongRunning)
             {
-                DDS::InstanceHandleSeq ihs;
-                e.writer->get_matched_subscriptions(ihs);
-                if(ihs.length() != 0)
+                status = e.writer->get_publication_matched_status(pms);
+                if(pms.current_count!= 0)
                 {
                     pongRunning = true;
                 }
+                else
+                {
+                    exampleSleepMilliseconds(500);
+                }
             };
             std::cout << "Sending termination request." << std::endl;
-            /** Send quit signal to pong if "quit" is supplied as an argument to ping */
-            RoundTripModule::Sample data;
+            /** Dispose an instance to signify that pong should quit if "quit" is supplied as an argument to ping */
+            RoundTripModule::DataType data;
             e.writer->dispose(data, DDS::HANDLE_NIL);
             exampleSleepMilliseconds(1000);
             return 0;
@@ -277,7 +290,7 @@ int ping(int argc, char *argv[])
         {
             payloadSize = atoi(argv[1]);
 
-            if(payloadSize > 655536)
+            if(payloadSize > 65536)
             {
                 invalid = true;
             }
@@ -294,7 +307,7 @@ int ping(int argc, char *argv[])
         {
             DDS::String_var exception = DDS::string_dup(
                 "Usage (parameters must be supplied in order):\n"
-                "./ping [payloadSize (bytes, 0 - 655536)] [numSamples (0 = infinite)] [timeOut (seconds, 0 = infinite)]\n"
+                "./ping [payloadSize (bytes, 0 - 65536)] [numSamples (0 = infinite)] [timeOut (seconds, 0 = infinite)]\n"
                 "./ping quit - ping sends a quit signal to pong.\n"
                 "Defaults:\n"
                 "./ping 0 0 0");
@@ -309,18 +322,18 @@ int ping(int argc, char *argv[])
         timeval preTakeTime;
         timeval postTakeTime;
         DDS::Duration_t waitTimeout = {1, 0};
-        RoundTripModule::Sample data;
+        RoundTripModule::DataType data;
         data.payload.length(payloadSize);
         for(unsigned long i = 0; i < payloadSize; i++)
         {
             data.payload[i] = 'a';
         }
         DDS::ConditionSeq conditions;
-        RoundTripModule::SampleSeq samples;
+        RoundTripModule::DataTypeSeq samples;
         DDS::SampleInfoSeq info;
 
         startTime = exampleGetTime();
-        std::cout << "# Warming up..." << std::endl;
+        std::cout << "# Warming up to stabilise performance..." << std::endl;
         bool warmUp = true;
         while(!terminated->get_trigger_value() && exampleTimevalToMicroseconds(exampleGetTime() - startTime) / US_IN_ONE_SEC < 5)
         {
@@ -401,7 +414,6 @@ int ping(int argc, char *argv[])
                 /** Print stats each second */
                 if(exampleTimevalToMicroseconds(postTakeTime - startTime) > US_IN_ONE_SEC || (i && i == numSamples))
                 {
-                    /* Print stats */
                     printf ("%9lu %9lu %8.0f %8lu %10lu %8.0f %8lu %10lu %8.0f %8lu\n",
                             elapsed + 1,
                             e.roundTrip.count,
@@ -476,9 +488,9 @@ int pong(int argc, char *argv[])
 
         DDS::Duration_t waitTimeout = DDS::DURATION_INFINITE;
         DDS::ConditionSeq conditions;
-        RoundTripModule::SampleSeq samples;
+        RoundTripModule::DataTypeSeq samples;
         DDS::SampleInfoSeq info;
-        RoundTripModule::Sample data;
+        RoundTripModule::DataType data;
         while(!terminated->get_trigger_value())
         {
             /** Wait for a sample from ping */

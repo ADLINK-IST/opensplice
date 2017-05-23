@@ -1,0 +1,21 @@
+parseconditions:
+    desc: ContentFilteredTopic LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: ge_entry
+          type: line
+          inst: All
+          required: yes
+          line: "GE: *"
+
+        - name: msft_entry
+          type: line
+          inst: 0
+          required: no
+          line: "MSFT: *"

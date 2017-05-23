@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -15,13 +23,17 @@
 */
 
 #include "idl_program.h"
+#include "idl_keyDef.h"
+#include "idl_walk.h"
+#include "idl_fileMap.h"
+
 /**
  * @file
  * This module generates Standalone C data types
  * related to an IDL input file.
 */
 
-#include "os.h"
+#include "vortex_os.h"
 #include "c_base.h"
 #include "c_sync.h"
 #include "c_iterator.h"
@@ -78,28 +90,28 @@ metaKindImage (
 #undef _CASE_
 }
 
-c_long
+os_size_t
 c_typeMaxSize(
     c_type type);
 
-c_long
+c_ulong
 c_collectionType_maxSize(
     c_collectionType o)
 {
-    c_long maxSize;
+    c_ulong maxSize;
     c_type subType;
     c_char *scopedName = NULL;
 
     maxSize = c_collectionTypeMaxSize(o);
     if (maxSize == 0) {
         switch (c_collectionType(o)->kind) {
-        case C_STRING:
-        case C_WSTRING:
+        case OSPL_C_STRING:
+        case OSPL_C_WSTRING:
             nr_of_unbounded_strings++;
             maxSize = DEFAULT_WORST_CASE_STRING_SIZE;
         break;
-        case C_ARRAY:
-        case C_SEQUENCE:
+        case OSPL_C_ARRAY:
+        case OSPL_C_SEQUENCE:
             nr_of_unbounded_sequences++;
             maxSize = DEFAULT_WORST_CASE_SEQUENCE_SIZE;
         break;
@@ -111,17 +123,17 @@ c_collectionType_maxSize(
         }
     }
     subType = c_collectionTypeSubType(o);
-    maxSize *= c_typeSize(subType);
+    maxSize *= (c_ulong) c_typeSize(subType);
     return maxSize;
 }
 
-c_long
+os_size_t
 c_structure_maxSize(
     c_structure o)
 {
-    c_long i;
+    c_ulong i;
     c_specifier s;
-    c_long maxSize = 0;
+    os_size_t maxSize = 0;
 
     maxSize = c_typeSize(c_type(o));
     for (i=0; i<c_arraySize(o->references); i++) {
@@ -131,22 +143,21 @@ c_structure_maxSize(
     return maxSize;
 }
 
-c_long
+os_size_t
 c_typeDef_maxSize(
     c_typeDef o)
 {
     return c_typeMaxSize(o->alias);
 }
 
-c_long
+os_size_t
 c_union_maxSize(
     c_union o)
 {
-    c_long i;
+    c_ulong i;
     c_specifier s;
-    c_long maxSize = 0;
-
-    c_long size = 0;
+    os_size_t maxSize = 0;
+    os_size_t size = 0;
 
     for (i=0; i<c_arraySize(o->cases); i++) {
         s = c_specifier(o->cases[i]);
@@ -157,11 +168,11 @@ c_union_maxSize(
     return maxSize;
 }
 
-c_long
+os_size_t
 c_typeMaxSize(
     c_type type)
 {
-    c_long maxSize = 0;
+    os_size_t maxSize = 0;
 
 #define _CASE_(t,k) case k: maxSize = t##_maxSize(t(type)); break
     switch(c_baseObject(type)->kind) {
@@ -189,14 +200,14 @@ idl_genTypeSize(
     idl_scope scope,
     c_type type)
 {
-    c_long minSize = 0;
-    c_long maxSize = 0;
+    os_size_t minSize = 0;
+    os_size_t maxSize = 0;
     const c_char *key_list = NULL;
     c_char *fullyScopedTypeName;
     c_char *key = NULL;
     c_baseObject o;
     c_iter keyIter;
-    c_long keySize = 0;
+    size_t keySize = 0;
     c_type t;
 
     printf("\n");
@@ -208,11 +219,11 @@ idl_genTypeSize(
         fullyScopedTypeName = c_metaScopedName(c_metaObject(type));
         printf("Type size calculation for \"%s\" :\n\n",fullyScopedTypeName);
         os_free(fullyScopedTypeName);
-        printf("    Minimum data size =           \t%d\n"
-               "    Estimated maximum data size = \t%d\n", minSize, maxSize);
+        printf("    Minimum data size =           \t%"PA_PRIuSIZE"\n"
+               "    Estimated maximum data size = \t%"PA_PRIuSIZE"\n", minSize, maxSize);
         keyIter = c_splitString(key_list,",");
-        printf("    Key expression length =      \t%d\n"
-               "    Number of keys =             \t%d\n",
+        printf("    Key expression length =      \t%"PA_PRIdSIZE"\n"
+               "    Number of keys =             \t%u\n",
                strlen(key_list), c_iterLength(keyIter));
         key = c_iterTakeFirst(keyIter);
         while (key) {
@@ -227,7 +238,7 @@ idl_genTypeSize(
             }
             key = c_iterTakeFirst(keyIter);
         }
-        printf("    Total key size =             \t%d\n\n", keySize);
+        printf("    Total key size =             \t%"PA_PRIuSIZE"\n\n", keySize);
     } else {
         printf("Type size calculation failed, no type specified!\n\n");
     }
@@ -240,9 +251,9 @@ getMetaSize(
     c_iterActionArg arg)
 {
     idl_scope scope;
-    c_long *size = (c_long *)arg;
+    size_t *size = (size_t *)arg;
     c_baseObject o = (c_baseObject)object;
-    c_long i, length;
+    c_ulong i, length;
 
     switch (o->kind) {
     case M_MODULE:
@@ -356,13 +367,13 @@ idl_genMetaSize(
     char *filename)
 {
     c_iter source;
-    c_long size = 0;
+    size_t size = 0;
     /* Create source for filename */
     printf("\nFootprint metrics file %s: (sizes in bytes)\n", filename);
     source = idl_fileMapGetObjects(idl_fileMapDefGet(), filename);
     if (source) {
         c_iterWalk(source, getMetaSize, &size);
     }
-    printf("Total metadata footprint generated by the idl file = %d\n\n", size);
+    printf("Total metadata footprint generated by the idl file = %"PA_PRIuSIZE"\n\n", size);
 }
 

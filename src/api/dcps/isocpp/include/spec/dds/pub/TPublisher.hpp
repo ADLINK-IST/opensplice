@@ -46,6 +46,7 @@ class PublisherListener;
  * to actually send the data-update message. In making this decision, it
  * considers any extra information that goes with the data (timestamp,
  * writer, etc.) as well as the QoS of the Publisher and the DataWriter.
+ * See \ref DCPS_Modules_Publisher "Publisher" for more information
  */
 template <typename DELEGATE>
 class dds::pub::TPublisher : public dds::core::TEntity<DELEGATE>
@@ -78,7 +79,7 @@ public:
     TPublisher(const dds::domain::DomainParticipant& dp,
                const dds::pub::qos::PublisherQos& qos,
                dds::pub::PublisherListener* listener = NULL,
-               const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::all());
+               const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::none());
 
     virtual ~TPublisher();
 

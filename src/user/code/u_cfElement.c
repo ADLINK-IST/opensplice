@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -24,17 +32,20 @@
 
 u_cfElement
 u_cfElementNew(
-    u_participant participant,
+    const u_participant participant,
     v_cfElement kElement)
 {
     u_cfElement _this = NULL;
 
-    if ((participant == NULL) || (kElement == NULL)) {
-        OS_REPORT(OS_ERROR, "u_cfElementNew", 0, "Illegal parameter");
-    } else {
-        _this = u_cfElement(os_malloc(U_CFELEMENT_SIZE));
+    assert(participant != NULL);
+    assert(kElement);
+
+    _this = u_cfElement(os_malloc(U_CFELEMENT_SIZE));
+    if (_this)
+    {
         u_cfNodeInit(u_cfNode(_this),participant,v_cfNode(kElement));
     }
+
     return _this;
 }
 
@@ -42,16 +53,16 @@ void
 u_cfElementFree(
     u_cfElement _this)
 {
-    if (_this != NULL) {
-        u_cfNodeDeinit(u_cfNode(_this));
-        memset(_this, 0, (size_t)sizeof(U_CFELEMENT_SIZE));
-        os_free(_this);
-    }
+    assert(_this != NULL);
+
+    u_cfNodeDeinit(u_cfNode(_this));
+    memset(_this, 0, sizeof(U_CFELEMENT_SIZE));
+    os_free(_this);
 }
 
 c_iter
 u_cfElementGetChildren(
-    u_cfElement element)
+    const u_cfElement element)
 {
     u_result      r;
     v_cfElement   ke;
@@ -61,41 +72,41 @@ u_cfElementGetChildren(
     c_iter        children;
     u_participant p;
 
+    assert(element != NULL);
+
     children = c_iterNew(NULL);
-    if (element != NULL) {
-        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
-        if (r == U_RESULT_OK) {
-            p = u_cfNodeParticipant(u_cfNode(element));
-            kc = v_cfElementGetChildren(ke);
-            child = c_iterTakeFirst(kc);
-            while (child != NULL) {
-                switch(v_cfNodeKind(child)) {
-                case V_CFELEMENT:
-                    proxy = u_cfNode(u_cfElementNew(p, v_cfElement(child)));
+    r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
+    if (r == U_RESULT_OK) {
+        p = u_cfNodeParticipant(u_cfNode(element));
+        kc = v_cfElementGetChildren(ke);
+        child = c_iterTakeFirst(kc);
+        while (child != NULL) {
+            switch(v_cfNodeKind(child)) {
+            case V_CFELEMENT:
+                proxy = u_cfNode(u_cfElementNew(p, v_cfElement(child)));
                 break;
-                case V_CFATTRIBUTE:
-                    proxy = u_cfNode(u_cfAttributeNew(p, v_cfAttribute(child)));
+            case V_CFATTRIBUTE:
+                proxy = u_cfNode(u_cfAttributeNew(p, v_cfAttribute(child)));
                 break;
-                case V_CFDATA:
-                    proxy = u_cfNode(u_cfDataNew(p,v_cfData(child)));
+            case V_CFDATA:
+                proxy = u_cfNode(u_cfDataNew(p,v_cfData(child)));
                 break;
-                default:
-                    proxy = NULL;
+            default:
+                proxy = NULL;
                 break;
-                }
-                c_iterInsert(children, proxy);
-                child = c_iterTakeFirst(kc);
             }
-            c_iterFree(kc);
-            u_cfNodeRelease(u_cfNode(element));
+            c_iterInsert(children, proxy);
+            child = c_iterTakeFirst(kc);
         }
+        c_iterFree(kc);
+        u_cfNodeRelease(u_cfNode(element));
     }
     return children;
 }
 
 c_iter
 u_cfElementGetAttributes(
-    u_cfElement element)
+    const u_cfElement element)
 {
     u_result      r;
     v_cfElement   ke;
@@ -104,29 +115,28 @@ u_cfElementGetAttributes(
     c_iter        attributes;
     u_participant p;
 
+    assert(element != NULL);
 
     attributes = c_iterNew(NULL);
-    if (element != NULL) {
-        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
-        if (r == U_RESULT_OK) {
-            p = u_cfNodeParticipant(u_cfNode(element));
-            ka = v_cfElementGetAttributes(ke);
+    r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
+    if (r == U_RESULT_OK) {
+        p = u_cfNodeParticipant(u_cfNode(element));
+        ka = v_cfElementGetAttributes(ke);
+        attr = c_iterTakeFirst(ka);
+        while (attr != NULL) {
+            c_iterInsert(attributes, u_cfAttributeNew(p, attr));
             attr = c_iterTakeFirst(ka);
-            while (attr != NULL) {
-                c_iterInsert(attributes, u_cfAttributeNew(p, attr));
-                attr = c_iterTakeFirst(ka);
-            }
-            c_iterFree(ka);
-            u_cfNodeRelease(u_cfNode(element));
         }
+        c_iterFree(ka);
+        u_cfNodeRelease(u_cfNode(element));
     }
     return attributes;
 }
 
 u_cfAttribute
 u_cfElementAttribute(
-    u_cfElement element,
-    const c_char *name)
+    const u_cfElement element,
+    const os_char *name)
 {
     u_result      r;
     v_cfElement   ke;
@@ -134,198 +144,203 @@ u_cfElementAttribute(
     u_cfAttribute attribute;
     u_participant p;
 
-    attribute = NULL;
-    if (element != NULL) {
-        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
-        if (r == U_RESULT_OK) {
-            p = u_cfNodeParticipant(u_cfNode(element));
-            attr = v_cfElementAttribute(ke, name);
+    assert(element != NULL);
+    assert(name != NULL);
 
-            if(attr){
-                attribute = u_cfAttributeNew(p, attr);
-            }
-            u_cfNodeRelease(u_cfNode(element));
+    attribute = NULL;
+    r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
+    if (r == U_RESULT_OK) {
+        p = u_cfNodeParticipant(u_cfNode(element));
+        attr = v_cfElementAttribute(ke, name);
+
+        if (attr) {
+            attribute = u_cfAttributeNew(p, attr);
         }
+        u_cfNodeRelease(u_cfNode(element));
     }
     return attribute;
 }
 
-c_bool
+u_bool
 u_cfElementAttributeStringValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_char **str)
+    const u_cfElement element,
+    const os_char *attributeName,
+    os_char **str)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfElement ke;
     c_value value;
     c_value resultValue;
 
-    result = FALSE;
-    if ((element != NULL) && (str != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
-        if (r == U_RESULT_OK) {
-            value = v_cfElementAttributeValue(ke, attributeName);
-            result = u_cfValueScan(value, V_STRING, &resultValue);
+    assert(element != NULL);
+    assert(str != NULL);
 
-            if (result == TRUE) {
-                *str = resultValue.is.String;
-            }
-            u_cfNodeRelease(u_cfNode(element));
+    result = FALSE;
+    r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
+    if (r == U_RESULT_OK) {
+        value = v_cfElementAttributeValue(ke, attributeName);
+        result = u_cfValueScan(value, V_STRING, &resultValue);
+
+        if (result == TRUE) {
+            *str = resultValue.is.String;
         }
+        u_cfNodeRelease(u_cfNode(element));
     }
     return result;
 }
 
-c_bool
+u_bool
 u_cfElementAttributeBoolValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_bool *b)
+    const u_cfElement element,
+    const os_char *attributeName,
+    u_bool *b)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfElement ke;
     c_value value;
     c_value resultValue;
 
-    result = FALSE;
-    if ((element != NULL) && (b != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
-        if (r == U_RESULT_OK) {
-            value = v_cfElementAttributeValue(ke, attributeName);
-            result = u_cfValueScan(value, V_BOOLEAN, &resultValue);
+    assert(element != NULL);
+    assert(b != NULL);
 
-            if (result == TRUE) {
-                *b = resultValue.is.Boolean;
-            }
-            u_cfNodeRelease(u_cfNode(element));
+    result = FALSE;
+    r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
+    if (r == U_RESULT_OK) {
+        value = v_cfElementAttributeValue(ke, attributeName);
+        result = u_cfValueScan(value, V_BOOLEAN, &resultValue);
+
+        if (result == TRUE) {
+            *b = resultValue.is.Boolean;
         }
+        u_cfNodeRelease(u_cfNode(element));
     }
     return result;
 }
 
-c_bool
+u_bool
 u_cfElementAttributeLongValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_long *lv)
+    const u_cfElement element,
+    const os_char *attributeName,
+    os_int32 *lv)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfElement ke;
     c_value value;
     c_value resultValue;
 
-    result = FALSE;
-    if ((element != NULL) && (lv != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
-        if (r == U_RESULT_OK) {
-            value = v_cfElementAttributeValue(ke, attributeName);
-            result = u_cfValueScan(value, V_LONG, &resultValue);
+    assert(element != NULL);
+    assert(lv != NULL);
 
-            if (result == TRUE) {
-                *lv = resultValue.is.Long;
-            }
-            u_cfNodeRelease(u_cfNode(element));
+    result = FALSE;
+    r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
+    if (r == U_RESULT_OK) {
+        value = v_cfElementAttributeValue(ke, attributeName);
+        result = u_cfValueScan(value, V_LONG, &resultValue);
+
+        if (result == TRUE) {
+            *lv = resultValue.is.Long;
         }
+        u_cfNodeRelease(u_cfNode(element));
     }
     return result;
 }
 
-c_bool
+u_bool
 u_cfElementAttributeULongValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_ulong *ul)
+    const u_cfElement element,
+    const os_char *attributeName,
+    os_uint32 *ul)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfElement ke;
     c_value value;
     c_value resultValue;
 
-    result = FALSE;
-    if ((element != NULL) && (ul != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
-        if (r == U_RESULT_OK) {
-            value = v_cfElementAttributeValue(ke, attributeName);
-            result = u_cfValueScan(value, V_ULONG, &resultValue);
+    assert(element != NULL);
+    assert(ul != NULL);
 
-            if (result == TRUE) {
-                *ul = resultValue.is.ULong;
-            }
-            u_cfNodeRelease(u_cfNode(element));
+    result = FALSE;
+    r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
+    if (r == U_RESULT_OK) {
+        value = v_cfElementAttributeValue(ke, attributeName);
+        result = u_cfValueScan(value, V_ULONG, &resultValue);
+
+        if (result == TRUE) {
+            *ul = resultValue.is.ULong;
         }
+        u_cfNodeRelease(u_cfNode(element));
     }
     return result;
 }
 
-c_bool
+u_bool
 u_cfElementAttributeSizeValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_size *size)
+    const u_cfElement element,
+    const os_char *attributeName,
+    u_size *size)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfElement ke;
     c_value value;
 
+    assert(element != NULL);
+    assert(size != NULL);
+
     result = FALSE;
-    if ((element != NULL) && (size != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
-        if (r == U_RESULT_OK) {
-            value = v_cfElementAttributeValue(ke, attributeName);
+    r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
+    if (r == U_RESULT_OK) {
+        value = v_cfElementAttributeValue(ke, attributeName);
 
-            if(value.kind == V_STRING){
-                result = u_cfDataSizeValueFromString(value.is.String,size);
-            }
-            else
-            {
-                OS_REPORT(OS_ERROR, "u_cfElementAttributeSizeValue", 0, "Value is not a string");
-                assert(value.kind == V_STRING);
-            }
-
-            u_cfNodeRelease(u_cfNode(element));
+        if (value.kind == V_STRING){
+           result = u_cfDataSizeValueFromString(value.is.String,size);
+        } else {
+            OS_REPORT(OS_ERROR, "u_cfElementAttributeSizeValue", 0, "Value is not a string");
+            assert(value.kind == V_STRING);
         }
+
+        u_cfNodeRelease(u_cfNode(element));
     }
     return result;
 }
 
-c_bool
+u_bool
 u_cfElementAttributeFloatValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_float *f)
+    const u_cfElement element,
+    const os_char *attributeName,
+    os_float *f)
 {
     u_result r;
-    c_bool result;
+    u_bool result;
     v_cfElement ke;
     c_value value;
     c_value resultValue;
 
-    result = FALSE;
-    if ((element != NULL) && (f != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
-        if (r == U_RESULT_OK) {
-            value = v_cfElementAttributeValue(ke, attributeName);
-            result = u_cfValueScan(value, V_FLOAT, &resultValue);
+    assert(element != NULL);
+    assert(f != NULL);
 
-            if (result == TRUE) {
-                *f = resultValue.is.Float;
-            }
-            u_cfNodeRelease(u_cfNode(element));
+    result = FALSE;
+    r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
+    if (r == U_RESULT_OK) {
+        value = v_cfElementAttributeValue(ke, attributeName);
+        result = u_cfValueScan(value, V_FLOAT, &resultValue);
+
+        if (result == TRUE) {
+            *f = resultValue.is.Float;
         }
+        u_cfNodeRelease(u_cfNode(element));
     }
     return result;
 }
 
 c_iter
 u_cfElementXPath(
-    u_cfElement element,
-    const c_char *xpathExpr)
+    const u_cfElement element,
+    const os_char *xpathExpr)
 {
     u_result      r;
     v_cfElement   ke;
@@ -335,34 +350,35 @@ u_cfElementXPath(
     u_participant p;
     u_cfNode      proxy;
 
+    assert(element != NULL);
+    assert(xpathExpr != NULL);
+
     children = c_iterNew(NULL);
-    if ((element != NULL) && (xpathExpr != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
-        if (r == U_RESULT_OK) {
-            p = u_cfNodeParticipant(u_cfNode(element));
-            vChildren = v_cfElementXPath(ke, xpathExpr);
-            vChild = c_iterTakeFirst(vChildren);
-            while (vChild != NULL) {
-                switch(v_cfNodeKind(vChild)) {
+    r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
+    if (r == U_RESULT_OK) {
+        p = u_cfNodeParticipant(u_cfNode(element));
+        vChildren = v_cfElementXPath(ke, xpathExpr);
+        vChild = c_iterTakeFirst(vChildren);
+        while (vChild != NULL) {
+            switch(v_cfNodeKind(vChild)) {
                 case V_CFELEMENT:
                     proxy = u_cfNode(u_cfElementNew(p, v_cfElement(vChild)));
-                break;
+                    break;
                 case V_CFATTRIBUTE:
                     proxy = u_cfNode(u_cfAttributeNew(p, v_cfAttribute(vChild)));
-                break;
+                    break;
                 case V_CFDATA:
                     proxy = u_cfNode(u_cfDataNew(p,v_cfData(vChild)));
-                break;
+                    break;
                 default:
                     proxy = NULL;
-                break;
-                }
-                children = c_iterInsert(children, proxy);
-                vChild = c_iterTakeFirst(vChildren);
+                    break;
             }
-            c_iterFree(vChildren);
-            u_cfNodeRelease(u_cfNode(element));
+            children = c_iterInsert(children, proxy);
+            vChild = c_iterTakeFirst(vChildren);
         }
+        c_iterFree(vChildren);
+        u_cfNodeRelease(u_cfNode(element));
     }
     return children;
 }

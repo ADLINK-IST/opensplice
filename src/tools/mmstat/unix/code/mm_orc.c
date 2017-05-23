@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "mm_metakindNames.h"
@@ -14,6 +22,7 @@
 #include "c_base.h"
 #include "c__base.h"
 #include "ut_collection.h"
+#include "os_errno.h"
 #include "os_stdlib.h"
 #include "c_module.h"
 
@@ -21,15 +30,16 @@
 
 #include <sys/types.h>
 #include <regex.h>
-#include <errno.h>
 
 #define MM_HEADER_SIZE  16  /* Assumed header size */
 
 /* c_base definitions */
 #define CONFIDENCE (0x504F5448)
 
+#ifdef OBJECT_WALK
 #define c_oid(o)    ((c_object)(C_ADDRESS(o) + HEADERSIZE))
 #define c_header(o) ((c_header)(C_ADDRESS(o) - HEADERSIZE))
+#endif
 
 #define MIN_DB_SIZE     (150000)
 #define MAXREFCOUNT     (50000)
@@ -63,13 +73,11 @@ C_STRUCT(monitor_orc) {
     c_ulong extendCountLimit;
     char *filterExpression;
     regex_t expression;
-    ut_collection refTree;
+    ut_table refTree;
     int totalObjectCount;
     os_address totalSizeCount;
     c_bool delta;
 };
-
-static const c_long HEADERSIZE = ALIGNSIZE(C_SIZEOF(c_header));
 
 C_CLASS(refLeaf);
 C_STRUCT(refLeaf) {
@@ -78,8 +86,10 @@ C_STRUCT(refLeaf) {
     unsigned int prc;
 };
 
-
+#ifdef OBJECT_WALK
+static const c_long HEADERSIZE = ALIGNSIZE(C_SIZEOF(c_header));
 static c_type nullType = (c_type)0xffffffff;
+#endif
 
 static void
 freeNode (
@@ -87,6 +97,7 @@ freeNode (
     c_voidp arg
     )
 {
+    OS_UNUSED_ARG(arg);
     free (o);
 }
 
@@ -97,6 +108,7 @@ compareLeafs (
     c_voidp args
     )
 {
+    OS_UNUSED_ARG(args);
     if (o1 < o2) {
         return OS_LT;
     } else if (o1 > o2) {
@@ -130,7 +142,7 @@ monitor_orcNew (
        {
           if (regcomp (&o->expression, o->filterExpression, REG_EXTENDED) != 0)
           {
-             regerror (errno,
+             regerror (os_getErrno (),
                        &o->expression,
                        expressionError,
                        sizeof(expressionError));
@@ -138,11 +150,11 @@ monitor_orcNew (
              fflush(stdout);
 
              regfree (&o->expression);
-             free (o->filterExpression);
+             os_free (o->filterExpression);
              o->filterExpression = NULL;
           }
        }
-       o->refTree = ut_tableNew (compareLeafs, NULL);
+       o->refTree = ut_tableNew (compareLeafs, NULL, NULL, NULL, freeNode, NULL);
        o->totalSizeCount = 0;
        o->totalObjectCount = 0;
        o->delta = delta;
@@ -151,6 +163,7 @@ monitor_orcNew (
     return o;
 }
 
+#ifdef OBJECT_WALK
 static void
 monitor_object (
     c_object o,
@@ -163,7 +176,7 @@ monitor_object (
     if (tr == NULL) {
         tr = nullType;
     }
-    ord = (refLeaf)ut_get (trace->refTree, tr);
+    ord = (refLeaf)ut_get (ut_collection(trace->refTree), tr);
     if (ord) {
         ord->rc++;
     } else {
@@ -171,9 +184,10 @@ monitor_object (
         ord->tr = tr;
         ord->rc = 1;
         ord->prc = 0;
-        ut_tableInsert(ut_table(trace->refTree), tr, ord);
+        ut_tableInsert(trace->refTree, tr, ord);
     }
 }
+#endif
 
 void
 monitor_orcFree (
@@ -181,14 +195,16 @@ monitor_orcFree (
     )
 {
     if (o->filterExpression) {
-        free (o->filterExpression);
+        os_free (o->filterExpression);
         regfree (&o->expression);
     }
-    ut_collectionFree (o->refTree, freeNode, NULL);
+    ut_tableFree(o->refTree);
+    o->refTree = NULL;
 
     free (o);
 }
 
+#ifdef OBJECT_WALK
 static void
 printScope (
     c_metaObject scope
@@ -233,19 +249,19 @@ display_orc (
         switch (c_baseObject(ord->tr)->kind) {
         case M_COLLECTION:
             switch (c_collectionType(ord->tr)->kind) {
-            case C_UNDEFINED:
-            case C_LIST:
-            case C_ARRAY:
-            case C_BAG:
-            case C_SET:
-            case C_MAP:
-            case C_DICTIONARY:
-            case C_SEQUENCE:
-            case C_STRING:
-            case C_WSTRING:
-            case C_QUERY:
-            case C_SCOPE:
-            case C_COUNT:
+            case OSPL_C_UNDEFINED:
+            case OSPL_C_LIST:
+            case OSPL_C_ARRAY:
+            case OSPL_C_BAG:
+            case OSPL_C_SET:
+            case OSPL_C_MAP:
+            case OSPL_C_DICTIONARY:
+            case OSPL_C_SEQUENCE:
+            case OSPL_C_STRING:
+            case OSPL_C_WSTRING:
+            case OSPL_C_QUERY:
+            case OSPL_C_SCOPE:
+            case OSPL_C_COUNT:
                 if (trace->delta) {
                     if (abs(ord->rc - ord->prc) >= trace->extendCountLimit) {
                         if (trace->filterExpression) {
@@ -361,10 +377,11 @@ display_orc (
     ord->rc = 0;
     return TRUE;
 }
+#endif
 
 void
 monitor_orcAction (
-    v_entity entity,
+    v_public entity,
     c_voidp args
     )
 {
@@ -391,7 +408,7 @@ monitor_orcAction (
         monitor_object (or, trace);
         count++;
     };
-    ut_walk (trace->refTree, display_orc, trace);
+    ut_walk (u_collection(trace->refTree), display_orc, trace);
     printf ("\r\n");
     printf ("        %d  for %d object headers (%d) and MM headers (%d)\r\n",
         trace->totalObjectCount * (C_SIZEOF(c_header)  + MM_HEADER_SIZE),
@@ -403,5 +420,8 @@ monitor_orcAction (
 
     trace->totalSizeCount = 0;
     trace->totalObjectCount = 0;
+#else
+    OS_UNUSED_ARG(entity);
+    OS_UNUSED_ARG(args);
 #endif
 }

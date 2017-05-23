@@ -1,8 +1,25 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #ifndef OS_FORMATSPEC_H
 #define OS_FORMATSPEC_H
 
-/* Include platform-specific os_abstract.h */
-#include "include/os_abstract.h"
 /* printf() format specifiers that work for Win32/Win64/WinCE */
 
 #define PA_PA_PRId16 "hd"
@@ -42,6 +59,24 @@
 #define PA_PA_PRIuSIZE PA_PA_PRIuADDR
 #define PA_PA_PRIxSIZE PA_PA_PRIxADDR
 #define PA_PA_PRIXSIZE PA_PA_PRIXADDR
+
+#define PA_PA_SCNd16 "hd"
+#define PA_PA_SCNi16 "hi"
+#define PA_PA_SCNo16 "ho"
+#define PA_PA_SCNu16 "hu"
+#define PA_PA_SCNx16 "hx"
+
+#define PA_PA_SCNd32 "ld"
+#define PA_PA_SCNi32 "li"
+#define PA_PA_SCNo32 "lo"
+#define PA_PA_SCNu32 "lu"
+#define PA_PA_SCNx32 "lx"
+
+#define PA_PA_SCNd64 "I64d"
+#define PA_PA_SCNi64 "I64i"
+#define PA_PA_SCNo64 "I64o"
+#define PA_PA_SCNu64 "I64u"
+#define PA_PA_SCNx64 "I64x"
 
 #define PA_PA_INT64_C(x) x##i64
 #define PA_PA_UINT64_C(x) x##ui64

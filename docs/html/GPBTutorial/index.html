@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>DDS Java and C++ API Google Protocol Buffers Tutorial &mdash; OpenSplice GPB Tutorial</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice GPB Tutorial" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="dds-java-and-c-api-google-protocol-buffers-tutorial">
+<h1>DDS Java and C++ API Google Protocol Buffers Tutorial<a class="headerlink" href="#dds-java-and-c-api-google-protocol-buffers-tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-vortex-opensplice-google-protocol-buffers-tutorial">1.1. About the Vortex OpenSplice Google Protocol Buffers Tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#conventions">1.2. Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">2. Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#google-protocol-buffers-for-dds">2.1. Google Protocol Buffers for DDS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="proto-message.html">3. Proto message for a DDS system</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="proto-message.html#use-case-person">3.1. Use case: Person</a></li>
+<li class="toctree-l2"><a class="reference internal" href="proto-message.html#proto-file-for-the-person-example">3.2. Proto file for the Person example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="proto-message.html#annotating-a-proto-message-for-use-as-a-type-in-dds">3.3. Annotating a proto message for use as a type in DDS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="compiling-datamodel.html">4. Compiling the datamodel with the GPB compiler</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="compiling-datamodel.html#dds-specific-gpb-compiler-plugin-to-generate-code">4.1. DDS-specific GPB-compiler plugin to generate code.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compiling-datamodel.html#java-5-example">4.2. Java 5 example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compiling-datamodel.html#c-example">4.3. C++ example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compiling-datamodel.html#tempory-idl-file-created-by-the-gpb-data-model">4.4. Tempory IDL file created by the GPB data-model</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="using-generated-api.html">5. Using the generated API in applications</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="using-generated-api.html#protobuf-data-model">5.1. Protobuf data model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using-generated-api.html#java">5.2. Java</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using-generated-api.html#iso-c">5.3. ISO-C++</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="evolving-data-models.html">6. Evolving data models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="evolving-data-models.html#old-publisher-and-old-subscriber">6.1. Old publisher and old subscriber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="evolving-data-models.html#new-publisher-and-new-subscriber">6.2. New publisher and new subscriber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="evolving-data-models.html#old-publisher-and-new-subscriber">6.3. Old publisher and new subscriber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="evolving-data-models.html#new-publisher-and-old-subscriber">6.4. New publisher and old subscriber</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">7. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">7.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">7.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">DDS Java and C++ API Google Protocol Buffers Tutorial</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

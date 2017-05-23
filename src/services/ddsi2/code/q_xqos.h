@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef NN_XQOS_H
@@ -25,7 +33,7 @@ extern "C" {
 #define NN_DDS_LENGTH_UNLIMITED -1
 
 typedef struct nn_octetseq {
-  int length;
+  unsigned length;
   unsigned char *value;
 } nn_octetseq_t;
 
@@ -74,8 +82,8 @@ typedef enum nn_presentation_access_scope_kind {
 
 typedef struct nn_presentation_qospolicy {
   nn_presentation_access_scope_kind_t access_scope;
-  char coherent_access;
-  char ordered_access;
+  unsigned char coherent_access;
+  unsigned char ordered_access;
 } nn_presentation_qospolicy_t;
 
 typedef struct nn_deadline_qospolicy {
@@ -115,7 +123,7 @@ typedef struct nn_time_based_filter_qospolicy {
 } nn_time_based_filter_qospolicy_t;
 
 typedef struct nn_stringseq {
-  int n;
+  unsigned n;
   char **strs;
 } nn_stringseq_t;
 
@@ -158,73 +166,106 @@ typedef struct nn_destination_order_qospolicy {
   nn_destination_order_kind_t kind;
 } nn_destination_order_qospolicy_t;
 
-#if 0
 typedef struct nn_entity_factory_qospolicy {
-  char autoeable_created_entities;
+  unsigned char autoenable_created_entities;
 } nn_entity_factory_qospolicy_t;
-#endif
 
 typedef struct nn_writer_data_lifecycle_qospolicy {
-  char autodispose_unregistered_instances;
+  unsigned char autodispose_unregistered_instances;
+  nn_duration_t autopurge_suspended_samples_delay; /* OpenSplice extension */
+  nn_duration_t autounregister_instance_delay; /* OpenSplice extension */
 } nn_writer_data_lifecycle_qospolicy_t;
+
+typedef enum nn_invalid_sample_visibility_kind {
+  NN_NO_INVALID_SAMPLE_VISIBILITY_QOS,
+  NN_MINIMUM_INVALID_SAMPLE_VISIBILITY_QOS,
+  NN_ALL_INVALID_SAMPLE_VISIBILITY_QOS
+} nn_invalid_sample_visibility_kind_t;
 
 typedef struct nn_reader_data_lifecycle_qospolicy {
   nn_duration_t autopurge_nowriter_samples_delay;
   nn_duration_t autopurge_disposed_samples_delay;
+  unsigned char autopurge_dispose_all; /* OpenSplice extension */
+  unsigned char enable_invalid_samples; /* OpenSplice extension */
+  nn_invalid_sample_visibility_kind_t invalid_sample_visibility; /* OpenSplice extension */
 } nn_reader_data_lifecycle_qospolicy_t;
 
+typedef struct nn_synchronous_endpoint_qospolicy {
+  unsigned char value;
+} nn_synchronous_endpoint_qospolicy_t;
 
 typedef struct nn_relaxed_qos_matching_qospolicy {
-  char value;
+  unsigned char value;
 } nn_relaxed_qos_matching_qospolicy_t;
 
+typedef struct nn_subscription_keys_qospolicy {
+  unsigned char use_key_list;
+  nn_stringseq_t key_list;
+} nn_subscription_keys_qospolicy_t;
+
+typedef struct nn_reader_lifespan_qospolicy {
+  unsigned char use_lifespan;
+  nn_duration_t duration;
+} nn_reader_lifespan_qospolicy_t;
+
+typedef struct nn_share_qospolicy {
+  unsigned char enable;
+  char *name;
+} nn_share_qospolicy_t;
 
 /***/
 
 /* Qos Present bit indices */
-#define QP_TOPIC_NAME              (1u <<  0)
-#define QP_TYPE_NAME               (1u <<  1)
-#define QP_PRESENTATION            (1u <<  2)
-#define QP_PARTITION               (1u <<  3)
-#define QP_GROUP_DATA              (1u <<  4)
-#define QP_TOPIC_DATA              (1u <<  5)
-#define QP_DURABILITY              (1u <<  6)
-#define QP_DURABILITY_SERVICE      (1u <<  7)
-#define QP_DEADLINE                (1u <<  8)
-#define QP_LATENCY_BUDGET          (1u <<  9)
-#define QP_LIVELINESS              (1u << 10)
-#define QP_RELIABILITY             (1u << 11)
-#define QP_DESTINATION_ORDER       (1u << 12)
-#define QP_HISTORY                 (1u << 13)
-#define QP_RESOURCE_LIMITS         (1u << 14)
-#define QP_TRANSPORT_PRIORITY      (1u << 15)
-#define QP_LIFESPAN                (1u << 16)
-#define QP_USER_DATA               (1u << 17)
-#define QP_OWNERSHIP               (1u << 18)
-#define QP_OWNERSHIP_STRENGTH      (1u << 19)
-#define QP_TIME_BASED_FILTER       (1u << 20)
-#define QP_PRISMTECH_WRITER_DATA_LIFECYCLE   (1u << 21)
-#define QP_PRISMTECH_READER_DATA_LIFECYCLE   (1u << 22)
-#define QP_PRISMTECH_RELAXED_QOS_MATCHING    (1u << 23)
+#define QP_TOPIC_NAME                        ((os_uint64)1 <<  0)
+#define QP_TYPE_NAME                         ((os_uint64)1 <<  1)
+#define QP_PRESENTATION                      ((os_uint64)1 <<  2)
+#define QP_PARTITION                         ((os_uint64)1 <<  3)
+#define QP_GROUP_DATA                        ((os_uint64)1 <<  4)
+#define QP_TOPIC_DATA                        ((os_uint64)1 <<  5)
+#define QP_DURABILITY                        ((os_uint64)1 <<  6)
+#define QP_DURABILITY_SERVICE                ((os_uint64)1 <<  7)
+#define QP_DEADLINE                          ((os_uint64)1 <<  8)
+#define QP_LATENCY_BUDGET                    ((os_uint64)1 <<  9)
+#define QP_LIVELINESS                        ((os_uint64)1 << 10)
+#define QP_RELIABILITY                       ((os_uint64)1 << 11)
+#define QP_DESTINATION_ORDER                 ((os_uint64)1 << 12)
+#define QP_HISTORY                           ((os_uint64)1 << 13)
+#define QP_RESOURCE_LIMITS                   ((os_uint64)1 << 14)
+#define QP_TRANSPORT_PRIORITY                ((os_uint64)1 << 15)
+#define QP_LIFESPAN                          ((os_uint64)1 << 16)
+#define QP_USER_DATA                         ((os_uint64)1 << 17)
+#define QP_OWNERSHIP                         ((os_uint64)1 << 18)
+#define QP_OWNERSHIP_STRENGTH                ((os_uint64)1 << 19)
+#define QP_TIME_BASED_FILTER                 ((os_uint64)1 << 20)
+#define QP_PRISMTECH_WRITER_DATA_LIFECYCLE   ((os_uint64)1 << 21)
+#define QP_PRISMTECH_READER_DATA_LIFECYCLE   ((os_uint64)1 << 22)
+#define QP_PRISMTECH_RELAXED_QOS_MATCHING    ((os_uint64)1 << 23)
+#define QP_PRISMTECH_READER_LIFESPAN         ((os_uint64)1 << 24)
+#define QP_PRISMTECH_SUBSCRIPTION_KEYS       ((os_uint64)1 << 25)
+#define QP_PRISMTECH_SHARE                   ((os_uint64)1 << 26)
+#define QP_PRISMTECH_ENTITY_FACTORY          ((os_uint64)1 << 27)
+#define QP_PRISMTECH_SYNCHRONOUS_ENDPOINT    ((os_uint64)1 << 28)
+#define QP_RTI_TYPECODE                      ((os_uint64)1 << 29)
 
 /* Partition QoS is not RxO according to the specification (DDS 1.2,
    section 7.1.3), but communication will not take place unless it
    matches. Same for topic and type.  Relaxed qos matching is a bit of
    a weird one, but it affects matching, so ... */
-#define QP_RXO_MASK (QP_DURABILITY | QP_PRESENTATION | QP_DEADLINE | QP_LATENCY_BUDGET | QP_OWNERSHIP | QP_LIVELINESS | QP_RELIABILITY | QP_DESTINATION_ORDER | QP_PRISMTECH_RELAXED_QOS_MATCHING)
-#define QP_CHANGEABLE_MASK (QP_USER_DATA | QP_TOPIC_DATA | QP_GROUP_DATA | QP_DEADLINE | QP_LATENCY_BUDGET | QP_OWNERSHIP_STRENGTH | QP_TIME_BASED_FILTER | QP_PARTITION | QP_TRANSPORT_PRIORITY | QP_LIFESPAN | QP_ENTITY_FACTORY | QP_PRISMTECH_WRITER_DATA_LIFECYCLE | QP_PRISMTECH_READER_DATA_LIFECYCLE)
+#define QP_RXO_MASK (QP_DURABILITY | QP_PRESENTATION | QP_DEADLINE | QP_LATENCY_BUDGET | QP_OWNERSHIP | QP_LIVELINESS | QP_RELIABILITY | QP_DESTINATION_ORDER | QP_PRISMTECH_RELAXED_QOS_MATCHING | QP_PRISMTECH_SYNCHRONOUS_ENDPOINT)
+#define QP_CHANGEABLE_MASK (QP_USER_DATA | QP_TOPIC_DATA | QP_GROUP_DATA | QP_DEADLINE | QP_LATENCY_BUDGET | QP_OWNERSHIP_STRENGTH | QP_TIME_BASED_FILTER | QP_PARTITION | QP_TRANSPORT_PRIORITY | QP_LIFESPAN | QP_PRISMTECH_ENTITY_FACTORY | QP_PRISMTECH_WRITER_DATA_LIFECYCLE | QP_PRISMTECH_READER_DATA_LIFECYCLE)
+#define QP_UNRECOGNIZED_INCOMPATIBLE_MASK (QP_PRISMTECH_RELAXED_QOS_MATCHING)
 
 /* readers & writers have an extended qos, hence why it is a separate
    type */
 typedef struct nn_xqos {
   /* Entries present, for sparse QoS */
-  unsigned present;
-  unsigned aliased;
+  os_uint64 present;
+  os_uint64 aliased;
 
   /*v---- in ...Qos
      v--- in ...BuiltinTopicData
       v-- mapped in DDSI
-       v- reader/writer specific */
+       v- reader/writer/publisher/subscriber/participant specific */
   /*      Extras: */
   /* xx */char *topic_name;
   /* xx */char *type_name;
@@ -232,9 +273,7 @@ typedef struct nn_xqos {
   /*xxx */nn_presentation_qospolicy_t presentation;
   /*xxx */nn_partition_qospolicy_t partition;
   /*xxx */nn_groupdata_qospolicy_t group_data;
-#if 0
-  /*x   */nn_entity_factory_qospolicy_t entity_factory;
-#endif
+  /*x xX*/nn_entity_factory_qospolicy_t entity_factory;
   /*      TopicQos: */
   /*xxx */nn_topicdata_qospolicy_t topic_data;
   /*      DataWriterQos, DataReaderQos: */
@@ -256,20 +295,31 @@ typedef struct nn_xqos {
   /*x  W*/nn_writer_data_lifecycle_qospolicy_t writer_data_lifecycle;
   /*x xR*/nn_reader_data_lifecycle_qospolicy_t reader_data_lifecycle;
   /*x x */nn_relaxed_qos_matching_qospolicy_t relaxed_qos_matching;
+  /*x xR*/nn_subscription_keys_qospolicy_t subscription_keys;
+  /*x xR*/nn_reader_lifespan_qospolicy_t reader_lifespan;
+  /*x xR*/nn_share_qospolicy_t share;
+  /*xxx */nn_synchronous_endpoint_qospolicy_t synchronous_endpoint;
+
+  /*   X*/nn_octetseq_t rti_typecode;
 } nn_xqos_t;
 
 struct nn_xmsg;
 
 void nn_xqos_init_empty (nn_xqos_t *xqos);
-int nn_xqos_init_default_reader (nn_xqos_t *xqos);
-int nn_xqos_init_default_writer (nn_xqos_t *xqos);
-int nn_xqos_copy (nn_xqos_t *dst, const nn_xqos_t *src);
-int nn_xqos_unalias (nn_xqos_t *xqos);
+void nn_xqos_init_default_reader (nn_xqos_t *xqos);
+void nn_xqos_init_default_writer (nn_xqos_t *xqos);
+void nn_xqos_init_default_writer_noautodispose (nn_xqos_t *xqos);
+void nn_xqos_init_default_subscriber (nn_xqos_t *xqos);
+void nn_xqos_init_default_publisher (nn_xqos_t *xqos);
+void nn_xqos_init_default_topic (nn_xqos_t *xqos);
+void nn_xqos_copy (nn_xqos_t *dst, const nn_xqos_t *src);
+void nn_xqos_unalias (nn_xqos_t *xqos);
 void nn_xqos_fini (nn_xqos_t *xqos);
-int nn_xqos_mergein_missing (nn_xqos_t *a, const nn_xqos_t *b);
-unsigned nn_xqos_delta (const nn_xqos_t *a, const nn_xqos_t *b, unsigned mask);
-int nn_xqos_addtomsg (struct nn_xmsg *m, const nn_xqos_t *xqos, unsigned wanted);
+void nn_xqos_mergein_missing (nn_xqos_t *a, const nn_xqos_t *b);
+os_uint64 nn_xqos_delta (const nn_xqos_t *a, const nn_xqos_t *b, os_uint64 mask);
+void nn_xqos_addtomsg (struct nn_xmsg *m, const nn_xqos_t *xqos, os_uint64 wanted);
 void nn_log_xqos (logcat_t cat, const nn_xqos_t *xqos);
+nn_xqos_t *nn_xqos_dup (const nn_xqos_t *src);
 
 #if defined (__cplusplus)
 }

@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Overview &mdash; Secure Networking Configuration Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Secure Networking Configuration Guide" href="index.html" />
+    <link rel="next" title="3. Secure Networking Configuration" href="securenetconfig.html" />
+    <link rel="prev" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="securenetconfig.html" title="3. Secure Networking Configuration"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Secure Networking Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="overview">
+<span id="id1"></span><h1>2. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<p><em>This section gives an overview of the features provided by the
+Vortex OpenSplice Secure Networking Service.</em></p>
+<div class="section" id="vortex-opensplice-secure-networking-service">
+<h2>2.1. Vortex OpenSplice Secure Networking Service<a class="headerlink" href="#vortex-opensplice-secure-networking-service" title="Permalink to this headline">¶</a></h2>
+<p>Vortex OpenSplice is a suite of software products for the creation
+of a secure, performant, and predictable information backbone
+for distributed systems and systems-of-systems, comprised of a
+high-performance, low-overhead run-time environment, development
+tools for modelling information and applications, and run-time
+tools for monitoring system performance.</p>
+<p>The objective of the OpenSplice suite is to reduce
+complexity, shorten time-to-market, raise quality, and ensure
+standards compliance and code correctness; all in a single
+integrated suite of tools and runtime components from a proven
+and trusted vendor. Fast and predictable networking between the
+nodes of the information backbone is an essential part of the
+OpenSplice solution, as is the importance of addressing
+Information Assurance.</p>
+<p>The OpenSplice Secure Networking Service is an optional
+pluggable service to the OpenSplice Core infrastructure. The
+Secure Networking Service complements the advanced real-time
+networking features of the OpenSplice Core module by
+offering a dedicated crypto-channel <em>per</em> network partition.</p>
+<p>The OpenSplice Networking service provides essential
+features for achieving both scalability as well as real-time
+determinism in mission-critical systems where important
+high-priority data must ‘pre-empt’ less-important data. The
+Networking service’s architecture supports multiple
+runtime-configured <em>network channels</em> each representing a
+pre-emptive priority band which allows for traffic-shaping and
+data-urgency (<tt class="docutils literal"><span class="pre">Latency-Budget</span></tt> QoS) driven network-packing. The
+proper network channel is automatically chosen based upon the
+actual importance (<tt class="docutils literal"><span class="pre">Transport_Priority</span></tt> QoS) of published data.
+The channel-specific traffic-shaping and bandwidth limitation
+effectively prevent faulty and/or misbehaving applications from
+monopolizing the network resources.</p>
+<p>The Secure Networking Service extends this real-time ‘network
+scheduler’ with configurable cryptographic protection
+implementing transport security with the following properties:</p>
+<ul class="simple">
+<li>Information exchanged between nodes of the OpenSplice-based
+information backbone over unsecure networks cannot be
+eavesdropped or modified without detection while in transit
+(data integrity and confidentiality).</li>
+<li>Complete, reliable, and readily-evaluatable separation
+between the area in which the information is processed in
+unencrypted form (<em>RED</em>, on the node) and the area to which
+critical (classified) information is not permitted to flow in
+unencrypted form (<em>BLACK</em>, network), is achieved by means of
+concentration and restriction of network connectivity to exactly
+one client on each node.</li>
+<li>Authenticity of all information exchanged between nodes.</li>
+</ul>
+<p>In addition to transport security, the Secure Networking Service
+offers pluggable access control. Different modules may be used
+to enforce access control (for example modules implementing
+mandatory access control or role-based access control, <em>etc.</em>).
+Currently, OpenSplice supports Mandatory Access Control (MAC).
+Other modules will be available in a future release. The
+Mandatory Access Control Module is characterized by the
+following features:</p>
+<ul class="simple">
+<li>Information received <em>via</em> the network can only be retrieved
+on nodes that<ul>
+<li>are accredited for the security level of this information, and</li>
+<li>host applications that have a need-to-know for the
+information.</li>
+</ul>
+</li>
+<li>Information of different classifications can be
+cryptographically separated while in transit between different
+nodes, resulting in stronger separation than only labelling, and
+performing no infiltration or exfiltration between different
+classifications while in transit.</li>
+</ul>
+<p>This infrastructure security solution ensures Information
+Assurance (IA) for all DDS-based co-operation and information
+exchange between the DDS nodes over untrusted communication
+infrastructures. The Secure Networking Service allows the
+reliable separation of applications with different clearances
+deployed on different nodes in a way that ensures transparency
+to the applications, thus supporting full portability.</p>
+<p>The OpenSplice Secure Networking Service is the first
+building block for a complete QoS-enabled IA solution offering
+end-to-end security between all applications (distributed or
+co-located), including mandatory access control for all data
+flowing between applications and detailed security audit of
+application interactions.</p>
+</div>
+<div class="section" id="getting-started">
+<h2>2.2. Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice Secure Networking Service is provided along
+with the OpenSplice commercial edition RTS and HDE product
+installers.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+To activate the Secure Networking Service an OpenSplice licence
+including the <em>OPENSPLICE_SECURE_NETWORKING</em>
+feature is required. Please be sure to read the Release Notes
+for the latest information.</p>
+<p>To install OpenSplice, please follow the instructions and
+configuration example given in the <em>Vortex OpenSplice Getting
+Started Guide</em>. For an in-depth description of the available
+configuration settings you may also want to read the
+<em>Vortex OpenSplice Deployment Guide</em> and the
+<em>Vortex OpenSplice Configuration Guide</em>.</p>
+<p>If you wish to try out the
+<a class="reference internal" href="securenettutorial.html#secure-networking-tutorial"><em>Secure Networking Tutorial</em></a>
+you will need to set up at least two networked hosts with
+OpenSplice. You will also need to build and run the
+Chat Tutorial application which is described in the
+<em>DCPS C Tutorial Guide</em>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Overview</a><ul>
+<li><a class="reference internal" href="#vortex-opensplice-secure-networking-service">2.1. Vortex OpenSplice Secure Networking Service</a></li>
+<li><a class="reference internal" href="#getting-started">2.2. Getting Started</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="previous chapter">1. Preface</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="securenetconfig.html"
+                        title="next chapter">3. Secure Networking Configuration</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/overview.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="securenetconfig.html" title="3. Secure Networking Configuration"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >previous</a> |</li>
+        <li><a href="index.html">Secure Networking Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

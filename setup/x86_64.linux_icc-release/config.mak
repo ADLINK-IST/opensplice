@@ -13,7 +13,7 @@ endif
 # Compiler flags
 CFLAGS_OPT       = -O3 -ipo
 CFLAGS_DEBUG     = -DNDEBUG
-JCFLAGS          = -g:none -nowarn
+JCFLAGS          = -g -nowarn
 
 #Csc compiler flags
 CSFLAGS_DEBUG    = -define:DEBUG\;TRACE -debug+ -debug:full
@@ -25,4 +25,3 @@ CFLAGS_STRICT=
 #CXX=g++ -L$(INTEL_LIBIRC) -lirc
 CXX=icc
 #LD_SO=gcc
-FILTER=

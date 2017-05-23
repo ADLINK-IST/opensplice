@@ -14,7 +14,7 @@ IDLPPFLAGS += -P COMMON_SAC_API,common_sac_if.h
 CPPFLAGS   += -DOSPL_BUILD_CHECK_DCPS -DCOMMON_SAC_BUILD
 endif
 
-CFLAGS += $(SHCFLAGS) $(MTCFLAGS)
+CFLAGS += $(SHCFLAGS)
 
 CINCS += -I$(OSPL_HOME)/src/kernel/include
 CINCS += -I$(OSPL_HOME)/src/api/dcps/sac/include

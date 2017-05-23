@@ -1,0 +1,616 @@
+{
+   "bone1":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples": ""
+   },
+
+   "bone3":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples": ""
+   },
+    
+   "bone6":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples": ""
+   },
+
+   "bone7":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples": ""
+   },
+    
+   "dds1-win2k3":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": ["PingPong"],
+      "partial_examples": ""
+   },
+
+   "dds2-win2k3":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+    
+   "dds3-win2k3":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+    
+   "debian6a-32":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["protobuf", "dbmsconnect"],
+      "partial_examples": ""
+   },
+
+   "jetson1":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples":
+      {
+          "dcpsPingPong": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "protobuf": 
+          {
+              "langs": ["isocpp2"]
+          }
+      }
+   },
+
+   "pi3a":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples": ""
+   },
+
+   "rhel4d":
+   {
+      "examples": ["All"],
+      "excluded_langs": ["isocpp", "isocpp2"],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "protobuf": 
+          {
+              "langs": ["cpp"]
+          },
+
+          "faceHelloWorld": 
+          {
+              "langs": ["cpp"]
+          }
+      }
+   },
+
+   "rhel4e":
+   {
+      "examples": ["All"],
+      "excluded_langs": ["isocpp", "isocpp2"],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "protobuf": 
+          {
+              "langs": ["cpp"]
+          },
+
+          "faceHelloWorld": 
+          {
+              "langs": ["cpp"]
+          }
+      }
+   },
+
+   "rhel4g":
+   {
+      "examples": ["All"],
+      "excluded_langs": ["isocpp", "isocpp2"],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "protobuf": 
+          {
+              "langs": ["cpp"]
+          },
+
+          "faceHelloWorld": 
+          {
+              "langs": ["cpp"]
+          }
+      }
+   },
+
+   "rhel5a":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel53a":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel54b":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel54-64b":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel54-64c":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel60a":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel62a":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel62-32a":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel60-64a":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel62-64a":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel62-64b":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel62-64c":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel64-64c":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "rhel72a":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld": 
+          {
+              "langs": ["ccpp"]
+          }
+      }
+   },
+
+   "ubuntu1204":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "ubuntu1204b":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "ubuntu1204-64":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "ubuntu1204-64b":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "ubuntu1404-64a":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "ubuntu1604-32a":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples": ""
+   },    
+
+   "ubuntu1604-64a":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples": ""
+   },    
+
+   "v240a":
+   {
+      "examples": ["All"],
+      "excluded_langs": ["isocpp2"],
+      "excluded_examples": ["protobuf"],
+      "partial_examples":
+      {
+          "faceHelloWorld": 
+          {
+              "langs": ["cpp"]
+          }
+      }
+   },
+    
+   "win2008-64a":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+    
+   "win7-32-ospl-1":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "win7-32-ospl-2":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "win7-32-ospl-3":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "win7-32-ospl-4":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "win7-64-ospl-1":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "win7-64-ospl-2":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "win7-64-ospl-3":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "win7-64-ospl-4":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "win7a-64":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "win7a":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "win7b":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld": 
+          {
+              "langs": ["ccpp"]
+          }
+      }
+   },
+
+   "win7c":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld": 
+          {
+              "langs": ["ccpp"]
+          }
+      }
+   },
+
+   "win7d":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld": 
+          {
+              "langs": ["ccpp"]
+          }
+      }
+   },
+
+   "win7e":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld": 
+          {
+              "langs": ["ccpp"]
+          }
+      }
+   },
+
+   "win10-64-vor-a":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld": 
+          {
+              "langs": ["ccpp"]
+          }
+      }
+   },
+
+   "win10-64-vor-b":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial": 
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld": 
+          {
+              "langs": ["ccpp"]
+          }
+      }
+   },
+
+   "winxp12":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "winxp13":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   },
+
+   "winxp13-new":
+   {
+      "examples": ["All"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples": ""
+   }     
+}   
+
+  
+      

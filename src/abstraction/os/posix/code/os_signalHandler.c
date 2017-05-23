@@ -1,17 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "os_signalHandler.h"
+#include "../common/include/os_signalHandlerCallback.h"
 
+#include "os_errno.h"
 #include "os_heap.h"
 #include "os_stdlib.h"
 
@@ -23,7 +33,6 @@
 #include <string.h>
 #include <assert.h>
 #include <sched.h>
-#include <errno.h>
 #ifndef __Lynx__
 #include <ucontext.h>
 #endif
@@ -39,6 +48,7 @@
 #include "os_thread.h"
 #include "os_abstract.h"
 #include "os_init.h"
+#include "os_mutex.h"
 
 
 
@@ -53,18 +63,27 @@ static const int exceptions[] = {
 };
 
 static const int quits[] = {
-    SIGINT, SIGQUIT, SIGTERM, SIGHUP, SIGPIPE
+    SIGQUIT, SIGPIPE, SIGINT, SIGTERM, SIGHUP
+};
+
+static unsigned quits_len = lengthof(quits);
+
+/* If any of the SIGFPE, SIGILL, SIGSEGV, or SIGBUS signals are generated while
+ * they are blocked, the result is undefined, unless the signal was generated
+ * by the kill() function, the sigqueue() function, or the raise() function. */
+static const int excludes[] = {
+    SIGFPE, SIGILL, SIGSEGV, SIGBUS
 };
 
 static sigset_t exceptionsMask;
 static sigset_t quitsMask;
 
+
 struct os_signalHandler_s {
     os_threadId threadId;   /* The thread id of the signalHandlerThread. */
     int pipeIn[2]; /* a pipe to send a signal to the signal handler thread. */
     int pipeOut[2]; /* a pipe to receive a result from the signal handler thread. */
-    os_signalHandlerExitRequestCallback exitRequestCallback;
-    os_signalHandlerExceptionCallback exceptionCallback;
+    os_signalHandlerCallbackInfo callbackInfo;
 };
 
 #ifdef NSIG
@@ -84,20 +103,35 @@ static os_signalHandler signalHandlerObj = NULL;
 
 static int installSignalHandler = 1;
 
+static void os__signalHandlerThreadStop(os_signalHandler _this);
 
 struct sig_context {
     siginfo_t info;
+    os_ulong_int ThreadIdSignalRaised;
+    os_int32 domainId;
 #ifdef OS_HAS_UCONTEXT_T
     ucontext_t uc;
 #endif
 };
+
+/* Include the common implementation for callback handling */
+#include "../common/code/os_signalHandlerCallback.c"
+
+void
+os_signalHandlerIgnoreJavaSignals (void)
+{
+    /* Ignore the SIGHUP, SIGINT and SIGTERM on POSIX platforms for JAVA see OSPL-6588
+     * so only first 2 signals in the quits array count
+     */
+    quits_len = 2;
+}
 
 /* private functions */
 static int
 isSignallingSafe(
     int reportReason)
 {
-
+#ifndef JAVA_IS_PERC
     if(!installSignalHandler && reportReason){
         OS_REPORT(OS_WARNING, "OS abstraction layer", 0,
                   "Did not install signal handlers to cleanup resources.\n"\
@@ -106,6 +140,9 @@ isSignallingSafe(
                   "              This library is part of your Java distribution.\n"\
                   "              To ensure proper cleanup set this before starting your application.");
     }
+#else
+    OS_UNUSED_ARG(reportReason);
+#endif
     return installSignalHandler;
 }
 
@@ -125,7 +162,7 @@ panic(
     const size_t count)
 {
     sigset_t abort_set;
-    write (STDERR_FILENO, panicmsg, count);
+    os_write (STDERR_FILENO, panicmsg, count);
     sigemptyset (&abort_set);
     sigaddset (&abort_set, SIGABRT);
     /* Forcedly set SIG_DFL handler; there is no possibility anymore for a
@@ -134,6 +171,37 @@ panic(
     sigprocmask (SIG_UNBLOCK, &abort_set, NULL);
     raise (SIGABRT);
     /* This line will not be reached anymore... */
+}
+
+/**
+ * Returns if the current thread is the signalHandlerThread.
+ *
+ * @remarks Do not perform any signal-handling context unsafe operations in this
+ * function.
+ *
+ * @return OS_TRUE if the current thread is the signalHandlerThread, or
+ *         OS_FALSE if it's not.
+ */
+static os_boolean
+inSignalHandlerThread (void)
+{
+    os_int match;
+    os_signalHandler _this = signalHandlerObj;
+
+#ifndef NDEBUG
+    /* Assert preconditions (regular assert may trigger this action, so it
+     * is not used here). */
+    if (_this == NULL) {
+        const char panicmsg[] = "Assertion failed: _this != NULL in " __FILE__ ":inSignalHandlerThread\n";
+        panic(panicmsg, sizeof(panicmsg) - 1);
+        /* This line will not be reached anymore */
+    }
+#endif
+
+    match = os_threadIdToInteger (_this->threadId) ==
+        os_threadIdToInteger (os_threadIdSelf ());
+
+    return match ? OS_TRUE : OS_FALSE;
 }
 
 /**
@@ -191,7 +259,6 @@ signalHandlerThreadNotify(
         /* This line will not be reached anymore */
     }
 #endif
-
    /* The following write and read statement implement a synchronous call
     * to the signalHandlerThread; the signalHandlerThread will detach the
     * user-layer from the Domain. If sync is !NULL, this operation will
@@ -203,7 +270,7 @@ signalHandlerThreadNotify(
     * struct atomic_write_constraint, the write of info is ensured to be atomic. */
     do {
         r = write(_this->pipeIn[1], &sigInfo, sizeof(sigInfo));
-        if (r == -1 && errno != EINTR){
+        if (r == -1 && os_getErrno() != EINTR){
             /* We understand that EINTR may have occurred, the rest of the
              * possible errors are reason for serious panic; the only means we
              * had of handling this cleanly is this piece of code :s, so panic
@@ -223,7 +290,7 @@ signalHandlerThreadNotify(
          * sure we get the entire struct. */
         do{
             r = read(_this->pipeOut[0], sync + nread, sizeof(*sync) - nread);
-            if (r == -1 && errno != EINTR){
+            if (r == -1 && os_getErrno() != EINTR){
                 /* We understand that EINTR may have occurred, the rest of the
                  * possible errors are reason for serious panic; the only means we
                  * had of handling this cleanly is this piece of code :s, so panic
@@ -233,11 +300,10 @@ signalHandlerThreadNotify(
                 /* This line will not be reached anymore */
             }
             if (r > 0) {
-                nread += r;
+                nread += (size_t) r;
             }
         } while(nread < sizeof(*sync));
     }
-
     return;
 }
 
@@ -275,7 +341,19 @@ signalHandler(
     struct sig_context sync;
     struct sig_context sigInfo;
 
-    sigInfo.info = *info;
+    /* info can be NULL on Solaris */
+    if (info == NULL) {
+        /* Pretend that it was an SI_USER signal. */
+        memset(&sigInfo.info, 0, sizeof(siginfo_t));
+        sigInfo.info.si_signo = sig;
+        sigInfo.info.si_code = SI_USER;
+        sigInfo.info.si_pid = getpid();
+        sigInfo.info.si_uid = getuid();
+    } else {
+        sigInfo.info = *info;
+    }
+    sigInfo.ThreadIdSignalRaised = os_threadIdToInteger(os_threadIdSelf());
+    sigInfo.domainId = os_reportGetDomain();
 #ifdef OS_HAS_UCONTEXT_T
     sigInfo.uc = *(ucontext_t *)uap;
 #endif
@@ -284,6 +362,16 @@ signalHandler(
      * using OS_REPORT_X and the like). */
     if (sigismember(&exceptionsMask, sig) == 1 && sigInfo.info.si_code != SI_USER){
         os_sigaction *xo;
+
+        if (inSignalHandlerThread()) {
+            /* The signalHandlerThread caught an exception (synchronous)
+             * itself. The fact that the signalHandlerThread caught an
+             * exception means there is a bug in the error handling code. */
+            const char panicmsg[] = "FATAL ERROR: Synchronously trapped signal in signalHandlerThread\n";
+            panic(panicmsg, sizeof(panicmsg) - 1);
+            /* This line will not be reached anymore */
+        }
+
         /* We have an exception (synchronous) here. The assumption is
          * that exception don't occur in middleware-code, so we can
          * synchronously call the signalHandlerThread in order to detach user-
@@ -292,39 +380,23 @@ signalHandler(
         /* BEWARE: This may be an interleaved handling of an exception, so use
          * sync from now on instead of sigInfo.*/
 
-        /* Reset the original signal-handler. Since the exception was
-         * synchronous, running out of this handler will regenerate the signal,
-         * which will then be handled by the original signal-handler. */
+        /* Reset the original signal-handler. If the exception was synchronous,
+         * running out of this handler will regenerate the signal, which will
+         * then be handled by the original signal-handler. Otherwise it needs
+         * to be re-raised. */
         xo = &old_signalHandler[sync.info.si_signo];
         os_sigactionSet(sync.info.si_signo, xo, NULL);
+
+        /* Positive values are reserved for kernel-generated signals, i.e.,
+         * actual synchronous hard errors. The rest are 'soft' errors and thus
+         * need to be re-raised. */
+        if(sigInfo.info.si_code <= 0){
+            raise(sig);
+        }
     } else {
         /* Pass signal to signal-handler thread for asynchronous handling */
         signalHandlerThreadNotify(sigInfo, NULL);
     }
-}
-
-os_signalHandlerExitRequestCallback
-os_signalHandlerSetExitRequestCallback(
-    os_signalHandlerExitRequestCallback cb)
-{
-    os_signalHandlerExitRequestCallback oldCb;
-    os_signalHandler _this = signalHandlerObj;
-
-    oldCb = _this->exitRequestCallback;
-    _this->exitRequestCallback = cb;
-    return oldCb;
-}
-
-os_signalHandlerExceptionCallback
-os_signalHandlerSetExceptionCallback(
-    os_signalHandlerExceptionCallback cb)
-{
-    os_signalHandlerExceptionCallback oldCb;
-    os_signalHandler _this = signalHandlerObj;
-
-    oldCb = _this->exceptionCallback;
-    _this->exceptionCallback = cb;
-    return oldCb;
 }
 
 os_result
@@ -338,7 +410,7 @@ os_signalHandlerFinishExitRequest(
     /* This is a request from the application to round up an (asynchronous)
      * exit-request. */
     if (sig < 1 || sig >= OS_NSIG){
-        OS_REPORT_2(OS_WARNING,
+        OS_REPORT(OS_WARNING,
             "os_signalHandlerFinishExitRequest", 0,
             "Callback-arg contains invalid signal, value out of range 1-%d: arg = %d",
             OS_NSIG, sig);
@@ -348,17 +420,18 @@ os_signalHandlerFinishExitRequest(
 #error "Worst-case allocation assumes max. signal of 99, which apparently is not correct"
 #endif
         /* We know which signal-number exist, all take at most 2 digits + ", ",
-         * so allocate worst-case 4 * lengthof(quits) */
-        char *expected = os_malloc(lengthof(quits) * 4 + 1);
+         * so allocate worst-case 4 * quits_len */
+        char *expected = os_malloc(quits_len * 4 + 1);
         if(expected){
-            int i, pos;
-            assert(lengthof(quits) > 0);
+            unsigned i;
+            int pos;
+            assert(quits_len > 0);
             pos = sprintf(expected, "%d", quits[0]);
-            for(i = 1; i < lengthof(quits); i++){
+            for(i = 1; i < quits_len; i++){
                 pos += sprintf(expected + pos, ", %d", quits[i]);
             }
         }
-        OS_REPORT_2(OS_WARNING,
+        OS_REPORT(OS_WARNING,
             "os_signalHandlerFinishExitRequest", 0,
             "Unexpected Signal, value out of range: signal = %d. Expected one of %s.",
             sig, expected ? expected : "the asynchronous exit request signals");
@@ -371,8 +444,7 @@ os_signalHandlerFinishExitRequest(
          * original signal. */
         xo = &old_signalHandler[sig];
         if(os_sigactionSet(sig, xo, NULL) != 0){
-            r = os_resultFail;
-            OS_REPORT_1(OS_WARNING,
+            OS_REPORT(OS_WARNING,
                "os_signalHandlerFinishExitRequest", 0,
                "Resetting original signal handler for signal %d failed, sigaction did not return 0.",sig);
             abort(); /* We were unable to reset the original handler, which is pretty serious. */
@@ -412,15 +484,16 @@ signalHandlerThread(
 
     while (cont) {
         nread = 0;
+        r = 0;
         while(nread < sizeof(info) && ((r = read(_this->pipeIn[0], &info + nread, sizeof(info) - nread)) > 0)){
-            nread += r;
+            nread += (size_t) r;
         }
         if (r < 0) {
-            int errorNr = errno;
-            OS_REPORT_2(OS_ERROR,
+            int errorNr = os_getErrno();
+            OS_REPORT(OS_ERROR,
                         "os_signalHandlerThread", 0,
                         "read(_this->pipeIn[0]) failed, error %d: %s",
-                        errorNr, strerror(errorNr));
+                        errorNr, os_strError(errorNr));
             assert(OS_FALSE);
             sig = SIGNAL_THREAD_STOP;
         } else {
@@ -428,47 +501,52 @@ signalHandlerThread(
         }
         if(sig != SIGNAL_THREAD_STOP){
             if (sig < 1 || sig >= OS_NSIG) {
-                OS_REPORT_2(OS_WARNING,
-                            "os_signalHandlerThread", 0,
+                OS_REPORT_WID(OS_WARNING,
+                            "os_signalHandlerThread", 0, info.domainId,
                             "Unexpected signal, value out of range 1-%d: signal = %d",
                             OS_NSIG, sig);
             } else {
                 if(sigismember(&exceptionsMask, sig) == 1){
-                    if(info.info.si_code == SI_USER){
-                        OS_REPORT_4(OS_INFO, "signalHandlerThread", 0,
+                    if(info.info.si_code == SI_USER || info.info.si_code == SI_QUEUE){
+                        /* Sent by kill or sigqueue, so we can report the origin
+                         * of the asynchronous delivery. */
+                        OS_REPORT_WID(OS_INFO, "signalHandlerThread", 0, info.domainId,
                             "Synchronous exception (signal %d) asynchronously received from PID %d%s, UID %d",
                             sig,
                             info.info.si_pid,
                             info.info.si_pid == getpid() ? " (self)" : "",
                             info.info.si_uid);
                     } else {
-                        OS_REPORT_1(OS_INFO, "signalHandlerThread", 0,
-                            "Exception (signal %d) occurred in process",
-                            sig);
+                        OS_REPORT_WID(OS_ERROR, "signalHandlerThread", 0, info.domainId,
+                            "Exception (signal %d) %s in process",
+                            sig,
+                            /* Positive values for si_code are reserved for kernel-
+                             * generated signals. This report allows to distinguish
+                             * an actual kernel-signal and signals within the process
+                             * like from pthread_kill(...) for example. */
+                            info.info.si_code > 0 ? "occurred" : "generated");
                     }
 
                     /* If an exceptionCallback was set, this should always be invoked. The main
                      * goal is to protect SHM in case of an exception, even if a customer
                      * installed a handler as well. */
-                    if (_this->exceptionCallback &&
-                        (_this->exceptionCallback() != os_resultSuccess)) {
-                        OS_REPORT(OS_ERROR,
-                            "os_signalHandlerThread", 0,
-                            "Exception-callback failed");
+                    {
+                        os_callbackArg cbarg;
+                        cbarg.sig = (void*)(os_address)sig;
+                        cbarg.ThreadId = info.ThreadIdSignalRaised;
+                        os__signalHandlerExceptionCallbackInvoke(&_this->callbackInfo, cbarg);
                     }
-
                     if(info.info.si_code == SI_USER){
                         /* Mimic an exception by re-raising it. A random thread received the signal
                          * asynchronously, so when we raise it again another random thread will
                          * receive the signal. */
                         os_sigaction *xo;
-                        os_sigset ss;
 
                         /* Reset the original signal-handler. */
                         xo = &old_signalHandler[info.info.si_signo];
                         os_sigactionSet(info.info.si_signo, xo, NULL);
 
-                        /* Since the exception was actually asynchronous (issued by an external
+                        /* Since the exception was actually asynchronous (issued by an external/soft
                          * source), the original signal-handler will not be called by running
                          * out of the handler. We chain by re-raising, since SIG_DFL or SIG_IGN
                          * cannot be called directly. */
@@ -477,7 +555,7 @@ signalHandlerThread(
                            as that would cause a dead lock. */
                         pid = getpid();
                         /* Don't think it's possible to not send the signal */
-                        OS_REPORT_2 (OS_DEBUG, "os_signalHandlerThread", 0,
+                        OS_REPORT_WID (OS_DEBUG, "os_signalHandlerThread", 0, info.domainId,
                             "Invoking kill (signal %d) on PID %d (self)",
                             info.info.si_signo, pid);
                         (void)kill (pid, info.info.si_signo);
@@ -485,35 +563,31 @@ signalHandlerThread(
                         /* Notify waiting signal handler to unblock. */
                         r = write(_this->pipeOut[1], &info, sizeof(info));
                         if (r<0) {
-                            int errorNr = errno;
-                            OS_REPORT_2(OS_ERROR,
-                                        "os_signalHandlerThread", 0,
-                                        "write(_this->pipeOut[1]) failed, error %d: %s",
-                                        errorNr, strerror(errorNr));
+                            int errorNr = os_getErrno();
+                            OS_REPORT_WID(OS_ERROR,
+                                      "os_signalHandlerThread", 0, info.domainId,
+                                      "write(_this->pipeOut[1]) failed, error %d: %s",
+                                      errorNr, os_strError(errorNr));
                             assert(OS_FALSE);
                         }
                     }
                 } else if (sigismember(&quitsMask, sig) == 1){
-                    os_callbackArg arg;
-                    OS_REPORT_4(OS_INFO, "signalHandlerThread", 0,
+                    os_callbackArg cbarg;
+                    OS_REPORT_WID(OS_INFO, "signalHandlerThread", 0, info.domainId,
                         "Termination request (signal %d) received from PID %d%s, UID %d",
                         sig,
                         (info.info.si_code == SI_USER) ? info.info.si_pid : getpid(),
                         (info.info.si_code != SI_USER  || info.info.si_pid == getpid()) ? " (self)" : "",
                         (info.info.si_code == SI_USER) ? info.info.si_uid : getuid());
 
-                    arg.sig = (void*)(os_address)sig;
+                    cbarg.sig = (void*)(os_address)sig;
+                    cbarg.ThreadId = info.ThreadIdSignalRaised;
 
                     /* Quit-signals which were set to SIG_IGN shouldn't have our signal-handler
                      * set at all. */
                     assert(old_signalHandler[sig].sa_handler != SIG_IGN);
                     if(old_signalHandler[sig].sa_handler == SIG_DFL){
-                        if (_this->exitRequestCallback &&
-                            (_this->exitRequestCallback(arg) != os_resultSuccess)) {
-                            OS_REPORT(OS_ERROR,
-                                "os_signalHandlerThread", 0,
-                                "Exit request-callback failed");
-                        }
+                        (void) os__signalHandlerExitRequestCallbackInvoke(&_this->callbackInfo, cbarg);
                     } else {
                         /* Execute the original signal-handler within our safe context. For quit-signals our
                          * own exitRequestCallback is not executed. We don't chain exit-request-handlers. */
@@ -540,27 +614,31 @@ static os_result
 os_signalHandlerInit(
     os_signalHandler _this);
 
-
 os_result
 os_signalHandlerNew(
     void)
 {
-    os_signalHandler _this = NULL;
+    os_signalHandler _this;
     os_result result = os_resultFail;
 
 #if !defined INTEGRITY && !defined VXWORKS_RTP
-    _this = (os_signalHandler)os_malloc(sizeof(struct os_signalHandler_s));
-
-    if (_this != NULL) {
-        signalHandlerObj = _this;
-        result = os_signalHandlerInit(_this);
-    } else {
-        OS_REPORT_1(OS_ERROR, "os_signalHandlerNew", 0,
-                    "os_malloc(%d) failed.",
-                     sizeof(struct os_signalHandler_s));
+    _this = os_malloc(sizeof(*_this));
+    if (_this == NULL) {
+        OS_REPORT(OS_ERROR, "os_signalHandlerNew", 0, "os_malloc(%"PA_PRIuSIZE") failed.", sizeof(*_this));
+        goto err_malloc;
+    }
+    signalHandlerObj = _this;
+    if((result = os_signalHandlerInit(_this)) != os_resultSuccess){
+        goto err_init;
     }
 #endif
     return result;
+
+err_init:
+    signalHandlerObj = NULL;
+    os_free(_this);
+err_malloc:
+    return os_resultFail;
 }
 
 static os_result
@@ -570,290 +648,251 @@ os_signalHandlerInit(
     os_result result = os_resultSuccess;
     os_sigaction action;
     os_sigset block_all_sigset, old_sigset;
-    int i, r;
+    unsigned i, iException, iExit;
+    int r;
+    os_threadAttr thrAttr;
 
-    if (_this == NULL) {
-        result = os_resultFail;
+    assert(_this);
+
+    if(os__signalHandlerCallbackInit(&_this->callbackInfo) != os_resultSuccess) {
+        goto err_callbackInfoInit;
     }
-    _this->exitRequestCallback = (os_signalHandlerExitRequestCallback)0;
-    _this->exceptionCallback = (os_signalHandlerExceptionCallback)0;
 
-
-    if(isSignallingSafe(1)){
-        /* Initialise the exceptionsMask */
-        sigemptyset(&exceptionsMask);
-        for(i = 0; i < lengthof(exceptions); i++){
-            sigaddset(&exceptionsMask, exceptions[i]);
-        }
-
-        /* Initialise the quitsMask */
-        sigemptyset(&quitsMask);
-        for(i = 0; i < lengthof(quits); i++){
-            sigaddset(&quitsMask, quits[i]);
-        }
-
-        /* create signal handling pipes */
-        if (result == os_resultSuccess) {
-            r = pipe(_this->pipeIn);
-            if (r<0) {
-                OS_REPORT_1(OS_ERROR,
-                            "os_signalHandlerInit", 0,
-                            "pipe(_this->pipeIn) failed, result = %d",
-                            r);
-                result = os_resultFail;
-            } else {
-                r = fcntl(_this->pipeIn[0], F_SETFD, 1);
-                if (r<0) {
-                    OS_REPORT_1(OS_WARNING,
-                                "os_signalHandlerInit", 0,
-                                "fcntl(_this->pipeIn[0]) failed, result = %d", r);
-                    assert(OS_FALSE);
-                }
-                r = fcntl(_this->pipeIn[1], F_SETFD, 1);
-                if (r<0) {
-                    OS_REPORT_1(OS_WARNING,
-                                "os_signalHandlerInit", 0,
-                                "fcntl(_this->pipeIn[1]) failed, result = %d", r);
-                    assert(OS_FALSE);
-                }
-            }
-        }
-        if (result == os_resultSuccess) {
-            r = pipe(_this->pipeOut);
-            if (r<0) {
-                OS_REPORT_1(OS_ERROR,
-                            "os_signalHandlerInit", 1,
-                            "pipe(_this->pipeOut) failed, result = %d",
-                            r);
-                result = os_resultFail;
-            } else {
-                r = fcntl(_this->pipeOut[0], F_SETFD, 1);
-                if (r<0) {
-                    OS_REPORT_1(OS_WARNING,
-                                "os_signalHandlerInit", 0,
-                                "fcntl(_this->pipeOut[0]) failed, result = %d",
-                                r);
-                    assert(OS_FALSE);
-                }
-                r = fcntl(_this->pipeOut[1], F_SETFD, 1);
-                if (r<0) {
-                    OS_REPORT_1(OS_WARNING,
-                                "os_signalHandlerInit", 0,
-                                "fcntl(_this->pipeOut[1]) failed, result = %d",
-                                r);
-                    assert(OS_FALSE);
-                }
-            }
-        }
-        /* Block all signals */
-        if (result == os_resultSuccess) {
-            result = os_sigsetFill(&block_all_sigset);
-            if (result != os_resultSuccess) {
-                OS_REPORT_1(OS_ERROR,
-                            "os_signalHandlerInit", 0,
-                            "os_sigsetFill(&block_all_sigset) failed, result = %d",
-                            r);
-                assert(OS_FALSE);
-            } else {
-                result = os_sigThreadSetMask(&block_all_sigset, &old_sigset);
-                if (result != os_resultSuccess) {
-                    OS_REPORT_3(OS_ERROR,
-                                "os_signalHandlerInit", 0,
-                                "os_sigThreadSetMask(0x%x, 0x%x) failed, result = %d",
-                                &block_all_sigset, &old_sigset, r);
-                    assert(OS_FALSE);
-                }
-            }
-        }
-        /* Setup signal handler thread. */
-        if (result == os_resultSuccess) {
-            os_threadAttr thrAttr;
-
-            result = os_threadAttrInit(&thrAttr);
-            if (result != os_resultSuccess) {
-                OS_REPORT_2(OS_ERROR,
-                            "os_signalHandlerInit", 0,
-                            "pthread_attr_init(0x%x) failed, result = %d",
-                            &thrAttr, r);
-                assert(OS_FALSE);
-            } else {
-                thrAttr.stackSize = 4*1024*1024; /* 4 MB */
-                result = os_threadCreate(&_this->threadId,
-                                         "signalHandler",
-                                         &thrAttr,
-                                         signalHandlerThread,
-                                         (void*)_this);
-
-                if (result != os_resultSuccess) {
-                    OS_REPORT_4(OS_ERROR,
-                                "os_signalHandlerInit", 0,
-                                "os_threadCreate(0x%x, 0x%x,0x%x,0) failed, result = %d",
-                                &_this->threadId,
-                                &thrAttr,
-                                signalHandlerThread,
-                                result);
-                    assert(OS_FALSE);
-                }
-            }
-        }
-        /* Reset signal mask to original value. */
-        if (result == os_resultSuccess) {
-            result = os_sigThreadSetMask(&old_sigset, NULL);
-            if (result != os_resultSuccess) {
-                OS_REPORT_2(OS_ERROR,
-                            "os_signalHandlerInit", 0,
-                            "os_sigThreadSetMask(0x%x, NULL) failed, result = %d",
-                            &old_sigset, r);
-                result = os_resultFail;
-                assert(OS_FALSE);
-            }
-        }
-        /* install signal handlers */
-        if (result == os_resultSuccess) {
-            os_sigset mask;
-            /* block all signals during handling of a signal */
-            result = os_sigsetFill(&mask);
-            if (result != os_resultSuccess) {
-                OS_REPORT_2(OS_ERROR,
-                            "os_signalHandlerInit", 0,
-                            "os_sigsetFill(0x%x) failed, result = %d",
-                            &action.sa_mask, result);
-            } else {
-                action = os_sigactionNew(signalHandler, &mask, SA_SIGINFO);
-            }
-            if (result == os_resultSuccess) {
-                for (i=0; i<lengthof(exceptions); i++) {
-                    const int sig = exceptions[i];
-                    r = os_sigsetDel(&action.sa_mask, sig);
-                    if (r<0) {
-                        OS_REPORT_3(OS_ERROR,
-                                    "os_signalHandlerInit", 0,
-                                    "os_sigsetDel(0x%x, %d) failed, result = %d",
-                                    &action, sig, r);
-                        result = os_resultFail;
-                        assert(OS_FALSE);
-                    }
-                }
-            }
-            if (result == os_resultSuccess) {
-                for (i=0; i<lengthof(exceptions); i++) {
-                    const int sig = exceptions[i];
-                    /* For exceptions we always set our own signal handler, since
-                     * applications that cause an exception are not in a position
-                     * to ignore it. However, we will chain the old handler to our
-                     * own.
-                     */
-                    r = os_sigactionSet(sig, &action, &old_signalHandler[sig]);
-                    if (r < 0) {
-                        OS_REPORT_4(OS_ERROR,
-                                    "os_signalHandlerInit", 0,
-                                    "os_sigactionSet(%d, 0x%x, 0x%x) failed, result = %d",
-                                    sig, &action, &old_signalHandler[sig], r);
-                        result = os_resultFail;
-                        assert(OS_FALSE);
-                    }
-                }
-            }
-            if (result == os_resultSuccess) {
-                for (i=0; i<lengthof(quits); i++) {
-                    const int sig = quits[i];
-                    /* By passing NULL we only retrieve the currently set handler. If
-                     * the signal should be ignored, we don't do anything. Otherwise we
-                     * chain the old handler to our own.
-                     * man-page of sigaction only states behaviour when new
-                     * action is non-NULL, but all known implementations act as
-                     * expected. That is: return the currently set signal-hand-
-                     * ler (and not the previous, as the man-pages state).
-                     * NOTE: Not MT-safe */
-                    r = os_sigactionSet(sig, NULL, &old_signalHandler[sig]);
-                    if (r == 0) {
-                        if(old_signalHandler[sig].sa_handler != SIG_IGN){
-                            /* We don't know if the oldHandler has been modified in the mean
-                             * time, since there is no way to make the signal handler reentrant.
-                             * It doesn't make sense to look for modifications now, since a
-                             * new modification could be on its way while we are processing
-                             * the current modification.
-                             * For that reason we will ignore any intermediate modifications
-                             * and continue setting our own handler. Processes should therefore
-                             * refrain from modifying the signal handler in multiple threads.
-                             */
-                            r = os_sigactionSet(sig, &action, NULL);
-                            if (r != 0) {
-                                OS_REPORT_4(OS_ERROR,
-                                            "os_signalHandlerInit", 0,
-                                            "os_sigactionSet(%d, 0x%x, 0x%x) failed, result = %d",
-                                            sig, &action, &old_signalHandler[sig], r);
-                                result = os_resultFail;
-                                assert(OS_FALSE);
-                            }
-                        } else {
-                            OS_REPORT_1(OS_INFO,
-                                       "os_signalHandlerThread", 0,
-                                       "Not installing a signal handler for the already ignored signal %d.",
-                                       sig);
-                        }
-                    } else {
-                        OS_REPORT_1(OS_ERROR, "os_signalHandlerInit", 0, "Could not retrieve currently set signal-handler for signal %d", sig);
-                        result = os_resultFail;
-                        assert(OS_FALSE);
-                    }
-                }
-            }
-        }
-    } else {
-        result = os_resultSuccess;
+    if(!isSignallingSafe(1)){
+        return os_resultSuccess;
     }
-    return result;
+
+    /* Initialise the exceptionsMask */
+    sigemptyset(&exceptionsMask);
+    for(i = 0; i < lengthof(exceptions); i++){
+        sigaddset(&exceptionsMask, exceptions[i]);
+    }
+
+    /* Initialise the quitsMask */
+    sigemptyset(&quitsMask);
+    for(i = 0; i < quits_len; i++){
+        sigaddset(&quitsMask, quits[i]);
+    }
+
+    /* create signal handling pipes */
+    r = pipe(_this->pipeIn);
+    if (r < 0) {
+        OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0, "pipe(_this->pipeIn) failed, result = %d", r);
+        goto err_pipeIn;
+    }
+
+    r = fcntl(_this->pipeIn[0], F_SETFD, 1);
+    if (r < 0) {
+        OS_REPORT(OS_WARNING, "os_signalHandlerInit", 0, "fcntl(_this->pipeIn[0]) failed, result = %d", r);
+        goto err_pipeInFcntl;
+    }
+
+    r = fcntl(_this->pipeIn[1], F_SETFD, 1);
+    if (r < 0) {
+        OS_REPORT(OS_WARNING, "os_signalHandlerInit", 0, "fcntl(_this->pipeIn[1]) failed, result = %d", r);
+        goto err_pipeInFcntl;
+    }
+
+    r = pipe(_this->pipeOut);
+    if (r < 0) {
+        OS_REPORT(OS_ERROR, "os_signalHandlerInit", 1, "pipe(_this->pipeOut) failed, result = %d", r);
+        goto err_pipeOut;
+    }
+
+    r = fcntl(_this->pipeOut[0], F_SETFD, 1);
+    if (r < 0) {
+        OS_REPORT(OS_WARNING, "os_signalHandlerInit", 0, "fcntl(_this->pipeOut[0]) failed, result = %d", r);
+        goto err_pipeOutFcntl;
+    }
+
+    r = fcntl(_this->pipeOut[1], F_SETFD, 1);
+    if (r < 0) {
+        OS_REPORT(OS_WARNING, "os_signalHandlerInit", 0, "fcntl(_this->pipeOut[1]) failed, result = %d", r);
+        goto err_pipeOutFcntl;
+    }
+
+    /* Block all signals in order to start the signalHandlerThread with all
+     * signals blocked. */
+    result = os_sigsetFill(&block_all_sigset);
+    if (result != os_resultSuccess) {
+        OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                "os_sigsetFill(&block_all_sigset) failed: %s", os_resultImage(result));
+        goto err_sigsetMask;
+    }
+
+    /* Remove signals that cannot be blocked. */
+    for (i = 0; i < lengthof(excludes); i++) {
+        const int sig = excludes[i];
+        if (os_sigsetDel(&block_all_sigset, sig) != 0) {
+            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0, "os_sigsetDel(0x%"PA_PRIxADDR", %d) failed, result = %d", (os_address)&action, sig, r);
+            goto err_sigsetMask;
+        }
+    }
+
+    result = os_sigThreadSetMask(&block_all_sigset, &old_sigset);
+    if (result != os_resultSuccess) {
+        OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0, "os_sigThreadSetMask(0x%"PA_PRIxADDR", 0x%"PA_PRIxADDR") failed: %s",
+                    (os_address)&block_all_sigset, (os_address)&old_sigset, os_resultImage(result));
+        goto err_sigsetMask;
+    }
+
+    /* Setup signal handler thread. */
+    os_threadAttrInit(&thrAttr);
+    thrAttr.stackSize = 4*1024*1024; /* 4 MB */
+    result = os_threadCreate(&_this->threadId,
+                             "signalHandler",
+                             &thrAttr,
+                             signalHandlerThread,
+                             (void*)_this);
+
+    if (result != os_resultSuccess) {
+        OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                    "os_threadCreate(0x%"PA_PRIxADDR", 0x%"PA_PRIxADDR",0x%"PA_PRIxADDR",0) failed: %s",
+                    (os_address)&_this->threadId,
+                    (os_address)&thrAttr,
+                    (os_address)signalHandlerThread,
+                    os_resultImage(result));
+        goto err_threadCreate;
+    }
+
+    /* Reset signal mask to original value. */
+    result = os_sigThreadSetMask(&old_sigset, NULL);
+    if (result != os_resultSuccess) {
+        OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                    "os_sigThreadSetMask(0x%"PA_PRIxADDR", NULL) failed: %s",
+                    (os_address)&old_sigset, os_resultImage(result));
+        goto err_sigResetMask;
+    }
+
+    /* install signal handlers */
+    action = os_sigactionNew(signalHandler, &block_all_sigset, SA_SIGINFO);
+
+    for (i = 0; i < lengthof(exceptions); i++) {
+        const int sig = exceptions[i];
+        r = os_sigsetDel(&action.sa_mask, sig);
+        if (r < 0) {
+            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                        "os_sigsetDel(0x%"PA_PRIxADDR", %d) failed, result = %d",
+                        (os_address)&action, sig, r);
+            goto err_exceptionSigSetDel;
+        }
+    }
+
+    for (iException = 0; iException < lengthof(exceptions); iException++) {
+        const int sig = exceptions[iException];
+        /* For exceptions we always set our own signal handler, since
+         * applications that cause an exception are not in a position
+         * to ignore it. However, we will chain the old handler to our
+         * own. */
+        r = os_sigactionSet(sig, &action, &old_signalHandler[sig]);
+        if (r < 0) {
+            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                        "os_sigactionSet(%d, 0x%"PA_PRIxADDR", 0x%"PA_PRIxADDR") failed, result = %d",
+                        sig, (os_address)&action, (os_address)&old_signalHandler[sig], r);
+            goto err_exceptionSigSet;
+        }
+    }
+
+    for (iExit = 0; iExit < quits_len; iExit++) {
+        const int sig = quits[iExit];
+        /* By passing NULL we only retrieve the currently set handler. If
+         * the signal should be ignored, we don't do anything. Otherwise we
+         * chain the old handler to our own.
+         * man-page of sigaction only states behaviour when new
+         * action is non-NULL, but all known implementations act as
+         * expected. That is: return the currently set signal-hand-
+         * ler (and not the previous, as the man-pages state).
+         * NOTE: Not MT-safe */
+        r = os_sigactionSet(sig, NULL, &old_signalHandler[sig]);
+        if (r < 0) {
+            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                    "Could not retrieve currently set signal-handler for signal %d", sig);
+            goto err_exitSigSet;
+        }
+        if(old_signalHandler[sig].sa_handler != SIG_IGN){
+            /* We don't know if the oldHandler has been modified in the mean
+             * time, since there is no way to make the signal handler reentrant.
+             * It doesn't make sense to look for modifications now, since a
+             * new modification could be on its way while we are processing
+             * the current modification.
+             * For that reason we will ignore any intermediate modifications
+             * and continue setting our own handler. Processes should therefore
+             * refrain from modifying the signal handler in multiple threads.
+             */
+            r = os_sigactionSet(sig, &action, NULL);
+            if (r != 0) {
+                OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                            "os_sigactionSet(%d, 0x%"PA_PRIxADDR", 0x%"PA_PRIxADDR") failed, result = %d",
+                            sig, (os_address)&action, (os_address)&old_signalHandler[sig], r);
+                goto err_exitSigSet;
+            }
+        }
+    }
+    return os_resultSuccess;
+
+
+/* Error handling */
+err_exitSigSet:
+    while(iExit) {
+        const int sig = quits[--iExit];
+        r = os_sigactionSet(sig, &old_signalHandler[sig], NULL);
+        if (r < 0) {
+            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                        "Failed to restore original handler: os_sigactionSet(%d, 0x%"PA_PRIxADDR", NULL) failed, result = %d",
+                        sig, (os_address)&old_signalHandler[sig], r);
+        }
+    }
+err_exceptionSigSet:
+    while(iException) {
+        const int sig = exceptions[--iException];
+        r = os_sigactionSet(sig, &old_signalHandler[sig], NULL);
+        if (r < 0) {
+            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                        "Failed to restore original handler: os_sigactionSet(%d, 0x%"PA_PRIxADDR", NULL) failed, result = %d",
+                        sig, (os_address)&old_signalHandler[sig], r);
+        }
+    }
+err_exceptionSigSetDel:
+    /* No undo needed for os_sigsetDel(...) */
+err_sigResetMask:
+    os__signalHandlerThreadStop(_this);
+err_threadCreate:
+    (void) os_sigThreadSetMask(&old_sigset, NULL);
+err_sigsetMask:
+    /* No undo needed for fcntl's/sigsetFill */
+err_pipeOutFcntl:
+    (void) close(_this->pipeOut[0]);
+    (void) close(_this->pipeOut[1]);
+err_pipeOut:
+    /* No undo needed for fcntl's */
+err_pipeInFcntl:
+    (void) close(_this->pipeIn[0]);
+    (void) close(_this->pipeIn[1]);
+err_pipeIn:
+    os__signalHandlerCallbackDeinit(&_this->callbackInfo);
+err_callbackInfoInit:
+    return os_resultFail;
 }
 
-os_result
-os_signalHandlerSetHandler(
-    os_signal signal,
-    os_actionHandler handler)
+static void
+os__signalHandlerThreadStop(
+        os_signalHandler _this)
 {
-    os_sigset mask;
-    os_result result;
-    os_sigaction action;
-    int r;
+    struct sig_context info;
+    void *thread_result;
 
-    /* block all signals during handling of a signal */
-    result = os_sigsetFill(&mask);
-    if (result != os_resultSuccess)
-    {
-        OS_REPORT_2(OS_ERROR,
-                    "os_signalHandlerInit", 0,
-                    "os_sigsetFill(0x%x) failed, result = %d",
-                    &action.sa_mask, result);
-    } else
-    {
-        action = os_sigactionNew(handler, &mask, SA_SIGINFO);
+    assert(_this);
+
+    memset (&info, 0, sizeof(info));
+    info.info.si_signo = SIGNAL_THREAD_STOP;
+    (void) write(_this->pipeIn[1], &info, sizeof(info));
+    /* When the signalHandlerThread itself is the exiting thread (this can happen
+     * when an exit call is done in a signalHandler installed by a customer for
+     * example), we should not invoke os_threadWaitExit but just let this call
+     * return immediately. */
+    if (os_threadIdSelf() != _this->threadId ) {
+        (void) os_threadWaitExit(_this->threadId, &thread_result);
     }
-    if (result == os_resultSuccess)
-    {
-        r = os_sigsetDel(&action.sa_mask, signal);
-        if (r < 0)
-        {
-            OS_REPORT_3(OS_ERROR,
-                        "os_signalHandlerInit", 0,
-                        "os_sigsetDel(0x%x, %d) failed, result = %d",
-                        &action, signal, r);
-            result = os_resultFail;
-            assert(OS_FALSE);
-        }
-    }
-    if (result == os_resultSuccess)
-    {
-        r = os_sigactionSet(signal, &action, &old_signalHandler[signal]);
-        if (r < 0) {
-            OS_REPORT_4(OS_ERROR,
-                        "os_signalHandlerInit", 0,
-                        "os_sigactionSet(%d, 0x%x, 0x%x) failed, result = %d",
-                        signal, &action, &old_signalHandler[signal], r);
-            result = os_resultFail;
-            assert(OS_FALSE);
-        }
-    }
-    return result;
 }
 
 void
@@ -861,35 +900,30 @@ os_signalHandlerFree(
     void)
 {
 #if !defined INTEGRITY && !defined VXWORKS_RTP
-    void *thread_result;
-    int i, r;
+    int i;
+    os_ssize_t r;
     os_signalHandler _this = signalHandlerObj;
-    struct sig_context info;
 
     if (isSignallingSafe(0) && _this) {
         for (i=0; i<lengthof(exceptions); i++) {
             const int sig = exceptions[i];
             r = os_sigactionSet(sig, &old_signalHandler[sig], NULL);
             if (r<0) {
-                OS_REPORT_3(OS_ERROR,
+                OS_REPORT(OS_ERROR,
                             "os_signalHandlerFree", 0,
-                            "os_sigactionSet(%d, 0x%x, NULL) failed, result = %d",
-                            sig, &old_signalHandler[sig], r);
+                            "os_sigactionSet(%d, 0x%"PA_PRIxADDR", NULL) failed, result = %"PA_PRIdSIZE,
+                            sig, (os_address)&old_signalHandler[sig], r);
                 assert(OS_FALSE);
             }
         }
-        memset (&info, 0, sizeof(info));
-        info.info.si_signo = SIGNAL_THREAD_STOP;
-        r = write(_this->pipeIn[1], &info, sizeof(info));
-        /* when signalhandler is the exiting thread itself, this can happen when an exit call is done in the signalhandler of the customer
-         * do not call os_threadWaitExit but just let this thread run out of its main function */
-        if (os_threadIdSelf() != _this->threadId ) {
-            os_threadWaitExit(_this->threadId, &thread_result);
-        }
+        os__signalHandlerThreadStop(_this);
         close(_this->pipeIn[0]);
         close(_this->pipeIn[1]);
         close(_this->pipeOut[0]);
         close(_this->pipeOut[1]);
+
+        os__signalHandlerCallbackDeinit(&_this->callbackInfo);
+
         os_free(_this);
         signalHandlerObj = NULL;
     }
@@ -906,4 +940,14 @@ os_signalHandlerSetEnabled(
         installSignalHandler = 1;
     }
     return os_resultSuccess;
+}
+
+static os_signalHandlerCallbackInfo*
+os__signalHandlerGetCallbackInfo(void)
+{
+    os_signalHandler _this = signalHandlerObj;
+
+    assert(_this);
+
+    return &_this->callbackInfo;
 }

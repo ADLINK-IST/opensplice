@@ -1,22 +1,30 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.impl;
 
 import org.opensplice.cm.CMException;
-import org.opensplice.cm.CMFactory;
 import org.opensplice.cm.DataReader;
 import org.opensplice.cm.Subscriber;
 import org.opensplice.cm.com.CommunicationException;
 import org.opensplice.cm.com.Communicator;
+import org.opensplice.cm.data.Mask;
 import org.opensplice.cm.qos.QoS;
 import org.opensplice.cm.qos.ReaderQoS;
 import org.opensplice.cm.qos.SubscriberQoS;
@@ -24,26 +32,30 @@ import org.opensplice.cm.qos.SubscriberQoS;
 /**
  * Implementation of the Subscriber interface.
  * 
- * @date May 18, 2005 
+ * @date May 18, 2005
  */
 public class SubscriberImpl extends EntityImpl implements Subscriber{
-    /** 
-     * Constructs a new Subscriber from the supplied arguments. This function
-     * is for internal use only and should not be used by API users.
+    /**
+     * Constructs a new Subscriber from the supplied arguments. This function is
+     * for internal use only and should not be used by API users.
      * 
-     * @param _index The index of the handle of the kernel entity that is
-     *               associated with this entity.
-     * @param _serial The serial of the handle of the kernel entity that is
-     *                associated with this entity.
-     * @param _pointer The address of the user layer entity that is associated
-     *                 with this entity.
-     * @param _name The name of the kernel entity that is associated with this
-     *              entity.
+     * @param _index
+     *            The index of the handle of the kernel entity that is
+     *            associated with this entity.
+     * @param _serial
+     *            The serial of the handle of the kernel entity that is
+     *            associated with this entity.
+     * @param _pointer
+     *            The address of the user layer entity that is associated with
+     *            this entity.
+     * @param _name
+     *            The name of the kernel entity that is associated with this
+     *            entity.
      */
     public SubscriberImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name) {
         super(communicator, _index, _serial, _pointer, _name);
     }
-    
+
     /**
      * Creates a new Subscriber from the supplied arguments. The Subscriber
      * is owned by the caller of this constructor.
@@ -72,28 +84,8 @@ public class SubscriberImpl extends EntityImpl implements Subscriber{
         this.enabled = s.enabled;
         s.freed = true;
     }
-    
-    /**
-     * Makes the Subscriber subscribe to data that is published in the 
-     * Partitions that match the supplied expression. Remember that the 
-     * Partitions must have been created within the Participant of this 
-     * Subscriber prior to calling this function.
-     * 
-     * @param expression The partition expression to apply.
-     * @throws CMException Thrown when Subscriber has already been freed or
-     *                     when publish failed.
-     */
-    public void subscribe(String expression) throws CMException{
-        if(this.isFreed()){
-            throw new CMException("Subscriber already freed.");
-        }
-        try {
-            getCommunicator().subscriberSubscribe(this, expression);
-        } catch (CommunicationException e) {
-            throw new CMException("subscribe failed for: " + expression);
-        }
-    }
-    
+
+    @Override
     public void setQoS(QoS qos) throws CMException{
         if(freed){
             throw new CMException("Supplied entity is not available (anymore).");
@@ -108,7 +100,52 @@ public class SubscriberImpl extends EntityImpl implements Subscriber{
         }
     }
 
+    @Override
     public DataReader createDataReader(String _name, String view, ReaderQoS qos) throws CMException {
         return new DataReaderImpl(this, _name, view, qos);
+    }
+
+    @Override
+    public void beginAccess() throws CMException {
+        if (freed) {
+            throw new CMException(
+                    "Supplied subscriber is not available (anymore).");
+        }
+        try {
+            getCommunicator().beginAccess(this);
+        } catch (CommunicationException ce) {
+            throw new CMException(ce.getMessage());
+        }
+    }
+
+    @Override
+    public void endAccess() throws CMException {
+        if (freed) {
+            throw new CMException(
+                    "Supplied subscriber is not available (anymore).");
+        }
+        try {
+            getCommunicator().endAccess(this);
+        } catch (CommunicationException ce) {
+            throw new CMException(ce.getMessage());
+        }
+    }
+
+    @Override
+    public DataReader[] getDataReaders() throws CMException {
+        return this.getDataReaders(Mask.ANY);
+    }
+
+    @Override
+    public DataReader[] getDataReaders(Mask mask) throws CMException {
+        if (freed) {
+            throw new CMException(
+                    "Supplied subscriber is not available (anymore).");
+        }
+        try {
+            return getCommunicator().subscriberGetDataReaders(this, mask);
+        } catch (CommunicationException ce) {
+            throw new CMException(ce.getMessage());
+        }
     }
 }

@@ -58,6 +58,7 @@ public:
     /**
      * Creates a null QueryCondition.
      */
+    QueryCondition();
     QueryCondition(const dds::core::null_type&);
 
     /**

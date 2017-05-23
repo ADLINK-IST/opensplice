@@ -34,6 +34,16 @@ typedef dds::topic::detail::PublicationBuiltinTopicData PublicationBuiltinTopicD
 
 typedef dds::topic::detail::SubscriptionBuiltinTopicData SubscriptionBuiltinTopicData;
 
+typedef dds::topic::detail::CMParticipantBuiltinTopicData CMParticipantBuiltinTopicData;
+
+typedef dds::topic::detail::CMPublisherBuiltinTopicData CMPublisherBuiltinTopicData;
+
+typedef dds::topic::detail::CMSubscriberBuiltinTopicData CMSubscriberBuiltinTopicData;
+
+typedef dds::topic::detail::CMDataWriterBuiltinTopicData CMDataWriterBuiltinTopicData;
+
+typedef dds::topic::detail::CMDataReaderBuiltinTopicData CMDataReaderBuiltinTopicData;
+
 }
 }
 

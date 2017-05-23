@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file services/serialization/code/sd_deepwalkMeta.c
@@ -85,7 +93,7 @@
    void userCallbackPost(const c_char *name, c_type type,
                          c_object *object, void *arg);
 
-   sd_deepwalkMeta(&object, 
+   sd_deepwalkMeta(&object,
                    userCallbackPre,
                    userCallbackPost,
                    (void *)&someVariable);\endverbatim
@@ -177,18 +185,13 @@
 #define SD_ERRNO(errorType)   SD_ERRNO_##errorType
 #define SD_MESSAGE(errorType) SD_MESSAGE_##errorType
 
-#define SD_RETURN_ON_ERROR(context)                                            \
-    if (context->doValidation && context->errorInfo) {                         \
-        return;                                                                \
-    }
+#define SD_RETURN_ON_ERROR(context) \
+    do { if ((context)->errorInfo) { \
+        return FALSE; \
+    } } while (0)
 
-#define SD_SET_ERROR(context, errorType, name, location)                       \
-    if (context->doValidation) {                                               \
-        context->errorInfo = sd_errorInfoNew(SD_ERRNO(errorType), name,        \
-                                             SD_MESSAGE(errorType), location); \
-    } else {                                                                   \
-        SD_CONFIDENCE(context->doValidation);                                  \
-    }
+#define SD_SET_ERROR(context, errorType, name, location) \
+    do { (context)->errorInfo = sd_errorInfoNew(SD_ERRNO(errorType), name, SD_MESSAGE(errorType), location); } while (0)
 
 /* ----------------------------- errorInfo ---------------------------------- */
 
@@ -205,11 +208,11 @@ sd_errorInfoGetName(
     sd_errorInfo errorInfo)
 {
     c_char *result = NULL;
-    
+
     if (errorInfo) {
        result = errorInfo->name;
     }
-    
+
     return result;
 }
 
@@ -226,8 +229,8 @@ sd_errorInfoSetName(
              errorInfo->name = NULL;
         }
     }
-}    
-                           
+}
+
 
 sd_errorInfo
 sd_errorInfoNew(
@@ -237,9 +240,9 @@ sd_errorInfoNew(
     c_char *location)
 {
     sd_errorInfo result;
-    
-    result = (sd_errorInfo)os_malloc((os_uint32)sizeof(*result));
-    
+
+    result = os_malloc(sizeof(*result));
+
     if (result) {
         result->errorNumber = errorNumber;
         sd_errorInfoSetName(result, name);
@@ -249,14 +252,13 @@ sd_errorInfoNew(
              result->message = NULL;
         }
         if (location) {
-            while ((*location == ' ') ||
-                   (*location == '\t') || (*location == '\n')) {
+            while ((*location == ' ') || (*location == '\t') || (*location == '\n')) {
                 location = &(location[1]);
             }
         }
         result->location = location;
     }
-    
+
     return result;
 }
 
@@ -274,7 +276,7 @@ sd_errorInfoFree(
         os_free(errorInfo);
     }
 }
-    
+
 c_bool
 sd_errorInfoGet(
     sd_errorInfo errorInfo,
@@ -283,136 +285,110 @@ sd_errorInfoGet(
     c_char **message,
     c_char **location)
 {
-    c_bool result = FALSE;
-    
-    if (errorInfo) {
-        result = TRUE;
+    if (errorInfo == NULL) {
+        return FALSE;
+    } else {
         *errorNumber = errorInfo->errorNumber;
         *name = errorInfo->name;
         *message = sd_stringDup(errorInfo->message);
         *location = errorInfo->location;
+        return TRUE;
     }
-    
-    return result;
 }
 
 
 
 /* ----------------------- deepwalkMetaContext ------------------------------ */
 
-C_STRUCT(sd_deepwalkMetaContext) {
-    /* The deepwalk itself */
-    sd_deepwalkMetaFunc actionPre;
-    sd_deepwalkMetaFunc actionPost;
-    sd_deepwalkMetaHook beforeAction;
-    void *actionArg;
-    void *userData; /* Can be used in the hook */
-    /* Validation */
-    c_bool doValidation;
-    sd_errorInfo errorInfo; /* To be set in case of error */
-};
-
 /* Private */
+
+static c_bool sd_deepwalkMetaContextPre(sd_deepwalkMetaContext context, const char *name, c_type type, c_object *object) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+static c_bool sd_deepwalkMetaContextHook(c_bool *doRecurse, sd_deepwalkMetaContext context, const char *name, c_baseObject propOrMem, c_object *object) __nonnull_all__ __attribute_warn_unused_result__;
+static c_bool sd_deepwalkMetaContextPost(sd_deepwalkMetaContext context, const char *name, c_type type, c_object *object) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
 
 static c_bool
 sd_deepwalkMetaContextHook(
+    c_bool *doRecurse,
     sd_deepwalkMetaContext context,
     const char *name,
     c_baseObject propOrMem,
     c_object *object)
 {
-    c_bool result = TRUE;
-    
-    if (context) {
-        if (context->beforeAction != NULL) {
-                result = context->beforeAction(name, propOrMem, object,
-                    context->actionArg, context->userData);
-        }
-    }
-    
-    return result;
+    return context->beforeAction(doRecurse, name, propOrMem, object, context->actionArg, &context->errorInfo, context->userData);
 }
 
 
-static void
+static c_bool
 sd_deepwalkMetaContextPre(
     sd_deepwalkMetaContext context,
     const char *name,
     c_type type,
     c_object *object)
 {
-    if (context) {
-        if (context->actionPre != NULL) {
-            if (context->doValidation) {
-                context->actionPre(name, type, object, context->actionArg,
-                                   &context->errorInfo, context->userData);
-            } else {
-                context->actionPre(name, type, object, context->actionArg,
-                                   NULL, context->userData);
-            }
-        }
-    }
+    return context->actionPre(name, type, object, context->actionArg, &context->errorInfo, context->userData);
 }
 
 
-static void
+static c_bool
 sd_deepwalkMetaContextPost(
     sd_deepwalkMetaContext context,
     const char *name,
     c_type type,
     c_object *object)
 {
-    if (context) {
-        if (context->actionPost != NULL) {
-            if (context->doValidation) {
-                context->actionPost(name, type, object, context->actionArg,
-                                    &context->errorInfo, context->userData);
-            } else {
-                context->actionPost(name, type, object, context->actionArg,
-                                    NULL, context->userData);
-            }
-        }
-    }
+    return context->actionPost(name, type, object, context->actionArg, &context->errorInfo, context->userData);
 }
 
 /* Public */
 
-sd_deepwalkMetaContext
-sd_deepwalkMetaContextNew(
+static c_bool sd_deepwalkMetaFuncDummy (const c_char *name, c_type type, c_object *object, void *arg, sd_errorInfo *errorInfo, void *userData)
+{
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(type);
+    OS_UNUSED_ARG(object);
+    OS_UNUSED_ARG(arg);
+    OS_UNUSED_ARG(errorInfo);
+    OS_UNUSED_ARG(userData);
+    return TRUE;
+}
+
+static c_bool sd_deepwalkMetaHookDummy (c_bool *doRecurse, const char *name, c_baseObject propOrMem, c_object *object, void *arg, sd_errorInfo *errorInfo, void *userData)
+{
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(propOrMem);
+    OS_UNUSED_ARG(object);
+    OS_UNUSED_ARG(arg);
+    OS_UNUSED_ARG(errorInfo);
+    OS_UNUSED_ARG(userData);
+    *doRecurse = TRUE;
+    return TRUE;
+}
+
+void
+sd_deepwalkMetaContextInit(
+    sd_deepwalkMetaContext context,
     const sd_deepwalkMetaFunc actionPre,
     const sd_deepwalkMetaFunc actionPost,
     const sd_deepwalkMetaHook beforeAction,
     void *actionArg,
-    c_bool doValidation,
     void *userData)
 {
-    sd_deepwalkMetaContext result = NULL;
-    
-    result = (sd_deepwalkMetaContext)os_malloc((os_uint32)sizeof(*result));
-    
-    if (result) {
-        result->actionPre = actionPre;
-        result->actionPost = actionPost;
-        result->beforeAction = beforeAction;
-        result->actionArg = actionArg;
-        result->doValidation = doValidation;
-        result->userData = userData;
-        result->errorInfo = NULL;
-    }
-    
-    return result;
+    context->actionPre = actionPre ? actionPre : sd_deepwalkMetaFuncDummy;
+    context->actionPost = actionPost ? actionPost : sd_deepwalkMetaFuncDummy;
+    context->beforeAction = beforeAction ? beforeAction : sd_deepwalkMetaHookDummy;
+    context->actionArg = actionArg;
+    context->userData = userData;
+    context->errorInfo = NULL;
 }
 
 
 void
-sd_deepwalkMetaContextFree(
+sd_deepwalkMetaContextDeinit(
     sd_deepwalkMetaContext context)
 {
-    if (context) {
-        sd_errorInfoFree(context->errorInfo);
-        os_free(context);
-    }
-}    
+    sd_errorInfoFree(context->errorInfo);
+}
 
 c_bool
 sd_deepwalkMetaContextGetErrorInfo(
@@ -422,20 +398,12 @@ sd_deepwalkMetaContextGetErrorInfo(
     c_char **message,
     c_char **location)
 {
-    c_bool result = FALSE;
-    
-    if (context) {
-        result = sd_errorInfoGet(context->errorInfo,
-            errorNumber, name, message, location);
-    }
-    
-    return result;
+    return sd_errorInfoGet(context->errorInfo, errorNumber, name, message, location);
 }
 
 /* --------------------------- deepwalkMeta ------------------------ */
 
-static void sd_deepwalkMetaType(c_type type, const c_char *name,
-                c_object *objectPtr, sd_deepwalkMetaContext context);
+static c_bool sd_deepwalkMetaType(c_type type, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
 
 
 /** \brief Routine for handling primitive types.
@@ -452,21 +420,19 @@ static void sd_deepwalkMetaType(c_type type, const c_char *name,
  *                   action arguments and validation context
  */
 
-static void
+static c_bool sd_deepwalkMetaPrimitive(c_primitive primitive, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_deepwalkMetaPrimitive(
     c_primitive primitive,
     const c_char *name,
     c_object *objectPtr,
     sd_deepwalkMetaContext context)
 {
-    sd_deepwalkMetaContextPre(context, name, c_type(primitive), objectPtr);
-    SD_RETURN_ON_ERROR(context);
-
-    /* No special actions for this type */
-
-    sd_deepwalkMetaContextPost(context, name, c_type(primitive), objectPtr);
-    SD_RETURN_ON_ERROR(context);
-/* QAC EXPECT 2006; More than one return path is justified here */
+    if (!sd_deepwalkMetaContextPre(context, name, c_type(primitive), objectPtr)) {
+        return FALSE;
+    }
+    return sd_deepwalkMetaContextPost(context, name, c_type(primitive), objectPtr);
 }
 
 
@@ -484,24 +450,20 @@ sd_deepwalkMetaPrimitive(
  *                   action arguments and validation context
  */
 
-static void
+static c_bool sd_deepwalkMetaEnumeration(c_enumeration enumeration, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_deepwalkMetaEnumeration(
     c_enumeration enumeration,
     const c_char *name,
     c_object *objectPtr,
     sd_deepwalkMetaContext context)
 {
-    sd_deepwalkMetaContextPre(context, name, c_type(enumeration), objectPtr);
-    SD_RETURN_ON_ERROR(context);
-
-    /* No special actions for this type */
-
-    sd_deepwalkMetaContextPost(context, name, c_type(enumeration), objectPtr);
-    SD_RETURN_ON_ERROR(context);
-/* QAC EXPECT 2006; More than one return path is justified here */
+    if (!sd_deepwalkMetaContextPre(context, name, c_type(enumeration), objectPtr)) {
+        return FALSE;
+    }
+    return sd_deepwalkMetaContextPost(context, name, c_type(enumeration), objectPtr);
 }
-
-
 
 
 /** \brief Routine for handling union types
@@ -524,7 +486,9 @@ sd_deepwalkMetaEnumeration(
  *                   action arguments and validation context
  */
 
-static void
+static c_bool sd_deepwalkMetaUnion(c_union v_union, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_deepwalkMetaUnion(
     c_union v_union,
     const c_char *name,
@@ -535,37 +499,35 @@ sd_deepwalkMetaUnion(
     c_type caseType;
     c_char *caseName;
     c_object unionData;
-    c_long dataOffset;
+    os_size_t dataOffset;
 
-    sd_deepwalkMetaContextPre(context, name, c_type(v_union), objectPtr);
-    SD_RETURN_ON_ERROR(context);
+    if (!sd_deepwalkMetaContextPre(context, name, c_type(v_union), objectPtr)) {
+        return FALSE;
+    }
 
     /* action for the switch */
-    sd_deepwalkMetaType(v_union->switchType, "switch", objectPtr, context);
-    SD_RETURN_ON_ERROR(context);
-    
+    if (!sd_deepwalkMetaType(v_union->switchType, "switch", objectPtr, context)) {
+        return FALSE;
+    }
+
     /* Determine which case is valid and do action for this case */
     activeCase = sd_unionDetermineActiveCase(v_union, *objectPtr);
     /* Make sure that a case is found */
     if (activeCase) {
         caseType = c_specifier(activeCase)->type;
-        caseName = (c_char *)c_specifier(activeCase)->name;
+        caseName = c_specifier(activeCase)->name;
         if (c_type(v_union)->alignment >= v_union->switchType->size) {
             dataOffset = c_type(v_union)->alignment;
         } else {
             dataOffset = v_union->switchType->size;
         }
         unionData = C_DISPLACE(*objectPtr, C_ADDRESS(dataOffset));
-        sd_deepwalkMetaType(caseType, caseName, &unionData, context);
-        SD_RETURN_ON_ERROR(context);
-        
-        sd_deepwalkMetaContextPost(context, name, c_type(v_union), objectPtr);
-        SD_RETURN_ON_ERROR(context);
-    } else {
-        /* Not an active case. No data to walk in */
-        sd_deepwalkMetaContextPost(context, name, c_type(v_union), objectPtr);
-    }        
-/* QAC EXPECT 2006; More than one return path is justified here */
+        if (!sd_deepwalkMetaType(caseType, caseName, &unionData, context)) {
+            return FALSE;
+        }
+    }
+
+    return sd_deepwalkMetaContextPost(context, name, c_type(v_union), objectPtr);
 }
 
 
@@ -582,39 +544,43 @@ sd_deepwalkMetaUnion(
  *                   action arguments and validation context
  */
 
-static void
+static c_bool sd_deepwalkMetaStructure(c_structure structure, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_deepwalkMetaStructure(
     c_structure structure,
     const c_char *name,
     c_object *objectPtr,
     sd_deepwalkMetaContext context)
 {
-    int i, size;
+    c_ulong i, size;
     c_member member;
     c_type memberType;
     c_char *memberName;
     c_object memberData;
 
-    sd_deepwalkMetaContextPre(context, name, c_type(structure), objectPtr);
-    SD_RETURN_ON_ERROR(context);
+    if (!sd_deepwalkMetaContextPre(context, name, c_type(structure), objectPtr)) {
+        return FALSE;
+    }
 
     /* action for members */
     size = c_arraySize(structure->members);
     for (i=0; i<size; i++) {
+        c_bool doRecurse;
         member = structure->members[i];
-        memberName = (c_char *)c_specifier(member)->name;
+        memberName = c_specifier(member)->name;
         memberData = C_DISPLACE(*objectPtr, C_ADDRESS(member->offset));
-        if (sd_deepwalkMetaContextHook(context, memberName,
-            c_baseObject(member), &memberData)) {
+        if (!sd_deepwalkMetaContextHook(&doRecurse, context, memberName, c_baseObject(member), &memberData)) {
+            return FALSE;
+        } else if (doRecurse) {
             memberType = c_typeActualType(c_specifier(member)->type);
-            sd_deepwalkMetaType(memberType, memberName, &memberData, context);
-            SD_RETURN_ON_ERROR(context);
+            if (!sd_deepwalkMetaType(memberType, memberName, &memberData, context)) {
+                return FALSE;
+            }
         }
     }
 
-    sd_deepwalkMetaContextPost(context, name, c_type(structure), objectPtr);
-    SD_RETURN_ON_ERROR(context);
-/* QAC EXPECT 2006; More than one return path is justified here */
+    return sd_deepwalkMetaContextPost(context, name, c_type(structure), objectPtr);
 }
 
 /** \brief Helper structure for deepwalkInterface */
@@ -629,48 +595,49 @@ typedef struct sd_interfaceMetaContext{
  *         This function handles one attribute of an interface.
  */
 
+static c_bool sd_deepwalkMetaInterfaceCallback(c_metaObject object, c_metaWalkActionArg actionArg) __nonnull((1, 2)) __attribute_warn_unused_result__;
+
 static c_bool
 sd_deepwalkMetaInterfaceCallback(
     c_metaObject object,
     c_metaWalkActionArg actionArg)
 {
-    sd_interfaceMetaContext ifContext = (sd_interfaceMetaContext)actionArg;
+    sd_interfaceMetaContext ifContext = actionArg;
     c_property property;
     c_type propertyType;
     c_char *propertyName;
     c_object propertyData;
-    c_bool result = TRUE;
 
     /* Get out of here in case of error */
-    if (ifContext->context->doValidation &&
-        (c_bool)(ifContext->context->errorInfo != NULL)) {
+    if (ifContext->context->errorInfo != NULL) {
         return FALSE;
     }
-    
+
     /* For now, we are interested in properties only */
     if (c_baseObject(object)->kind == M_ATTRIBUTE) {
+        c_bool doRecurse;
         property = c_property(object);
         propertyData = C_DISPLACE(*ifContext->objectPtr, C_ADDRESS(property->offset));
-        propertyName = (c_char *)c_metaObject(property)->name;
-        if (sd_deepwalkMetaContextHook(ifContext->context, propertyName,
-            c_baseObject(property), &propertyData)) {
+        propertyName = c_metaObject(property)->name;
+        if (!sd_deepwalkMetaContextHook(&doRecurse, ifContext->context, propertyName, c_baseObject(property), &propertyData)) {
+            return FALSE;
+        } else if (doRecurse) {
             propertyType = property->type;
-            sd_deepwalkMetaType(propertyType, propertyName, &propertyData,
-                                ifContext->context);
+            if (!sd_deepwalkMetaType(propertyType, propertyName, &propertyData, ifContext->context)) {
+                return FALSE;
+            }
         }
     }
 
-    if (ifContext->context->doValidation) {
-        result = (c_bool)(ifContext->context->errorInfo == NULL);
-    }
-    
-    return result;
+    return (c_bool)(ifContext->context->errorInfo == NULL);
 }
 
 /** \brief Routine called by sd_deepwalkMetaInterface to do the
  *         actual walking over attributes
  */
-static void
+static c_bool sd_deepwalkMetaDoInterface(c_interface interf, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_deepwalkMetaDoInterface(
     c_interface interf,
     const c_char *name,
@@ -688,12 +655,12 @@ sd_deepwalkMetaDoInterface(
         ifContext.name = name;
         ifContext.objectPtr = inst;
         ifContext.context = context;
-        c_metaWalk(c_metaObject(interf), 
-                   (c_metaWalkAction)sd_deepwalkMetaInterfaceCallback,
-                   &ifContext);
-        SD_RETURN_ON_ERROR(context);
+        if (!c_metaWalkBool(c_metaObject(interf), sd_deepwalkMetaInterfaceCallback, &ifContext)) {
+            return FALSE;
+        }
     }
-/* QAC EXPECT 2006; More than one return path is justified here */
+
+    return TRUE;
 }
 
 #ifndef NDEBUG
@@ -711,22 +678,22 @@ sd_deepwalkMetaDoInterface(
  *                   action arguments and validation context.
  */
 
-static void
+static c_bool sd_deepwalkMetaInterface(c_interface interf, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_deepwalkMetaInterface(
     c_interface interf,
     const c_char *name,
     c_object *objectPtr,
     sd_deepwalkMetaContext context)
 {
-    sd_deepwalkMetaContextPre(context, name, c_type(interf), objectPtr);
-    SD_RETURN_ON_ERROR(context);
-
-    sd_deepwalkMetaDoInterface(interf, name, objectPtr, context);
-    SD_RETURN_ON_ERROR(context);
-
-    sd_deepwalkMetaContextPost(context, name, c_type(interf), objectPtr);
-    SD_RETURN_ON_ERROR(context);
-/* QAC EXPECT 2006; More than one return path is justified here */
+    if (!sd_deepwalkMetaContextPre(context, name, c_type(interf), objectPtr)) {
+        return FALSE;
+    }
+    if (!sd_deepwalkMetaDoInterface(interf, name, objectPtr, context)) {
+        return FALSE;
+    }
+    return sd_deepwalkMetaContextPost(context, name, c_type(interf), objectPtr);
 }
 #endif
 
@@ -735,7 +702,9 @@ sd_deepwalkMetaInterface(
  *         walking over parent classes and to call the routine to
  *         walk over attributes
  */
-static void
+static c_bool sd_deepwalkMetaDoClass(c_class class, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_deepwalkMetaDoClass(
     c_class class,
     const c_char *name,
@@ -743,14 +712,11 @@ sd_deepwalkMetaDoClass(
     sd_deepwalkMetaContext context)
 {
     if (class->extends) {
-/* QAC EXPECT 3670; Recursive call is OK */
-        sd_deepwalkMetaDoClass(class->extends, name, objectPtr, context);
-        SD_RETURN_ON_ERROR(context);
+        if (!sd_deepwalkMetaDoClass(class->extends, name, objectPtr, context)) {
+            return FALSE;
+        }
     }
-
-    sd_deepwalkMetaDoInterface(c_interface(class), name, objectPtr, context);
-    SD_RETURN_ON_ERROR(context);
-/* QAC EXPECT 2006; More than one return path is justified here */
+    return sd_deepwalkMetaDoInterface(c_interface(class), name, objectPtr, context);
 }
 
 /** \brief Routine for handling class types.
@@ -769,8 +735,10 @@ sd_deepwalkMetaDoClass(
  *                   action functions.
  */
 
+static c_bool sd_deepwalkMetaClass(c_class class, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
 #define SD_CONSTANT_NAME "c_constant"
-static void
+static c_bool
 sd_deepwalkMetaClass(
     c_class class,
     const c_char *name,
@@ -779,7 +747,7 @@ sd_deepwalkMetaClass(
 {
     c_class actualClass;
     int isConst = FALSE;
-    
+
     if ((*objectPtr) && *((c_class *)(*objectPtr))) {
         /* For deepwalkMeta, we are interested in the actual class. We might
          * have a baseclass here so downcast to the real class */
@@ -788,14 +756,14 @@ sd_deepwalkMetaClass(
         actualClass = class;
     }
     /* Workaround for const values */
-    isConst = (c_metaObject(actualClass)->name && 
-               (strncmp(c_metaObject(actualClass)->name, SD_CONSTANT_NAME,
-                        (unsigned int)sizeof(SD_CONSTANT_NAME)) == 0));
-    
+    isConst = (c_metaObject(actualClass)->name &&
+               (strncmp(c_metaObject(actualClass)->name, SD_CONSTANT_NAME, sizeof(SD_CONSTANT_NAME)) == 0));
+
     if (!isConst) {
 
-        sd_deepwalkMetaContextPre(context, name, c_type(class), objectPtr);
-        SD_RETURN_ON_ERROR(context);
+        if (!sd_deepwalkMetaContextPre(context, name, c_type(class), objectPtr)) {
+            return FALSE;
+        }
 
         /* Again re-evaluate the actual class because the Pre-function might
          * have changed its value. This is the case for virtual classes */
@@ -806,13 +774,14 @@ sd_deepwalkMetaClass(
         } else {
             actualClass = class;
         }
-    
-        sd_deepwalkMetaDoClass(actualClass, name, objectPtr, context);
 
-        SD_RETURN_ON_ERROR(context);
-        
-        sd_deepwalkMetaContextPost(context, name, c_type(class), objectPtr);
-        SD_RETURN_ON_ERROR(context);
+        if (!sd_deepwalkMetaDoClass(actualClass, name, objectPtr, context)) {
+            return FALSE;
+        }
+
+        if (!sd_deepwalkMetaContextPost(context, name, c_type(class), objectPtr)) {
+            return FALSE;
+        }
     } else {
         /* Workaround for const values */
         c_constant constant;
@@ -820,25 +789,31 @@ sd_deepwalkMetaClass(
         c_string *namePtr;
         c_string** placeHolder;
         c_type stringType;
-         
+
+        assert(*objectPtr);
         constant = *((c_constant *)(*objectPtr));
-        if (constant) {         
+        if (constant) {
             constName = c_metaObject(constant)->name;
             stringType = c_getType(constName);
             SD_CONFIDENCE(stringType);
             SD_CONFIDENCE(c_baseObject(stringType)->kind == M_COLLECTION);
-            SD_CONFIDENCE(c_collectionType(stringType)->kind == C_STRING);
+            SD_CONFIDENCE(c_collectionType(stringType)->kind == OSPL_C_STRING);
             namePtr = &constName;
             placeHolder = &namePtr;
-            sd_deepwalkMetaType(stringType, name, (c_object *)placeHolder, context);
-            SD_RETURN_ON_ERROR(context);
+            if (!sd_deepwalkMetaType(stringType, name, (c_object *)placeHolder, context)) {
+                return FALSE;
+            }
         } else {
-            sd_deepwalkMetaContextPre(context, name, c_type(actualClass), objectPtr);
-            sd_deepwalkMetaContextPost(context, name, c_type(actualClass), objectPtr);
+            if (!sd_deepwalkMetaContextPre(context, name, c_type(actualClass), objectPtr)) {
+                return FALSE;
+            }
+            if (!sd_deepwalkMetaContextPost(context, name, c_type(actualClass), objectPtr)) {
+                return FALSE;
+            }
         }
     }
-    
-/* QAC EXPECT 2006; More than one return path is justified here */
+
+    return TRUE;
 }
 #undef SD_CONSTANT_NAME
 
@@ -857,45 +832,46 @@ sd_deepwalkMetaClass(
  *  \param context   Context object containing information on action routines,
  *                   action arguments and validation context
  */
+static c_bool sd_deepwalkMetaArrayElements(c_collectionType array, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
 
-static void
+static c_bool
 sd_deepwalkMetaArrayElements(
     c_collectionType array,
     const c_char *name,
     c_object *objectPtr,
     sd_deepwalkMetaContext context)
 {
-    int i;
-    c_long arrayLength;
+    c_ulong i, arrayLength;
     c_object baseObject;
     c_object currentObject;
 
     /* Walk over all entries */
     switch (c_collectionType(array)->kind) {
-    case C_ARRAY:
-        if (array->maxSize == 0) {
+        case OSPL_C_ARRAY:
+            if (array->maxSize == 0) {
+                arrayLength = c_arraySize(*((c_array *)(*objectPtr)));
+                baseObject = *((c_object *)(*objectPtr));
+            } else {
+                arrayLength = array->maxSize;
+                baseObject = *objectPtr;
+            }
+            break;
+        case OSPL_C_SEQUENCE:
             arrayLength = c_arraySize(*((c_array *)(*objectPtr)));
             baseObject = *((c_object *)(*objectPtr));
-        } else {
-            arrayLength = array->maxSize;
-            baseObject = *objectPtr;
-        }
-    break;
-    case C_SEQUENCE:
-        arrayLength = c_arraySize(*((c_array *)(*objectPtr)));
-        baseObject = *((c_object *)(*objectPtr));
-    break;
-    default:
-        SD_CONFIDENCE(FALSE);
-        arrayLength = 0;
-        baseObject = NULL;
-    break;
+            break;
+        default:
+            SD_CONFIDENCE(FALSE);
+            arrayLength = 0;
+            baseObject = NULL;
+            break;
     }
 
     currentObject = baseObject;
     for (i=0; i<arrayLength; i++) {
-        sd_deepwalkMetaType(array->subType, name, &currentObject, context);
-        SD_RETURN_ON_ERROR(context);
+        if (!sd_deepwalkMetaType(array->subType, name, &currentObject, context)) {
+            return FALSE;
+        }
 
         if (c_typeIsRef(array->subType)) {
             currentObject = C_DISPLACE(currentObject,C_ADDRESS(sizeof(c_voidp)));
@@ -903,7 +879,8 @@ sd_deepwalkMetaArrayElements(
             currentObject = C_DISPLACE(currentObject,C_ADDRESS(array->subType->size));
         }
     }
-/* QAC EXPECT 2006; More than one return path is justified here */
+
+    return TRUE;
 }
 
 
@@ -919,37 +896,33 @@ typedef struct sd_collectionMetaContext{
  *         This function handles one element of a complex collection
  *         (e.g. \b SET).
  */
+static c_bool sd_deepwalkMetaCollectionCallback(c_object object, c_voidp actionArg) __nonnull((1)) __attribute_warn_unused_result__;
+
 static c_bool
 sd_deepwalkMetaCollectionCallback(
     c_object object,
     c_voidp actionArg)
 {
-    sd_collectionMetaContext cContext = (sd_collectionMetaContext)actionArg;
+    sd_collectionMetaContext cContext = actionArg;
     c_object placeHolder;
-    c_bool result = TRUE;
 
-    if (!(int)c_typeIsRef(cContext->type)) {
+    if (!c_typeIsRef(cContext->type)) {
         placeHolder = object;
     } else {
         placeHolder = (c_object)&object;
     }
 
-    sd_deepwalkMetaType(cContext->type, cContext->name,
-                        &placeHolder, cContext->context);
-
-    if (cContext->context->doValidation) {
-        result = (c_bool)(cContext->context->errorInfo == NULL);
-    }
-    
-    return result;
+    return sd_deepwalkMetaType(cContext->type, cContext->name, &placeHolder, cContext->context);
 }
 
-static void
+static c_bool sd_deepwalkMetaCollectionScopeWalkAction(c_metaObject o, c_scopeWalkActionArg arg) __nonnull((1)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_deepwalkMetaCollectionScopeWalkAction(
     c_metaObject o,
     c_scopeWalkActionArg arg)
 {
-    (void) sd_deepwalkMetaCollectionCallback(c_object(o), arg);
+    return sd_deepwalkMetaCollectionCallback(c_object(o), arg);
 }
 
 
@@ -971,7 +944,9 @@ sd_deepwalkMetaCollectionScopeWalkAction(
  *                   action arguments and validation context.
  */
 
-static void
+static c_bool sd_deepwalkMetaArrayElements(c_collectionType array, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_deepwalkMetaCollectionElements(
     c_collectionType collectionType,
     const c_char *name,
@@ -981,11 +956,11 @@ sd_deepwalkMetaCollectionElements(
     struct sd_collectionMetaContext cContext;
     c_collection collectionInst;
 
-    SD_CONFIDENCE((collectionType->kind == C_LIST) ||
-           (collectionType->kind == C_BAG)  ||
-           (collectionType->kind == C_SET)  ||
-           (collectionType->kind == C_DICTIONARY) ||
-           (collectionType->kind == C_QUERY));
+    SD_CONFIDENCE((collectionType->kind == OSPL_C_LIST) ||
+                  (collectionType->kind == OSPL_C_BAG)  ||
+                  (collectionType->kind == OSPL_C_SET)  ||
+                  (collectionType->kind == OSPL_C_DICTIONARY) ||
+                  (collectionType->kind == OSPL_C_QUERY));
 
     collectionInst = *((c_collection *)(*objectPtr));
     if (collectionInst) {
@@ -993,10 +968,10 @@ sd_deepwalkMetaCollectionElements(
         cContext.name = name;
         cContext.type = collectionType->subType;
         cContext.context = context;
-        c_walk(collectionInst, (c_action)sd_deepwalkMetaCollectionCallback, &cContext);
-        SD_RETURN_ON_ERROR(context);
+        return c_walk(collectionInst, sd_deepwalkMetaCollectionCallback, &cContext);
+    } else {
+        return TRUE;
     }
-/* QAC EXPECT 2006; More than one return path is justified here */
 }
 
 
@@ -1018,7 +993,9 @@ sd_deepwalkMetaCollectionElements(
  *                   action arguments and validation context.
  */
 
-static void
+static c_bool sd_deepwalkMetaArrayElements(c_collectionType array, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_deepwalkMetaScopeElements(
     c_collectionType collectionType,
     const c_char *name,
@@ -1028,7 +1005,7 @@ sd_deepwalkMetaScopeElements(
     struct sd_collectionMetaContext cContext;
     c_scope scopeInst;
 
-    SD_CONFIDENCE(collectionType->kind == C_SCOPE);
+    SD_CONFIDENCE(collectionType->kind == OSPL_C_SCOPE);
 
     scopeInst = *((c_scope *)(*objectPtr));
     if (scopeInst) {
@@ -1036,12 +1013,10 @@ sd_deepwalkMetaScopeElements(
         cContext.name = name;
         cContext.type = collectionType->subType;
         cContext.context = context;
-        c_scopeWalk(scopeInst,
-                    sd_deepwalkMetaCollectionScopeWalkAction,
-                    &cContext);
-        SD_RETURN_ON_ERROR(context);
+        return c_scopeWalkBool(scopeInst, sd_deepwalkMetaCollectionScopeWalkAction, &cContext);
+    } else {
+        return TRUE;
     }
-/* QAC EXPECT 2006; More than one return path is justified here */
 }
 
 
@@ -1061,49 +1036,53 @@ sd_deepwalkMetaScopeElements(
  *                   action arguments and validation context.
  */
 
-static void
+static c_bool sd_deepwalkMetaCollection(c_collectionType collectionType, const c_char *name, c_object *objectPtr, sd_deepwalkMetaContext context) __nonnull((1, 3, 4)) __attribute_warn_unused_result__;
+
+static c_bool
 sd_deepwalkMetaCollection(
     c_collectionType collectionType,
     const c_char *name,
     c_object *objectPtr,
     sd_deepwalkMetaContext context)
 {
-    sd_deepwalkMetaContextPre(context, name, c_type(collectionType), objectPtr);
-    SD_RETURN_ON_ERROR(context);
-
-    /* For complex types, walk over all elements */
-    switch (collectionType->kind) {
-    case C_ARRAY:
-    case C_SEQUENCE:
-        sd_deepwalkMetaArrayElements(collectionType, "element", objectPtr,
-                                     context);
-        SD_RETURN_ON_ERROR(context);
-    break;
-    case C_STRING:
-        ; /* No action here, chars are not treated separately */
-    break;
-    case C_SET:
-    case C_LIST:
-    case C_BAG:
-    case C_DICTIONARY:
-    case C_QUERY:
-        sd_deepwalkMetaCollectionElements(collectionType, "element", objectPtr,
-                                    context);
-        SD_RETURN_ON_ERROR(context);
-    break;
-    case C_SCOPE:
-        sd_deepwalkMetaScopeElements(collectionType, "element", objectPtr,
-                                     context);
-        SD_RETURN_ON_ERROR(context);
-    break;
-    default:
-        SD_CONFIDENCE(FALSE);
-    break;
+    if (!sd_deepwalkMetaContextPre(context, name, c_type(collectionType), objectPtr)) {
+        return FALSE;
     }
 
-    sd_deepwalkMetaContextPost(context, name, c_type(collectionType), objectPtr);
-    SD_RETURN_ON_ERROR(context);
-/* QAC EXPECT 2006; More than one return path is justified here */
+    switch (collectionType->kind) {
+        case OSPL_C_ARRAY:
+        case OSPL_C_SEQUENCE:
+            if (!sd_deepwalkMetaArrayElements(collectionType, "element", objectPtr, context)) {
+                return FALSE;
+            }
+            break;
+        case OSPL_C_STRING:
+            ; /* No action here, chars are not treated separately */
+            break;
+        case OSPL_C_SET:
+        case OSPL_C_LIST:
+        case OSPL_C_BAG:
+        case OSPL_C_DICTIONARY:
+        case OSPL_C_QUERY:
+            if (!sd_deepwalkMetaCollectionElements(collectionType, "element", objectPtr, context)) {
+                return FALSE;
+            }
+            break;
+        case OSPL_C_SCOPE:
+            if (!sd_deepwalkMetaScopeElements(collectionType, "element", objectPtr, context)) {
+                return FALSE;
+            }
+            break;
+        default:
+            SD_CONFIDENCE(FALSE);
+            break;
+    }
+
+    if (!sd_deepwalkMetaContextPost(context, name, c_type(collectionType), objectPtr)) {
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 
@@ -1122,62 +1101,49 @@ sd_deepwalkMetaCollection(
  *                   action arguments and validation context.
  */
 
-static void
+static c_bool
 sd_deepwalkMetaType(
     c_type type,
     const c_char *name,
     c_object *objectPtr,
     sd_deepwalkMetaContext context)
 {
-    c_type actualType;
+    c_type const actualType = c_typeActualType(type);
+    c_bool ok;
 
-    actualType = c_typeActualType(type);
-
-    /* Determine which action to take */
     switch (c_baseObject(actualType)->kind) {
-    case M_COLLECTION:
-        sd_deepwalkMetaCollection(c_collectionType(actualType), name,
-                                  objectPtr, context);
-        SD_RETURN_ON_ERROR(context);
-    break;
-    case M_STRUCTURE:
-    case M_EXCEPTION:
-        sd_deepwalkMetaStructure(c_structure(actualType), name,
-                                 objectPtr, context);
-        SD_RETURN_ON_ERROR(context);
-    break;
-    case M_CLASS:
-        sd_deepwalkMetaClass(c_class(actualType), name,
-                             objectPtr, context);
-        SD_RETURN_ON_ERROR(context);
-    break;
+        case M_COLLECTION:
+            ok = sd_deepwalkMetaCollection(c_collectionType(actualType), name, objectPtr, context);
+            break;
+        case M_STRUCTURE:
+        case M_EXCEPTION:
+            ok = sd_deepwalkMetaStructure(c_structure(actualType), name, objectPtr, context);
+            break;
+        case M_CLASS:
+            ok = sd_deepwalkMetaClass(c_class(actualType), name, objectPtr, context);
+            break;
 #ifndef NDEBUG
-    case M_INTERFACE:
-        sd_deepwalkMetaInterface(c_interface(actualType), name,
-                                 objectPtr, context);
-        SD_RETURN_ON_ERROR(context);
-    break;
+        case M_INTERFACE:
+            ok = sd_deepwalkMetaInterface(c_interface(actualType), name, objectPtr, context);
+            break;
 #endif
-    case M_UNION:
-        sd_deepwalkMetaUnion(c_union(actualType), name,
-                             objectPtr, context);
-        SD_RETURN_ON_ERROR(context);
-    break;
-    case M_PRIMITIVE:
-        sd_deepwalkMetaPrimitive(c_primitive(actualType), name,
-                                 objectPtr, context);
-        SD_RETURN_ON_ERROR(context);
-    break;
-    case M_ENUMERATION:
-        sd_deepwalkMetaEnumeration(c_enumeration(actualType), name,
-                                   objectPtr, context);
-        SD_RETURN_ON_ERROR(context);
-    break;
-    default:
-        SD_CONFIDENCE(FALSE); /* Only descendants of type possible */
-    break;
+        case M_UNION:
+            ok = sd_deepwalkMetaUnion(c_union(actualType), name, objectPtr, context);
+            break;
+        case M_PRIMITIVE:
+            ok = sd_deepwalkMetaPrimitive(c_primitive(actualType), name, objectPtr, context);
+            break;
+        case M_ENUMERATION:
+            ok = sd_deepwalkMetaEnumeration(c_enumeration(actualType), name, objectPtr, context);
+            break;
+        default:
+            SD_CONFIDENCE(FALSE); /* Only descendants of type possible */
+            ok = FALSE;
+            break;
     }
-/* QAC EXPECT 2006, 5101; More than one return path is OK, cyclomatic complexity is no problem */
+    
+    assert (ok || context->errorInfo);
+    return ok;
 }
 
 
@@ -1202,7 +1168,7 @@ sd_deepwalkMetaType(
  *                   execute.
  */
 
-void
+c_bool
 sd_deepwalkMeta(
     c_type type,
     const c_char *name,
@@ -1217,5 +1183,5 @@ sd_deepwalkMeta(
         placeHolder = (c_object**)objectPtr;
     }
 
-    sd_deepwalkMetaType(type, name, (c_object*)placeHolder, context);
+    return sd_deepwalkMetaType(type, name, (c_object*)placeHolder, context);
 }

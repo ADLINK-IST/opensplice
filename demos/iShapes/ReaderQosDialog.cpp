@@ -33,6 +33,8 @@ ReaderQosDialog::get_qos()
 
     qos_ = tmpQos;
 
+    qos_ << dds::core::policy::LatencyBudget(dds::core::Duration::infinite());
+
     if (qosForm_.reliableRButt->isChecked())
         qos_ << dds::core::policy::Reliability::Reliable();
 
@@ -69,7 +71,6 @@ ReaderQosDialog::get_qos()
         dds::core::Duration d;
         qos_ << dds::core::policy::TimeBasedFilter(d.from_millisecs(period));
   }
-
 
     return qos_;
 }

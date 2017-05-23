@@ -1,0 +1,16 @@
+<OpenSplice>
+    <Domain>
+        <Name>cmagent</Name>
+        <Id>0</Id>
+        <SingleProcess>false</SingleProcess>
+        <Service name="cmagent">
+            <Command>cmagent</Command>
+        </Service>
+    </Domain>
+    <Agent name="cmagent">
+        <Tracing>
+            <OutputFile>cmagent.log</OutputFile>
+            <Verbosity>FINEST</Verbosity>
+        </Tracing>
+    </Agent>
+</OpenSplice>

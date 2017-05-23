@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -25,9 +33,9 @@ cmx_snapshotFree(
     c_char* snapshot)
 {
     const c_char* kind;
-    
+
     kind = cmx_snapshotKind(snapshot);
-    
+
     if(strcmp(kind, "READERSNAPSHOT") == 0){
         cmx_readerSnapshotFree(snapshot);
     } else if(strcmp(kind, "WRITERSNAPSHOT") == 0){
@@ -41,10 +49,10 @@ cmx_snapshotRead(
 {
     c_char* result;
     const c_char* kind;
-    
+
     result = NULL;
     kind = cmx_snapshotKind(snapshot);
-    
+
     if(strcmp(kind, "READERSNAPSHOT") == 0){
         result = cmx_readerSnapshotRead(snapshot);
     } else if(strcmp(kind, "WRITERSNAPSHOT") == 0){
@@ -59,10 +67,10 @@ cmx_snapshotTake(
 {
     c_char* result;
     const c_char* kind;
-    
+
     result = NULL;
     kind = cmx_snapshotKind(snapshot);
-    
+
     if(strcmp(kind, "READERSNAPSHOT") == 0){
         result = cmx_readerSnapshotTake(snapshot);
     } else if(strcmp(kind, "WRITERSNAPSHOT") == 0){
@@ -85,17 +93,16 @@ cmx_snapshotKind(
 {
     c_char* copy;
     c_char* temp;
-    cmx_writerSnapshot s;
+    c_char* saveptr;
     const c_char* result;
-    
-    s = NULL;
+
     result = NULL;
-    
+
     if(snapshot != NULL){
         copy = (c_char*)(os_malloc(strlen(snapshot) + 1));
         os_strcpy(copy, snapshot);
-        temp = strtok((c_char*)copy, "</>");    /*<xxxxxxSnapshot>*/
-        
+        temp = os_strtok_r((c_char*)copy, "</>", &saveptr);    /*<xxxxxxSnapshot>*/
+
         if(temp != NULL){
             if(strcmp(temp, "readerSnapshot") == 0){
                 result = "READERSNAPSHOT";

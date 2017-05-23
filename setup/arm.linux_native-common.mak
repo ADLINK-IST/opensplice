@@ -8,10 +8,6 @@ CC		 = gcc
 CXX		 = g++
 CSC		 = gmcs
 
-    # Binary used for filtering
-ifeq ($(INCLUDE_FILTERS),yes)
-FILTER           = filter_gcc
-endif
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
@@ -73,25 +69,16 @@ SHCFLAGS         = -fpic
 # Values of compiler flags can be overruled
 CFLAGS_OPT       = -O3 -fno-strict-aliasing -DNDEBUG
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
-CFLAGS_STRICT	 = -Wall -W -pedantic -Wno-long-long
+CFLAGS_STRICT	 = -Wall -W -Wno-long-long
 
-# Set compiler options for single threaded process
-CFLAGS		 = -pipe -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -pipe -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+# Set compiler options
+CFLAGS		 = -pipe $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(MTCFLAGS)
+CXXFLAGS	 = -pipe $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(MTCFLAGS)
 CSFLAGS	     = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
-
-# INNER_DESC is set only once per make invocation and has to be set to a value
-# that allows unique identification of the current state of the sources. It will
-# be set to the first 7 characters of the SHA1-hashes used by GIT. If set, for
-# example os_report can use it to decorate the 'Internals' string with
-# information on how to build that version.
-ifndef INNER_DESC
-INNER_DESC := $(shell cd ${OSPL_HOME} 2>/dev/null && git rev-parse --short HEAD 2>/dev/null)
-export INNER_DESC
-endif
 
 # For Linux, this version supports symbolic names instead of IP addresses
 CFLAGS      += -DDO_HOST_BY_NAME
+CPPFLAGS    += -std=c99
 
 # Set CPP flags
 CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -D_GNU_SOURCE
@@ -99,22 +86,18 @@ ifeq (,$(wildcard /etc/gentoo-release))
 CPPFLAGS	 += -D_XOPEN_SOURCE=500
 endif
 
+# For isocpp2 use c++11 compiler option
+ifeq ($(GCC_SUPPORTS_CPLUSPLUS11),1)
+ISOCPP2_CXX_FLAGS=-std=c++0x
+endif
+
 # Disable licensing because RLM not available on ARM
 CPPFLAGS += -DOSPL_NO_LICENSING
 CFLAGS += -DOSPL_NO_LICENSING
 
-# Pass the GIT-descriptor of the current source state to the compilers.
-ifdef INNER_DESC
-ifneq (,$(INNER_DESC))
-CFLAGS       += -DINNER_DESC="\\\"$(INNER_DESC)\\\""
-CXXFLAGS     += -DINNER_DESC=\"$(INNER_DESC)\"
-endif
-endif
-
 # Set compiler options for multi threaded process
 	# notify usage of posix threads
-#MTCFLAGS	 = -D_POSIX_C_SOURCE=199506L
-MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
+MTCFLAGS	 = -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
 LDFLAGS		 = -static-libgcc -L$(SPLICE_LIBRARY_PATH)
@@ -123,7 +106,7 @@ LDFLAGS		 = -static-libgcc -L$(SPLICE_LIBRARY_PATH)
 SHLDFLAGS	 = -shared -fpic
 
 # Set library context
-LDLIBS           = -lc -lm -lpthread
+LDLIBS           = -lc -lm -lpthread -lrt
 
 # Set library context for building shared libraries
 SHLDLIBS	 = 
@@ -131,7 +114,7 @@ SHLDLIBS	 =
 # Set component specific libraries that are platform dependent
 LDLIBS_CXX = -lstdc++
 LDLIBS_NW = 
-LDLIBS_OS = -lrt -ldl
+LDLIBS_OS = -lrt -ldl -lm
 LDLIBS_CMS = 
 LDLIBS_JAVA = -ljvm -ljava -lverify -lhpi
 LDLIBS_ODBC= -lodbc

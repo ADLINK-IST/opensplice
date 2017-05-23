@@ -1,18 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "u__serviceManager.h"
 #include "u__types.h"
+#include "u__object.h"
+#include "u__observable.h"
 #include "u__entity.h"
-#include "u__dispatcher.h"
 #include "u__participant.h"
 #include "u__domain.h"
 #include "u_user.h"
@@ -25,9 +34,40 @@
 #include "os_heap.h"
 #include "os_report.h"
 
+static u_result
+u__serviceManagerDeinitW(
+    void *_this)
+{
+    return u__entityDeinitW(_this);
+}
+
+static void
+u__serviceManagerFreeW(
+    void *_this)
+{
+    u__entityFreeW(_this);
+}
+
+static u_result
+u_serviceManagerInit(
+    const u_serviceManager _this,
+    const v_serviceManager sm,
+    const u_participant participant)
+{
+    u_result result;
+
+    assert(_this != NULL);
+
+    result = u_entityInit(u_entity(_this), v_entity(sm), u_observableDomain(u_observable(participant)));
+    _this->callback = NULL;
+    _this->usrData = NULL;
+
+    return result;
+}
+
 u_serviceManager
 u_serviceManagerNew(
-    u_participant participant)
+    const u_participant participant)
 {
     u_result result;
     u_serviceManager m;
@@ -35,142 +75,71 @@ u_serviceManagerNew(
     v_kernel kk;
     v_serviceManager sm;
 
+    assert(participant != NULL);
+
     m = NULL;
-    if (participant != NULL) {
-        domain = u_participantDomain(participant);
-        result = u_entityWriteClaim(u_entity(domain),(v_entity*)(&kk));
-        if (result == U_RESULT_OK) {
-            assert(kk);
-            sm = v_getServiceManager(kk);
-            if (sm != NULL) {
-                m = u_entityAlloc(participant,u_serviceManager,sm,TRUE);
-                if (m != NULL) {
-                    u_serviceManagerInit(m);
-                } else {
-                    OS_REPORT(OS_ERROR,"u_serviceManagerNew",0,
-                              "Allocation Service Manager proxy failed.");
+    domain = u_participantDomain(participant);
+    assert(domain != NULL);
+    result = u_observableWriteClaim(u_observable(domain),(v_public *)(&kk), C_MM_RESERVATION_ZERO);
+    if (result == U_RESULT_OK) {
+        assert(kk);
+        sm = v_getServiceManager(kk);
+        if (sm != NULL) {
+            m = u_objectAlloc(sizeof(*m), U_SERVICEMANAGER, u__serviceManagerDeinitW, u__serviceManagerFreeW);
+            if (m != NULL) {
+                result = u_serviceManagerInit(m, sm, participant);
+                if (result != U_RESULT_OK) {
+                    OS_REPORT(OS_ERROR,"u_serviceManagerNew", result,
+                                        "Failed to initiate Service Manager proxy.");
+                    u_objectFree (u_object (m));
+                    m = NULL;
                 }
             } else {
-                OS_REPORT(OS_ERROR,"u_serviceManagerNew",0,
-                          "Retrieval Service Manager failed.");
+                OS_REPORT(OS_ERROR,"u_serviceManagerNew", U_RESULT_OUT_OF_MEMORY,
+                          "Allocation Service Manager proxy failed.");
             }
-            result = u_entityRelease(u_entity(domain));
         } else {
-            OS_REPORT(OS_WARNING,"u_serviceManagerNew",0,
-                      "Claim Domain failed.");
+            OS_REPORT(OS_ERROR,"u_serviceManagerNew", U_RESULT_INTERNAL_ERROR,
+                      "Retrieval Service Manager failed.");
         }
+        u_observableRelease(u_observable(domain), C_MM_RESERVATION_ZERO);
     } else {
-        OS_REPORT(OS_ERROR,"u_serviceManagerNew",0,
-                  "No Participant specified.");
+        OS_REPORT(OS_WARNING,"u_serviceManagerNew", result,
+                  "Claim Domain failed.");
     }
+
     return m;
-}
-
-u_result
-u_serviceManagerInit(
-    u_serviceManager _this)
-{
-    u_result result;
-
-    if (_this != NULL) {
-        result = u_dispatcherInit(u_dispatcher(_this));
-        u_entity(_this)->flags |= U_ECREATE_INITIALISED;
-    } else {
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_serviceManagerFree(
-    u_serviceManager _this)
-{
-    u_result result;
-    c_bool destroy;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        destroy = u_entityDereference(u_entity(_this));
-        /* if refCount becomes zero then this call
-         * returns true and destruction can take place
-         */
-        if (destroy) {
-            if (u_entityOwner(u_entity(_this))) {
-                result = u_serviceManagerDeinit(_this);
-            } else {
-                /* This user entity is a proxy, meaning that it is not fully
-                 * initialized, therefore only the entity part of the object
-                 * can be deinitialized.
-                 * It would be better to either introduce a separate proxy
-                 * entity for clarity or fully initialize entities and make
-                 * them robust against missing information.
-                 */
-                result = u_entityDeinit(u_entity(_this));
-            }
-            if (result == U_RESULT_OK) {
-                u_entityDealloc(u_entity(_this));
-            } else {
-                OS_REPORT_2(OS_WARNING,
-                            "u_serviceManagerFree",0,
-                            "Operation u_serviceManagerDeinit failed: "
-                            "ServiceManager = 0x%x, result = %s.",
-                            _this, u_resultImage(result));
-                u_entityUnlock(u_entity(_this));
-            }
-        } else {
-            u_entityUnlock(u_entity(_this));
-        }
-    } else {
-        OS_REPORT_2(OS_WARNING,
-                    "u_serviceManagerFree",0,
-                    "Operation u_entityLock failed: "
-                    "ServiceManager = 0x%x, result = %s.",
-                    _this, u_resultImage(result));
-    }
-    return result;
-}
-
-u_result
-u_serviceManagerDeinit(
-    u_serviceManager _this)
-{
-    u_result result;
-
-    if (_this == NULL) {
-        result = U_RESULT_ILL_PARAM;
-    }
-    return u_dispatcherDeinit(u_dispatcher(_this));
 }
 
 v_serviceStateKind
 u_serviceManagerGetServiceStateKind(
-    u_serviceManager _this,
-    const c_char *serviceName)
+    const u_serviceManager _this,
+    const os_char *serviceName)
 {
-    u_result result = U_RESULT_OK;
+    u_result result;
     v_serviceManager kServiceManager;
     v_serviceStateKind kind;
 
-    if (_this == NULL) {
-        kind = STATE_NONE;
+    assert(_this != NULL);
+    assert(serviceName != NULL);
+
+    result = u_observableReadClaim(u_observable(_this), (v_public *)(&kServiceManager), C_MM_RESERVATION_NO_CHECK);
+    if (result == U_RESULT_OK) {
+        kind = v_serviceManagerGetServiceStateKind(kServiceManager, serviceName);
+        u_observableRelease(u_observable(_this), C_MM_RESERVATION_NO_CHECK);
     } else {
-        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kServiceManager));
-        if (result == U_RESULT_OK) {
-            kind = v_serviceManagerGetServiceStateKind(kServiceManager, serviceName);
-            u_entityRelease(u_entity(_this));
-        } else {
-            kind = STATE_NONE;
-            OS_REPORT(OS_WARNING, "u_serviceManagerGetServiceStateKind", 0,
-                      "Could not claim serviceManager.");
-        }
+        kind = STATE_NONE;
+        OS_REPORT(OS_WARNING, "u_serviceManagerGetServiceStateKind", result,
+                  "Could not claim serviceManager.");
     }
+
     return kind;
 }
 
 c_iter
 u_serviceManagerGetServices(
-    u_serviceManager _this,
-    v_serviceStateKind kind)
+    const u_serviceManager _this,
+    const v_serviceStateKind kind)
 {
     u_result result = U_RESULT_OK;
     v_serviceManager kServiceManager;
@@ -179,48 +148,58 @@ u_serviceManagerGetServices(
     c_string str;
     c_char *n;
 
+    assert(_this != NULL);
+
     names = c_iterNew(NULL);
-    if (_this != NULL) {
-        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kServiceManager));
-        if (result == U_RESULT_OK) {
-            vNames = v_serviceManagerGetServices(kServiceManager, kind);
-            u_entityRelease(u_entity(_this));
+
+    result = u_observableReadClaim(u_observable(_this), (v_public *)(&kServiceManager), C_MM_RESERVATION_NO_CHECK);
+    if (result == U_RESULT_OK) {
+        vNames = v_serviceManagerGetServices(kServiceManager, kind);
+        str = (c_string)c_iterTakeFirst(vNames);
+        while (str != NULL) {
+            n = os_strdup(str);
+            names = c_iterInsert(names, (void *)n);
             str = (c_string)c_iterTakeFirst(vNames);
-            while (str != NULL) {
-                n = os_strdup(str);
-                names = c_iterInsert(names, (void *)n);
-                str = (c_string)c_iterTakeFirst(vNames);
-            }
-            c_iterFree(vNames);
-        } else {
-            OS_REPORT(OS_WARNING, "u_serviceManagerGetServices", 0,
-                      "Could not claim serviceManager.");
         }
+        c_iterFree(vNames);
+        u_observableRelease(u_observable(_this), C_MM_RESERVATION_NO_CHECK);
+    } else {
+        OS_REPORT(OS_WARNING, "u_serviceManagerGetServices", result,
+                  "Could not claim serviceManager.");
     }
+
     return names;
+}
+
+u_result
+u_serviceManagerSetListener(
+    const u_serviceManager _this,
+    const u_serviceSplicedaemonListener callback,
+    const void *usrData)
+{
+    assert(_this != NULL);
+    _this->callback = (u_serviceSplicedaemonListener)callback;
+    _this->usrData  = (void *)usrData;
+    return U_RESULT_OK;
 }
 
 c_bool
 u_serviceManagerRemoveService(
-    u_serviceManager _this,
+    const u_serviceManager _this,
     const c_char *serviceName)
 {
     u_result result = U_RESULT_OK;
     v_serviceManager kServiceManager;
     c_bool retVal = FALSE;
 
-    if (_this == NULL) {
-        OS_REPORT_1(OS_ERROR, "u_serviceManagerRemoveService", 0,
-                  "No valid serviceManager therefore service %s cannot be removed.",serviceName);
+    assert(_this);
+    result = u_observableReadClaim(u_observable(_this), (v_public*)(&kServiceManager), C_MM_RESERVATION_NO_CHECK);
+    if (result == U_RESULT_OK) {
+        retVal = v_serviceManagerRemoveService(kServiceManager, serviceName);
+        u_observableRelease(u_observable(_this), C_MM_RESERVATION_NO_CHECK);
     } else {
-        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kServiceManager));
-        if (result == U_RESULT_OK) {
-            retVal = v_serviceManagerRemoveService(kServiceManager, serviceName);
-            u_entityRelease(u_entity(_this));
-        } else {
-            OS_REPORT(OS_ERROR, "u_serviceManagerRemoveService", 0,
-                      "Could not claim serviceManager.");
-        }
+        OS_REPORT(OS_ERROR, "u_serviceManagerRemoveService", result,
+                  "Could not claim serviceManager.");
     }
     return retVal;
 }

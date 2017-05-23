@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cms_client.h"
@@ -14,13 +22,14 @@
 #include "cms__thread.h"
 #include "cms_thread.h"
 #include "cms_soapThread.h"
-#include "os.h"
+#include "vortex_os.h"
 #include "os_report.h"
+#include "u_observable.h"
 #include "u_entity.h"
+#include "v_cmsoap.h"
+#include "v_maxValue.h"
 #include "v_participant.h"
-#include "v_statistics.h"
 #include "v_cmsoapStatistics.h"
-#include "../code/v__statisticsInterface.h"
 
 
 static c_bool   cms_clientLeaseIsValid  (cms_client client);
@@ -38,72 +47,67 @@ struct Namespace namespaces[] =
 
 static void
 cms_clientStatisticsThreadAdd(
-    v_entity entity,
+    v_public entity,
     c_voidp args)
 {
-    v_statisticsULongValueInc(v_cmsoap, clientThreads, entity);
-    v_statisticsMaxValueSetValue(v_cmsoap, maxClientThreads, entity,
-        *(v_statisticsGetRef(v_cmsoap, clientThreads, entity)));
+    v_cmsoap cmsoap = v_cmsoap(entity);
+
+    OS_UNUSED_ARG(args);
+
+    if (cmsoap->statistics) {
+        cmsoap->statistics->clientThreads++;
+        v_maxValueSetValue(&cmsoap->statistics->maxClientThreads,
+                           cmsoap->statistics->clientThreads);
+    }
 }
 
 static void
 cms_clientStatisticsThreadRemove(
-    v_entity entity,
+    v_public entity,
     c_voidp args)
 {
-    v_statisticsULongValueDec(v_cmsoap, clientThreads, entity);
+    v_cmsoap cmsoap = v_cmsoap(entity);
+
+    OS_UNUSED_ARG(args);
+
+    if (cmsoap->statistics) {
+        cmsoap->statistics->clientThreads--;
+    }
 }
 
 cms_client
 cms_clientNew(
     unsigned long ip,
-    cms_service service,
-    const c_char* uri)
+    cms_service service)
 {
     cms_client client;
     os_result osr;
-    os_mutexAttr attr;
-    os_condAttr condAttr;
 
-    client = cms_client(os_malloc(C_SIZEOF(cms_client)));
+    client = os_malloc(sizeof *client);
     cms_threadInit(cms_thread(client), "cms_client", &service->configuration->clientScheduling);
     if(client != NULL){
         cms_object(client)->kind = CMS_CLIENT;
-        cms_thread(client)->uri = os_strdup(uri);
+        cms_thread(client)->did = service->did;
+        cms_thread(client)->uri = os_strdup(service->uri);
         client->ip = ip;
         client->initCount = 0;
         client->service = service;
         client->internalFree = FALSE;
-        osr = os_mutexAttrInit(&attr);
+        osr = os_mutexInit(&client->soapMutex, NULL);
+        client->soapEnvs = c_iterNew(NULL);
 
         if(osr == os_resultSuccess){
-            attr.scopeAttr = OS_SCOPE_PRIVATE;
-            osr = os_mutexInit(&client->soapMutex, &attr);
-            client->soapEnvs = c_iterNew(NULL);
-
+            osr = os_mutexInit(&client->conditionMutex, NULL);
             if(osr == os_resultSuccess){
-                osr = os_condAttrInit(&condAttr);
-
+                osr = os_condInit(&client->condition, &client->conditionMutex, NULL );
                 if(osr == os_resultSuccess){
-                    osr = os_mutexInit(&client->conditionMutex, &attr);
+                    osr = os_mutexInit(&client->threadMutex, NULL);
 
                     if(osr == os_resultSuccess){
-                        condAttr.scopeAttr = OS_SCOPE_PRIVATE;
-                        osr = os_condInit(&client->condition, &client->conditionMutex, &condAttr );
-                        if(osr == os_resultSuccess){
-                            osr = os_mutexInit(&client->threadMutex, &attr);
-
-                            if(osr == os_resultSuccess){
-                                client->threads = c_iterNew(NULL);
-                            } else {
-                                cms_clientFree(client);
-                            }
-                        }
+                        client->threads = c_iterNew(NULL);
                     } else {
                         cms_clientFree(client);
                     }
-                } else {
-                    cms_clientFree(client);
                 }
             } else {
                 cms_clientFree(client);
@@ -127,11 +131,7 @@ cms_clientFree(
     cms_client client)
 {
     struct soap* soap;
-    os_time ost;
     cms_soapThread soapThread;
-
-    ost.tv_sec = 0;
-    ost.tv_nsec = 1000000;
 
     cms_thread(client)->terminate = TRUE;
 
@@ -164,7 +164,7 @@ cms_clientFree(
 
         while(soapThread){
             cms_soapThreadFree(soapThread);
-            u_entityAction(u_entity(client->service->uservice), cms_clientStatisticsThreadRemove, client->service);
+            (void)u_observableAction(u_observable(client->service->uservice), cms_clientStatisticsThreadRemove, client->service);
             soapThread = cms_soapThread(c_iterTakeFirst(client->threads));
         }
         c_iterFree(client->threads);
@@ -177,7 +177,7 @@ cms_clientFree(
     client->initCount = 0;
 
     if(client->service->configuration->verbosity >= 5){
-        OS_REPORT_4(OS_INFO, CMS_CONTEXT, 0,
+        OS_REPORT(OS_INFO, CMS_CONTEXT, 0,
                         "Client thread stopped for IP: %d.%d.%d.%d",
                         (int)(client->ip>>24)&0xFF,
                         (int)(client->ip>>16)&0xFF,
@@ -267,23 +267,18 @@ cms_clientRun(
     cms_thread thread;
     cms_soapThread soapThread;
     struct soap* soap;
-    os_time ost;
-    os_time ost2;
+    os_duration duration;
     c_bool found;
-    int i;
-    c_long maxThreads;
+    c_ulong i;
+    c_ulong maxThreads;
 
-    ost.tv_sec = 10;
-    ost.tv_nsec = 0;
-
-    ost2.tv_sec = 0;
-    ost2.tv_nsec = 1000;
+    duration = OS_DURATION_INIT(10,0);
 
     cmsc = cms_client(client);
     thread = cms_thread(client);
     thread->ready = FALSE;
     maxThreads = cmsc->service->configuration->maxThreadsPerClient;
-    cmsc->leaseTime = os_timeGet();
+    cmsc->leaseTime = os_timeMGet();
 
     while(thread->terminate == FALSE){
         if(!(cms_clientLeaseIsValid(cmsc))){ /*lease has expired.*/
@@ -299,7 +294,7 @@ cms_clientRun(
             /*new request arrived and client is not terminating.*/
             while((soap != NULL) && (cms_thread(thread)->terminate == FALSE)){
                 found = FALSE;
-                cmsc->leaseTime = os_timeGet();
+                cmsc->leaseTime = os_timeMGet();
                 os_mutexLock(&cmsc->threadMutex);
 
                 while((found == FALSE) && (cms_thread(thread)->terminate == FALSE)){
@@ -310,7 +305,7 @@ cms_clientRun(
                             found = TRUE;
                         } else {
                             if(cmsc->service->configuration->verbosity >= 7){
-                                OS_REPORT_1(OS_INFO, CMS_CONTEXT, 0,
+                                OS_REPORT(OS_INFO, CMS_CONTEXT, 0,
                                     "Thread %s not ready yet.",
                                     cms_thread(thread)->name);
                             }
@@ -322,10 +317,10 @@ cms_clientRun(
                             cmsc->threads = c_iterAppend(cmsc->threads, soapThread);
                             cms_soapThreadHandleRequest(soapThread, soap);
                             cms_soapThreadStart(soapThread);
-                            u_entityAction(u_entity(cmsc->service->uservice), cms_clientStatisticsThreadAdd, cmsc->service);
+                            (void)u_observableAction(u_observable(cmsc->service->uservice), cms_clientStatisticsThreadAdd, cmsc->service);
 
                             if(cmsc->service->configuration->verbosity >= 6){
-                                OS_REPORT_5(OS_INFO, CMS_CONTEXT, 0,
+                                OS_REPORT(OS_INFO, CMS_CONTEXT, 0,
                                     "New thread started for client: %d.%d.%d.%d. Total #threads: %d",
                                     (int)(cmsc->ip>>24)&0xFF,
                                     (int)(cmsc->ip>>16)&0xFF,
@@ -335,7 +330,7 @@ cms_clientRun(
                             }
                             found = TRUE;
                         } else {
-                            os_nanoSleep(ost2);
+                            os_sleep(OS_DURATION_MICROSECOND);
                         }
                     } else {
                         cms_soapThreadHandleRequest(soapThread, soap);
@@ -351,10 +346,10 @@ cms_clientRun(
         os_mutexLock(&cmsc->conditionMutex);
 
         if(thread->terminate == FALSE){
-            os_condTimedWait(&cmsc->condition, &cmsc->conditionMutex, &ost);
+            os_condTimedWait(&cmsc->condition, &cmsc->conditionMutex, duration);
 
             if(cmsc->service->configuration->verbosity >= 7){
-                OS_REPORT_1(OS_INFO, CMS_CONTEXT, 0,  "soapClient '%s' condition triggered.", thread->name);
+                OS_REPORT(OS_INFO, CMS_CONTEXT, 0,  "soapClient '%s' condition triggered.", thread->name);
             }
         }
         os_mutexUnlock(&cmsc->conditionMutex);
@@ -371,24 +366,20 @@ static c_bool
 cms_clientLeaseIsValid(
     cms_client client)
 {
-    v_duration clientLeasePeriod;
-    os_time curTime;
-    os_time valTime;
+    os_timeM curTime;
+    os_timeM valTime;
     os_compare cmp;
     c_bool result;
 
-    clientLeasePeriod = client->service->configuration->clientLeasePeriod;
+    curTime = os_timeMGet();
+    valTime = os_timeMAdd(client->leaseTime, client->service->configuration->clientLeasePeriod);
 
-    curTime = os_timeGet();
-    valTime.tv_sec = client->leaseTime.tv_sec + clientLeasePeriod.seconds;
-    valTime.tv_nsec = client->leaseTime.tv_nsec + clientLeasePeriod.nanoseconds;
-
-    cmp = os_timeCompare(valTime, curTime);
+    cmp = os_timeMCompare(valTime, curTime);
 
     if(cmp == OS_LESS){
         result = FALSE;
         if(client->service->configuration->verbosity >= 2){
-            OS_REPORT_4(OS_INFO, CMS_CONTEXT, 0,
+            OS_REPORT(OS_INFO, CMS_CONTEXT, 0,
                             "Client lease expired: IP %d.%d.%d.%d",
                             (int)(client->ip>>24)&0xFF,
                             (int)(client->ip>>16)&0xFF,

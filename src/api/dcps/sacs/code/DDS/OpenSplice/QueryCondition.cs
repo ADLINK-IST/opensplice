@@ -1,26 +1,27 @@
-﻿// The OpenSplice DDS Community Edition project.
-//
-// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
-// Copyright (C) 2009  L-3 Communications / IS
-// 
-//  This library is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License Version 3 dated 29 June 2007, as published by the
-//  Free Software Foundation.
-// 
-//  This library is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-// 
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
 
 using System;
 using System.Runtime.InteropServices;
 using DDS;
 using DDS.OpenSplice.CustomMarshalers;
+using DDS.OpenSplice.Kernel;
 
 namespace DDS.OpenSplice
 {
@@ -34,23 +35,48 @@ namespace DDS.OpenSplice
     /// </summary>
     internal class QueryCondition : ReadCondition, IQueryCondition
     {
-        internal QueryCondition(IntPtr gapiPtr)
-            : base(gapiPtr)
+        private string queryExpression;
+        private string[] queryParameters;
+    
+        internal QueryCondition(
+                DataReader dataReader,
+                SampleStateKind sampleState, 
+                ViewStateKind viewState, 
+                InstanceStateKind instanceState, 
+                string queryExpression, 
+                string[] queryParameters)
+            : base(dataReader, sampleState, viewState, instanceState)
         {
-            // Base class handles everything.
+            this.queryExpression = queryExpression;
+            this.queryParameters = queryParameters;
         }
 
+        internal override ReturnCode init(IntPtr query)
+        {
+            return base.init(query);
+        }
+        
         /// <summary>
         /// This operation returns the query expression associated with the QueryCondition.
         /// </summary>
         /// <returns>The query expression associated with the QueryCondition.</returns>
         public string GetQueryExpression()
         {
-            IntPtr ptr = Gapi.QueryCondition.get_query_expression(GapiPeer);
-            string result = Marshal.PtrToStringAnsi(ptr);
-            Gapi.GenericAllocRelease.Free(ptr);
+            bool isAlive;
+            string qexpr = null;
 
-            return result;
+            ReportStack.Start();
+            lock(this)
+            {
+                isAlive = this.rlReq_isAlive;
+                if (isAlive)
+                {
+                    qexpr = queryExpression;
+                }
+            }
+            ReportStack.Flush(this, !isAlive);
+
+            return qexpr;
         }
 
         /// <summary>
@@ -61,18 +87,19 @@ namespace DDS.OpenSplice
         /// <returns>Return codes are:Ok,Error,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode GetQueryParameters(ref string[] queryParameters)
         {
-            ReturnCode result = ReturnCode.Error;
-            using (SequenceStringMarshaler marshaler = new SequenceStringMarshaler())
-            {
-                result = Gapi.QueryCondition.get_query_parameters(
-                        GapiPeer,
-                        marshaler.GapiPtr);
+            queryParameters = null;
+            ReturnCode result = DDS.ReturnCode.AlreadyDeleted;
 
-                if (result == ReturnCode.Ok)
+            ReportStack.Start();
+            lock(this)
+            {
+                if (this.rlReq_isAlive)
                 {
-                    marshaler.CopyOut(ref queryParameters);
+                    queryParameters = this.queryParameters;
+                    result = DDS.ReturnCode.Ok;
                 }
             }
+            ReportStack.Flush(this, result != ReturnCode.Ok);
 
             return result;
         }
@@ -85,18 +112,59 @@ namespace DDS.OpenSplice
         /// <returns>Return codes are:Ok,Error,BadParameter,AlreadyDeleted or OutOfResources.</returns>
         public ReturnCode SetQueryParameters(params string[] queryParameters)
         {
-            ReturnCode result = ReturnCode.Error;
-            using (SequenceStringMarshaler marshaler = new SequenceStringMarshaler())
+            ReturnCode result = DDS.ReturnCode.AlreadyDeleted;
+
+            ReportStack.Start();
+            lock(this)
             {
-                if (marshaler.CopyIn(queryParameters) == ReturnCode.Ok)
+                if (this.rlReq_isAlive)
                 {
-                    result = Gapi.QueryCondition.set_query_parameters(
-                            GapiPeer,
-                            marshaler.GapiPtr);
+                    using (SequenceStringToArrMarshaler marshaler = new SequenceStringToArrMarshaler())
+                    {
+                        result = marshaler.CopyIn(queryParameters);
+                        if (result == ReturnCode.Ok)
+                        {
+                            uint length = queryParameters == null ? 0 : (uint) queryParameters.Length;
+                            result = uResultToReturnCode(
+                                    User.Query.Set(rlReq_UserPeer, marshaler.UserPtr, length));
+                            if (result == ReturnCode.Ok)
+                            {
+                                marshaler.CopyOut(ref this.queryParameters); // Make deep copy.
+                            } else {
+                                ReportStack.Report(result, "Could not copy out query_paramters.");
+                            }
+                        } else {
+                            ReportStack.Report(result, "Could not copy int query_paramters.");
+                        }
+                    }
                 }
             }
-
+            ReportStack.Flush(this, result != ReturnCode.Ok);
             return result;
+        }
+        
+        internal override ReturnCode Read(IntPtr sampleList)
+        {
+            return uResultToReturnCode(
+                    User.Query.Read(rlReq_UserPeer, Common.SampleList.ReaderAction, sampleList, DDS.Duration.Zero.OsDuration));
+        }
+         
+        internal override ReturnCode Take(IntPtr sampleList)
+        {
+            return uResultToReturnCode(
+                    User.Query.Take(rlReq_UserPeer, Common.SampleList.ReaderAction, sampleList, DDS.Duration.Zero.OsDuration));
+        }
+         
+        internal override ReturnCode ReadNextInstance(InstanceHandle handle, IntPtr sampleList)
+        {
+            return uResultToReturnCode(
+                    User.Query.ReadNextInstance(rlReq_UserPeer, handle, Common.SampleList.ReaderAction, sampleList, DDS.Duration.Zero.OsDuration));
+        }
+         
+        internal override ReturnCode TakeNextInstance(InstanceHandle handle, IntPtr sampleList)
+        {
+            return uResultToReturnCode(
+                    User.Query.TakeNextInstance(rlReq_UserPeer, handle, Common.SampleList.ReaderAction, sampleList, DDS.Duration.Zero.OsDuration));
         }
     }
 }

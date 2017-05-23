@@ -357,7 +357,7 @@
             <if expr="len(searchList) > 0">
             <iterate var="candidate" in="searchList">
                 <sequence>
-                    <script>msg = 'RequestHost: try %s...' % candidate.get_hostname()</script>
+                    <script>msg = 'RequestHost: try %s... target is %s and mode is %s' % (candidate.get_hostname(), target, mode)</script>
                     <if expr="candidate.supportsTarget(target) and candidate.supportsMode(mode)">
                         <sequence>
                             <call function="'RequestHostResource'">candidate.get_hostname(), 5</call>
@@ -492,15 +492,17 @@
                                             <!-- Check if preinstalled OpenSplice is valid
                                                  Break if valid version is found
                                             -->
-                                            <iterate var="element" in="STAFResult">
+                                            <iterate var="element" in="STAFResult">                                               
                                                 <sequence>
+                                                    <log message="STAXMessageLog" level="'info'">'DeployHost: version is \'%s\' on %s' % (element, host.get_hostname())</log>
                                                     <script>
-                                                        m = re.match('^V([0-9]+\.[0-9]+\.[0-9]+)', element, re.I)
+                                                        <!--m = re.match('^V([0-9]+\.[0-9]+\.[0-9]+)', element, re.I)
                                                         if m:
                                                             host.set_version(m.group(1))
                                                             corrupt = 0
-                                                        else:
-                                                            corrupt = 1
+                                                        else:-->
+                                                            host.set_version(element)
+                                                            corrupt = 0
                                                     </script>
                                                     <if expr="corrupt">
                                                         <log message="STAXMessageLog" level="'warning'">'DeployHost: Unsupported OpenSplice instance \'%s\' on %s' % (element, host.get_hostname())</log>

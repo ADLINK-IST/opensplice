@@ -113,4 +113,9 @@ UTL_Error * FE_new_UTL_Error();
 UTL_Indenter * FE_new_UTL_Indenter();
 UTL_String * FE_new_UTL_String(const char *);
 
+extern "C" 
+{
+   extern char * fe_cpp_keyword (char * id);
+}
+
 #endif           // _FE_EXTERN_FE_EXTERN_HH

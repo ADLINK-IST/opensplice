@@ -9,10 +9,11 @@ TESTCASES="
     SACSTesterInvalidData
     SACSTesterCondition
     SACSTesterContentFilteredTopic
+    SACSTesterCopyInCopyOut
+    SACSDefaultConstructor
     SACSTesterParticipant
-    SACSTesterDomainParticipantFactory
+    domainParticipantFactory
     SACSTesterErrorInfo
-    SACSTesterHistDataWithCondition
     SACSTesterListener
     SACSTesterPublisher
     SACSTesterReader
@@ -27,5 +28,12 @@ TESTCASES="
     SACSTesterQosProvider
     "
 
-run_testcases    
-   
+run_testcases
+
+TESTCASES="
+    SACSTesterHistDataWithCondition
+    "
+
+OSPL_URI=file://${OSPL_HOME_NORMALIZED}/testsuite/dbt/api/dcps/sacs/etc/sacs_with_durability.xml
+export OSPL_URI
+run_testcases

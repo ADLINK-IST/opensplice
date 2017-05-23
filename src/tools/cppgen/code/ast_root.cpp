@@ -108,8 +108,7 @@ AST_Root::fe_add_sequence(AST_Sequence *t)
    if (t == NULL)
       return NULL;
 
-   t->set_name(new UTL_ScopedName(new Identifier("local type", 1, 0, I_FALSE),
-                                  NULL));
+   t->set_name(new UTL_ScopedName(new Identifier("local type"), NULL));
 
    add_to_local_types(t);
 
@@ -125,8 +124,7 @@ AST_Root::fe_add_string(AST_String *t)
    if (t == NULL)
       return NULL;
 
-   t->set_name(new UTL_ScopedName(new Identifier("local type", 1, 0, I_FALSE),
-                                  NULL));
+   t->set_name(new UTL_ScopedName(new Identifier("local type"), NULL));
 
    add_to_local_types(t);
 
@@ -142,8 +140,7 @@ AST_Root::fe_add_array(AST_Array *t)
    if (t == NULL)
       return NULL;
 
-   t->set_name(new UTL_ScopedName(new Identifier("local type", 1, 0, I_FALSE),
-                                  NULL));
+   t->set_name(new UTL_ScopedName(new Identifier("local type"), NULL));
 
    add_to_local_types(t);
 

@@ -1,0 +1,6 @@
+. $OSPL_HOME/testsuite/dbt/api/dcps/sacs/bin/test_general
+
+TESTCASE=domainParticipantFactory
+TESTCASEDIR=$API_TEST_DIR/$TESTCASE
+
+run_testcase

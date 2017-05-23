@@ -1,18 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include <stddef.h>
 #include "os_stdlib.h"
 #include "os_report.h"
 #include "os_abstract.h"
+#include "os_atomics.h"
 #include "ut_avl.h"
 #include "c_mmbase.h"
 #include "c__mmbase.h"
@@ -35,14 +44,17 @@
 #define TYPE_REFC_COUNTS_OBJECTS 0
 #define CONFIDENCE (0x504F5448)
 
+#define REFCOUNT_MASK             0xffffffu
+#define REFCOUNT_FLAG_ATOMIC     0x1000000u
+#define REFCOUNT_FLAG_TRACE      0x2000000u
+#define REFCOUNT_FLAG_TRACETYPE  0x4000000u
+
 #define c_oid(o)    ((c_object)(C_ADDRESS(o) + HEADERSIZE))
 #define c_header(o) ((c_header)(C_ADDRESS(o) - HEADERSIZE))
 #define c_arrayHeader(o) ((c_arrayHeader)(C_ADDRESS(o) - ARRAYHEADERSIZE))
 
 #define MIN_DB_SIZE     (150000)
 #define MAXREFCOUNT     (50000)
-#define MAXALIGNMENT    (C_ALIGNMENT(c_value))
-#define ALIGNSIZE(size) ((((size-1)/MAXALIGNMENT)+1)*MAXALIGNMENT)
 #define MEMSIZE(size)   ((size)+HEADERSIZE)
 #define ARRAYMEMSIZE(size)   ((size)+ARRAYHEADERSIZE)
 
@@ -51,12 +63,11 @@
 #define CHECK_REF (0)
 
 #if CHECK_REF
-
-#include "ut__trace.h" /* enable specific trace function (basic or extended) inside this header file */
+#include "ut_trace.h" /* enable specific trace function (basic or extended) inside this header file */
 /* default "v_message<kernelModule::v_topicInfo>" */
 #define CHECK_REF_TYPE "v_message<kernelModule::v_topicInfo>"
 #define CHECK_REF_TYPE_LEN (strlen(CHECK_REF_TYPE))
-
+#define CHECK_REF_DEPTH (64)
 #endif
 
 #define ACTUALTYPE(_t,_type) \
@@ -76,7 +87,7 @@ C_STRUCT(c_header) {
     c_object prevObject;
 #endif
 #endif
-    c_ulong refCount;
+    pa_uint32_t refCount;
     c_type type;
 };
 
@@ -90,14 +101,8 @@ C_STRUCT(c_arrayHeader) {
     C_EXTENDS(c_header);
 };
 
-static const c_long HEADERSIZE = ALIGNSIZE(C_SIZEOF(c_header));
-static const c_long ARRAYHEADERSIZE = ALIGNSIZE(C_SIZEOF(c_arrayHeader));
-
-C_STRUCT(c_baseBinding) {
-    ut_avlNode_t avlnode;
-    c_object object;
-    c_char  *name;
-};
+static const c_ulong HEADERSIZE = C_MAXALIGNSIZE(C_SIZEOF(c_header));
+static const c_ulong ARRAYHEADERSIZE = C_MAXALIGNSIZE(C_SIZEOF(c_arrayHeader));
 
 static const ut_avlTreedef_t c_base_bindings_td =
   UT_AVL_TREEDEF_INITIALIZER_INDKEY (offsetof (C_STRUCT(c_baseBinding), avlnode),
@@ -107,7 +112,8 @@ static const ut_avlTreedef_t c_base_bindings_td =
 static c_string
 c__stringMalloc(
     c_base base,
-    c_size length)
+    c_size length,
+    c_bool check)
 {
     c_header header;
     c_string s = NULL;
@@ -115,7 +121,14 @@ c__stringMalloc(
     assert(base);
     assert(length > 0);
 
-    header = (c_header)c_mmMalloc(c_baseMM(base), MEMSIZE(length));
+    if (check) {
+        header = (c_header)c_mmMallocThreshold(c_baseMM(base), MEMSIZE(length));
+    } else {
+        header = (c_header)c_mmMalloc(c_baseMM(base), MEMSIZE(length));
+        if (!header) {
+            abort();
+        }
+    }
     if (header) {
 #if TYPE_REFC_COUNTS_OBJECTS
         header->type = c_keep(base->string_type);
@@ -123,9 +136,9 @@ c__stringMalloc(
         header->type = base->string_type;
 #endif
         if (base->maintainObjectCount) {
-            pa_increment(&base->string_type->objectCount);
+            pa_inc32(&base->string_type->objectCount);
         }
-        header->refCount = 1;
+        pa_st32(&header->refCount, 1 | REFCOUNT_FLAG_ATOMIC);
         s = (c_string)c_oid(header);
         s[0] = '\0'; /* c_stringNew/Malloc always return a null-terminated string */
 #ifndef NDEBUG
@@ -160,34 +173,58 @@ c_stringMalloc(
         return c_keep(base->emptyString);
     }
 
-    return c__stringMalloc(base, length);
+    return c__stringMalloc(base, length, FALSE);
+}
+
+c_string
+c_stringMalloc_s(
+    c_base base,
+    c_size length)
+{
+    assert(base);
+    assert(length > 0);
+
+    if (length == 1){
+        /* Empty strings are interned. The only valid string with length 1 is the
+         * 'empty' string, so in this case return a reference to the intern. This
+         * saves precious resources in case of big amounts of empty strings, since
+         * each empty string does not only contain the '\0' terminator but also
+         * 36-40 bytes of header information. */
+        assert(base->emptyString[0] == '\0');
+        return c_keep(base->emptyString);
+    }
+
+    return c__stringMalloc(base, length, TRUE);
 }
 
 static c_wstring
 c__wstringMalloc(
     c_base base,
-    c_size length)
+    c_size length,
+    c_bool check)
 {
     c_header header;
     c_wstring s = NULL;
-    c_type wstring_t;
 
     assert(base);
     assert(length > 0);
 
-    header = (c_header)c_mmMalloc(c_baseMM(base), MEMSIZE(length*sizeof(c_wchar)));
+    if (check) {
+        header = (c_header)c_mmMallocThreshold(c_baseMM(base), MEMSIZE(length*sizeof(c_wchar)));
+    } else {
+        header = (c_header)c_mmMalloc(c_baseMM(base), MEMSIZE(length*sizeof(c_wchar)));
+    }
     if (header) {
-        wstring_t = c_wstring_t(base);
+        c_type wstring_t = c_wstring_t(base);
 #if TYPE_REFC_COUNTS_OBJECTS
-        header->type = wstring_t; /* Transfer ref */
+        header->type = c_keep(wstring_t);
 #else
         header->type = wstring_t;
 #endif
         if (base->maintainObjectCount) {
-            pa_increment(&wstring_t->objectCount);
+            pa_inc32(&wstring_t->objectCount);
         }
-        c_free(wstring_t); /* Remove free and inline c_wstring_t(base) call when OSPL-1294 is implemented */
-        header->refCount = 1;
+        pa_st32(&header->refCount, 1 | REFCOUNT_FLAG_ATOMIC);
         s = (c_wstring)c_oid(header);
         s[0] = 0; /* c_wstringNew/Malloc always return a nul-terminated string */
 #ifndef NDEBUG
@@ -222,8 +259,31 @@ c_wstringMalloc(
         return c_keep(base->emptyWstring);
     }
 
-    return c__wstringMalloc(base, length);
+    return c__wstringMalloc(base, length, FALSE);
 }
+
+
+c_wstring
+c_wstringMalloc_s(
+    c_base base,
+    c_size length)
+{
+    assert(base);
+    assert(length > 0);
+
+    if (length == 1){
+        /* Empty wstrings are interned. The only valid string with length 1 is the
+         * 'empty' string, so in this case return a reference to the intern. This
+         * saves precious resources in case of big amounts of empty strings, since
+         * each empty string does not only contain the '\0' terminator but also
+         * 36-40 bytes of header information. */
+        assert(base->emptyWstring[0] == 0);
+        return c_keep(base->emptyWstring);
+    }
+
+    return c__wstringMalloc(base, length, TRUE);
+}
+
 
 c_string
 c_stringNew(
@@ -251,6 +311,33 @@ c_stringNew(
     return s;
 }
 
+c_string
+c_stringNew_s(
+    c_base base,
+    const c_char *str)
+{
+    c_string s;
+     size_t len;
+
+     assert(base);
+
+     if (str == NULL) {
+         return NULL;
+     }
+
+     len = strlen(str) + 1;
+     if((s = c_stringMalloc_s(base, len)) != NULL && len > 1){
+         /* str is nul-terminated (since we could determine len), so memcpy str
+          * including the nul-terminator. */
+         memcpy(s, str, len);
+     }
+
+     /* c_wstringNew/Malloc always return a nul-terminated string */
+     assert(!s || s[len - 1] == '\0');
+     return s;
+}
+
+
 /* The following Macro and subsequent instances implements the
  * following type caches in c_base and getter methods.
  *
@@ -268,7 +355,6 @@ c_stringNew(
  * c_string_t(c_base _this)
  * c_wchar_t(c_base _this)
  * c_wstring_t(c_base _this)
- * c_array_t(c_base _this)
  * c_type_t(c_base _this)
  * c_valueKind_t(c_base _this)
   */
@@ -291,9 +377,11 @@ _TYPE_CACHE_(c_double)
 _TYPE_CACHE_(c_string)
 _TYPE_CACHE_(c_wchar)
 _TYPE_CACHE_(c_wstring)
-_TYPE_CACHE_(c_array)
 _TYPE_CACHE_(c_type)
 _TYPE_CACHE_(c_valueKind)
+_TYPE_CACHE_(pa_uint32_t)
+_TYPE_CACHE_(pa_uintptr_t)
+_TYPE_CACHE_(pa_voidp_t)
 
 c_type
 c_getMetaType(
@@ -307,7 +395,11 @@ static void
 initInterface(
     c_object o)
 {
-    c_interface(o)->scope = (c_scope)c_scopeNew(c__getBase(o));
+    /* The vast majority of classes that get defined during initialisation have the scope already
+       allocated by c_metaDefine, but not all of them. */
+    if(c_interface(o)->scope == NULL) {
+        c_interface(o)->scope = (c_scope)c_scopeNew(c__getBase(o));
+    }
     c_interface(o)->abstract = FALSE;
     c_interface(o)->inherits = NULL;
     c_interface(o)->references = NULL;
@@ -336,8 +428,8 @@ static c_type
 c_newMetaClass(
     c_base base,
     const c_char *name,
-    c_long size,
-    c_long alignment)
+    size_t size,
+    size_t alignment)
 {
     c_metaObject o,found;
 
@@ -349,7 +441,7 @@ c_newMetaClass(
     c_metaTypeInit(o,size,alignment);
     found = c_metaBind(c_metaObject(base),name,o);
     if (found != o) {
-        OS_REPORT_1(OS_ERROR,"c_newMetaClass failed",0,"%s already defined",name);
+        OS_REPORT(OS_ERROR,"c_newMetaClass failed",0,"%s already defined",name);
         assert(FALSE);
     }
     c_free(o);
@@ -399,7 +491,6 @@ c_typeCacheInit (C_STRUCT(c_typeCache) *typeCache)
     typeCache->c_string_t = NULL;
     typeCache->c_wchar_t = NULL;
     typeCache->c_wstring_t = NULL;
-    typeCache->c_array_t = NULL;
     typeCache->c_type_t = NULL;
     typeCache->c_valueKind_t = NULL;
     typeCache->c_member_t = NULL;
@@ -407,6 +498,9 @@ c_typeCacheInit (C_STRUCT(c_typeCache) *typeCache)
     typeCache->c_constant_t = NULL;
     typeCache->c_unionCase_t = NULL;
     typeCache->c_property_t = NULL;
+    typeCache->pa_uint32_t_t = NULL;
+    typeCache->pa_uintptr_t_t = NULL;
+    typeCache->pa_voidp_t_t = NULL;
 }
 
 void
@@ -419,21 +513,34 @@ c_baseSetMaintainObjectCount (
     base->maintainObjectCount = enable;
 }
 
-c_mutexAttr
-c_baseGetMutexAttr(
+void
+c_baseSetY2038Ready (
+    c_base base,
+    c_bool enable)
+{
+    /* Not bothering with locking here, so it is undefined when
+       exactly other threads take note (but they will eventually) */
+    base->y2038Ready = enable;
+}
+
+c_bool
+c_baseGetY2038Ready (
     c_base base)
 {
-    c_mutexAttr attr = PRIVATE_MUTEX;
-    c_mmStatus  mmStatus;
+    return base->y2038Ready;
+}
 
+os_scopeAttr
+c_baseGetScopeAttr(
+    c_base base)
+{
     /* Use shared mutexes only when this base
      * is within shared memory. */
-    mmStatus = c_mmState(base->mm, FALSE);
-    if (mmStatus.mmMode == MM_SHARED) {
-        attr = SHARED_MUTEX;
+    if (c_mmMode(base->mm) == MM_SHARED) {
+        return OS_SCOPE_SHARED;
+    } else {
+        return OS_SCOPE_PRIVATE;
     }
-
-    return attr;
 }
 
 static void
@@ -443,10 +550,10 @@ c_baseInit (
 {
     c_type type,scopeType;
     c_header header;
-    c_metaObject o,found,_intern;
+    c_metaObject o,found,_intern,temp;
     c_array members;
     c_iter labels;
-    c_long size;
+    size_t size;
     c_ulong caseNumber;
 
     /* A c_base inherits as follows:
@@ -457,6 +564,8 @@ c_baseInit (
 
     /* First, attach mm to base. */
     base->mm = mm;
+    base->maintainObjectCount = FALSE;
+    base->y2038Ready = FALSE;
 
     /* c_baseObject init */
     c_baseObject(base)->kind = M_MODULE;
@@ -466,15 +575,14 @@ c_baseInit (
     c_metaObject(base)->name = NULL;
 
     /* c_module init */
-    c_mutexInit(&((c_module)base)->mtx, c_baseGetMutexAttr(base));
+    c_mutexInit(base, &((c_module)base)->mtx);
     /* scope is initialized when scope-type is bootstrapped */
 
     /* c_base init */
-    base->maintainObjectCount = 1;
     base->confidence = CONFIDENCE;
     ut_avlInit (&c_base_bindings_td, &base->bindings);
-    c_mutexInit(&base->bindLock,c_baseGetMutexAttr(base));
-    c_mutexInit(&base->serLock,c_baseGetMutexAttr(base));
+    c_mutexInit(base, &base->bindLock);
+    c_mutexInit(base, &base->serLock);
 
     /* metaType[M_COUNT], string_type and emptyString are initialized when types
      * are available. */
@@ -499,7 +607,7 @@ c_baseInit (
     return;
     }
     memset(header,0,size);
-    header->refCount = 1;
+    pa_st32(&header->refCount, 1);
     header->type = NULL;
 #ifndef NDEBUG
     header->confidence = CONFIDENCE;
@@ -516,7 +624,7 @@ c_baseInit (
 #endif
     c_type(o)->base = base;
     c_baseObject(o)->kind = M_CLASS;
-    c_type(o)->alignment = C_ALIGNMENT(C_STRUCT(c_class));
+    c_type (o)->alignment = C_ALIGNMENT_C_STRUCT (c_class);
     c_type(o)->size = C_SIZEOF(c_class);
     base->metaType[M_CLASS] = c_type(o);
     header->type = (c_type) o;
@@ -532,7 +640,7 @@ c_baseInit (
 
     scopeType = c_type(c_new(base->metaType[M_COLLECTION]));
     c_baseObject(scopeType)->kind = M_COLLECTION;
-    c_collectionType(scopeType)->kind = C_SCOPE;
+    c_collectionType(scopeType)->kind = OSPL_C_SCOPE;
     c_collectionType(scopeType)->maxSize = 0;
     C_META_TYPEINIT_(scopeType,c_scope);
 
@@ -555,7 +663,7 @@ c_baseInit (
     /** Declare c_string type, this is required to be able to bind objects to names. **/
     o = c_metaObject(c_new(base->metaType[M_COLLECTION]));
     c_baseObject(o)->kind = M_COLLECTION;
-    c_collectionType(o)->kind = C_STRING;
+    c_collectionType(o)->kind = OSPL_C_STRING;
     c_metaTypeInit(o,sizeof(c_string),C_ALIGNMENT(c_string));
 
     base->string_type = c_keep(o);
@@ -593,18 +701,19 @@ c_baseInit (
      * even though in the baseInit no empty strings are used, initialisation
      * is needed here to guarantee the assertions of c_stringNew and
      * c_stringMalloc. */
-    base->emptyString = c__stringMalloc(base, 1);
+    base->emptyString = c__stringMalloc(base, 1, FALSE);
     base->emptyString[0] = '\0';
 
-#define _META_(b,t) c_object(c_newMetaClass(b,((const c_char *)#t),C_SIZEOF(t),C_ALIGNMENT(C_STRUCT(t))))
+#define _META_(b,t) c_object(c_newMetaClass(b,((const c_char *)#t),C_SIZEOF(t),C_ALIGNMENT_C_STRUCT(t)))
 
     /** Declare abstract meta types **/
-    found = _META_(base,c_baseObject); c_free(found);
-    found = _META_(base,c_operand); c_free(found);
-    found = _META_(base,c_specifier); c_free(found);
-    found = _META_(base,c_metaObject); c_free(found);
-    found = _META_(base,c_property); c_free(found);
-    found = _META_(base,c_type); c_free(found);
+    c_free(_META_(base,c_baseObject));
+    c_free(_META_(base,c_operand));
+    c_free(_META_(base,c_specifier));
+    c_free(_META_(base,c_metaObject));
+
+    base->baseCache.typeCache.c_property_t = _META_(base,c_property);
+    base->baseCache.typeCache.c_type_t = _META_(base,c_type);
 
     /** At last set the subType of c_scope type. **/
     c_collectionType(scopeType)->subType = ResolveType(base,c_metaObject);
@@ -631,6 +740,11 @@ c_baseInit (
     base->metaType[M_EXCEPTION] =    _META_(base,c_exception);
     base->metaType[M_INTERFACE] =    _META_(base,c_interface);
     base->metaType[M_ANNOTATION] =   _META_(base,c_annotation);
+
+    base->baseCache.typeCache.c_literal_t = base->metaType[M_LITERAL];
+    base->baseCache.typeCache.c_member_t  = base->metaType[M_MEMBER];
+    base->baseCache.typeCache.c_unionCase_t = base->metaType[M_UNIONCASE];
+    base->baseCache.typeCache.c_constant_t = base->metaType[M_CONSTANT];
 
     c_free(base->metaType[M_LITERAL]);
     c_free(base->metaType[M_CONSTOPERAND]);
@@ -662,6 +776,7 @@ c_baseInit (
 
 #define INITPRIM(s,n,k) \
     o = c_metaDeclare(c_metaObject(s),#n,M_PRIMITIVE); \
+    s->baseCache.typeCache.n##_t = c_type(o); \
     c_primitive(o)->kind = k; \
     c_metaFinalize(o); \
     c_free(o)
@@ -683,10 +798,14 @@ c_baseInit (
     INITPRIM(base,c_mutex,     P_MUTEX);
     INITPRIM(base,c_lock,      P_LOCK);
     INITPRIM(base,c_cond,      P_COND);
+    INITPRIM(base,pa_uint32_t, P_PA_UINT32);
+    INITPRIM(base,pa_uintptr_t,P_PA_UINTPTR);
+    INITPRIM(base,pa_voidp_t,  P_PA_VOIDP);
 
 #undef INITPRIM
 
     o = c_metaDeclare(c_metaObject(base),"c_object",M_CLASS);
+    base->baseCache.typeCache.c_object_t = c_type(o);
     c_metaFinalize(o);
     c_free(o);
     o = c_metaDeclare(c_metaObject(base),"c_any",M_CLASS);
@@ -695,18 +814,24 @@ c_baseInit (
 
     c_collectionInit(base);
 
-    /* Initialize the interned empty wstring. */
-    base->emptyWstring = c__wstringMalloc(base, 1);
-    base->emptyWstring[0] = 0;
+    base->baseCache.typeCache.c_string_t = ResolveType(base,c_string);;
+    base->baseCache.typeCache.c_wstring_t = ResolveType(base,c_wstring);
 
 #define _ENUMVAL_(e,v) \
     c_enumeration(e)->elements[v] = \
-    c_constantNew(c_metaObject(e),#v,c_longValue(v))
+    c_metaDeclareEnumElement(c_metaObject(base),#v)
 
-    o = c_metaDeclare(c_metaObject(base),"c_metaKind",M_ENUMERATION);
-    type = c_constant_t(base);
-    c_enumeration(o)->elements = c_arrayNew(type,M_COUNT);
-    c_free(type);
+#define _ENUMVAL_PREFIX_(e,v) \
+    c_enumeration(e)->elements[v] = \
+    c_metaDeclareEnumElement(c_metaObject(base),#v + 5 /* OSPL_ prefix */)
+
+    o = c_metaDefine(c_metaObject(base),M_ENUMERATION);
+    /* The following array of objects should be defined as array of c_constant.
+     * This is not a problem and is intentional because of the side effect.
+     * The side effect is that a type ARRAY<c_object> is created in the database.
+     * This type will otherwise not be available but it is required for c_clone to work.
+     */
+    c_enumeration(o)->elements = c_arrayNew(c_object_t(base),M_COUNT);
     _ENUMVAL_(o,M_UNDEFINED);
     _ENUMVAL_(o,M_ANNOTATION);
     _ENUMVAL_(o,M_ATTRIBUTE);
@@ -731,31 +856,29 @@ c_baseInit (
     _ENUMVAL_(o,M_UNION);
     _ENUMVAL_(o,M_UNIONCASE);
     c_metaFinalize(o);
+    c_metaBind(c_metaObject(base),"c_metaKind",o);
     c_free(o);
 
-    o = c_metaDeclare(c_metaObject(base),"c_collKind",M_ENUMERATION);
-    type = c_constant_t(base);
-    c_enumeration(o)->elements = c_arrayNew(type,C_COUNT);
-    c_free(type);
-    _ENUMVAL_(o,C_UNDEFINED);
-    _ENUMVAL_(o,C_LIST);
-    _ENUMVAL_(o,C_ARRAY);
-    _ENUMVAL_(o,C_BAG);
-    _ENUMVAL_(o,C_SET);
-    _ENUMVAL_(o,C_MAP);
-    _ENUMVAL_(o,C_DICTIONARY);
-    _ENUMVAL_(o,C_SEQUENCE);
-    _ENUMVAL_(o,C_STRING);
-    _ENUMVAL_(o,C_WSTRING);
-    _ENUMVAL_(o,C_QUERY);
-    _ENUMVAL_(o,C_SCOPE);
+    o = c_metaDefine(c_metaObject(base),M_ENUMERATION);
+    c_enumeration(o)->elements = c_arrayNew(c_constant_t(base),OSPL_C_COUNT);
+    _ENUMVAL_PREFIX_(o,OSPL_C_UNDEFINED);
+    _ENUMVAL_PREFIX_(o,OSPL_C_LIST);
+    _ENUMVAL_PREFIX_(o,OSPL_C_ARRAY);
+    _ENUMVAL_PREFIX_(o,OSPL_C_BAG);
+    _ENUMVAL_PREFIX_(o,OSPL_C_SET);
+    _ENUMVAL_PREFIX_(o,OSPL_C_MAP);
+    _ENUMVAL_PREFIX_(o,OSPL_C_DICTIONARY);
+    _ENUMVAL_PREFIX_(o,OSPL_C_SEQUENCE);
+    _ENUMVAL_PREFIX_(o,OSPL_C_STRING);
+    _ENUMVAL_PREFIX_(o,OSPL_C_WSTRING);
+    _ENUMVAL_PREFIX_(o,OSPL_C_QUERY);
+    _ENUMVAL_PREFIX_(o,OSPL_C_SCOPE);
     c_metaFinalize(o);
+    c_metaBind(c_metaObject(base),"c_collKind",o);
     c_free(o);
 
-    o = c_metaDeclare(c_metaObject(base),"c_primKind",M_ENUMERATION);
-    type = c_constant_t(base);
-    c_enumeration(o)->elements = c_arrayNew(type,P_COUNT);
-    c_free(type);
+    o = c_metaDefine(c_metaObject(base),M_ENUMERATION);
+    c_enumeration(o)->elements = c_arrayNew(c_constant_t(base),P_COUNT);
     _ENUMVAL_(o,P_UNDEFINED);
     _ENUMVAL_(o,P_ADDRESS);
     _ENUMVAL_(o,P_BOOLEAN);
@@ -774,13 +897,15 @@ c_baseInit (
     _ENUMVAL_(o,P_MUTEX);
     _ENUMVAL_(o,P_LOCK);
     _ENUMVAL_(o,P_COND);
+    _ENUMVAL_(o,P_PA_UINT32);
+    _ENUMVAL_(o,P_PA_UINTPTR);
+    _ENUMVAL_(o,P_PA_VOIDP);
     c_metaFinalize(o);
+    c_metaBind(c_metaObject(base),"c_primKind",o);
     c_free(o);
 
-    o = c_metaDeclare(c_metaObject(base),"c_exprKind",M_ENUMERATION);
-    type = c_constant_t(base);
-    c_enumeration(o)->elements = c_arrayNew(type,E_COUNT);
-    c_free(type);
+    o = c_metaDefine(c_metaObject(base),M_ENUMERATION);
+    c_enumeration(o)->elements = c_arrayNew(c_constant_t(base),E_COUNT);
     _ENUMVAL_(o,E_UNDEFINED);
     _ENUMVAL_(o,E_OR);
     _ENUMVAL_(o,E_XOR);
@@ -794,23 +919,22 @@ c_baseInit (
     _ENUMVAL_(o,E_MOD);
     _ENUMVAL_(o,E_NOT);
     c_metaFinalize(o);
+    c_metaBind(c_metaObject(base),"c_exprKind",o);
     c_free(o);
 
-    o = c_metaDeclare(c_metaObject(base),"c_direction",M_ENUMERATION);
-    type = c_constant_t(base);
-    c_enumeration(o)->elements = c_arrayNew(type,D_COUNT);
-    c_free(type);
+    o = c_metaDefine(c_metaObject(base),M_ENUMERATION);
+    c_enumeration(o)->elements = c_arrayNew(c_constant_t(base),D_COUNT);
     _ENUMVAL_(o,D_UNDEFINED);
     _ENUMVAL_(o,D_IN);
     _ENUMVAL_(o,D_OUT);
     _ENUMVAL_(o,D_INOUT);
     c_metaFinalize(o);
+    c_metaBind(c_metaObject(base),"c_direction",o);
     c_free(o);
 
-    o = c_metaDeclare(c_metaObject(base),"c_valueKind",M_ENUMERATION);
-    type = c_constant_t(base);
-    c_enumeration(o)->elements = c_arrayNew(type,V_COUNT);
-    c_free(type);
+    o = c_metaDefine(c_metaObject(base),M_ENUMERATION);
+    base->baseCache.typeCache.c_valueKind_t = c_type(o);
+    c_enumeration(o)->elements = c_arrayNew(c_constant_t(base),V_COUNT);
     _ENUMVAL_(o,V_UNDEFINED);
     _ENUMVAL_(o,V_ADDRESS);
     _ENUMVAL_(o,V_BOOLEAN);
@@ -831,24 +955,27 @@ c_baseInit (
     _ENUMVAL_(o,V_OBJECT);
     _ENUMVAL_(o,V_VOIDP);
     c_metaFinalize(o);
+    c_metaBind(c_metaObject(base),"c_valueKind",o);
     c_free(o);
 
 #undef _ENUMVAL_
+#undef _ENUMVAL_PREFIX_
 
-    o = c_metaDeclare(c_metaObject(base),"c_threadId",M_STRUCTURE);
-    c_metaTypeInit(o,sizeof(c_threadId),C_ALIGNMENT(c_threadId));
-    c_free(o);
+    {
+        C_ALIGNMENT_TYPE (c_threadId);
+        o = c_metaDeclare (c_metaObject (base), "c_threadId", M_STRUCTURE);
+        c_metaTypeInit (o, sizeof (c_threadId), C_ALIGNMENT (c_threadId));
+        c_free (o);
+    }
 
     o = c_metaDefine(c_metaObject(base),M_STRUCTURE);
-    type = c_member_t(base);
-    members = c_arrayNew(type,2);
-    c_free(type);
+    members = c_arrayNew(c_member_t(base),2);
     members[0] = (c_voidp)c_metaDefine(c_metaObject(base),M_MEMBER);
         c_specifier(members[0])->name = c_stringNew(base,"seconds");
-        c_specifier(members[0])->type = c_long_t(base);
+        c_specifier(members[0])->type = c_keep(c_long_t(base));
     members[1] = (c_voidp)c_metaDefine(c_metaObject(base),M_MEMBER);
         c_specifier(members[1])->name = c_stringNew(base,"nanoseconds");
-        c_specifier(members[1])->type = c_ulong_t(base);
+        c_specifier(members[1])->type = c_keep(c_ulong_t(base));
     c_structure(o)->members = members;
     c_metaObject(o)->definedIn = c_metaObject(base);
     c_metaFinalize(o);
@@ -856,12 +983,44 @@ c_baseInit (
     c_free(found);
     c_free(o);
 
+    o = c_metaDefine(c_metaObject(base),M_TYPEDEF);
+    c_metaObject(o)->definedIn = c_metaObject(base);
+    c_typeDef(o)->alias = c_keep(c_ulonglong_t(base));
+    c_metaFinalize(o);
+    found = c_metaBind(c_metaObject(base),"os_timeW",o);
+    c_free(found);
+    c_free(o);
+
+    o = c_metaDefine(c_metaObject(base),M_TYPEDEF);
+    c_metaObject(o)->definedIn = c_metaObject(base);
+    c_typeDef(o)->alias = c_keep(c_ulonglong_t(base));
+    c_metaFinalize(o);
+    found = c_metaBind(c_metaObject(base),"os_timeM",o);
+    c_free(found);
+    c_free(o);
+
+    o = c_metaDefine(c_metaObject(base),M_TYPEDEF);
+    c_metaObject(o)->definedIn = c_metaObject(base);
+    c_typeDef(o)->alias = c_keep(c_ulonglong_t(base));
+    c_metaFinalize(o);
+    found = c_metaBind(c_metaObject(base),"os_timeE",o);
+    c_free(found);
+    c_free(o);
+
+    o = c_metaDefine(c_metaObject(base),M_TYPEDEF);
+    c_metaObject(o)->definedIn = c_metaObject(base);
+    c_typeDef(o)->alias = c_keep(c_longlong_t(base));
+    c_metaFinalize(o);
+    found = c_metaBind(c_metaObject(base),"os_duration",o);
+    c_free(found);
+    c_free(o);
+
     o = c_metaDeclare(c_metaObject(base),"c_value",M_UNION);
-    c_metaTypeInit(o,sizeof(struct c_value),C_ALIGNMENT(struct c_value));
+    c_metaTypeInit(o,sizeof(struct c_value),C_ALIGNMENT(c_value));
     c_free(o);
 
     o = c_metaDeclare(c_metaObject(base),"c_annotation", M_CLASS);
-    c_metaTypeInit(o,sizeof(struct c_annotation_s),C_ALIGNMENT(struct c_annotation_s));
+    c_metaTypeInit(o,sizeof(struct c_annotation_s),C_ALIGNMENT_C_STRUCT(c_annotation));
     c_free(o);
 
 
@@ -889,9 +1048,7 @@ c_baseInit (
         c_free(o);
 
     o = _INITCLASS_(base,c_specifier,c_baseObject);
-        type = c_string_t(base);
-        C_META_ATTRIBUTE_(c_specifier,o,name,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_specifier,o,name,c_string_t(base));
         type = ResolveType(base,c_type);
         C_META_ATTRIBUTE_(c_specifier,o,type,type);
         c_free(type);
@@ -899,12 +1056,8 @@ c_baseInit (
         c_free(o);
 
     o = _INITCLASS_(base,c_metaObject,c_baseObject);
-        type = c_string_t(base);
-        C_META_ATTRIBUTE_(c_metaObject,o,name,type);
-        c_free(type);
-        type = c_voidp_t(base);
-        C_META_ATTRIBUTE_(c_metaObject,o,definedIn,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_metaObject,o,name,c_string_t(base));
+        C_META_ATTRIBUTE_(c_metaObject,o,definedIn,c_voidp_t(base));
         C_META_FINALIZE_(o);
         c_free(o);
 
@@ -919,15 +1072,11 @@ c_baseInit (
         c_free(o);
 
     o = _INITCLASS_(base,c_type,c_metaObject);
-        type = c_voidp_t(base);
-        C_META_ATTRIBUTE_(c_type,o,base,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_type,o,base,c_voidp_t(base));
         type = ResolveType(base,c_address);
         C_META_ATTRIBUTE_(c_type,o,alignment,type);
         c_free(type);
-        type = c_long_t(base);
-        C_META_ATTRIBUTE_(c_type,o,objectCount,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_type,o,objectCount,c_long_t(base));
         type = ResolveType(base,c_address);
         C_META_ATTRIBUTE_(c_type,o,size,type);
         c_free(type);
@@ -955,7 +1104,7 @@ c_baseInit (
         c_free(type);
         type = c_type(c_metaDefine(c_metaObject(base),M_COLLECTION));
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_operand>");
-            c_collectionTypeKind(type) = C_ARRAY;
+            c_collectionTypeKind(type) = OSPL_C_ARRAY;
             c_collectionTypeMaxSize(type) = 0;
             c_collectionTypeSubType(type) = ResolveType(base,c_operand);
             c_metaFinalize(c_metaObject(type));
@@ -981,7 +1130,7 @@ c_baseInit (
     o = _INITCLASS_(base,c_unionCase,c_specifier);
         type = c_type(c_metaDefine(c_metaObject(base),M_COLLECTION));
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_literal>");
-            c_collectionTypeKind(type) = C_ARRAY;
+            c_collectionTypeKind(type) = OSPL_C_ARRAY;
             c_collectionTypeMaxSize(type) = 0;
             c_collectionTypeSubType(type) = ResolveType(base,c_literal);
             c_metaFinalize(c_metaObject(type));
@@ -991,16 +1140,12 @@ c_baseInit (
         c_free(o);
 
     o = _INITCLASS_(base,c_attribute,c_property);
-        type = c_bool_t(base);
-        C_META_ATTRIBUTE_(c_attribute,o,isReadOnly,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_attribute,o,isReadOnly,c_bool_t(base));
         C_META_FINALIZE_(o);
         c_free(o);
 
     o = _INITCLASS_(base,c_relation,c_property);
-        type = c_string_t(base);
-        C_META_ATTRIBUTE_(c_relation,o,inverse,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_relation,o,inverse,c_string_t(base));
         C_META_FINALIZE_(o);
         c_free(o);
 
@@ -1030,7 +1175,7 @@ c_baseInit (
         c_free(type);
         type = c_type(c_metaDefine(c_metaObject(base),M_COLLECTION));
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_parameter>");
-            c_collectionTypeKind(type) = C_ARRAY;
+            c_collectionTypeKind(type) = OSPL_C_ARRAY;
             c_collectionTypeMaxSize(type) = 0;
             c_collectionTypeSubType(type) = ResolveType(base,c_parameter);
             c_metaFinalize(c_metaObject(type));
@@ -1050,9 +1195,7 @@ c_baseInit (
         type = ResolveType(base,c_collKind);
         C_META_ATTRIBUTE_(c_collectionType,o,kind,type);
         c_free(type);
-        type = c_long_t(base);
-        C_META_ATTRIBUTE_(c_collectionType,o,maxSize,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_collectionType,o,maxSize,c_ulong_t(base));
         type = ResolveType(base,c_type);
         C_META_ATTRIBUTE_(c_collectionType,o,subType,type);
         c_free(type);
@@ -1069,7 +1212,7 @@ c_baseInit (
     o = _INITCLASS_(base,c_enumeration,c_type);
         type = c_type(c_metaDefine(c_metaObject(base),M_COLLECTION));
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_constant>");
-            c_collectionTypeKind(type) = C_ARRAY;
+            c_collectionTypeKind(type) = OSPL_C_ARRAY;
             c_collectionTypeMaxSize(type) = 0;
             c_collectionTypeSubType(type) = ResolveType(base,c_constant);
             c_metaFinalize(c_metaObject(type));
@@ -1081,7 +1224,7 @@ c_baseInit (
     o = _INITCLASS_(base,c_union,c_type);
         type = c_type(c_metaDefine(c_metaObject(base),M_COLLECTION));
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_unionCase>");
-            c_collectionTypeKind(type) = C_ARRAY;
+            c_collectionTypeKind(type) = OSPL_C_ARRAY;
             c_collectionTypeMaxSize(type) = 0;
             c_collectionTypeSubType(type) = ResolveType(base,c_unionCase);
             c_metaFinalize(c_metaObject(type));
@@ -1089,7 +1232,7 @@ c_baseInit (
         c_free(type);
         type = c_type(c_metaDefine(c_metaObject(base),M_COLLECTION));
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_unionCase>");
-            c_collectionTypeKind(type) = C_ARRAY;
+            c_collectionTypeKind(type) = OSPL_C_ARRAY;
             c_collectionTypeMaxSize(type) = 0;
             c_collectionTypeSubType(type) = ResolveType(base,c_unionCase);
             c_metaFinalize(c_metaObject(type));
@@ -1107,7 +1250,7 @@ c_baseInit (
     o = _INITCLASS_(base,c_structure,c_type);
         type = c_type(c_metaDefine(c_metaObject(base),M_COLLECTION));
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_member>");
-            c_collectionTypeKind(type) = C_ARRAY;
+            c_collectionTypeKind(type) = OSPL_C_ARRAY;
             c_collectionTypeMaxSize(type) = 0;
             c_collectionTypeSubType(type) = ResolveType(base,c_member);
             c_metaFinalize(c_metaObject(type));
@@ -1115,7 +1258,7 @@ c_baseInit (
         c_free(type);
         type = c_type(c_metaDefine(c_metaObject(base),M_COLLECTION));
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_member>");
-            c_collectionTypeKind(type) = C_ARRAY;
+            c_collectionTypeKind(type) = OSPL_C_ARRAY;
             c_collectionTypeMaxSize(type) = 0;
             c_collectionTypeSubType(type) = ResolveType(base,c_member);
             c_metaFinalize(c_metaObject(type));
@@ -1132,12 +1275,10 @@ c_baseInit (
         c_free(o);
 
     o = _INITCLASS_(base,c_interface,c_type);
-        type = c_bool_t(base);
-        C_META_ATTRIBUTE_(c_interface,o,abstract,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_interface,o,abstract,c_bool_t(base));
         type = c_type(c_metaDefine(c_metaObject(base),M_COLLECTION));
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_interface>");
-            c_collectionTypeKind(type) = C_ARRAY;
+            c_collectionTypeKind(type) = OSPL_C_ARRAY;
             c_collectionTypeMaxSize(type) = 0;
             c_collectionTypeSubType(type) = ResolveType(base,c_interface);
             c_metaFinalize(c_metaObject(type));
@@ -1145,7 +1286,7 @@ c_baseInit (
         c_free(type);
         type = c_type(c_metaDefine(c_metaObject(base),M_COLLECTION));
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_property>");
-            c_collectionTypeKind(type) = C_ARRAY;
+            c_collectionTypeKind(type) = OSPL_C_ARRAY;
             c_collectionTypeMaxSize(type) = 0;
             c_collectionTypeSubType(type) = ResolveType(base,c_property);
             c_metaFinalize(c_metaObject(type));
@@ -1163,7 +1304,7 @@ c_baseInit (
         c_free(type);
         type = c_type(c_metaDefine(c_metaObject(base),M_COLLECTION));
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_string>");
-            c_collectionTypeKind(type) = C_ARRAY;
+            c_collectionTypeKind(type) = OSPL_C_ARRAY;
             c_collectionTypeMaxSize(type) = 0;
             c_collectionTypeSubType(type) = ResolveType(base,c_string);
             c_metaFinalize(c_metaObject(type));
@@ -1198,118 +1339,101 @@ c_baseInit (
         type = ResolveType(base,c_literal);
         c_union(o)->cases = c_arrayNew(type,18);
         c_free(type);
+        c_free(c_union(o)->scope);
         c_union(o)->scope = NULL;
 
         caseNumber = 0;
         /* c_unionCaseNew transfers refCount of type and
          * c_enumValue(_SWITCH_TYPE_,"V_BOOLEAN")
          */
-        type = c_address_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_ADDRESS"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                              "Address",type,labels);
+                                              "Address",c_address_t(base),labels);
         c_iterFree(labels);
 
-        type = c_bool_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_BOOLEAN"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                              "Boolean",type,labels);
+                                              "Boolean",c_bool_t(base),labels);
         c_iterFree(labels);
 
-        type = c_octet_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_OCTET"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                              "Octet",type,labels);
+                                              "Octet",c_octet_t(base),labels);
         c_iterFree(labels);
 
-        type = c_short_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_SHORT"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                              "Short",type,labels);
+                                              "Short",c_short_t(base),labels);
         c_iterFree(labels);
 
-        type = c_long_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_LONG"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                              "Long",type,labels);
+                                              "Long",c_long_t(base),labels);
         c_iterFree(labels);
 
-        type = c_longlong_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_LONGLONG"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                              "LongLong",type,labels);
+                                              "LongLong",c_longlong_t(base),labels);
         c_iterFree(labels);
 
-        type = c_ushort_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_USHORT"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                              "UShort",type,labels);
+                                              "UShort",c_ushort_t(base),labels);
         c_iterFree(labels);
 
-        type = c_ulong_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_ULONG"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                              "ULong",type,labels);
+                                              "ULong",c_ulong_t(base),labels);
         c_iterFree(labels);
 
-        type = c_ulonglong_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_ULONGLONG"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                              "ULongLong",type,labels);
+                                              "ULongLong",c_ulonglong_t(base),labels);
         c_iterFree(labels);
 
-        type = c_float_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_FLOAT"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                              "Float",type,labels);
+                                              "Float",c_float_t(base),labels);
         c_iterFree(labels);
 
-        type = c_double_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_DOUBLE"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                              "Double",type,labels);
+                                              "Double",c_double_t(base),labels);
         c_iterFree(labels);
 
-        type = c_char_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_CHAR"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                               "Char",type,labels);
+                                               "Char",c_char_t(base),labels);
         c_iterFree(labels);
 
-        type = c_string_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_STRING"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                               "String",type,labels);
+                                               "String",c_string_t(base),labels);
         c_iterFree(labels);
 
-        type = c_wchar_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_WCHAR"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                               "WChar",type,labels);
+                                               "WChar",c_wchar_t(base),labels);
         c_iterFree(labels);
 
-        type = c_wstring_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_WSTRING"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                               "WString",type,labels);
+                                               "WString",c_wstring_t(base),labels);
         c_iterFree(labels);
 
-        type = c_string_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_FIXED"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                               "Fixed",type,labels);
+                                               "Fixed",c_string_t(base),labels);
         c_iterFree(labels);
 
-        type = c_object_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_OBJECT"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                               "Object",type,labels);
+                                               "Object",c_object_t(base),labels);
         c_iterFree(labels);
 
-        type = c_voidp_t(base);
         labels = c_iterNew(c_enumValue(_SWITCH_TYPE_,"V_VOIDP"));
         c_union(o)->cases[caseNumber++] = c_unionCaseNew(c_metaObject(base),
-                                               "Voidp",type,labels);
+                                               "Voidp",c_voidp_t(base),labels);
         c_iterFree(labels);
         c_metaFinalize(o);
         c_free(o);
@@ -1328,30 +1452,39 @@ c_baseInit (
     /* ::ID */
     o = c_metaDefine(c_metaObject(_intern), M_ANNOTATION);
     initAnnotation(o);
+    found = c_metaDeclare(o, "value", M_ATTRIBUTE);
+    c_property(found)->type = c_ulong_t(base);
+    c_free(found);
     c_metaBind(c_metaObject(_intern), "ID", o);
-    c_metaDeclare(o, "value", M_ATTRIBUTE);
     /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::Optional */
     o = c_metaDefine(c_metaObject(_intern), M_ANNOTATION);
     initAnnotation(o);
+    found = c_metaDeclare(o, "value", M_ATTRIBUTE);
+    c_property(found)->type = c_bool_t(base);
+    c_free(found);
     c_metaBind(c_metaObject(_intern), "optional", o);
-    c_metaDeclare(o, "value", M_ATTRIBUTE);
     /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::Key */
     o = c_metaDefine(c_metaObject(_intern), M_ANNOTATION);
     initAnnotation(o);
+    found = c_metaDeclare(o, "value", M_ATTRIBUTE);
+    c_property(found)->type = c_bool_t(base);
+    c_free(found);
     c_metaBind(c_metaObject(_intern), "Key", o);
-    c_metaDeclare(o, "value", M_ATTRIBUTE);
     /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::Shared */
     o = c_metaDefine(c_metaObject(_intern), M_ANNOTATION);
     initAnnotation(o);
+    found = c_metaDeclare(o, "value", M_ATTRIBUTE);
+    c_property(found)->type = c_bool_t(base);
+    c_free(found);
     c_metaBind(c_metaObject(_intern), "Shared", o);
     /*c_metaFinalize(o);*/
     c_free(o);
@@ -1359,16 +1492,20 @@ c_baseInit (
     /* ::BitBound */
     o = c_metaDefine(c_metaObject(_intern), M_ANNOTATION);
     initAnnotation(o);
+    found = c_metaDeclare(o, "value", M_ATTRIBUTE);
+    c_property(found)->type = c_ushort_t(base);
+    c_free(found);
     c_metaBind(c_metaObject(_intern), "BitBound", o);
-    c_metaDeclare(o, "value", M_ATTRIBUTE);
     /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::Value */
     o = c_metaDefine(c_metaObject(_intern), M_ANNOTATION);
     initAnnotation(o);
+    found = c_metaDeclare(o, "value", M_ATTRIBUTE);
+    c_property(found)->type = c_ulong_t(base);
+    c_free(found);
     c_metaBind(c_metaObject(_intern), "Value", o);
-    c_metaDeclare(o, "value", M_ATTRIBUTE);
     /*c_metaFinalize(o);*/
     c_free(o);
 
@@ -1382,24 +1519,39 @@ c_baseInit (
     /* ::Nested */
     o = c_metaDefine(c_metaObject(_intern), M_ANNOTATION);
     initAnnotation(o);
+    found = c_metaDeclare(o, "value", M_ATTRIBUTE);
+    c_property(found)->type = c_bool_t(base);
+    c_free(found);
     c_metaBind(c_metaObject(_intern), "Nested", o);
-    c_metaDeclare(o, "value", M_ATTRIBUTE);
     /*c_metaFinalize(o);*/
     c_free(o);
+
+    temp = c_metaDefine(c_metaObject(base),M_ENUMERATION);
+    c_enumeration(temp)->elements = c_arrayNew(c_constant_t(base),3);
+    c_enumeration(temp)->elements[0] = c_metaDeclareEnumElement(c_metaObject(base),"FINAL_EXTENSIBILITY");
+    c_enumeration(temp)->elements[1] = c_metaDeclareEnumElement(c_metaObject(base),"EXTENSIBLE_EXTENSIBILITY");
+    c_enumeration(temp)->elements[2] = c_metaDeclareEnumElement(c_metaObject(base),"MUTABLE_EXTENSIBILITY");
+    c_metaFinalize(temp);
+    c_metaBind(c_metaObject(base), "ExtensibilityKind", temp);
 
     /* ::Extensibility */
     o = c_metaDefine(c_metaObject(_intern), M_ANNOTATION);
     initAnnotation(o);
+    found = c_metaDeclare(o, "value", M_ATTRIBUTE);
+    /* Transfer refCount of temp here, so no c_free on it later. */
+    c_property(found)->type = c_type(temp);
+    c_free(found);
     c_metaBind(c_metaObject(_intern), "Extensibility", o);
-    c_metaDeclare(o, "value", M_ATTRIBUTE);
     /*c_metaFinalize(o);*/
     c_free(o);
 
     /* ::MustUnderstand */
     o = c_metaDefine(c_metaObject(_intern), M_ANNOTATION);
     initAnnotation(o);
+    found = c_metaDeclare(o, "value", M_ATTRIBUTE);
+    c_property(found)->type = c_bool_t(base);
+    c_free(found);
     c_metaBind(c_metaObject(_intern), "MustUnderstand", o);
-    c_metaDeclare(o, "value", M_ATTRIBUTE);
     /*c_metaFinalize(o);*/
     c_free(o);
 
@@ -1407,9 +1559,38 @@ c_baseInit (
     o = c_metaDefine(c_metaObject(_intern), M_ANNOTATION);
     initAnnotation(o);
     c_metaBind(c_metaObject(_intern), "Verbatim", o);
-    c_metaDeclare(o, "language", M_ATTRIBUTE);
-    c_metaDeclare(o, "placement", M_ATTRIBUTE);
-    c_metaDeclare(o, "text", M_ATTRIBUTE);
+
+    found = c_metaObject(c_metaDefine(c_metaObject(base), M_COLLECTION));
+    c_collectionType(found)->kind = OSPL_C_STRING;
+    c_collectionType(found)->subType = c_char_t(base);
+    c_collectionType(found)->maxSize = 32;
+    c_metaObject(found)->definedIn = c_metaObject(base);
+    c_metaFinalize(found);
+    temp = c_metaBind(c_metaObject(base), "C_STRING<32>", found);
+    c_free(found);
+
+    found = c_metaDeclare(o, "language", M_ATTRIBUTE);
+    /* Transfer refCount of temp here, so no c_free on it later. */
+    c_property(found)->type = c_type(temp);
+    c_free(found);
+
+    found = c_metaObject(c_metaDefine(c_metaObject(base), M_COLLECTION));
+    c_collectionType(found)->kind = OSPL_C_STRING;
+    c_collectionType(found)->subType = c_char_t(base);
+    c_collectionType(found)->maxSize = 128;
+    c_metaObject(found)->definedIn = c_metaObject(base);
+    c_metaFinalize(found);
+    temp = c_metaBind(c_metaObject(base), "C_STRING<128>", found);
+    c_free(found);
+
+    found = c_metaDeclare(o, "placement", M_ATTRIBUTE);
+    /* Transfer refCount of temp here, so no c_free on it later. */
+    c_property(found)->type = c_type(temp);
+    c_free(found);
+
+    found = c_metaDeclare(o, "text", M_ATTRIBUTE);
+    c_property(found)->type = c_string_t(base);
+    c_free(found);
     /*c_metaFinalize(o);*/
     c_free(o);
 
@@ -1430,8 +1611,8 @@ c_create (
     c_header header;
 
     if ((size != 0) && (size < MIN_DB_SIZE)) {
-        OS_REPORT_2(OS_ERROR,"c_base::c_create",0,
-                    "Specified memory size (%d) is too small to occupy a c_base instance,"
+        OS_REPORT(OS_ERROR,"c_base::c_create",0,
+                    "Specified memory size (%"PA_PRIuSIZE") is too small to occupy a c_base instance,"
                     "required minimum size is %d bytes.",
                     size,MIN_DB_SIZE);
         return NULL;
@@ -1450,18 +1631,18 @@ c_create (
         header->prevObject = NULL;
 #endif
 #endif
-        header->refCount = 1;
+        pa_st32(&header->refCount, 1);
         header->type = NULL; /* Will be set in c_baseInit after bootstrapping */
         tempbase = (c_base)c_oid(header);
         base = (c_base)c_mmBind(mm, name, tempbase);
         if (base != tempbase) {
-            OS_REPORT_4(OS_ERROR,
+            OS_REPORT(OS_ERROR,
                         "c_base::c_create",0,
                         "Internal error, memory management seems corrupted.\n"
-                        "             mm = 0x%x, name = %s,\n"
-                        "             tempbase = 0x%x, base = 0x%x",
-                        mm, name ? name : "(null)", tempbase, base);
-            c_mmFree(mm, tempbase);
+                        "             mm = 0x%"PA_PRIxADDR", name = %s,\n"
+                        "             tempbase = 0x%"PA_PRIxADDR", base = 0x%"PA_PRIxADDR"",
+                        (os_address)mm, name ? name : "(null)", (os_address)tempbase, (os_address)base);
+            c_mmFree(mm, header);
             return NULL;
         }
 
@@ -1509,14 +1690,14 @@ c_open (
     }
     base = (c_base)c_mmLookup(mm, name);
     if (base == NULL) {
-        OS_REPORT_1(OS_ERROR,
+        OS_REPORT(OS_ERROR,
                     "c_base::c_open",0,
                     "segment %s not found",name);
         return NULL;
     }
 
     if (base->confidence != CONFIDENCE) {
-        OS_REPORT_2(OS_ERROR,
+        OS_REPORT(OS_ERROR,
                     "c_base::c_open",0,
                     "confidence mismatch: %d <> %d",
                     base->confidence,CONFIDENCE);
@@ -1605,7 +1786,7 @@ c_resolve (
     return NULL;
 }
 
-c_long
+os_size_t
 c_memsize (
     c_type type)
 {
@@ -1619,52 +1800,82 @@ c_baseGetMemThresholdStatus(
     return c_mmbaseGetMemThresholdStatus(_this->mm);
 }
 
-c_object
-c_new (
-    c_type type)
+c_bool
+c_baseMakeMemReservation(
+    c_base _this,
+    os_address amount)
+{
+    if (amount != C_MM_RESERVATION_NO_CHECK) {
+        return c_mmbaseMakeReservation(_this->mm, amount);
+    }
+    return TRUE;
+}
+
+void
+c_baseReleaseMemReservation(
+    c_base _this,
+    os_address amount)
+{
+    if (amount != C_MM_RESERVATION_NO_CHECK) {
+        c_mmbaseReleaseReservation(_this->mm, amount);
+    }
+}
+
+static c_object
+c__newCommon (
+    c_type type,
+    c_bool check)
 {
     c_header header;
     c_object o;
-    c_long size;
-    c_base base;
-    c_mm mm;
+    os_size_t size;
+    os_uint32 traceType;
 
     assert(type);
-
-    base = type->base;
-    mm = base->mm;
 
     if (c_baseObjectKind (type) != M_COLLECTION) {
         size = type->size;
     } else {
 #ifndef NDEBUG
-        if (c_collectionTypeKind (type) == C_ARRAY || c_collectionTypeKind (type) == C_SEQUENCE) {
+        if (c_collectionTypeKind (type) == OSPL_C_ARRAY ||
+            c_collectionTypeKind (type) == OSPL_C_SEQUENCE)
+        {
             OS_REPORT(OS_ERROR,
                       "Database c_new",0,
-                      "c_new cannot create C_ARRAY nor C_SEQUENCE, use c_newArray or c_newSequence respectively");
+                      "c_new cannot create OSPL_C_ARRAY nor OSPL_C_SEQUENCE, "
+                      "use c_newArray or c_newSequence respectively");
             assert(0);
         }
 #endif
         size = c_typeSize (type);
-        if (size < 0) {
-            return NULL;
-        }
     }
     assert (size > 0);
 
-    header = (c_header) c_mmMalloc (mm, MEMSIZE(size));
+    if (check) {
+        header = (c_header) c_mmMallocThreshold (type->base->mm, MEMSIZE(size));
+    } else {
+        header = (c_header) c_mmMalloc (type->base->mm, MEMSIZE(size));
+        if (!header) {
+            abort();
+        }
+    }
     if (c_unlikely (header == NULL)) {
         return NULL;
     }
 
-    header->refCount = 1;
+    traceType = (pa_ld32(&c_header(type)->refCount) & REFCOUNT_FLAG_TRACETYPE);
+    pa_st32(&header->refCount, 1);
+    if (traceType) {
+        pa_or32(&header->refCount, REFCOUNT_FLAG_TRACE);
+        c_mmTrackObject (type->base->mm, header, C_MMTRACKOBJECT_CODE_MIN + 2);
+    }
 #if TYPE_REFC_COUNTS_OBJECTS
     header->type = c_keep(type);
 #else
     header->type = type;
 #endif
-    if (base->maintainObjectCount) {
-        pa_increment(&type->objectCount);
+    if (type->base->maintainObjectCount) {
+        pa_inc32(&type->objectCount);
     }
 #ifndef NDEBUG
     header->confidence = CONFIDENCE;
@@ -1692,30 +1903,45 @@ c_new (
     return o;
 }
 
+c_object
+c_new (
+    c_type type)
+{
+    return c__newCommon(type, FALSE);
+}
+
+c_object
+c_new_s(
+    c_type type)
+{
+    return c__newCommon(type, TRUE);
+}
+
 /*
  * Use the macro definitions c_newArray and c_newSequence instead, respectively
  * for creating an array or a sequence for legibility.
  */
-c_object
-c_newBaseArrayObject (
+static c_object
+c__newBaseArrayObjectCommon (
     c_collectionType arrayType,
-    c_long size)
+    c_ulong size,
+    c_bool check)
 {
     c_size allocSize;
     c_object o = NULL;
 
     assert(arrayType);
     assert(
-        (c_collectionTypeKind(arrayType) == C_ARRAY && size > 0)
+        (c_collectionTypeKind(arrayType) == OSPL_C_ARRAY && size > 0)
         ||
-        (c_collectionTypeKind(arrayType) == C_SEQUENCE && size >= 0)
+        (c_collectionTypeKind(arrayType) == OSPL_C_SEQUENCE)
         );
 
-    if ((c_collectionTypeKind(arrayType) == C_ARRAY)
-         || (c_collectionTypeKind(arrayType) == C_SEQUENCE)) {
-        if (    (c_collectionTypeKind(arrayType) == C_ARRAY && size > 0)
+    if ((c_collectionTypeKind(arrayType) == OSPL_C_ARRAY)
+         || (c_collectionTypeKind(arrayType) == OSPL_C_SEQUENCE)) {
+        if (    (c_collectionTypeKind(arrayType) == OSPL_C_ARRAY && size > 0)
                 ||
-                (c_collectionTypeKind(arrayType) == C_SEQUENCE && size >= 0) ) {
+                (c_collectionTypeKind(arrayType) == OSPL_C_SEQUENCE) ) {
             c_arrayHeader hdr;
             c_header header;
             c_base base;
@@ -1738,13 +1964,27 @@ c_newBaseArrayObject (
             }
 
             base = c_type(arrayType)->base;
-            hdr = (c_arrayHeader)c_mmMalloc(base->mm, ARRAYMEMSIZE(allocSize));
+            if (check) {
+                hdr = (c_arrayHeader)c_mmMallocThreshold(base->mm, ARRAYMEMSIZE(allocSize));
+            } else {
+                hdr = (c_arrayHeader)c_mmMalloc(base->mm, ARRAYMEMSIZE(allocSize));
+                if (!hdr) {
+                    abort();
+                }
+            }
 
             if (hdr) {
+                os_uint32 traceType;
+
                 hdr->size = size;
                 header = (c_header)&hdr->_parent;
 
-                header->refCount = 1;
+                traceType = (pa_ld32(&c_header(arrayType)->refCount) & REFCOUNT_FLAG_TRACETYPE);
+                pa_st32(&header->refCount, 1);
+                if (traceType) {
+                    pa_or32(&header->refCount, REFCOUNT_FLAG_TRACE);
+                    c_mmTrackObject (base->mm, header, C_MMTRACKOBJECT_CODE_MIN + 2);
+                }
                 /* Keep reference to our type */
 #if TYPE_REFC_COUNTS_OBJECTS
                 header->type = c_keep(c_type(arrayType));
@@ -1752,7 +1992,7 @@ c_newBaseArrayObject (
                 header->type = c_type(arrayType);
 #endif
                 if (base->maintainObjectCount) {
-                    pa_increment(&header->type->objectCount);
+                    pa_inc32(&header->type->objectCount);
                 }
 
                 o = c_oid(header);
@@ -1777,7 +2017,7 @@ c_newBaseArrayObject (
 #endif
             }
         } else {
-            OS_REPORT_1(OS_ERROR,
+            OS_REPORT(OS_ERROR,
                         "Database c_newBaseArrayObject",0,
                         "Illegal size %d specified", size);
         }
@@ -1790,6 +2030,23 @@ c_newBaseArrayObject (
 }
 
 c_object
+c_newBaseArrayObject (
+    c_collectionType arrayType,
+    c_ulong size)
+{
+    return c__newBaseArrayObjectCommon(arrayType, size, FALSE);
+}
+
+
+c_object
+c_newBaseArrayObject_s (
+    c_collectionType arrayType,
+    c_ulong size)
+{
+    return c__newBaseArrayObjectCommon(arrayType, size, TRUE);
+}
+
+c_object
 c_mem2object(
     c_voidp mem,
     c_type type)
@@ -1798,7 +2055,7 @@ c_mem2object(
     c_type t;
     C_STRUCT(c_header) *header = (C_STRUCT(c_header) *)mem;
 
-    header->refCount = 1;
+    pa_st32(&header->refCount, 1);
     header->type = c_keep(type);
 
     o = c_oid(header);
@@ -1829,7 +2086,7 @@ c_object2mem (
     }
 
     header = c_header(object);
-    assert(header->refCount == 0);
+    assert((pa_ld32(&header->refCount) & REFCOUNT_MASK) == 0);
 #ifndef NDEBUG
     assert(header->confidence == CONFIDENCE);
 #endif
@@ -1844,7 +2101,7 @@ c__assertValidDatabaseObject(
 {
     assert(o);
     assert(c_header(o)->confidence == CONFIDENCE);
-    assert(c_header(o)->refCount > 0);
+    assert((pa_ld32(&c_header(o)->refCount) & REFCOUNT_MASK) > 0);
 }
 #endif
 
@@ -1873,7 +2130,7 @@ _freeReference (
     break;
     case M_BASE:
     case M_COLLECTION:
-        if ((c_collectionType(t)->kind == C_ARRAY) &&
+        if ((c_collectionType(t)->kind == OSPL_C_ARRAY) &&
             (c_collectionType(t)->maxSize != 0)) {
             c_freeReferences(c_metaObject(t), p);
         } else {
@@ -1920,28 +2177,31 @@ _c_freeReferences (
     c_array references, labels, ar;
     c_property property;
     c_member member;
-    c_long i,j,length;
+    c_ulong i,j,length;
     c_size size;
-    c_long nrOfRefs,nrOfLabs;
+    c_ulong nrOfRefs,nrOfLabs;
     c_value v;
 
     assert(metaObject);
     assert(o);
 
     switch (c_baseObject(metaObject)->kind) {
-#if 0
     case M_CLASS:
-        c_freeReferences(c_metaObject(c_class(metaObject)->extends),o);
-    case M_INTERFACE:
-        length = c_arraySize(c_interface(metaObject)->references);
-        for (i=0;i<length;i++) {
-            property = c_property(c_interface(metaObject)->references[i]);
-            type = property->type;
-            freeReference(C_DISPLACE(o,property->offset),type);
+        /* Check if type is an enumeration and in that case set the type of its enum constant to NULL.
+         * This is because the existing cyclic reference between enumeration and its constant are
+         * deliberately not ref counted otherwise the enumeration would be kept alive forever.
+         * Now we need to correct this otherwise freeing the constants will decrease the refcount
+         * of the enumeration type below zero.
+         * This solution will not win the beauty contest, a better solution would be to implement a
+         * c_enumConstant instead of using c_constant but that is considerably more work to implement.
+         */
+        if (metaObject == c_metaObject(c_type(metaObject)->base->metaType[M_ENUMERATION])) {
+            c_array elements = ((c_enumeration)o)->elements;
+            length = c_arraySize(elements);
+            for (i=0; i<length; i++) {
+                c_constant(elements[i])->type = NULL;
+            }
         }
-    break;
-#else
-    case M_CLASS:
         cls = c_class(metaObject);
         while (cls) {
             length = c_arraySize(c_interface(cls)->references);
@@ -1962,7 +2222,6 @@ _c_freeReferences (
             freeReference(C_DISPLACE(o,property->offset),type);
         }
     break;
-#endif
     case M_EXCEPTION:
     case M_STRUCTURE:
         length = c_arraySize(c_structure(metaObject)->references);
@@ -1991,7 +2250,6 @@ _c_freeReferences (
                       "illegal union switch type detected");
             assert(FALSE);
             return FALSE;
-        break;
         }
 #undef _CASE_
         references = c_union(metaObject)->references;
@@ -2016,12 +2274,12 @@ _c_freeReferences (
     break;
     case M_COLLECTION:
         switch (c_collectionType(metaObject)->kind) {
-        case C_ARRAY:
-        case C_SEQUENCE:
+        case OSPL_C_ARRAY:
+        case OSPL_C_SEQUENCE:
             ACTUALTYPE(type,c_collectionType(metaObject)->subType);
             ar = (c_array)o;
 
-            if(c_collectionType(metaObject)->kind == C_ARRAY
+            if(c_collectionType(metaObject)->kind == OSPL_C_ARRAY
                 && c_collectionType(metaObject)->maxSize > 0){
                 length = c_collectionType(metaObject)->maxSize;
             } else {
@@ -2041,7 +2299,7 @@ _c_freeReferences (
                 }
             }
         break;
-        case C_SCOPE:
+        case OSPL_C_SCOPE:
             c_scopeDeinit(c_scope(o));
         break;
         default:
@@ -2083,6 +2341,7 @@ _c_freeReferences (
     return TRUE;
 }
 
+#ifndef NDEBUG
 /*
  * Function used in OS_REPORT in c_free
  */
@@ -2121,6 +2380,7 @@ metaKindImage (
             }
 #undef _CASE_
 }
+#endif
 
 void
 c_free (
@@ -2140,11 +2400,11 @@ c_free (
 
 #ifndef NDEBUG
     assert(header->confidence == CONFIDENCE);
-    if (header->refCount == 0) {
+    if ((pa_ld32(&header->refCount) & REFCOUNT_MASK) == 0) {
 #if CHECK_REF
-        UT_TRACE("\n\n===========Free(0x%x) already freed =======\n", (unsigned int)object);
+        UT_TRACE("\n\n===========Free(%p) already freed =======\n", object);
 #endif
-        OS_REPORT_3(OS_ERROR,
+        OS_REPORT(OS_ERROR,
                     "Database",0,
                     "Object (%p) of type '%s', kind '%s' already deleted",
                     object,
@@ -2167,21 +2427,20 @@ c_free (
     }
 #endif
 
-    if ((safeCount = pa_decrement(&header->refCount)) != 0)
+    safeCount = pa_dec32_nv(&header->refCount);
+    if ((safeCount & REFCOUNT_MASK) != 0)
     {
-#if 0
-        c_type headerType = header->type, type;
-        void *block;
-        ACTUALTYPE (type, headerType);
-        if ((c_baseObjectKind (type) == M_COLLECTION) &&
-            ((c_collectionTypeKind (type) == C_ARRAY) ||
-             (c_collectionTypeKind (type) == C_SEQUENCE))) {
-            block = c_arrayHeader (object);
-        } else {
-            block = header;
+        if (safeCount & REFCOUNT_FLAG_TRACE) {
+            c_type headerType = header->type, type;
+            void *block;
+            ACTUALTYPE (type, headerType);
+            if ((c_baseObjectKind (type) == M_COLLECTION) && ((c_collectionTypeKind (type) == OSPL_C_ARRAY) || (c_collectionTypeKind (type) == OSPL_C_SEQUENCE))) {
+                block = c_arrayHeader (object);
+            } else {
+                block = header;
+            }
+            c_mmTrackObject (type->base->mm, block, C_MMTRACKOBJECT_CODE_MIN + 1);
         }
-        c_mmTrackObject (type->base->mm, block, C_MMTRACKOBJECT_CODE_MIN + 1);
-#endif
     }
     else
     {
@@ -2194,12 +2453,12 @@ c_free (
 #endif
 
         base = type->base;
-        c_freeReferences(c_metaObject(type),object);
+        if (!(safeCount & REFCOUNT_FLAG_ATOMIC)) {
+            c_freeReferences(c_metaObject(type),object);
+        }
 #ifndef NDEBUG
-        {
-            c_long size;
-
 #ifdef OBJECT_WALK
+        {
             c_object *prevNext;
             c_object *nextPrev;
 
@@ -2215,19 +2474,13 @@ c_free (
             }
             *prevNext = header->nextObject;
             *nextPrev = header->prevObject;
-#endif
-
-            size = c_typeSize(type);
-            if (size < 0) {
-                OS_REPORT(OS_ERROR,"c_free",0,"illegal object size ( size <= 0 )");
-                assert(FALSE);
-            }
         }
+#endif
 #endif
 
         if ((c_baseObjectKind(type) == M_COLLECTION) &&
-            ((c_collectionTypeKind(type) == C_ARRAY) ||
-             (c_collectionTypeKind(type) == C_SEQUENCE))) {
+            ((c_collectionTypeKind(type) == OSPL_C_ARRAY) ||
+             (c_collectionTypeKind(type) == OSPL_C_SEQUENCE))) {
             c_arrayHeader hdr;
 
             hdr = c_arrayHeader(object);
@@ -2238,6 +2491,9 @@ c_free (
                 memset(hdr,0xff,ARRAYMEMSIZE(size));
             }
 #endif
+            if (safeCount & REFCOUNT_FLAG_TRACE) {
+                c_mmTrackObject (base->mm, hdr, C_MMTRACKOBJECT_CODE_MIN + 3);
+            }
             c_mmFree(base->mm, hdr);
         } else {
 #ifdef OSPL_STRICT_MEM
@@ -2249,6 +2505,9 @@ c_free (
                 memset(header,0xff,MEMSIZE(size));
             }
 #endif
+            if (safeCount & REFCOUNT_FLAG_TRACE) {
+                c_mmTrackObject (base->mm, header, C_MMTRACKOBJECT_CODE_MIN + 3);
+            }
             c_mmFree(base->mm, header);
         }
         /* Do not use type, as it refers to an actual type, while
@@ -2257,7 +2516,7 @@ c_free (
         if (base->maintainObjectCount) {
             /* Since no special actions need to be performed on going to 0, the
              * return-value of the decrement isn't needed. */
-            (void) pa_decrement(&headerType->objectCount);
+            (void) pa_dec32_nv(&headerType->objectCount);
         }
 #if TYPE_REFC_COUNTS_OBJECTS
         c_free(headerType); /* free the header->type */
@@ -2268,7 +2527,7 @@ c_free (
     if(matchesRefRequest)
     {
           UT_TRACE("\n\n============ Free(%p): %d -> %d =============\n",
-                   object, safeCount+1, safeCount);
+                   object, (safeCount & REFCOUNT_MASK)+1, safeCount & REFCOUNT_MASK);
 
     }
 #endif
@@ -2279,6 +2538,7 @@ c_keep (
     c_object object)
 {
     c_header header;
+    os_uint32 oldCount;
 
     if (object == NULL) {
         return NULL;
@@ -2286,40 +2546,59 @@ c_keep (
 
     header = c_header(object);
     assert(header->confidence == CONFIDENCE);
-    assert(header->refCount > 0);
 #if CHECK_REF
     if (header->type) {
         c_type type;
         ACTUALTYPE(type,header->type);
         if (type && c_metaObject(type)->name) {
-            if (strlen(c_metaObject(type)->name) == CHECK_REF_TYPE_LEN) {
+            if (strlen(c_metaObject(type)->name) >= CHECK_REF_TYPE_LEN) {
                 if (strncmp(c_metaObject(type)->name, CHECK_REF_TYPE, CHECK_REF_TYPE_LEN) == 0) {
-                    UT_TRACE("\n\n============ Keep(%p): %d -> %d =============\n",
-                        object, header->refCount, header->refCount+1);
+                    os_uint32 refc = pa_ld32(&header->refCount) & REFCOUNT_MASK;
+                    UT_TRACE("\n\n============ Keep(%p): %d -> %d =============\n", object, refc, refc+1);
                 }
             }
         }
     }
 #endif
-    pa_increment(&header->refCount);
-
-#if 0
-    {
+    oldCount = pa_ld32(&header->refCount);
+    assert((oldCount & REFCOUNT_MASK) > 0);
+    pa_inc32(&header->refCount); /* FIXME: should add pa_inc32_ov and use it here */
+    if (oldCount & REFCOUNT_FLAG_TRACE) {
         c_type headerType = header->type, type;
         void *block;
         ACTUALTYPE (type, headerType);
-        if ((c_baseObjectKind (type) == M_COLLECTION) &&
-            ((c_collectionTypeKind (type) == C_ARRAY) ||
-             (c_collectionTypeKind (type) == C_SEQUENCE))) {
+        if ((c_baseObjectKind (type) == M_COLLECTION) && ((c_collectionTypeKind (type) == OSPL_C_ARRAY) || (c_collectionTypeKind (type) == OSPL_C_SEQUENCE))) {
             block = c_arrayHeader (object);
         } else {
             block = header;
         }
         c_mmTrackObject (type->base->mm, block, C_MMTRACKOBJECT_CODE_MIN + 0);
     }
-#endif
 
     return object;
+}
+
+void
+c_baseTraceObject (
+    c_object object)
+{
+    c_header header;
+    if (object != NULL) {
+        header = c_header(object);
+        assert(header->confidence == CONFIDENCE);
+        pa_or32(&header->refCount, REFCOUNT_FLAG_TRACE);
+    }
+}
+
+void
+c_baseTraceObjectsOfType (
+    c_type type)
+{
+    c_header header;
+    assert(c_instanceOf(type, "c_type"));
+    header = c_header(type);
+    assert(header->confidence == CONFIDENCE);
+    pa_or32(&header->refCount, REFCOUNT_FLAG_TRACETYPE);
 }
 
 c_mm
@@ -2361,7 +2640,7 @@ c_refCount (
     if (object == NULL) {
         return 0;
     }
-    return c_header(object)->refCount;
+    return (c_long) (pa_ld32(&c_header(object)->refCount) & REFCOUNT_MASK);
 }
 
 void
@@ -2378,7 +2657,7 @@ c_baseSerUnlock(
     c_mutexUnlock(&base->serLock);
 }
 
-c_long
+c_ulong
 c_arraySize(
     c_array _this)
 {
@@ -2391,25 +2670,25 @@ c_arraySize(
              */
             (c_baseObjectKind(c_header(_this)->type) == M_COLLECTION)
             && (
-                    (c_collectionTypeKind(c_header(_this)->type) == C_ARRAY)
-                    || (c_collectionTypeKind(c_header(_this)->type) == C_SEQUENCE)
+                    (c_collectionTypeKind(c_header(_this)->type) == OSPL_C_ARRAY)
+                    || (c_collectionTypeKind(c_header(_this)->type) == OSPL_C_SEQUENCE)
                )
             );
-        return (c_long)(c_arrayHeader(_this)->size);
+        return (c_ulong)(c_arrayHeader(_this)->size);
     } else {
         return 0;
     }
 }
 
-c_long
+c_ulong
 c_sequenceSize(
     c_sequence _this)
 {
     if (_this) {
         assert(c_header(_this)->confidence == CONFIDENCE);
         assert(c_baseObjectKind(c_header(_this)->type) == M_COLLECTION &&
-                c_collectionTypeKind(c_header(_this)->type) == C_SEQUENCE);
-        return (c_long)(c_arrayHeader(_this)->size);
+                c_collectionTypeKind(c_header(_this)->type) == OSPL_C_SEQUENCE);
+        return (c_ulong)(c_arrayHeader(_this)->size);
     } else {
         return 0;
     }
@@ -2484,9 +2763,9 @@ c_baseCheckPtr(
                 hdr = (c_arrayHeader)(C_ADDRESS(hdr) - 4);
             }
         } else {
-            OS_REPORT_1(OS_ERROR,"c_baseCheckPtr", 0,
-                        "Could not resolve Memory Manager for Database (0x%x)",
-                        _this);
+            OS_REPORT(OS_ERROR,"c_baseCheckPtr", 0,
+                        "Could not resolve Memory Manager for Database (0x%"PA_PRIxADDR")",
+                        (os_address)_this);
         }
     } else {
         OS_REPORT(OS_ERROR,"c_baseCheckPtr", 0,

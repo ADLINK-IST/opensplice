@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Introduction &mdash; OpenSplice Configuration Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '60',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Configuration Guide" href="index.html" />
+    <link rel="next" title="2   OpenSplice" href="guide.html" />
+    <link rel="prev" title="Vortex OpenSplice Configuration Guide" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="guide.html" title="2   OpenSplice"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Vortex OpenSplice Configuration Guide"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Configuration Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="introduction">
+<span id="configuration"></span><h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>This guide describes the various configuration elements and attributes available for
+Vortex OpenSplice. The configuration items should be added to an XML file
+and then the OSPL_URI environment variable should be set to point to the
+path of that XML file with the &#8220;<a class="reference external" href="file://">file://</a>&#8221; URI prefix.</p>
+<ul>
+<li><dl class="first docutils">
+<dt>e.g.</dt>
+<dd><ul class="first last simple">
+<li>Linux: export OSPL_URI=file://$OSPL_HOME/etc/ospl.xml</li>
+<li>Windows: set OSPL_URI=file://%OSPL_HOME%\\etc\\ospl.xml</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>The ospl.xml file supplied with Vortex OpenSplice contains the following:</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;OpenSplice&gt;</span>
+   <span class="nt">&lt;Domain&gt;</span>
+     <span class="nt">&lt;Name&gt;</span>ospl_sp_ddsi<span class="nt">&lt;/Name&gt;</span>
+     <span class="nt">&lt;Id&gt;</span>0<span class="nt">&lt;/Id&gt;</span>
+     <span class="nt">&lt;SingleProcess&gt;</span>true<span class="nt">&lt;/SingleProcess&gt;</span>
+     <span class="nt">&lt;Service</span> <span class="na">name=</span><span class="s">&quot;ddsi2&quot;</span><span class="nt">&gt;</span>
+         <span class="nt">&lt;Command&gt;</span>ddsi2<span class="nt">&lt;/Command&gt;</span>
+     <span class="nt">&lt;/Service&gt;</span>
+     <span class="nt">&lt;Service</span> <span class="na">name=</span><span class="s">&quot;durability&quot;</span><span class="nt">&gt;</span>
+         <span class="nt">&lt;Command&gt;</span>durability<span class="nt">&lt;/Command&gt;</span>
+     <span class="nt">&lt;/Service&gt;</span>
+     <span class="nt">&lt;Service</span> <span class="na">name=</span><span class="s">&quot;cmsoap&quot;</span><span class="nt">&gt;</span>
+         <span class="nt">&lt;Command&gt;</span>cmsoap<span class="nt">&lt;/Command&gt;</span>
+     <span class="nt">&lt;/Service&gt;</span>
+   <span class="nt">&lt;/Domain&gt;</span>
+   <span class="nt">&lt;DDSI2Service</span> <span class="na">name=</span><span class="s">&quot;ddsi2&quot;</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;General&gt;</span>
+         <span class="nt">&lt;NetworkInterfaceAddress&gt;</span>AUTO<span class="nt">&lt;/NetworkInterfaceAddress&gt;</span>
+         <span class="nt">&lt;AllowMulticast&gt;</span>true<span class="nt">&lt;/AllowMulticast&gt;</span>
+         <span class="nt">&lt;EnableMulticastLoopback&gt;</span>true<span class="nt">&lt;/EnableMulticastLoopback&gt;</span>
+         <span class="nt">&lt;CoexistWithNativeNetworking&gt;</span>false<span class="nt">&lt;/CoexistWithNativeNetworking&gt;</span>
+     <span class="nt">&lt;/General&gt;</span>
+     <span class="nt">&lt;Compatibility&gt;</span>
+         <span class="c">&lt;!-- see the release notes and/or the OpenSplice configurator on DDSI interoperability --&gt;</span>
+         <span class="nt">&lt;StandardsConformance&gt;</span>lax<span class="nt">&lt;/StandardsConformance&gt;</span>
+         <span class="c">&lt;!-- the following one is necessary only for TwinOaks CoreDX DDS compatibility --&gt;</span>
+         <span class="c">&lt;!-- &lt;ExplicitlyPublishQosSetToDefault&gt;true&lt;/ExplicitlyPublishQosSetToDefault&gt; --&gt;</span>
+     <span class="nt">&lt;/Compatibility&gt;</span>
+   <span class="nt">&lt;/DDSI2Service&gt;</span>
+   <span class="nt">&lt;DurabilityService</span> <span class="na">name=</span><span class="s">&quot;durability&quot;</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;Network&gt;</span>
+         <span class="nt">&lt;Alignment&gt;</span>
+             <span class="nt">&lt;TimeAlignment&gt;</span>false<span class="nt">&lt;/TimeAlignment&gt;</span>
+             <span class="nt">&lt;RequestCombinePeriod&gt;</span>
+                 <span class="nt">&lt;Initial&gt;</span>2.5<span class="nt">&lt;/Initial&gt;</span>
+                 <span class="nt">&lt;Operational&gt;</span>0.1<span class="nt">&lt;/Operational&gt;</span>
+             <span class="nt">&lt;/RequestCombinePeriod&gt;</span>
+         <span class="nt">&lt;/Alignment&gt;</span>
+         <span class="nt">&lt;WaitForAttachment</span> <span class="na">maxWaitCount=</span><span class="s">&quot;100&quot;</span><span class="nt">&gt;</span>
+             <span class="nt">&lt;ServiceName&gt;</span>ddsi2<span class="nt">&lt;/ServiceName&gt;</span>
+         <span class="nt">&lt;/WaitForAttachment&gt;</span>
+     <span class="nt">&lt;/Network&gt;</span>
+     <span class="nt">&lt;NameSpaces&gt;</span>
+         <span class="nt">&lt;NameSpace</span> <span class="na">name=</span><span class="s">&quot;defaultNamespace&quot;</span><span class="nt">&gt;</span>
+             <span class="nt">&lt;Partition&gt;</span>*<span class="nt">&lt;/Partition&gt;</span>
+         <span class="nt">&lt;/NameSpace&gt;</span>
+         <span class="nt">&lt;Policy</span> <span class="na">alignee=</span><span class="s">&quot;Initial&quot;</span> <span class="na">aligner=</span><span class="s">&quot;true&quot;</span> <span class="na">durability=</span><span class="s">&quot;Durable&quot;</span> <span class="na">nameSpace=</span><span class="s">&quot;defaultNamespace&quot;</span><span class="nt">/&gt;</span>
+     <span class="nt">&lt;/NameSpaces&gt;</span>
+   <span class="nt">&lt;/DurabilityService&gt;</span>
+   <span class="nt">&lt;TunerService</span> <span class="na">name=</span><span class="s">&quot;cmsoap&quot;</span><span class="nt">&gt;</span>
+     <span class="nt">&lt;Server&gt;</span>
+         <span class="nt">&lt;PortNr&gt;</span>Auto<span class="nt">&lt;/PortNr&gt;</span>
+     <span class="nt">&lt;/Server&gt;</span>
+   <span class="nt">&lt;/TunerService&gt;</span>
+   <span class="nt">&lt;Description&gt;</span>Stand-alone &#39;single-process&#39; deployment and standard DDSI networking.<span class="nt">&lt;/Description&gt;</span>
+<span class="nt">&lt;/OpenSplice&gt;</span>
+</pre></div>
+</div>
+<p>The tags in the XML file should be nested in the same way as they are in
+the table of contents in this configuration guide. The nesting and numbering of
+the tags in the contents of this guide allows you to see which elements are
+the parent or children of one another. For example, if you wanted to find
+a description of the NetworkInterfaceAddress attribute, you would first navigate
+to it&#8217;s parent, the General element, and inside that you would find a
+heading for the child NetworkInterfaceAddress attribute along with a
+description and valid values. Some attributes may state that they are required
+and if so these elements must be present when the parent element is included in
+the XML file.</p>
+<p>If you wanted to add a new element, say to enable security, you would
+navigate to the Security element of the guide. This has a child element
+called SecurityProfile which should be nested within the Security element.
+Each element lists a number of occurences, this states how many times this element
+can appear in your XML file. The SecurityProfile element has three attributes,
+Name, which is required, and Cipher and CipherKey  which are optional.
+Attributes are added within the parent element tag in the format name=&#8221;value&#8221;.
+Adding these new elements and attributes would result in the following XML:</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;OpenSplice&gt;</span>
+  <span class="nt">&lt;Domain&gt;</span>
+     <span class="nt">&lt;Name&gt;</span>ospl_sp_ddsi<span class="nt">&lt;/Name&gt;</span>
+     <span class="nt">&lt;Id&gt;</span>0<span class="nt">&lt;/Id&gt;</span>
+  <span class="nt">&lt;/Domain&gt;</span>
+  <span class="nt">&lt;DDSI2E&gt;</span>
+      <span class="nt">&lt;General&gt;</span>
+          <span class="nt">&lt;NetworkInterfaceAddress&gt;</span>AUTO<span class="nt">&lt;/NetworkInterfaceAddress&gt;</span>
+          <span class="nt">&lt;AllowMulticast&gt;</span>true<span class="nt">&lt;/AllowMulticast&gt;</span>
+          <span class="nt">&lt;EnableMulticastLoopback&gt;</span>true<span class="nt">&lt;/EnableMulticastLoopback&gt;</span>
+      <span class="nt">&lt;/General&gt;</span>
+      <span class="nt">&lt;Compatibility&gt;</span>
+          <span class="nt">&lt;StandardsConformance&gt;</span>lax<span class="nt">&lt;/StandardsConformance&gt;</span>
+      <span class="nt">&lt;/Compatibility&gt;</span>
+      <span class="nt">&lt;Tracing&gt;</span>
+          <span class="nt">&lt;Verbosity&gt;</span>warning<span class="nt">&lt;/Verbosity&gt;</span>
+      <span class="nt">&lt;/Tracing&gt;</span>
+      <span class="nt">&lt;Security&gt;</span>
+          <span class="nt">&lt;SecurityProfile</span> <span class="na">Name=</span><span class="s">&quot;GlobalProfile&quot;</span> <span class="na">Cipher=</span><span class="s">&quot;blowfish&quot;</span> <span class="na">CipherKey=</span><span class="s">&quot;00000000000000000000000000000000&quot;</span><span class="nt">/&gt;</span>
+      <span class="nt">&lt;/Security&gt;</span>
+  <span class="nt">&lt;/DDSI2E&gt;</span>
+<span class="nt">&lt;/OpenSplice&gt;</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Vortex OpenSplice Configuration Guide</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="guide.html"
+                        title="next chapter">2&nbsp;&nbsp;&nbsp;OpenSplice</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/intro.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="guide.html" title="2   OpenSplice"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Vortex OpenSplice Configuration Guide"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Configuration Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

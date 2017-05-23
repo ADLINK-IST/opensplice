@@ -1,0 +1,33 @@
+parseconditions:
+    desc: RoundTrip LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions:
+        - name: rt_params
+          type: line
+          inst: 1
+          required: yes
+          line: "# payloadSize: * | numSamples: * | timeOut: *"
+
+        - name: rt_headings
+          type: line
+          inst: 1
+          required: yes
+          line: "# Seconds     Count   median      min      Count   median      min      Count   median      min"
+
+        - name: rt_overall
+          type: line
+          inst: 1
+          required: yes
+          line: "# Overall *"
+
+        - name: rt_termination
+          type: line
+          inst: 1
+          required: yes
+          line: "Sending termination request"

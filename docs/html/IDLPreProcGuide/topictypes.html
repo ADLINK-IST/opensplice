@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>9. Extensible and Dynamic Topic Types for DDS annotation support &mdash; IDL PreProcessor Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="IDL PreProcessor Guide" href="index.html" />
+    <link rel="next" title="10. Built-in DDS data types" href="ddsdatatypes.html" />
+    <link rel="prev" title="8. Modes, Languages and Processing steps" href="modeslanguages.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ddsdatatypes.html" title="10. Built-in DDS data types"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="modeslanguages.html" title="8. Modes, Languages and Processing steps"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="extensible-and-dynamic-topic-types-for-dds-annotation-support">
+<span id="extensible-and-dynamic-topic-types"></span><h1>9. Extensible and Dynamic Topic Types for DDS annotation support<a class="headerlink" href="#extensible-and-dynamic-topic-types-for-dds-annotation-support" title="Permalink to this headline">¶</a></h1>
+<p>The specification defines an annotation language as extension to IDL. Even though
+this  specification has not been implemented in Vortex OpenSplice, its IDL pre-processor
+is already able to parse these extensions even though it does not generate
+anything special for them yet. This allows users to write future-proof
+IDL definitions with annotations already in them.</p>
+<p>The specification describes <em>two</em> notations for defining annotations in IDL, a prefix
+and a suffix notation. An annotation type is defined by prefixing a local interface
+definition with the new token <tt class="docutils literal"><span class="pre">&#64;Annotation</span></tt>. The members of these types shall be
+represented using IDL attributes, as shown in the following example using the
+prefix notation:</p>
+<div class="highlight-python"><div class="highlight"><pre>1  @Annotation
+2  local interface MyAnnotation {
+3     attribute long my_annotation_member_1;
+4     attribute double my_annotation_member_2;
+5  };
+</pre></div>
+</div>
+<p>Alternately and equivalently, an annotation can be defined by suffixing the interface
+with the new annotation token using <em>slash-slash-at</em> (<tt class="docutils literal"><span class="pre">//&#64;Annotation</span></tt>) instead,
+like this:</p>
+<div class="highlight-python"><div class="highlight"><pre>1  local interface MyAnnotation {
+2     attribute long my_annotation_member_1;
+3     attribute double my_annotation_member_2;
+4  }; //@Annotation
+</pre></div>
+</div>
+<p>An annotation can be applied to a type or type member by prefixing it with an
+<em>at</em> sign (<tt class="docutils literal"><span class="pre">&#64;</span></tt>) and the name of the annotation type to apply. To specify the
+values of any members of the annotation type, include them in name=value syntax
+between parentheses; for example:</p>
+<div class="highlight-python"><div class="highlight"><pre>1  @MyTypeAnnotation
+2  struct Gadget {
+3     @MyAnnotation(my_annotation_member_1=5,
+   my_annotation_member_2=3.4) long my_integer;
+4  };
+</pre></div>
+</div>
+<p>Alternately and equivalently, an annotation can also be applied to a type
+or type member by suffixing it with an annotation type name using
+<em>slash-slash-at</em> (<tt class="docutils literal"><span class="pre">//&#64;</span></tt>) instead of the <em>at</em> sign by itself; for example:</p>
+<div class="highlight-python"><div class="highlight"><pre>1  struct Gadget {
+2  long my_integer;//@MyAnnotation(my_annotation_member_1=5,
+   my_annotation_member_2=3.4)
+3  }; //@MyTypeAnnotation
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div>Please note that the IDL Pre-Processor <em>only</em> supports the <em>suffix</em> notation
+when selecting C++ (<tt class="docutils literal"><span class="pre">-l</span> <span class="pre">cpp</span></tt>, <tt class="docutils literal"><span class="pre">-l</span> <span class="pre">c++</span></tt>, <tt class="docutils literal"><span class="pre">-l</span> <span class="pre">isocpp</span></tt>, <tt class="docutils literal"><span class="pre">-l</span> <span class="pre">isoc++</span></tt>,
+<tt class="docutils literal"><span class="pre">-l</span> <span class="pre">isocpp2</span></tt> or <tt class="docutils literal"><span class="pre">-l</span> <span class="pre">isoc++2</span></tt>) or CORBA-cohabitated java (<tt class="docutils literal"><span class="pre">-l</span> <span class="pre">java</span> <span class="pre">-C</span></tt>)
+as language.</div></blockquote>
+<p>For other languages both prefix and suffix notations are supported. The
+<a class="reference internal" href="bibliography.html#omg-dds-xtypes-2012"><em>Extensible and Dynamic Topic Types for DDS specification</em></a>
+also defines a number of annotations for use by applications. These types
+do not appear as annotations at runtime; they exist at runtime only in order
+to extend the capabilities of IDL. The following annotations have been
+defined and are accepted by the Vortex OpenSplice IDL pre-processor as well:</p>
+<ul class="simple">
+<li>ID</li>
+<li>Optional</li>
+<li>Key</li>
+<li>Shared</li>
+<li>BitBound</li>
+<li>Value</li>
+<li>BitSet</li>
+<li>Nested</li>
+<li>Extensibility</li>
+<li>MustUnderstand</li>
+<li>Verbatim</li>
+</ul>
+<p>For more details on built-in annotations and annotations in general please
+refer to section 7.3.1 of the
+<a class="reference internal" href="bibliography.html#omg-dds-xtypes-2012"><em>OMG Extensible and Dynamic Topic Types for DDS specification</em></a>.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="modeslanguages.html"
+                        title="previous chapter">8. Modes, Languages and Processing steps</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="ddsdatatypes.html"
+                        title="next chapter">10. Built-in DDS data types</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/topictypes.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ddsdatatypes.html" title="10. Built-in DDS data types"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="modeslanguages.html" title="8. Modes, Languages and Processing steps"
+             >previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

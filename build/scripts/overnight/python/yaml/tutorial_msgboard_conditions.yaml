@@ -1,0 +1,21 @@
+parseconditions:
+    desc: Tutorial LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: chatter_msgno
+          type: line
+          inst: 10
+          required: yes
+          line: "Chatter 1*: Message no."
+
+        - name: term_msg
+          type: line
+          inst: 1
+          required: yes
+          line: "Termination message received: exiting..."

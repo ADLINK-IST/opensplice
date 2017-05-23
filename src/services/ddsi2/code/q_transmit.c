@@ -1,18 +1,35 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <assert.h>
 #include <math.h>
 
 #include "os_defs.h"
 #include "os_stdlib.h"
 #include "os_mutex.h"
-
-#include "v_state.h"
+#include "os_heap.h"
 
 #include "ut_avl.h"
 #include "q_whc.h"
 #include "q_entity.h"
 #include "q_addrset.h"
 #include "q_xmsg.h"
-#include "q_osplser.h"
 #include "q_bswap.h"
 #include "q_misc.h"
 #include "q_thread.h"
@@ -27,6 +44,8 @@
 #include "q_hbcontrol.h"
 #include "q_static_assert.h"
 
+#include "q_osplser.h"
+
 #include "sysdeps.h"
 
 #if __STDC_VERSION__ >= 199901L
@@ -39,9 +58,10 @@
 #define POS_INFINITY_DOUBLE 1e1000
 #endif
 
-static const os_int64 const_hb_intv = 100 * T_MILLISECOND;
-static const os_int64 const_hb_intv_min = 20 * T_MILLISECOND;
-static const os_int64 const_hb_intv_max = 8000 * T_MILLISECOND;
+static const os_int64 const_hb_intv_sched = 100 * T_MILLISECOND;
+static const os_int64 const_hb_intv_sched_min = 20 * T_MILLISECOND;
+static const os_int64 const_hb_intv_sched_max = 8000 * T_MILLISECOND;
+static const os_int64 const_hb_intv_min = 5 * T_MILLISECOND;
 
 static const struct wr_prd_match *root_rdmatch (const struct writer *wr)
 {
@@ -58,15 +78,15 @@ static int have_reliable_subs (const struct writer *wr)
 
 void writer_hbcontrol_init (struct hbcontrol *hbc)
 {
-  hbc->t_of_last_write = 0;
-  hbc->t_of_last_hb = 0;
-  hbc->t_of_last_ackhb = 0;
-  hbc->tsched = T_NEVER;
+  hbc->t_of_last_write.v = 0;
+  hbc->t_of_last_hb.v = 0;
+  hbc->t_of_last_ackhb.v = 0;
+  hbc->tsched.v = T_NEVER;
   hbc->hbs_since_last_write = 0;
   hbc->last_packetid = 0;
 }
 
-static void writer_hbcontrol_note_hb (struct writer *wr, os_int64 tnow, int ansreq)
+static void writer_hbcontrol_note_hb (struct writer *wr, nn_mtime_t tnow, int ansreq)
 {
   struct hbcontrol * const hbc = &wr->hbcontrol;
 
@@ -80,35 +100,35 @@ static void writer_hbcontrol_note_hb (struct writer *wr, os_int64 tnow, int ansr
   hbc->hbs_since_last_write++;
 }
 
-os_int64 writer_hbcontrol_intv (const struct writer *wr, UNUSED_ARG (os_int64 tnow))
+os_int64 writer_hbcontrol_intv (const struct writer *wr, UNUSED_ARG (nn_mtime_t tnow))
 {
   struct hbcontrol const * const hbc = &wr->hbcontrol;
-  os_int64 ret = const_hb_intv;
-  int n_unacked;
+  os_int64 ret = const_hb_intv_sched;
+  os_size_t n_unacked;
 
   if (hbc->hbs_since_last_write > 2)
   {
     unsigned cnt = hbc->hbs_since_last_write;
-    while (cnt-- > 2 && 2 * ret < const_hb_intv_max)
+    while (cnt-- > 2 && 2 * ret < const_hb_intv_sched_max)
       ret *= 2;
   }
 
-  n_unacked = writer_number_of_unacked_samples (wr);
-  if (n_unacked >= config.whc_highwater_mark / 2)
-    ret /= 4;
-  else if (n_unacked >= config.whc_highwater_mark / 4)
+  n_unacked = whc_unacked_bytes (wr->whc);
+  if (n_unacked >= wr->whc_low + 3 * (wr->whc_high - wr->whc_low) / 4)
+    ret /= 2;
+  if (n_unacked >= wr->whc_low + (wr->whc_high - wr->whc_low) / 2)
     ret /= 2;
   if (wr->throttling)
     ret /= 2;
-  if (ret < const_hb_intv_min)
-    ret = const_hb_intv_min;
+  if (ret < const_hb_intv_sched_min)
+    ret = const_hb_intv_sched_min;
   return ret;
 }
 
-void writer_hbcontrol_note_asyncwrite (struct writer *wr, os_int64 tnow)
+void writer_hbcontrol_note_asyncwrite (struct writer *wr, nn_mtime_t tnow)
 {
   struct hbcontrol * const hbc = &wr->hbcontrol;
-  os_int64 tnext;
+  nn_mtime_t tnext;
 
   /* Reset number of heartbeats since last write: that means the
      heartbeat rate will go back up to the default */
@@ -116,8 +136,8 @@ void writer_hbcontrol_note_asyncwrite (struct writer *wr, os_int64 tnow)
 
   /* We know this is new data, so we want a heartbeat event after one
      base interval */
-  tnext = tnow + const_hb_intv;
-  if (tnext < hbc->tsched)
+  tnext.v = tnow.v + const_hb_intv_sched;
+  if (tnext.v < hbc->tsched.v)
   {
     /* Insertion of a message with WHC locked => must now have at
        least one unacked msg if there are reliable readers, so must
@@ -127,13 +147,13 @@ void writer_hbcontrol_note_asyncwrite (struct writer *wr, os_int64 tnow)
   }
 }
 
-int writer_hbcontrol_must_send (const struct writer *wr, os_int64 tnow)
+int writer_hbcontrol_must_send (const struct writer *wr, nn_mtime_t tnow /* monotonic */)
 {
   struct hbcontrol const * const hbc = &wr->hbcontrol;
-  return (tnow >= hbc->t_of_last_hb + writer_hbcontrol_intv (wr, tnow));
+  return (tnow.v >= hbc->t_of_last_hb.v + writer_hbcontrol_intv (wr, tnow));
 }
 
-struct nn_xmsg *writer_hbcontrol_create_heartbeat (struct writer *wr, os_int64 tnow, int hbansreq, int issync)
+struct nn_xmsg *writer_hbcontrol_create_heartbeat (struct writer *wr, nn_mtime_t tnow, int hbansreq, int issync)
 {
   struct nn_xmsg *msg;
   const nn_guid_t *prd_guid;
@@ -184,7 +204,7 @@ struct nn_xmsg *writer_hbcontrol_create_heartbeat (struct writer *wr, os_int64 t
     TRACE (("multicasting "));
   else
     TRACE (("unicasting to prd %x:%x:%x:%x ", PGUID (*prd_guid)));
-  TRACE (("(rel-prd %d seq-eq-max %d seq %lld maxseq %lld)\n",
+  TRACE (("(rel-prd %d seq-eq-max %d seq %lld maxseq %"PA_PRId64")\n",
           wr->num_reliable_readers,
           ut_avlIsEmpty (&wr->readers) ? -1 : root_rdmatch (wr)->num_reliable_readers_where_seq_equals_max,
           wr->seq,
@@ -192,12 +212,8 @@ struct nn_xmsg *writer_hbcontrol_create_heartbeat (struct writer *wr, os_int64 t
 
   if (prd_guid == NULL)
   {
-    nn_xmsg_setdstN (msg, wr->as);
-    if (add_Heartbeat (msg, wr, hbansreq, to_entityid (NN_ENTITYID_UNKNOWN), tnow, issync) < 0)
-    {
-      nn_xmsg_free (msg);
-      return NULL;
-    }
+    nn_xmsg_setdstN (msg, wr->as, wr->as_group);
+    add_Heartbeat (msg, wr, hbansreq, to_entityid (NN_ENTITYID_UNKNOWN), issync);
   }
   else
   {
@@ -210,22 +226,22 @@ struct nn_xmsg *writer_hbcontrol_create_heartbeat (struct writer *wr, os_int64 t
     }
     /* set the destination explicitly to the unicast destination and the fourth
        param of add_Heartbeat needs to be the guid of the reader */
-    nn_xmsg_setdstPRD (msg, prd);
-    if (add_Heartbeat (msg, wr, hbansreq, prd_guid->entityid, tnow, issync) < 0)
+    if (nn_xmsg_setdstPRD (msg, prd) < 0)
     {
       nn_xmsg_free (msg);
       return NULL;
     }
+    add_Heartbeat (msg, wr, hbansreq, prd_guid->entityid, issync);
   }
 
   writer_hbcontrol_note_hb (wr, tnow, hbansreq);
   return msg;
 }
 
-static int writer_hbcontrol_ack_required_generic (const struct writer *wr, os_int64 tlast, os_int64 tnow, int piggyback)
+static int writer_hbcontrol_ack_required_generic (const struct writer *wr, nn_mtime_t tlast, nn_mtime_t tnow, int piggyback)
 {
   struct hbcontrol const * const hbc = &wr->hbcontrol;
-  const os_int64 hb_intv_ack = const_hb_intv;
+  const os_int64 hb_intv_ack = const_hb_intv_sched;
 
   if (piggyback)
   {
@@ -235,44 +251,38 @@ static int writer_hbcontrol_ack_required_generic (const struct writer *wr, os_in
        before the next heartbeat will go out should have one
        piggybacked onto it, so that the scheduled heartbeat can be
        suppressed. */
-    if (tnow >= tlast + 4 * hb_intv_ack / 5)
+    if (tnow.v >= tlast.v + 4 * hb_intv_ack / 5)
       return 2;
   }
   else
   {
     /* For heartbeat events use a slightly longer interval */
-    if (tnow >= tlast + hb_intv_ack)
+    if (tnow.v >= tlast.v + hb_intv_ack)
       return 2;
   }
 
-  /* For writers near throttling, add heartbeats often.  Soon they
-     will be unable to make progress data is ack'd, for which we need
-     a heartbeat. */
-  if (wr->throttling)
-    return 2;
-  if (writer_number_of_unacked_samples (wr) >= config.whc_highwater_mark / 4)
+  if (whc_unacked_bytes (wr->whc) >= wr->whc_low + (wr->whc_high - wr->whc_low) / 2)
   {
-    const os_int64 intv = T_MILLISECOND; /* writer_hbcontrol_intv (wr, tnow) */
-    if (tnow >= hbc->t_of_last_ackhb + intv)
+    if (tnow.v >= hbc->t_of_last_ackhb.v + const_hb_intv_sched_min)
       return 2;
-    else
+    else if (tnow.v >= hbc->t_of_last_ackhb.v + const_hb_intv_min)
       return 1;
   }
 
   return 0;
 }
 
-int writer_hbcontrol_ack_required (const struct writer *wr, os_int64 tnow)
+int writer_hbcontrol_ack_required (const struct writer *wr, nn_mtime_t tnow)
 {
   struct hbcontrol const * const hbc = &wr->hbcontrol;
   return writer_hbcontrol_ack_required_generic (wr, hbc->t_of_last_write, tnow, 0);
 }
 
-struct nn_xmsg *writer_hbcontrol_piggyback (struct writer *wr, os_int64 tnow, unsigned packetid, int *hbansreq)
+struct nn_xmsg *writer_hbcontrol_piggyback (struct writer *wr, nn_mtime_t tnow, unsigned packetid, int *hbansreq)
 {
   struct hbcontrol * const hbc = &wr->hbcontrol;
   unsigned last_packetid;
-  os_int64 tlast;
+  nn_mtime_t tlast;
   struct nn_xmsg *msg;
 
   tlast = hbc->t_of_last_write;
@@ -305,19 +315,19 @@ struct nn_xmsg *writer_hbcontrol_piggyback (struct writer *wr, os_int64 tnow, un
 
   if (msg)
   {
-    TRACE (("heartbeat(wr %x:%x:%x:%x%s) piggybacked, resched in %g s (min-ack %lld%s, avail-seq %lld, xmit %lld)\n",
+    TRACE (("heartbeat(wr %x:%x:%x:%x%s) piggybacked, resched in %g s (min-ack %"PA_PRId64"%s, avail-seq %"PA_PRId64", xmit %lld)\n",
             PGUID (wr->e.guid),
             *hbansreq ? "" : " final",
-            (hbc->tsched == T_NEVER) ? POS_INFINITY_DOUBLE : (hbc->tsched - tnow) / 1e9,
-            ut_avlIsEmpty (&wr->readers) ? (os_int64) -1 : root_rdmatch (wr)->min_seq,
+            (hbc->tsched.v == T_NEVER) ? POS_INFINITY_DOUBLE : (double) (hbc->tsched.v - tnow.v) / 1e9,
+            ut_avlIsEmpty (&wr->readers) ? -1 : root_rdmatch (wr)->min_seq,
             ut_avlIsEmpty (&wr->readers) || root_rdmatch (wr)->all_have_replied_to_hb ? "" : "!",
-            whc_empty (wr->whc) ? (os_int64) -1 : whc_max_seq (wr->whc), wr->seq_xmit));
+            whc_empty (wr->whc) ? -1 : whc_max_seq (wr->whc), wr->seq_xmit));
   }
 
   return msg;
 }
 
-int add_Heartbeat (struct nn_xmsg *msg, struct writer *wr, int hbansreq, nn_entityid_t dst, os_int64 tnow, int issync)
+void add_Heartbeat (struct nn_xmsg *msg, struct writer *wr, int hbansreq, nn_entityid_t dst, int issync)
 {
   struct nn_xmsg_marker sm_marker;
   Heartbeat_t * hb;
@@ -332,7 +342,7 @@ int add_Heartbeat (struct nn_xmsg *msg, struct writer *wr, int hbansreq, nn_enti
   {
     /* If configured to measure heartbeat-to-ack latency, we must add
        a timestamp.  No big deal if it fails. */
-    nn_xmsg_add_timestamp (msg, tnow);
+    nn_xmsg_add_timestamp (msg, now ());
   }
 
   hb = nn_xmsg_append (msg, &sm_marker, sizeof (Heartbeat_t));
@@ -360,9 +370,12 @@ int add_Heartbeat (struct nn_xmsg *msg, struct writer *wr, int hbansreq, nn_enti
   else
   {
     min = whc_min_seq (wr->whc);
-    max = whc_max_seq (wr->whc);
+    max = wr->seq;
     assert (min <= max);
-    if (!issync && wr->seq_xmit < max)
+    /* Informing readers of samples that haven't even been transmitted makes little sense,
+       but for transient-local data, we let the first heartbeat determine the time at which
+       we trigger wait_for_historical_data, so it had better be correct */
+    if (!issync && wr->seq_xmit < max && !wr->handle_as_transient_local)
     {
       /* When: queue data ; queue heartbeat ; transmit data ; update
          seq_xmit, max may be < min.  But we must never advertise the
@@ -384,15 +397,12 @@ int add_Heartbeat (struct nn_xmsg *msg, struct writer *wr, int hbansreq, nn_enti
   hb->firstSN = toSN (min);
   hb->lastSN = toSN (max);
 
-  if (wr->hbcount == DDSI_COUNT_MAX)
-    NN_FATAL0 ("writer reached maximum heartbeat sequence number");
   hb->count = ++wr->hbcount;
 
   nn_xmsg_submsg_setnext (msg, sm_marker);
-  return 0;
 }
 
-int create_fragment_message (struct writer *wr, os_int64 seq, struct serdata *serdata, unsigned fragnum, struct proxy_reader *prd, struct nn_xmsg **pmsg, int isnew)
+int create_fragment_message (struct writer *wr, os_int64 seq, const struct nn_plist *plist, struct serdata *serdata, unsigned fragnum, struct proxy_reader *prd, struct nn_xmsg **pmsg, int isnew)
 {
   /* We always fragment into FRAGMENT_SIZEd fragments, which are near
      the smallest allowed fragment size & can't be bothered (yet) to
@@ -408,7 +418,7 @@ int create_fragment_message (struct writer *wr, os_int64 seq, struct serdata *se
      Expected inline QoS size: header(4) + statusinfo(8) + keyhash(20)
      + sentinel(4). Plus some spare cos I can't be bothered. */
   const int set_smhdr_flags_asif_data = config.buggy_datafrag_flags_mode;
-  const int expected_inline_qos_size = 4+8+20+4 + 32;
+  const size_t expected_inline_qos_size = 4+8+20+4 + 32;
   struct nn_xmsg_marker sm_marker;
   void *sm;
   Data_DataFrag_common_t *ddcmn;
@@ -419,7 +429,7 @@ int create_fragment_message (struct writer *wr, os_int64 seq, struct serdata *se
 
   ASSERT_MUTEX_HELD (&wr->e.lock);
 
-  if (fragnum * config.fragment_size >= serdata_size (serdata))
+  if (fragnum * config.fragment_size >= ddsi_serdata_size (serdata) && ddsi_serdata_size (serdata) > 0)
   {
     /* This is the first chance to detect an attempt at retransmitting
        an non-existent fragment, which a malicious (or buggy) remote
@@ -428,7 +438,7 @@ int create_fragment_message (struct writer *wr, os_int64 seq, struct serdata *se
     return ERR_INVALID;
   }
 
-  fragging = (config.fragment_size < serdata_size (serdata));
+  fragging = (config.fragment_size < ddsi_serdata_size (serdata));
 
   if ((*pmsg = nn_xmsg_new (gv.xmsgpool, &wr->e.guid.prefix, sizeof (InfoTimestamp_t) + sizeof (DataFrag_t) + expected_inline_qos_size, xmsg_kind)) == NULL)
     return ERR_OUT_OF_MEMORY;
@@ -436,20 +446,24 @@ int create_fragment_message (struct writer *wr, os_int64 seq, struct serdata *se
 
   if (prd)
   {
-    nn_xmsg_setdstPRD (*pmsg, prd);
+    if (nn_xmsg_setdstPRD (*pmsg, prd) < 0)
+    {
+      nn_xmsg_free (*pmsg);
+      *pmsg = NULL;
+      return ERR_NO_ADDRESS;
+    }
     /* retransmits: latency budget doesn't apply */
   }
   else
   {
-    nn_xmsg_setdstN (*pmsg, wr->as);
+    nn_xmsg_setdstN (*pmsg, wr->as, wr->as_group);
     nn_xmsg_setmaxdelay (*pmsg, nn_from_ddsi_duration (wr->xqos->latency_budget.duration));
   }
 
   /* Timestamp only needed once, for the first fragment */
   if (fragnum == 0)
   {
-    if (nn_xmsg_add_timestamp (*pmsg, serdata->v.msginfo.timestamp) < 0)
-      goto outofmem;
+    nn_xmsg_add_timestamp (*pmsg, serdata->v.msginfo.timestamp);
   }
 
   sm = nn_xmsg_append (*pmsg, &sm_marker, fragging ? sizeof (DataFrag_t) : sizeof (Data_t));
@@ -457,13 +471,13 @@ int create_fragment_message (struct writer *wr, os_int64 seq, struct serdata *se
 
   if (!fragging)
   {
-    const unsigned contentflag = serdata_is_key (serdata) ? DATA_FLAG_KEYFLAG : DATA_FLAG_DATAFLAG;
+    const unsigned char contentflag = (ddsi_serdata_is_empty (serdata) ? 0 : ddsi_serdata_is_key (serdata) ? DATA_FLAG_KEYFLAG : DATA_FLAG_DATAFLAG);
     Data_t *data = sm;
     nn_xmsg_submsg_init (*pmsg, sm_marker, SMID_DATA);
-    ddcmn->smhdr.flags |= contentflag;
+    ddcmn->smhdr.flags = (unsigned char) (ddcmn->smhdr.flags | contentflag);
 
     fragstart = 0;
-    fraglen = serdata_size (serdata);
+    fraglen = ddsi_serdata_size (serdata);
     ddcmn->octetsToInlineQos = (unsigned short) ((char*) (data+1) - ((char*) &ddcmn->octetsToInlineQos + 2));
 
     if (wr->reliable)
@@ -471,33 +485,35 @@ int create_fragment_message (struct writer *wr, os_int64 seq, struct serdata *se
   }
   else
   {
-    const unsigned contentflag =
+    const unsigned char contentflag =
       set_smhdr_flags_asif_data
-      ? (serdata_is_key (serdata) ? DATA_FLAG_KEYFLAG : DATA_FLAG_DATAFLAG)
-      : (serdata_is_key (serdata) ? DATAFRAG_FLAG_KEYFLAG : 0);
+      ? (ddsi_serdata_is_key (serdata) ? DATA_FLAG_KEYFLAG : DATA_FLAG_DATAFLAG)
+      : (ddsi_serdata_is_key (serdata) ? DATAFRAG_FLAG_KEYFLAG : 0);
     DataFrag_t *frag = sm;
+    /* empty means size = 0, which means it never needs fragmenting */
+    assert (!ddsi_serdata_is_empty (serdata));
     nn_xmsg_submsg_init (*pmsg, sm_marker, SMID_DATA_FRAG);
-    ddcmn->smhdr.flags |= contentflag;
+    ddcmn->smhdr.flags = (unsigned char) (ddcmn->smhdr.flags | contentflag);
 
     frag->fragmentStartingNum = fragnum + 1;
     frag->fragmentsInSubmessage = 1;
-    frag->fragmentSize = config.fragment_size;
-    frag->sampleSize = serdata_size (serdata);
+    frag->fragmentSize = (unsigned short) config.fragment_size;
+    frag->sampleSize = ddsi_serdata_size (serdata);
 
     fragstart = fragnum * config.fragment_size;
 #if MULTIPLE_FRAGS_IN_SUBMSG /* ugly hack for testing only */
-    if (fragstart + config.fragment_size < serdata_size (serdata) &&
-        fragstart + 2 * config.fragment_size >= serdata_size (serdata))
+    if (fragstart + config.fragment_size < ddsi_serdata_size (serdata) &&
+        fragstart + 2 * config.fragment_size >= ddsi_serdata_size (serdata))
       frag->fragmentsInSubmessage++;
     ret = frag->fragmentsInSubmessage;
 #endif
 
     fraglen = config.fragment_size * frag->fragmentsInSubmessage;
-    if (fragstart + fraglen > serdata_size (serdata))
-      fraglen = serdata_size (serdata) - fragstart;
+    if (fragstart + fraglen > ddsi_serdata_size (serdata))
+      fraglen = ddsi_serdata_size (serdata) - fragstart;
     ddcmn->octetsToInlineQos = (unsigned short) ((char*) (frag+1) - ((char*) &ddcmn->octetsToInlineQos + 2));
 
-    if (wr->reliable && (!isnew || fragstart + fraglen == serdata_size (serdata)))
+    if (wr->reliable && (!isnew || fragstart + fraglen == ddsi_serdata_size (serdata)))
     {
       /* only set for final fragment for new messages; for rexmits we
          want it set for all so we can do merging. FIXME: I guess the
@@ -517,21 +533,35 @@ int create_fragment_message (struct writer *wr, os_int64 seq, struct serdata *se
 
   Q_STATIC_ASSERT_CODE (DATA_FLAG_INLINE_QOS == DATAFRAG_FLAG_INLINE_QOS);
   assert (!(ddcmn->smhdr.flags & DATAFRAG_FLAG_INLINE_QOS));
+
   if (fragnum == 0)
   {
     int rc;
-    if (wr->include_keyhash && nn_xmsg_addpar_keyhash (*pmsg, serdata) < 0)
-      goto outofmem;
-    if (serdata->v.msginfo.statusinfo && nn_xmsg_addpar_statusinfo (*pmsg, serdata->v.msginfo.statusinfo) < 0)
-      goto outofmem;
+    /* Adding parameters means potential reallocing, so sm, ddcmn now likely become invalid */
+    if (wr->include_keyhash)
+    {
+      nn_xmsg_addpar_keyhash (*pmsg, serdata);
+    }
+    if (serdata->v.msginfo.statusinfo)
+    {
+      nn_xmsg_addpar_statusinfo (*pmsg, serdata->v.msginfo.statusinfo);
+    }
+    if (plist)
+    {
+      nn_plist_addtomsg (*pmsg, plist, ~(os_uint64)0, ~(os_uint64)0);
+    }
     /* If it's 0 or 1, we know the proper calls have been made */
-    assert (serdata->v.msginfo.have_wrinfo == 0 || serdata->v.msginfo.have_wrinfo == 1);
-    if (serdata->v.msginfo.have_wrinfo && nn_xmsg_addpar_wrinfo (*pmsg, &serdata->v.msginfo.wrinfo) < 0)
-      goto outofmem;
-    if ((rc = nn_xmsg_addpar_sentinel_ifparam (*pmsg)) < 0)
-      goto outofmem;
+    assert (serdata == NULL || serdata->v.msginfo.have_wrinfo == 0 || serdata->v.msginfo.have_wrinfo == 1);
+    if (serdata->v.msginfo.have_wrinfo)
+    {
+      nn_xmsg_addpar_wrinfo (*pmsg, &serdata->v.msginfo.wrinfo);
+    }
+    rc = nn_xmsg_addpar_sentinel_ifparam (*pmsg);
     if (rc > 0)
+    {
+      ddcmn = nn_xmsg_submsg_from_marker (*pmsg, sm_marker);
       ddcmn->smhdr.flags |= DATAFRAG_FLAG_INLINE_QOS;
+    }
   }
 
   nn_xmsg_serdata (*pmsg, serdata, fragstart, fraglen);
@@ -541,15 +571,11 @@ int create_fragment_message (struct writer *wr, os_int64 seq, struct serdata *se
           fragging ? "frag" : "", PGUID (wr->e.guid),
           seq, fragnum+1, fragstart, fragstart + fraglen));
 #endif
-  return ret;
 
- outofmem:
-  nn_xmsg_free (*pmsg);
-  *pmsg = NULL;
-  return ERR_OUT_OF_MEMORY;
+  return ret;
 }
 
-static void create_HeartbeatFrag (struct writer *wr, os_int64 seq, unsigned fragnum, struct proxy_reader *prd,struct nn_xmsg **pmsg)
+static void create_HeartbeatFrag (struct writer *wr, os_int64 seq, unsigned fragnum, struct proxy_reader *prd, struct nn_xmsg **pmsg)
 {
   struct nn_xmsg_marker sm_marker;
   HeartbeatFrag_t *hbf;
@@ -557,9 +583,19 @@ static void create_HeartbeatFrag (struct writer *wr, os_int64 seq, unsigned frag
   if ((*pmsg = nn_xmsg_new (gv.xmsgpool, &wr->e.guid.prefix, sizeof (HeartbeatFrag_t), NN_XMSG_KIND_CONTROL)) == NULL)
     return; /* ignore out-of-memory: HeartbeatFrag is only advisory anyway */
   if (prd)
-    nn_xmsg_setdstPRD (*pmsg, prd);
+  {
+    if (nn_xmsg_setdstPRD (*pmsg, prd) < 0)
+    {
+      /* HeartbeatFrag is only advisory anyway */
+      nn_xmsg_free (*pmsg);
+      *pmsg = NULL;
+      return;
+    }
+  }
   else
-    nn_xmsg_setdstN (*pmsg, wr->as);
+  {
+    nn_xmsg_setdstN (*pmsg, wr->as, wr->as_group);
+  }
   hbf = nn_xmsg_append (*pmsg, &sm_marker, sizeof (HeartbeatFrag_t));
   nn_xmsg_submsg_init (*pmsg, sm_marker, SMID_HEARTBEAT_FRAG);
   hbf->readerId = nn_hton_entityid (prd ? prd->e.guid.entityid : to_entityid (NN_ENTITYID_UNKNOWN));
@@ -567,37 +603,35 @@ static void create_HeartbeatFrag (struct writer *wr, os_int64 seq, unsigned frag
   hbf->writerSN = toSN (seq);
   hbf->lastFragmentNum = fragnum + 1; /* network format is 1 based */
 
-  if (wr->hbfragcount == DDSI_COUNT_MAX)
-    NN_FATAL0 ("writer reached maximum heartbeat-frag sequence number");
   hbf->count = ++wr->hbfragcount;
 
   nn_xmsg_submsg_setnext (*pmsg, sm_marker);
 }
 
 #if 0
-static int must_skip_frag (const char *frags_to_skip, int frag)
+static int must_skip_frag (const char *frags_to_skip, unsigned frag)
 {
   /* one based, for easier reading of logs */
   char str[14];
   int n, m;
   if (frags_to_skip == NULL)
     return 0;
-  n = snprintf (str, sizeof (str), ",%d,", frag + 1);
+  n = snprintf (str, sizeof (str), ",%u,", frag + 1);
   if (strstr (frags_to_skip, str))
     return 1; /* somewhere in middle */
-  if (strncmp (frags_to_skip, str+1, n-1) == 0)
+  if (strncmp (frags_to_skip, str+1, (size_t)n-1) == 0)
     return 1; /* first in list */
   str[--n] = 0; /* drop trailing comma */
   if (strcmp (frags_to_skip, str+1) == 0)
     return 1; /* only one */
-  m = strlen (frags_to_skip);
+  m = (int)strlen (frags_to_skip);
   if (m >= n && strcmp (frags_to_skip + m - n, str) == 0)
     return 1; /* last one in list */
   return 0;
 }
 #endif
 
-static int transmit_sample (struct nn_xpack *xp, struct writer *wr, os_int64 seq, serdata_t serdata, struct proxy_reader *prd, int isnew)
+static int transmit_sample (struct nn_xpack *xp, struct writer *wr, os_int64 seq, const struct nn_plist *plist, serdata_t serdata, struct proxy_reader *prd, int isnew)
 {
   unsigned i, sz, nfrags;
 #if 0
@@ -605,8 +639,13 @@ static int transmit_sample (struct nn_xpack *xp, struct writer *wr, os_int64 seq
 #endif
   assert(xp);
 
-  sz = serdata_size (serdata);
+  sz = ddsi_serdata_size (serdata);
   nfrags = (sz + config.fragment_size - 1) / config.fragment_size;
+  if (nfrags == 0)
+  {
+    /* end-of-transaction messages are empty, but still need to be sent */
+    nfrags = 1;
+  }
   for (i = 0; i < nfrags; i++)
   {
     struct nn_xmsg *fmsg = NULL;
@@ -621,7 +660,7 @@ static int transmit_sample (struct nn_xpack *xp, struct writer *wr, os_int64 seq
        we haven't yet completed transmitting a fragmented message, add
        a HeartbeatFrag. */
     os_mutexLock (&wr->e.lock);
-    ret = create_fragment_message (wr, seq, serdata, i, prd, &fmsg, isnew);
+    ret = create_fragment_message (wr, seq, plist, serdata, i, prd, &fmsg, isnew);
     if (ret >= 0)
     {
       if (nfrags > 1 && i + 1 < nfrags)
@@ -629,8 +668,8 @@ static int transmit_sample (struct nn_xpack *xp, struct writer *wr, os_int64 seq
     }
     os_mutexUnlock (&wr->e.lock);
 
-    if(fmsg) nn_xpack_addmsg (xp, fmsg);
-    if(hmsg) nn_xpack_addmsg (xp, hmsg);
+    if(fmsg) nn_xpack_addmsg (xp, fmsg, 0);
+    if(hmsg) nn_xpack_addmsg (xp, hmsg, 0);
 
 #if MULTIPLE_FRAGS_IN_SUBMSG /* ugly hack for testing only */
     if (ret > 1)
@@ -644,11 +683,12 @@ static int transmit_sample (struct nn_xpack *xp, struct writer *wr, os_int64 seq
     struct nn_xmsg *msg = NULL;
     int hbansreq;
     os_mutexLock (&wr->e.lock);
-    msg = writer_hbcontrol_piggyback (wr, serdata_twrite (serdata), nn_xpack_packetid (xp), &hbansreq);
+    msg = writer_hbcontrol_piggyback
+      (wr, ddsi_serdata_twrite (serdata), nn_xpack_packetid (xp), &hbansreq);
     os_mutexUnlock (&wr->e.lock);
     if (msg)
     {
-      nn_xpack_addmsg (xp, msg);
+      nn_xpack_addmsg (xp, msg, 0);
       if (hbansreq >= 2)
         nn_xpack_send (xp);
     }
@@ -657,15 +697,20 @@ static int transmit_sample (struct nn_xpack *xp, struct writer *wr, os_int64 seq
   return 0;
 }
 
-int enqueue_sample_wrlock_held (struct writer *wr, os_int64 seq, serdata_t serdata, struct proxy_reader *prd, int isnew)
+int enqueue_sample_wrlock_held (struct writer *wr, os_int64 seq, const struct nn_plist *plist, serdata_t serdata, struct proxy_reader *prd, int isnew)
 {
   unsigned i, sz, nfrags;
   int enqueued = 1;
 
   ASSERT_MUTEX_HELD (&wr->e.lock);
 
-  sz = serdata_size (serdata);
+  sz = ddsi_serdata_size (serdata);
   nfrags = (sz + config.fragment_size - 1) / config.fragment_size;
+  if (nfrags == 0)
+  {
+    /* end-of-transaction messages are empty, but still need to be sent */
+    nfrags = 1;
+  }
   for (i = 0; i < nfrags && enqueued; i++)
   {
     struct nn_xmsg *fmsg = NULL;
@@ -674,7 +719,7 @@ int enqueue_sample_wrlock_held (struct writer *wr, os_int64 seq, serdata_t serda
        eventually we'll have to retry.  But if a packet went out and
        we haven't yet completed transmitting a fragmented message, add
        a HeartbeatFrag. */
-    if (create_fragment_message (wr, seq, serdata, i, prd, &fmsg, isnew) >= 0)
+    if (create_fragment_message (wr, seq, plist, serdata, i, prd, &fmsg, isnew) >= 0)
     {
       if (nfrags > 1 && i + 1 < nfrags)
         create_HeartbeatFrag (wr, seq, i, prd, &hmsg);
@@ -686,13 +731,8 @@ int enqueue_sample_wrlock_held (struct writer *wr, os_int64 seq, serdata_t serda
     }
     else
     {
-      /* Because of the way DDSI2 handles retransmitting fragmented data
-         it must be able to queue the entire sample regardless of the
-         queuing limits set.  By allowing the qxev_msg_rexmit call to
-         drop the first fragment, but forcing it to accept all of them
-         if it accepted the first, we can always enqueued any size sample
-         while retaining some semblance of a limited-size queue. */
-      const int force = (i != 0);
+      /* Implementations that never use NACKFRAG are allowed by the specification, and for such a peer, we must always force out the full sample on a retransmit request. I am not aware of any such implementations so leaving the override flag in, but not actually using it at the moment. Should set force = (i != 0) for "known bad" implementations. */
+      const int force = 0;
       if(fmsg)
       {
         enqueued = qxev_msg_rexmit_wrlock_held (wr->evq, fmsg, force);
@@ -701,7 +741,7 @@ int enqueue_sample_wrlock_held (struct writer *wr, os_int64 seq, serdata_t serda
          HeartbeatFrags out, so never force them into the queue. */
       if(hmsg)
       {
-        if (enqueued)
+        if (enqueued > 1)
           qxev_msg (wr->evq, hmsg);
         else
           nn_xmsg_free (hmsg);
@@ -711,43 +751,43 @@ int enqueue_sample_wrlock_held (struct writer *wr, os_int64 seq, serdata_t serda
   return enqueued ? 0 : -1;
 }
 
-static int insert_sample_in_whc (struct writer *wr, os_int64 * pseq, serdata_t serdata)
+static int insert_sample_in_whc (struct writer *wr, os_int64 seq, struct nn_plist *plist, serdata_t serdata)
 {
-  /* DCPS write/dispose/writeDispose/unregister and the with_timestamp
-     variants, all folded into a single function (all the message info
-     and the payload is encoded in serdata).
-
-     If sending fails (out-of-memory is the only real one), don't
-     report an error, as we can always try again. If adding the sample
-     to the WHC fails, however, we never accepted the sample and do
-     return an error.
-
-     If xp = NULL => queue the events, else simply pack them. */
-  int res;
-  *pseq = ++wr->seq;
+  /* returns: < 0 on error, 0 if no need to insert in whc, > 0 if inserted */
+  int do_insert, insres, res;
 
   ASSERT_MUTEX_HELD (&wr->e.lock);
 
-  assert (serdata_refcount_is_1 (serdata));
   if (config.enabled_logcats & LC_TRACE)
   {
     char ppbuf[1024];
     int tmp;
-    const char *tname = wr->topic ? topic_name (wr->topic) : "(null)";
-    const char *ttname = wr->topic ? topic_typename (wr->topic) : "(null)";
+    const char *tname = wr->topic ? wr->topic->name : "(null)";
+    const char *ttname = wr->topic ? wr->topic->typename : "(null)";
     tmp = prettyprint_serdata (ppbuf, sizeof (ppbuf), serdata);
-    nn_log (LC_TRACE, "write_sample %x:%x:%x:%x #%lld: ST%d %s/%s:%s%s\n",
-            PGUID (wr->e.guid), *pseq, serdata->v.msginfo.statusinfo,
-            tname, ttname, ppbuf,
-            tmp < (int) sizeof (ppbuf) ? "" : " (trunc)");
+    nn_log (LC_TRACE, "write_sample %x:%x:%x:%x #%"PA_PRId64"", PGUID (wr->e.guid), seq);
+    if (plist != 0 && (plist->present & PP_COHERENT_SET))
+      nn_log (LC_TRACE, " C#%"PA_PRId64"", fromSN (plist->coherent_set_seqno));
+    nn_log (LC_TRACE, ": ST%d %s/%s:%s%s\n",
+            serdata->v.msginfo.statusinfo, tname, ttname,
+            ppbuf, tmp < (int) sizeof (ppbuf) ? "" : " (trunc)");
   }
 
   assert (wr->reliable || have_reliable_subs (wr) == 0);
 
-  if ((wr->reliable && have_reliable_subs (wr)) || wr->handle_as_transient_local || wr->startup_mode)
-    res = whc_insert (wr->whc, writer_max_drop_seq (wr), *pseq, serdata);
+  if (wr->reliable && have_reliable_subs (wr))
+    do_insert = 1;
+  else if (wr->handle_as_transient_local || wr->startup_mode)
+    do_insert = 1;
   else
+    do_insert = 0;
+
+  if (!do_insert)
     res = 0;
+  else if ((insres = whc_insert (wr->whc, writer_max_drop_seq (wr), seq, plist, serdata)) < 0)
+    res = insres;
+  else
+    res = 1;
 
 #ifndef NDEBUG
   if (wr->e.guid.entityid.u == NN_ENTITYID_SPDP_BUILTIN_PARTICIPANT_WRITER)
@@ -759,14 +799,9 @@ static int insert_sample_in_whc (struct writer *wr, os_int64 * pseq, serdata_t s
   return res;
 }
 
-static int writer_must_throttle (const struct writer *wr)
-{
-  return writer_number_of_unacked_samples (wr) > config.whc_highwater_mark;
-}
-
 static int writer_may_continue (const struct writer *wr)
 {
-  return writer_number_of_unacked_samples (wr) < config.whc_lowwater_mark || (wr->state != WRST_OPERATIONAL);
+  return (whc_unacked_bytes (wr->whc) <= wr->whc_low && !wr->retransmitting) || (wr->state != WRST_OPERATIONAL);
 }
 
 static void throttle_helper (struct wr_prd_match *wprd, struct writer * const wr)
@@ -783,20 +818,13 @@ static void throttle_helper (struct wr_prd_match *wprd, struct writer * const wr
        chance to recover */
     wprd->has_replied_to_hb = 0;
     ut_avlAugmentUpdate (&wr_readers_treedef, wprd);
-    NN_WARNING2 ("writer %x:%x:%x:%x considering reader %x:%x:%x:%x non-responsive\n",
-                 PGUID ( wr->e.guid), PGUID (wprd->prd_guid));
+    NN_WARNING3 ("writer %x:%x:%x:%x topic %s considering reader %x:%x:%x:%x non-responsive\n",
+                 PGUID (wr->e.guid), wr->topic ? wr->topic->name : "(null)", PGUID (wprd->prd_guid));
   }
 }
 
-static int throttle_writer (struct nn_xpack *xp, struct writer *wr)
+static os_result throttle_writer (struct nn_xpack *xp, struct writer *wr)
 {
-  /* We don't _really_ need to hold the lock if we can decide whether
-     or not to throttle based on atomically updated state. Currently,
-     this is the case, and if it remains that way, maybe we should
-     eventually remove the precondition that the lock be held. */
-  ASSERT_MUTEX_HELD (&wr->e.lock);
-  assert (vtime_awake_p (lookup_thread_state ()->vtime));
-
   /* Sleep (cond_wait) without updating the thread's vtime: the
      garbage collector won't free the writer while we leave it
      unchanged.  Alternatively, we could decide to go back to sleep,
@@ -830,73 +858,108 @@ static int throttle_writer (struct nn_xpack *xp, struct writer *wr)
      resent to them, until a ACKNACK is received from that
      reader. This implicitly clears the whc and unblocks the
      writer. */
-  if (!writer_must_throttle (wr))
-    return 0;
-  else
+
+  nn_mtime_t tnow = now_mt ();
+  const nn_mtime_t abstimeout = add_duration_to_mtime (tnow, config.responsiveness_timeout);
+  os_size_t n_unacked = whc_unacked_bytes (wr->whc);
+  os_result result;
+
+  /* We don't _really_ need to hold the lock if we can decide whether
+     or not to throttle based on atomically updated state. Currently,
+     this is the case, and if it remains that way, maybe we should
+     eventually remove the precondition that the lock be held. */
+  ASSERT_MUTEX_HELD (&wr->e.lock);
+  assert (vtime_awake_p (lookup_thread_state ()->vtime));
+
+  TRACE (("writer %x:%x:%x:%x topic %s waiting for whc to shrink below low-water mark (whc %"PA_PRIuSIZE" low=%u high=%u)\n", PGUID (wr->e.guid), wr->topic ? wr->topic->name : "(null)", n_unacked, wr->whc_low, wr->whc_high));
+  wr->throttling++;
+  wr->throttle_count++;
+
+  /* Force any outstanding packet out: there will be a heartbeat
+     requesting an answer in it.  FIXME: obviously, this is doing
+     things the wrong way round ... */
+  if (xp)
   {
-    const os_int64 abstimeout = now() + config.responsiveness_timeout;
-    int n_unacked;
-    n_unacked = writer_number_of_unacked_samples (wr);
-    TRACE (("writer %x:%x:%x:%x waiting for whc to shrink below low-water mark (whc %d)\n", PGUID (wr->e.guid), n_unacked));
-    wr->throttling++;
-
-    /* Force any outstanding packet out: there will be a heartbeat
-       requesting an answer in it.  FIXME: obviously, this is doing
-       things the wrong way round ... */
-    if (xp)
+    struct nn_xmsg *hbmsg = writer_hbcontrol_create_heartbeat (wr, tnow, 1, 1);
+    os_mutexUnlock (&wr->e.lock);
+    if (hbmsg)
     {
-      os_mutexUnlock (&wr->e.lock);
-      nn_xpack_send (xp);
-      os_mutexLock (&wr->e.lock);
+      nn_xpack_addmsg (xp, hbmsg, 0);
     }
-
-    while (gv.rtps_keepgoing && !writer_may_continue (wr)) {
-      const os_int64 reltimeout = abstimeout - now();
-      os_result result;
-      if (reltimeout <= 0)
-        result = os_resultTimeout;
-      else
-      {
-        os_time timeout;
-        timeout.tv_sec = (os_int32) (reltimeout / T_SECOND);
-        timeout.tv_nsec = (os_int32) (reltimeout % T_SECOND);
-        result = os_condTimedWait (&wr->throttle_cond, &wr->e.lock, &timeout);
-      }
-      if (result == os_resultTimeout)
-      {
-        /* Walk over all connected readers and mark them "not
-         responsive" if they have unacked data. */
-        n_unacked = writer_number_of_unacked_samples (wr);
-        TRACE (("writer %x:%x:%x:%x whc not shrunk enough after maximum blocking time (whc %d)\n", PGUID (wr->e.guid), n_unacked));
-        ut_avlWalk (&wr_readers_treedef, &wr->readers, (ut_avlWalk_t) throttle_helper, wr);
-        remove_acked_messages (wr);
-        os_condBroadcast (&wr->throttle_cond);
-      }
-    }
-
-    wr->throttling--;
-
-    n_unacked = writer_number_of_unacked_samples (wr);
-    TRACE (("writer %x:%x:%x:%x done waiting for whc to shrink below low-water mark (whc %d)\n", PGUID (wr->e.guid), n_unacked));
-    return 1;
+    nn_xpack_send (xp);
+    os_mutexLock (&wr->e.lock);
   }
+
+  while (gv.rtps_keepgoing && !writer_may_continue (wr) && tnow.v < abstimeout.v)
+  {
+    const os_int64 reltimeout = abstimeout.v - tnow.v;
+    os_duration timeout;
+    /* Termination doesn't (yet) trigger blocked writers, so polling
+       is better than blocking indefinitely. The interesting events
+       all lead to triggers, so there's no need to poll frequently. */
+    if (reltimeout > 5*T_SECOND) {
+      timeout = 5*OS_DURATION_SECOND;
+    } else {
+      timeout = reltimeout;
+    }
+    thread_state_blocked (lookup_thread_state ());
+    (void)os_condTimedWait (&wr->throttle_cond, &wr->e.lock, timeout);
+    thread_state_unblocked (lookup_thread_state ());
+    tnow = now_mt ();
+  }
+
+  /* OSPL simply needs to know whether it must drop data or not,
+     whether a timeout occurred is irrelevant if the writer may not
+     continue */
+  result = os_resultSuccess;
+  if (!writer_may_continue (wr))
+  {
+    n_unacked = whc_unacked_bytes (wr->whc);
+    TRACE (("writer %x:%x:%x:%x topic %s whc not shrunk enough after maximum blocking time (whc %"PA_PRIuSIZE")\n", PGUID (wr->e.guid), wr->topic ? wr->topic->name : "(null)", n_unacked));
+    /* Walk over all connected readers and mark them "not responsive" if they have unacked data. */
+    ut_avlWalk (&wr_readers_treedef, &wr->readers, (ut_avlWalk_t) throttle_helper, wr);
+    remove_acked_messages (wr);
+    os_condBroadcast (&wr->throttle_cond);
+  }
+
+  wr->throttling--;
+  n_unacked = whc_unacked_bytes (wr->whc);
+  TRACE (("writer %x:%x:%x:%x done waiting for whc to shrink below low-water mark (whc %"PA_PRIuSIZE" low=%u high=%u)\n", PGUID (wr->e.guid), n_unacked, wr->whc_low, wr->whc_high));
+  return result;
 }
 
-int write_sample_kernel_seq (struct nn_xpack *xp, struct writer *wr, serdata_t serdata, int have_kernel_seq, os_uint32 kernel_seq)
+static int maybe_grow_whc (struct writer *wr)
+{
+  if (!wr->retransmitting && config.whc_adaptive && wr->whc_high < config.whc_highwater_mark)
+  {
+    nn_etime_t tnow = now_et();
+    nn_etime_t tgrow = add_duration_to_etime (wr->t_whc_high_upd, 10 * T_MILLISECOND);
+    if (tnow.v >= tgrow.v)
+    {
+      os_uint32 m = (config.whc_highwater_mark - wr->whc_high) / 32;
+      wr->whc_high = (m == 0) ? config.whc_highwater_mark : wr->whc_high + m;
+      wr->t_whc_high_upd = tnow;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static int write_sample_kernel_seq_eot (struct nn_xpack *xp, struct writer *wr, struct nn_plist *plist, serdata_t serdata, int have_kernel_seq, os_uint32 kernel_seq, int end_of_txn)
 {
   int r;
   os_int64 seq;
-  os_int64 tnow;
+  nn_mtime_t tnow;
 
-  if (serdata_size (serdata) > config.max_sample_size)
+  if (ddsi_serdata_size (serdata) > config.max_sample_size)
   {
     char ppbuf[1024];
     int tmp;
-    const char *tname = wr->topic ? topic_name (wr->topic) : "(null)";
-    const char *ttname = wr->topic ? topic_typename (wr->topic) : "(null)";
+    const char *tname = wr->topic ? wr->topic->name : "(null)";
+    const char *ttname = wr->topic ? wr->topic->typename : "(null)";
     tmp = prettyprint_serdata (ppbuf, sizeof (ppbuf), serdata);
     NN_WARNING7 ("dropping oversize (%u > %u) sample from local writer %x:%x:%x:%x %s/%s:%s%s\n",
-                 serdata_size (serdata), config.max_sample_size,
+                 ddsi_serdata_size (serdata), config.max_sample_size,
                  PGUID (wr->e.guid), tname, ttname, ppbuf,
                  tmp < (int) sizeof (ppbuf) ? "" : " (trunc)");
     r = ERR_INVALID_DATA;
@@ -904,6 +967,11 @@ int write_sample_kernel_seq (struct nn_xpack *xp, struct writer *wr, serdata_t s
   }
 
   os_mutexLock (&wr->e.lock);
+
+  if (end_of_txn)
+  {
+    wr->cs_seq = 0;
+  }
 
   if (config.forward_all_messages || !have_kernel_seq)
   {
@@ -922,54 +990,130 @@ int write_sample_kernel_seq (struct nn_xpack *xp, struct writer *wr, serdata_t s
     goto drop;
   }
 
-  /* If we blocked in throttle_writer, we must read the clock
-     again. If we didn't but the timestamp in serdata's msginfo is
-     not known to be the current time a few clock ticks ago, we must
-     do so too. Only when we did not block & know that we have a
-     good timestamp available we can avoid it. */
-  if (throttle_writer (xp, wr) || !serdata->v.msginfo.timestamp_is_now)
-  {
-    tnow = now ();
-  }
-  else
-  {
-    tnow = serdata->v.msginfo.timestamp;
-  }
-  serdata_set_twrite (serdata, tnow);
-  r = insert_sample_in_whc (wr, &seq, serdata);
+  /* If WHC overfull, block. */
 
-  /* Note the subtlety of enqueueing with the lock held but
-     transmitting without holding the lock. Still working on cleaning
-     that up. */
-  if (xp)
+
   {
-    os_mutexUnlock (&wr->e.lock);
-    if (r >= 0)
+    os_size_t unacked_bytes = whc_unacked_bytes (wr->whc);
+    os_result ores;
+    if (unacked_bytes <= wr->whc_high)
+      ores = os_resultSuccess;
+    else if (config.prioritize_retransmit && wr->retransmitting)
+      ores = throttle_writer (xp, wr);
+    else
     {
-      transmit_sample (xp, wr, seq, serdata, NULL, 1);
+      maybe_grow_whc (wr);
+      if (unacked_bytes <= wr->whc_high)
+        ores = os_resultSuccess;
+      else
+        ores = throttle_writer (xp, wr);
+    }
+    if (ores == os_resultTimeout)
+    {
+      os_mutexUnlock (&wr->e.lock);
+      r = ERR_TIMEOUT;
+      goto drop;
+    }
+  }
+
+  /* Always use the current monotonic time */
+  tnow = now_mt ();
+  ddsi_serdata_set_twrite (serdata, tnow);
+
+  seq = ++wr->seq;
+  if (wr->cs_seq != 0)
+  {
+    if (plist == NULL)
+    {
+      plist = os_malloc (sizeof (*plist));
+      nn_plist_init_empty (plist);
+    }
+    assert (!(plist->present & PP_COHERENT_SET));
+    plist->present |= PP_COHERENT_SET;
+    plist->coherent_set_seqno = toSN (wr->cs_seq);
+  }
+
+  if ((r = insert_sample_in_whc (wr, seq, plist, serdata)) < 0)
+  {
+    /* Failure of some kind */
+    os_mutexUnlock (&wr->e.lock);
+    if (plist != NULL)
+    {
+      nn_plist_fini (plist);
+      os_free (plist);
     }
   }
   else
   {
-    if (r >= 0)
+    /* Note the subtlety of enqueueing with the lock held but
+       transmitting without holding the lock. Still working on
+       cleaning that up. */
+    if (xp)
+    {
+      /* If all reliable readers disappear between unlocking the writer and
+       * creating the message, the WHC will free the plist (if any). Currently,
+       * plist's are only used for coherent sets, which is assumed to be rare,
+       * which in turn means that an extra copy doesn't hurt too badly ... */
+      nn_plist_t plist_stk, *plist_copy;
+      if (plist == NULL)
+        plist_copy = NULL;
+      else
+      {
+        plist_copy = &plist_stk;
+        nn_plist_copy (plist_copy, plist);
+      }
+      os_mutexUnlock (&wr->e.lock);
+      transmit_sample (xp, wr, seq, plist_copy, serdata, NULL, 1);
+      if (plist_copy)
+        nn_plist_fini (plist_copy);
+    }
+    else
     {
       if (wr->heartbeat_xevent)
         writer_hbcontrol_note_asyncwrite (wr, tnow);
-      enqueue_sample_wrlock_held (wr, seq, serdata, NULL, 1);
+      enqueue_sample_wrlock_held (wr, seq, plist, serdata, NULL, 1);
+      os_mutexUnlock (&wr->e.lock);
     }
-    os_mutexUnlock (&wr->e.lock);
+
+    /* If not actually inserted, WHC didn't take ownership of plist */
+    if (r == 0 && plist != NULL)
+    {
+      nn_plist_fini (plist);
+      os_free (plist);
+    }
   }
 
 drop:
-  /* FIXME: shouldn't I move the serdata_unref call to the callers? */
-  serdata_unref (serdata);
+  /* FIXME: shouldn't I move the ddsi_serdata_unref call to the callers? */
+  ddsi_serdata_unref (serdata);
   return r;
+}
+
+int write_sample_kernel_seq (struct nn_xpack *xp, struct writer *wr, serdata_t serdata, int have_kernel_seq, os_uint32 kernel_seq)
+{
+  return write_sample_kernel_seq_eot (xp, wr, NULL, serdata, have_kernel_seq, kernel_seq, 0);
 }
 
 int write_sample (struct nn_xpack *xp, struct writer *wr, serdata_t serdata)
 {
-  assert (is_builtin_entityid (wr->e.guid.entityid));
-  return write_sample_kernel_seq (xp, wr, serdata, 0, 0);
+#ifndef NDEBUG
+  const nn_vendorid_t ownvendorid = MY_VENDOR_ID;
+  assert (is_builtin_entityid (wr->e.guid.entityid, ownvendorid));
+#endif
+  return write_sample_kernel_seq_eot (xp, wr, NULL, serdata, 0, 0, 0);
+}
+
+void begin_coherent_set (struct writer *wr)
+{
+  os_mutexLock (&wr->e.lock);
+  if (wr->cs_seq == 0)
+    wr->cs_seq = wr->seq + 1;
+  os_mutexUnlock (&wr->e.lock);
+}
+
+int end_coherent_set (struct nn_xpack *xp, struct writer *wr, struct nn_plist *plist, serdata_t serdata, int have_kernel_seq, os_uint32 kernel_seq)
+{
+  return write_sample_kernel_seq_eot (xp, wr, plist, serdata, have_kernel_seq, kernel_seq, 1);
 }
 
 /* SHA1 not available (unoffical build.) */

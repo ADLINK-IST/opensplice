@@ -10,12 +10,15 @@ else
 include $(OSPL_HOME)/setup/x86.linux-default.mak
 endif
 
+# C only Compiler flags
+CFLAGS += -std=c99
+
 # Compiler flags
-CFLAGS_OPT       = -O0
+CFLAGS_OPT = -O0 
 # -DE_DEBUG is needed to enable debugging info for the SACPP apis
-CFLAGS_DEBUG     = -g -D_TYPECHECK_ -DE_DEBUG
+CFLAGS_DEBUG = -g -D_TYPECHECK_ -DE_DEBUG
 CFLAGS_STRICT_UNINITIALIZED =
-JCFLAGS          = -g
+JCFLAGS = -g
 
 #Csc compiler flags
-CSFLAGS_DEBUG    = -define:DEBUG\;TRACE -debug+ -debug:full
+CSFLAGS_DEBUG = -define:DEBUG\;TRACE -debug+ -debug:full

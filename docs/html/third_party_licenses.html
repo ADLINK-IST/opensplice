@@ -1,20 +1,82 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
-  <title>OpenSplice DDS 3rd party licenses</title>
-  <meta http-equiv="Content-Type"
-    content="text/html; charset=iso-8859-1">
-  <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
-  <base target="main">
-  <style _base_target="main">
-  </style>
-</head>
-<body>
-<h1>OpenSplice DDS 3rd party licenses</h1>
-<p>
-  OpenSplice DDS uses 3rd party software. The license information for
-  this software is mentioned on this page.
-</p>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Vortex OpenSplice - documentation index</title>
+    <style type="text/css" media="all">
+      @import url("../css/maven-base.css");
+      @import url("../css/maven-theme.css");
+      @import url("../css/site.css");
+    </style>
+    <link rel="stylesheet" href="./docs/css/print.css" type="text/css" media="print" />
+    <meta name="Date-Revision-yyyymmdd" content="20141002" />
+    <meta http-equiv="Content-Language" content="en" />
+        
+ </head>
+ <body class="composite">
+    <div id="banner">
+       <a href="http://www.prismtech.com" id="bannerLeft">
+          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       </a>
+       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       </a>
+       <div class="clear">
+          <hr/>
+       </div>
+    </div>
+    <div id="breadcrumbs">
+       <div class="xright">
+          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
+          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+       </div>
+       <div class="clear">
+         <hr/>
+       </div>
+    </div>
+    <div id="leftColumn">
+      <div id="navcolumn">
+         <h5>Vortex OpenSplice</h5>
+         <ul>
+            <li class="none">
+            <a href="../../index.html" title = "Intro">Introduction</a>
+            </li>
+            <li class="none">
+              <a href="guides.html" title="APIs">User Guides</a>
+            </li>
+            <li class="none">
+              <a href="changedV6.html" title="Changes">Changes</a><br>
+            </li>
+            <li class="none">
+              <a href="platforms.html" title="Supported Platforms">Supported Platforms</a><br>
+            </li>
+            <li class="none">
+              <a href="known_issues.html" title="Changes">Known Issues</a><br>
+            </li>
+            <li class="none">
+              <a href="ddsi2_release_notes.html" title="Changes">DDSI Release Notes</a><br>
+            </li>
+            <li class="none">
+               <a href="rebuilding_APIs.html" title = "User Guide">Rebuilding the APIs</a><br>
+            </li>
+            <li class="none">
+               <a href="upgrading.html" title = "Upgrading">Upgrading OpenSplice</a><br>
+            </li>
+            <li class="none">
+               <a href="../../examples/dcps/README.html" title = "Examples">Examples</a><br>
+            </li>
+            <li class="none">
+               <a href="third_party_licenses.html" title = "Third Party Licenses"><strong>Third party licenses</strong></a><br>
+            </li>
+            <li class="none">
+              <a href="./../../LICENSE" title="License">License</a>
+            </li>
+          </ul>
+      </a>
+      </div>
+    </div>
+    <div id="bodyColumn">
+      <div id="contentBox">
 
 <h2>GSOAP license</h2>
 <p> OpenSplice DDS incorporates gSOAP in order to provide SOAP
@@ -37,7 +99,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
-<hr>
 
 <br>
 <h2>Sun MicroSystems license</h2>
@@ -100,11 +161,11 @@ NOTE:<br><br>
 SunOS, SunSoft, Sun, Solaris, Sun Microsystems or the Sun logo are trademarks or
 registered trademarks of Sun Microsystems, Inc.<br><br>
 
-<hr>
-
 <h2>OpenSSL license</h2>
 <p>
   The OpenSplice DDS Secure Networking Module uses the OpenSSL crypto
+  library.</br></br>
+  The OpenSplice DDSI2E Networking Module uses the OpenSSL crypto and OpenSSL ssl
   library.
 </p>
 <br>
@@ -240,7 +301,6 @@ simply
 be copied and put under another distribution licence
 [including the GNU Public Licence.]<br>
 
-<hr>
 <h2>wcecompat license</h2>
 Applicable for Windows CE only, the above OpenSLL library was built using wcecompat which is
 the Windows CE Runtime Library "compatibility" library.<br>
@@ -252,7 +312,6 @@ this is the GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1, February 1999<br>
 <br>
 Please have a look at the thirdParty directory in the distribution for more information on this.<br>
 
-<hr>
 <h2>log4c as an example</h2>
 PrismTech provides a "copy" of log4c in its examples. This examples demonstrates
 how to use an external logging provider with OpenSplice DDS. This is provided as
@@ -262,8 +321,6 @@ operational use within OpenSplice DDS. License details for
 log4c which is covered by the GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1, February 1999
 can be found in the log4c directory in the examples.<br>
 <br>
-
-<hr>
 
 <h2>OpenSplice Durability Service</h2>
 Durability can be configured to use Leveldb or SQLLite
@@ -301,22 +358,15 @@ SQLLite<br>
 <br>http://www.sqlite.org/copyright.html
 </ul><br>
 
-
-<hr>
-
-
 <h2>OpenSplice Tester</h2>
 <p>Uses the following third party products
 </p>
 <ul>
 <li>RSyntaxTextArea : <a href ="http://sourceforge.net/projects/rsyntaxtextarea/">GNU Library or Lesser General Public License (LGPL)</a>.</li>
-<li><a href="http://java.net/projects/swingx">SwingX</a>:</li><a href="http://www.opensource.org/licenses/lgpl-2.1.php">GNU Library or Lesser General Public License (LGPL)</a></li>
+<li><a href="http://java.net/projects/swingx">SwingX </a> : <a href="http://www.opensource.org/licenses/lgpl-2.1.php">GNU Library or Lesser General Public License (LGPL)</a></li>
 <li>Log4j: <a href = "http://logging.apache.org/log4j/1.2/license.html">The Apache Software License, Version 2.0</a></li>
 <li><a href = "http://jchart2d.sourceforge.net/">JChart2D</a>: <a href="http://www.gnu.org/copyleft/lesser.txt">GNU Library or Lesser General Public License (LGPL)</a> </li>
-<li><a href = "http://www.javadesktop.org/articles/jdic/index.html">JDesktop Integration Components - JDIC</a>: <a href="http://www.gnu.org/copyleft/lesser.txt">GNU Library or Lesser General Public License (LGPL)</a> </li>
 </ul>
-
-<hr>
 
 <h2>Compression library licenses</h2>
 The OpenSplice Real-Time network service compression plugins for the <b>lzf</b> and <b>snappy</b> algorithms contain code licensed under the following conditions:
@@ -379,9 +429,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT<br>
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.<br>
 </ul>
 
-
-<hr>
-
 <h2>Make, Project and workspace Creator. Source location: submods/MPC_ROOT</h2>
 MPC (Licensed Product) is protected by copyright, and is distributed under
 the following terms.<br><br>
@@ -437,9 +484,6 @@ DAMAGES, EVEN IF OCI HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.<br><br
 
 MPC copyright OCI. St. Louis MO USA, 2003-2006<br><br>
 
-
-<hr>
-
 <h2>sha2 license</h2>
 The opensplice abstraction layer contains the source files os_sha2.c and os_sha2.h which use the following license.
 <br>
@@ -479,27 +523,74 @@ The opensplice abstraction layer contains the source files os_sha2.c and os_sha2
  */<br>
 
 
-<hr>
+<h2>atomic_ops license</h2>
+
+<p>OpenSplice DDS contains code from the atomic_ops project. This was originally
+written by Hans Boehm, with some platform-dependent code imported from the
+Boehm-Demers-Weiser GC, where it was contributed by many others. It is
+distributed under the following license:</p>
 
 
-<br>
-<br><br><br>
-<p>
-  <a target="_top" href="http://www.prismtech.com"
-    _base_target="main">
-    <img src="../images/logo_prismtech2.jpg"
-     alt="PrismTech" _base_target="main" align="right" border="0"
-     height="29" width="112">
-  </a>
-  <a href="#top" target="_self"
-    _base_target="main">
-    <img src="../images/top.gif" alt="TOP"
-"32">
-  </a>
-  <br>
-  <a href="#top" target="_self" _base_target="main">Top</a>
+<p>Copyright (c) ...</p>
+
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:</p>
+
+<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+
+<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</p>
+
+<h2>SIGAR</h2>
+
+<p>OpenSplice DDS contains a node manager service that when activated will provide
+statistics about the node on which DDS is exectuing. These are used with the 
+Insight Tool. It is distributed under the 
+<a href="https://github.com/hyperic/sigar/blob/master/LICENSE">Apache 2.0 license</a>.
 </p>
 
-</p>
-</body>
+<h2>Google Protocol Buffers</h2>
+<p>The OpenSpliceDDS API's allow publishing/subscribing to types modelled with
+Google Protocol Buffers, which is distributed under the following license:</p>
+<p>Copyright 2008, Google Inc.
+All rights reserved.</p>
+
+<p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p>
+
+<p>Code generated by the Protocol Buffer compiler is owned by the owner
+of the input file used when generating it.  This code is not
+standalone and requires a support library to be linked with it.  This
+support library is itself covered by the above license.</p>
+
+    <div class="clear">
+    <hr/>
+    </div>
+    <div id="footer">
+      <div class="xright">
+       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.      
+      </div>
+     <div class="clear">
+     <hr/>
+     </div>
+    </div>
+  </body>
 </html>

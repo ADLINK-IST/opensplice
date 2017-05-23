@@ -50,55 +50,89 @@ public:
      * For instance:
      * <pre><code>
            QosProvider xml_file_provider("file:///somewhere/on/disk/qos-config.xml");
-           QosProvider json_file_provider("file:///somewhere/on/disk/json-config.json");
-           QosProvider json_http_provider("http:///somewhere.org/here/json-config.json");
         </code></pre>
 
      * The URI determines the how the Qos configuration is fetched and the
      * format in which it is represented. This specification requires compliant
      * implementations to support at least one file-based configuration using
      * the XML syntax defined as part of the DDS for CCM specification (formal/12.02.01).
+     *
+     * @param uri URI of QosProvider xml file
+     * @param profile the profile name within the xml file
      */
     explicit TQosProvider(const std::string& uri, const std::string& profile);
 
+    /**
+     * Create a QosProvider fetching QoS configuration from the specified URI
+     * @param uri URI of the QosProvider xml file
+     */
     explicit TQosProvider(const std::string& uri);
 
-    dds::domain::qos::DomainParticipantQos
-    participant_qos();
+    /**
+     * @return DomainParticipantQos from the given URI (and profile)
+     */
+    dds::domain::qos::DomainParticipantQos participant_qos();
 
-    dds::domain::qos::DomainParticipantQos
-    participant_qos(const std::string& id);
+    /**
+     * @param id the identifier of a specific Domain Participant
+     * @return DomainParticipantQos from the given URI (and profile) using the id
+     */
+    dds::domain::qos::DomainParticipantQos participant_qos(const std::string& id);
 
+    /**
+     * @return TopicQos from the given URI (and profile)
+     */
+    dds::topic::qos::TopicQos topic_qos();
 
-    dds::topic::qos::TopicQos
-    topic_qos();
+    /**
+     * @param id the identifier of a specific Topic
+     * @return TopicQos from the given URI (and profile) using the id
+     */
+    dds::topic::qos::TopicQos topic_qos(const std::string& id);
 
-    dds::topic::qos::TopicQos
-    topic_qos(const std::string& id);
+    /**
+     * @return SubscriberQos from the given URI (and profile)
+     */
+    dds::sub::qos::SubscriberQos subscriber_qos();
 
-    dds::sub::qos::SubscriberQos
-    subscriber_qos();
+    /**
+     * @param id the identifier of a specific Subscriber
+     * @return SubscriberQos from the given URI (and profile) using the id
+     */
+    dds::sub::qos::SubscriberQos subscriber_qos(const std::string& id);
 
-    dds::sub::qos::SubscriberQos
-    subscriber_qos(const std::string& id);
+    /**
+     * @return DataReadertQos from the given URI (and profile)
+     */
+    dds::sub::qos::DataReaderQos datareader_qos();
 
-    dds::sub::qos::DataReaderQos
-    datareader_qos();
+    /**
+     * @param id the identifier of a specific DataReader
+     * @return DataReaderQos from the given URI (and profile) using the id
+     */
+    dds::sub::qos::DataReaderQos datareader_qos(const std::string& id);
 
-    dds::sub::qos::DataReaderQos
-    datareader_qos(const std::string& id);
+    /**
+     * @return PublisherQos from the given URI (and profile)
+     */
+    dds::pub::qos::PublisherQos publisher_qos();
 
-    dds::pub::qos::PublisherQos
-    publisher_qos();
+    /**
+     * @param id the identifier of a specific Publisher
+     * @return PublisherQos from the given URI (and profile) using the id
+     */
+    dds::pub::qos::PublisherQos publisher_qos(const std::string& id);
 
-    dds::pub::qos::PublisherQos
-    publisher_qos(const std::string& id);
+    /**
+     * @return DataWriterQos from the given URI (and profile)
+     */
+    dds::pub::qos::DataWriterQos datawriter_qos();
 
-    dds::pub::qos::DataWriterQos
-    datawriter_qos();
-
-    dds::pub::qos::DataWriterQos
-    datawriter_qos(const std::string& id);
+    /**
+     * @param id the identifier of a specific DataWriter
+     * @return DataWriterQos from the given URI (and profile) using the id
+     */
+    dds::pub::qos::DataWriterQos datawriter_qos(const std::string& id);
 };
 
 #endif /* OMG_DDS_CORE_QOS_TPROVIDER_HPP_ */

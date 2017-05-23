@@ -1,27 +1,30 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef U_SUBSCRIBER_H
 #define U_SUBSCRIBER_H
 
+#include "u_types.h"
+
 #if defined (__cplusplus)
 extern "C" {
 #endif
-
-#include "u_types.h"
-
-typedef c_bool (*u_subscriberAction)(u_subscriber subscriber, c_voidp arg);
-
-#include "u_reader.h"
-#include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -31,73 +34,57 @@ typedef c_bool (*u_subscriberAction)(u_subscriber subscriber, c_voidp arg);
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 #define u_subscriber(o) \
-        ((u_subscriber)u_entityCheckType(u_entity(o),U_SUBSCRIBER))
+        ((u_subscriber)u_objectCheckType(u_object(o),U_SUBSCRIBER))
+
+typedef c_bool (*u_subscriberAction)(u_dataReader reader, void *arg);
 
 OS_API u_subscriber
 u_subscriberNew (
-    u_participant _scope,
-    const c_char *name,
-    v_subscriberQos qos,
-    c_bool enable);
+    const u_participant _scope,
+    const os_char *name,
+    const u_subscriberQos qos,
+    u_bool enable);
 
 OS_API u_result
-u_subscriberFree (
-    u_subscriber _this);
+u_subscriberGetQos (
+    const u_subscriber _this,
+    u_subscriberQos *qos);
 
 OS_API u_result
-u_subscriberSubscribe (
-    u_subscriber _this,
-    const c_char *partitionExpr);
+u_subscriberSetQos (
+    const u_subscriber _this,
+    const u_subscriberQos qos);
 
 OS_API u_result
-u_subscriberUnSubscribe (
-    u_subscriber _this,
-    const c_char *partitionExpr);
+u_subscriberBeginAccess(
+    const u_subscriber _this);
 
 OS_API u_result
-u_subscriberAddReader(
-    u_subscriber _this,
-    u_reader reader);
-
-OS_API u_result
-u_subscriberRemoveReader(
-    u_subscriber _this,
-    u_reader reader);
-
-OS_API c_bool
-u_subscriberContainsReader(
-    u_subscriber _this,
-    u_reader reader);
-
-OS_API c_long
-u_subscriberReaderCount(
-    u_subscriber _this);
-
-OS_API c_iter
-u_subscriberLookupReaders(
-    u_subscriber _this,
-    const c_char *topic_name);
-
-OS_API u_result
-u_subscriberWalkReaders(
-    u_subscriber _this,
-    u_readerAction action,
-    c_voidp actionArg);
+u_subscriberEndAccess(
+    const u_subscriber _this);
 
 OS_API u_dataReader
 u_subscriberCreateDataReader (
-    u_subscriber _this,
-    const c_char *name,
-    const c_char *expression,
-    c_value params[],
-    v_readerQos qos,
-    c_bool enable);
+    const u_subscriber _this,
+    const os_char *name,
+    const os_char *expression,
+    const c_value params[],
+    const u_readerQos qos,
+    u_bool enable);
 
 OS_API u_result
-u_subscriberDeleteContainedEntities (
-    u_subscriber _this);
+u_subscriberGetDataReaders (
+    const u_subscriber _this,
+    u_sampleMask mask,
+    c_iter *readers);
 
-#undef OS_API 
+OS_API u_result
+u_subscriberGetDataReaderProxies (
+    const u_subscriber _this,
+    u_sampleMask mask,
+    c_iter *readers);
+
+#undef OS_API
 
 #if defined (__cplusplus)
 }

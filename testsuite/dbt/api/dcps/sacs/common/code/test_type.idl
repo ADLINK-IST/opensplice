@@ -1,3 +1,4 @@
+#include "dds_dcps.idl"
 
 module mod {
     struct tst{
@@ -58,3 +59,25 @@ module arrAndSeqModule {
         sequence<octetSeq> seqOfSeq;
     };
 };
+
+module Foo {
+    struct Embedded {
+        long id;
+        long origin;
+    };
+
+    struct Test {
+        long longArr3[3];
+        long longArr3_2[3][2];
+        string StrArr3_2[3][2];
+        sequence<long> longSeq; // TODO: Change into ulong!!!
+        sequence<DDS::Duration_t> durationSeq;
+        sequence<sequence<long, 2>, 3> longSeq3Seq2;
+        sequence<sequence<sequence<long> > > longSeqSeqSeq;
+        sequence<Embedded> embStruct;
+        sequence<Test> recursiveStruct;
+        long key;
+    };
+#pragma keylist Test key
+};
+

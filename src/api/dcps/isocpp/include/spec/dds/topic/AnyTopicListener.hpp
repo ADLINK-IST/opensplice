@@ -26,7 +26,7 @@ namespace dds
 namespace topic
 {
 
-class AnyTopicListener
+class OMG_DDS_API AnyTopicListener
 {
 public:
     virtual ~AnyTopicListener();
@@ -38,7 +38,7 @@ public:
 };
 
 
-class NoOpAnyTopicListener : public virtual AnyTopicListener
+class OMG_DDS_API NoOpAnyTopicListener : public virtual AnyTopicListener
 {
 public:
     virtual ~NoOpAnyTopicListener();

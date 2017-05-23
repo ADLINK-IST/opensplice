@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.transform.xml;
@@ -81,7 +89,9 @@ public class MetaTypeDeserializerXML implements MetaTypeDeserializer{
                                                    xmlType);
             */
             try {
-                document = builder.parse(new InputSource(new StringReader(xmlType)));
+                synchronized(builder){
+                    document = builder.parse(new InputSource(new StringReader(xmlType)));
+                }
             }
             catch (SAXException se) {
                 logger.logp(Level.SEVERE,  "MetaTypeDeserializerXML",
@@ -212,7 +222,7 @@ public class MetaTypeDeserializerXML implements MetaTypeDeserializer{
         NodeList scope = typeElement.getChildNodes();
         Node elementNode, elementContentNode, classNode, childNode;
         NodeList memberNodeList;
-        ArrayList members = new ArrayList();
+        ArrayList<MetaField> members = new ArrayList<MetaField>();
         MetaClass result = null;
         Element scopeElement = null;
         Element extendsElement = null;
@@ -409,12 +419,10 @@ public class MetaTypeDeserializerXML implements MetaTypeDeserializer{
             if(nameNode != null){
                 primKind = nameNode.getNodeValue().trim();
                 return new MetaPrimitive(fieldName, primKind);
-            } else {
-                logger.logp(Level.SEVERE,  "MetaTypeDeserializerXML",
-                        "parsePrimitive",
-                        "-Unsupported primitve type found(2).");
-                metaType.mayNotBeFinalized();
             }
+            logger.logp(Level.SEVERE, "MetaTypeDeserializerXML",
+                    "parsePrimitive", "-Unsupported primitve type found(2).");
+            metaType.mayNotBeFinalized();
         }
         else{
             logger.logp(Level.SEVERE,  "MetaTypeDeserializerXML",
@@ -439,7 +447,7 @@ public class MetaTypeDeserializerXML implements MetaTypeDeserializer{
         Node membersNode = null;
         String structTypeName = null;
         MetaStruct result = null;
-        ArrayList members = new ArrayList();
+        ArrayList<MetaField> members = new ArrayList<MetaField>();
 
         for(int i=0; i<structContents.getLength(); i++){
             structNode = structContents.item(i);
@@ -633,7 +641,7 @@ public class MetaTypeDeserializerXML implements MetaTypeDeserializer{
             if(nameNode != null){
                 Element cases = (Element)(nameNode);
                 NodeList caseList = cases.getChildNodes();
-                ArrayList caseArray = new ArrayList();
+                ArrayList<MetaUnionCase> caseArray = new ArrayList<MetaUnionCase>();
                 MetaUnionCase caseField;
                 Element c;
 
@@ -700,12 +708,11 @@ public class MetaTypeDeserializerXML implements MetaTypeDeserializer{
                             MetaField result = this.parseUnionSwitchType(unionName, (Element)aliasNode);
                             metaType.addTypedef(typeDefName, result);
                             return result;
-                        } else {
-                            logger.logp(Level.SEVERE, "MetaTypeDeserializerXML",
-                                    "parseUnionSwitchType",
-                                    "Found union switchType without alias or name.");
-                            metaType.mayNotBeFinalized();
                         }
+                        logger.logp(Level.SEVERE, "MetaTypeDeserializerXML",
+                                "parseUnionSwitchType",
+                                "Found union switchType without alias or name.");
+                        metaType.mayNotBeFinalized();
                     }
                     else{
                         logger.logp(Level.SEVERE, "MetaTypeDeserializerXML",
@@ -845,7 +852,7 @@ public class MetaTypeDeserializerXML implements MetaTypeDeserializer{
                                     found = true;
                                 }
                             }
-                            ArrayList labels = new ArrayList();
+                            ArrayList<String> labels = new ArrayList<String>();
 
                             if(found){
                                 Element casesElement = (Element)labelNode;

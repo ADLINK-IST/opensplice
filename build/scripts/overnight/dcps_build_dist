@@ -42,6 +42,17 @@ cd install ||
     exit 2;
 }
 
+# Write a list of features enabled to a features file then store to the
+# logs section on the scoreboard. Hides any INCLUDE_*=no before writing.
+env | grep 'INCLUDE_' | grep -v 'no' | xargs -I % echo % > $LOGDIR/features.txt
+cp $LOGDIR/features.txt $OSPL_HOME/etc/features.txt
+
+# Copy list of possible ospli/osplo features done as part of the dcps_build.
+if [ -f $OSPL_HOME/all_features.txt ]
+then
+   cp $OSPL_HOME/all_features.txt $LOGDIR/all_features.txt
+fi
+
 #Make a full distro and an eval, then an lgpl
 make all_distros
 

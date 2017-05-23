@@ -1,46 +1,67 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "u_participant.h"
+#include "u_subscriber.h"
+#include "u_writer.h"
 #include "u__participant.h"
-#include "u__subscriber.h"
 #include "u__topic.h"
 #include "u__types.h"
-#include "u__dispatcher.h"
+#include "u__object.h"
+#include "u__observable.h"
 #include "u__entity.h"
 #include "u__user.h"
-#include "u__writer.h"
 #include "u__cfElement.h"
 #include "u__domain.h"
-#include "u_user.h"
-#include "u_scheduler.h"
+#include "u__user.h"
 
 #include "v_entity.h"
 #include "v_participant.h"
+#include "v_participantQos.h"
 #include "v_leaseManager.h"
 #include "v_configuration.h"
 #include "v_event.h"
-#include "v_statistics.h"
+#include "v_topicAdapter.h"
+#include "v_typeRepresentation.h"
 
+#include "os_process.h"
 #include "os_report.h"
+#include "os_atomics.h"
+
+
+#define u_participantReadClaim(_this, participant, claim) \
+        u_observableReadClaim(u_observable(_this), (v_public *)(participant), claim)
+
+#define u_participantWriteClaim(_this, participant, claim) \
+        u_observableWriteClaim(u_observable(_this), (v_public *)(participant), claim)
+
+#define u_participantRelease(_this, claim) \
+        u_observableRelease(u_observable(_this), claim)
 
 static void
-collect_entities(
-    c_voidp object,
-    c_voidp arg)
+decrThreadWaitCount(u_participant p)
 {
-    c_iter *entities = (c_iter *)arg;
-
-    u_entityKeep(u_entity(object));
-    *entities = c_iterInsert(*entities, object);
+    os_mutexLock(&p->mutex);
+    if (--(p->threadWaitCount) == 0) {
+        os_condBroadcast(&p->cv);
+    }
+    os_mutexUnlock(&p->mutex);
 }
 
 static void *
@@ -52,17 +73,21 @@ leaseManagerMain(
     v_leaseManager lm;
     u_result result;
 
-    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kp));
+    assert(_this != NULL);
+
+    result = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
+    decrThreadWaitCount(_this);
     if(result == U_RESULT_OK)
     {
+        v_kernelThreadFlags(V_KERNEL_THREAD_FLAG_SERVICETHREAD, V_KERNEL_THREAD_FLAG_SERVICETHREAD);
         assert(kp);
         lm = v_participantGetLeaseManager(kp);
         v_leaseManagerMain(lm);
         c_free(lm);
-        u_entityRelease(u_entity(_this));
+        u_participantRelease(_this, C_MM_RESERVATION_ZERO);
     } else {
-        OS_REPORT(OS_WARNING, "u_participant::leaseManagerMain", 0,
-                  "Failed to claim Participant");
+        OS_REPORT(OS_WARNING, "u_participant::leaseManagerMain", result,
+                  "Failed to claim Participant, lease manager is not started");
     }
     return NULL;
 }
@@ -75,933 +100,342 @@ resendManagerMain(
     v_participant kp;
     u_result result;
 
-    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kp));
+    assert(_this != NULL);
+
+    result = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
+    decrThreadWaitCount(_this);
     if(result == U_RESULT_OK)
     {
+        v_kernelThreadFlags(V_KERNEL_THREAD_FLAG_SERVICETHREAD, V_KERNEL_THREAD_FLAG_SERVICETHREAD);
         assert(kp);
         v_participantResendManagerMain(kp);
-        u_entityRelease(u_entity(_this));
+        u_participantRelease(_this, C_MM_RESERVATION_ZERO);
     } else {
-        OS_REPORT(OS_WARNING, "u_participant::resendManagerMain", 0,
-                  "Failed to claim Participant");
+        OS_REPORT(OS_WARNING, "u_participant::resendManagerMain", result,
+                  "Failed to claim Participant, resend manager is not started");
     }
     return NULL;
 }
 
+void
+u__participantFreeW (
+    void *_this)
+{
+    u_participant p;
+    p = u_participant(_this);
+
+    while (pa_ld32(&p->useCount) > 0) {
+        os_duration t = OS_DURATION_INIT(0, 100000000);
+        os_sleep(t);
+    }
+
+    u__entityFreeW(_this);
+}
+
+u_result
+u__participantDeinitW (
+    void *_this)
+{
+    u_result r = U_RESULT_OK;
+    u_participant p;
+    u_domain domain;
+    p = u_participant(_this);
+    assert(p != NULL);
+
+    os_condDestroy(&p->cv);
+    os_mutexDestroy(&p->mutex);
+    (void)pa_dec32_nv(&p->useCount);
+    domain = u_observableDomain(u_observable(p));
+    if (domain) {
+        r = u_participantDetach(p);
+        if (r == U_RESULT_OK) {
+            u__entityDeinitW(_this);
+            (void) u_domainRemoveParticipant(domain, p);
+            r = u_domainClose(domain);
+        } else if (r == U_RESULT_ALREADY_DELETED) {
+            r = U_RESULT_OK;
+        }
+    } else {
+        (void)u__entityDeinitW(_this);
+    }
+
+    return r;
+}
+
 u_participant
 u_participantNew(
-    const c_char *uri,
-    c_long timeout,
-    const c_char *name,
-    v_qos qos,
-    c_bool enable)
+    const os_char *uri,
+    const u_domainId_t id,
+    os_uint32 timeout,
+    const os_char *name,
+    const u_participantQos qos,
+    u_bool enable)
 {
     u_domain domain;
     u_participant p = NULL;
     u_result r;
     v_kernel kk = NULL;
     v_participant kp;
-    const c_char *uri_string;
 
-    if (uri) {
-        uri_string = uri;
-    } else {
-        uri_string = "";
+    if (timeout > OS_MAX_INTEGER(os_int32)) {
+        return NULL;
     }
-    r = u_domainOpen(&domain, uri, timeout);
 
+    r = u_domainOpen(&domain, uri, id, (os_int32) timeout);
     if (r == U_RESULT_OK)
     {
-        r = u_entityWriteClaim(u_entity(domain),(v_entity*)(&kk));
+        r = u_observableWriteClaim(u_observable(domain),(v_public*)(&kk), C_MM_RESERVATION_HIGH);
         if (r == U_RESULT_OK) {
             assert(kk);
-            kp = v_participantNew(kk,name,qos, NULL,enable);
+            kp = v_participantNew(kk, name, (v_participantQos)qos, enable);
             if (kp != NULL) {
-                p = u_entityAlloc(NULL,u_participant,kp,TRUE);
+                p = u_objectAlloc(sizeof(*p), U_PARTICIPANT, u__participantDeinitW, u__participantFreeW);
                 if (p != NULL) {
-                    r = u_participantInit(p, domain);
+                    r = u_participantInit(p, kp, domain);
                     if (r != U_RESULT_OK) {
-                        os_free(p);
-                        p = NULL;
-                        OS_REPORT(OS_ERROR,"u_participantNew",0,
+                        OS_REPORT(OS_ERROR,"u_participantNew",r,
                                   "Initialization Participant failed.");
+                        u_objectFree(u_object(p));
+                        p = NULL;
                     }
                 } else {
-                    OS_REPORT(OS_ERROR,"u_participantNew",0,
+                    OS_REPORT(OS_ERROR,"u_participantNew",U_RESULT_INTERNAL_ERROR,
                               "Allocation user proxy failed.");
                 }
                 c_free(kp);
             } else {
-                OS_REPORT(OS_ERROR,"u_participantNew",0,
+                OS_REPORT(OS_ERROR,"u_participantNew",U_RESULT_INTERNAL_ERROR,
                           "Create kernel entity failed.");
             }
-            r = u_entityRelease(u_entity(domain));
+            u_observableRelease(u_observable(domain), C_MM_RESERVATION_HIGH);
         } else {
-            OS_REPORT(OS_ERROR,"u_participantNew",0,
+            OS_REPORT(OS_ERROR,"u_participantNew",r,
                       "Claim Kernel failed.");
         }
+
+        if (p == NULL) {
+           (void)u_domainClose(domain);
+        }
     } else {
-        OS_REPORT_1(OS_ERROR,"u_participantNew",0,
-                    "Failure to open the domain, URI=\"%s\" "
-                    "The most common cause of this error is that OpenSpliceDDS is not running (when using shared memory mode). "
-                    "Please make sure to start OpenSplice before creating a DomainParticipant.",
-                    uri_string);
+        const c_char *uri_string;
+        if (uri) {
+            uri_string = uri;
+        } else {
+            uri_string = "<NULL>";
+        }
+        OS_REPORT(OS_ERROR,"u_participantNew",r,
+                    "Failure to open the domain, domain id = %d and URI=\"%s\" "
+                    "The most common cause of this error is that OpenSpliceDDS "
+                    "is not running (when using shared memory mode). "
+                    "Please make sure to start OpenSplice before creating a "
+                    "DomainParticipant.",
+                    id, uri_string);
     }
     return p;
 }
 
-static u_cfAttribute
-u_configurationResolveAttribute(
-    u_cfElement e,
-    const c_char* xpathExpr,
-    const c_char* attrName)
-{
-    u_cfAttribute result;
-    c_iter nodes;
-    u_cfNode tmp;
-
-    result = NULL;
-
-    if (e != NULL) {
-        nodes = u_cfElementXPath(e, xpathExpr);
-        tmp = u_cfNode(c_iterTakeFirst(nodes));
-
-        if (tmp != NULL) {
-            if (u_cfNodeKind(tmp) == V_CFELEMENT) {
-                result = u_cfElementAttribute(u_cfElement(tmp), attrName);
-            }
-        }
-        while(tmp != NULL){
-            u_cfNodeFree(tmp);
-            tmp = u_cfNode(c_iterTakeFirst(nodes));
-        }
-        c_iterFree(nodes);
-    }
-    return result;
-}
-
-static u_cfData
-u_configurationResolveParameter(
-    u_cfElement e,
-    const c_char* xpathExpr)
-{
-    u_cfData result;
-    c_iter nodes;
-    u_cfNode tmp;
-
-    result = NULL;
-
-    if(e != NULL){
-        nodes = u_cfElementXPath(e, xpathExpr);
-        tmp = u_cfNode(c_iterTakeFirst(nodes));
-
-        if(tmp != NULL){
-            if(u_cfNodeKind(tmp) == V_CFDATA){
-                result = u_cfData(tmp);
-            } else {
-                u_cfNodeFree(tmp);
-            }
-            tmp = u_cfNode(c_iterTakeFirst(nodes));
-        }
-
-        while(tmp != NULL){
-            u_cfNodeFree(tmp);
-            tmp = u_cfNode(c_iterTakeFirst(nodes));
-        }
-        c_iterFree(nodes);
-    }
-    return result;
-}
-
-#define U_WATCHDOG_TEXT         "/#text"
-#define U_WATCHDOG_CLASS_FMT    "%s[@name='%s']/Watchdog/Scheduling/Class"
-#define U_WATCHDOG_PRIO_FMT     "%s[@name='%s']/Watchdog/Scheduling/Priority"
-#define U_GENERALWATCHDOG_CLASS_FMT    "%s/GeneralWatchdog/Scheduling/Class"
-#define U_GENERALWATCHDOG_PRIO_FMT     "%s/GeneralWatchdog/Scheduling/Priority"
-#define U_SPLICEDWATCHDOG_CLASS_FMT    "%s/Watchdog/Scheduling/Class"
-#define U_SPLICEDWATCHDOG_PRIO_FMT     "%s/Watchdog/Scheduling/Priority"
-#define U_WATCHDOG_ATTRKIND     "priority_kind"
-
-static void
-participantGetWatchDogAttr(
-    u_cfElement root,
-    const c_char* element,
-    const c_char* name,
-    os_threadAttr * attr)
-{
-    c_char* path;
-    c_char* fallbackPath;
-    c_char* schedClass;
-    c_char* prioKind;
-    c_ulong prio;
-    c_bool success;
-    u_cfData data;
-    u_cfAttribute attribute;
-    struct v_schedulePolicy qos;
-    const char* fallbackElement = "Domain";
-    c_bool deprecatedSpliced = FALSE;
-    c_bool showDeprecationWarning = FALSE;
-
-    /*
-     * General search path for the watchdog parameters:
-     * Service/Watchdog/Scheduling/ if a service has explicitly specified individual preferences.
-     * Domain/GeneralWatchdog/Scheduling/ if a service has not set an overruling preference.
-     *
-     * For Spliced the search path is:
-     * Domain/Daemon/Watchdog/Scheduling/ if not present,
-     * Domain/Watchdog/Scheduling/ this path is now deprecated as it moved to Domain/Daemon but kept alive for backward compatibility
-     * Domain/GeneralWatchdog/Scheduling/
-     */
-
-    if (root != NULL) {
-
-        if (strcmp(element, "Domain/Daemon")==0) {
-            /* old watchdog location configuration for spliced still needed for backward compatibility*/
-            deprecatedSpliced = TRUE;
-            path = os_malloc(strlen(U_SPLICEDWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT) +
-                                     strlen(element) + 1);
-        } else {
-            path = os_malloc(strlen(U_WATCHDOG_CLASS_FMT U_WATCHDOG_TEXT) +
-                                     strlen(element) + strlen(name) + 1);
-        }
-        if (path != NULL) {
-            if (deprecatedSpliced) {
-                os_sprintf(path, U_SPLICEDWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT, element);
-            } else {
-                os_sprintf(path, U_WATCHDOG_CLASS_FMT U_WATCHDOG_TEXT, element, name);
-            }
-            data = u_configurationResolveParameter(root, path);
-            /* look for deprecated place Domain/Watchdog */
-            if (data == NULL && deprecatedSpliced) {
-                os_free(path);
-                path = os_malloc(strlen(U_SPLICEDWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT) +
-                                         strlen(fallbackElement) + 1);
-                if (path != NULL) {
-                    os_sprintf(path, U_SPLICEDWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT, fallbackElement);
-                    data = u_configurationResolveParameter(root, path);
-                    showDeprecationWarning = TRUE;
-                }
-            }
-            if (data != NULL) {
-                success = u_cfDataStringValue(data, &schedClass);
-                if (success) {
-                    if (strcmp(schedClass, "Default")==0) {
-                        qos.kind = V_SCHED_DEFAULT;
-                    } else if (strcmp(schedClass, "Realtime")==0) {
-                        qos.kind = V_SCHED_REALTIME;
-                    } else if (strcmp(schedClass, "Timeshare")==0) {
-                        qos.kind = V_SCHED_TIMESHARING;
-                    } else {
-                        OS_REPORT_1(OS_ERROR, "Watchdog initialization", 0,
-                                    "Illegal 'Scheduling/Class' for %s", name);
-                        success = FALSE;
-                    }
-                    if (showDeprecationWarning) {
-                        OS_REPORT(OS_WARNING, "Watchdog initialization", 0,
-                                  "deprecated path for Domain Watchdog 'Scheduling/Class' please use Domain/Daemon.");
-                    }
-                    os_free(schedClass);
-                } else {
-                    OS_REPORT_1(OS_ERROR, "Watchdog initialization", 0,
-                    "Illegal 'Scheduling/Class' for %s. Applying default.",
-                    name);
-                }
-                u_cfDataFree(data);
-            } else {
-                fallbackPath = os_malloc(strlen(U_GENERALWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT) +
-                                         strlen(fallbackElement) + 1);
-                if (fallbackPath != NULL) {
-                    os_sprintf(fallbackPath, U_GENERALWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT, fallbackElement);
-                    data = u_configurationResolveParameter(root, fallbackPath);
-                    if (data != NULL) {
-                        success = u_cfDataStringValue(data, &schedClass);
-                        if (success) {
-                            if (strcmp(schedClass, "Default")==0) {
-                                qos.kind = V_SCHED_DEFAULT;
-                            } else if (strcmp(schedClass, "Realtime")==0) {
-                                qos.kind = V_SCHED_REALTIME;
-                            } else if (strcmp(schedClass, "Timeshare")==0) {
-                                qos.kind = V_SCHED_TIMESHARING;
-                            } else {
-                                OS_REPORT(OS_ERROR, "GeneralWatchdog initialization", 0,
-                                            "Illegal 'Scheduling/Class'");
-                                success = FALSE;
-                            }
-                            os_free(schedClass);
-                        } else {
-                            OS_REPORT(OS_ERROR, "GeneralWatchdog initialization", 0,
-                            "Illegal 'Scheduling/Class' Applying default.");
-                        }
-                        u_cfDataFree(data);
-                    } else {
-                        success = FALSE;
-                    }
-                } else {
-                    success = FALSE;
-                }
-                os_free(fallbackPath);
-            }
-            os_free(path);
-        } else {
-            success = FALSE;
-        }
-        showDeprecationWarning = FALSE;
-        if (success) {
-            if (strcmp(element, "Domain/Daemon")==0) {
-                /* old watchdog location configuration for spliced still needed for backward compatibility*/
-                deprecatedSpliced = TRUE;
-                path = os_malloc(strlen(U_SPLICEDWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT) +
-                                         strlen(element) + 1);
-            } else {
-                path = os_malloc(strlen(U_WATCHDOG_PRIO_FMT U_WATCHDOG_TEXT) +
-                                         strlen(element) + strlen(name) + 1);
-            }
-
-            if (path != NULL) {
-                if (deprecatedSpliced) {
-                    os_sprintf(path, U_SPLICEDWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT, element);
-                } else {
-                    os_sprintf(path, U_WATCHDOG_PRIO_FMT U_WATCHDOG_TEXT, element, name);
-                }
-                data = u_configurationResolveParameter(root, path);
-                /* look for deprecated place Domain/Watchdog */
-                if (data == NULL && deprecatedSpliced) {
-                    os_free(path);
-                    path = os_malloc(strlen(U_SPLICEDWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT) +
-                                             strlen(fallbackElement) + 1);
-                    if (path != NULL) {
-                        os_sprintf(path, U_SPLICEDWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT, fallbackElement);
-                        data = u_configurationResolveParameter(root, path);
-                        showDeprecationWarning = TRUE;
-                    }
-                }
-                if (data != NULL) {
-                    success = u_cfDataULongValue(data, &prio);
-                    if (success) {
-                        qos.priority = prio;
-                        if(showDeprecationWarning) {
-                            OS_REPORT(OS_WARNING, "Watchdog initialization", 0,
-                                      "deprecated path for Domain Watchdog 'Scheduling/Priority' please use Domain/Daemon.");
-                        }
-                    } else {
-                        OS_REPORT_1(OS_ERROR, "Watchdog initialization", 0,
-                        "%s Configuration: value of 'Scheduling/Priority' not "
-                        "valid.  Applying default.", name);
-                    }
-                    u_cfDataFree(data);
-                } else {
-                    fallbackPath = os_malloc(strlen(U_GENERALWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT) +
-                                     strlen(fallbackElement) + 1);
-                    if (fallbackPath != NULL) {
-                        os_sprintf(fallbackPath, U_GENERALWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT,fallbackElement);
-                        data = u_configurationResolveParameter(root, fallbackPath);
-                        if (data != NULL) {
-                            success = u_cfDataULongValue(data, &prio);
-                            if (success) {
-                                qos.priority = prio;
-                            } else {
-                                OS_REPORT(OS_ERROR, "GeneralWatchdog initialization", 0,
-                                "Configuration: value of 'Scheduling/Priority' not "
-                                "valid.  Applying default.");
-                            }
-                            u_cfDataFree(data);
-                        } else {
-                            success = FALSE;
-                        }
-                        os_free(fallbackPath);
-                    } else {
-                        success = FALSE;
-                    }
-                }
-                os_free(path);
-            } else {
-                success = FALSE;
-            }
-        }
-        showDeprecationWarning = FALSE;
-        if (success) {
-            if (strcmp(element, "Domain/Daemon")==0) {
-                /* old watchdog location configuration for spliced still needed for backward compatibility*/
-                deprecatedSpliced = TRUE;
-                path = os_malloc(strlen(U_SPLICEDWATCHDOG_PRIO_FMT) +
-                                         strlen(element) + 1);
-            } else {
-                path = os_malloc(strlen(U_WATCHDOG_PRIO_FMT) +
-                                 strlen(element) + strlen(name) + 1);
-            }
-            if (path != NULL) {
-                if (deprecatedSpliced) {
-                     /*no need to realloc path because the alloced size is always bigger than needed here*/
-                    os_sprintf(path, U_SPLICEDWATCHDOG_PRIO_FMT, element);
-                } else {
-                    os_sprintf(path, U_WATCHDOG_PRIO_FMT, element, name);
-                }
-                attribute = u_configurationResolveAttribute(root, path,
-                                                            U_WATCHDOG_ATTRKIND);
-                 /*look for deprecated place Domain/Watchdog*/
-                if (attribute == NULL && deprecatedSpliced) {
-                    os_free(path);
-                    path = os_malloc(strlen(U_SPLICEDWATCHDOG_PRIO_FMT) +
-                                             strlen(fallbackElement) + 1);
-                    if (path != NULL) {
-                        os_sprintf(path, U_SPLICEDWATCHDOG_PRIO_FMT, fallbackElement);
-                        attribute = u_configurationResolveAttribute(root, path,U_WATCHDOG_ATTRKIND);
-                        showDeprecationWarning = TRUE;
-                    }
-                }
-                if (attribute != NULL) {
-                    success = u_cfAttributeStringValue(attribute, &prioKind);
-                    if (success) {
-                        if (strcmp(prioKind, "Relative")==0) {
-                            qos.priorityKind = V_SCHED_PRIO_RELATIVE;
-                        } else if (strcmp(prioKind, "Absolute")==0) {
-                            qos.priorityKind = V_SCHED_PRIO_ABSOLUTE;
-                        } else {
-                            OS_REPORT_1(OS_ERROR,
-                                        "Watchdog initialization", 0,
-                                        "Invalid 'priority_kind' in "
-                                        "'Scheduling/Priority'. "
-                                        "Applying default for %s.", name);
-                            success = FALSE;
-                        }
-                        if(showDeprecationWarning) {
-                            OS_REPORT(OS_WARNING, "Watchdog initialization", 0,
-                                      "deprecated path for 'priority_kind' in Domain Watchdog 'Scheduling/Priority' please use Domain/Daemon.");
-                        }
-                    } else {
-                        OS_REPORT_1(OS_ERROR, "Watchdog initialization", 0,
-                        "Invalid 'priority_kind' in 'Scheduling/Priority'. "
-                        "Applying default for %s.", name);
-                    }
-                } else {
-                    fallbackPath = os_malloc(strlen(U_GENERALWATCHDOG_PRIO_FMT) +
-                                     strlen(fallbackElement) + 1);
-                    if (fallbackPath != NULL) {
-                        os_sprintf(fallbackPath, U_GENERALWATCHDOG_PRIO_FMT, fallbackElement);
-                        attribute = u_configurationResolveAttribute(root, fallbackPath,
-                                                                    U_WATCHDOG_ATTRKIND);
-                        if (attribute != NULL) {
-                            success = u_cfAttributeStringValue(attribute, &prioKind);
-                            if (success) {
-                                if (strcmp(prioKind, "Relative")==0) {
-                                    qos.priorityKind = V_SCHED_PRIO_RELATIVE;
-                                } else if (strcmp(prioKind, "Absolute")==0) {
-                                    qos.priorityKind = V_SCHED_PRIO_ABSOLUTE;
-                                } else {
-                                    OS_REPORT(OS_ERROR,
-                                                "GeneralWatchdog initialization", 0,
-                                                "Invalid 'priority_kind' in "
-                                                "'Scheduling/Priority' "
-                                                "Applying default.");
-                                    success = FALSE;
-                                }
-                            } else {
-                                OS_REPORT(OS_ERROR, "GeneralWatchdog initialization", 0,
-                                "Invalid 'priority_kind' in 'Scheduling/Priority'. "
-                                "Applying default");
-                            }
-                        } else {
-                            success = FALSE;
-                        }
-                    } else {
-                        success = FALSE;
-                    }
-                    os_free(fallbackPath);
-                }
-            } else {
-                success = FALSE;
-            }
-            os_free(path);
-        }
-        os_threadAttrInit(attr);
-
-        if (success) {
-            u_threadAttrInit (&qos, attr);
-        }
-    } else {
-        OS_REPORT_1(OS_INFO,
-                    "Watchdog"
-                    " initialization", 0,
-                    "No watchdog configuration information specified\n"
-                    "              for process \"%s\".\n"
-                    "              The service will not be able to detect "
-                    "termination of\n              this process.",
-                     name);
-        os_threadAttrInit(attr);
-    }
-}
-
 static c_ulong
 u_participantNewGroupListener(
-    u_dispatcher _this,
+    u_observable _this,
     c_ulong event,
     c_voidp usrData)
 {
     u_result r;
     v_participant kp;
 
-    r = u_entityWriteClaim(u_entity(_this), (v_entity*)(&kp));
+    OS_UNUSED_ARG(event);
+    OS_UNUSED_ARG(usrData);
+
+    r = u_observableWriteClaim(_this, (v_public*)(&kp),C_MM_RESERVATION_HIGH);
     if(r == U_RESULT_OK)
     {
         assert(kp);
         v_participantConnectNewGroup(kp,NULL);
-        r = u_entityRelease(u_entity(_this));
+        u_observableRelease(_this, C_MM_RESERVATION_HIGH);
     }
     return r;
 }
 
 u_result
 u_participantInit (
-    u_participant _this,
-    u_domain domain)
+    const u_participant _this,
+    const v_participant kp,
+    const u_domain domain)
 {
     u_result r;
-    v_participant kp;
     os_threadAttr attr;
+    os_mutexAttr mutexAttr;
+    os_condAttr condAttr;
     os_result osr;
-    u_cfElement root;
     c_ulong mask;
 
-    if (_this == NULL || domain == NULL) {
-        OS_REPORT_2(OS_ERROR,
-                    "u_participantInit", 0,
-                    "Invalid argument: _this = 0x%x, domain = 0x%x",
-                    _this, domain);
-        return U_RESULT_ILL_PARAM;
-    }
+    assert(_this != NULL);
+    assert(domain != NULL);
 
-    _this->domain = domain;
-    r = u_entityReadClaim(u_entity(_this), (v_entity*)(&kp));
-    if(r == U_RESULT_OK)
-    {
+    r = u_entityInit(u_entity(_this), v_entity(kp), domain);
+    if (r == U_RESULT_OK) {
         assert(kp);
-        _this->topics = NULL;
-        _this->publishers = NULL;
-        _this->subscribers = NULL;
-        _this->builtinSubscriber = NULL;
-        _this->builtinTopicCount = 0;
-        if (u_entity(_this)->kind == U_SERVICE) {
-            root = u_participantGetConfiguration(_this);
-            switch(u_service(_this)->serviceKind) {
-                case U_SERVICE_DDSI:
-                    participantGetWatchDogAttr(root, "DDSI2Service",
-                                               v_participantName(kp), &attr);
-                    break;
-                case U_SERVICE_DDSIE:
-                    participantGetWatchDogAttr(root, "DDSI2EService",
-                                               v_participantName(kp), &attr);
-                    break;
-                case U_SERVICE_SNETWORKING:
-                    participantGetWatchDogAttr(root, "SNetworkService",
-                                               v_participantName(kp), &attr);
-                    break;
-                case U_SERVICE_NETWORKING:
-                    participantGetWatchDogAttr(root, "NetworkService",
-                                               v_participantName(kp), &attr);
-                    break;
-                case U_SERVICE_DURABILITY:
-                    participantGetWatchDogAttr(root, "DurabilityService",
-                                               v_participantName(kp), &attr);
-                    break;
-                case U_SERVICE_CMSOAP:
-                    participantGetWatchDogAttr(root, "TunerService",
-                                               v_participantName(kp), &attr);
-                    break;
-                case U_SERVICE_SPLICED:
-                    participantGetWatchDogAttr(root, "Domain/Daemon",
-                                               v_participantName(kp), &attr);
-                    break;
-                case U_SERVICE_DBMSCONNECT:
-                    participantGetWatchDogAttr(root, "DbmsConnectService",
-                                               v_participantName(kp), &attr);
-                    break;
-                case U_SERVICE_RNR:
-                    participantGetWatchDogAttr(root, "RnRService",
-                                               v_participantName(kp), &attr);
-                    break;
-                case U_SERVICE_INCOGNITO:
-                    os_threadAttrInit(&attr);
-                    break;
+
+        pa_st32(&_this->useCount, 1);
+
+        os_mutexAttrInit(&mutexAttr);
+        os_condAttrInit(&condAttr);
+        osr = os_mutexInit(&_this->mutex, &mutexAttr);
+        if (osr == os_resultSuccess) {
+            osr = os_condInit(&_this->cv, &_this->mutex, &condAttr);
+            if (osr == os_resultSuccess) {
+                os_mutexLock(&_this->mutex);
+                _this->threadWaitCount = 0;
+
+                r = u_domainAddParticipant(domain,_this);
+
+                os_threadAttrInit(&attr);
+                switch (kp->qos->watchdogScheduling.v.kind) {
+                case V_SCHED_REALTIME:
+                    attr.schedClass = OS_SCHED_REALTIME;
+                break;
+                case V_SCHED_TIMESHARING:
+                    attr.schedClass = OS_SCHED_TIMESHARE;
+                break;
                 default:
-                    OS_REPORT(OS_ERROR, "u_participantInit", 0,
-                              "Internal error: Unknown Service kind detected.");
-                    os_threadAttrInit(&attr);
-                    break;
+                    attr.schedClass = os_procAttrGetClass ();
+                break;
+                }
+                attr.schedPriority = kp->qos->watchdogScheduling.v.priority;
+                if (kp->qos->watchdogScheduling.v.priorityKind == V_SCHED_PRIO_RELATIVE) {
+                    attr.schedPriority += os_procAttrGetPriority();
+                }
+
+                osr = os_threadCreate(&_this->threadId, "watchdog", &attr, leaseManagerMain, _this);
+                if(osr == os_resultSuccess){
+                    (_this->threadWaitCount)++;
+                } else {
+                    OS_REPORT(OS_CRITICAL, "u_participantInit", osr,
+                              "Watchdog thread could not be started.\n");
+                }
+
+                osr = os_threadCreate(&_this->threadIdResend, "resendManager", &attr,
+                                (void *(*)(void *))resendManagerMain,(void *)_this);
+
+                if(osr == os_resultSuccess){
+                    (_this->threadWaitCount)++;
+                } else {
+                    OS_REPORT(OS_CRITICAL, "u_participantInit", osr,
+                              "Watchdog thread could not be started.\n");
+                }
+
+                (void)u_observableGetListenerMask(u_observable(_this), &mask);
+                (void)u_observableAddListener(u_observable(_this), u_participantNewGroupListener, NULL);
+                mask |= V_EVENT_NEW_GROUP;
+                mask |= V_EVENT_CONNECT_WRITER;
+                (void)u_observableSetListenerMask(u_observable(_this), mask);
+
+                while (_this->threadWaitCount > 0) {
+                    os_condWait(&_this->cv, &_this->mutex);
+                }
+                os_mutexUnlock(&_this->mutex);
+            } else {
+                OS_REPORT(OS_CRITICAL, "u_participantInit", osr,
+                          "Unable to initialize condition variable.\n");
+                r = U_RESULT_INTERNAL_ERROR;
             }
-            u_cfElementFree(root);
-        } else if (u_entity(_this)->kind == U_PARTICIPANT) {
-            os_threadAttrInit(&attr);
-            /* use the values configured for the participant */
-            u_threadAttrInit (&kp->qos->watchdogScheduling, &attr);
         } else {
-            os_threadAttrInit(&attr);
+            OS_REPORT(OS_CRITICAL, "u_participantInit", osr,
+                      "Unable to initialize mutex.\n");
+            r = U_RESULT_INTERNAL_ERROR;
         }
-        r = u_dispatcherInit(u_dispatcher(_this));
-        if (r == U_RESULT_OK) {
-            r = u_domainAddParticipant(domain,_this);
 
-            osr = os_threadCreate(&_this->threadId, "watchdog", &attr,
-                (void *(*)(void *))leaseManagerMain,(void *)_this);
-
-            if(osr != os_resultSuccess){
-                OS_REPORT(OS_ERROR, "u_participantInit", 0,
-                          "Watchdog thread could not be started.\n");
-            }
-            /* slave ResendManager attributes from parent process */
-            os_threadAttrInit(&attr);
-
-            osr = os_threadCreate(&_this->threadIdResend, "resendManager", &attr,
-                            (void *(*)(void *))resendManagerMain,(void *)_this);
-
-            if(osr != os_resultSuccess){
-                OS_REPORT(OS_ERROR, "u_participantInit", 0,
-                          "Watchdog thread could not be started.\n");
-            }
-        } else {
-            OS_REPORT(OS_ERROR, "u_participantInit", 0,
-                      "Dispatcher Initialization failed.");
-        }
-        u_dispatcherGetEventMask(u_dispatcher(_this), &mask);
-        u_dispatcherInsertListener(u_dispatcher(_this),
-                                   u_participantNewGroupListener,
-                                   NULL);
-        mask |= V_EVENT_NEW_GROUP;
-        mask |= V_EVENT_CONNECT_WRITER;
-        u_dispatcherSetEventMask(u_dispatcher(_this), mask);
-        r = u_entityRelease(u_entity(_this));
-        if (r != U_RESULT_OK) {
-            OS_REPORT(OS_ERROR, "u_participantInit", 0,
-                      "Release Participant failed.");
-        }
-    } else {
-        OS_REPORT(OS_WARNING, "u_participantInit", 0,
-                  "failed to claim Participant.");
     }
     return r;
 }
 
 u_result
-u_participantFree (
-    u_participant _this)
+u_participantGetQos (
+    const u_participant _this,
+          u_participantQos *qos)
 {
-    u_result result = U_RESULT_OK;
-    c_bool destroy;
+    u_result result;
+    v_participant vParticipant;
+    v_participantQos vQos;
 
-    result = u_entityLock(u_entity(_this));
+    assert(_this != NULL);
+    assert(qos != NULL);
+
+    result = u_participantReadClaim(_this, &vParticipant, C_MM_RESERVATION_ZERO);
     if (result == U_RESULT_OK) {
-        destroy = u_entityDereference(u_entity(_this));
-        if (destroy) {
-            if (u_entityOwner(u_entity(_this))) {
-                result = u_participantDeinit(_this);
-            } else {
-                /* This user entity is a proxy, meaning that it is not fully
-                 * initialized, therefore only the entity part of the object
-                 * can be deinitialized.
-                 * It would be better to either introduce a separate proxy
-                 * entity for clarity or fully initialize entities and make
-                 * them robust against missing information.
-                 */
-                result = u_entityDeinit(u_entity(_this));
-            }
-            if (result == U_RESULT_OK) {
-                u_entityDealloc(u_entity(_this));
-            } else {
-                OS_REPORT_2(OS_WARNING,
-                            "u_participantFree",0,
-                            "Operation u_participantDeinit failed: "
-                            "participant = 0x%x, result = %s.",
-                            _this, u_resultImage(result));
-                u_entityUnlock(u_entity(_this));
-            }
-        } else {
-            u_entityUnlock(u_entity(_this));
-        }
-    } else {
-        OS_REPORT_2(OS_WARNING,
-            "u_participantFree",0,
-            "Operation u_entityLock failed: "
-            "participant = 0x%x, result = %s.",
-            _this, u_resultImage(result));
+        vQos = v_participantGetQos(vParticipant);
+        *qos = u_participantQosNew(vQos);
+        c_free(vQos);
+        u_participantRelease(_this, C_MM_RESERVATION_ZERO);
     }
     return result;
 }
 
-/* Precondition: Participant _this must be locked. */
 u_result
-u_participantDeinit (
-    u_participant _this)
+u_participantSetQos (
+    const u_participant _this,
+    const u_participantQos qos)
 {
-    u_result r;
-    v_participant kp;
-    v_leaseManager lm;
+    u_result result;
+    v_participant vParticipant;
 
-    if (_this != NULL) {
-        r = u_domainRemoveParticipant(_this->domain,_this);
-        if (r == U_RESULT_OK) {
-            r = u_entityReadClaim(u_entity(_this), (v_entity*)(&kp));
-            if(r == U_RESULT_OK)
-            {
-                assert(kp);
-                lm = v_participantGetLeaseManager(kp);
+    assert(_this != NULL);
+    assert(qos != NULL);
 
-                if (lm != NULL) {
-                    v_leaseManagerNotify(lm, NULL, V_EVENT_TERMINATE);
-                }
-
-                v_participantResendManagerQuit(kp);
-                if (lm != NULL) {
-                    os_threadWaitExit(_this->threadId, NULL);
-                    c_free(lm);
-                } else {
-                    OS_REPORT(OS_ERROR, "u_participantDeinit", 0,
-                              "Access to lease manager failed.");
-                }
-                os_threadWaitExit(_this->threadIdResend, NULL);
-
-                /* First Release before Deinit,
-                 * otherwise Release will have no effect.
-                 * results in a process that won't terminate.
-                 */
-                u_entityRelease(u_entity(_this));
-                r = u_dispatcherDeinit(u_dispatcher(_this));
-            } else {
-                OS_REPORT(OS_WARNING, "u_participantDeinit", 0,
-                          "Failed to claim Participant.");
-            }
-            u_domainFree(_this->domain);
-            /* The domain may or may not be actually deinitialised, since there
-             * can be more participants connected throught this domain. At least
-             * remove acces through this participant to the domain. */
-            _this->domain = NULL;
-            assert(c_iterLength(_this->publishers) == 0);
-            c_iterFree(_this->publishers);
-            assert(c_iterLength(_this->subscribers) == 0);
-            c_iterFree(_this->subscribers);
-            assert(_this->builtinTopicCount == 0);
-            assert(c_iterLength(_this->topics) == 0);
-            c_iterFree(_this->topics);
-         }
-    } else {
-        OS_REPORT(OS_ERROR, "u_participantDeinit", 0,
-                  "Participant is not specified.");
-        r = U_RESULT_ILL_PARAM;
+    result = u_participantReadClaim(_this, &vParticipant, C_MM_RESERVATION_LOW);
+    if (result == U_RESULT_OK) {
+        result = u_resultFromKernel(v_participantSetQos(vParticipant, qos));
+        u_participantRelease(_this, C_MM_RESERVATION_LOW);
     }
-    return r;
+    return result;
 }
 
-u_result
-u_participantDeleteContainedEntities(
-    u_participant _this)
+void
+u_participantIncUseCount(
+    const u_participant _this)
 {
-    u_result r;
-    u_entity entity;
-    c_iter list;
+    pa_inc32(&_this->useCount);
+}
 
-    if (_this != NULL) {
-
-        r = u_entityLock(u_entity(_this));
-        if (r == U_RESULT_OK) {
-            list = _this->publishers;
-            _this->publishers = NULL;
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT_2(OS_ERROR,
-                        "u_participantDeleteContainedEntities",0,
-                        "Lock Participant 0x%x failed: result = %s.",
-                        _this, u_resultImage(r));
-            list = NULL;
-        }
-        entity = c_iterTakeFirst(list);
-        while (entity) {
-            r = u_publisherDeleteContainedEntities(u_publisher(entity));
-            r = u_publisherFree(u_publisher(entity));
-            u_entityDereference(u_entity(_this));
-            entity = c_iterTakeFirst(list);
-        }
-        c_iterFree(list);
-
-        r = u_entityLock(u_entity(_this));
-        if (r == U_RESULT_OK) {
-            list = _this->subscribers;
-            _this->subscribers = NULL;
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT_2(OS_ERROR,
-                        "u_participantDeleteContainedEntities",0,
-                        "Lock Participant 0x%x failed: result = %s.",
-                        _this, u_resultImage(r));
-        }
-        entity = c_iterTakeFirst(list);
-        while (entity) {
-            if (u_subscriber(entity) == _this->builtinSubscriber) {
-                /* The builtin subscription must remain so insert
-                 * it back into the list.
-                 */
-                _this->subscribers = c_iterInsert(_this->subscribers,entity);
-            } else {
-                r = u_subscriberDeleteContainedEntities(u_subscriber(entity));
-                r = u_subscriberFree(u_subscriber(entity));
-                u_entityDereference(u_entity(_this));
-            }
-            entity = c_iterTakeFirst(list);
-        }
-        c_iterFree(list);
-        r = u_entityLock(u_entity(_this));
-        if (r == U_RESULT_OK) {
-            list = _this->topics;
-            _this->topics = NULL;
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT_2(OS_ERROR,
-                        "u_participantDeleteContainedEntities",0,
-                        "Lock Participant 0x%x failed: result = %s.",
-                        _this, u_resultImage(r));
-        }
-        entity = c_iterTakeFirst(list);
-        while (entity) {
-            if (u_topicIsBuiltin(u_topic(entity))) {
-                assert(_this->builtinTopicCount > 0);
-                _this->builtinTopicCount--;
-            } else {
-                /* The ref count is only increased for user defined topics
-                 * and not for implicitly created builtin topics so therefore
-                 * only degrade the refcount for user defined topics.
-                 */
-                u_entityDereference(u_entity(_this));
-            }
-            r = u_topicFree(u_topic(entity));
-            entity = c_iterTakeFirst(list);
-        }
-        c_iterFree(list);
-    } else {
-        OS_REPORT(OS_ERROR, "u_participantDeleteContainedEntities", 0,
-                  "Participant is not specified.");
-        r = U_RESULT_ILL_PARAM;
-    }
-    return r;
+void
+u_participantDecUseCount(
+    const u_participant _this)
+{
+    (void)pa_dec32_nv(&_this->useCount);
 }
 
 u_result
 u_participantDetach(
-    u_participant _this)
+    const u_participant _this)
 {
     u_result r;
-    u_entity entity;
-    c_iter list;
     v_participant kp;
     v_leaseManager lm;
 
-    if (_this != NULL) {
-        r = u_entityReadClaim(u_entity(_this), (v_entity*)(&kp));
-        if(r == U_RESULT_OK)
-        {
-            assert(kp);
-            list = _this->publishers;
-            _this->publishers = NULL;
+    assert(_this != NULL);
 
-            entity = c_iterTakeFirst(list);
-            while (entity) {
-                r = u_publisherDeleteContainedEntities(u_publisher(entity));
-                if (r == U_RESULT_OK) {
-                    r = u_publisherFree(u_publisher(entity));
-                    if (r == U_RESULT_OK) {
-                        u_entityDereference(u_entity(_this));
-                    } else {
-                        OS_REPORT_2(OS_ERROR,
-                                    "u_participantDetach", 0,
-                                    "Delete Publisher failed: "
-                                    "Participant 0x%x, Publisher 0x%x.",
-                                    _this, entity);
-                    }
-                } else {
-                    OS_REPORT_2(OS_ERROR,
-                                "u_participantDetach", 0,
-                                "DeleteContainedEntities on Publisher failed: "
-                                "Participant 0x%x, Publisher 0x%x.",
-                                _this, entity);
-                }
-                entity = c_iterTakeFirst(list);
-            }
-            c_iterFree(list);
+    r = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_NO_CHECK);
+    if(r == U_RESULT_OK)
+    {
+        assert(kp);
 
-            list = _this->subscribers;
-            _this->subscribers = NULL;
-            entity = c_iterTakeFirst(list);
-            while (entity) {
-                r = u_subscriberDeleteContainedEntities(u_subscriber(entity));
-                if (r == U_RESULT_OK) {
-                    r = u_subscriberFree(u_subscriber(entity));
-                    if (r == U_RESULT_OK) {
-                        u_entityDereference(u_entity(_this));
-                    } else {
-                        OS_REPORT_2(OS_ERROR,
-                                    "u_participantDetach", 0,
-                                    "Delete Subscriber failed: "
-                                    "Participant 0x%x, Subscriber 0x%x.",
-                                    _this, entity);
-                    }
-                } else {
-                    OS_REPORT_2(OS_ERROR,
-                                "u_participantDetach", 0,
-                                "DeleteContainedEntities on Subscriber failed: "
-                                "Participant 0x%x, Subscriber 0x%x.",
-                                _this, entity);
-                }
-                entity = c_iterTakeFirst(list);
-            }
-            c_iterFree(list);
-
-            list = _this->topics;
-            _this->topics = NULL;
-            entity = c_iterTakeFirst(list);
-            while (entity) {
-                if (u_topicIsBuiltin(u_topic(entity))) {
-                    assert(_this->builtinTopicCount > 0);
-                    _this->builtinTopicCount--;
-                } else {
-                    /* Own ref count is only increased for user defined topics
-                     * and not for implicitly created builtin topics so therefore
-                     * only degrade the refcount for user defined topics.
-                     */
-                    u_entityDereference(u_entity(_this));
-                }
-                r = u_topicFree(u_topic(entity));
-                if (r != U_RESULT_OK) {
-                    OS_REPORT_3(OS_ERROR,
-                                "u_participantDetach", 0,
-                                "Delete Topic failed: result = %s, "
-                                "Participant 0x%x, Topic 0x%x.",
-                                u_resultImage(r), _this, entity);
-                }
-                entity = c_iterTakeFirst(list);
-            }
-            c_iterFree(list);
-
-            lm = v_participantGetLeaseManager(kp);
-            if (lm != NULL) {
-                v_leaseManagerNotify(lm, NULL, V_EVENT_TERMINATE);
-            }
-            v_participantResendManagerQuit(kp);
-            if (lm != NULL) {
-                os_threadWaitExit(_this->threadId, NULL);
-                c_free(lm);
-            } else {
-                OS_REPORT(OS_ERROR, "u_participantDetach", 0,
-                          "Access to lease manager failed.");
-            }
-            os_threadWaitExit(_this->threadIdResend, NULL);
-            r = u_entityRelease(u_entity(_this));
-            os_mutexLock(&u_entity(_this)->mutex); /* u_dispatcherDeinit must be called Locked on entity */
-            u_dispatcherDeinit(u_dispatcher(_this));
-            _this->domain = NULL;
-        } else {
-            OS_REPORT(OS_WARNING,"u_participantDetach", 0,
-                      "Failed to claim Participant.");
+        lm = v_participantGetLeaseManager(kp);
+        if (lm != NULL) {
+            v_leaseManagerNotify(lm, NULL, V_EVENT_TERMINATE);
         }
+        v_participantResendManagerQuit(kp);
+        if (lm != NULL) {
+            os_threadWaitExit(_this->threadId, NULL);
+            c_free(lm);
+        } else {
+            OS_REPORT(OS_CRITICAL, "u_participantDetach", U_RESULT_INTERNAL_ERROR,
+                      "Access to lease manager failed.");
+        }
+        os_threadWaitExit(_this->threadIdResend, NULL);
+        u_participantRelease(_this, C_MM_RESERVATION_NO_CHECK);
     } else {
-        OS_REPORT(OS_ERROR,"u_participantDetach",0,
-                  "No participant specified.");
-        r = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_WARNING,"u_participantDetach", r,
+                  "Failed to claim Participant.");
     }
 
     return r;
@@ -1009,801 +443,247 @@ u_participantDetach(
 
 u_domain
 u_participantDomain(
-    u_participant p)
+    const u_participant _this)
 {
-    if (p == NULL) {
-        return NULL;
-    }
-    return p->domain;
+    assert(_this != NULL);
+    return u_observableDomain(u_observable(_this));
 }
 
-u_result
-u_participantDisable(
-    u_participant p)
+u_domainId_t
+u_participantGetDomainId(
+    const u_participant _this)
 {
-    u_result r = U_RESULT_ILL_PARAM;
+    u_domainId_t domainId;
+    u_domain domain;
 
-    if (p != NULL) {
-      p->domain = NULL;
-      r = U_RESULT_OK;
+    assert(_this != NULL);
+
+    domain = u_observableDomain(u_observable(_this));
+    if (domain == NULL) {
+        domainId = U_DOMAIN_ID_INVALID ;
+    } else {
+        domainId = u_domainId(domain);
     }
-    return r;
+
+    return domainId;
 }
 
 u_cfElement
 u_participantGetConfiguration(
-    u_participant _this)
+    const u_participant _this)
 {
+    u_domain domain;
     u_result r;
     v_kernel k;
     v_configuration config;
     u_cfElement cfg = NULL;
 
-    if (_this != NULL) {
-        r = u_entityReadClaim(u_entity(_this->domain),(v_entity*)(&k));
-        if ((r == U_RESULT_OK) && (k != NULL)) {
-            config= v_getConfiguration(k);
-            if(config!= NULL){
-                 cfg = u_cfElementNew(_this, v_configurationGetRoot(config));
-            }
-            u_entityRelease(u_entity(_this->domain));
-        } else {
-            OS_REPORT(OS_ERROR,
-                      "u_participantGetConfiguration", 0,
-                      "Failed to claim participant.");
+    assert(_this != NULL);
+
+    domain = u_observableDomain(u_observable(_this));
+    r = u_observableReadClaim(u_observable(domain),(v_public*)(&k), C_MM_RESERVATION_ZERO);
+    if ((r == U_RESULT_OK) && (k != NULL)) {
+        config= v_getConfiguration(k);
+        if(config!= NULL){
+             cfg = u_cfElementNew(_this, v_configurationGetRoot(config));
         }
+        u_observableRelease(u_observable(domain), C_MM_RESERVATION_ZERO);
     } else {
         OS_REPORT(OS_ERROR,
-                  "u_participantGetConfiguration", 0,
-                  "Illegal parameter.");
+                  "u_participantGetConfiguration", r,
+                  "Failed to claim domain.");
     }
+
     return cfg;
 }
 
 c_iter
 u_participantFindTopic(
-    u_participant p,
-    const c_char *name,
-    v_duration timeout)
+    const u_participant _this,
+    const os_char *name,
+    const os_duration timeout)
 {
     u_result r;
     v_participant kp;
     u_topic t;
     v_topic kt;
+    v_topicAdapter kta;
     c_iter list = NULL;
     c_iter topics = NULL;
-    os_time delay;
-    os_time const tryPeriod = {0, 100 * 1e6}; /* 0.1s */
-    os_time endTime;
     os_int retry = 1;
-    c_bool error = FALSE;
+    os_timeM now, endTime = OS_TIMEM_INVALID;
+    os_duration delta, tryPeriod = 100*OS_DURATION_MILLISECOND;
 
-    if(!c_timeIsInfinite(timeout)){
-        delay.tv_sec = timeout.seconds;
-        delay.tv_nsec = timeout.nanoseconds;
-        endTime = os_timeAdd(os_timeGet(), delay);
+    if (!OS_DURATION_ISINFINITE(timeout)) {
+        endTime = os_timeMAdd(os_timeMGet(), timeout);
     }
-    if (p== NULL) {
-        OS_REPORT(OS_ERROR,
-                  "User Participant",0,
-                  "u_participantFindTopic: No participant specified.");
-    } else {
-        do {
-            r = u_entityLock(u_entity(p));
-            if(r == U_RESULT_OK) {
-                r = u_entityReadClaim(u_entity(p), (v_entity*)(&kp));
-                if(r == U_RESULT_OK)
-                {
-                    assert(kp);
-                    /** todo Make real implementatio when SI912 is solved...... */
-                    list = v_resolveTopics(v_objectKernel(kp),name);
-                    r = u_entityRelease(u_entity(p));
-                    if(r != U_RESULT_OK) {
-                        OS_REPORT(OS_WARNING,
-                                  "u_participantFindTopic",0,
-                                  "Failed to release the Participant.");
-                        retry = 0;
-                        error = TRUE;
-                    }
+    topics = NULL;
 
-                    r = u_entityUnlock(u_entity(p));
-                    if(r != U_RESULT_OK) {
-                        OS_REPORT(OS_WARNING,
-                                  "u_participantFindTopic",0,
-                                  "Failed to unlock the Participant.");
-                        retry = 0;
-                        error = TRUE;
-                    }
+    do {
+        r = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
 
-                    if(c_iterLength(list) == 0) {
-                        os_nanoSleep(tryPeriod);
-                        retry = c_timeIsInfinite(timeout) || (os_timeCompare(os_timeGet(), endTime) == OS_LESS);
-                    } else {
-                        retry = 0;
-                    }
-                } else {
-                    OS_REPORT(OS_WARNING,
-                              "u_participantFindTopic",0,
-                              "Failed to claim Participant.");
-                    retry = 0;
-                    error = TRUE;
-                    u_entityUnlock(u_entity(p));
-                }
-            }  else {
-                OS_REPORT(OS_WARNING,
-                          "u_participantFindTopic",0,
-                          "Failed to lock the Participant.");
-                retry = 0;
-                error = TRUE;
-            }
-        } while (retry);
-        if (list != NULL && c_iterLength(list) != 0) {
-            kt = c_iterTakeFirst(list);
-            while (kt != NULL) {
-                if (!error) {
-                    t = u_topic(u_entityNew(v_entity(kt), p,TRUE));
-                    if (t) {
-                        topics = c_iterInsert(topics,t);
-                    } else {
-                        OS_REPORT_1(OS_WARNING,
-                                    "u_participantFindTopic",0,
-                                    "Found Kernel Topic '%s' without user layer entity.",
-                                    name);
-                    }
-                }
-                c_free(kt);
+        if(r == U_RESULT_OK){
+            assert(kp);
+            /** \todo Make real implementation when SI912 is solved...... */
+            list = v_resolveTopics(v_objectKernel(kp),name);
+            if (c_iterLength(list) != 0) {
                 kt = c_iterTakeFirst(list);
+                while (kt != NULL) {
+                    kta = v_topicAdapterWrap(kp, kt);
+                    if (kta) {
+                        t = u_objectAlloc(sizeof(*t), U_TOPIC, u__topicDeinitW, u__topicFreeW);
+                        r = u_topicInit(t, v_topicAdapterName(kta), kta, _this);
+                        if (r == U_RESULT_OK) {
+                            topics = c_iterInsert(topics, t);
+                        }
+                        c_free(kta);
+                    }
+                    c_free(kt);
+                    kt = c_iterTakeFirst(list);
+                }
             }
-        }
-        c_iterFree(list);
-        list = NULL;
-    }
-    return topics;
-}
+            c_iterFree(list);
+            list = NULL;
+            u_participantRelease(_this, C_MM_RESERVATION_ZERO);
 
-u_subscriber
-u_participantGetBuiltinSubscriber(
-    u_participant p)
-{
-    u_subscriber s = NULL;
-    C_STRUCT(v_subscriberQos) sQos;
+            if(topics == NULL){
+                if (!OS_DURATION_ISINFINITE(timeout)) {
+                    now = os_timeMGet();
 
-    if (p == NULL) {
-        OS_REPORT(OS_ERROR,
-                  "u_participantGetBuiltinSubscriber",0,
-                  "No participant specified.");
-    } else if (p->builtinSubscriber) {
-        s = p->builtinSubscriber;
-    } else {
-        ((v_qos)&sQos)->kind = V_SUBSCRIBER_QOS;
-        sQos.groupData.value              = NULL;
-        sQos.groupData.size               = 0;
-        sQos.presentation.access_scope    = V_PRESENTATION_TOPIC;
-        sQos.presentation.coherent_access = FALSE;
-        sQos.presentation.ordered_access  = FALSE;
-        sQos.partition                    = "__BUILT-IN PARTITION__";
-        sQos.share.enable                 = FALSE;
-        sQos.share.name                   = NULL;
-        sQos.entityFactory.autoenable_created_entities = TRUE;
+                    if (os_timeMCompare(now, endTime) == OS_LESS) {
+                        delta = os_timeMDiff(endTime, now);
 
-        s = u_subscriberNew(p,"BuiltinSubscriber",&sQos,TRUE);
-        if (s == NULL) {
+                        if (os_durationCompare(delta, tryPeriod) == OS_LESS) {
+                            tryPeriod = delta;
+                        }
+                    } else {
+                        retry = 0; /* timeout expired */
+                    }
+                }
+            } else {
+                retry = 0; /* topic found or error */
+            }
+            if (retry) {
+                os_sleep(tryPeriod);
+            }
+        } else {
+            retry = 0;
             OS_REPORT(OS_WARNING,
-                      "u_participantGetBuiltinSubscriber",0,
-                      "Failed to create user layer builtin Subscriber.");
+                      "u_participantFindTopic", r,
+                      "Failed to claim Participant.");
         }
-        p->builtinSubscriber = s;
-    }
-    return s;
-}
+    } while (retry);
 
-/* Temporary operation needed for gapi_domainParticipant delete contained entities */
-c_bool
-u_participantIsBuiltinSubscriber(
-    u_participant _this,
-    u_subscriber s)
-{
-    c_bool result = FALSE;
-
-    if (_this && s) {
-        if (_this->builtinSubscriber == s) {
-            result = TRUE;
-        }
-    }
-    return result;
+    return topics;
 }
 
 u_result
 u_participantAssertLiveliness(
-    u_participant p)
+    const u_participant _this)
 {
     u_result r;
     v_participant kp;
 
-    if (p != NULL) {
-        r = u_entityReadClaim(u_entity(p), (v_entity*)(&kp));
-        if(r == U_RESULT_OK)
-        {
-            assert(kp);
-            v_participantAssertLiveliness(kp);
-            r = u_entityRelease(u_entity(p));
-        } else {
-            OS_REPORT(OS_WARNING, "u_participantAssertLiveliness", 0,
-                      "Failed to claim Participant.");
-        }
+    assert(_this != NULL);
+
+    r = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
+    if(r == U_RESULT_OK)
+    {
+        assert(kp);
+        v_participantAssertLiveliness(kp);
+        u_participantRelease(_this, C_MM_RESERVATION_ZERO);
     } else {
-        OS_REPORT(OS_ERROR,"u_participantAssertLiveliness",0,
-                  "No participant specified.");
-        r = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_WARNING, "u_participantAssertLiveliness", r,
+                  "Failed to claim Participant.");
     }
     return r;
 }
 
 u_result
 u_participantDeleteHistoricalData(
-    u_participant p,
-    const c_char* partitionExpr,
-    const c_char* topicExpr)
+    const u_participant _this,
+    const os_char *partitionExpr,
+    const os_char *topicExpr)
 {
     u_result r;
     v_participant kp;
 
-    if (p != NULL) {
-        r = u_entityReadClaim(u_entity(p), (v_entity*)(&kp));
-        if(r == U_RESULT_OK)
-        {
-            assert(kp);
-            if(partitionExpr && topicExpr){
-                v_participantDeleteHistoricalData(kp, partitionExpr, topicExpr);
-            } else {
-                OS_REPORT(OS_ERROR,"u_participantDeleteHistoricalData",0,
-                          "Illegal parameter.");
-                r = U_RESULT_ILL_PARAM;
-            }
-            r = u_entityRelease(u_entity(p));
+    assert(_this != NULL);
+    assert(topicExpr != NULL);
+    assert(partitionExpr != NULL);
+
+    r = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_LOW);
+    if(r == U_RESULT_OK)
+    {
+        assert(kp);
+        if(partitionExpr && topicExpr){
+            v_participantDeleteHistoricalData(kp, partitionExpr, topicExpr);
         } else {
-            OS_REPORT(OS_WARNING, "u_participantDeleteHistoricalData", 0,
-                      "Failed to claim Participant.");
+            r = U_RESULT_ILL_PARAM;
+            OS_REPORT(OS_ERROR,"u_participantDeleteHistoricalData", r,
+                      "Illegal parameter.");
         }
+        u_participantRelease(_this, C_MM_RESERVATION_LOW);
     } else {
-        OS_REPORT(OS_ERROR,"u_participantDeleteHistoricalData",0,
-                  "No participant specified.");
-        r = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_WARNING, "u_participantDeleteHistoricalData", r,
+                  "Failed to claim Participant.");
     }
     return r;
 }
 
 u_result
-u_participantAddPublisher(
+u_participantRegisterTypeRepresentation (
     u_participant _this,
-    u_publisher publisher)
+    const u_typeRepresentation tr)
 {
-    u_result result = U_RESULT_OK;
+    u_result result;
+    v_participant kp;
+    v_typeRepresentation ktr;
 
-    if (publisher) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            _this->publishers = c_iterInsert(_this->publishers, publisher);
-            u_entityKeep(u_entity(_this));
-            u_entityUnlock(u_entity(_this));
-        }
+    assert(_this != NULL);
+    assert(tr != NULL);
+    assert(tr->metaData != NULL);
+    assert(tr->metaDataLen != 0);
+
+    result = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_LOW);
+    if (result == U_RESULT_OK) {
+        ktr = v_typeRepresentationNew(kp,
+                tr->typeName,
+                tr->dataRepresentationId,
+                tr->typeHash,
+                tr->metaData, tr->metaDataLen,
+                tr->extentions, tr->extentionsLen);
+        c_free(ktr);
+        u_participantRelease(_this, C_MM_RESERVATION_LOW);
     } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_participantAddPublisher",0,
-                    "Given Publisher (0x%x) is invalid.",
-                    publisher);
-        result = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_WARNING, "u_participantRegisterTypeRepresentation", result,
+                  "Failed to claim Participant.");
     }
+
     return result;
 }
 
-u_result
-u_participantRemovePublisher(
+void*
+u_domainParticipant_create_copy_cache(
     u_participant _this,
-    u_publisher publisher)
+    void* (action)(void* arg),
+    void* arg)
 {
-    u_publisher found;
+    v_participant kp;
     u_result result;
+    void* pvReturn = NULL;
 
-    if (publisher) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            found = c_iterTake(_this->publishers,publisher);
-            if (found) {
-                u_entityDereference(u_entity(_this));
-            }
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_participantRemovePublisher",0,
-                      "Failed to lock Participant.");
-        }
+    result = u_participantReadClaim(_this, &kp, C_MM_RESERVATION_ZERO);
+    if(result == U_RESULT_OK)
+    {
+        assert(kp);
+        pvReturn = action(arg);
+        u_participantRelease(_this, C_MM_RESERVATION_ZERO);
     } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_participantRemovePublisher",0,
-                    "Given Publisher (0x%x) is invalid.",
-                    publisher);
-        result = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_WARNING, "u_participant::u_domainParticipant_create_copy_cache", 0,
+                  "Failed to claim Participant");
     }
-    return result;
-}
-
-c_bool
-u_participantContainsPublisher(
-    u_participant _this,
-    u_publisher publisher)
-{
-    c_bool found = FALSE;
-    u_result result;
-
-    if (publisher) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            found = c_iterContains(_this->publishers,publisher);
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_participantContainsPublisher",0,
-                      "Failed to lock Participant.");
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_participantContainsPublisher",0,
-                    "Given Publisher (0x%x) is invalid.",
-                    publisher);
-    }
-    return found;
-}
-
-c_long
-u_participantPublisherCount(
-    u_participant _this)
-{
-    c_long length = -1;
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        length = c_iterLength(_this->publishers);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_participantPublisherCount",0,
-                  "Failed to lock Participant.");
-    }
-    return length;
-}
-
-u_result
-u_participantWalkPublishers(
-    u_participant _this,
-    u_publisherAction action,
-    c_voidp actionArg)
-{
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        c_iterWalkUntil(_this->publishers,
-                        (c_iterAction)action,
-                        actionArg);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_participantWalkPublishers",0,
-                  "Failed to lock Participant.");
-    }
-    return result;
-}
-
-c_iter
-u_participantLookupPublishers(
-    u_participant _this)
-{
-    c_iter publishers = NULL;
-    u_result result;
-
-    publishers = NULL;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        c_iterWalk(_this->publishers, collect_entities, &publishers);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                  "u_participantLookupPublishers",0,
-                  "Failed to lock Participant: result = %s.",
-                  u_resultImage(result));
-    }
-    return publishers;
-}
-
-u_result
-u_participantAddSubscriber(
-    u_participant _this,
-    u_subscriber subscriber)
-{
-    u_result result = U_RESULT_OK;
-
-    if (subscriber) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            _this->subscribers = c_iterInsert(_this->subscribers, subscriber);
-            u_entityKeep(u_entity(_this));
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_participantAddSubscriber",0,
-                      "Failed to lock Participant.");
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_participantAddSubscriber",0,
-                    "Given Subscriber (0x%x) is invalid.",
-                    subscriber);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_participantRemoveSubscriber(
-    u_participant _this,
-    u_subscriber subscriber)
-{
-    u_subscriber found;
-    u_result result = U_RESULT_OK;
-
-    if (subscriber) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            found = c_iterTake(_this->subscribers,subscriber);
-            if (found) {
-                u_entityDereference(u_entity(_this));
-                if (found == _this->builtinSubscriber) {
-                    _this->builtinSubscriber = NULL;
-                }
-            }
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_participantRemoveSubscriber",0,
-                      "Failed to lock Participant.");
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_participantRemoveSubscriber",0,
-                    "Given Subscriber (0x%x) is invalid.",
-                    subscriber);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-c_bool
-u_participantContainsSubscriber(
-    u_participant _this,
-    u_subscriber subscriber)
-{
-    c_bool found = FALSE;
-    u_result result;
-
-    if (subscriber) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            found = c_iterContains(_this->subscribers,subscriber);
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_participantContainsSubscriber",0,
-                      "Failed to lock Participant.");
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_participantContainsSubscriber",0,
-                    "Given Subscriber (0x%x) is invalid.",
-                    subscriber);
-    }
-    return found;
-}
-
-c_long
-u_participantSubscriberCount(
-    u_participant _this)
-{
-    c_long length = -1;
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        length = c_iterLength(_this->subscribers);
-        if (_this->builtinSubscriber) {
-            assert(length > 0);
-            length--;
-        }
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_participantSubscriberCount",0,
-                  "Failed to lock Participant.");
-    }
-    return length;
-}
-
-u_result
-u_participantWalkSubscribers(
-    u_participant _this,
-    u_subscriberAction action,
-    c_voidp actionArg)
-{
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        c_iterWalkUntil(_this->subscribers,
-                        (c_iterAction)action,
-                        actionArg);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_participantWalkSubscribers",0,
-                  "Failed to lock Participant.");
-    }
-    return result;
-}
-
-c_iter
-u_participantLookupSubscribers(
-    u_participant _this)
-{
-    c_iter subscribers = NULL;
-    u_result result;
-
-    subscribers = NULL;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        c_iterWalk(_this->subscribers, collect_entities, &subscribers);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                  "u_participantLookupSubscribers",0,
-                  "Failed to lock Participant: result = %s.",
-                  u_resultImage(result));
-    }
-    return subscribers;
-}
-
-u_result
-u_participantAddTopic(
-    u_participant _this,
-    u_topic topic)
-{
-    u_result result;
-
-    if (topic) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            _this->topics = c_iterInsert(_this->topics, topic);
-            if (u_topicIsBuiltin(topic)) {
-                _this->builtinTopicCount++;
-            } else {
-                /* Only increase reference count for user created topics
-                 * and not for implicitly created builtin topics otherwise
-                 * the delete participant will fail because of the ref count
-                 * which never will decrease to 0.
-                 */
-                u_entityKeep(u_entity(_this));
-            }
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_participantAddTopic",0,
-                      "Failed to lock Participant.");
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_participantAddTopic",0,
-                    "Given Topic (0x%x) is invalid.",
-                    topic);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_participantRemoveTopic(
-    u_participant _this,
-    u_topic topic)
-{
-    u_topic found;
-    u_result result;
-
-    if (topic) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            found = c_iterTake(_this->topics,topic);
-            if (found) {
-                if (u_topicIsBuiltin(topic)) {
-                    assert(_this->builtinTopicCount > 0);
-                    _this->builtinTopicCount--;
-                } else {
-                    /* The ref count is only increased for user defined topics
-                     * and not for implicitly created builtin topics so therefore
-                     * only degrade the refcount for user defined topics.
-                     */
-                    u_entityDereference(u_entity(_this));
-                }
-            }
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_participantRemoveTopic",0,
-                      "Failed to lock Participant.");
-            result = U_RESULT_ILL_PARAM;
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_participantRemoveTopic",0,
-                    "Given Topic (0x%x) is invalid.",
-                    topic);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-c_bool
-u_participantContainsTopic(
-    u_participant _this,
-    u_topic topic)
-{
-    c_bool found = FALSE;
-    u_result result;
-
-    if (topic) {
-        result = u_entityLock(u_entity(_this));
-        if (result == U_RESULT_OK) {
-            found = c_iterContains(_this->topics,topic);
-            u_entityUnlock(u_entity(_this));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_participantContainsTopic",0,
-                      "Failed to lock Participant.");
-        }
-    } else {
-        OS_REPORT_1(OS_WARNING,
-                    "u_participantContainsTopic",0,
-                    "Given Topic (0x%x) is invalid.",
-                    topic);
-    }
-    return found;
-}
-
-struct collect_topics_arg {
-    const c_char *topic_name;
-    c_iter topics;
-};
-
-static void
-collect_topics(
-    c_voidp object,
-    c_voidp arg)
-{
-    struct collect_topics_arg *a = (struct collect_topics_arg *)arg;
-    u_topic t = (u_topic)object;
-    c_char *name;
-
-    if (a->topic_name == NULL) {
-        a->topics = c_iterInsert(a->topics, t);
-        u_entityKeep(u_entity(t));
-    } else {
-        name = u__topicName(t);
-        if (strcmp(name, a->topic_name) == 0)
-        {
-            a->topics = c_iterInsert(a->topics, t);
-            u_entityKeep(u_entity(t));
-        }
-    }
-}
-
-c_iter
-u_participantLookupTopics(
-    u_participant _this,
-    const c_char *topic_name)
-{
-    struct collect_topics_arg arg;
-    u_result result;
-
-    /* topic_name == NULL is treated as wildcard '*' */
-    arg.topic_name = topic_name;
-    arg.topics = NULL;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        c_iterWalk(_this->topics, collect_topics, &arg);
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_participantLookupTopics",0,
-                  "Failed to lock Participant.");
-    }
-    return arg.topics;
-}
-
-c_long
-u_participantTopicCount(
-    u_participant _this)
-{
-    c_long length = -1;
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        length = c_iterLength(_this->topics);
-        length = length - _this->builtinTopicCount;
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_participantRemoveTopic",0,
-                  "Failed to lock Participant.");
-    }
-    return length;
-}
-
-u_result
-u_participantWalkTopics(
-    u_participant _this,
-    u_topicAction action,
-    c_voidp actionArg)
-{
-    u_result result;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        c_iterWalkUntil(_this->topics, (c_iterAction)action, actionArg);
-        u_entityUnlock(u_entity(_this));
-        result = TRUE;
-    } else {
-        OS_REPORT(OS_WARNING,
-                  "u_participantWalkTopics",0,
-                  "Failed to lock Participant.");
-    }
-    return result;
-}
-
-/* What is needed is atomic lookup and create:
- * topic =  u_participantCreateTopic(p,name, typeName, keyList, qos);
- * The Operation u_participantCreateTopic will use u_topicNew to
- * construct the Topic but will perform lookup and insert of the
- * Topic so this can be removed from u_topicNew.
- */
-u_topic
-u_participantCreateTopic(
-    u_participant _this,
-    const c_char *name,
-    const c_char *typeName,
-    const c_char *keyList,
-    v_topicQos qos)
-{
-    u_result result;
-    u_topic topic = NULL;
-
-    result = u_entityLock(u_entity(_this));
-    if (result == U_RESULT_OK) {
-        if (topic == NULL) {
-            topic = u_topicNew(_this, name, typeName, keyList, qos);
-            /* if topic == NULL then the c_iterInsert will be a noop. */
-            _this->topics = c_iterInsert(_this->topics, topic);
-        }
-        u_entityUnlock(u_entity(_this));
-    } else {
-        OS_REPORT_2(OS_WARNING,
-                    "u_participantCreateTopic",0,
-                    "Failed to lock Participant 0x%x. "
-                    "Aborting creation of Topic '%s'.",
-                    _this, name);
-    }
-    return topic;
+    return pvReturn;
 }
 
 u_result
@@ -1813,9 +693,15 @@ u_participantFederationSpecificPartitionName (
     os_size_t bufsize)
 {
     u_result result;
+    u_domain domain;
+#if 0
     if ((result = u_entityLock (u_entity(_this))) == U_RESULT_OK) {
-        result = u_domainFederationSpecificPartitionName (_this->domain, buf, bufsize);
+#endif
+        domain = u_observableDomain(u_observable(_this));
+        result = u_domainFederationSpecificPartitionName(domain, buf, bufsize);
+#if 0
         u_entityUnlock (u_entity (_this));
     }
+#endif
     return result;
 }

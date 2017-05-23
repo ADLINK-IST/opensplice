@@ -56,10 +56,12 @@ module testDefConstr {
         long nums[DIM_NUMS_1][DIM_NUMS_2];
         sequence<longSeq, 3> nums2;
         sequence<sequence<float, 10> > floatList;
+        sequence<string> stringList;
         longArray10 la2Dim[DIM_LA2DIM_1];   
     };
 #pragma keylist A id
 
+#if OSPL_UNION_SUPPORTED
     enum Size {
         LARGE,
         MEDIUM,
@@ -221,4 +223,5 @@ module testDefConstr {
         arrayA erik[DIM_ERIK_1][DIM_ERIK_2];
     };
 #pragma keylist StructBigTest id
+#endif
 };

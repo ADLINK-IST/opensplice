@@ -2,16 +2,24 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
-#include "ThroughputData_DCPS.hpp"
+#include "Throughput_DCPS.hpp"
 
 namespace examples { namespace dcps { namespace Throughput { namespace isocpp {
 
@@ -32,7 +40,7 @@ public:
         dds::domain::DomainParticipant participant = dds::domain::DomainParticipant(org::opensplice::domain::default_id());
 
         /** A dds::topic::Topic is created for our sample type on the domain participant. */
-        dds::topic::Topic<ThroughputModule::Sample> topic = dds::topic::Topic<ThroughputModule::Sample>(participant, "Throughput");
+        dds::topic::Topic<ThroughputModule::DataType> topic = dds::topic::Topic<ThroughputModule::DataType>(participant, "Throughput");
 
         /** A dds::pub::Publisher is created on the domain participant. */
         dds::pub::qos::PublisherQos pubQos
@@ -45,12 +53,12 @@ public:
         dwqos << dds::core::policy::Reliability::Reliable(dds::core::Duration(10, 0))
               << dds::core::policy::History::KeepAll()
               << dds::core::policy::ResourceLimits(100);
-        writer = dds::pub::DataWriter<ThroughputModule::Sample>(publisher, topic, dwqos);
+        writer = dds::pub::DataWriter<ThroughputModule::DataType>(publisher, topic, dwqos);
     }
 
 public:
     /** The DataWriter used by the publisher. */
-    dds::pub::DataWriter<ThroughputModule::Sample> writer;
+    dds::pub::DataWriter<ThroughputModule::DataType> writer;
 };
 
 /**
@@ -68,7 +76,7 @@ public:
         dds::domain::DomainParticipant participant = dds::domain::DomainParticipant(org::opensplice::domain::default_id());
 
         /** A dds::topic::Topic is created for our sample type on the domain participant. */
-        dds::topic::Topic<ThroughputModule::Sample> topic = dds::topic::Topic<ThroughputModule::Sample>(participant, "Throughput");
+        dds::topic::Topic<ThroughputModule::DataType> topic = dds::topic::Topic<ThroughputModule::DataType>(participant, "Throughput");
 
         /** A dds::sub::Subscriber is created on the domain participant. */
         dds::sub::qos::SubscriberQos subQos
@@ -83,7 +91,7 @@ public:
               << dds::core::policy::ResourceLimits(400);
 
         /** A dds::sub::DataReader is created on the Subscriber & Topic with the DataReaderQos. */
-        reader = dds::sub::DataReader<ThroughputModule::Sample>(subscriber, topic, drqos);
+        reader = dds::sub::DataReader<ThroughputModule::DataType>(subscriber, topic, drqos);
 
         /** A StatusCondition is created which is triggered when data is available to read */
         dds::core::cond::StatusCondition dataAvailable(reader);
@@ -100,7 +108,7 @@ public:
 
 public:
     /** The DataReader used by the subscriber. */
-    dds::sub::DataReader<ThroughputModule::Sample> reader;
+    dds::sub::DataReader<ThroughputModule::DataType> reader;
     /** The WaitSet used by the subscriber. */
     dds::core::cond::WaitSet waitSet;
 };

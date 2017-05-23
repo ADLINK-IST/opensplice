@@ -1,0 +1,482 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The Vortex OpenSplice Tester User Guide &mdash; Test Tool User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Test Tool User Guide" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-vortex-opensplice-tester-user-guide">
+<h1>The Vortex OpenSplice Tester User Guide<a class="headerlink" href="#the-vortex-opensplice-tester-user-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-vortex-opensplice-tester-user-guide">1.1. About The Vortex OpenSplice Tester User Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#intended-audience">1.2. Intended Audience</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#organisation">1.3. Organisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#conventions">1.4. Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">2. Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#features">2.1. Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#location-of-tester-in-the-opensplice-architecture">2.2. Location of Tester in the OpenSplice architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#things-to-know">2.3. Things to Know</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#prerequisites">2.4. Prerequisites</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted.html">3. Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getstarted.html#starting-and-stopping-tester">3.1. Starting and Stopping Tester</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getstarted.html#starting-local-connection">3.2. Starting - Local Connection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getstarted.html#starting-remote-connection">3.3. Starting - Remote Connection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getstarted.html#stopping">3.4. Stopping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getstarted.html#remotely-controlling-tester">3.5. Remotely Controlling Tester</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getstarted.html#trying-out-tester">3.6. Trying out Tester</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getstarted.html#tester-windows">3.7. Tester Windows</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="getstarted.html#main-window">3.7.1. Main Window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="getstarted.html#overview-windows">3.7.2. Overview Windows</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#services">3.7.2.1. Services</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#scripts">3.7.2.2. Scripts</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#macros">3.7.2.3. Macros</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#topics">3.7.2.4. Topics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#readers">3.7.2.5. Readers</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="getstarted.html#working-windows">3.7.3. Working Windows</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#sample-list-window">3.7.3.1. Sample List Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#statistics-window">3.7.3.2. Statistics Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#browser-window">3.7.3.3. Browser Window</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="getstarted.html#scripting-windows">3.7.4. Scripting Windows</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#edit-window">3.7.4.1. Edit Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#debug-window">3.7.4.2. Debug Window</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="getstarted.html#other-windows">3.7.5. Other Windows</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#add-reader-window">3.7.5.1. Add Reader Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#batch-window">3.7.5.2. Batch Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#batch-results-window">3.7.5.3. Batch Results Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#chart-window">3.7.5.4. Chart Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#edit-sample-window">3.7.5.5. Edit Sample Window</a></li>
+<li class="toctree-l4"><a class="reference internal" href="getstarted.html#topic-instance-window">3.7.5.6. Topic Instance Window</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="familiarization.html">4. Familiarization Exercises</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#starting-the-tester">4.1. Starting the Tester</a></li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#connection-management">4.2. Connection management</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-connect-to-a-local-opensplice-instance">4.2.1. To Connect to a local OpenSplice instance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-connect-to-a-remote-opensplice-instance">4.2.2. To Connect to a remote OpenSplice instance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-disconnect">4.2.3. To Disconnect</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-exit-tester">4.2.4. To Exit Tester</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#topics-and-readers">4.3. Topics and Readers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#the-topic-list">4.3.1. The Topic list</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-view-a-topic-s-type-definition">4.3.2. To View a Topic&#8217;s Type definition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-add-a-reader-from-the-topic-list">4.3.3. To Add a Reader from the Topic list</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-add-a-reader-from-the-file-menu">4.3.4. To Add a Reader from the File menu</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-add-multiple-readers-to-the-tester-timeline">4.3.5. To Add multiple Readers to the Tester timeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-save-the-current-readers-to-a-file">4.3.6. To Save the current Readers to a file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-remove-all-readers">4.3.7. To Remove all Readers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-load-readers-from-a-saved-file">4.3.8. To Load Readers from a saved file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-delete-a-reader">4.3.9. To Delete a Reader</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#samples">4.4. Samples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#writing-and-editing-samples">4.4.1. Writing and Editing Samples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="familiarization.html#to-write-sample-topic-data">4.4.1.1. To Write Sample Topic data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="familiarization.html#to-display-detailed-information-on-sample-data">4.4.1.2. To display detailed information on sample data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="familiarization.html#more-information-on-sample-info">4.4.1.3. More information on sample info</a></li>
+<li class="toctree-l4"><a class="reference internal" href="familiarization.html#to-display-extra-fields">4.4.1.4. To Display extra fields</a></li>
+<li class="toctree-l4"><a class="reference internal" href="familiarization.html#to-edit-a-sample">4.4.1.5. To Edit a sample</a></li>
+<li class="toctree-l4"><a class="reference internal" href="familiarization.html#to-compare-two-samples">4.4.1.6. To Compare two samples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#filtering">4.5. Filtering</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-filter-the-sample-list-on-a-topic">4.5.1. To Filter the Sample List on a Topic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-reset-filters-and-display-all-samples">4.5.2. To Reset Filters and display all samples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-filter-on-both-topic-and-key">4.5.3. To Filter on both Topic and Key</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#filter-samples-on-state">4.5.4. Filter samples on State</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-filter-samples-on-key-value">4.5.5. To Filter Samples on Key value</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#filter-on-column-text">4.5.6. Filter on column text</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#find-specific-text">4.5.7. Find specific text</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#global-topic-filters">4.5.8. Global Topic filters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#working-with-samples">4.6. Working with Samples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-delete-a-column-from-the-sample-list-table">4.6.1. To Delete a column from the Sample List table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-chart-sample-data">4.6.2. To Chart Sample Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-dump-a-sample-list-to-a-file">4.6.3. To Dump a sample list to a file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-dump-selected-samples-only">4.6.4. To Dump selected Samples only</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-dump-to-a-csv-format-file">4.6.5. To Dump to a CSV format file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-dispose-data-with-alive-state">4.6.6. To Dispose data with Alive state</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-translate-sample-data-to-test-script">4.6.7. To Translate Sample data to test script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#translate-selected-sample-to-test-script">4.6.8. Translate selected sample to test script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-display-samples-with-not-alive-no-writers-state">4.6.9. To display samples with not_alive_no_writers state</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-control-the-number-of-samples-kept-per-reader">4.6.10. To control the number of samples kept per reader</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#groups">4.7. Groups</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#definition-of-a-group-in-tester">4.7.1. Definition of a Group in Tester</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-add-a-reader-under-a-group">4.7.2. To Add a Reader under a Group</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-add-multiple-readers-under-a-group">4.7.3. To Add multiple Readers under a Group</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-publish-coherent-sets">4.7.4. To Publish coherent sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-subscribe-coherent-sets">4.7.5. To Subscribe coherent sets</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#system-browser-browser-window">4.8. System Browser (Browser window)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#browse-tree">4.8.1. Browse tree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#readers-and-writers-tables-are-updated-when-a-new-reader-is-created">4.8.2. Readers and Writers tables are updated when a new Reader is created</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#readers-and-writers-tables-are-updated-when-a-new-reader-is-deleted">4.8.3. Readers and Writers tables are updated when a new Reader is deleted</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-check-reader-and-writer-compatibility">4.8.4. To Check Reader and Writer compatibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-show-disposed-participants-from-the-browser-tree">4.8.5. To Show Disposed Participants from the Browser tree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-spawn-a-tuner-from-the-system-browser">4.8.6. To Spawn a Tuner from the System Browser</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#statistics">4.8.7. Statistics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="familiarization.html#statistics-participants">4.8.7.1. Statistics - participants</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="familiarization.html#write-sample-topics-and-check-statistics-window-content">4.8.7.1.1. Write sample topics and check statistics window content</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="familiarization.html#statistics-topics">4.8.7.2. Statistics - topics</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="familiarization.html#id2">4.8.7.2.1. Write sample topics and check statistics window content</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#scripting">4.9. Scripting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-create-a-new-scenario">4.9.1. To Create a New Scenario</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-create-a-new-macro">4.9.2. To Create a New Macro</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-edit-an-existing-scenario-or-macro">4.9.3. To Edit an Existing Scenario or Macro</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-save-an-open-scenario-or-macro">4.9.4. To Save an open Scenario or Macro</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-complete-and-compile-a-scenario">4.9.5. To Complete and Compile a Scenario</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#script-selection">4.9.6. Script selection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#code-completion">4.9.7. Code completion</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#execute-and-debug">4.10. Execute and Debug</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-run-the-current-script">4.10.1. To Run the Current Script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#batch-execution-batch-window">4.10.2. Batch execution (Batch window)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#to-run-a-batch-script-from-the-command-line">4.10.3. To Run a Batch Script from the Command Line</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#batch-results">4.10.4. Batch results</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="familiarization.html#load-batch-result">4.10.4.1. Load batch result</a></li>
+<li class="toctree-l4"><a class="reference internal" href="familiarization.html#scan-regression-folder-for-batch-results">4.10.4.2. Scan regression folder for batch results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="familiarization.html#scan-regression-for-specified-directory">4.10.4.3. Scan regression for specified directory</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#adding-virtual-fields">4.11. Adding virtual fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#add-virtual-fields-to-the-topic">4.11.1. Add virtual fields to the topic</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#plugins">4.12. Plugins</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#install-uninstall-plugins">4.12.1. Install / Uninstall plugins</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="familiarization.html#more-on-virtual-fields">4.13. More on Virtual fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#adding-virtual-fields-via-plugin">4.13.1. Adding Virtual Fields <em>via</em> plugin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="familiarization.html#adding-virtual-fields-via-script">4.13.2. Adding Virtual Fields <em>via</em> script</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="commandref.html">5. Command Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="commandref.html#introduction">5.1. Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="commandref.html#menus">5.2. Menus</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#file">5.2.1. File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#script">5.2.2. Script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#view">5.2.3. View</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#samplelist">5.2.4. SampleList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#display">5.2.5. Display</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#filter">5.2.6. Filter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#editor">5.2.7. Editor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#edit">5.2.8. Edit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="commandref.html#keyboard-only-commands">5.2.8.1. Keyboard-only commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="commandref.html#macro-recorder">5.2.8.2. Macro Recorder</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="commandref.html#lists">5.3. Lists</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#services">5.3.1. Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#scripts">5.3.2. Scripts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#macros">5.3.3. Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#readers">5.3.4. Readers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="commandref.html#edit-sample-window">5.3.4.1. Edit Sample Window</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#topics">5.3.5. Topics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#groups">5.3.6. Groups</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="commandref.html#windows">5.4. Windows</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#sample-list-window">5.4.1. Sample List Window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#statistics-window">5.4.2. Statistics Window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#browser-window">5.4.3. Browser Window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#edit-window">5.4.4. Edit Window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="commandref.html#debug-window">5.4.5. Debug Window</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting.html">6. Scripting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html#the-script-language">6.1. The Script Language</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#a-script-file">6.1.1. A script file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#variables">6.1.2. Variables</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="scripting.html#special-variables">6.1.2.1. Special variables</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#embedded-scripts">6.1.3. Embedded Scripts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#comments">6.1.4. Comments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#macros">6.1.5. Macros</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html#the-instructions">6.2. The Instructions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#send">6.2.1. Send</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#dispose">6.2.2. Dispose</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#writedispose">6.2.3. Writedispose</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#check">6.2.4. Check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#miss">6.2.5. Miss</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#disposed">6.2.6. Disposed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#mark">6.2.7. Mark</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#repeat">6.2.8. Repeat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#set">6.2.9. Set</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#execute">6.2.10. Execute</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#log">6.2.11. Log</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#message">6.2.12. Message</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#fail">6.2.13. Fail</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#call">6.2.14. Call</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#reader">6.2.15. Reader</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html#instructions-for-graphs">6.3. Instructions for Graphs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#graph">6.3.1. Graph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#column">6.3.2. Column</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html#instructions-for-flow-control">6.4. Instructions for Flow Control</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#wait">6.4.1. Wait</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#if">6.4.2. If</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#for">6.4.3. For</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#exit">6.4.4. Exit</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html#instructions-for-the-message-interface">6.5. Instructions for the Message Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#write">6.5.1. Write</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#read">6.5.2. Read</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#connect">6.5.3. Connect</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#disconnect">6.5.4. Disconnect</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#control">6.5.5. Control</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting.html#installing-script-engines">6.6. Installing Script Engines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#jython">6.6.1. Jython</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#jruby">6.6.2. Jruby</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting.html#groovy">6.6.3. Groovy</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="messageinterfaces.html">7. Message Interfaces</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="messageinterfaces.html#id2">7.1. Message interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="messageinterfaces.html#getting-started-with-a-message-interface">7.2. Getting Started with a Message Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="messageinterfaces.html#types-of-interfaces">7.3. Types of interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="messageinterfaces.html#basic-message-interface">7.3.1. Basic message interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="messageinterfaces.html#buffered-message-interface">7.3.2. Buffered message interface</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="messageinterfaces.html#ada-syntax-for-message-definition">7.3.2.1. ADA Syntax for message definition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="messageinterfaces.html#message-id-translation">7.3.2.2. Message ID translation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="messageinterfaces.html#message-hooks">7.3.2.3. Message Hooks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="messageinterfaces.html#control-functions">7.3.2.4. Control functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gpbuffers.html">8. Google Protocol Buffers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gpbuffers.html#about-google-protocol-buffers-in-tester">8.1. About Google Protocol Buffers in Tester</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpbuffers.html#viewing-type-evolutions">8.2. Viewing type evolutions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="gpbuffers.html#view-topic-type-window">8.2.1. View Topic Type Window</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gpbuffers.html#reading-protocol-buffer-topics">8.3. Reading protocol buffer topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpbuffers.html#reading-protocol-buffer-topics-via-script">8.4. Reading protocol buffer topics <em>via</em> script</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpbuffers.html#editing-protocol-buffer-topic-samples">8.5. Editing protocol buffer topic samples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pythonscripting.html">9. Python Scripting Engine</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pythonscripting.html#about-python-scripting">9.1. About Python Scripting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#design-goals">9.1.1. Design Goals</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pythonscripting.html#configuration">9.2. Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#prerequisites">9.2.1. Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#download-and-install-jython">9.2.2. Download and install Jython</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#verifying-the-installation">9.2.3. Verifying the installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pythonscripting.html#a-quick-tour-of-ospl-scripting">9.3. A Quick Tour of OSPL Scripting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#id2">9.3.1. Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#preliminaries">9.3.2. Preliminaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#writing-and-reading-samples">9.3.3. Writing and Reading samples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#working-with-qos-settings">9.3.4. Working with QoS settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#working-with-waitsets">9.3.5. Working with WaitSets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#filtering-data">9.3.6. Filtering data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#query-expressions-query-parameters-and-their-limitations">9.3.7. Query Expressions, Query Parameters and their Limitations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#using-coherent-access">9.3.8. Using Coherent access</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pythonscripting.html#note-using-waitsets-with-group-coherence">9.3.8.1. Note: Using waitsets with group coherence</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#creating-a-unit-test-script">9.3.9. Creating a unit test script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#working-with-more-complex-topics">9.3.10. Working with more Complex topics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#creating-a-sample-time-line">9.3.11. Creating a sample time-line</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pythonscripting.html#using-eclipse-and-pydev-to-create-and-run-osplscript-files">9.4. Using Eclipse and PyDev to create and run OsplScript files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#download-and-installation">9.4.1. Download and Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#id3">9.4.2. Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#creating-a-pydev-project">9.4.3. Creating a PyDev Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#create-a-python-script">9.4.4. Create a Python script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#running-a-python-script">9.4.5. Running a Python script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#debugging-a-python-script">9.4.6. Debugging a Python script</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pythonscripting.html#using-pycharm-to-create-and-run-tester-scripting">9.5. Using PyCharm to create and run Tester Scripting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#id4">9.5.1. Download and Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#id5">9.5.2. Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#creating-a-pycharm-project">9.5.3. Creating a PyCharm Project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#id6">9.5.4. Create a Python script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#id7">9.5.5. Running a Python script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pythonscripting.html#id8">9.5.6. Debugging a Python script</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="appendixa.html">10. Appendix A</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="appendixa.html#scripting-bnf">10.1. Scripting BNF</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="appendixa.html#tokens">10.1.1. TOKENS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="appendixa.html#non-terminals">10.1.2. NON-TERMINALS</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">11. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">11.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">11.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The Vortex OpenSplice Tester User Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

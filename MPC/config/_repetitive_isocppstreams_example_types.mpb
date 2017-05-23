@@ -1,0 +1,21 @@
+// -*- MPC -*-
+// $Id:$
+
+project : dcps_typesupport_base, ospl_dcpsisocpp, ospl_dcps_cpp_app_base_libs, _example_dcps_type_lib, c_or_cplusplus_example, ospl_streamsisocpp, streams_isocpp_typesupport {
+
+    StreamsTypes_Files {
+        ../idl
+    }
+
+    splice_ts_flags += -l isocpp -i -I ..<%slash%>idl
+    requires += dcps_isocpp_example
+    TypeSupport_Files {
+        .
+    }
+    Source_Files {
+    }
+
+    Documentation_Files {
+        ../.
+    }
+}

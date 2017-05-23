@@ -23,10 +23,15 @@
 
 #include "os_if.h"
 #include "os_heap.h"
+#include "os_errno.h"
 #ifndef WIN32
 #include "os_stdlib.h"
-#include "ctype.h"
+#else
+extern int os_strcasecmp(const char *s1, const char *s2);
+extern char *os_strdup(const char *s1);
+extern char *os_strncpy(char *s1, const char *s2, size_t num);
 #endif
+#include "ctype.h"
 
 /**********************************************************************
  *
@@ -34,7 +39,7 @@
  *
  **********************************************************************/
 
-#define pc() parser_column+=strlen(yytext)
+#define pc() parser_column+=(int)strlen(yytext)
 #define pl() parser_line++; parser_column=0
 
 /**********************************************************************
@@ -45,8 +50,8 @@
 
 static int compareStrings(const char *String1, const char *String2);
 static int extractToken(const char *_String);
-static int extractIdent(char *str);
-static int extractString(char *str);
+static os_size_t extractIdent(char *str);
+static os_size_t extractString(char *str);
 static void preprocessor_directive(char *str);
 
 /* TODO: Check if this static var is necessary.
@@ -105,30 +110,30 @@ ODL_Identifier          [a-zA-Z_][a-zA-Z0-9_]*
                           preprocessor_directive( yytext );
                         }
 
-";"                     { pc();return SEMI; }
-"}"                     { pc();return RPAR; }
-"{"                     { pc();return LPAR; }
-"::"                    { pc();return DOUBLE_COLON; }
-":"                     { pc();return COLON; }
-"("                     { pc();return LRPAR; }
-")"                     { pc();return RRPAR; }
-","                     { pc();return COMMA; }
-"="                     { pc();return EQUAL; }
-"|"                     { pc();return VERT; }
-"^"                     { pc(); return HAT; }
-"&"                     { pc(); return AMPER; }
-">>"                    { pc(); return DOUBLE_RIGHT; }
-"<<"                    { pc(); return DOUBLE_LEFT; }
-"+"                     { pc(); return PLUS; }
-"-"                     { pc(); return MINUS; }
-"*"                     { pc(); return TIMES; }
-"/"                     { pc(); return SLASH; }
-"%"                     { pc(); return PERCENT; }
-"~"                     { pc(); return TILDE; }
-"<"                     { pc(); return LEFT; } 
-">"                     { pc(); return RIGHT; }
-"["                     { pc(); return LEPAR; }
-"]"                     { pc(); return REPAR; }
+";"                     { pc();return ODL_SEMI; }
+"}"                     { pc();return ODL_RPAR; }
+"{"                     { pc();return ODL_LPAR; }
+"::"                    { pc();return ODL_DOUBLE_COLON; }
+":"                     { pc();return ODL_COLON; }
+"("                     { pc();return ODL_LRPAR; }
+")"                     { pc();return ODL_RRPAR; }
+","                     { pc();return ODL_COMMA; }
+"="                     { pc();return ODL_EQUAL; }
+"|"                     { pc();return ODL_VERT; }
+"^"                     { pc(); return ODL_HAT; }
+"&"                     { pc(); return ODL_AMPER; }
+">>"                    { pc(); return ODL_DOUBLE_RIGHT; }
+"<<"                    { pc(); return ODL_DOUBLE_LEFT; }
+"+"                     { pc(); return ODL_PLUS; }
+"-"                     { pc(); return ODL_MINUS; }
+"*"                     { pc(); return ODL_TIMES; }
+"/"                     { pc(); return ODL_SLASH; }
+"%"                     { pc(); return ODL_PERCENT; }
+"~"                     { pc(); return ODL_TILDE; }
+"<"                     { pc(); return ODL_LEFT; }
+">"                     { pc(); return ODL_RIGHT; }
+"["                     { pc(); return ODL_LEPAR; }
+"]"                     { pc(); return ODL_REPAR; }
 
 {Float_Literal1}        |
 {Float_Literal2}        |
@@ -143,16 +148,16 @@ ODL_Identifier          [a-zA-Z_][a-zA-Z0-9_]*
 {Fixed_Literal3}        |
 {Fixed_Literal4}        { pc();return FixedPtLiteral;
                         }
-{Int_Literal}           { sscanf(yytext,"%lld",(long long int *)&intValue); /* intValue = atoll(yytext); */
-                          yylval.Integer = intValue;
+{Int_Literal}           { sscanf(yytext,"%llu",&intValue);
+                          yylval.Integer = (c_longlong) intValue;
                           pc();return IntegerLiteral;
                         }
 {Oct_Literal}           { sscanf(yytext,"%llo",&intValue);
-                          yylval.Integer = intValue;
+                          yylval.Integer = (c_longlong) intValue;
                           pc();return IntegerLiteral;
                         }
 {Hex_Literal}           { sscanf(yytext,"%llx",&intValue);
-                          yylval.Integer = intValue;
+                          yylval.Integer = (c_longlong) intValue;
                           pc();return IntegerLiteral;
                         }
 
@@ -175,7 +180,7 @@ ODL_Identifier          [a-zA-Z_][a-zA-Z0-9_]*
                             case '4': case '5': case '6': case '7':
                              yylval.Char = 0;
                               while (*str && *str != '\'') {
-                                yylval.Char = yylval.Char * 8 + (*str++ - '0');
+                                yylval.Char = (c_char) (yylval.Char * 8 + (*str++ - '0'));
                               }
                               break;
                             case 'x':
@@ -184,14 +189,11 @@ ODL_Identifier          [a-zA-Z_][a-zA-Z0-9_]*
                               str++;
                               while (*str && *str != '\'') {
                                 if (*str >= '0' && *str <= '9')
-                                  yylval.Char = yylval.Char * 16 +
-                                                       (*str - '0');
+                                  yylval.Char = (c_char) (yylval.Char * 16 + (*str - '0'));
                                 else if (*str >= 'a' && *str <= 'f')
-                                  yylval.Char = yylval.Char * 16 +
-                                                       (*str - 'a') + 10;
+                                  yylval.Char = (c_char) (yylval.Char * 16 + (*str - 'a') + 10);
                                 else if (*str >= 'A' && *str <= 'F')
-                                  yylval.Char = yylval.Char * 16 +
-                                                       (*str - 'f') + 10;
+                                  yylval.Char = (c_char) (yylval.Char * 16 + (*str - 'f') + 10);
                                 str++;
                               }
                               break;
@@ -230,58 +232,60 @@ compareStrings(const char *String1, const char *String2)
 static int
 extractToken(const char *_String)
 {
-   if (!compareStrings(_String, "module"      ) ) return MODULE;
-   if (!compareStrings(_String, "persistent"  ) ) return PERSISTENT;
-   if (!compareStrings(_String, "transient"   ) ) return TRANSIENT;
-   if (!compareStrings(_String, "interface"   ) ) return INTERFACE;
-   if (!compareStrings(_String, "key"         ) ) return KEY;
-   if (!compareStrings(_String, "keys"        ) ) return KEYS;
-   if (!compareStrings(_String, "const"       ) ) return _CONST;
-   if (!compareStrings(_String, "true"        ) ) return TOK_TRUE;
-   if (!compareStrings(_String, "false"       ) ) return TOK_FALSE;
-   if (!compareStrings(_String, "typedef"     ) ) return TYPEDEF;
-   if (!compareStrings(_String, "float"       ) ) return FLOAT;
-   if (!compareStrings(_String, "double"      ) ) return DOUBLE;
-   if (!compareStrings(_String, "long"        ) ) return LONG;
-   if (!compareStrings(_String, "short"       ) ) return SHORT;
-   if (!compareStrings(_String, "unsigned"    ) ) return UNSIGNED;
-   if (!compareStrings(_String, "char"        ) ) return CHAR;
-   if (!compareStrings(_String, "boolean"     ) ) return BOOLEAN;
-   if (!compareStrings(_String, "any"         ) ) return ANY;
-   if (!compareStrings(_String, "octet"       ) ) return OCTET;
-   if (!compareStrings(_String, "struct"      ) ) return STRUCT;
-   if (!compareStrings(_String, "union"       ) ) return UNION;
-   if (!compareStrings(_String, "switch"      ) ) return SWITCH;
-   if (!compareStrings(_String, "case"        ) ) return CASE;
-   if (!compareStrings(_String, "default"     ) ) return DEFAULT;
-   if (!compareStrings(_String, "enum"        ) ) return ENUM;
-   if (!compareStrings(_String, "array"       ) ) return ARRAY;
-   if (!compareStrings(_String, "sequence"    ) ) return SEQUENCE;
+   if (!compareStrings(_String, "module"      ) ) return ODL_MODULE;
+   if (!compareStrings(_String, "persistent"  ) ) return ODL_PERSISTENT;
+   if (!compareStrings(_String, "transient"   ) ) return ODL_TRANSIENT;
+   if (!compareStrings(_String, "interface"   ) ) return ODL_INTERFACE;
+   if (!compareStrings(_String, "key"         ) ) return ODL_KEY;
+   if (!compareStrings(_String, "keys"        ) ) return ODL_KEYS;
+   if (!compareStrings(_String, "const"       ) ) return ODL_CONST;
+   if (!compareStrings(_String, "true"        ) ) return ODL_TRUE;
+   if (!compareStrings(_String, "false"       ) ) return ODL_FALSE;
+   if (!compareStrings(_String, "typedef"     ) ) return ODL_TYPEDEF;
+   if (!compareStrings(_String, "float"       ) ) return ODL_FLOAT;
+   if (!compareStrings(_String, "double"      ) ) return ODL_DOUBLE;
+   if (!compareStrings(_String, "long"        ) ) return ODL_LONG;
+   if (!compareStrings(_String, "short"       ) ) return ODL_SHORT;
+   if (!compareStrings(_String, "unsigned"    ) ) return ODL_UNSIGNED;
+   if (!compareStrings(_String, "char"        ) ) return ODL_CHAR;
+   if (!compareStrings(_String, "boolean"     ) ) return ODL_BOOLEAN;
+   if (!compareStrings(_String, "any"         ) ) return ODL_ANY;
+   if (!compareStrings(_String, "octet"       ) ) return ODL_OCTET;
+   if (!compareStrings(_String, "struct"      ) ) return ODL_STRUCT;
+   if (!compareStrings(_String, "union"       ) ) return ODL_UNION;
+   if (!compareStrings(_String, "switch"      ) ) return ODL_SWITCH;
+   if (!compareStrings(_String, "case"        ) ) return ODL_CASE;
+   if (!compareStrings(_String, "default"     ) ) return ODL_DEFAULT;
+   if (!compareStrings(_String, "enum"        ) ) return ODL_ENUM;
+   if (!compareStrings(_String, "array"       ) ) return ODL_ARRAY;
+   if (!compareStrings(_String, "sequence"    ) ) return ODL_SEQUENCE;
    if (!compareStrings(_String, "String"      ) ) return ODL_STRING;
-   if (!compareStrings(_String, "readonly"    ) ) return READONLY;
-   if (!compareStrings(_String, "attribute"   ) ) return ATTRIBUTE;
-   if (!compareStrings(_String, "set"         ) ) return SET;
-   if (!compareStrings(_String, "list"        ) ) return LIST;
-   if (!compareStrings(_String, "bag"         ) ) return BAG;
-   if (!compareStrings(_String, "inverse"     ) ) return INVERSE;
-   if (!compareStrings(_String, "relationship") ) return RELATIONSHIP;
-   if (!compareStrings(_String, "order_by"    ) ) return ORDER_BY;
-   if (!compareStrings(_String, "exception"   ) ) return EXCEPTION;
-   if (!compareStrings(_String, "oneway"      ) ) return ONEWAY;
+   if (!compareStrings(_String, "readonly"    ) ) return ODL_READONLY;
+   if (!compareStrings(_String, "attribute"   ) ) return ODL_ATTRIBUTE;
+   if (!compareStrings(_String, "set"         ) ) return ODL_SET;
+   if (!compareStrings(_String, "list"        ) ) return ODL_LIST;
+   if (!compareStrings(_String, "bag"         ) ) return ODL_BAG;
+   if (!compareStrings(_String, "inverse"     ) ) return ODL_INVERSE;
+   if (!compareStrings(_String, "relationship") ) return ODL_RELATIONSHIP;
+   if (!compareStrings(_String, "order_by"    ) ) return ODL_ORDER_BY;
+   if (!compareStrings(_String, "exception"   ) ) return ODL_EXCEPTION;
+   if (!compareStrings(_String, "oneway"      ) ) return ODL_ONEWAY;
    if (!compareStrings(_String, "void"        ) ) return ODL_VOID;
-   if (!compareStrings(_String, "in"          ) ) return IN;
-   if (!compareStrings(_String, "out"         ) ) return OUT;
-   if (!compareStrings(_String, "inout"       ) ) return INOUT;
-   if (!compareStrings(_String, "raises"      ) ) return RAISES;
-   if (!compareStrings(_String, "context"     ) ) return CONTEXT;
-   if (!compareStrings(_String, "class"       ) ) return CLASS;
-   if (!compareStrings(_String, "date"        ) ) return DATE;
-   if (!compareStrings(_String, "time"        ) ) return TIME;
-   if (!compareStrings(_String, "extends"     ) ) return EXTENDS;
-   if (!compareStrings(_String, "timestamp"   ) ) return TIMESTAMP;
-   if (!compareStrings(_String, "interval"    ) ) return INTERVAL;
-   if (!compareStrings(_String, "dictionary"  ) ) return DICTIONARY;
-   if (!compareStrings(_String, "import"      ) ) return IMPORT;
+   if (!compareStrings(_String, "in"          ) ) return ODL_IN;
+   if (!compareStrings(_String, "out"         ) ) return ODL_OUT;
+   if (!compareStrings(_String, "inout"       ) ) return ODL_INOUT;
+   if (!compareStrings(_String, "raises"      ) ) return ODL_RAISES;
+   if (!compareStrings(_String, "context"     ) ) return ODL_CONTEXT;
+   if (!compareStrings(_String, "class"       ) ) return ODL_CLASS;
+   if (!compareStrings(_String, "date"        ) ) return ODL_DATE;
+   if (!compareStrings(_String, "time"        ) ) return ODL_TIME;
+   if (!compareStrings(_String, "extends"     ) ) return ODL_EXTENDS;
+   if (!compareStrings(_String, "timestamp"   ) ) return ODL_TIMESTAMP;
+   if (!compareStrings(_String, "interval"    ) ) return ODL_INTERVAL;
+   if (!compareStrings(_String, "dictionary"  ) ) return ODL_DICTIONARY;
+   if (!compareStrings(_String, "import"      ) ) return ODL_IMPORT;
+   if (!compareStrings(_String, "atomic"      ) ) return ODL_ATOMIC;
+   if (!compareStrings(_String, "weak"        ) ) return ODL_WEAK;
 
 /* If _String starts with '_' the identifier is an escaped keyword, like
    '_key'. The ODL parser must treat the identifier as 'key'.
@@ -292,26 +296,26 @@ extractToken(const char *_String)
        assert(compareStrings(_String, yylval.String) == 0);
        os_strncpy(yylval.String, &tmp[1], strlen(tmp) - 1);
        yylval.String[strlen(tmp) - 1] = '\0';
-		 os_free(tmp);
+                 os_free(tmp);
    }
 
    return Identifier;
 }
 
-static int
+static os_size_t
 extractIdent(char *str)
 {
-   int length = strlen(str);
+   os_size_t length = strlen(str);
    yylval.String = (char*)malloc(length+1);
    os_strncpy(yylval.String, str, length);
    yylval.String[length]=0;
    return length;
 }
 
-static int
+static os_size_t
 extractString(char *str)
 {
-   int length = strlen(str) - 1;
+   os_size_t length = strlen(str) - 1;
    yylval.String = (char*)malloc(length);
    os_strncpy(yylval.String, ++str, length-1);
    yylval.String[length-1]=0;
@@ -321,7 +325,8 @@ extractString(char *str)
 static void
 preprocessor_directive(char *str)
 {
-   int lineNumber, length;
+   long lineNumber;
+   size_t length;
    char *fileName, *ptr;
 
    str++; /* skip # */
@@ -334,7 +339,7 @@ preprocessor_directive(char *str)
        return;
    }
    while (isgraph((int)*ptr) && (*ptr != '"')) ptr++;
-   length = abs((size_t)ptr - (size_t)fileName);
+   length = (size_t) (ptr - fileName);
    if (length >= MAX_FILENAME_LENGTH) {
       fprintf(stderr,"filename <%s> exceeds max length of %d\n",
                       fileName,MAX_FILENAME_LENGTH);
@@ -344,6 +349,6 @@ preprocessor_directive(char *str)
    if (*ptr != '"') return;
    os_strncpy(file_name,fileName,length);
    file_name[length] = 0;
-   parser_line = lineNumber;
+   parser_line = (int) lineNumber;
    parser_column = 0;
 }

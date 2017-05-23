@@ -98,8 +98,8 @@ DRV_init()
    idl_global->set_main_filename(NULL);
    idl_global->set_real_filename(NULL);
    idl_global->set_stripped_filename(NULL);
-   idl_global->set_import(I_TRUE);
-   idl_global->set_in_main_file(I_FALSE);
+   idl_global->set_import(true);
+   idl_global->set_in_main_file(false);
    idl_global->set_lineno( -1);
 
    idl_global->set_prog_name(NULL);
@@ -110,7 +110,7 @@ DRV_init()
 
    idl_global->set_compile_flags(0);
 
-   idl_global->set_read_from_stdin(I_FALSE);
+   idl_global->set_read_from_stdin(false);
 
    idl_global->set_include_file_names(NULL);
    idl_global->set_n_include_file_names(0);

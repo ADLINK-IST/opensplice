@@ -1,17 +1,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#include "v__statistics.h"
-#include "v__statisticsInterface.h"
+#include "v_statistics.h"
 #include "v_writerStatistics.h"
+#include "v_maxValue.h"
 
 v_writerStatistics
 v_writerStatisticsNew(
@@ -62,43 +70,6 @@ v_writerStatisticsDeinit(
     assert(ws!=NULL);
     assert(C_TYPECHECK(ws, v_writerStatistics));
     OS_UNUSED_ARG(ws);
-}
-
-c_bool
-v_writerStatisticsReset(
-    v_writerStatistics ws,
-    const c_char* fieldName)
-{
-    c_bool result;
-
-    assert(ws!=NULL);
-    assert(C_TYPECHECK(ws, v_writerStatistics));
-
-    result = FALSE;
-
-    if (fieldName != NULL) {
-        result = v_statisticsResetField(v_statistics(ws), fieldName);
-    } else {
-        v_statisticsULongResetInternal(v_writer, numberOfWrites, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfDisposes, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfRegisters, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfImplicitRegisters, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfUnregisters, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfTimedOutWrites, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfWritesBlockedBySamplesLimit, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfWritesBlockedByInstanceLimit, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfWritesBlockedBySamplesPerInstanceLimit, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfRetries, ws);
-
-        v_statisticsULongResetInternal(v_writer, numberOfInstancesWithStatusAlive, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfInstancesWithStatusDisposed, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfInstancesWithStatusUnregistered, ws);
-        v_statisticsULongResetInternal(v_writer, numberOfSamples, ws);
-        v_maxValueReset(&ws->maxNumberOfSamplesPerInstance);
-
-        result = TRUE;
-    }
-    return result;
 }
 
 void

@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <math.h>
 #include <stdlib.h>
 
@@ -6,8 +25,11 @@
 #include "os_mutex.h"
 #include "os_defs.h"
 #include "os_stdlib.h"
+#include "os_atomics.h"
 
 #include "ut_avl.h"
+#include "ut_fibheap.h"
+
 #include "q_time.h"
 #include "q_log.h"
 #include "q_addrset.h"
@@ -26,10 +48,10 @@
 #include "q_misc.h"
 #include "q_radmin.h"
 #include "q_bitset.h"
-#include "q_osplser.h"
 #include "q_lease.h"
 #include "q_xmsg.h"
-#include "q_fibheap.h"
+#include "q_osplser.h"
+#include "ddsi_ser.h"
 
 #include "sysdeps.h"
 
@@ -45,7 +67,8 @@
 #define POS_INFINITY_DOUBLE (HUGE_VAL + HUGE_VAL)
 #endif
 
-enum xeventkind {
+enum xeventkind
+{
   XEVK_HEARTBEAT,
   XEVK_ACKNACK,
   XEVK_SPDP,
@@ -55,10 +78,11 @@ enum xeventkind {
   XEVK_CALLBACK
 };
 
-struct xevent {
-  struct fibheap_node heapnode;
+struct xevent
+{
+  ut_fibheapNode_t heapnode;
   struct xeventq *evq;
-  os_int64 tsched;
+  nn_mtime_t tsched;
   enum xeventkind kind;
   union {
     struct {
@@ -88,22 +112,25 @@ struct xevent {
       nn_guid_t guid;
     } delete_writer;
     struct {
-      void (*cb) (struct xevent *ev, void *arg, os_int64 tnow);
+      void (*cb) (struct xevent *ev, void *arg, nn_mtime_t tnow);
       void *arg;
     } callback;
   } u;
 };
 
-enum xeventkind_nt {
+enum xeventkind_nt
+{
   XEVK_MSG,
-  XEVK_MSG_REXMIT
+  XEVK_MSG_REXMIT,
+  XEVK_ENTITYID
 };
 
 struct untimed_listelem {
   struct xevent_nt *next;
 };
 
-struct xevent_nt {
+struct xevent_nt
+{
   struct untimed_listelem listnode;
   struct xeventq *evq;
   enum xeventkind_nt kind;
@@ -115,45 +142,53 @@ struct xevent_nt {
     struct {
       /* xmsg is self-contained / relies on reference counts */
       struct nn_xmsg *msg;
-      unsigned queued_rexmit_bytes;
+      size_t queued_rexmit_bytes;
       ut_avlNode_t msg_avlnode;
     } msg_rexmit;
+    struct {
+      /* xmsg is self-contained / relies on reference counts */
+      struct nn_xmsg *msg;
+    } entityid;
   } u;
 };
 
 struct xeventq {
-  struct fibheap xevents;
+  ut_fibheap_t xevents;
   ut_avlTree_t msg_xevents;
   struct xevent_nt *non_timed_xmit_list_oldest;
   struct xevent_nt *non_timed_xmit_list_newest; /* undefined if ..._oldest == NULL */
-  unsigned queued_rexmit_bytes;
-  unsigned queued_rexmit_msgs;
-  unsigned max_queued_rexmit_bytes;
-  unsigned max_queued_rexmit_msgs;
+  size_t queued_rexmit_bytes;
+  size_t queued_rexmit_msgs;
+  size_t max_queued_rexmit_bytes;
+  size_t max_queued_rexmit_msgs;
   int terminate;
   struct thread_state1 *ts;
   os_mutex lock;
   os_cond cond;
   ddsi_tran_conn_t tev_conn;
+  os_uint32 auxiliary_bandwidth_limit;
 };
 
 static void *xevent_thread (struct xeventq *xevq);
-static os_int64 earliest_in_xeventq (struct xeventq *evq);
+static nn_mtime_t earliest_in_xeventq (struct xeventq *evq);
 static int msg_xevents_cmp (const void *a, const void *b);
+static int compare_xevent_tsched (const void *va, const void *vb);
 
 static const ut_avlTreedef_t msg_xevents_treedef = UT_AVL_TREEDEF_INITIALIZER_INDKEY (offsetof (struct xevent_nt, u.msg_rexmit.msg_avlnode), offsetof (struct xevent_nt, u.msg_rexmit.msg), msg_xevents_cmp, 0);
+
+static const ut_fibheapDef_t evq_xevents_fhdef = UT_FIBHEAPDEF_INITIALIZER(offsetof (struct xevent, heapnode), compare_xevent_tsched);
 
 static int compare_xevent_tsched (const void *va, const void *vb)
 {
   const struct xevent *a = va;
   const struct xevent *b = vb;
-  return (a->tsched == b->tsched) ? 0 : (a->tsched < b->tsched) ? -1 : 1;
+  return (a->tsched.v == b->tsched.v) ? 0 : (a->tsched.v < b->tsched.v) ? -1 : 1;
 }
 
 static void update_rexmit_counts (struct xeventq *evq, struct xevent_nt *ev)
 {
 #if 0
-  TRACE (("ZZZ(%p,%u)", (void *) ev, ev->u.msg_rexmit.queued_rexmit_bytes));
+  TRACE (("ZZZ(%p,%"PA_PRIuSIZE")", (void *) ev, ev->u.msg_rexmit.queued_rexmit_bytes));
 #endif
   assert (ev->kind == XEVK_MSG_REXMIT);
   assert (ev->u.msg_rexmit.queued_rexmit_bytes <= evq->queued_rexmit_bytes);
@@ -260,13 +295,18 @@ static int compute_non_timed_xmit_list_size (struct xeventq *evq)
 
 #ifndef NDEBUG
 static int nontimed_xevent_in_queue (struct xeventq *evq, struct xevent_nt *ev)
-  {
+{
   struct xevent_nt *x;
+  os_mutexLock (&evq->lock);
   for (x = evq->non_timed_xmit_list_oldest; x; x = x->listnode.next)
-    {
+  {
     if (x == ev)
+    {
+      os_mutexUnlock (&evq->lock);
       return 1;
+    }
   }
+  os_mutexUnlock (&evq->lock);
   return 0;
 }
 #endif
@@ -274,7 +314,7 @@ static int nontimed_xevent_in_queue (struct xeventq *evq, struct xevent_nt *ev)
 static void free_xevent (struct xeventq *evq, struct xevent *ev)
 {
   (void) evq;
-  if (ev->tsched != TSCHED_DELETE)
+  if (ev->tsched.v != TSCHED_DELETE)
   {
     switch (ev->kind)
     {
@@ -304,6 +344,9 @@ static void free_xevent_nt (struct xeventq *evq, struct xevent_nt *ev)
       update_rexmit_counts (evq, ev);
       nn_xmsg_free (ev->u.msg_rexmit.msg);
       break;
+    case XEVK_ENTITYID:
+      nn_xmsg_free (ev->u.entityid.msg);
+      break;
   }
   os_free (ev);
 }
@@ -313,17 +356,17 @@ void delete_xevent (struct xevent *ev)
   struct xeventq *evq = ev->evq;
   os_mutexLock (&evq->lock);
   /* Can delete it only once, no matter how we implement it internally */
-  assert (ev->tsched != TSCHED_DELETE);
-  assert (TSCHED_DELETE < ev->tsched);
-  if (ev->tsched != T_NEVER)
+  assert (ev->tsched.v != TSCHED_DELETE);
+  assert (TSCHED_DELETE < ev->tsched.v);
+  if (ev->tsched.v != T_NEVER)
   {
-    ev->tsched = TSCHED_DELETE;
-    fh_decreasekey (&evq->xevents, ev);
+    ev->tsched.v = TSCHED_DELETE;
+    ut_fibheapDecreaseKey (&evq_xevents_fhdef, &evq->xevents, ev);
   }
   else
   {
-    ev->tsched = TSCHED_DELETE;
-    fh_insert (&evq->xevents, ev);
+    ev->tsched.v = TSCHED_DELETE;
+    ut_fibheapInsert (&evq_xevents_fhdef, &evq->xevents, ev);
   }
   /* TSCHED_DELETE is absolute minimum time, so chances are we need to
      wake up the thread.  The superfluous signal is harmless. */
@@ -331,55 +374,55 @@ void delete_xevent (struct xevent *ev)
   os_mutexUnlock (&evq->lock);
 }
 
-int resched_xevent_if_earlier (struct xevent *ev, os_int64 tsched)
+int resched_xevent_if_earlier (struct xevent *ev, nn_mtime_t tsched)
 {
   struct xeventq *evq = ev->evq;
   int is_resched;
   os_mutexLock (&evq->lock);
-  assert (tsched != TSCHED_DELETE);
+  assert (tsched.v != TSCHED_DELETE);
   /* If you want to delete it, you to say so by calling the right
      function. Don't want to reschedule an event marked for deletion,
      but with TSCHED_DELETE = MIN_INT64, tsched >= ev->tsched is
      guaranteed to be false. */
-  assert (tsched > TSCHED_DELETE);
-  if (tsched >= ev->tsched)
+  assert (tsched.v > TSCHED_DELETE);
+  if (tsched.v >= ev->tsched.v)
     is_resched = 0;
   else
   {
-    os_int64 tbefore = earliest_in_xeventq (evq);
-    assert (tsched != T_NEVER);
-    if (ev->tsched != T_NEVER)
+    nn_mtime_t tbefore = earliest_in_xeventq (evq);
+    assert (tsched.v != T_NEVER);
+    if (ev->tsched.v != T_NEVER)
     {
       ev->tsched = tsched;
-      fh_decreasekey (&evq->xevents, ev);
+      ut_fibheapDecreaseKey (&evq_xevents_fhdef, &evq->xevents, ev);
     }
     else
     {
       ev->tsched = tsched;
-      fh_insert (&evq->xevents, ev);
+      ut_fibheapInsert (&evq_xevents_fhdef, &evq->xevents, ev);
     }
     is_resched = 1;
-    if (tsched < tbefore)
+    if (tsched.v < tbefore.v)
       os_condSignal (&evq->cond);
   }
   os_mutexUnlock (&evq->lock);
   return is_resched;
 }
 
-static struct xevent *qxev_common (struct xeventq *evq, os_int64 tsched, enum xeventkind kind)
+static struct xevent * qxev_common (struct xeventq *evq, nn_mtime_t tsched, enum xeventkind kind)
 {
   /* qxev_common is the route by which all timed xevents are
      created. */
   struct xevent *ev = os_malloc (sizeof (*ev));
 
-  assert (tsched != TSCHED_DELETE);
+  assert (tsched.v != TSCHED_DELETE);
   ASSERT_MUTEX_HELD (&evq->lock);
 
   /* round up the scheduled time if required */
-  if (tsched != T_NEVER && config.schedule_time_rounding != 0)
+  if (tsched.v != T_NEVER && config.schedule_time_rounding != 0)
   {
-    os_int64 tsched_rounded = time_round_up (tsched, config.schedule_time_rounding);
-    TRACE (("rounded event scheduled for %lld to %lld\n", tsched, tsched_rounded));
+    nn_mtime_t tsched_rounded = mtime_round_up (tsched, config.schedule_time_rounding);
+    TRACE (("rounded event scheduled for %"PA_PRId64" to %"PA_PRId64"\n", tsched.v, tsched_rounded.v));
     tsched = tsched_rounded;
   }
 
@@ -398,14 +441,17 @@ static struct xevent_nt *qxev_common_nt (struct xeventq *evq, enum xeventkind_nt
   return ev;
 }
 
-static os_int64 earliest_in_xeventq (struct xeventq *evq)
+static nn_mtime_t earliest_in_xeventq (struct xeventq *evq)
 {
   struct xevent *min;
   ASSERT_MUTEX_HELD (&evq->lock);
-  if ((min = fh_min (&evq->xevents)) == NULL)
-    return T_NEVER;
-  else
+  if ((min = ut_fibheapMin (&evq_xevents_fhdef, &evq->xevents)) != NULL)
     return min->tsched;
+  else
+  {
+    nn_mtime_t r = { T_NEVER };
+    return r;
+  }
 }
 
 static void qxev_insert (struct xevent *ev)
@@ -414,11 +460,11 @@ static void qxev_insert (struct xevent *ev)
      event administration. */
   struct xeventq *evq = ev->evq;
   ASSERT_MUTEX_HELD (&evq->lock);
-  if (ev->tsched != T_NEVER)
+  if (ev->tsched.v != T_NEVER)
   {
-    os_int64 tbefore = earliest_in_xeventq (evq);
-    fh_insert (&evq->xevents, ev);
-    if (ev->tsched < tbefore)
+    nn_mtime_t tbefore = earliest_in_xeventq (evq);
+    ut_fibheapInsert (&evq_xevents_fhdef, &evq->xevents, ev);
+    if (ev->tsched.v < tbefore.v)
       os_condSignal (&evq->cond);
   }
 }
@@ -440,15 +486,16 @@ static int msg_xevents_cmp (const void *a, const void *b)
 struct xeventq * xeventq_new
 (
   ddsi_tran_conn_t conn,
-  unsigned max_queued_rexmit_bytes,
-  unsigned max_queued_rexmit_msgs
+  size_t max_queued_rexmit_bytes,
+  size_t max_queued_rexmit_msgs,
+  os_uint32 auxiliary_bandwidth_limit
 )
 {
   struct xeventq *evq = os_malloc (sizeof (*evq));
   /* limit to 2GB to prevent overflow (4GB - 64kB should be ok, too) */
   if (max_queued_rexmit_bytes > 2147483648u)
     max_queued_rexmit_bytes = 2147483648u;
-  fh_init (&evq->xevents, offsetof (struct xevent, heapnode), compare_xevent_tsched);
+  ut_fibheapInit (&evq_xevents_fhdef, &evq->xevents);
   ut_avlInit (&msg_xevents_treedef, &evq->msg_xevents);
   evq->non_timed_xmit_list_oldest = NULL;
   evq->non_timed_xmit_list_newest = NULL;
@@ -456,31 +503,34 @@ struct xeventq * xeventq_new
   evq->ts = NULL;
   evq->max_queued_rexmit_bytes = max_queued_rexmit_bytes;
   evq->max_queued_rexmit_msgs = max_queued_rexmit_msgs;
+  evq->auxiliary_bandwidth_limit = auxiliary_bandwidth_limit;
   evq->queued_rexmit_bytes = 0;
   evq->queued_rexmit_msgs = 0;
   evq->tev_conn = conn;
-  os_mutexInit (&evq->lock, &gv.mattr);
-  os_condInit (&evq->cond, &evq->lock, &gv.cattr);
+  os_mutexInit (&evq->lock, NULL);
+  os_condInit (&evq->cond, &evq->lock, NULL);
   return evq;
 }
 
 int xeventq_start (struct xeventq *evq, const char *name)
 {
-  char *evqname;
+  char * evqname = "tev";
   assert (evq->ts == NULL);
 
-  if (name == NULL)
-    evqname = "tev";
-  else if ((evqname = os_malloc (strlen (name) + 5)) == NULL)
-    return ERR_OUT_OF_MEMORY;
-  else
-    sprintf (evqname, "tev.%s", name);
+  if (name)
+  {
+    os_size_t slen = strlen (name) + 5;
+    evqname = os_malloc (slen);
+    snprintf (evqname, slen, "tev.%s", name);
+  }
 
   evq->terminate = 0;
   evq->ts = create_thread (evqname, (void * (*) (void *)) xevent_thread, evq);
 
-  if (name != NULL)
+  if (name)
+  {
     os_free (evqname);
+  }
   return (evq->ts == NULL) ? ERR_UNSPECIFIED : 0;
 }
 
@@ -499,8 +549,23 @@ void xeventq_free (struct xeventq *evq)
 {
   struct xevent *ev;
   assert (evq->ts == NULL);
-  while ((ev = fh_extractmin (&evq->xevents)) != NULL)
-    free_xevent (evq, ev);
+  while ((ev = ut_fibheapExtractMin (&evq_xevents_fhdef, &evq->xevents)) != NULL)
+  {
+    if (ev->tsched.v == TSCHED_DELETE || ev->kind != XEVK_CALLBACK)
+      free_xevent (evq, ev);
+    else
+    {
+      ev->tsched.v = T_NEVER;
+      ev->u.callback.cb (ev, ev->u.callback.arg, ev->tsched);
+      if (ev->tsched.v != TSCHED_DELETE)
+      {
+        union { void *v; void (*f) (struct xevent *ev, void *arg, nn_mtime_t tnow); } fp;
+        fp.f = ev->u.callback.cb;
+        NN_WARNING1("xeventq_free: callback %p did not schedule deletion as required, deleting event anyway\n", fp.v);
+        delete_xevent (ev);
+      }
+    }
+  }
   while (!non_timed_xmit_list_is_empty(evq))
     free_xevent_nt (evq, getnext_from_non_timed_xmit_list (evq));
   assert (ut_avlIsEmpty (&evq->msg_xevents));
@@ -511,45 +576,45 @@ void xeventq_free (struct xeventq *evq)
 
 /* EVENT QUEUE EVENT HANDLERS ******************************************************/
 
-static os_size_t handle_xevk_msg (struct nn_xpack *xp, struct xevent_nt *ev, UNUSED_ARG (os_int64 tnow))
+static void handle_xevk_msg (struct nn_xpack *xp, struct xevent_nt *ev)
 {
   assert (!nontimed_xevent_in_queue (ev->evq, ev));
-
-  nn_xpack_addmsg (xp, ev->u.msg.msg);
-  os_free (ev);
-  return 0;
+  nn_xpack_addmsg (xp, ev->u.msg.msg, 0);
 }
 
-static os_size_t handle_xevk_msg_rexmit (struct nn_xpack *xp, struct xevent_nt *ev, UNUSED_ARG (os_int64 tnow))
+static void handle_xevk_msg_rexmit (struct nn_xpack *xp, struct xevent_nt *ev)
 {
   struct xeventq *evq = ev->evq;
 
   assert (!nontimed_xevent_in_queue (ev->evq, ev));
 
-  nn_xpack_addmsg (xp, ev->u.msg_rexmit.msg);
+  nn_xpack_addmsg (xp, ev->u.msg_rexmit.msg, 0);
 
   /* FIXME: less than happy about having to relock the queue for a
      little while here */
   os_mutexLock (&evq->lock);
   update_rexmit_counts (evq, ev);
   os_mutexUnlock (&evq->lock);
-
-  os_free (ev);
-  return 0;
 }
 
-static os_size_t handle_xevk_heartbeat (struct nn_xpack *xp, struct xevent *ev, os_int64 tnow)
+static void handle_xevk_entityid (struct nn_xpack *xp, struct xevent_nt *ev)
+{
+  assert (!nontimed_xevent_in_queue (ev->evq, ev));
+  nn_xpack_addmsg (xp, ev->u.entityid.msg, 0);
+}
+
+static void handle_xevk_heartbeat (struct nn_xpack *xp, struct xevent *ev, nn_mtime_t tnow /* monotonic */)
 {
   struct nn_xmsg *msg;
   struct writer *wr;
-  os_int64 t_next;
+  nn_mtime_t t_next;
   int hbansreq = 0;
 
   if ((wr = ephash_lookup_writer_guid (&ev->u.heartbeat.wr_guid)) == NULL)
   {
     TRACE (("heartbeat(wr %x:%x:%x:%x) writer gone\n",
             PGUID (ev->u.heartbeat.wr_guid)));
-    return 0;
+    return;
   }
 
   assert (wr->reliable);
@@ -558,26 +623,26 @@ static os_size_t handle_xevk_heartbeat (struct nn_xpack *xp, struct xevent *ev, 
   {
     hbansreq = 1; /* just for trace */
     msg = NULL; /* Need not send it now, and no need to schedule it for the future */
-    t_next = T_NEVER;
+    t_next.v = T_NEVER;
   }
   else if (!writer_hbcontrol_must_send (wr, tnow))
   {
     hbansreq = 1; /* just for trace */
     msg = NULL;
-    t_next = tnow + writer_hbcontrol_intv (wr, tnow);
+    t_next.v = tnow.v + writer_hbcontrol_intv (wr, tnow);
   }
   else
   {
     hbansreq = writer_hbcontrol_ack_required (wr, tnow);
     msg = writer_hbcontrol_create_heartbeat (wr, tnow, hbansreq, 0);
-    t_next = tnow + writer_hbcontrol_intv (wr, tnow);
+    t_next.v = tnow.v + writer_hbcontrol_intv (wr, tnow);
   }
 
-  TRACE (("heartbeat(wr %x:%x:%x:%x%s) %s, resched in %g s (min-ack %lld%s, avail-seq %lld, xmit %lld)\n",
+  TRACE (("heartbeat(wr %x:%x:%x:%x%s) %s, resched in %g s (min-ack %"PA_PRId64"%s, avail-seq %"PA_PRId64", xmit %lld)\n",
           PGUID (wr->e.guid),
           hbansreq ? "" : " final",
           msg ? "sent" : "suppressed",
-          (t_next == T_NEVER) ? POS_INFINITY_DOUBLE : (t_next - tnow) / 1e9,
+          (t_next.v == T_NEVER) ? POS_INFINITY_DOUBLE : (double)(t_next.v - tnow.v) / 1e9,
           ut_avlIsEmpty (&wr->readers) ? (os_int64) -1 : ((struct wr_prd_match *) ut_avlRoot (&wr_readers_treedef, &wr->readers))->min_seq,
           ut_avlIsEmpty (&wr->readers) || ((struct wr_prd_match *) ut_avlRoot (&wr_readers_treedef, &wr->readers))->all_have_replied_to_hb ? "" : "!",
           whc_empty (wr->whc) ? (os_int64) -1 : whc_max_seq (wr->whc), wr->seq_xmit));
@@ -591,8 +656,9 @@ static os_size_t handle_xevk_heartbeat (struct nn_xpack *xp, struct xevent *ev, 
      Besides, nn_xpack_addmsg may sleep for bandwidth-limited channels
      and we certainly don't want to hold the lock during that time. */
   if (msg)
-    nn_xpack_addmsg (xp, msg);
-  return 0;
+  {
+    nn_xpack_addmsg (xp, msg, 0);
+  }
 }
 
 static os_int64 next_deliv_seq (const struct proxy_writer *pwr, const os_int64 next_seq)
@@ -635,7 +701,7 @@ static os_int64 next_deliv_seq (const struct proxy_writer *pwr, const os_int64 n
      FIXME: next_seq - #dqueue could probably be used instead,
      provided #dqueue is decremented after delivery, rather than
      before delivery. */
-  const os_uint32 lw = atomic_read_u32 (&pwr->next_deliv_seq_lowword);
+  const os_uint32 lw = pa_ld32 (&pwr->next_deliv_seq_lowword);
   os_int64 next_deliv_seq;
   next_deliv_seq = (next_seq & ~(os_int64) 0xffffffff) | lw;
   if (next_deliv_seq > next_seq)
@@ -644,19 +710,19 @@ static os_int64 next_deliv_seq (const struct proxy_writer *pwr, const os_int64 n
   return next_deliv_seq;
 }
 
-static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pwr_rd_match *rwn, int *isnack)
+static void add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pwr_rd_match *rwn, os_int64 *nack_seq)
 {
   /* If pwr->have_seen_heartbeat == 0, no heartbeat has been received
      by this proxy writer yet, so we'll be sending a pre-emptive
      AckNack.  NACKing data now will most likely cause another NACK
      upon reception of the first heartbeat, and so cause the data to
      be resent twice. */
-  const int max_numbits = 256; /* as spec'd */
+  const unsigned max_numbits = 256; /* as spec'd */
   int notail = 0; /* all known missing ones are nack'd */
   struct nn_reorder *reorder;
   AckNack_t *an;
   struct nn_xmsg_marker sm_marker;
-  int i, numbits;
+  unsigned i, numbits;
   os_int64 base;
   unsigned ui;
 
@@ -672,7 +738,7 @@ static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pw
 
   /* if in sync, look at proxy writer status, else look at
      proxy-writer--reader match status */
-  if (rwn->in_sync)
+  if (rwn->in_sync != PRMSS_OUT_OF_SYNC)
   {
     reorder = pwr->reorder;
     if (!config.late_ack_mode)
@@ -703,8 +769,8 @@ static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pw
   /* Scan through bitmap, cutting it off at the first missing sample
      that the defragmenter knows about. Then note the sequence number
      & add a NACKFRAG for that sample */
-  nackfrag_numbits = 0;
-  for (i = 0; i < numbits && nackfrag_numbits <= 0; i++)
+  nackfrag_numbits = -1;
+  for (i = 0; i < numbits && nackfrag_numbits < 0; i++)
   {
     os_uint32 fragnum;
     nackfrag_seq = base + i;
@@ -716,9 +782,10 @@ static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pw
       fragnum = 0xffffffff;
     nackfrag_numbits = nn_defrag_nackmap (pwr->defrag, nackfrag_seq, fragnum, &nackfrag.set, max_numbits);
   }
-  if (nackfrag_numbits > 0) {
+  if (nackfrag_numbits >= 0) {
     /* Cut the NACK short, NACKFRAG will be added after the NACK's is
        properly formatted */
+    assert (i > 0);
     an->readerSNState.numbits = numbits = i - 1;
   }
 
@@ -730,10 +797,10 @@ static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pw
      Who cares about an answer to an acknowledgment!? -- actually,
      that'd a very useful feature in combination with directed
      heartbeats, or somesuch, to get reliability guarantees. */
-  *isnack = (numbits > 0);
+  *nack_seq = (numbits > 0) ? base + numbits : 0;
   if (!pwr->have_seen_heartbeat) {
     /* We must have seen a heartbeat for us to consider setting FINAL */
-  } else if (*isnack && base + numbits <= pwr->last_seq) {
+  } else if (*nack_seq && base + numbits <= pwr->last_seq) {
     /* If it's a NACK and it doesn't cover samples all the way up to
        the highest known sequence number, there's some reason to expect
        we may to do another round.  For which we need a Heartbeat.
@@ -750,7 +817,7 @@ static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pw
      although RTI seems to think otherwise). */
   if (numbits == 0 && config.acknack_numbits_emptyset > 0)
   {
-    an->readerSNState.numbits = config.acknack_numbits_emptyset;
+    an->readerSNState.numbits = (unsigned) config.acknack_numbits_emptyset;
     nn_bitset_zero (an->readerSNState.numbits, an->readerSNState.bits);
   }
 
@@ -759,8 +826,6 @@ static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pw
     nn_count_t *countp =
       (nn_count_t *) ((char *) an + offsetof (AckNack_t, readerSNState) +
                       NN_SEQUENCE_NUMBER_SET_SIZE (an->readerSNState.numbits));
-    if (rwn->count == DDSI_COUNT_MAX)
-      NN_FATAL0 ("reader reached maximum acknack sequence number");
     *countp = ++rwn->count;
 
     /* Reset submessage size, now that we know the real size, and update
@@ -768,7 +833,7 @@ static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pw
     nn_xmsg_shrink (msg, sm_marker, ACKNACK_SIZE (an->readerSNState.numbits));
     nn_xmsg_submsg_setnext (msg, sm_marker);
 
-    TRACE (("acknack %x:%x:%x:%x -> %x:%x:%x:%x: #%d:%lld/%d:",
+    TRACE (("acknack %x:%x:%x:%x -> %x:%x:%x:%x: #%d:%"PA_PRId64"/%d:",
             PGUID (rwn->rd_guid), PGUID (pwr->e.guid), rwn->count,
             base, an->readerSNState.numbits));
     for (ui = 0; ui != an->readerSNState.numbits; ui++)
@@ -781,9 +846,9 @@ static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pw
 
     /* We use 0-based fragment numbers, but externally have to provide
        1-based fragment numbers */
-    assert (nackfrag_numbits == (int) nackfrag.set.numbits);
+    assert ((unsigned) nackfrag_numbits == nackfrag.set.numbits);
 
-    nf = nn_xmsg_append (msg, &sm_marker, NACKFRAG_SIZE (nackfrag_numbits));
+    nf = nn_xmsg_append (msg, &sm_marker, NACKFRAG_SIZE ((unsigned) nackfrag_numbits));
 
     nn_xmsg_submsg_init (msg, sm_marker, SMID_NACK_FRAG);
     nf->readerId = nn_hton_entityid (rwn->rd_guid.entityid);
@@ -796,22 +861,19 @@ static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pw
     {
       nn_count_t *countp =
         (nn_count_t *) ((char *) nf + offsetof (NackFrag_t, fragmentNumberState) + NN_FRAGMENT_NUMBER_SET_SIZE (nf->fragmentNumberState.numbits));
-      if (pwr->nackfragcount == DDSI_COUNT_MAX)
-        NN_FATAL0 ("proxy writer reached maximum nackfrag sequence number");
       *countp = ++pwr->nackfragcount;
       nn_xmsg_submsg_setnext (msg, sm_marker);
 
-      TRACE ((" + nackfrag #%d:%lld/%u/%d:", *countp, fromSN (nf->writerSN), nf->fragmentNumberState.bitmap_base, nf->fragmentNumberState.numbits));
+      TRACE ((" + nackfrag #%d:%"PA_PRId64"/%u/%d:", *countp, fromSN (nf->writerSN), nf->fragmentNumberState.bitmap_base, nf->fragmentNumberState.numbits));
       for (ui = 0; ui != nf->fragmentNumberState.numbits; ui++)
         TRACE (("%c", nn_bitset_isset (nf->fragmentNumberState.numbits, nf->fragmentNumberState.bits, ui) ? '1' : '0'));
     }
   }
 
   TRACE (("\n"));
-  return 0;
 }
 
-static os_size_t handle_xevk_acknack (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, os_int64 tnow)
+static void handle_xevk_acknack (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, nn_mtime_t tnow)
 {
   /* FIXME: ought to keep track of which NACKs are being generated in
      response to a Heartbeat.  There is no point in having multiple
@@ -823,27 +885,29 @@ static os_size_t handle_xevk_acknack (UNUSED_ARG (struct nn_xpack *xp), struct x
      favour of others, so MUST ensure that the defragmenter won't start
      threshing and fail to make progress! */
   struct proxy_writer *pwr;
-  os_sockaddr_storage addr;
   struct nn_xmsg *msg;
   struct pwr_rd_match *rwn;
+  nn_locator_t loc;
 
   if ((pwr = ephash_lookup_proxy_writer_guid (&ev->u.acknack.pwr_guid)) == NULL)
-    return 0;
+  {
+    return;
+  }
 
   os_mutexLock (&pwr->e.lock);
   if ((rwn = ut_avlLookup (&pwr_readers_treedef, &pwr->readers, &ev->u.acknack.rd_guid)) == NULL)
   {
     os_mutexUnlock (&pwr->e.lock);
-    return 0;
+    return;
   }
 
-  if (addrset_any_uc (pwr->c.as, &addr) || addrset_any_mc (pwr->c.as, &addr))
+  if (addrset_any_uc (pwr->c.as, &loc) || addrset_any_mc (pwr->c.as, &loc))
   {
-    int isnack;
+    os_int64 nack_seq;
     if ((msg = nn_xmsg_new (gv.xmsgpool, &ev->u.acknack.rd_guid.prefix, ACKNACK_SIZE_MAX, NN_XMSG_KIND_CONTROL)) == NULL)
       goto outofmem;
-    nn_xmsg_setdst1 (msg, &ev->u.acknack.pwr_guid.prefix, &addr);
-    if (config.meas_hb_to_ack_latency && rwn->hb_timestamp)
+    nn_xmsg_setdst1 (msg, &ev->u.acknack.pwr_guid.prefix, &loc);
+    if (config.meas_hb_to_ack_latency && rwn->hb_timestamp.v)
     {
       /* If HB->ACK latency measurement is enabled, and we have a
          timestamp available, add it and clear the time stamp.  There
@@ -851,10 +915,14 @@ static os_size_t handle_xevk_acknack (UNUSED_ARG (struct nn_xpack *xp), struct x
          solution for that yet ...  If adding the time stamp fails,
          too bad, but no reason to get worried. */
       nn_xmsg_add_timestamp (msg, rwn->hb_timestamp);
-      rwn->hb_timestamp = 0;
+      rwn->hb_timestamp.v = 0;
     }
-    if (add_AckNack (msg, pwr, rwn, &isnack) < 0)
-      goto outofmem;
+    add_AckNack (msg, pwr, rwn, &nack_seq);
+    if (nack_seq)
+    {
+      rwn->t_last_nack = tnow;
+      rwn->seq_last_nack = nack_seq;
+    }
     TRACE (("send acknack(rd %x:%x:%x:%x -> pwr %x:%x:%x:%x)\n",
             PGUID (ev->u.acknack.rd_guid), PGUID (ev->u.acknack.pwr_guid)));
   }
@@ -864,12 +932,13 @@ static os_size_t handle_xevk_acknack (UNUSED_ARG (struct nn_xpack *xp), struct x
             PGUID (ev->u.acknack.rd_guid), PGUID (ev->u.acknack.pwr_guid)));
     msg = NULL;
   }
-  if (!pwr->have_seen_heartbeat && tnow - rwn->tcreate <= 300 * T_SECOND)
+
+  if (!pwr->have_seen_heartbeat && tnow.v - rwn->tcreate.v <= 300 * T_SECOND)
   {
      /* Force pre-emptive AckNacks out until we receive a heartbeat,
         but let the frequency drop over time and stop after a couple
         of minutes. */
-    int intv, age = (int) ((tnow - rwn->tcreate) / T_SECOND + 1);
+    int intv, age = (int) ((tnow.v - rwn->tcreate.v) / T_SECOND + 1);
     if (age <= 10)
       intv = 1;
     else if (age <= 60)
@@ -878,29 +947,26 @@ static os_size_t handle_xevk_acknack (UNUSED_ARG (struct nn_xpack *xp), struct x
       intv = 5;
     else
       intv = 10;
-    resched_xevent_if_earlier (ev, tnow + intv * T_SECOND);
+    resched_xevent_if_earlier (ev, add_duration_to_mtime (tnow, intv * T_SECOND));
   }
   os_mutexUnlock (&pwr->e.lock);
 
   /* nn_xpack_addmsg may sleep (for bandwidth-limited channels), so
      must be outside the lock */
   if (msg)
-    nn_xpack_addmsg (xp, msg);
-  return 0;
+    nn_xpack_addmsg (xp, msg, 0);
+  return;
 
  outofmem:
   /* What to do if out of memory?  Crash or burn? */
   os_mutexUnlock (&pwr->e.lock);
-  if (msg)
-    nn_xmsg_free (msg);
-  resched_xevent_if_earlier (ev, tnow + 100 * T_MILLISECOND);
-  return 0;
+  resched_xevent_if_earlier (ev, add_duration_to_mtime (tnow, 100 * T_MILLISECOND));
 }
 
-static os_size_t handle_xevk_spdp (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, os_int64 tnow)
+
+static void handle_xevk_spdp (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, nn_mtime_t tnow)
 {
   /* Like the writer pointer in the heartbeat event, the participant pointer in the spdp event is assumed valid. */
-  const os_int64 mindelta = 10 * T_MILLISECOND;
   struct participant *pp;
   struct proxy_reader *prd;
   struct writer *spdp_wr;
@@ -913,7 +979,7 @@ static os_size_t handle_xevk_spdp (UNUSED_ARG (struct nn_xpack *xp), struct xeve
   {
     TRACE (("handle_xevk_spdp %x:%x:%x:%x - unknown guid\n",
             PGUID (ev->u.spdp.pp_guid)));
-    return 0;
+    return;
   }
 
   if ((spdp_wr = get_builtin_writer (pp, NN_ENTITYID_SPDP_BUILTIN_PARTICIPANT_WRITER)) == NULL)
@@ -942,14 +1008,14 @@ static os_size_t handle_xevk_spdp (UNUSED_ARG (struct nn_xpack *xp), struct xeve
   }
 
   /* Look up data in (transient-local) WHC by key value */
-  if ((st = serstate_new (gv.serpool, NULL)) == NULL)
+  if ((st = ddsi_serstate_new (gv.serpool, NULL)) == NULL)
   {
     TRACE (("xmit spdp: skip %x:%x:%x:%x: out of memory\n", PGUID (ev->u.spdp.pp_guid)));
     goto skip;
   }
   kh = nn_hton_guid (ev->u.spdp.pp_guid);
-  serstate_set_key (st, 1, 16, &kh);
-  sd = serstate_fix (st);
+  serstate_set_key (st, 1, &kh);
+  sd = ddsi_serstate_fix (st);
 
   os_mutexLock (&spdp_wr->e.lock);
   if ((whcn = whc_findkey (spdp_wr->whc, sd)) != NULL)
@@ -959,11 +1025,11 @@ static os_size_t handle_xevk_spdp (UNUSED_ARG (struct nn_xpack *xp), struct xeve
        updating of the last transmitted sequence number won't take
        place anyway.  Nor is it necessary to fiddle with heartbeat
        control stuff. */
-    enqueue_sample_wrlock_held (spdp_wr, whcn->seq, whcn->serdata, prd, 1);
+    enqueue_sample_wrlock_held (spdp_wr, whcn->seq, whcn->plist, whcn->serdata, prd, 1);
   }
   os_mutexUnlock (&spdp_wr->e.lock);
 
-  serdata_unref (sd);
+  ddsi_serdata_unref (sd);
 
 #ifndef NDEBUG
   if (whcn == NULL)
@@ -981,7 +1047,7 @@ static os_size_t handle_xevk_spdp (UNUSED_ARG (struct nn_xpack *xp), struct xeve
     {
       os_mutexLock (&pp->e.lock);
       os_mutexLock (&ev->evq->lock);
-      assert (ev->tsched == TSCHED_DELETE);
+      assert (ev->tsched.v == TSCHED_DELETE);
       os_mutexUnlock (&ev->evq->lock);
       os_mutexUnlock (&pp->e.lock);
     }
@@ -1002,18 +1068,29 @@ static os_size_t handle_xevk_spdp (UNUSED_ARG (struct nn_xpack *xp), struct xeve
   }
   else
   {
-    /* NB lease duration can't change */
-    os_int64 t_next = add_duration_to_time (tnow, config.spdp_interval);
-    if (t_next < tnow + mindelta)
-      t_next = tnow + mindelta;
+    /* schedule next when 80% of the interval has elapsed, or 2s
+       before the lease ends, whichever comes first (similar to PMD),
+       but never wait longer than spdp_interval */
+    const os_int64 mindelta = 10 * T_MILLISECOND;
+    const os_int64 ldur = pp->lease_duration;
+    nn_mtime_t tnext;
+    os_int64 intv;
 
+    if (ldur < 5 * mindelta / 4)
+      intv = mindelta;
+    else if (ldur < 10 * T_SECOND)
+      intv = 4 * ldur / 5;
+    else
+      intv = ldur - 2 * T_SECOND;
+    if (intv > config.spdp_interval)
+      intv = config.spdp_interval;
+    tnext = add_duration_to_mtime (tnow, intv);
     TRACE (("xmit spdp %x:%x:%x:%x to %x:%x:%x:%x (resched %gs)\n",
             PGUID (pp->e.guid),
             PGUIDPREFIX (ev->u.spdp.dest_proxypp_guid_prefix), NN_ENTITYID_SPDP_BUILTIN_PARTICIPANT_READER,
-            (t_next - tnow) / 1e9));
-    resched_xevent_if_earlier (ev, t_next);
+            (double)(tnext.v - tnow.v) / 1e9));
+    resched_xevent_if_earlier (ev, tnext);
   }
-  return 0;
 }
 
 static void write_pmd_message (struct nn_xpack *xp, struct participant *pp, unsigned pmd_kind)
@@ -1038,11 +1115,11 @@ static void write_pmd_message (struct nn_xpack *xp, struct participant *pp, unsi
   u.pmd.length = PMD_DATA_LENGTH;
   memset (u.pmd.value, 0, u.pmd.length);
 
-  serstate = serstate_new (gv.serpool, NULL);
-  serstate_append_blob (serstate, 4, sizeof (u.pad), &u.pmd);
-  serstate_set_key (serstate, 0, 16, &u.pmd);
-  serstate_set_msginfo (serstate, 0, now (), 1, NULL);
-  serdata = serstate_fix (serstate);
+  serstate = ddsi_serstate_new (gv.serpool, NULL);
+  ddsi_serstate_append_blob (serstate, 4, sizeof (u.pad), &u.pmd);
+  serstate_set_key (serstate, 0, &u.pmd);
+  ddsi_serstate_set_msginfo (serstate, 0, now (), NULL);
+  serdata = ddsi_serstate_fix (serstate);
 
   /* HORRIBLE HACK ALERT -- serstate/serdata looks at whether topic is
      a null pointer to choose PL_CDR_x encoding or regular CDR_x
@@ -1053,13 +1130,16 @@ static void write_pmd_message (struct nn_xpack *xp, struct participant *pp, unsi
 #undef PMD_DATA_LENGTH
 }
 
-static os_size_t handle_xevk_pmd_update (struct nn_xpack *xp, struct xevent *ev, os_int64 tnow)
+static void handle_xevk_pmd_update (struct nn_xpack *xp, struct xevent *ev, nn_mtime_t tnow)
 {
   struct participant *pp;
-  os_int64 intv, tnext;
+  os_int64 intv;
+  nn_mtime_t tnext;
 
   if ((pp = ephash_lookup_participant_guid (&ev->u.pmd_update.pp_guid)) == NULL)
-    return 0;
+  {
+    return;
+  }
 
   write_pmd_message (xp, pp, PARTICIPANT_MESSAGE_DATA_KIND_AUTOMATIC_LIVELINESS_UPDATE);
 
@@ -1075,21 +1155,25 @@ static os_size_t handle_xevk_pmd_update (struct nn_xpack *xp, struct xevent *ev,
   /* FIXME: need to use smallest liveliness duration of all automatic-liveliness writers */
   if (intv == T_NEVER)
   {
-    tnext = T_NEVER;
+    tnext.v = T_NEVER;
     TRACE (("resched pmd(%x:%x:%x:%x): never\n", PGUID (pp->e.guid)));
   }
   else
   {
-    tnext = tnow + intv - 2 * T_SECOND;
-    TRACE (("resched pmd(%x:%x:%x:%x): %gs\n", PGUID (pp->e.guid), (tnext - tnow) / 1e9));
+    /* schedule next when 80% of the interval has elapsed, or 2s
+       before the lease ends, whichever comes first */
+    if (intv >= 10 * T_SECOND)
+      tnext.v = tnow.v + intv - 2 * T_SECOND;
+    else
+      tnext.v = tnow.v + 4 * intv / 5;
+    TRACE (("resched pmd(%x:%x:%x:%x): %gs\n", PGUID (pp->e.guid), (double)(tnext.v - tnow.v) / 1e9));
   }
 
   resched_xevent_if_earlier (ev, tnext);
   os_mutexUnlock (&pp->e.lock);
-  return 0;
 }
 
-static os_size_t handle_xevk_end_startup_mode (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, UNUSED_ARG (os_int64 tnow))
+static void handle_xevk_end_startup_mode (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, UNUSED_ARG (nn_mtime_t tnow))
 {
   struct ephash_enum_writer est;
   struct writer *wr;
@@ -1102,68 +1186,65 @@ static os_size_t handle_xevk_end_startup_mode (UNUSED_ARG (struct nn_xpack *xp),
     writer_exit_startup_mode (wr);
   ephash_enum_writer_fini (&est);
   delete_xevent (ev);
-  return 0;
 }
 
-static os_size_t handle_xevk_delete_writer (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, UNUSED_ARG (os_int64 tnow))
+static void handle_xevk_delete_writer (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, UNUSED_ARG (nn_mtime_t tnow))
 {
   /* don't worry if the writer is already gone by the time we get here. */
   TRACE (("handle_xevk_delete_writer: %x:%x:%x:%x\n", PGUID (ev->u.delete_writer.guid)));
   delete_writer_nolinger (&ev->u.delete_writer.guid);
   delete_xevent (ev);
-  return 0;
 }
 
-static os_size_t handle_individual_xevent (struct xevent *xev, struct nn_xpack *xp, os_int64 tnow)
+static void handle_individual_xevent (struct xevent *xev, struct nn_xpack *xp, nn_mtime_t tnow)
 {
-  os_size_t nbytes = 0;
   switch (xev->kind)
   {
     case XEVK_HEARTBEAT:
-      nbytes = handle_xevk_heartbeat (xp, xev, tnow);
+      handle_xevk_heartbeat (xp, xev, tnow);
       break;
     case XEVK_ACKNACK:
-      nbytes = handle_xevk_acknack (xp, xev, tnow);
+      handle_xevk_acknack (xp, xev, tnow);
       break;
     case XEVK_SPDP:
-      nbytes = handle_xevk_spdp (xp, xev, tnow);
+      handle_xevk_spdp (xp, xev, tnow);
       break;
     case XEVK_PMD_UPDATE:
-      nbytes = handle_xevk_pmd_update (xp, xev, tnow);
+      handle_xevk_pmd_update (xp, xev, tnow);
       break;
     case XEVK_END_STARTUP_MODE:
-      nbytes = handle_xevk_end_startup_mode (xp, xev, tnow);
+      handle_xevk_end_startup_mode (xp, xev, tnow);
       break;
     case XEVK_DELETE_WRITER:
-      nbytes = handle_xevk_delete_writer (xp, xev, tnow);
+      handle_xevk_delete_writer (xp, xev, tnow);
       break;
     case XEVK_CALLBACK:
-      xev->u.callback.cb (xev, xev->u.callback.arg,tnow);
+      xev->u.callback.cb (xev, xev->u.callback.arg, tnow);
       break;
   }
-  return nbytes;
 }
 
-static os_size_t handle_individual_xevent_nt (struct xevent_nt *xev, struct nn_xpack *xp, os_int64 tnow)
+static void handle_individual_xevent_nt (struct xevent_nt *xev, struct nn_xpack *xp)
 {
-  os_size_t nbytes = 0;
   switch (xev->kind)
   {
     case XEVK_MSG:
-      nbytes = handle_xevk_msg (xp, xev, tnow);
+      handle_xevk_msg (xp, xev);
       break;
     case XEVK_MSG_REXMIT:
-      nbytes = handle_xevk_msg_rexmit (xp, xev, tnow);
+      handle_xevk_msg_rexmit (xp, xev);
+      break;
+    case XEVK_ENTITYID:
+      handle_xevk_entityid (xp, xev);
       break;
   }
-  return nbytes;
+  os_free (xev);
 }
 
-static os_size_t handle_timed_xevent (struct thread_state1 *self, struct xevent *xev, struct nn_xpack *xp, os_int64 tnow)
+static void handle_timed_xevent (struct thread_state1 *self, struct xevent *xev, struct nn_xpack *xp, nn_mtime_t tnow /* monotonic */)
 {
    /* This function handles the individual xevent irrespective of
       whether it is a "timed" or "non-timed" xevent */
-  os_size_t nbytes;
   struct xeventq *xevq = xev->evq;
 
   /* We relinquish the lock while processing the event, but require it
@@ -1171,22 +1252,20 @@ static os_size_t handle_timed_xevent (struct thread_state1 *self, struct xevent 
   ASSERT_MUTEX_HELD (&xevq->lock);
 
   assert (xev->evq == xevq);
-  assert (xev->tsched != TSCHED_DELETE);
+  assert (xev->tsched.v != TSCHED_DELETE);
 
   os_mutexUnlock (&xevq->lock);
   thread_state_awake (self);
-  nbytes = handle_individual_xevent (xev, xp, tnow);
+  handle_individual_xevent (xev, xp, tnow /* monotonic */);
   os_mutexLock (&xevq->lock);
 
   ASSERT_MUTEX_HELD (&xevq->lock);
-  return nbytes;
 }
 
-static os_size_t handle_nontimed_xevent (struct thread_state1 *self, struct xevent_nt *xev, struct nn_xpack *xp, os_int64 tnow)
+static void handle_nontimed_xevent (struct thread_state1 *self, struct xevent_nt *xev, struct nn_xpack *xp)
 {
    /* This function handles the individual xevent irrespective of
       whether it is a "timed" or "non-timed" xevent */
-  os_size_t nbytes;
   struct xeventq *xevq = xev->evq;
 
   /* We relinquish the lock while processing the event, but require it
@@ -1197,17 +1276,15 @@ static os_size_t handle_nontimed_xevent (struct thread_state1 *self, struct xeve
 
   os_mutexUnlock (&xevq->lock);
   thread_state_awake (self);
-  nbytes = handle_individual_xevent_nt (xev, xp, tnow);
+  handle_individual_xevent_nt (xev, xp);
   /* non-timed xevents are freed by the handlers */
   os_mutexLock (&xevq->lock);
 
   ASSERT_MUTEX_HELD (&xevq->lock);
-  return nbytes;
 }
 
-static os_size_t handle_xevents (struct thread_state1 *self, struct xeventq *xevq, struct nn_xpack *xp, os_int64 tnow)
+static void handle_xevents (struct thread_state1 *self, struct xeventq *xevq, struct nn_xpack *xp, nn_mtime_t tnow /* monotonic */)
 {
-  os_size_t nbytes = 0;
   int xeventsToProcess = 1;
 
   ASSERT_MUTEX_HELD (&xevq->lock);
@@ -1222,13 +1299,12 @@ static os_size_t handle_xevents (struct thread_state1 *self, struct xeventq *xev
 
   while (xeventsToProcess)
   {
-    while (earliest_in_xeventq (xevq) <= tnow)
+    while (earliest_in_xeventq(xevq).v <= tnow.v)
     {
-      struct xevent *xev = fh_extractmin (&xevq->xevents);
-      if (xev->tsched == TSCHED_DELETE)
+      struct xevent *xev = ut_fibheapExtractMin (&evq_xevents_fhdef, &xevq->xevents);
+      if (xev->tsched.v == TSCHED_DELETE)
       {
         free_xevent (xevq, xev);
-        nbytes = 0;
       }
       else
       {
@@ -1236,20 +1312,20 @@ static os_size_t handle_xevents (struct thread_state1 *self, struct xeventq *xev
            determine whether it is currently on the heap or not (i.e.,
            scheduled or not), so set to TSCHED_NEVER to indicate it
            currently isn't. */
-        xev->tsched = T_NEVER;
-        nbytes += handle_timed_xevent (self, xev, xp, tnow);
+        xev->tsched.v = T_NEVER;
+        handle_timed_xevent (self, xev, xp, tnow);
       }
 
       /* Limited-bandwidth channels means events can take a LONG time
          to process.  So read the clock more often. */
-      tnow = now ();
+      tnow = now_mt ();
     }
 
-    if (!non_timed_xmit_list_is_empty(xevq))
+    if (!non_timed_xmit_list_is_empty (xevq))
     {
       struct xevent_nt *xev = getnext_from_non_timed_xmit_list (xevq);
-      nbytes += handle_nontimed_xevent (self, xev, xp, tnow);
-      tnow = now ();
+      handle_nontimed_xevent (self, xev, xp);
+      tnow = now_mt ();
     }
     else
     {
@@ -1258,7 +1334,6 @@ static os_size_t handle_xevents (struct thread_state1 *self, struct xeventq *xev
   }
 
   ASSERT_MUTEX_HELD (&xevq->lock);
-  return nbytes;
 }
 
 static void * xevent_thread (struct xeventq * xevq)
@@ -1266,13 +1341,12 @@ static void * xevent_thread (struct xeventq * xevq)
   struct thread_state1 *self = lookup_thread_state ();
   struct nn_xpack *xp;
 
-  xp = nn_xpack_new (xevq->tev_conn);
+  xp = nn_xpack_new (xevq->tev_conn, xevq->auxiliary_bandwidth_limit);
 
   os_mutexLock (&xevq->lock);
   while (!xevq->terminate)
   {
-    os_int64 tnow = now ();
-    os_int64 twakeup;
+    nn_mtime_t tnow = now_mt ();
 
     handle_xevents (self, xevq, xp, tnow);
 
@@ -1288,25 +1362,28 @@ static void * xevent_thread (struct xeventq * xevq)
     {
       /* continue immediately */
     }
-    else if ((twakeup = earliest_in_xeventq (xevq)) == T_NEVER)
-    {
-      /* no scheduled events nor any non-timed events */
-      os_condWait (&xevq->cond, &xevq->lock);
-    }
     else
     {
-      /* Although we assumed instantaneous handling of events, we
-         don't want to sleep much longer than we have to. With
-         os_condTimedWait requiring a relative time, we don't have
-         much choice but to read the clock now */
-      tnow = now ();
-      if (twakeup > tnow)
+      nn_mtime_t twakeup = earliest_in_xeventq (xevq);
+      if (twakeup.v == T_NEVER)
       {
-        os_time to;
-        twakeup -= tnow; /* os_condTimedWait: relative timeout */
-        to.tv_sec = (int) (twakeup / 1000000000);
-        to.tv_nsec = (unsigned) (twakeup % 1000000000);
-        os_condTimedWait (&xevq->cond, &xevq->lock, &to);
+        /* no scheduled events nor any non-timed events */
+        os_condWait (&xevq->cond, &xevq->lock);
+      }
+      else
+      {
+        /* Although we assumed instantaneous handling of events, we
+           don't want to sleep much longer than we have to. With
+           os_condTimedWait requiring a relative time, we don't have
+           much choice but to read the clock now */
+        tnow = now_mt ();
+        if (twakeup.v > tnow.v)
+        {
+          os_duration to;
+          twakeup.v -= tnow.v; /* os_condTimedWait: relative timeout */
+          to = twakeup.v;
+          os_condTimedWait (&xevq->cond, &xevq->lock, to);
+        }
       }
     }
   }
@@ -1316,7 +1393,7 @@ static void * xevent_thread (struct xeventq * xevq)
   return NULL;
 }
 
-int qxev_msg (struct xeventq *evq, struct nn_xmsg *msg)
+void qxev_msg (struct xeventq *evq, struct nn_xmsg *msg)
 {
   struct xevent_nt *ev;
   assert (evq);
@@ -1326,12 +1403,65 @@ int qxev_msg (struct xeventq *evq, struct nn_xmsg *msg)
   ev->u.msg.msg = msg;
   qxev_insert_nt (ev);
   os_mutexUnlock (&evq->lock);
-  return 1;
+}
+
+void qxev_prd_entityid (struct proxy_reader * prd, nn_guid_prefix_t * id)
+{
+  struct nn_xmsg *msg;
+  struct xevent_nt *ev;
+
+  /* For connected transports, may need to establish and identify connection */
+
+  if (! gv.xevents->tev_conn->m_connless)
+  {
+    msg = nn_xmsg_new (gv.xmsgpool, id, sizeof (EntityId_t), NN_XMSG_KIND_CONTROL);
+    if (nn_xmsg_setdstPRD (msg, prd) == 0)
+    {
+      TRACE (("  qxev_prd_entityid (%x:%x:%x)\n", PGUIDPREFIX (*id)));
+      nn_xmsg_add_entityid (msg);
+      os_mutexLock (&gv.xevents->lock);
+      ev = qxev_common_nt (gv.xevents, XEVK_ENTITYID);
+      ev->u.entityid.msg = msg;
+      qxev_insert_nt (ev);
+      os_mutexUnlock (&gv.xevents->lock);
+    }
+    else
+    {
+      nn_xmsg_free (msg);
+    }
+  }
+}
+
+void qxev_pwr_entityid (struct proxy_writer * pwr, nn_guid_prefix_t * id)
+{
+  struct nn_xmsg *msg;
+  struct xevent_nt *ev;
+
+  /* For connected transports, may need to establish and identify connection */
+
+  if (! pwr->evq->tev_conn->m_connless)
+  {
+    msg = nn_xmsg_new (gv.xmsgpool, id, sizeof (EntityId_t), NN_XMSG_KIND_CONTROL);
+    if (nn_xmsg_setdstPWR (msg, pwr) == 0)
+    {
+      TRACE (("  qxev_pwr_entityid (%x:%x:%x)\n", PGUIDPREFIX (*id)));
+      nn_xmsg_add_entityid (msg);
+      os_mutexLock (&pwr->evq->lock);
+      ev = qxev_common_nt (pwr->evq, XEVK_ENTITYID);
+      ev->u.entityid.msg = msg;
+      qxev_insert_nt (ev);
+      os_mutexUnlock (&pwr->evq->lock);
+    }
+    else
+    {
+      nn_xmsg_free (msg);
+    }
+  }
 }
 
 int qxev_msg_rexmit_wrlock_held (struct xeventq *evq, struct nn_xmsg *msg, int force)
 {
-  unsigned msg_size = nn_xmsg_size (msg);
+  size_t msg_size = nn_xmsg_size (msg);
   struct xevent_nt *ev;
 
   assert (evq);
@@ -1352,7 +1482,7 @@ int qxev_msg_rexmit_wrlock_held (struct xeventq *evq, struct nn_xmsg *msg, int f
     os_mutexUnlock (&evq->lock);
     nn_xmsg_free (msg);
 #if 0
-    TRACE ((" qxev_msg_rexmit%s drop (sz %u qb %u qm %u)", force ? "!" : "",
+    TRACE ((" qxev_msg_rexmit%s drop (sz %"PA_PRIuSIZE" qb %"PA_PRIuSIZE" qm %"PA_PRIuSIZE")", force ? "!" : "",
             msg_size, evq->queued_rexmit_bytes, evq->queued_rexmit_msgs));
 #endif
     return 0;
@@ -1366,14 +1496,14 @@ int qxev_msg_rexmit_wrlock_held (struct xeventq *evq, struct nn_xmsg *msg, int f
     evq->queued_rexmit_msgs++;
     qxev_insert_nt (ev);
 #if 0
-    TRACE (("AAA(%p,%u)", (void *) ev, msg_size));
+    TRACE (("AAA(%p,%"PA_PRIuSIZE")", (void *) ev, msg_size));
 #endif
     os_mutexUnlock (&evq->lock);
-    return 1;
+    return 2;
   }
 }
 
-struct xevent *qxev_heartbeat (struct xeventq *evq, os_int64 tsched, const nn_guid_t *wr_guid)
+struct xevent *qxev_heartbeat (struct xeventq *evq, nn_mtime_t tsched, const nn_guid_t *wr_guid)
 {
   /* Event _must_ be deleted before enough of the writer is freed to
      cause trouble.  Currently used exclusively for
@@ -1388,7 +1518,7 @@ struct xevent *qxev_heartbeat (struct xeventq *evq, os_int64 tsched, const nn_gu
   return ev;
 }
 
-struct xevent *qxev_acknack (struct xeventq *evq, os_int64 tsched, const nn_guid_t *pwr_guid, const nn_guid_t *rd_guid)
+struct xevent *qxev_acknack (struct xeventq *evq, nn_mtime_t tsched, const nn_guid_t *pwr_guid, const nn_guid_t *rd_guid)
 {
   struct xevent *ev;
   assert(evq);
@@ -1401,7 +1531,7 @@ struct xevent *qxev_acknack (struct xeventq *evq, os_int64 tsched, const nn_guid
   return ev;
 }
 
-struct xevent *qxev_spdp (os_int64 tsched, const nn_guid_t *pp_guid, const nn_guid_t *dest_proxypp_guid)
+struct xevent *qxev_spdp (nn_mtime_t tsched, const nn_guid_t *pp_guid, const nn_guid_t *dest_proxypp_guid)
 {
   struct xevent *ev;
   os_mutexLock (&gv.xevents->lock);
@@ -1419,7 +1549,7 @@ struct xevent *qxev_spdp (os_int64 tsched, const nn_guid_t *pp_guid, const nn_gu
   return ev;
 }
 
-struct xevent *qxev_pmd_update (os_int64 tsched, const nn_guid_t *pp_guid)
+struct xevent *qxev_pmd_update (nn_mtime_t tsched, const nn_guid_t *pp_guid)
 {
   struct xevent *ev;
   os_mutexLock (&gv.xevents->lock);
@@ -1430,7 +1560,7 @@ struct xevent *qxev_pmd_update (os_int64 tsched, const nn_guid_t *pp_guid)
   return ev;
 }
 
-struct xevent *qxev_end_startup_mode (os_int64 tsched)
+struct xevent *qxev_end_startup_mode (nn_mtime_t tsched)
 {
   struct xevent *ev;
   os_mutexLock (&gv.xevents->lock);
@@ -1440,7 +1570,7 @@ struct xevent *qxev_end_startup_mode (os_int64 tsched)
   return ev;
 }
 
-struct xevent *qxev_delete_writer (os_int64 tsched, const nn_guid_t *guid)
+struct xevent *qxev_delete_writer (nn_mtime_t tsched, const nn_guid_t *guid)
 {
   struct xevent *ev;
   os_mutexLock (&gv.xevents->lock);
@@ -1451,7 +1581,7 @@ struct xevent *qxev_delete_writer (os_int64 tsched, const nn_guid_t *guid)
   return ev;
 }
 
-struct xevent *qxev_callback (os_int64 tsched, void (*cb) (struct xevent *ev, void *arg, os_int64 tnow), void *arg)
+struct xevent *qxev_callback (nn_mtime_t tsched, void (*cb) (struct xevent *ev, void *arg, nn_mtime_t tnow), void *arg)
 {
   struct xevent *ev;
   os_mutexLock (&gv.xevents->lock);

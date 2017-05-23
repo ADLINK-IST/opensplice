@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl.h"
@@ -202,7 +210,7 @@ void be_array::Initialize ()
          m_tc_ctor_val = (DDS_StdString) anonName + "_ctor";
          m_tc_dtor_val = (DDS_StdString) anonName + "_dtor";
          m_tc_assign_val = (DDS_StdString) anonName + "_copy";
-         if ((this->local () == I_TRUE) || isPrimitiveArray)
+         if ((this->local () == true) || isPrimitiveArray)
          {
             m_tc_put_val = (DDS_StdString) "0";
             m_tc_get_val = (DDS_StdString) "0";
@@ -901,76 +909,80 @@ void be_array::GenerateTypedefs
    {
       DDS_StdString relTypeName = BE_Globals::RelativeScope (scope, typeName);
       os << tab << "typedef " << relTypeName << " "
-      << alias.LocalName() << ";" << nl;
+                << alias.LocalName() << ";" << nl;
 
-      os << tab << "typedef " << relTypeName << DDSSliceExtension << " "
-      << alias.LocalName() << DDSSliceExtension << ";" << nl;
-
-      if (n_dims() < 3)
+      if (!BE_Globals::isocpp_new_types)
       {
-         os << tab << "typedef " << relTypeName << "_forany" << " "
-         << alias.LocalName() << "_forany" << ";" << nl;
-         os << tab << "typedef " << relTypeName << DDSVarExtension << " "
-         << alias.LocalName() << DDSVarExtension << ";" << nl;
+         os << tab << "typedef " << relTypeName << DDSSliceExtension << " "
+                  << alias.LocalName() << DDSSliceExtension << ";" << nl;
+
+         if (n_dims() < 3)
+         {
+             os << tab << "typedef " << relTypeName << "_forany" << " "
+                      << alias.LocalName() << "_forany" << ";" << nl;
+             os << tab << "typedef " << relTypeName << DDSVarExtension << " "
+                      << alias.LocalName() << DDSVarExtension << ";" << nl;
+         }
+
+         if (!IsFixedLength())
+         {
+             os << tab << "typedef " << relTypeName << DDSOutExtension << " "
+                      << alias.LocalName() << DDSOutExtension << ";" << nl;
+         }
+
+         // GENERATE T_ALLOC() AND T_FREE() AND T_ASSIGN()
+         if (alias.isAtModuleScope ())  // Declare file-scope help functions
+         {
+             fileScope = BE_Globals::UserDLL + BE_Globals::DLLExtension + "inline ";
+         }
+         else if (alias.EnclosingScope ().length () == 0)
+         {
+             fileScope = "static ";
+         }
+
+         //
+         // allocater
+         //
+         os << tab << fileScope << aliasSliceName << " * " << aliasAllocater;
+
+         os << "()" << nl
+                  << tab << "{" << nl
+                  << tab << tab << "return (" << aliasSliceName << "*)" << allocater
+                  << "();" << nl
+                  << tab << "}" << nl;
+
+         //
+         // releaser
+         //
+         os << tab << fileScope << "void " << aliasReleaser << "("
+                  << aliasSliceName << " *_slice_)"
+                  << tab << "{ " << nl
+                  << tab << tab << releaser << "(_slice_);" << nl
+                  << tab << "}" << nl;
+
+         //
+         // assigner
+         //
+         os << tab << fileScope << "void " << aliasAssigner
+                  << "(" << aliasSliceName << "* _to_, const "
+                  << aliasSliceName << "* _from_)" << nl;
+         os << tab << "{" << nl
+                  << tab << tab << assigner << "(_to_, _from_);" << nl
+                  << tab << "}" << nl;
+
+         //
+         // dup
+         //
+         os << tab << fileScope << aliasSliceName << " * " << aliasDuplicator
+                  << "(" << aliasSliceName << "* _from_)" << nl;
+         os << tab << "{" << nl
+                  << tab << tab << aliasSliceName << "* to = " << aliasAllocater
+                  << " ();" << nl
+                  << tab << tab << assigner << "(to, _from_);" << nl
+                  << tab << tab << "return to;" << nl
+                  << tab << "}" << nl;
+
       }
-
-      if (!IsFixedLength())
-      {
-         os << tab << "typedef " << relTypeName << DDSOutExtension << " "
-         << alias.LocalName() << DDSOutExtension << ";" << nl;
-      }
-
-      // GENERATE T_ALLOC() AND T_FREE() AND T_ASSIGN()
-      if (alias.isAtModuleScope ())  // Declare file-scope help functions
-      {
-         fileScope = BE_Globals::UserDLL + BE_Globals::DLLExtension + "inline ";
-      }
-      else if (alias.EnclosingScope ().length () == 0)
-      {
-         fileScope = "static ";
-      }
-
-      //
-      // allocater
-      //
-      os << tab << fileScope << aliasSliceName << " * " << aliasAllocater;
-
-      os << "()" << nl
-         << tab << "{" << nl
-         << tab << tab << "return (" << aliasSliceName << "*)" << allocater
-         << "();" << nl
-         << tab << "}" << nl;
-
-      //
-      // releaser
-      //
-      os << tab << fileScope << "void " << aliasReleaser << "("
-         << aliasSliceName << " *_slice_)"
-         << tab << "{ " << nl
-         << tab << tab << releaser << "(_slice_);" << nl
-         << tab << "}" << nl;
-
-      //
-      // assigner
-      //
-      os << tab << fileScope << "void " << aliasAssigner
-         << "(" << aliasSliceName << "* _to_, const "
-         << aliasSliceName << "* _from_)" << nl;
-      os << tab << "{" << nl
-         << tab << tab << assigner << "(_to_, _from_);" << nl
-         << tab << "}" << nl;
-
-      //
-      // dup
-      //
-      os << tab << fileScope << aliasSliceName << " * " << aliasDuplicator
-         << "(" << aliasSliceName << "* _from_)" << nl;
-      os << tab << "{" << nl
-         << tab << tab << aliasSliceName << "* to = " << aliasAllocater
-         << " ();" << nl
-         << tab << tab << assigner << "(to, _from_);" << nl
-         << tab << tab << "return to;" << nl
-         << tab << "}" << nl;
    }
 }
 

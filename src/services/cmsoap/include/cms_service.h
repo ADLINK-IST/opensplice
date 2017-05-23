@@ -1,18 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 /**
  * @file services/cmsoap/include/cms_service.h
- * 
+ *
  * Represents the control & monitoring soap service (cmsoap).
  */
 #ifndef CMS_SERVICE_H
@@ -32,14 +40,14 @@ extern "C" {
  * - Initializes configuration.
  * - Start lease update thread.
  * - Initialize SOAP environment
- * 
+ *
  * @param uri The uri where the domain configuration will be read from.
  */
 cms_service cms_serviceNew          (const c_char* name, const c_char* uri);
 
 /**
  * Terminates and frees the supplied service.
- * 
+ *
  * @param cms The service to terminate and free.
  */
 void        cms_serviceFree         (cms_service cms);
@@ -55,19 +63,18 @@ void        cms_serviceFree         (cms_service cms);
  *    it returns NULL to the calling thread. If not, see (5).
  * 5. The service creates a new client thread and returns it to the calling
  *    thread.
- * 
+ *
  * @param cms The cmsoap service.
- * @param soap The SOAP request.
- * @return The client thread that is able to handle the request. In the 
+ * @return The client thread that is able to handle the request. In the
  *         following cases NULL is returned:
  *         - The service is terminating.
  *         - The maximum number of clients is reached.
  */
-cms_client  cms_serviceLookupClient (cms_service cms, struct soap* soap, const c_char* uri);
+cms_client  cms_serviceLookupClient (cms_service cms);
 
 /**
  * Deregisters the supplied client thread from the supplied service.
- * 
+ *
  * @param cms The cmsoap service.
  * @param client The client thread.
  */

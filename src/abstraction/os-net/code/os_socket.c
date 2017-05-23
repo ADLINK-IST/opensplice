@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -23,13 +31,16 @@
 #include "os_stdlib.h"
 #include "os_report.h"
 #include "os_heap.h"
+#include "os_errno.h"
 #include <string.h>
 
 #if (OS_SOCKET_HAS_IPV6 == 1)
 #ifndef _VXWORKS
 const os_in6_addr os_in6addr_any = IN6ADDR_ANY_INIT;
+const os_in6_addr os_in6addr_loopback = IN6ADDR_LOOPBACK_INIT;
 #else
 const os_in6_addr os_in6addr_any = { { 0 } };
+const os_in6_addr os_in6addr_loopback = { { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 } } };
 #endif
 #endif
 
@@ -90,7 +101,7 @@ os_sockaddrInit(os_sockaddr* sa,
 #if (OS_SOCKET_HAS_IPV6 == 1)
         os__sockaddrInit6(sa);
 #else
-        OS_REPORT(OS_API_INFO,"os_sockaddrInit", 0,
+        OS_REPORT(OS_ERROR,"os_sockaddrInit", 0,
                   "Unsupported parameter value: IPV6 address requested but not supported by this platform");
         os__sockaddrInit4(sa);
         result = os_resultInvalid;
@@ -146,6 +157,77 @@ os_sockaddrIPAddressEqual(const os_sockaddr* thisSock,
     return result;
 }
 
+os_equality
+os_sockaddrIpAddressCompare(const os_sockaddr* addr1,
+                            const os_sockaddr* addr2)
+{
+    os_equality result = OS_LT;
+    os_ushort port1, port2;
+    int r;
+
+#if (OS_SOCKET_HAS_IPV6 == 1)
+    os_sockaddr_in6 * thisV6, * thatV6;
+#endif
+
+    if (addr1->sa_family == addr2->sa_family)
+    {
+        if (addr1->sa_family == AF_INET)
+        {
+            /* IPv4 */
+            if (((os_sockaddr_in*)addr1)->sin_addr.s_addr ==
+                ((os_sockaddr_in*)addr2)->sin_addr.s_addr) {
+                port1 = os_sockaddrGetPort(addr1);
+                port2 = os_sockaddrGetPort(addr2);
+                if (port1 == port2) {
+                    result = OS_EQ;
+                } else {
+                    if (port1 > port2) {
+                        result = OS_GT;
+                    } else {
+                        result = OS_LT;
+                    }
+                }
+            } else {
+                if (((os_sockaddr_in*)addr1)->sin_addr.s_addr >
+                    ((os_sockaddr_in*)addr2)->sin_addr.s_addr) {
+                    result = OS_GT;
+                } else {
+                    result = OS_LT;
+                }
+            }
+        }
+#if (OS_SOCKET_HAS_IPV6 == 1)
+        else
+        {
+            /* IPv6 */
+            thisV6 = (os_sockaddr_in6*) addr1;
+            thatV6 = (os_sockaddr_in6*) addr2;
+            r = memcmp(&thisV6->sin6_addr.s6_addr, &thatV6->sin6_addr.s6_addr, sizeof(unsigned char) * 16);
+            if (r == 0) {
+                port1 = os_sockaddrGetPort(addr1);
+                port2 = os_sockaddrGetPort(addr2);
+                if (port1 == port2) {
+                    result = OS_EQ;
+                } else {
+                    if (port1 > port2) {
+                        result = OS_GT;
+                    } else {
+                        result = OS_LT;
+                    }
+                }
+            } else {
+                if (r > 0) {
+                    result = OS_GT;
+                } else {
+                    result = OS_LT;
+                }
+            }
+        }
+#endif
+    }
+    return result;
+}
+
 /**
 * Checks two socket IP host addresses for be on the same subnet, considering the given subnetmask.
 * It will not consider the possibility of IPv6 mapped IPv4 addresses or anything arcane like that.
@@ -161,7 +243,7 @@ os_sockaddrSameSubnet(const os_sockaddr* thisSock,
 {
     os_boolean result = OS_FALSE;
 #if (OS_SOCKET_HAS_IPV6 == 1)
-    os_sockaddr_in6 * thisV6, * thatV6, *maskV6;
+    os_sockaddr_in6 thisV6, thatV6, *maskV6;
 #endif
 
     if (thisSock->sa_family == thatSock->sa_family &&
@@ -177,16 +259,17 @@ os_sockaddrSameSubnet(const os_sockaddr* thisSock,
 #if (OS_SOCKET_HAS_IPV6 == 1)
         else
         {
-            int i;
+            size_t i, size;
             /* IPv6 */
-            thisV6 = (os_sockaddr_in6*) thisSock;
-            thatV6 = (os_sockaddr_in6*) thatSock;
-            maskV6 = (os_sockaddr_in6*) thatSock;
-            for( i=0; i < 16;i++){
-                thisV6->sin6_addr.s6_addr[i] &= maskV6->sin6_addr.s6_addr[i];
-                thatV6->sin6_addr.s6_addr[i] &= maskV6->sin6_addr.s6_addr[i];
+            memcpy(&thisV6, thisSock, sizeof(thisV6));
+            memcpy(&thatV6, thatSock, sizeof(thatV6));
+            maskV6 = (os_sockaddr_in6*) mask;
+            size = sizeof(thisV6.sin6_addr.s6_addr);
+            for (i=0; i < size; i++) {
+                thisV6.sin6_addr.s6_addr[i] &= maskV6->sin6_addr.s6_addr[i];
+                thatV6.sin6_addr.s6_addr[i] &= maskV6->sin6_addr.s6_addr[i];
             }
-            result = (memcmp(&thisV6->sin6_addr.s6_addr, &thatV6->sin6_addr.s6_addr, sizeof(unsigned char) * 16) ?
+            result = (memcmp(&thisV6.sin6_addr.s6_addr, &thatV6.sin6_addr.s6_addr, size) ?
                      OS_FALSE : OS_TRUE);
         }
 #endif
@@ -274,7 +357,7 @@ os_sockaddrStringToAddress(const char *addressString,
 #if (OS_SOCKET_HAS_IPV6 == 1)
         /* Try and parse as an IPv6 address */
         sslen = sizeof(os_sockaddr_in6);
-        memset(addressOut, 0, sslen);
+        memset(addressOut, 0, (unsigned) sslen);
 #ifdef WIN32
         if (WSAStringToAddress((LPTSTR) addressString, AF_INET6, NULL, (os_sockaddr*)addressOut, &sslen) == 0)
         {
@@ -292,7 +375,7 @@ os_sockaddrStringToAddress(const char *addressString,
     else
     {
         sslen = sizeof(os_sockaddr_in);
-        memset(addressOut, 0, sslen);
+        memset(addressOut, 0, (unsigned) sslen);
         ((os_sockaddr_in*)addressOut)->sin_family = AF_INET;
         ((os_sockaddr_in*)addressOut)->sin_addr.s_addr = ipv4IntAddress;
         result = OS_TRUE;
@@ -312,7 +395,7 @@ os_sockaddrStringToAddress(const char *addressString,
         retCode = getaddrinfo(addressString, NULL, &template, &resultList);
         if (retCode != 0)
         {
-            OS_REPORT_2(OS_WARNING,"os_sockaddrStringToAddress", 0,
+            OS_REPORT(OS_DEBUG,"os_sockaddrStringToAddress", 0,
                 "error calling getaddrinfo(\"%s\"): %s",
                 addressString, gai_strerror(retCode));
         }
@@ -328,21 +411,14 @@ os_sockaddrStringToAddress(const char *addressString,
             }
             else
             {
-                OS_REPORT_1(OS_WARNING,"os_sockaddrStringToAddress", 0,
+                OS_REPORT(OS_DEBUG,"os_sockaddrStringToAddress", 0,
                       "could not lookup host \"%s\"",
                       addressString);
             }
         }
 #else
-        isIPv4 = OS_FALSE; /* Assign just to avoid unused arg warning */
+        OS_UNUSED_ARG(isIPv4);
 #endif
-    }
-
-    if (!result)
-    {
-        OS_REPORT_1(OS_WARNING,"os_sockaddrStringToAddress", 0,
-            "ignoring invalid networking address %s",
-            addressString);
     }
 
     return result;
@@ -401,13 +477,13 @@ os_sockaddrSizeof(
             break;
         default:
 #if (OS_SOCKET_HAS_IPV6 == 1)
-            OS_REPORT_3(OS_API_INFO,"os_sockaddrSizeof", 0,
-                "Unkown address family specified: %hu. Should be AF_INET (%hu) or AF_INET6 (%hu)",
-                sa->sa_family, AF_INET, AF_INET6);
+            OS_REPORT(OS_ERROR,"os_sockaddrSizeof", 0,
+                "Unkown address family specified: %d. Should be AF_INET (%d) or AF_INET6 (%d)",
+                (int)sa->sa_family, AF_INET, AF_INET6);
 #else
-            OS_REPORT_2(OS_API_INFO,"os_sockaddrSizeof", 0,
-                "Unkown address family specified: %hu. Should be AF_INET (%hu)",
-                sa->sa_family, AF_INET);
+            OS_REPORT(OS_ERROR,"os_sockaddrSizeof", 0,
+                "Unkown address family specified: %d. Should be AF_INET (%d)",
+                (int)sa->sa_family, AF_INET);
 #endif
             result = 0;
             break;
@@ -494,33 +570,33 @@ os_sockaddrAddressToString(const os_sockaddr* sa,
 
     os_strncpy(buffer, "Unknown address family", buflen);
 
-    structLength = (sa->sa_family == AF_INET6 ? sizeof (os_sockaddr_in6) : sizeof (os_sockaddr_in));
-    if (errorCode = getnameinfo(sa,
-                   structLength,
-                   buffer,
-                   buflen,
-                   NULL,
-                   0,
-                   NI_NUMERICHOST))
-    {
-        char* errorString;
-        errorString = os_reportErrnoToString(os_sockError());
-        OS_REPORT_2(OS_ERROR,"os_sockaddrAddressToString", 0,
-                "error calling getnameinfo to stringify network address. Error: %d (%s)",
-                WSAGetLastError(), errorString);
-        os_free(errorString);
+    if ((sa->sa_family == AF_INET) || (sa->sa_family == AF_INET6)) {
+        structLength = (sa->sa_family == AF_INET6 ? sizeof (os_sockaddr_in6) : sizeof (os_sockaddr_in));
+        if (errorCode = getnameinfo(sa,
+                structLength,
+                buffer,
+                (DWORD)buflen,
+                NULL,
+                0,
+                NI_NUMERICHOST))
+        {
+            OS_REPORT(OS_ERROR,"os_sockaddrAddressToString", 0,
+                    "error calling getnameinfo to stringify network address. Error: %d (%s)",
+                    os_getErrno(), os_strError(os_getErrno()));
+        }
     }
 #else
+    assert (buflen <= 0x7fffffff);
     switch(sa->sa_family) {
         case AF_INET:
             OS_INET_NTOP(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr),
-                    buffer, buflen);
+                    buffer, (socklen_t) buflen);
             break;
 
 #if (OS_SOCKET_HAS_IPV6 == 1)
         case AF_INET6:
             OS_INET_NTOP(AF_INET6, &(((os_sockaddr_in6 *)sa)->sin6_addr),
-                    buffer, buflen);
+                    buffer, (socklen_t) buflen);
             break;
 #endif
 
@@ -550,7 +626,7 @@ os_sockaddrAddressPortToString(
     case AF_INET6:
       if(buflen){
           buffer[0] = '[';
-          os_sockaddrAddressToString (sa, buffer + 1, buflen);
+          os_sockaddrAddressToString (sa, buffer + 1, buflen - 1);
           pos = strlen (buffer);
           snprintf (buffer + pos, buflen - pos,
                     "]:%hu", ntohs (((os_sockaddr_in6 *) sa)->sin6_port));

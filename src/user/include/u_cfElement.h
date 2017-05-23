@@ -1,18 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef U_CFELEMENT_H
 #define U_CFELEMENT_H
 
-#include "c_typebase.h"
+#include "u_types.h"
 #include "c_iterator.h"
 
 #include "u_cfAttribute.h"
@@ -63,7 +71,7 @@ u_cfElementFree(
  */
 OS_API c_iter
 u_cfElementGetChildren(
-    u_cfElement element);
+    const u_cfElement element);
 
 /**
  * \brief Returns a collection of all attributes of this element.
@@ -78,7 +86,7 @@ u_cfElementGetChildren(
  */
 OS_API c_iter
 u_cfElementGetAttributes(
-    u_cfElement element);
+    const u_cfElement element);
 
 /**
  * \brief Returns a proxy to the configuration attribute of the given element,
@@ -97,8 +105,8 @@ u_cfElementGetAttributes(
  */
 OS_API u_cfAttribute
 u_cfElementAttribute(
-    u_cfElement element,
-    const c_char *name);
+    const u_cfElement element,
+    const os_char *name);
 
 /**
  * \brief Retrieves the specified attribute value as a string.
@@ -114,11 +122,11 @@ u_cfElementAttribute(
  *               as string type
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfElementAttributeStringValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_char **str);
+    const u_cfElement element,
+    const os_char *attributeName,
+    os_char **str);
 
 /**
  * \brief Retrieves the specified attribute value as a boolean.
@@ -137,11 +145,11 @@ u_cfElementAttributeStringValue(
  *               as boolean
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfElementAttributeBoolValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_bool *b);
+    const u_cfElement element,
+    const os_char *attributeName,
+    u_bool *b);
 
 /**
  * \brief Retrieves the specified attribute value as a long.
@@ -157,11 +165,11 @@ u_cfElementAttributeBoolValue(
  *               as long
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfElementAttributeLongValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_long *l);
+    const u_cfElement element,
+    const os_char *attributeName,
+    os_int32 *l);
 
 /**
  * \brief Retrieves the specified attribute value as unsigned long with as input
@@ -179,11 +187,11 @@ u_cfElementAttributeLongValue(
  *               as unsigned long
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfElementAttributeSizeValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_size *size);
+    const u_cfElement element,
+    const os_char *attributeName,
+    u_size *size);
 
 /**
  * \brief Retrieves the specified attribute value as unsigned long.
@@ -199,11 +207,11 @@ u_cfElementAttributeSizeValue(
  *               as unsigned long
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfElementAttributeULongValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_ulong *ul);
+    const u_cfElement element,
+    const os_char *attributeName,
+    os_uint32 *ul);
 
 /**
  * \brief Retrieves the specified attribute value as floating point.
@@ -219,11 +227,11 @@ u_cfElementAttributeULongValue(
  *               as floating point
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfElementAttributeFloatValue(
-    u_cfElement element,
-    const c_char *attributeName,
-    c_float *f);
+    const u_cfElement element,
+    const os_char *attributeName,
+    os_float *f);
 
 /**
  * \brief Returns an collection containing proxies to configuration nodes selected by
@@ -251,8 +259,8 @@ u_cfElementAttributeFloatValue(
  */
 OS_API c_iter
 u_cfElementXPath(
-    u_cfElement element,
-    const c_char *xpathExpr);
+    const u_cfElement element,
+    const os_char *xpathExpr);
 
 #undef OS_API
 

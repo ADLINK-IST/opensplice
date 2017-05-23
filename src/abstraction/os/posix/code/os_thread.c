@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file os/posix/code/os_thread.c
@@ -16,6 +24,7 @@
  */
 
 #include "os_thread.h"
+#include "os_errno.h"
 #include "os_heap.h"
 #include "os_report.h"
 #include "os_process.h"
@@ -25,7 +34,6 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <assert.h>
-#include <errno.h>
 #include <unistd.h>
 #ifndef PIKEOS_POSIX
 #include <strings.h>
@@ -47,6 +55,14 @@ typedef struct {
     void *(*startRoutine)(void *);
 } os_threadContext;
 
+
+
+typedef struct {
+    void *pthreadMem;
+    os_threadPrivMemDestructor destructor;
+    void *userArgs;
+} os_threadRegisteredPrivMem;
+
 typedef struct {
 #ifndef INTEGRITY
     sigset_t oldMask;
@@ -62,6 +78,8 @@ static os_threadHook os_threadCBs;
 #ifndef INTEGRITY
 static sigset_t os_threadBlockAllMask;
 #endif
+
+static void os__threadMemFree (os_int32 index, os_threadRegisteredPrivMem *pthreadMemArray);
 
 /** \brief Initialize the thread private memory array
  *
@@ -82,11 +100,14 @@ os_threadMemInit (
 {
     void *pthreadMemArray;
 
-    pthreadMemArray = os_malloc (sizeof(void *) * OS_THREAD_MEM_ARRAY_SIZE);
+    pthreadMemArray = os_malloc (sizeof(os_threadRegisteredPrivMem) * OS_THREAD_MEM_ARRAY_SIZE);
     if (pthreadMemArray != NULL) {
-        memset (pthreadMemArray, 0, sizeof(void *) * OS_THREAD_MEM_ARRAY_SIZE);
+        memset (pthreadMemArray, 0, sizeof(os_threadRegisteredPrivMem) * OS_THREAD_MEM_ARRAY_SIZE);
         if (pthread_setspecific (os_threadMemKey, pthreadMemArray) == EINVAL) {
-            OS_REPORT_1 (OS_ERROR, "os_threadMemInit", 4, "pthread_setspecific failed with error %d", EINVAL);
+            OS_REPORT (OS_ERROR, "os_threadMemInit", 4,
+                         "pthread_setspecific failed with error EINVAL (%d), "
+                         "invalid threadMemKey value", EINVAL);
+            os_free(pthreadMemArray);
         }
     } else {
         OS_REPORT (OS_ERROR, "os_threadMemInit", 3, "Out of heap memory");
@@ -111,20 +132,19 @@ static void
 os_threadMemExit(
     void)
 {
-    void **pthreadMemArray;
+    os_threadRegisteredPrivMem *pthreadMemArray;
     os_int32 i;
 
     pthreadMemArray = pthread_getspecific (os_threadMemKey);
     if (pthreadMemArray != NULL) {
         for (i = 0; i < OS_THREAD_MEM_ARRAY_SIZE; i++) {
-            if (pthreadMemArray[i] != NULL) {
-                os_free (pthreadMemArray[i]);
+            if (pthreadMemArray[i].pthreadMem != NULL) {
+                os_threadMemFree(i);
             }
         }
         os_free (pthreadMemArray);
-        pthreadMemArray = NULL;
-        if (pthread_setspecific (os_threadMemKey, pthreadMemArray) == EINVAL) {
-            OS_REPORT_1 (OS_ERROR, "os_threadMemExit", 4, "pthread_setspecific failed with error %d", EINVAL);
+        if (pthread_setspecific (os_threadMemKey, NULL) == EINVAL) {
+            OS_REPORT (OS_ERROR, "os_threadMemExit", 4, "pthread_setspecific failed with error %d", EINVAL);
         }
     }
 }
@@ -164,6 +184,39 @@ os_threadHookExit(void)
     return;
 }
 
+static
+void os_threadMemKeyDestroyCallback(void* pvData)
+{
+    /* this callback function is called by the os if the
+     * key set by os_threadMemKey is not NULL and the thread
+     * is exiting. This callback is the last possibility to prevent
+     * possible mem loss.
+     */
+    os_threadRegisteredPrivMem *pthreadMemArray = (os_threadRegisteredPrivMem*)pvData;
+    os_int32 i;
+    if (pthreadMemArray != NULL) {
+        for (i = 0; i < OS_THREAD_MEM_ARRAY_SIZE; i++) {
+            if (pthreadMemArray[i].pthreadMem != NULL) {
+                os__threadMemFree(i, pthreadMemArray);
+            }
+        }
+        os_free (pthreadMemArray);
+        pthread_setspecific(os_threadMemKey, NULL);
+    }
+}
+
+static
+void os_threadNameKeyDestroyCallback(void* pvData)
+{
+    /* this callback function is called by the os if the
+     * key set by os_threadnameKey is not NULL and the thread
+     * is exiting. This callback is the last possibility to prevent
+     * possible mem loss.
+     */
+    OS_UNUSED_ARG(pvData);
+}
+
+
 /** \brief Initialize the thread module
  *
  * \b os_threadModuleInit initializes the thread module for the
@@ -173,8 +226,8 @@ void
 os_threadModuleInit (
     void)
 {
-    pthread_key_create (&os_threadNameKey, NULL);
-    pthread_key_create (&os_threadMemKey, NULL);
+    pthread_key_create (&os_threadNameKey, os_threadNameKeyDestroyCallback);
+    pthread_key_create (&os_threadMemKey, os_threadMemKeyDestroyCallback);
 
     pthread_setspecific (os_threadNameKey, "main thread");
 
@@ -294,6 +347,11 @@ os_startRoutineWrapper (
 
     os_threadCBs.stopCb(id, os_threadCBs.stopArg);
 
+#if !LITE
+    os_report_stack_free();
+    os_reportClearApiInfo();
+#endif
+
     /* Free the thread context resources, arguments is responsibility */
     /* for the caller of os_procCreate                                */
     os_free (context->threadName);
@@ -355,6 +413,9 @@ os_threadCreate (
     }
     else
     {
+#ifdef VXWORKS_RTP
+       (void)pthread_attr_setname(&attr, name);
+#endif
        if (pthread_getschedparam(pthread_self(), &policy, &sched_param) != 0 ||
 #if !defined (OS_RTEMS_DEFS_H) && !defined (PIKEOS_POSIX)
            pthread_attr_setscope (&attr, PTHREAD_SCOPE_SYSTEM) != 0 ||
@@ -388,21 +449,21 @@ os_threadCreate (
              result = pthread_attr_setschedpolicy (&attr, SCHED_FIFO);
 
              if (result != 0) {
-                OS_REPORT_3 (OS_WARNING, "os_threadCreate", 2,
+                OS_REPORT (OS_WARNING, "os_threadCreate", 2,
                              "pthread_attr_setschedpolicy failed for SCHED_FIFO with "\
                              "error %d (%s) for thread '%s', reverting to SCHED_OTHER.",
-                             result, strerror(result), name);
+                             result, os_strError(result), name);
 
                 result = pthread_attr_setschedpolicy (&attr, SCHED_OTHER);
                 if (result != 0) {
-                   OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2, "pthread_attr_setschedpolicy failed with error %d (%s)", result, name);
+                   OS_REPORT (OS_WARNING, "os_threadCreate", 2, "pthread_attr_setschedpolicy failed with error %d (%s)", result, name);
                 }
              }
           } else {
              result = pthread_attr_setschedpolicy (&attr, SCHED_OTHER);
 
              if (result != 0) {
-                OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2,
+                OS_REPORT (OS_WARNING, "os_threadCreate", 2,
                              "pthread_attr_setschedpolicy failed with error %d (%s)",
                              result, name);
              }
@@ -411,7 +472,7 @@ os_threadCreate (
 
           if ((tattr.schedPriority < sched_get_priority_min(policy)) ||
               (tattr.schedPriority > sched_get_priority_max(policy))) {
-             OS_REPORT_1 (OS_WARNING, "os_threadCreate", 2,
+             OS_REPORT (OS_WARNING, "os_threadCreate", 2,
                           "scheduling priority outside valid range for the policy "\
                           "reverted to valid value (%s)", name);
              sched_param.sched_priority = (sched_get_priority_min(policy) +
@@ -429,10 +490,10 @@ os_threadCreate (
           /* start the thread */
           result = pthread_attr_setschedparam (&attr, &sched_param);
           if (result != 0) {
-             OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2,
+             OS_REPORT (OS_WARNING, "os_threadCreate", 2,
                           "pthread_attr_setschedparam failed with error %d (%s)",
                           result, name);
-          } 
+          }
 
           create_ret = pthread_create(threadId, &attr, os_startRoutineWrapper,
                                       threadContext);
@@ -442,17 +503,17 @@ os_threadCreate (
               */
              if((create_ret == EPERM) && (tattr.schedClass == OS_SCHED_REALTIME))
              {
-                OS_REPORT_1 (OS_WARNING, "os_threadCreate", 2,
+                OS_REPORT (OS_WARNING, "os_threadCreate", 2,
                              "pthread_create failed with SCHED_FIFO "     \
                              "for thread '%s', reverting to SCHED_OTHER.",
                              name);
                 pthread_attr_setschedpolicy (&attr, SCHED_OTHER);
                 pthread_attr_getschedpolicy(&attr, &policy);
-              
+
                 if ((tattr.schedPriority < sched_get_priority_min(policy)) ||
                     (tattr.schedPriority > sched_get_priority_max(policy)))
                 {
-                   OS_REPORT_1 (OS_WARNING, "os_threadCreate", 2,
+                   OS_REPORT (OS_WARNING, "os_threadCreate", 2,
                                 "scheduling priority outside valid range for the " \
                                 "policy reverted to valid value (%s)", name);
                    sched_param.sched_priority =
@@ -464,7 +525,7 @@ os_threadCreate (
 
                 result = pthread_attr_setschedparam (&attr, &sched_param);
                 if (result != 0) {
-                   OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2,
+                   OS_REPORT (OS_WARNING, "os_threadCreate", 2,
                                 "pthread_attr_setschedparam failed "      \
                                 "with error %d (%s)", result, name);
                 } else {
@@ -478,7 +539,7 @@ os_threadCreate (
           if(create_ret != 0){
              os_free (threadContext->threadName);
              os_free (threadContext);
-             OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2, "pthread_create failed with error %d (%s)", create_ret, name);
+             OS_REPORT (OS_WARNING, "os_threadCreate", 2, "pthread_create failed with error %d (%s)", create_ret, name);
              rv = os_resultFail;
           }
        }
@@ -533,6 +594,22 @@ os_threadFigureIdentity (
     return size;
 }
 
+os_int32
+os_threadGetThreadName (
+    os_char *buffer,
+    os_uint32 length)
+{
+    os_char *name;
+
+    assert (buffer != NULL);
+
+    if ((name = pthread_getspecific (os_threadNameKey)) == NULL) {
+        name = "";
+    }
+
+    return snprintf (buffer, length, "%s", name);
+}
+
 #ifndef VXWORKS_RTP
 /** \brief Wait for the termination of the identified thread
  *
@@ -551,7 +628,9 @@ os_threadWaitExit (
     assert (threadId);
     result = pthread_join (threadId, thread_result);
     if (result != 0) {
-        OS_REPORT_1 (OS_ERROR, "os_threadWaitExit", 2, "pthread_join failed with error %d", result);
+        /* NOTE: The below report actually is a debug output; makes no sense from
+         * a customer perspective. Made OS_INFO for now. */
+        OS_REPORT (OS_INFO, "os_threadWaitExit", 2, "pthread_join(%lu) failed with error %d", os_threadIdToInteger(threadId), result);
         rv = os_resultFail;
     } else {
         rv = os_resultSuccess;
@@ -583,27 +662,50 @@ os_threadWaitExit (
 void *
 os_threadMemMalloc (
     os_int32 index,
-    os_size_t size)
+    os_size_t size,
+    os_threadPrivMemDestructor destructor,
+    void* userArgs)
 {
-    void **pthreadMemArray;
+    os_threadRegisteredPrivMem *pthreadMemArray;
     void *threadMemLoc = NULL;
 
     if ((0 <= index) && (index < OS_THREAD_MEM_ARRAY_SIZE)) {
         pthreadMemArray = pthread_getspecific (os_threadMemKey);
         if (pthreadMemArray == NULL) {
-	        os_threadMemInit ();
+            os_threadMemInit ();
             pthreadMemArray = pthread_getspecific (os_threadMemKey);
-	    }
+        }
         if (pthreadMemArray != NULL) {
-            if (pthreadMemArray[index] == NULL) {
+            if (pthreadMemArray[index].pthreadMem == NULL) {
                 threadMemLoc = os_malloc (size);
-	            if (threadMemLoc != NULL) {
-	                pthreadMemArray[index] = threadMemLoc;
+                if (threadMemLoc != NULL) {
+                    pthreadMemArray[index].pthreadMem = threadMemLoc;
+                    pthreadMemArray[index].destructor = destructor;
+                    pthreadMemArray[index].userArgs = userArgs;
                 }
-	        }
-	    }
+            }
+        }
     }
     return threadMemLoc;
+}
+
+static void
+os__threadMemFree (
+    os_int32 index,
+    os_threadRegisteredPrivMem *pthreadMemArray)
+{
+    void *threadMemLoc = NULL;
+
+    if ((0 <= index) && (index < OS_THREAD_MEM_ARRAY_SIZE)) {
+        threadMemLoc = pthreadMemArray[index].pthreadMem;
+        if (threadMemLoc != NULL) {
+            if (pthreadMemArray[index].destructor != NULL) {
+                pthreadMemArray[index].destructor(threadMemLoc, pthreadMemArray[index].userArgs);
+            }
+            pthreadMemArray[index].pthreadMem = NULL;
+            os_free (threadMemLoc);
+        }
+    }
 }
 
 /** \brief Free thread private memory
@@ -621,17 +723,12 @@ void
 os_threadMemFree (
     os_int32 index)
 {
-    void **pthreadMemArray;
-    void *threadMemLoc = NULL;
+    os_threadRegisteredPrivMem *pthreadMemArray;
 
     if ((0 <= index) && (index < OS_THREAD_MEM_ARRAY_SIZE)) {
         pthreadMemArray = pthread_getspecific (os_threadMemKey);
         if (pthreadMemArray != NULL) {
-            threadMemLoc = pthreadMemArray[index];
-            if (threadMemLoc != NULL) {
-                pthreadMemArray[index] = NULL;
-                os_free (threadMemLoc);
-            }
+            os__threadMemFree(index, pthreadMemArray);
         }
     }
 }
@@ -650,13 +747,13 @@ void *
 os_threadMemGet (
     os_int32 index)
 {
-    void **pthreadMemArray;
+    os_threadRegisteredPrivMem *pthreadMemArray;
     void *threadMemLoc = NULL;
 
     if ((0 <= index) && (index < OS_THREAD_MEM_ARRAY_SIZE)) {
         pthreadMemArray = pthread_getspecific (os_threadMemKey);
         if (pthreadMemArray != NULL) {
-            threadMemLoc = pthreadMemArray[index];
+            threadMemLoc = pthreadMemArray[index].pthreadMem;
         }
     }
     return threadMemLoc;
@@ -671,7 +768,7 @@ os_threadProtect(void)
     pi = os_threadMemGet(OS_THREAD_PROTECT);
     if (pi == NULL) {
         pi = os_threadMemMalloc(OS_THREAD_PROTECT,
-                                sizeof(os_threadProtectInfo));
+                                sizeof(os_threadProtectInfo), NULL, NULL);
         if (pi) {
             pi->protectCount = 1;
             result = os_resultSuccess;

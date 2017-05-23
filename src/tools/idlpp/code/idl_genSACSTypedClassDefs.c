@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_program.h"
@@ -19,6 +27,7 @@
 #include "idl_genSACSType.h"
 #include "idl_genSACSTypedClassDefs.h"
 #include "idl_genSACSHelper.h"
+#include "idl_genMetaHelper.h"
 
 #include "os_heap.h"
 #include "os_stdlib.h"
@@ -49,6 +58,9 @@ idl_fileOpen(
     struct os_stat tmplStat;
     unsigned int nRead;
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     tmplPath = os_getenv("OSPL_TMPL_PATH");
     orbPath = os_getenv("OSPL_ORB_PATH");
@@ -64,7 +76,7 @@ idl_fileOpen(
     /* Prepare file header template */
     snprintf(
             tmplFileName,
-            (size_t)sizeof(tmplFileName),
+            sizeof(tmplFileName),
             "%s%c%s%c%sHeader",
             tmplPath,
             OS_FILESEPCHAR,
@@ -78,10 +90,10 @@ idl_fileOpen(
         return (idl_abort);
     }
     /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+    idlpp_template = os_malloc(tmplStat.stat_size+1);
     tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+    nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+    memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
     close(tmplFile);
     idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
     idlpp_macroSet = idl_macroSetNew();
@@ -97,7 +109,7 @@ idl_fileOpen(
     /* Prepare class definition template */
     snprintf(
             tmplFileName,
-            (size_t)sizeof(tmplFileName),
+            sizeof(tmplFileName),
             "%s%c%s%c%s",
             tmplPath,
             OS_FILESEPCHAR,
@@ -111,10 +123,10 @@ idl_fileOpen(
         return (idl_abort);
     }
     /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+    idlpp_template = os_malloc(tmplStat.stat_size+1);
     tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+    nRead = (unsigned int)read(tmplFile, idlpp_template, tmplStat.stat_size);
+    memset(&idlpp_template[nRead], 0, tmplStat.stat_size+1-nRead);
     close(tmplFile);
 
     if (csUserData->idlpp_metaList)
@@ -137,6 +149,9 @@ idl_moduleOpen(
 {
     char *moduleName;
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     moduleName = idl_CsharpId(name, csUserData->customPSM, FALSE);
     idl_printIndent(idlpp_indent_level);
@@ -152,6 +167,8 @@ static void
 idl_moduleClose(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     idlpp_indent_level--;
     idl_printIndent(idlpp_indent_level);
     idl_fileOutPrintf(idl_fileCur(), "}\n");
@@ -165,9 +182,11 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(structSpec);
+
     /* QAC EXPECT 3416; No side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
-        c_char spaces[20];
+        c_char spaces[128];
         idl_tmplExp te;
         SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
         char *scopeName = idl_CsharpId(
@@ -175,6 +194,14 @@ idl_structureOpen(
                 csUserData->customPSM,
                 FALSE);
         char *structName = idl_CsharpId(name, csUserData->customPSM, FALSE);
+        char *scopedTypeName = idl_scopeStack(scope, "::", name);
+        const char *internalTypeName = idl_internalTypeNameForBuiltinTopic(scopedTypeName);
+        const char *keyList = idl_keyResolve(idl_keyDefDefGet(), scope, name);
+        if ((strlen(internalTypeName) != 0) &&
+            ((keyList == NULL) ||
+             (strcmp(keyList,"key") == 0))) {
+            keyList = "key.localId,key.systemId";
+        }
 
         /* keylist has been defined for this struct, so it acts as topic. */
         te = idl_tmplExpNew(idlpp_macroSet);
@@ -182,10 +209,13 @@ idl_structureOpen(
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", structName));
         idl_macroSetAdd(
                 idlpp_macroSet,
-                idl_macroNew("scoped-meta-type-name", idl_scopeStack(scope, "::", name)));
-        snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
+                idl_macroNew("scoped-meta-type-name", scopedTypeName));
+        idl_macroSetAdd(
+                idlpp_macroSet,
+                idl_macroNew("internal-type-name", internalTypeName));
+        snprintf(spaces, sizeof(spaces), "%d", idlpp_indent_level*4);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
-        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("key-list", idl_keyResolve(idl_keyDefDefGet(), scope, name)));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("key-list", keyList));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("custom-psm", csUserData->customPSM ? "true" : "false"));
 
         if (csUserData->idlpp_metaList) {
@@ -198,6 +228,7 @@ idl_structureOpen(
         idl_streamInFree(idlpp_inStream);
         idl_tmplExpFree(te);
 
+        os_free(scopedTypeName);
         os_free(scopeName);
         os_free(structName);
     }
@@ -211,6 +242,8 @@ idl_unionOpen(
     idl_typeUnion unionSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(unionSpec);
+
     /* QAC EXPECT 3416; No side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
         c_char spaces[20];
@@ -226,7 +259,7 @@ idl_unionOpen(
         te = idl_tmplExpNew(idlpp_macroSet);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scope", scopeName));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", unionName));
-        snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
+        snprintf(spaces, sizeof(spaces), "%d", idlpp_indent_level*4);
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "os_heap.h"
@@ -66,7 +74,7 @@ idl_fileNew(
     const char *fileName)
 {
     /* QAC EXPECT 5007; will not use wrapper */
-    idl_file file = os_malloc ((size_t)C_SIZEOF(idl_file));
+    idl_file file = os_malloc (C_SIZEOF(idl_file));
 
     file->fileName = os_strdup(fileName);
     file->contains = c_iterNew(0);
@@ -161,7 +169,7 @@ idl_fileMap
 idl_fileMapNew(void)
 {
     /* QAC EXPECT 5007; will not use wrapper */
-    idl_fileMap fileMap = os_malloc((size_t)C_SIZEOF(idl_fileMap));
+    idl_fileMap fileMap = os_malloc(C_SIZEOF(idl_fileMap));
 
     fileMap->files = c_iterNew(0);
     return fileMap;
@@ -271,7 +279,7 @@ idl_fileMapResolve(
     const c_baseObject object)
 {
     /* QAC EXPECT 5007; will not use wrapper */
-    idl_map map = os_malloc((size_t)C_SIZEOF(idl_map));
+    idl_map map = os_malloc(C_SIZEOF(idl_map));
     c_char *fileName = NULL;
 
     if (fileMap != NULL) {
@@ -379,7 +387,7 @@ idl_checkFinalized(
             name = c_metaScopedName(c_metaObject(o));
             printf("missing implementation for struct\\union %s.\n", name);
             (*unfinalCount)++;
-            free(name);
+            os_free(name);
         }
         break;
     default:

@@ -1,16 +1,24 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include <stddef.h>
-#include "os.h"
+#include "vortex_os.h"
 #include "ut_avl.h"
 #include "c__scope.h"
 #include "c__base.h"
@@ -53,21 +61,43 @@ c_bindingCompare(const void *va, const void *vb)
     return strcmp (a->name, b->name);
 }
 
-c_scope
-c_scopeNew(
-    c_base base)
+static c_scope
+c__scopeNewCommon(
+    c_base base,
+    c_bool check)
 {
     c_scope o;
     c_type scopeType;
 
     scopeType = c_resolve(base,"c_scope");
-    o = c_scope(c_new(scopeType));
-    c_free(scopeType);
-    if(o){
-        c_scopeInit(o);
+    if (check) {
+        o = c_scope(c_new_s(scopeType));
+        if (!o) {
+            goto err_alloc_scope;
+        }
+    } else {
+        o = c_scope(c_new(scopeType));
     }
+    assert(o);
+    c_scopeInit(o);
 
+err_alloc_scope:
+    c_free(scopeType);
     return o;
+}
+
+c_scope
+c_scopeNew(
+    c_base base)
+{
+    return c__scopeNewCommon(base, FALSE);
+}
+
+c_scope
+c_scopeNew_s(
+    c_base base)
+{
+    return c__scopeNewCommon(base, TRUE);
 }
 
 void
@@ -116,9 +146,7 @@ void
 c_scopeClean(
     c_scope scope)
 {
-    if (scope != NULL) {
-        ut_avlCFreeArg (&c_scope_bindings_td, &scope->bindings, c_bindingFreeWrapper, MM (scope));
-    }
+    ut_avlCFreeArg (&c_scope_bindings_td, &scope->bindings, c_bindingFreeWrapper, MM (scope));
 }
 
 void
@@ -134,7 +162,7 @@ c_scopeInsert(
     c_metaObject object)
 {
     ut_avlIPath_t p;
-    c_binding binding;
+    c_binding binding = NULL;
 
     if ((binding = ut_avlCLookupIPath (&c_scope_bindings_td, &scope->bindings, object, &p)) == NULL) {
         binding = c_bindingNew(scope, object);
@@ -143,7 +171,7 @@ c_scopeInsert(
             scope->headInsOrder = binding;
         }
         if (scope->tailInsOrder) {
-           scope->tailInsOrder->nextInsOrder = binding;
+            scope->tailInsOrder->nextInsOrder = binding;
         }
         scope->tailInsOrder = binding;
     } else {
@@ -163,15 +191,11 @@ c_metaObject
 c_scopeLookup(
     c_scope scope,
     const c_char *name,
-    c_long metaFilter)
+    c_ulong metaFilter)
 {
     C_STRUCT(c_metaObject) tmp;
     c_binding binding;
     c_metaObject o;
-
-    if (scope == NULL) {
-        return NULL;
-    }
 
     tmp.name = (char *) name;
     if ((binding = ut_avlCLookup (&c_scope_bindings_td, &scope->bindings, &tmp)) == NULL) {
@@ -188,7 +212,7 @@ static c_metaEquality
 c_metaNameCompare (
     c_baseObject baseObject,
     const char *key,
-    c_long metaFilter)
+    c_ulong metaFilter)
 {
     c_metaEquality equality = E_UNEQUAL;
     char *name;
@@ -218,12 +242,10 @@ c_baseObject
 c_scopeResolve(
     c_scope scope,
     const char *name,
-    c_long metaFilter)
+    c_ulong metaFilter)
 {
     c_metaObject o = NULL;
-    if (scope == NULL) {
-        o = NULL;
-    } else if (!(metaFilter & CQ_CASEINSENSITIVE)) {
+    if (!(metaFilter & CQ_CASEINSENSITIVE)) {
         o = c_scopeLookup(scope, name, metaFilter);
     } else {
         ut_avlCIter_t it;
@@ -291,11 +313,37 @@ c_scopeWalk(
     }
 }
 
-c_long
+c_bool
+c_scopeWalkBool(
+    c_scope scope,
+    c_scopeWalkBoolAction action,
+    c_scopeWalkActionArg actionArg)
+{
+    c_binding binding;
+
+    binding = scope->headInsOrder;
+    while(binding) {
+        if (!action(binding->object, actionArg)) {
+            return FALSE;
+        }
+        binding = binding->nextInsOrder;
+    }
+    return TRUE;
+}
+
+c_ulong
 c_scopeCount(
     c_scope scope)
 {
-    c_long count;
-    count = ut_avlCCount (&scope->bindings);
-    return count;
+    return (c_ulong) ut_avlCCount (&scope->bindings);
+}
+
+c_bool
+c_scopeExists (
+    c_scope scope,
+    const c_char *name)
+{
+    C_STRUCT(c_metaObject) tmp;
+    tmp.name = (char *) name;
+    return (ut_avlCLookup (&c_scope_bindings_td, &scope->bindings, &tmp) != NULL);
 }

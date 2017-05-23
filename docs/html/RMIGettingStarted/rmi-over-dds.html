@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Vortex OpenSplice RMI over DDS &mdash; RMI User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RMI User Guide" href="index.html" />
+    <link rel="next" title="4. Building an RMI Application" href="build-rmi-apps.html" />
+    <link rel="prev" title="2. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="build-rmi-apps.html" title="4. Building an RMI Application"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="product-name-rmi-over-dds">
+<span id="id1"></span><h1>3. Vortex OpenSplice RMI over DDS<a class="headerlink" href="#product-name-rmi-over-dds" title="Permalink to this headline">¶</a></h1>
+<p>As in traditional service-oriented applications, communication from
+client to server is performed through a well-defined service model. The
+RMI module enables a user to build a service model with remote method
+invocation capabilities and completely hides the DDS DCPS API. Of
+course, using RMI does not prevent the application from using the DDS
+API as shown by the following figure:</p>
+<div class="figure" id="rmi-relationship-to-dds">
+<a class="reference internal image-reference" href="_images/RMI-diag-02.png"><img alt="RMI Relationship to DDS" src="_images/RMI-diag-02.png" style="height: 50mm;" /></a>
+</div>
+<p><strong>RMI Relationship to DDS</strong></p>
+<p>A service model is defined by one or more object-oriented interfaces. A
+DDS RMI interface is an IDL interface having a name and a set of
+operations. Each operation has a fixed set of typed parameters. The RMI
+module provides:</p>
+<ul class="simple">
+<li>A service invocation framework that maps the different services
+operations onto a set of DDS topics that hold the operation&#8217;s invocation
+requests and replies. A set of mapping rules have been defined for this
+purpose. At runtime, this framework sets up the underlying DDS
+environment and handles the remote interface invocations using the basic
+DDS read/write operations.</li>
+<li>A simple and intuitive programming model for both the server application
+side implementing the interface, and the client application side
+invoking that interface. The server programming model is as simple as
+implementing an interface, and the client programming model is as simple
+as calling a local interface.</li>
+<li>A powerful feature to enable tuning of the invocation request and reply
+QoS by setting their corresponding DDS QoS policies. This feature
+enables developers to improve the invocations quality with real-time and
+high-performance features. For instance, priorities and validity
+durations (lifespan) could be set on the different operation
+requests/replies.</li>
+<li>Synchronous, asynchronous and oneway invocation modes. The synchronous
+mode is the invocation mode that blocks the client thread until the
+reply is sent back to him by the server. The asynchronous mode is
+similar to the CORBA Asynchronous Messaging Interface (AMI) callback
+model. It is a non-blocking mode where the client does not wait for the
+reply from the server, but rather provides a callback object that will
+be invoked by the middleware to deliver the request return values when
+they are received. Finally, the oneway mode is a fire-and-forget
+invocation mode where the client does not care about the success or
+failure of the invocation. A oneway method cannot return values and no
+reply message will ever return to the client once the request is sent to
+the server.</li>
+<li>&#8216;C++ and Java&#8217; implementation.</li>
+</ul>
+<div class="section" id="key-components">
+<h2>3.1. Key components<a class="headerlink" href="#key-components" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice RMI module includes the following components:</p>
+<dl class="docutils">
+<dt><strong>RMI Pre-processor</strong> (<tt class="docutils literal"><span class="pre">rmipp</span></tt>)</dt>
+<dd>Generates the interface-type-specific
+requests/replies topics and invocation handling classes.</dd>
+<dt><strong>Core library</strong></dt>
+<dd>Provides the runtime setup operations and a generic
+invocation framework.</dd>
+</dl>
+</div>
+<div class="section" id="binding-languages">
+<h2>3.2. Binding Languages<a class="headerlink" href="#binding-languages" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice RMI module is available for both <strong>Java</strong> and <strong>C++</strong> languages.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Vortex OpenSplice RMI over DDS</a><ul>
+<li><a class="reference internal" href="#key-components">3.1. Key components</a></li>
+<li><a class="reference internal" href="#binding-languages">3.2. Binding Languages</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">2. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="build-rmi-apps.html"
+                        title="next chapter">4. Building an RMI Application</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/rmi-over-dds.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="build-rmi-apps.html" title="4. Building an RMI Application"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

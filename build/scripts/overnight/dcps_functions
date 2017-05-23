@@ -267,3 +267,28 @@ test_perform_rbt_tests ()
         return 1
     fi
 }
+
+test_perform_examples ()
+{
+    if [ ! -d $1 ]
+    then
+        return 1
+    fi
+
+    if [ ! -f $1/totals.log ]
+    then
+        return 1
+    fi
+
+    PASS=`grep 'Examples Passed' $1/totals.log | awk -F'= ' '{ print $2 }'`
+    FAIL=`grep 'Examples Failed' $1/totals.log | awk -F'= ' '{ print $2 }'`
+
+    if [ $FAIL = 0 ]
+    then
+        return 0
+    else
+        EX_TMP_INFO="P:${PASS}_F:${FAIL}"
+        EX_INFO=`echo $EX_TMP_INFO | tr -d ' '`
+        return 1
+    fi
+}

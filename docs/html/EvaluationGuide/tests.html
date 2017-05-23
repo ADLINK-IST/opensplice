@@ -1,0 +1,294 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>8. Performance Tests and Examples &mdash; OpenSplice Evaluation and Benchmarking Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Evaluation and Benchmarking Guide" href="index.html" />
+    <link rel="next" title="9. Bibliography" href="biblio.html" />
+    <link rel="prev" title="7. How to run OpenSplice Enterprise" href="running.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="biblio.html" title="9. Bibliography"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="running.html" title="7. How to run OpenSplice Enterprise"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="performance-tests-and-examples">
+<span id="id1"></span><h1>8. Performance Tests and Examples<a class="headerlink" href="#performance-tests-and-examples" title="Permalink to this headline">¶</a></h1>
+<p>To make the evaluation process as easy as possible, OpenSplice
+Enterprise is shipped with dedicated performance tests that can be
+used to measure latency and throughput. The tests are simple and
+clear, allowing the user to obtain performance results easily.</p>
+<p>The easiest way to build and run the performance tests is to use the
+OpenSplice Enterprise <em>Launcher</em> tool. In the <em>Examples</em> menu select the
+specific example and the appropriate language and configuration.
+Click the <em>Compile Example</em> button and then <em>Run Example</em>. This will run
+the DDS applications, and if running with a shared memory
+configuration it will also manage the starting and stopping of
+OpenSplice Enterprise.</p>
+<p>OpenSplice Enterprise also provides dedicated performance testing
+scripts which:</p>
+<ul class="simple">
+<li>Test multiple API bindings</li>
+<li>Use a varying range of payload sizes</li>
+<li>Timestamp and append results to a CSV file</li>
+<li>Set process priority and CPU affinity</li>
+</ul>
+<p>Please see the <tt class="docutils literal"><span class="pre">html</span></tt> files for the individual performance tests for details
+of how to run these scripts.</p>
+<div class="section" id="round-trip-latency-performance">
+<h2>8.1. Round-Trip Latency Performance<a class="headerlink" href="#round-trip-latency-performance" title="Permalink to this headline">¶</a></h2>
+<p>The latency of a DDS implementation is an expression of how fast data
+can be delivered between two DDS applications. <em>Round-trip latency</em> is
+the time taken for an individual DDS data sample to be delivered from
+Application A to Application B and back again, so importantly it
+includes metrics for both data delivery and reception.</p>
+<p>The easiest way to build and run the performance tests is to use the
+OpenSplice Enterprise <em>Launcher</em> tool as explained above.</p>
+<p>Alternatively, to manually build and run the round-trip performance
+test, for example for the ISO C++ API:</p>
+<p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="c"># In an OpenSplice Enterprise environment:</span>
+<span class="nb">cd</span> <span class="nv">$OSPL_HOME</span>/examples/dcps/RoundTrip/isocpp
+make
+
+<span class="nb">cd</span> <span class="nv">$OSPL_HOME</span>/examples/dcps/RoundTrip/isocpp
+<span class="c"># If using shared memory do &quot;ospl start&quot;</span>
+./pong
+<span class="c"># If using shared memory do &quot;ospl stop&quot;</span>
+
+<span class="c"># In another OpenSplice Enterprise environment:</span>
+<span class="nb">cd</span> <span class="nv">$OSPL_HOME</span>/examples/dcps/RoundTrip/isocpp
+<span class="c"># If using shared memory do &quot;ospl start&quot;</span>
+./ping <span class="m">20</span> 100
+<span class="c"># If using shared memory do &quot;ospl stop&quot;</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<div class="highlight-bat"><div class="highlight"><pre># Load the OpenSplice DDS examples project solution
+# into Visual Studio and build the required projects
+
+# In an OpenSplice Enterprise environment:
+<span class="k">cd</span> <span class="nv">%OSPL_HOME%</span>\examples\dcps\RoundTrip\isocpp
+# <span class="k">If</span> using shared memory <span class="k">do</span> <span class="s2">&quot;ospl start&quot;</span>
+pong.exe
+# <span class="k">If</span> using shared memory <span class="k">do</span> <span class="s2">&quot;ospl stop&quot;</span>
+
+# In another OpenSplice Enterprise environment:
+<span class="k">cd</span> <span class="nv">%OSPL_HOME%</span>\examples\dcps\RoundTrip\isocpp
+# <span class="k">If</span> using shared memory <span class="k">do</span> <span class="s2">&quot;ospl start&quot;</span>
+ping.exe <span class="m">20</span> <span class="m">100</span>
+# <span class="k">If</span> using shared memory <span class="k">do</span> <span class="s2">&quot;ospl stop&quot;</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">ping</span></tt> application will report the roundtrip time taken to
+send DDS data samples back and forth between the applications.
+The test utilizes the <tt class="docutils literal"><span class="pre">ReliabilityQoS</span></tt> set to <tt class="docutils literal"><span class="pre">RELIABLE</span></tt> by default
+in order to show the maximal performance whilst maintaining the guaranteed
+delivery of DDS samples. See the <tt class="docutils literal"><span class="pre">README</span></tt> file for the test for further
+details.</p>
+<p><strong>The lowest roundtrip latency may be achieved by tuning the test
+parameters appropriately.</strong></p>
+<p>As mentioned above, the performance testing script described in the
+<tt class="docutils literal"><span class="pre">html</span></tt> for the example is a convenient way to test and record the
+running of this test.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that the default <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> value refers to a <em>Single Process</em>
+deployment with <em>DDSI</em> networking.</dd>
+</dl>
+<ul class="simple">
+<li>To observe the best performance within a node it is suggested
+that you use a <em>Shared Memory</em> configuration.</li>
+<li>To observe the best performance between nodes it is suggested
+that you use an <em>RTNetworking</em> service configuration.</li>
+</ul>
+</div>
+<div class="section" id="throughput-performance">
+<h2>8.2. Throughput Performance<a class="headerlink" href="#throughput-performance" title="Permalink to this headline">¶</a></h2>
+<p>The throughput of a DDS implementation is an expression of the rate
+of data delivery through the DDS system. Measured in bits per second,
+it describes the ability of the DDS implementation to effectively
+deliver DDS data without data loss.</p>
+<p>As with the round-trip test, the easiest way to build and run the
+throughput performance test is to use the OpenSplice Enterprise
+<em>Launcher</em> tool.</p>
+<p>Alternatively, to manually build and run the throughput performance
+test, for example for the ISO C++ API:</p>
+<p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="c"># In an OpenSplice Enterprise environment:</span>
+<span class="nb">cd</span> <span class="nv">$OSPL_HOME</span>/examples/dcps/Throughput/isocpp
+make
+<span class="nb">cd</span> <span class="nv">$OSPL_HOME</span>/examples/dcps/Throughput/isocpp
+<span class="c"># If using shared memory do &quot;ospl start&quot;</span>
+./publisher
+<span class="c"># If using shared memory do &quot;ospl stop&quot;</span>
+
+<span class="c"># In another In an OpenSplice Enterprise environment:</span>
+<span class="nb">cd</span> <span class="nv">$OSPL_HOME</span>/examples/dcps/Throughput/isocpp
+<span class="c"># If using shared memory do &quot;ospl start&quot;</span>
+./subscriber
+<span class="c"># If using shared memory do &quot;ospl stop&quot;</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<div class="highlight-bat"><div class="highlight"><pre># Load the OpenSplice DDS examples project solution
+# into Visual Studio and build the required projects
+
+# In an OpenSplice Enterprise environment:
+<span class="k">cd</span> <span class="nv">%OSPL_HOME%</span>\examples\dcps\Throughput\isocpp
+# <span class="k">If</span> using shared memory <span class="k">do</span> <span class="s2">&quot;ospl start&quot;</span>
+publisher.exe
+# <span class="k">If</span> using shared memory <span class="k">do</span> <span class="s2">&quot;ospl stop&quot;</span>
+
+# In another OpenSplice Enterprise environment:
+<span class="k">cd</span> <span class="nv">%OSPL_HOME%</span>\examples\dcps\Throughput\isocpp
+# <span class="k">If</span> using shared memory <span class="k">do</span> <span class="s2">&quot;ospl start&quot;</span>
+subscriber.exe
+# <span class="k">If</span> using shared memory <span class="k">do</span> <span class="s2">&quot;ospl stop&quot;</span>
+</pre></div>
+</div>
+<p>The subscriber application will report the DDS data throughput by
+default once per second. This and many other aspects of the test can
+be configured on the command line. The test utilizes the
+<tt class="docutils literal"><span class="pre">`ReliabilityQoS</span></tt> set to <tt class="docutils literal"><span class="pre">RELIABLE</span></tt> by default in order to show the
+maximal performance whilst maintaining the guaranteed delivery of DDS
+samples. See the <tt class="docutils literal"><span class="pre">README</span></tt> file for the test for further details.</p>
+<p><strong>The maximum throughput may be achieved by tuning the test
+parameters appropriately.</strong></p>
+<p>As mentioned above, the performance testing script described in the
+<tt class="docutils literal"><span class="pre">html</span></tt> for the example is a convenient way to test and record the
+running of this test.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that the default <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> value refers to a <em>Single Process</em>
+deployment with <em>DDSI</em> networking.</dd>
+</dl>
+<ul class="simple">
+<li>To observe the best performance within a node it is suggested that
+you use a <em>Shared Memory</em> configuration.</li>
+<li>To observe the best performance between nodes it is suggested that
+you use an <em>RTNetworking</em> service configuration.</li>
+</ul>
+<div class="section" id="achieving-maximum-throughput">
+<h3>8.2.1. Achieving Maximum Throughput<a class="headerlink" href="#achieving-maximum-throughput" title="Permalink to this headline">¶</a></h3>
+<p>Where there is a requirement to support continuous flows or
+&#8216;streams&#8217; of data with minimal overhead consider the use
+of OpenSplice Streams. The ability to deliver potentially millions of
+samples per second is realized by the Streams feature transparently
+batching (packing and queuing) the periodic samples.</p>
+<div class="figure" id="streams-architecture">
+<a class="reference internal image-reference" href="_images/StreamsArchitecture.png"><img alt="Streams Architecture" src="_images/StreamsArchitecture.png" style="height: 55mm;" /></a>
+<p class="caption"><strong>Streams Architecture</strong></p>
+</div>
+<p>The streams performance example is located in the <tt class="docutils literal"><span class="pre">examples/streams</span></tt>
+directory within the installation.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">8. Performance Tests and Examples</a><ul>
+<li><a class="reference internal" href="#round-trip-latency-performance">8.1. Round-Trip Latency Performance</a></li>
+<li><a class="reference internal" href="#throughput-performance">8.2. Throughput Performance</a><ul>
+<li><a class="reference internal" href="#achieving-maximum-throughput">8.2.1. Achieving Maximum Throughput</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="running.html"
+                        title="previous chapter">7. How to run OpenSplice Enterprise</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="biblio.html"
+                        title="next chapter">9. Bibliography</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tests.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="biblio.html" title="9. Bibliography"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="running.html" title="7. How to run OpenSplice Enterprise"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

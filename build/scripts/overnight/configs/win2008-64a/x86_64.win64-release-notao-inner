@@ -1,0 +1,3 @@
+. configs/common-inner
+unset TAO_ROOT
+export OVERRIDE_STRICT_CHECKS=no

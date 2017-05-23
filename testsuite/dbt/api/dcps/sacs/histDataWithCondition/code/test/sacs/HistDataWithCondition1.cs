@@ -79,9 +79,8 @@ namespace test.sacs
             participant.GetCurrentTime(out tHolder);
             maxSourceTime = tHolder;
 
-            // TODO: JLS, WaitForHistoricalDataWithCondition is missing
-            //			ddsReturnCode = reader.WaitForHistoricalDataWithCondition("long_1 < 5 AND long_2 < 5"
-            //				, null, minSourceTime, maxSourceTime, resource, maxWait);
+            ddsReturnCode = reader.WaitForHistoricalDataWithCondition(
+                    "long_1 < 5 AND long_2 < 5", null, minSourceTime, maxSourceTime, resource, maxWait);
             if (ddsReturnCode != DDS.ReturnCode.Ok)
             {
                 result.Result = "wait_for_historical_data_w_condition failed";
@@ -115,18 +114,16 @@ namespace test.sacs
             }
             reader.ReturnLoan(ref dataList, ref infoList);
 
-            // TODO: JLS, WaitForHistoricalDataWithCondition is missing
-            //			ddsReturnCode = reader.WaitForHistoricalDataWithCondition("long_1 < 5 AND long_2 > 5"
-            //				, null, minSourceTime, maxSourceTime, resource, maxWait);
+            ddsReturnCode = reader.WaitForHistoricalDataWithCondition(
+                    "long_1 < 5 AND long_2 > 5", null, minSourceTime, maxSourceTime, resource, maxWait);
             if (ddsReturnCode != DDS.ReturnCode.PreconditionNotMet)
             {
                 result.Result = "wait_for_historical_data_w_condition did not return precondition not met,";
                 subscriber.DeleteDataReader(reader);
                 return result;
             }
-            // TODO: JLS, WaitForHistoricalDataWithCondition is missing
-            //            ddsReturnCode = reader.WaitForHistoricalDataWithCondition("long_1 < 5 AND long_2 < 5"
-            //				, null, minSourceTime, maxSourceTime, resource, maxWait);
+            ddsReturnCode = reader.WaitForHistoricalDataWithCondition(
+                    "long_1 < 5 AND long_2 < 5", null, minSourceTime, maxSourceTime, resource, maxWait);
             if (ddsReturnCode != DDS.ReturnCode.Ok)
             {
                 result.Result = "wait_for_historical_data_w_condition did not succeed(2)";

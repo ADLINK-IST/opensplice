@@ -33,7 +33,6 @@ sub handle_compiler_output_line($) {
   my $self = shift;
   my $s = shift;
 
-
   # Check for the subsection indicator
   # VC71 || GNU make || nmake || borland make
   if ($s =~ m/^(?:\d+>)?------ Build started: Project: (.*), Config.*/ || $s =~ /GNUmakefile: (.*) MAKEFLAGS.*/ || $s =~ /nmake.exe\" \/f Makefile.(.*) CFG.*/ || $s =~ /make .* -f (.*).bor .*/ || $s =~ /^make.*Entering directory \`(.*)\/bld\/.*/ || $s =~ /Entering directory .*\`\/(ospl.\/.*)/ || $s =~ /^make.*Entering directory \`(.*)\'$/ ) {
@@ -254,6 +253,34 @@ sub handle_compiler_output_line($) {
       return;
   }
 
+  if ($s =~ m/FileListAbsolute.txt". The specified path, file name, or both are too long/) {
+    # New install path results in some files not getting written,
+    # these files are used for cleaning and recompiling which we don't do overnight
+      $self->Output_Warning ($s);
+      return;
+  }
+
+  if ($s =~ m/lastbuildstate". The specified path, file name, or both are too long/) {
+    # New install path results in some files not getting written,
+    # these files are used for cleaning and recompiling which we don't do overnight
+      $self->Output_Warning ($s);
+      return;
+  }
+
+  if ($s =~ /printf\("native error: %d\\n",nativeError\)/) {
+    # This output comes for ODBC and is just a printf 
+    # statement that is getting output for some reason
+      $self->Output_Normal ($s);
+      return;
+  }
+
+  if ($s =~ /sprintf\(test_result,"Read data error;/) {
+      # This output is the actual message output of an RBT test result
+      # which is wrongly classed as an error in the build log on ubuntu1604
+      $self->Output_Normal ($s);
+      return;
+  }  
+
   if ($s =~ m/Rule line too long/) {
     # Can be given by Borland make
     $self->Output_Error ($s);
@@ -281,6 +308,12 @@ sub handle_compiler_output_line($) {
     $self->Output_Warning ($s);
     return;
   }
+
+  if ($s =~ m/setup_error_utests/) {
+    # This is a warning from building c99 error_utests and is not an error
+    $self->Output_Warning ($s);
+    return;
+  }  
 
   if ($s =~ m/cannot execute binary file/) {
     # Means we can't execute the binary, probably using target executable on host
@@ -322,11 +355,17 @@ sub handle_compiler_output_line($) {
       $self->Output_Normal ($s);
       return;
     }
-    # Definately an error
+    
+    if ($s =~ m/^.*.cpp:[0-9]+:[0-9]+:\s+required from here/) {
+    # This is output on some platforms for some reason but is not an error
+      $self->Output_Normal ($s);
+      return;
+    }
+    
+    # Definitely an error
     $self->Output_Error ($s);
     return;
   }
-
 
   if ($s =~ m/ld: Can't find dependent library/) {
     $self->Output_Error ($s);
@@ -597,6 +636,13 @@ sub handle_compiler_output_line($) {
         $self->Output_Warning ($s);
   }
 
+  if ($s =~ m/static const int AFUNC ## __init_variable__ = AFUNC\(\);/) {
+  # This is output on ubuntu1604 but is not an error or warning,
+  # it gets set as an error because of the hashes
+    $self->Output_Normal ($s);
+    return;
+  }
+  
   # OSPL additions from dcps_functions
   if ($s =~ m/No such file or directory/) {
     $self->Output_Error ($s);

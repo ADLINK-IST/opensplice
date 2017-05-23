@@ -46,6 +46,8 @@ class SubscriberListener;
  * or by enabling related conditions. The application can access the list of
  * concerned DataReader objects through the operation get_datareaders and
  * then access the data available through operations on the DataReader.
+ *
+ *  See \ref DCPS_Modules_Subscriber "Subscriber" for more information
  */
 template <typename DELEGATE>
 class dds::sub::TSubscriber : public dds::core::TEntity<DELEGATE>
@@ -77,7 +79,7 @@ public:
     TSubscriber(const ::dds::domain::DomainParticipant& dp,
                 const dds::sub::qos::SubscriberQos& qos,
                 dds::sub::SubscriberListener* listener = NULL,
-                const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::all());
+                const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::none());
 
 public:
     virtual ~TSubscriber();
@@ -146,6 +148,31 @@ public:
      * @return the DomainParticipant that owns this Subscriber
      */
     const dds::domain::DomainParticipant& participant() const;
+
+    /**
+     *
+     *  allows the application to access the DataReader objects that contain samples with the
+     *  specified sample_states, view_states, and instance_states.
+     *
+     *  The PRESENTATION QosPolicy of the Subscriber affects the order and occurrences of readers
+     *  returned by this operation:
+     *  If the PRESENTATION QosPolicy of the Subscriber to which the DataReader belongs
+     *  has the access_scope set to 'GROUP'. This operation should only be invoked inside a
+     *  begin_access/end_access block. Otherwise it will return the error PRECONDITION_NOT_MET.
+     *
+     *  Depending on the setting of the PRESENTATION QoS policy the returned collection of DataReader
+     *  objects may be a 'set' containing each DataReader at most once in no specified order, or a
+     *  'list' containing each DataReader one or more times in a specific order.
+     *  - If PRESENTATION access_scope is INSTANCE or TOPIC, the returned collection is a 'set'.
+     *  - If PRESENTATION access_scope is GROUP and ordered_access is set to TRUE, then the returned
+     *    collection is a 'list'. This difference is due to the fact that, in the second situation
+     *    it is required to access samples belonging to different DataReader objects in a particular
+     *    order. In this case, the application should process each DataReader in the same order it
+     *    appears in the 'list' and read or take exactly one sample from each DataReader.
+     *
+     * @return list of data reaader
+     */
+    //dds::sub::AnyDataReader get_datareaders();
 
     /**
      * Set the QoS associated with this Subscriber.

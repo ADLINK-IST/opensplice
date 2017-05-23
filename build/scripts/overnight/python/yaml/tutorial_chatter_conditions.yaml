@@ -1,0 +1,27 @@
+parseconditions:
+    desc: Tutorial LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: write_msg
+          type: line
+          inst: 1
+          required: yes
+          line: "Writing message: *Hi *here, I will send you 10 * messages."
+
+        - name: msg_no
+          type: line
+          inst: 10
+          required: yes
+          line: "Writing message: *Message no."
+
+        - name: term_msg
+          type: line
+          inst: 1
+          required: yes
+          line: "Writing message: *Termination message*"

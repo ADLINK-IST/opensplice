@@ -52,18 +52,6 @@ export RTORB_HOME="$OSPLDEV_ROOT/RTORB"
 # This is a convenience variable used only by these scripts.
 #export EXPHOME="$OSPLDEV_ROOT/expect/v5.44.1"
 
-# Root of OpenORB installation. This variable must be in native format.
-# This variable is required by ospli/osplo scripts and makefiles.
-export OPENORB_HOME="$OSPLDEV_ROOT/OPENORB"
-
-# OpenORB version string.
-# This variable is required by ospli/osplo scripts and makefiles.
-export OPENORB_VERSION='1.4.0'
-
-# Root of Junit installation. This variable must be in native format.
-# This variable is required by ospli/osplo scripts and makefiles.
-export JUNIT_HOME="$OSPLDEV_ROOT/junit-3.81"
-
 # Root of ant installation. This variable must be in native format.
 # This is a convenience variable used only by these scripts.
 export ANTHOME="$OSPLDEV_ROOT/ant/v1.7.0"

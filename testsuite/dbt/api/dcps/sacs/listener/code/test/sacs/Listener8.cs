@@ -1,8 +1,11 @@
+using System.Threading;
+using System.Collections.Generic;
 namespace test.sacs
 {
     /// <date>Jun 2, 2005</date>
     public class Listener8 : Test.Framework.TestCase
     {
+        Dictionary<DDS.StatusKind, Semaphore> semaphores = null;
         public Listener8()
             : base("sacs_listener_tc8", "sacs_listener", "listener", "Test if a DataReaderListener works."
                 , "Test if a DataReaderListener works.", null)
@@ -29,6 +32,9 @@ namespace test.sacs
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
             string expResult = "DataReaderListener test succeeded.";
+            semaphores = new Dictionary<DDS.StatusKind, Semaphore>();
+            semaphores.Add(DDS.StatusKind.DataAvailable, new Semaphore(0, 1));
+
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
                 .Pass, Test.Framework.TestVerdict.Fail);
             factory = DDS.DomainParticipantFactory.Instance;
@@ -134,29 +140,13 @@ namespace test.sacs
                 this.Cleanup(factory, participant);
                 return result;
             }
-            listener = new test.sacs.MyDataReaderListener();
+            listener = new test.sacs.MyDataReaderListener(semaphores);
             rc = datareader.SetListener(listener, DDS.StatusKind.LivelinessChanged | DDS.StatusKind.DataAvailable);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Set listener failed.";
                 return result;
             }
-            try
-            {
-                System.Threading.Thread.Sleep(10000);
-            }
-            catch (System.Exception e)
-            {
-                System.Console.WriteLine(e);
-            }
-            if (!listener.onLivelinessChangedCalled)
-            {
-                result.Result = "on_liveliness_changed does not work properly.";
-                this.Cleanup(factory, participant);
-                return result;
-            }
-            listener.Reset();
-
             mod.tst t = new mod.tst();
             t.long_1 = 1;
             t.long_2 = 2;
@@ -169,17 +159,15 @@ namespace test.sacs
                 this.Cleanup(factory, participant);
                 return result;
             }
-            try
-            {
-                System.Threading.Thread.Sleep(3000);
-            }
-            catch (System.Exception e)
-            {
-                System.Console.WriteLine(e);
-            }
-            if (!listener.onDataAvailableCalled)
-            {
-                result.Result = "on_data_available does not work properly.";
+            if(semaphores[DDS.StatusKind.DataAvailable].WaitOne(10000)) {
+	            if (!listener.onDataAvailableCalled)
+	            {
+	                result.Result = "on_data_available does not work properly.";
+	                this.Cleanup(factory, participant);
+	                return result;
+	            }
+            } else {
+                result.Result = "on_data_available did not trigger";
                 this.Cleanup(factory, participant);
                 return result;
             }

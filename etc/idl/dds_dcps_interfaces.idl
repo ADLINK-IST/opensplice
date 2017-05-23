@@ -32,54 +32,64 @@ module DDS {
     typedef sequence<InstanceHandle_t> InstanceHandleSeq;
 
     typedef long ReturnCode_t;
-    typedef long ErrorCode_t;
     typedef long QosPolicyId_t;
 
     // ----------------------------------------------------------------------
     // Pre-defined values
     // ----------------------------------------------------------------------
     const InstanceHandle_t HANDLE_NIL           = HANDLE_NIL_NATIVE;
-    const long LENGTH_UNLIMITED             = -1;
+    const long LENGTH_UNLIMITED                 = -1;
     const long DURATION_INFINITE_SEC            = 0x7fffffff;
-    const unsigned long DURATION_INFINITE_NSEC      = 0x7fffffff;
-    const long DURATION_ZERO_SEC            = 0;
+    const unsigned long DURATION_INFINITE_NSEC  = 0x7fffffff;
+    const long DURATION_ZERO_SEC                = 0;
     const unsigned long DURATION_ZERO_NSEC      = 0;
+#ifdef OSPL_DDS_Y2038_READY
+    const long long TIMESTAMP_INVALID_SEC       = -1;
+#else
     const long TIMESTAMP_INVALID_SEC            = -1;
-    const unsigned long TIMESTAMP_INVALID_NSEC      = 0xffffffff;
-    const DomainId_t DOMAIN_ID_DEFAULT            =  0x7fffffff;
+#endif
+    const unsigned long TIMESTAMP_INVALID_NSEC  = 0xffffffff;
+
+    const DomainId_t DOMAIN_ID_DEFAULT          =  0x7fffffff;
+    const DomainId_t DOMAIN_ID_INVALID          =  -1;
 
     // ----------------------------------------------------------------------
     // Return codes
     // ----------------------------------------------------------------------
-    const ReturnCode_t RETCODE_OK           = 0;
-    const ReturnCode_t RETCODE_ERROR            = 1;
-    const ReturnCode_t RETCODE_UNSUPPORTED      = 2;
-    const ReturnCode_t RETCODE_BAD_PARAMETER        = 3;
-    const ReturnCode_t RETCODE_PRECONDITION_NOT_MET = 4;
-    const ReturnCode_t RETCODE_OUT_OF_RESOURCES     = 5;
-    const ReturnCode_t RETCODE_NOT_ENABLED      = 6;
-    const ReturnCode_t RETCODE_IMMUTABLE_POLICY     = 7;
-    const ReturnCode_t RETCODE_INCONSISTENT_POLICY  = 8;
-    const ReturnCode_t RETCODE_ALREADY_DELETED      = 9;
-    const ReturnCode_t RETCODE_TIMEOUT          = 10;
-    const ReturnCode_t RETCODE_NO_DATA          = 11;
-    const ReturnCode_t RETCODE_ILLEGAL_OPERATION        = 12;
+    const ReturnCode_t RETCODE_OK                               = 0;
+    const ReturnCode_t RETCODE_ERROR                            = 1;
+    const ReturnCode_t RETCODE_UNSUPPORTED                      = 2;
+    const ReturnCode_t RETCODE_BAD_PARAMETER                    = 3;
+    const ReturnCode_t RETCODE_PRECONDITION_NOT_MET             = 4;
+    const ReturnCode_t RETCODE_OUT_OF_RESOURCES                 = 5;
+    const ReturnCode_t RETCODE_NOT_ENABLED                      = 6;
+    const ReturnCode_t RETCODE_IMMUTABLE_POLICY                 = 7;
+    const ReturnCode_t RETCODE_INCONSISTENT_POLICY              = 8;
+    const ReturnCode_t RETCODE_ALREADY_DELETED                  = 9;
+    const ReturnCode_t RETCODE_TIMEOUT                          = 10;
+    const ReturnCode_t RETCODE_NO_DATA                          = 11;
+    const ReturnCode_t RETCODE_ILLEGAL_OPERATION                = 12;
 
     // ----------------------------------------------------------------------
     // Error codes
+    // @Deprecated. Please do not use these ErrorCode_t values any more.
+    // They will be removed in future versions of OpenSplice, and be
+    // replaced by the more familiar ReturnCode_t.
     // ----------------------------------------------------------------------
-    const ErrorCode_t ERRORCODE_UNDEFINED                   = 0;
-    const ErrorCode_t ERRORCODE_ERROR                   = 1;
-    const ErrorCode_t ERRORCODE_OUT_OF_RESOURCES            = 2;
+    typedef long ErrorCode_t;
+
+    const ErrorCode_t ERRORCODE_UNDEFINED                       = 0;
+    const ErrorCode_t ERRORCODE_ERROR                           = 1;
+    const ErrorCode_t ERRORCODE_OUT_OF_RESOURCES                = 2;
     const ErrorCode_t ERRORCODE_CREATION_KERNEL_ENTITY_FAILED   = 3;
-    const ErrorCode_t ERRORCODE_INVALID_VALUE               = 4;
-    const ErrorCode_t ERRORCODE_INVALID_DURATION        = 5;
-    const ErrorCode_t ERRORCODE_INVALID_TIME            = 6;
-    const ErrorCode_t ERRORCODE_ENTITY_INUSE                = 7;
+    const ErrorCode_t ERRORCODE_INVALID_VALUE                   = 4;
+    const ErrorCode_t ERRORCODE_INVALID_DURATION                = 5;
+    const ErrorCode_t ERRORCODE_INVALID_TIME                    = 6;
+    const ErrorCode_t ERRORCODE_ENTITY_INUSE                    = 7;
     const ErrorCode_t ERRORCODE_CONTAINS_ENTITIES               = 8;
-    const ErrorCode_t ERRORCODE_ENTITY_UNKNOWN          = 9;
-    const ErrorCode_t ERRORCODE_HANDLE_NOT_REGISTERED       = 10;
-    const ErrorCode_t ERRORCODE_HANDLE_NOT_MATCH        = 11;
+    const ErrorCode_t ERRORCODE_ENTITY_UNKNOWN                  = 9;
+    const ErrorCode_t ERRORCODE_HANDLE_NOT_REGISTERED           = 10;
+    const ErrorCode_t ERRORCODE_HANDLE_NOT_MATCH                = 11;
     const ErrorCode_t ERRORCODE_HANDLE_INVALID                  = 12;
     const ErrorCode_t ERRORCODE_INVALID_SEQUENCE                = 13;
     const ErrorCode_t ERRORCODE_UNSUPPORTED_VALUE               = 14;
@@ -98,22 +108,22 @@ module DDS {
     typedef unsigned long StatusKind;
     typedef unsigned long StatusMask; // bit-mask StatusKind
 
-    const StatusKind INCONSISTENT_TOPIC_STATUS      = 0x0001 << 0;
-    const StatusKind OFFERED_DEADLINE_MISSED_STATUS = 0x0001 << 1;
+    const StatusKind INCONSISTENT_TOPIC_STATUS          = 0x0001 << 0;
+    const StatusKind OFFERED_DEADLINE_MISSED_STATUS     = 0x0001 << 1;
     const StatusKind REQUESTED_DEADLINE_MISSED_STATUS   = 0x0001 << 2;
     const StatusKind OFFERED_INCOMPATIBLE_QOS_STATUS    = 0x0001 << 5;
     const StatusKind REQUESTED_INCOMPATIBLE_QOS_STATUS  = 0x0001 << 6;
-    const StatusKind SAMPLE_LOST_STATUS         = 0x0001 << 7;
-    const StatusKind SAMPLE_REJECTED_STATUS     = 0x0001 << 8;
-    const StatusKind DATA_ON_READERS_STATUS     = 0x0001 << 9;
-    const StatusKind DATA_AVAILABLE_STATUS      = 0x0001 << 10;
-    const StatusKind LIVELINESS_LOST_STATUS     = 0x0001 << 11;
-    const StatusKind LIVELINESS_CHANGED_STATUS      = 0x0001 << 12;
-    const StatusKind PUBLICATION_MATCHED_STATUS     = 0x0001 << 13;
-    const StatusKind SUBSCRIPTION_MATCHED_STATUS    = 0x0001 << 14;
+    const StatusKind SAMPLE_LOST_STATUS                 = 0x0001 << 7;
+    const StatusKind SAMPLE_REJECTED_STATUS             = 0x0001 << 8;
+    const StatusKind DATA_ON_READERS_STATUS             = 0x0001 << 9;
+    const StatusKind DATA_AVAILABLE_STATUS              = 0x0001 << 10;
+    const StatusKind LIVELINESS_LOST_STATUS             = 0x0001 << 11;
+    const StatusKind LIVELINESS_CHANGED_STATUS          = 0x0001 << 12;
+    const StatusKind PUBLICATION_MATCHED_STATUS         = 0x0001 << 13;
+    const StatusKind SUBSCRIPTION_MATCHED_STATUS        = 0x0001 << 14;
 
     // Opensplice Extensions
-    const StatusKind ALL_DATA_DISPOSED_TOPIC_STATUS = 0x0001 << 31;
+    const StatusKind ALL_DATA_DISPOSED_TOPIC_STATUS     = 0x0001 << 31;
 
     struct InconsistentTopicStatus {
         long total_count;
@@ -131,10 +141,6 @@ module DDS {
     };
 
     enum SampleRejectedStatusKind {
-        // @discrepancy In ./etc/idlpp/dds_dcps.idl we had:
-        // @discrepancy REJECTED_BY_INSTANCE_LIMIT,
-        // @discrepancy REJECTED_BY_TOPIC_LIMIT
-        // @discrepancy In C++ mapping we had:
         NOT_REJECTED,
         REJECTED_BY_INSTANCES_LIMIT,
         REJECTED_BY_SAMPLES_LIMIT,
@@ -214,6 +220,7 @@ module DDS {
     // Listeners
     // ----------------------------------------------------------------------
     local interface Listener;
+    local interface PropertyInterface;
     local interface Entity;
     local interface TopicDescription;
     local interface Topic;
@@ -225,6 +232,7 @@ module DDS {
     local interface Subscriber;
     local interface Publisher;
 
+    typedef sequence<Object> ObjSeq;
     typedef sequence<Topic> TopicSeq;
     typedef sequence<DataReader> DataReaderSeq;
 
@@ -368,39 +376,39 @@ module DDS {
     typedef unsigned long SampleStateKind;
     typedef sequence <SampleStateKind> SampleStateSeq;
 
-    const SampleStateKind READ_SAMPLE_STATE         = 0x0001 << 0;
-    const SampleStateKind NOT_READ_SAMPLE_STATE         = 0x0001 << 1;
+    const SampleStateKind READ_SAMPLE_STATE                     = 0x0001 << 0;
+    const SampleStateKind NOT_READ_SAMPLE_STATE                 = 0x0001 << 1;
 
     // This is a bit-mask SampleStateKind
     typedef unsigned long SampleStateMask;
 
-    const SampleStateMask ANY_SAMPLE_STATE          = 0xffff;
+    const SampleStateMask ANY_SAMPLE_STATE                      = 0xffff;
 
     // View states to support reads
     typedef unsigned long ViewStateKind;
     typedef sequence<ViewStateKind> ViewStateSeq;
 
-    const ViewStateKind NEW_VIEW_STATE              = 0x0001 << 0;
-    const ViewStateKind NOT_NEW_VIEW_STATE          = 0x0001 << 1;
+    const ViewStateKind NEW_VIEW_STATE                          = 0x0001 << 0;
+    const ViewStateKind NOT_NEW_VIEW_STATE                      = 0x0001 << 1;
 
     // This is a bit-mask ViewStateKind
     typedef unsigned long ViewStateMask;
 
-    const ViewStateMask ANY_VIEW_STATE              = 0xffff;
+    const ViewStateMask ANY_VIEW_STATE                          = 0xffff;
 
     // Instance states to support reads
     typedef unsigned long InstanceStateKind;
     typedef sequence<InstanceStateKind> InstanceStateSeq;
 
-    const InstanceStateKind ALIVE_INSTANCE_STATE        = 0x0001 << 0;
+    const InstanceStateKind ALIVE_INSTANCE_STATE                = 0x0001 << 0;
     const InstanceStateKind NOT_ALIVE_DISPOSED_INSTANCE_STATE   = 0x0001 << 1;
     const InstanceStateKind NOT_ALIVE_NO_WRITERS_INSTANCE_STATE = 0x0001 << 2;
 
     // This is a bit-mask InstanceStateKind
     typedef unsigned long InstanceStateMask;
 
-    const InstanceStateMask ANY_INSTANCE_STATE          = 0xffff;
-    const InstanceStateMask NOT_ALIVE_INSTANCE_STATE        = 0x006;
+    const InstanceStateMask ANY_INSTANCE_STATE                  = 0xffff;
+    const InstanceStateMask NOT_ALIVE_INSTANCE_STATE            = 0x006;
 
     local interface ReadCondition : Condition {
         SampleStateMask
@@ -434,65 +442,83 @@ module DDS {
     // ----------------------------------------------------------------------
     // Qos
     // ----------------------------------------------------------------------
-    const string USERDATA_QOS_POLICY_NAME               = "UserData";
-    const string DURABILITY_QOS_POLICY_NAME             = "Durability";
-    const string PRESENTATION_QOS_POLICY_NAME           = "Presentation";
-    const string DEADLINE_QOS_POLICY_NAME               = "Deadline";
-    const string LATENCYBUDGET_QOS_POLICY_NAME          = "LatencyBudget";
-    const string OWNERSHIP_QOS_POLICY_NAME              = "Ownership";
-    const string OWNERSHIPSTRENGTH_QOS_POLICY_NAME      = "OwnershipStrength";
-    const string LIVELINESS_QOS_POLICY_NAME             = "Liveliness";
-    const string TIMEBASEDFILTER_QOS_POLICY_NAME        = "TimeBasedFilter";
-    const string PARTITION_QOS_POLICY_NAME              = "Partition";
-    const string RELIABILITY_QOS_POLICY_NAME            = "Reliability";
-    const string DESTINATIONORDER_QOS_POLICY_NAME       = "DestinationOrder";
-    const string HISTORY_QOS_POLICY_NAME                = "History";
-    const string RESOURCELIMITS_QOS_POLICY_NAME         = "ResourceLimits";
-    const string ENTITYFACTORY_QOS_POLICY_NAME          = "EntityFactory";
-    const string WRITERDATALIFECYCLE_QOS_POLICY_NAME    = "WriterDataLifecycle";
-    const string READERDATALIFECYCLE_QOS_POLICY_NAME    = "ReaderDataLifecycle";
-    const string TOPICDATA_QOS_POLICY_NAME              = "TopicData";
-    const string GROUPDATA_QOS_POLICY_NAME              = "GroupData";
-    const string TRANSPORTPRIORITY_QOS_POLICY_NAME      = "TransportPriority";
-    const string LIFESPAN_QOS_POLICY_NAME               = "Lifespan";
-    const string DURABILITYSERVICE_QOS_POLICY_NAME      = "DurabilityService";
-    const string SUBSCRIPTIONKEY_QOS_POLICY_NAME        = "SubscriptionKey";
-    const string VIEWKEY_QOS_POLICY_NAME                = "ViewKey";
-    const string READERLIFESPAN_QOS_POLICY_NAME         = "ReaderLifespan";
-    const string SHARE_QOS_POLICY_NAME                  = "Share";
-    const string SCHEDULING_QOS_POLICY_NAME             = "Scheduling";
+    const string USERDATA_QOS_POLICY_NAME                   = "UserData";
+    const string DURABILITY_QOS_POLICY_NAME                 = "Durability";
+    const string PRESENTATION_QOS_POLICY_NAME               = "Presentation";
+    const string DEADLINE_QOS_POLICY_NAME                   = "Deadline";
+    const string LATENCYBUDGET_QOS_POLICY_NAME              = "LatencyBudget";
+    const string OWNERSHIP_QOS_POLICY_NAME                  = "Ownership";
+    const string OWNERSHIPSTRENGTH_QOS_POLICY_NAME          = "OwnershipStrength";
+    const string LIVELINESS_QOS_POLICY_NAME                 = "Liveliness";
+    const string TIMEBASEDFILTER_QOS_POLICY_NAME            = "TimeBasedFilter";
+    const string PARTITION_QOS_POLICY_NAME                  = "Partition";
+    const string RELIABILITY_QOS_POLICY_NAME                = "Reliability";
+    const string DESTINATIONORDER_QOS_POLICY_NAME           = "DestinationOrder";
+    const string HISTORY_QOS_POLICY_NAME                    = "History";
+    const string RESOURCELIMITS_QOS_POLICY_NAME             = "ResourceLimits";
+    const string ENTITYFACTORY_QOS_POLICY_NAME              = "EntityFactory";
+    const string WRITERDATALIFECYCLE_QOS_POLICY_NAME        = "WriterDataLifecycle";
+    const string READERDATALIFECYCLE_QOS_POLICY_NAME        = "ReaderDataLifecycle";
+    const string TOPICDATA_QOS_POLICY_NAME                  = "TopicData";
+    const string GROUPDATA_QOS_POLICY_NAME                  = "GroupData";
+    const string TRANSPORTPRIORITY_QOS_POLICY_NAME          = "TransportPriority";
+    const string LIFESPAN_QOS_POLICY_NAME                   = "Lifespan";
+    const string DURABILITYSERVICE_QOS_POLICY_NAME          = "DurabilityService";
+    const string SUBSCRIPTIONKEY_QOS_POLICY_NAME            = "SubscriptionKey";
+    const string VIEWKEY_QOS_POLICY_NAME                    = "ViewKey";
+    const string READERLIFESPAN_QOS_POLICY_NAME             = "ReaderLifespan";
+    const string SHARE_QOS_POLICY_NAME                      = "Share";
+    const string SCHEDULING_QOS_POLICY_NAME                 = "Scheduling";
 
-    const QosPolicyId_t INVALID_QOS_POLICY_ID           = 0;
-    const QosPolicyId_t USERDATA_QOS_POLICY_ID          = 1;
-    const QosPolicyId_t DURABILITY_QOS_POLICY_ID        = 2;
-    const QosPolicyId_t PRESENTATION_QOS_POLICY_ID      = 3;
-    const QosPolicyId_t DEADLINE_QOS_POLICY_ID          = 4;
-    const QosPolicyId_t LATENCYBUDGET_QOS_POLICY_ID     = 5;
-    const QosPolicyId_t OWNERSHIP_QOS_POLICY_ID         = 6;
+    const QosPolicyId_t INVALID_QOS_POLICY_ID               = 0;
+    const QosPolicyId_t USERDATA_QOS_POLICY_ID              = 1;
+    const QosPolicyId_t DURABILITY_QOS_POLICY_ID            = 2;
+    const QosPolicyId_t PRESENTATION_QOS_POLICY_ID          = 3;
+    const QosPolicyId_t DEADLINE_QOS_POLICY_ID              = 4;
+    const QosPolicyId_t LATENCYBUDGET_QOS_POLICY_ID         = 5;
+    const QosPolicyId_t OWNERSHIP_QOS_POLICY_ID             = 6;
     const QosPolicyId_t OWNERSHIPSTRENGTH_QOS_POLICY_ID     = 7;
-    const QosPolicyId_t LIVELINESS_QOS_POLICY_ID        = 8;
+    const QosPolicyId_t LIVELINESS_QOS_POLICY_ID            = 8;
     const QosPolicyId_t TIMEBASEDFILTER_QOS_POLICY_ID       = 9;
-    const QosPolicyId_t PARTITION_QOS_POLICY_ID         = 10;
-    const QosPolicyId_t RELIABILITY_QOS_POLICY_ID       = 11;
+    const QosPolicyId_t PARTITION_QOS_POLICY_ID             = 10;
+    const QosPolicyId_t RELIABILITY_QOS_POLICY_ID           = 11;
     const QosPolicyId_t DESTINATIONORDER_QOS_POLICY_ID      = 12;
-    const QosPolicyId_t HISTORY_QOS_POLICY_ID           = 13;
+    const QosPolicyId_t HISTORY_QOS_POLICY_ID               = 13;
     const QosPolicyId_t RESOURCELIMITS_QOS_POLICY_ID        = 14;
-    const QosPolicyId_t ENTITYFACTORY_QOS_POLICY_ID     = 15;
+    const QosPolicyId_t ENTITYFACTORY_QOS_POLICY_ID         = 15;
     const QosPolicyId_t WRITERDATALIFECYCLE_QOS_POLICY_ID   = 16;
     const QosPolicyId_t READERDATALIFECYCLE_QOS_POLICY_ID   = 17;
-    const QosPolicyId_t TOPICDATA_QOS_POLICY_ID         = 18;
-    const QosPolicyId_t GROUPDATA_QOS_POLICY_ID         = 19;
+    const QosPolicyId_t TOPICDATA_QOS_POLICY_ID             = 18;
+    const QosPolicyId_t GROUPDATA_QOS_POLICY_ID             = 19;
     const QosPolicyId_t TRANSPORTPRIORITY_QOS_POLICY_ID     = 20;
-    const QosPolicyId_t LIFESPAN_QOS_POLICY_ID          = 21;
+    const QosPolicyId_t LIFESPAN_QOS_POLICY_ID              = 21;
     const QosPolicyId_t DURABILITYSERVICE_QOS_POLICY_ID     = 22;
     const QosPolicyId_t SUBSCRIPTIONKEY_QOS_POLICY_ID       = 23;
     const QosPolicyId_t VIEWKEY_QOS_POLICY_ID               = 24;
     const QosPolicyId_t READERLIFESPAN_QOS_POLICY_ID        = 25;
     const QosPolicyId_t SHARE_QOS_POLICY_ID                 = 26;
-    const QosPolicyId_t SCHEDULING_QOS_POLICY_ID        = 27;
+    const QosPolicyId_t SCHEDULING_QOS_POLICY_ID            = 27;
 
     // ----------------------------------------------------------------------
-    local interface Entity {
+
+    // Specifies an interface for setting and retrieving custom properties
+    // by means of name-value pairs.
+    struct Property {
+        string name;
+        string value;
+    };
+
+    local interface PropertyInterface {
+        ReturnCode_t
+        set_property(
+            in Property a_property);
+
+        ReturnCode_t
+        get_property(
+            inout Property a_property);
+    };
+
+    local interface Entity : PropertyInterface {
         //  ReturnCode_t
         //  set_qos(
         //      in EntityQos qos);
@@ -518,8 +544,6 @@ module DDS {
         StatusMask
         get_status_changes();
 
-        // @discrepancy This method did not exist in ./etc/idlpp/dds_dcps.idl
-        // @discrepancy but did in the c++ mapping version
         InstanceHandle_t
         get_instance_handle();
     };
@@ -576,8 +600,6 @@ module DDS {
             in string name,
             in Topic related_topic,
             in string filter_expression,
-            // @discrepancy (trivial) arg below now named 'filter_parameters'
-            // @discrepancy was called 'expression_parameters' in ./etc/idlpp/.
             in StringSeq expression_parameters);
 
         ReturnCode_t
@@ -660,7 +682,6 @@ module DDS {
         get_default_topic_qos(
             inout TopicQos qos);
 
-        // @discrepancy Start discrepancy - these methods existed in C++ mapping IDL not ./etc/idlpp/dds_dcps.idl
         ReturnCode_t
         get_discovered_participants(
             inout InstanceHandleSeq participant_handles);
@@ -686,11 +707,15 @@ module DDS {
         ReturnCode_t
         get_current_time(
             inout Time_t current_time);
-        // @discrepancy End discrepancy - these methods existed in C++ mapping IDL not ./etc/idlpp/dds_dcps.idl
+
+        ReturnCode_t
+        delete_historical_data(
+            in string partition_expression,
+            in string topic_expression);
+
     };
 
 
-    // @discrepancy Start discrepancy - this interface "Domain2 existed in C++ mapping IDL not ./etc/idlpp/dds_dcps.idl
     local interface Domain {
         ReturnCode_t
         create_persistent_snapshot(
@@ -699,7 +724,6 @@ module DDS {
             in string URI);
 
     };
-    // @discrepancy End discrepancy - this interface "Domain2 existed in C++ mapping IDL not ./etc/idlpp/dds_dcps.idl
 
     local interface DomainParticipantFactoryInterface {
         DomainParticipant
@@ -730,7 +754,6 @@ module DDS {
         ReturnCode_t get_qos(
             inout DomainParticipantFactoryQos qos);
 
-        // @discrepancy Start discrepancy - this method existed in C++ mapping IDL not ./etc/idlpp/dds_dcps.idl
         Domain lookup_domain(
             in DomainId_t domainId);
 
@@ -739,7 +762,10 @@ module DDS {
 
         ReturnCode_t delete_contained_entities(
             );
-        // @discrepancy End discrepancy - this method existed in C++ mapping IDL not ./etc/idlpp/dds_dcps.idl
+
+        ReturnCode_t detach_all_domains(
+            in boolean block_operations,
+            in boolean delete_entities);
     };
 
     local interface TypeSupport {
@@ -751,41 +777,26 @@ module DDS {
         get_type_name();
     };
 
-    // @discrepancy New interface in C++ mapping not ./etc/idlpp/.
-    // ----------------------------------------------------------------------
-    // This class is added to be able to create an ORB dependent factory for
-    // typed Readers and Writers.
-    // ----------------------------------------------------------------------
-    local interface TypeSupportFactory {
-    //  DataReader
-    //  create_datareader (long handle);
-    //
-    //  DataWriter
-    //  create_datawriter (long handle);
-    //  DataReaderView
-    //  create_view (long handle);
-    };
-    // @discrepancy End of new interface in C++ mapping not ./etc/idlpp/.
-
 
     // ----------------------------------------------------------------------
-    // @discrepancy This class now inherits Entity in C++ mapping IDL
     local interface TopicDescription {
-        string
-        get_type_name();
-
         string
         get_name();
 
+        string
+        get_type_name();
+
         DomainParticipant
         get_participant();
-        };
+    };
 
-    // @discrepancy This class now inherits Entity from TopicDescription not directly in C++ mapping IDL
-    local interface Topic : Entity, TopicDescription {
+    local interface Topic : TopicDescription, Entity {
         // Access the status
         ReturnCode_t
         get_inconsistent_topic_status(inout InconsistentTopicStatus a_status);
+
+        ReturnCode_t
+        get_all_data_disposed_topic_status(inout AllDataDisposedTopicStatus a_status);
 
         ReturnCode_t
         get_qos(inout TopicQos qos);
@@ -799,7 +810,6 @@ module DDS {
         ReturnCode_t
         set_listener(in TopicListener a_listener, in StatusMask mask);
 
-        // @discrepancy This method added to C++ mapping only
         ReturnCode_t
         dispose_all_data();
     };
@@ -1026,8 +1036,6 @@ module DDS {
 
         ReturnCode_t
         get_datareaders(
-            // @discrepancy Parameter 'readers' changed from out to inout in C++ mapping
-            // @discrepancy presumably as per typical perfomance optimisation for sequences.
             inout DataReaderSeq readers,
             in SampleStateMask sample_states,
             in ViewStateMask view_states,
@@ -1075,24 +1083,7 @@ module DDS {
             in TopicQos a_topic_qos);
     };
 
-    // Specifies an interface for setting and retrieving custom properties
-    // by means of name-value pairs.
-    struct Property {
-        string name;
-        string value;
-    };
-
-    local interface PropertyInterface {
-        ReturnCode_t
-        set_property(
-            in Property a_property);
-
-        ReturnCode_t
-        get_property(
-            inout Property a_property);
-    };
-
-    local interface DataReader : Entity, PropertyInterface {
+    local interface DataReader : Entity {
         //  ReturnCode_t
         //  read(
         //      inout DataSeq data_values,
@@ -1270,7 +1261,6 @@ module DDS {
         wait_for_historical_data(
             in Duration_t max_wait);
 
-        // @discrepancy New method in C++ mapping IDL
         ReturnCode_t
         wait_for_historical_data_w_condition(
             in string filter_expression,
@@ -1309,16 +1299,15 @@ module DDS {
         SampleStateKind sample_state;
         ViewStateKind view_state;
         InstanceStateKind instance_state;
-        // @discrepancy This is at the end of the struct in the idlpp / standard file I think
-        boolean valid_data;
-        Time_t source_timestamp;
-        InstanceHandle_t instance_handle;
-        InstanceHandle_t publication_handle;
         long disposed_generation_count;
         long no_writers_generation_count;
         long sample_rank;
         long generation_rank;
         long absolute_generation_rank;
+        Time_t source_timestamp;
+        InstanceHandle_t instance_handle;
+        InstanceHandle_t publication_handle;
+        boolean valid_data;
         Time_t reception_timestamp;
     };
 
@@ -1330,7 +1319,7 @@ module DDS {
 
         ReturnCode_t
         get_code(
-            inout ErrorCode_t code);
+            inout ReturnCode_t code);
 
         ReturnCode_t
         get_message(

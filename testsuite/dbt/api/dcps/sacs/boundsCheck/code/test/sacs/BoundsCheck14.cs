@@ -21,7 +21,7 @@ namespace test.sacs
             Test.Framework.TestResult result = new Test.Framework.TestResult(
                 expResult,
                 string.Empty,
-                Test.Framework.TestVerdict.Fail,
+                Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
 
             if (result.Result != string.Empty)
@@ -34,13 +34,10 @@ namespace test.sacs
             for (int i = 0; i < 4; i++) {
                 bce.message2.tstArr[i] = new mod.tst(); // Prevent uninitialized array from causing error.
             }
-            // scdds2162 - Once solved for CopyIn, re-enable the Write instruction.
-            //rc = bce.datawriter2.Write(bce.message2, 0);
-            rc = DDS.ReturnCode.Ok; // Temporary to make testcase FAIL. Please Remove when Write is re-enabled. 
+            rc = bce.datawriter2.Write(bce.message2, 0);
             if (rc != DDS.ReturnCode.BadParameter)
             {
                 result.Result = "struct array with too big size did NOT return BAD_PARAMETER.";
-            	this.testFramework.TestMessage(Test.Framework.TestMessage.Note, "See scdds2162: CopyIn should do more validity checking.");
                 return result;
             }
             result.Result = expResult;

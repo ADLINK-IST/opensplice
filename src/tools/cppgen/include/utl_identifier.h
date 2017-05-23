@@ -84,18 +84,15 @@ class Identifier
 {
 public:
 
-   Identifier (const char * s, long x, long y, long z = 0);
-
-   Identifier (const char * s = NULL);
-
+   Identifier (const char * id = 0);
    virtual ~Identifier () {};
 
    // Operations
 
    inline const char * get_string () { return pv_string; };
    unsigned long hash () const;
-   long compare (Identifier *other);
-   long operator == (const Identifier& other) const;
+   bool compare (Identifier * other);
+   long operator == (const Identifier & other) const;
 
    // Dumping
 

@@ -105,7 +105,7 @@ public:
 
    // Compare two String *
 
-   virtual long compare (UTL_String *s);
+   virtual bool compare (UTL_String *s);
 
    inline operator const char * ()
    {

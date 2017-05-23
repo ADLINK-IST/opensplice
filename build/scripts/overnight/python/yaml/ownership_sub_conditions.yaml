@@ -1,0 +1,25 @@
+parseconditions:
+    desc: Ownership LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    conditions: 
+        - name: msft_inst
+          type: line
+          inst: All
+          required: yes
+          line: "MSFT *"
+
+        - name: msft_pub1
+          type: line
+          inst: All
+          required: yes
+          line: "MSFT * pub1 5"
+
+        - name: msft_pub2
+          type: line
+          inst: All
+          required: yes
+          line: "MSFT * pub2 10"

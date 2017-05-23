@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef _XBE_GENERATOR_HH
@@ -42,14 +50,22 @@ public:
 
    virtual AST_Module *create_module(UTL_ScopedName *n, const UTL_Pragmas &p);
    virtual AST_Root *create_root(UTL_ScopedName *n, const UTL_Pragmas &p);
-   virtual AST_Interface *create_interface(idl_bool local,
-                                           UTL_ScopedName *n,
-                                           AST_Interface **ih,
-                                           long nih,
-                                           const UTL_Pragmas &p);
-   virtual AST_InterfaceFwd *create_interface_fwd(idl_bool local,
-                                                  UTL_ScopedName *n,
-                                                  const UTL_Pragmas &p);
+   virtual AST_Interface *create_interface
+   (
+      bool local,
+      bool abstract,
+      UTL_ScopedName *n,
+      AST_Interface **ih,
+      long nih,
+      const UTL_Pragmas &p
+   );
+   virtual AST_InterfaceFwd * create_interface_fwd
+   (
+      bool local,
+      bool abstract,
+      UTL_ScopedName * n,
+      const UTL_Pragmas & p
+   );
    virtual AST_Exception *create_exception(UTL_ScopedName *n, const UTL_Pragmas &p);
    virtual AST_Structure *create_structure(UTL_ScopedName *n, const UTL_Pragmas &p);
    virtual AST_Enum *create_enum(UTL_ScopedName *n, const UTL_Pragmas &p);
@@ -63,13 +79,15 @@ public:
                                          AST_Type *ft,
                                          UTL_ScopedName *n,
                                          const UTL_Pragmas &p);
-   virtual AST_Attribute *create_attribute(idl_bool ro,
+   virtual AST_Attribute *create_attribute(bool ro,
                                            AST_Type *ft,
                                            UTL_ScopedName *n,
                                            const UTL_Pragmas &p);
-   virtual AST_Union *create_union(AST_ConcreteType *dt,
-                                   UTL_ScopedName *n,
-                                   const UTL_Pragmas &p);
+   virtual AST_Union *create_union
+   (
+      UTL_ScopedName *n,
+      const UTL_Pragmas &p
+   );
    virtual AST_UnionBranch *create_union_branch(AST_UnionLabel *lab,
          AST_Type *ft,
          UTL_ScopedName *n,
@@ -112,9 +130,9 @@ public:
 
    virtual AST_Value *create_valuetype
    (
-      idl_bool abstract,
-      idl_bool custom,
-      idl_bool truncatable,
+      bool abstract,
+      bool custom,
+      bool truncatable,
       UTL_ScopedName *n,
       AST_Value **ih,
       long nih,
@@ -125,14 +143,14 @@ public:
 
    virtual AST_ValueFwd *create_valuetype_fwd
    (
-      idl_bool abstract,
+      bool abstract,
       UTL_ScopedName *n,
       const UTL_Pragmas &p
    );
 
    virtual AST_StateMember *create_state_member
    (
-      idl_bool public_access,
+      bool public_access,
       AST_Type *ft,
       UTL_ScopedName *n,
       const UTL_Pragmas &p

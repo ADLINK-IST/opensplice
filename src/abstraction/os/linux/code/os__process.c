@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -46,8 +54,8 @@ os_procGetProcessName(
     char *tmpName;
     char *procPath;
     char *exec;
-    int ret;
-    int size;
+    ssize_t ret;
+    size_t size;
     int finish = 0;
 
     if (processName == NULL) {
@@ -55,19 +63,19 @@ os_procGetProcessName(
         *processName = '\0';
         process_env_name = os_getenv("SPLICE_PROCNAME");
         if (process_env_name != NULL) {
-            size = snprintf(processName, _OS_PROCESS_DEFAULT_CMDLINE_LEN_, "%s",process_env_name);
+            size = (size_t)snprintf(processName, _OS_PROCESS_DEFAULT_CMDLINE_LEN_, "%s",process_env_name);
         }
         else {
             procPath = (char*) os_malloc(_OS_PROCESS_DEFAULT_CMDLINE_LEN_);
             if (procPath) {
-                size = snprintf(procPath, _OS_PROCESS_DEFAULT_CMDLINE_LEN_,
-                        _OS_PROCESS_PROCFS_PATH_FMT_, os_procIdToInteger(os_procIdSelf()));
+                size = (size_t)snprintf(procPath, _OS_PROCESS_DEFAULT_CMDLINE_LEN_,
+                        _OS_PROCESS_PROCFS_PATH_FMT_, os_procIdSelf());
                 if (size >= _OS_PROCESS_DEFAULT_CMDLINE_LEN_) { /* pid is apparently longer */
                     char *tmp = (char*) os_realloc(procPath, size + 1);
                     if (tmp) {
                         procPath = tmp;
-                        size = snprintf(procPath, size + 1, _OS_PROCESS_PROCFS_PATH_FMT_,
-                                os_procIdToInteger(os_procIdSelf()));
+                        size = (size_t)snprintf(procPath, size + 1, _OS_PROCESS_PROCFS_PATH_FMT_,
+                                os_procIdSelf());
                     } else {
                         /* Memory-claim failed */
                         size = 0;
@@ -79,7 +87,7 @@ os_procGetProcessName(
                     if (tmpName) {
                         while (!finish) {
                             ret = readlink(procPath, tmpName, size);
-                            if (ret >= size) {
+                            if (ret >= 0 && (size_t)ret >= size) {
                                 char *tmp;
                                 size *= 2;
                                 tmp = (char*) os_realloc(tmpName, size +1);
@@ -111,8 +119,7 @@ os_procGetProcessName(
             }
         }
     }
-    size = snprintf(procName, procNameSize, "%s", processName);
-    return (os_int32)size;
+    return snprintf(procName, procNameSize, "%s", processName);
 }
 
 #undef _OS_PROCESS_DEFAULT_CMDLINE_LEN_

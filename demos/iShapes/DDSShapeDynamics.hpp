@@ -41,7 +41,8 @@ public:
         int x0, int y0,
         dds::sub::DataReader<ShapeType> shapeReader,
         const std::string& color,
-        int colorIdx
+        int colorIdx,
+        bool dummy
     );
 
     virtual ~DDSShapeDynamics();
@@ -71,6 +72,7 @@ private:
     QColor  colorList_[CN];
     bool updateBounds_;
     dds::sub::LoanedSamples<ShapeType> samples;
+    bool dummy_;
 
 };
 }

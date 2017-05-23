@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /* Interface */
@@ -14,11 +22,11 @@
 
 /* Implementation */
 #include "os_report.h"
+#include "os_process.h"
 #include "c_base.h"
-#include "kernelModule.h"
+#include "kernelModuleI.h"
 #include "v_networkReaderEntry.h"
 #include "v_networkReaderStatistics.h"
-#include "v__statisticsInterface.h"
 #include "v_entity.h"    /* for v_entity() */
 #include "v_group.h"     /* for v_group()  */
 #include "v__reader.h"    /* for v_reader() */
@@ -28,10 +36,11 @@
 #include "v_subscriber.h"
 #include "v_groupSet.h"
 #include "v_topic.h"
-#include "v_time.h"
-#include "v_statistics.h"
 #include "v_message.h"
-#include "v__messageQos.h"
+#include "v_messageQos.h"
+#include "v_fullCounter.h"
+#include "v__processInfo.h"
+#include "v__kernel.h"
 
 #define MIN_SLEEPTIME {0, 0}
 #define MIN_SLEEPPERIOD 0
@@ -51,36 +60,35 @@
 #define V_NSEC_TO_MSEC(nsec) ((c_ulonglong)((nsec)/1000000))
 #define V_MSEC_TO_NSEC(nsec) ((c_ulong)((nsec)*1000000))
 
-#define MSEC_TO_TIME(msec, time) \
-    time.seconds = V_MSEC_TO_SEC(msec); \
-    time.nanoseconds = V_MSEC_TO_NSEC(msec % 1000)
+#define TIMEE_TO_MSEC(time, msec) \
+    msec = (c_ulonglong)(OS_TIMEE_GET_VALUE(time) / OS_TIME_MILLISECOND)
 
-#define TIME_TO_MSEC(time, msec) \
-    msec = (c_ulonglong)(V_SEC_TO_MSEC(time.seconds) + V_NSEC_TO_MSEC(time.nanoseconds))
+#define TIME_TO_MSEC_ULONG(time, msec) \
+    msec = (c_ulong)(V_SEC_TO_MSEC(time.seconds) + V_NSEC_TO_MSEC(time.nanoseconds))
 
 static void
 v_networkQueueUpdateNextWakeup(
     v_networkQueue queue,
     c_bool *hasChanged)
 {
-    c_time now;
-    c_time newWakeup;
+    os_timeE now;
+    os_timeE newWakeup;
     c_ulonglong msecsTime;
     c_ulonglong msecsResult;
     c_ulonglong msecsLeftOver;
-    
+
     *hasChanged = FALSE;
     if (queue->periodic) {
-        now = v_timeGet();
-        TIME_TO_MSEC(now, msecsTime);
+        now = os_timeEGet();
+        TIMEE_TO_MSEC(now, msecsTime);
         /* Do a ++ because we are doing a ceil and TIME_TO_MSEC is doing a trunc.
          * Only if time was an exact multiple of milliseconds, this approach is
          * not completely correct. But it saves us the hassle and this works fine */
         msecsTime++;
         msecsLeftOver = (msecsTime - queue->phaseMilliSeconds) % queue->msecsResolution;
         msecsResult = msecsTime - msecsLeftOver + queue->msecsResolution;
-        MSEC_TO_TIME(msecsResult, newWakeup);
-        if (c_timeCompare(newWakeup,queue->nextWakeup) == C_GT) {
+        newWakeup = OS_TIMEE_MILLISECONDS((os_duration)msecsResult);
+        if (os_timeECompare(newWakeup,queue->nextWakeup) == OS_MORE) {
             queue->nextWakeup = newWakeup;
             *hasChanged = TRUE;
         }
@@ -88,8 +96,8 @@ v_networkQueueUpdateNextWakeup(
 }
 
 #define dataExpired(queue) \
-        (c_timeCompare(queue->nextWakeup, \
-                       queue->firstStatusMarker->sendBefore) == C_GT)
+        (os_timeECompare(queue->nextWakeup, \
+                       queue->firstStatusMarker->sendBefore) == OS_MORE)
 
 #define v_networkQueueHasExpiringData(queue) \
         (queue->firstStatusMarker ? \
@@ -105,16 +113,15 @@ v_networkQueueNew(
     c_ulong priority,
     c_bool reliable,
     c_bool P2P,
-    c_time resolution,
+    os_duration resolution,
     v_networkQueueStatistics statistics)
 {
     v_networkQueue result = NULL;
     c_type type;
-    c_equality equality;
     c_bool hasChanged;
-    c_time now;
+    os_timeE now;
 
-    type = c_resolve(base, "kernelModule::v_networkQueue");
+    type = c_resolve(base, "kernelModuleI::v_networkQueue");
     assert(type);
     result = v_networkQueue(c_new(type));
     c_free(type);
@@ -124,9 +131,9 @@ v_networkQueueNew(
         result->maxMsgCount = queueSize;
         result->currentMsgCount = 0;
         /* Cached type */
-        result->statusMarkerType = c_resolve(base, "kernelModule::v_networkStatusMarker");
+        result->statusMarkerType = c_resolve(base, "kernelModuleI::v_networkStatusMarker");
         assert(result->statusMarkerType != NULL);
-        result->sampleType = c_resolve(base, "kernelModule::v_networkQueueSample");
+        result->sampleType = c_resolve(base, "kernelModuleI::v_networkQueueSample");
         assert(result->sampleType != NULL);
         /* Linked list of in-use marker items */
         result->firstStatusMarker = NULL;
@@ -135,50 +142,49 @@ v_networkQueueNew(
         result->freeStatusMarkers = NULL;
         result->freeSamples = NULL;
         /* Init cv stuff */
-        c_mutexInit(&result->mutex, SHARED_MUTEX);
-        c_condInit(&result->cv, &result->mutex, SHARED_COND);
+        c_mutexInit(c_getBase(result), &result->mutex);
+        c_condInit(c_getBase(result), &result->cv, &result->mutex);
         /* Currently no differentiation wrt qos */
         result->priority = priority;
         result->reliable = reliable;
         result->P2P = P2P;
 
-        result->statistics = statistics;
+        result->statistics = c_keep(statistics);
 
-        equality = c_timeCompare(C_TIME_ZERO, resolution);
-        if (equality == C_EQ) {
+        if (OS_DURATION_ISZERO(resolution)) {
             result->periodic = FALSE;
-            result->resolution = C_TIME_INFINITE;
+            result->resolution = OS_DURATION_INFINITE;
             result->msecsResolution = 0xFFFFFFFF;
             result->phaseMilliSeconds = 0;
-            result->nextWakeup = C_TIME_INFINITE;
+            result->nextWakeup = OS_TIMEE_INFINITE;
         } else {
-            assert(equality == C_LT);
+            assert(resolution > 0);
             result->periodic = TRUE;
             result->resolution = resolution;
-            TIME_TO_MSEC(resolution, result->msecsResolution);        
+            result->nextWakeup = OS_TIMEE_ZERO;
+            result->msecsResolution = (c_ulong)(resolution / OS_DURATION_MILLISECOND);
             /* A semi-random phase to avoid wake-ups at the same time */
-            now = v_timeGet();
-            result->phaseMilliSeconds = ((c_ulong)(now.nanoseconds/1000000 * 1.618)) %
-                result->msecsResolution;
+            now = os_timeEGet();
+            result->phaseMilliSeconds = ((c_ulong)((double)(OS_TIMEE_GET_NANOSECONDS(now)/1000000) * 1.618)) % result->msecsResolution;
             v_networkQueueUpdateNextWakeup(result, &hasChanged);
             assert(hasChanged);
         }
         result->threadWaiting = FALSE;
     } else {
         OS_REPORT(OS_ERROR,
-                  "v_networkQueueNew",0,
+                  "v_networkQueueNew",V_RESULT_INTERNAL_ERROR,
                   "Failed to allocate network queue.");
         assert(FALSE);
     }
     return result;
-}    
+}
 
 c_bool
 v_networkQueueWrite(
     v_networkQueue queue,
     v_message msg,
     v_networkReaderEntry entry,
-    c_long sequenceNumber,
+    c_ulong sequenceNumber,
     v_gid sender,
     c_bool sendTo, /* for p2p writing */
     v_gid receiver)
@@ -193,20 +199,21 @@ v_networkQueueWrite(
     c_ulonglong msecsTime;
     c_ulonglong msecsResult;
     c_ulonglong msecsLeftOver;
-    c_time sendBeforeNoTrunc;
-    c_time sendBefore;
-    c_time now;
+    os_timeE sendBeforeNoTrunc;
+    os_timeE sendBefore;
     c_ulong priorityLookingFor;
-    c_equality eq;
+    os_compare eq;
     c_bool sendNow = FALSE;
-   
-    V_MESSAGE_STAMP(msg,readerInsertTime); 
+
+    V_MESSAGE_STAMP(msg,readerInsertTime);
 
     c_mutexLock(&queue->mutex);
-    sendBefore = C_TIME_ZERO;
+    sendBefore = OS_TIMEE_ZERO;
 
     /* numberOfSamplesArrived statistics */
-    v_networkQueueStatisticsAdd(numberOfSamplesArrived,queue->statistics);
+    if (queue->statistics) {
+        queue->statistics->numberOfSamplesArrived++;
+    }
 
     /* When the network queue is full then the message should be rejected.
      * The exception is an UNREGISTER message. The UNREGISTER message should
@@ -220,10 +227,12 @@ v_networkQueueWrite(
      * triggers the purge mechanism.
      */
     if (!v_messageStateTest(msg,L_UNREGISTER)) {
-        if (queue->currentMsgCount == queue->maxMsgCount) {
+        if (queue->currentMsgCount >= queue->maxMsgCount) {
             c_mutexUnlock(&queue->mutex);
             /* numberOfSamplesRejected stat */
-            v_networkQueueStatisticsAdd(numberOfSamplesRejected,queue->statistics);
+            if (queue->statistics) {
+                queue->statistics->numberOfSamplesRejected++;
+            }
             return FALSE;
         }
     }
@@ -240,33 +249,25 @@ v_networkQueueWrite(
     marker = NULL;
     found = FALSE;
 
-    priorityLookingFor = v_messageQos_getTransportPriority(msg->qos);
+    priorityLookingFor = (c_ulong) v_messageQos_getTransportPriority(msg->qos);
     if (queue->periodic) {
         if (v_messageQos_isZeroLatency(msg->qos)) {
-            sendBefore = C_TIME_ZERO;
             sendNow = TRUE;
         } else {
-#ifdef _NAT_
-            now = v_timeGet();
-#else
-            now = msg->allocTime;
-#endif
-            sendBeforeNoTrunc = c_timeAdd(now,
-                                          v_messageQos_getLatencyPeriod(msg->qos));
-            TIME_TO_MSEC(sendBeforeNoTrunc, msecsTime);
-            msecsLeftOver = (c_ulonglong)((msecsTime - queue->phaseMilliSeconds) %
-                                         queue->msecsResolution);
+            sendBeforeNoTrunc = os_timeEAdd(msg->allocTime, v_messageQos_getLatencyPeriod(msg->qos));
+            TIMEE_TO_MSEC(sendBeforeNoTrunc, msecsTime);
+            msecsLeftOver = (c_ulonglong)((msecsTime - queue->phaseMilliSeconds) % queue->msecsResolution);
             msecsResult = (c_ulonglong)(msecsTime - msecsLeftOver);
-            MSEC_TO_TIME(msecsResult, sendBefore);
+            sendBefore = OS_TIMEE_MILLISECONDS((os_duration)msecsResult);
         }
         while ((currentMarker != NULL) && (!found)) {
-            eq = c_timeCompare(sendBefore, currentMarker->sendBefore);
+            eq = os_timeECompare(sendBefore, currentMarker->sendBefore);
             switch (eq) {
-            case C_GT:
+            case OS_MORE:
                 currentMarkerPtr = &currentMarker->next;
                 currentMarker = *currentMarkerPtr;
             break;
-            case C_EQ:
+            case OS_EQUAL:
                 if (priorityLookingFor < currentMarker->priority) {
                     currentMarkerPtr = &currentMarker->next;
                     currentMarker = *currentMarkerPtr;
@@ -277,7 +278,7 @@ v_networkQueueWrite(
                     }
                 }
             break;
-            case C_LT:
+            case OS_LESS:
                 found = TRUE;
             break;
             default:
@@ -287,8 +288,8 @@ v_networkQueueWrite(
         }
     } else {
         if (currentMarker) {
-        sendBefore = C_TIME_ZERO;
-            if (c_timeIsZero(currentMarker->sendBefore)) {
+            sendBefore = OS_TIMEE_ZERO;
+            if (OS_TIMEE_ISZERO(currentMarker->sendBefore)) {
                 marker = currentMarker;
             }
         }
@@ -299,7 +300,7 @@ v_networkQueueWrite(
             marker = v_networkStatusMarker(c_new(queue->statusMarkerType));
             if (marker == NULL) {
                 OS_REPORT(OS_ERROR,
-                          "v_networkQueueWrite",0,
+                          "v_networkQueueWrite",V_RESULT_INTERNAL_ERROR,
                           "Failed to allocate v_networkStatusMarker object.");
                 c_mutexUnlock(&queue->mutex);
                 return FALSE;
@@ -319,18 +320,10 @@ v_networkQueueWrite(
         }
         *currentMarkerPtr = marker; /* no keep, transfer refCount */
     }
-    V_MESSAGE_STAMP(msg,readerLookupTime); 
+    V_MESSAGE_STAMP(msg,readerLookupTime);
     assert(marker != NULL);
     if (queue->freeSamples == NULL) {
         newHolder = c_new(queue->sampleType);
-        if (newHolder == NULL) {
-            OS_REPORT(OS_ERROR,
-                      "v_networkQueueWrite",0,
-                      "Failed to allocate v_networkQueueSample object.");
-            result = FALSE;
-            c_mutexUnlock(&queue->mutex);
-            return result;
-        }
     } else {
         newHolder = queue->freeSamples;
         queue->freeSamples = newHolder->next;
@@ -339,8 +332,10 @@ v_networkQueueWrite(
     queue->currentMsgCount++;
 
     /* numberOfSamplesInserted & numberOfSamplesWaiting + stats*/
-    v_networkQueueStatisticsAdd(numberOfSamplesInserted,queue->statistics);
-    v_networkQueueStatisticsCounterInc(numberOfSamplesWaiting,queue->statistics);
+    if (queue->statistics) {
+        queue->statistics->numberOfSamplesInserted++;
+        v_fullCounterValueInc(&queue->statistics->numberOfSamplesWaiting);
+    }
 
     newHolder->message = c_keep(msg);
     newHolder->entry = c_keep(entry);
@@ -353,7 +348,7 @@ v_networkQueueWrite(
         newHolder->next = v_networkQueueSample(marker->lastSample)->next; /* no keep, transfer refCount */
         v_networkQueueSample(marker->lastSample)->next = newHolder; /* no keep, transfer refCount */
     } else {
-    newHolder->next = marker->firstSample; /* no keep, transfer refCount */
+        newHolder->next = marker->firstSample; /* no keep, transfer refCount */
         marker->firstSample = newHolder; /* no keep, transfer refCount */
     }
     marker->lastSample = newHolder;
@@ -367,16 +362,14 @@ v_networkQueueWrite(
     }
 
     c_mutexUnlock(&queue->mutex);
-    
+
     return result;
 }
-
 
 #undef V_SEC_TO_MSEC
 #undef V_MSEC_TO_SEC
 #undef V_NSEC_TO_MSEC
 #undef V_MSEC_TO_NSEC
-
 
 c_bool
 v_networkQueueTakeFirst(
@@ -387,7 +380,7 @@ v_networkQueueTakeFirst(
     v_gid *sender,
     c_bool *sendTo, /* for p2p writing */
     v_gid *receiver,
-    c_time *sendBefore,
+    os_timeE *sendBefore,
     c_ulong *priority,
     c_bool *more)
 {
@@ -396,7 +389,7 @@ v_networkQueueTakeFirst(
     v_networkQueueSample sample;
 
     *more = FALSE;
-    
+
     c_mutexLock(&queue->mutex);
 
     currentMarker = queue->firstStatusMarker;
@@ -408,8 +401,8 @@ v_networkQueueTakeFirst(
         sample = currentMarker->firstSample;
         assert(sample != NULL);
         result = TRUE;
-        
-        V_MESSAGE_STAMP(sample->message,readerDataAvailableTime); 
+
+        V_MESSAGE_STAMP(sample->message,readerDataAvailableTime);
 
         /* Copy values */
         *message = sample->message; /* no keep, transfer refCount */
@@ -422,14 +415,15 @@ v_networkQueueTakeFirst(
         *receiver = sample->receiver;
         *sendBefore = currentMarker->sendBefore;
         *priority = currentMarker->priority;
-        
+
         /* Remove and free holder */
         queue->currentMsgCount--;
 
         /* numberOfSamplesTaken+ & numberOfSamplesWaiting- stats */
-        v_networkQueueStatisticsAdd(numberOfSamplesTaken,queue->statistics);
-        v_networkQueueStatisticsCounterDec(numberOfSamplesWaiting,queue->statistics);
-
+        if (queue->statistics) {
+            queue->statistics->numberOfSamplesTaken++;
+            v_fullCounterValueDec(&queue->statistics->numberOfSamplesWaiting);
+        }
 
         currentMarker->firstSample = sample->next; /* no keep, transfer refCount */
         sample->next = queue->freeSamples;
@@ -449,7 +443,7 @@ v_networkQueueTakeFirst(
         *more = FALSE;
     }
     c_mutexUnlock(&queue->mutex);
-    
+
     return result;
 }
 
@@ -473,9 +467,10 @@ v_networkQueueTakeAction(
             proceed = action(sample, arg);
             queue->currentMsgCount--;
             /* numberOfSamplesTaken+ & numberOfSamplesWaiting- stats */
-            v_networkQueueStatisticsAdd(numberOfSamplesTaken,queue->statistics);
-            v_networkQueueStatisticsCounterDec(numberOfSamplesWaiting,queue->statistics);
-
+            if (queue->statistics) {
+                queue->statistics->numberOfSamplesTaken++;
+                v_fullCounterValueDec(&queue->statistics->numberOfSamplesWaiting);
+            }
 
             currentMarker->firstSample = sample->next; /* no keep, transfer refCount */
             sample->next = queue->freeSamples;
@@ -494,7 +489,7 @@ v_networkQueueTakeAction(
     }
     c_mutexUnlock(&queue->mutex);
     proceed = action(NULL, arg);
-    
+
     return proceed;
 }
 
@@ -503,12 +498,12 @@ v_networkQueueWait(
     v_networkQueue queue)
 {
     v_networkReaderWaitResult result = V_WAITRESULT_NONE;
-    c_syncResult syncResult;
+    v_result rs;
     c_bool hasChanged;
-    c_time interval;
-    c_time minSleepTime = MIN_SLEEPTIME;
-    c_equality eq;
-    
+    os_duration interval;
+    os_duration minSleepTime = OS_DURATION_ZERO;
+    os_compare eq;
+
     c_mutexLock(&queue->mutex);
 
     /* First update nextWakeup */
@@ -516,58 +511,58 @@ v_networkQueueWait(
     if (hasChanged) {
         result |= V_WAITRESULT_TIMEOUT;
     }
-    
+
     /* With the new nextWakeup, check if any data is expiring */
     if ((int)v_networkQueueHasExpiringData(queue)) {
         result |= V_WAITRESULT_MSGWAITING;
     }
-    
+
     /* Also check if no request has been issued lately */
     if ((int)queue->triggered) {
         result |= V_WAITRESULT_TRIGGERED;
     }
-    
+
     /* Now go to sleep if needed */
     while (result == V_WAITRESULT_NONE) {
         if (queue->periodic) {
-            c_time org =  v_timeGet();
-            interval = c_timeSub(queue->nextWakeup,org);
-            eq = c_timeCompare(minSleepTime, interval);
-            if (eq == C_LT) {
+            os_timeE org =  os_timeEGet();
+            interval = os_timeEDiff(queue->nextWakeup,org);
+            eq = os_durationCompare(minSleepTime, interval);
+            if (eq == OS_LESS) {
                 queue->threadWaiting = TRUE;
-                syncResult = c_condTimedWait(&queue->cv,
-                                             &queue->mutex,
-                                             interval);
+                rs = v_condWait(&queue->cv, &queue->mutex, interval);
                 queue->threadWaiting = FALSE;
             } else {
-                syncResult = SYNC_RESULT_TIMEOUT;
+                rs = V_RESULT_TIMEOUT;
             }
-            if (syncResult == SYNC_RESULT_TIMEOUT) {
+            if (rs == V_RESULT_TIMEOUT) {
                 result |= V_WAITRESULT_TIMEOUT;
-                queue->nextWakeup = c_timeAdd(queue->nextWakeup,
-                                              queue->resolution);
+                queue->nextWakeup = os_timeEAdd(queue->nextWakeup, queue->resolution);
             }
         } else {
             /* Wait infinitely if the queue is not periodic */
             queue->threadWaiting = TRUE;
-            syncResult = c_condWait(&queue->cv, &queue->mutex);
+            rs = v_condWait(&queue->cv, &queue->mutex, OS_DURATION_INFINITE);
             queue->threadWaiting = FALSE;
         }
         /* Test current status of queue */
-        if ((int)queue->triggered) {
-            result |= V_WAITRESULT_TRIGGERED;
-        }
-        if (v_networkQueueHasExpiringData(queue)) {
-            result |= V_WAITRESULT_MSGWAITING;
+        if ((rs != V_RESULT_OK) && (rs != V_RESULT_TIMEOUT)) {
+            result |= V_WAITRESULT_FAIL;
+        } else {
+            if ((int)queue->triggered) {
+                result |= V_WAITRESULT_TRIGGERED;
+            }
+            if (v_networkQueueHasExpiringData(queue)) {
+                result |= V_WAITRESULT_MSGWAITING;
+            }
         }
     }
-    
     queue->triggered = 0;
-    
+
     c_mutexUnlock(&queue->mutex);
-    
+
     return result;
-}    
+}
 
 
 void

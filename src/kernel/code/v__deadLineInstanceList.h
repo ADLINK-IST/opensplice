@@ -1,18 +1,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#ifndef V__DEADLINEINSTANCE_H
-#define V__DEADLINEINSTANCE_H
+#ifndef V__DEADLINEINSTANCELIST_H
+#define V__DEADLINEINSTANCELIST_H
 
-#include "v_time.h"
 #include "v_leaseManager.h"
 #include "v_status.h"
 #include "v_public.h"
@@ -21,11 +28,14 @@
 #define v_deadLineInstanceList(o) \
         (C_CAST(o,v_deadLineInstanceList))
 
+#define v_deadLineInstanceListHead(_this) \
+        (v_deadLineInstanceList(_this)->head)
+
 v_deadLineInstanceList
 v_deadLineInstanceListNew(
     c_base base,
     v_leaseManager leaseManager,
-    v_duration leaseDuration,
+    os_duration leaseDuration,
     v_leaseActionId actionId,
     v_public o);
 
@@ -36,30 +46,29 @@ v_deadLineInstanceListFree(
 void
 v_deadLineInstanceListSetDuration(
     v_deadLineInstanceList _this,
-    v_duration duration);
+    os_duration duration);
 
 void
 v_deadLineInstanceListInsertInstance(
     v_deadLineInstanceList _this,
-    v_instance instance,
-    c_time timestamp);
+    v_deadLineInstance instance);
 
 void
 v_deadLineInstanceListRemoveInstance(
     v_deadLineInstanceList _this,
-    v_instance instance);
+    v_deadLineInstance instance) __nonnull_all__;
 
 void
 v_deadLineInstanceListUpdate(
     v_deadLineInstanceList _this,
-    v_instance instance,
-    c_time timestamp);
+    v_deadLineInstance instance,
+    os_timeE timestamp) __nonnull_all__;
 
 c_iter
 v_deadLineInstanceListCheckDeadlineMissed(
     v_deadLineInstanceList _this,
-    v_duration deadlineTime,
-    c_time now);
+    os_duration deadlineTime,
+    os_timeE now);
 
 c_bool
 v_deadLineInstanceListEmpty(

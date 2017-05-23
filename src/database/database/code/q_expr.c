@@ -1,15 +1,23 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#include "os.h"
+#include "vortex_os.h"
 #include "c_iterator.h"
 #include "q_expr.h"
 #include "q_helper.h"
@@ -37,6 +45,7 @@ C_STRUCT(q_expr) {
         c_char *string;
         c_char character;
         c_longlong integer;
+        c_ulonglong uinteger;
         c_double real;
         c_type type;
         q_func function;
@@ -97,8 +106,12 @@ q_print(
     switch(e->kind) {
     case T_VAR:
     case T_INT:
-	llstr[35] = '\0';
-        printf("%s",os_lltostr(e->info.integer, &llstr[35]));
+        (void)os_lltostr(e->info.integer, llstr, sizeof(llstr), NULL);
+        printf("%s",llstr);
+    break;
+    case T_UINT:
+        (void)os_ulltostr(e->info.uinteger, llstr, sizeof(llstr), NULL);
+        printf("%s",llstr);
     break;
     case T_DBL:
         printf("%f",e->info.real);
@@ -122,7 +135,7 @@ q_print(
             } else {
                 printf("%s(<anonomous type>,0x" PA_ADDRFMT,name,(c_address)q_getPar(e,1));
             }
-            p = i+strlen(name)+1;
+            p = i+(c_long)strlen(name)+1;
             printf(",\n");
             for (n=0;n<p;n++) printf(" ");
             q_print(q_getPar(e,2),p);
@@ -130,7 +143,7 @@ q_print(
         } else {
             name = (c_char *)q_tagImage(e->info.function->tag);
             printf("%s(",name);
-            p = i+strlen(name)+1;
+            p = i+(c_long)strlen(name)+1;
             l = e->info.function->params;
             if (l != NULL) {
                 q_print(l->expr,p);
@@ -168,14 +181,11 @@ listMalloc()
 static q_expr q_exprMalloc()
 {
     q_expr expr;
-
-    expr = (q_expr)os_malloc(C_SIZEOF(q_expr));
-    if(expr){
-        expr->text = NULL;
-        expr->instanceState = 0;
-        expr->sampleState = 0;
-        expr->viewState = 0;
-    }
+    expr = os_malloc(C_SIZEOF(q_expr));
+    expr->text = NULL;
+    expr->instanceState = 0;
+    expr->sampleState = 0;
+    expr->viewState = 0;
     return expr;
 }
 
@@ -203,11 +213,9 @@ funcMalloc(
     q_tag tag,
     q_list params)
 {
-    q_func func = (q_func)os_malloc(C_SIZEOF(q_func));
-    if(func){
-        func->tag = tag;
-        func->params = params;
-    }
+    q_func func = os_malloc(C_SIZEOF(q_func));
+    func->tag = tag;
+    func->params = params;
     return func;
 }
 
@@ -216,10 +224,18 @@ q_newInt(
     c_longlong value)
 {
     q_expr expr = q_exprMalloc();
-    if(expr){
-        expr->kind = T_INT;
-        expr->info.integer = value;
-    }
+    expr->kind = T_INT;
+    expr->info.integer = value;
+    return expr;
+}
+
+q_expr
+q_newUInt(
+    c_ulonglong value)
+{
+    q_expr expr = q_exprMalloc();
+    expr->kind = T_UINT;
+    expr->info.uinteger = value;
     return expr;
 }
 
@@ -228,10 +244,8 @@ q_newDbl(
     c_double value)
 {
     q_expr expr = q_exprMalloc();
-    if(expr){
-        expr->kind = T_DBL;
-        expr->info.real = value;
-    }
+    expr->kind = T_DBL;
+    expr->info.real = value;
     return expr;
 }
 
@@ -240,10 +254,8 @@ q_newChr(
     c_char value)
 {
     q_expr expr = q_exprMalloc();
-    if(expr){
-        expr->kind = T_CHR;
-        expr->info.character = value;
-    }
+    expr->kind = T_CHR;
+    expr->info.character = value;
     return expr;
 }
 
@@ -252,10 +264,8 @@ q_newStr(
     c_char *string)
 {
     q_expr expr = q_exprMalloc();
-    if(expr){
-        expr->kind = T_STR;
-        expr->info.string = q_stringMalloc(string);
-    }
+    expr->kind = T_STR;
+    expr->info.string = q_stringMalloc(string);
     return expr;
 }
 
@@ -264,10 +274,8 @@ q_newId(
     c_char *string)
 {
     q_expr expr = q_exprMalloc();
-    if(expr){
-        expr->kind = T_ID;
-        expr->info.string = q_stringMalloc(string);
-    }
+    expr->kind = T_ID;
+    expr->info.string = q_stringMalloc(string);
     return expr;
 }
 
@@ -275,10 +283,8 @@ q_expr
 q_newVar(c_longlong id)
 {
     q_expr expr = q_exprMalloc();
-    if(expr){
-        expr->kind = T_VAR;
-        expr->info.integer = id;
-    }
+    expr->kind = T_VAR;
+    expr->info.integer = id;
     return expr;
 }
 
@@ -287,10 +293,8 @@ q_newTyp(
     c_type type)
 {
     q_expr expr = q_exprMalloc();
-    if(expr){
-        expr->kind = T_TYP;
-        expr->info.type = c_keep(type);
-    }
+    expr->kind = T_TYP;
+    expr->info.type = c_keep(type);
     return expr;
 }
 
@@ -305,10 +309,8 @@ q_newFnc(
 
 /* ================================================== */
     expr = q_exprMalloc();
-    if(expr){
-        expr->kind = T_FNC;
-        expr->info.function = funcMalloc(tag, params);
-    }
+    expr->kind = T_FNC;
+    expr->info.function = funcMalloc(tag, params);
     return expr;
 }
 
@@ -320,6 +322,16 @@ q_isInt(
         return FALSE;
     }
     return (expr->kind == T_INT);
+}
+
+c_bool
+q_isUInt(
+    q_expr expr)
+{
+    if (expr == NULL) {
+        return FALSE;
+    }
+    return (expr->kind == T_UINT);
 }
 
 c_bool
@@ -407,6 +419,14 @@ q_getInt(
     return expr->info.integer;
 }
 
+c_ulonglong
+q_getUInt(
+    q_expr expr)
+{
+    assert(expr->kind == T_UINT);
+    return expr->info.uinteger;
+}
+
 c_double
 q_getDbl(
     q_expr expr)
@@ -465,7 +485,6 @@ q_getPar(
 
     assert(expr->kind == T_FNC);
     ptr = expr->info.function->params;
-    i=0;
     for (i=0; (ptr!=NULL)&&(i!=index); i++) {
         ptr=ptr->next;
     }
@@ -487,7 +506,6 @@ q_takePar(
     assert(expr->kind == T_FNC);
 
     ptr = &expr->info.function->params;
-    i=0;
     for (i=0; (*ptr!=NULL)&&(i!=index); i++) {
         ptr=&(*ptr)->next;
     }
@@ -567,6 +585,13 @@ q_exprCopy(
         return copy;
     case T_INT:
         copy = q_newInt(q_getInt(e));
+        q_exprSetText(copy, e->text);
+        q_exprSetInstanceState(copy, e->instanceState);
+        q_exprSetSampleState(copy, e->sampleState);
+        q_exprSetViewState(copy, e->viewState);
+        return copy;
+    case T_UINT:
+        copy = q_newUInt(q_getUInt(e));
         q_exprSetText(copy, e->text);
         q_exprSetInstanceState(copy, e->instanceState);
         q_exprSetSampleState(copy, e->sampleState);
@@ -691,6 +716,7 @@ q_takeField(
     case T_TYP:
     case T_VAR:
     case T_INT:
+    case T_UINT:
     case T_DBL:
     case T_CHR:
     case T_STR:
@@ -712,7 +738,8 @@ q_takeKey(
     c_array keyList)
 {
     q_expr *l,*r,p,q,x;
-    c_long i,len;
+    c_ulong i,len;
+    c_long k;
     c_char qn[1024];
     q_tag tag;
 
@@ -765,11 +792,11 @@ q_takeKey(
             }
             return NULL;
         case Q_EXPR_PROPERTY:
-            i=0; qn[0]=0;
-            while ((p = q_getPar(*e,i)) != NULL) {
-                if (i!=0) os_strcat(qn,".");
+            k=0; qn[0]=0;
+            while ((p = q_getPar(*e,k)) != NULL) {
+                if (k!=0) os_strcat(qn,".");
                 os_strcat(qn,q_getId(p));
-                i++;
+                k++;
             }
             for (i=0; i<len; i++) {
                 if (strcmp(qn,c_fieldName(keyList[i])) == 0) {
@@ -786,6 +813,7 @@ q_takeKey(
     break;
     case T_VAR:
     case T_INT:
+    case T_UINT:
     case T_DBL:
     case T_CHR:
     case T_STR:
@@ -854,6 +882,9 @@ q_prefixFieldNames (
         case Q_EXPR_PROGRAM:
             q_prefixFieldNames(&(*e)->info.function->params->expr,prefix);
         break;
+        case Q_EXPR_SCOPEDNAME:
+            q_prefixFieldNames(&(*e)->info.function->params->expr,prefix);
+        break;
         default:
             assert(FALSE);
         break;
@@ -861,6 +892,7 @@ q_prefixFieldNames (
     break;
     case T_VAR:
     case T_INT:
+    case T_UINT:
     case T_DBL:
     case T_CHR:
     case T_STR:
@@ -1367,7 +1399,8 @@ q_propertyName(
 {
     q_expr p;
     c_char *name;
-    c_long len,i;
+    c_size len;
+    c_long i;
 
     if (q_isFnc(e,Q_EXPR_PROPERTY)) {
         i=0; len = 0;
@@ -1416,7 +1449,7 @@ q_countVarWalk(
         case T_VAR:
             found = c_iterResolve(list,(c_iterResolveCompare)compareVar,e);
             if (found == NULL) {
-                list = c_iterInsert(list,e);
+                (void) c_iterInsert(list,e);
             }
         break;
         case T_FNC:
@@ -1436,11 +1469,35 @@ q_countVarWalk(
     }
 }
 
-c_long
+c_ulong q_getLastVar(q_expr e)
+{
+    c_longlong lastVar = 0;
+    c_iter list;
+    q_expr found;
+
+    list = c_iterNew(NULL);
+    q_countVarWalk(e,list);
+    found = c_iterTakeFirst(list);
+    while (found)
+    {
+        if (found->info.integer > lastVar)
+        {
+            lastVar = found->info.integer;
+        }
+        found = c_iterTakeFirst(list);
+    }
+
+    c_iterFree(list);
+    assert (lastVar == (c_ulong) lastVar);
+    return (c_ulong) lastVar;
+
+
+}
+c_ulong
 q_countVar(
     q_expr e)
 {
-    c_long nrOfVar;
+    c_ulong nrOfVar;
     c_iter list;
 
     list = c_iterNew(NULL);
@@ -1563,14 +1620,14 @@ translate(
         {
             /* first get the string representation of the id's in this expr */
             c_field f;
-            c_long i, index = -1, size = 0;
+            c_ulong i, index, size = 0;
             c_char *name;
 
             name = q_propertyName(expr);
             if(name)
             {
                 /* Now find the matching key in the sourceKeyList */
-                size = c_arraySize(sourceKeyList);
+                index = size = c_arraySize(sourceKeyList);
 
                 assert(size == c_arraySize(indexKeyList));
 
@@ -1586,9 +1643,9 @@ translate(
                         }
                     }
 
-                    assert(index >= 0);
+                    assert(index < size);
 
-                    if(index >= 0)
+                    if(index < size)
                     {
                         /* now replace the Q_EXPR_PROPERTY id's by the indexKeyList ones */
                         q_expr e;
@@ -1619,11 +1676,11 @@ translate(
                             c_iterFree(ids);
                         }
                     } else {
-                        OS_REPORT_1(OS_WARNING,"v_dataReaderQuery_translate failed", 0,
+                        OS_REPORT(OS_WARNING,"v_dataReaderQuery_translate failed", 0,
                                         "Cannot find key '%s' in key list.", name);
                     }
                 } else {
-                    OS_REPORT_2(OS_ERROR,"v_dataReaderQuery_translate failed", 0,
+                    OS_REPORT(OS_ERROR,"v_dataReaderQuery_translate failed", 0,
                                        "sizes of indexKeyList (size %d) and sourceKeyList (size %d) do not match.", c_arraySize(indexKeyList), size);
                 }
                 os_free(name);

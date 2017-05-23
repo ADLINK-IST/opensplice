@@ -10,3 +10,6 @@ export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/gsoap-v2.7
 #USERPROFILE which has spaces in and does not work, unsetting solves the problem
 unset USERPROFILE
 export QTDIR=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_32bit
+export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
+export LAUNCH4J_HOME=/home/dds/INSTALLED_FOR_DDS/Launch4j
+export PATH=/usr/local/bin:$PATH

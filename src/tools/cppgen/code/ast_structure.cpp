@@ -1,4 +1,3 @@
-
 /*
  
 COPYRIGHT
@@ -72,47 +71,42 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * structure's fields are managed in a scope).
  */
 
-#include "idl.h"
-#include "idl_extern.h"
+#include <idl.h>
+#include <idl_extern.h>
 
 /*
  * Constructor(s) and destructor
  */
-AST_Structure::AST_Structure()
+AST_Structure::AST_Structure ()
+   : pd_defined (false)
 {}
 
-AST_Structure::AST_Structure(UTL_ScopedName *n, const UTL_Pragmas &p)
-      : AST_Decl(AST_Decl::NT_struct, n, p),
-      UTL_Scope(AST_Decl::NT_struct, n, p)
+AST_Structure::AST_Structure (UTL_ScopedName *n, const UTL_Pragmas &p)
+: 
+   AST_Decl (AST_Decl::NT_struct, n, p),
+   UTL_Scope (AST_Decl::NT_struct, n, p),
+   pd_defined (true)
 {}
 
-AST_Structure::AST_Structure(AST_Decl::NodeType nt,
-                             UTL_ScopedName *n,
-                             const UTL_Pragmas &p)
-      : AST_Decl(nt, n, p),
-      UTL_Scope(nt, n, p)
+AST_Structure::AST_Structure
+(
+   AST_Decl::NodeType nt,
+   UTL_ScopedName *n,
+   const UTL_Pragmas &p
+)
+: AST_Decl (nt, n, p), UTL_Scope (nt, n, p),
+  pd_defined (true)
 {}
-
-/*
- * Private operations
- */
-
-/*
- * Public operations
- */
-
-/*
- * Redefinition of inherited virtual operations
- */
 
 /*
  * Add this AST_Field node (a field declaration) to this scope
  */
-AST_Field *AST_Structure::fe_add_field(AST_Field *t)
+
+AST_Field * AST_Structure::fe_add_field (AST_Field *t)
 {
    AST_Decl *d;
 
-   if (local() != I_TRUE)
+   if (local() != true)
    {
       set_local(t->field_type()->local());
    }
@@ -142,15 +136,8 @@ AST_Field *AST_Structure::fe_add_field(AST_Field *t)
       }
    }
 
-   /*
-    * Add it to scope
-    */
-   add_to_scope(t);
-
-   /*
-    * Add it to set of locally referenced symbols
-    */
-   add_to_referenced(t, I_FALSE);
+   add_to_scope (t);
+   add_to_referenced (t, false);
 
    return t;
 }
@@ -166,7 +153,7 @@ AST_Structure *AST_Structure::fe_add_structure(AST_Structure *t)
     * Already defined and cannot be redefined? Or already used?
     */
 
-   if (local() != I_TRUE)
+   if (local() != true)
    {
       set_local(t->local());
    }
@@ -200,7 +187,7 @@ AST_Structure *AST_Structure::fe_add_structure(AST_Structure *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -216,7 +203,7 @@ AST_Union *AST_Structure::fe_add_union(AST_Union *t)
     * Already defined and cannot be redefined? Or already used?
     */
 
-   if (local() != I_TRUE)
+   if (local() != true)
    {
       set_local(t->local());
    }
@@ -250,7 +237,7 @@ AST_Union *AST_Structure::fe_add_union(AST_Union *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -295,7 +282,7 @@ AST_Enum *AST_Structure::fe_add_enum(AST_Enum *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -343,7 +330,7 @@ AST_EnumVal *AST_Structure::fe_add_enum_val(AST_EnumVal *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -387,16 +374,17 @@ AST_Typedef *AST_Structure::fe_add_typedef(AST_Typedef *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
 
-/*
- * Dump this AST_Structure node to the ostream o
- */
-void
-AST_Structure::dump(ostream &o)
+void AST_Structure::virt_set_gen_any (void)
+{
+   set_scoped_gen_any ();
+}
+
+void AST_Structure::dump (ostream &o)
 {
    o << "struct ";
    AST_Decl::dump(o);
@@ -406,7 +394,6 @@ AST_Structure::dump(ostream &o)
    o << "}";
 }
 
-// Narrowing
-IMPL_NARROW_METHODS2(AST_Structure, AST_ConcreteType, UTL_Scope)
-IMPL_NARROW_FROM_DECL(AST_Structure)
-IMPL_NARROW_FROM_SCOPE(AST_Structure)
+IMPL_NARROW_METHODS2 (AST_Structure, AST_ConcreteType, UTL_Scope)
+IMPL_NARROW_FROM_DECL (AST_Structure)
+IMPL_NARROW_FROM_SCOPE (AST_Structure)

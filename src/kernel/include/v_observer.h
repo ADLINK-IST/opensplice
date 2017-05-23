@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef V_OBSERVER_H
@@ -23,7 +31,7 @@
  *
  * <b>Notification</b>:
  * When a derived class implements its own notification method it must be called
- * from <code>v_observerNotify</code>. So the implementation of 
+ * from <code>v_observerNotify</code>. So the implementation of
  * <code>v_observerNotify</code> is modified each time a derived observer
  * implements its own notification method.
  *
@@ -31,7 +39,7 @@
  * \todo current implementation does not obey this rule!
  * Each derived observer should use <code>v_observerLock</code> and
  * <code>v_observerUnlock</code> to protect its data. It may introduce its own
- * mutex (or lock) to protect its data, but must take into account the 
+ * mutex (or lock) to protect its data, but must take into account the
  * scheduling penalties it introduces. If an observer deviates from this rule
  * it MUST be documented!
  * What scheduling penalties are introduced when the observer mutex is not
@@ -115,7 +123,7 @@ v_observerWait(
 OS_API c_ulong
 v_observerTimedWait(
     v_observer _this,
-    const c_time timeout);
+    const os_duration timeout);
 
 /**
  * Add the event(s) the observer is interested in.
@@ -180,7 +188,7 @@ v_observerSetEventMask(
     c_ulong mask);
 
 #define v_observerLock(_this) \
-        c_mutexLock(&v_observer(_this)->mutex)
+        (void)c_mutexLock(&v_observer(_this)->mutex)
 
 #define v_observerUnlock(_this) \
         c_mutexUnlock(&v_observer(_this)->mutex)

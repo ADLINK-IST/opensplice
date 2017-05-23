@@ -1,0 +1,21 @@
+parseconditions:
+    desc: ContentFilteredTopic LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: sub_receive_ge
+          type: line
+          inst: All
+          required: yes
+          line: "=== [ContentFilteredTopicDataSubscriber] receives stockQuote :  (GE, *"
+
+        - name: sub_receive_msft
+          type: line
+          inst: 0
+          required: no
+          line: "=== [ContentFilteredTopicDataSubscriber] receives stockQuote :  (MSFT, *"

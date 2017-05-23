@@ -1,18 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.com;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,6 +52,7 @@ import org.opensplice.cm.Waitset;
 import org.opensplice.cm.Writer;
 import org.opensplice.cm.WriterSnapshot;
 import org.opensplice.cm.data.GID;
+import org.opensplice.cm.data.Mask;
 import org.opensplice.cm.data.Sample;
 import org.opensplice.cm.data.UserData;
 import org.opensplice.cm.meta.MetaType;
@@ -77,7 +87,7 @@ import org.opensplice.cm.transform.UserDataSerializer;
  * Monitoring API, communication with SPLICE-DDS domains on remote nodes is
  * possible if the Control & Monitoring SOAP Service is running on that node/
  * domain combination.
- * 
+ *
  * @date Jan 17, 2005
  */
 public class SOAPCommunicator implements Communicator, ActionListener {
@@ -104,11 +114,11 @@ public class SOAPCommunicator implements Communicator, ActionListener {
     /**
      * Creates a new SOAP communication handler for the Control & Monitoring
      * API.
-     * 
+     *
      * @throws Exception
      *             Thrown when: - The Java SOAP extensions are not available.
      */
-    public SOAPCommunicator() throws CommunicationException {
+    public SOAPCommunicator(String url) throws CommunicationException {
         initialized = false;
         connectionAlive = false;
 
@@ -145,13 +155,13 @@ public class SOAPCommunicator implements Communicator, ActionListener {
             SortedMap<String, String> members = new TreeMap<String, String>();
             members.put("dummy", "dummy");
             leaseRequest = this.createRequest("updateLease", members);
+            this.initialise(url);
         } catch (Exception e) {
             throw new CommunicationException(e.getMessage());
         }
     }
 
-    @Override
-    public void initialise(String _url) throws CommunicationException {
+    private void initialise(String _url) throws CommunicationException {
         SOAPConnection connection = null;
         try {
             connectionPool = SOAPConnectionPool.getInstance();
@@ -169,6 +179,7 @@ public class SOAPCommunicator implements Communicator, ActionListener {
             initialized = true;
             connectionAlive = true;
             updateLease.start();
+
         } catch (UnsupportedOperationException e) {
             throw new CommunicationException(e.getMessage());
         } catch (SOAPException e) {
@@ -178,6 +189,29 @@ public class SOAPCommunicator implements Communicator, ActionListener {
             if (connectionPool != null) {
                 connectionPool.releaseConnection(connection);
             }
+        }
+        try {
+            String version = this.getVersion();
+
+            if (!"N.A".equals(version)) {
+                String[] majorMinorStr = version.replaceFirst("V", "").split(
+                        "\\.");
+                int major = new Integer(majorMinorStr[0]);
+                int minor = new Integer(majorMinorStr[1]);
+                double majorMinor = new Double(major + "." + minor);
+
+                if (majorMinor < 6.6) {
+                    this.qosSerializer = DataTransformerFactory
+                            .getQoSSerializer(DataTransformerFactory.XML_PRE_V6_6);
+                } else if (majorMinor > 6.6) {
+                    this.qosSerializer = DataTransformerFactory
+                            .getQoSSerializer(DataTransformerFactory.XML_TIME_64);
+                    qosDeserializer = DataTransformerFactory.getQoSDeserializer(
+                            DataTransformerFactory.XML_TIME_64);
+                }
+            }
+        } catch (CMException e) {
+            // This may happen and is expected, so ignore.
         }
     }
 
@@ -206,7 +240,6 @@ public class SOAPCommunicator implements Communicator, ActionListener {
                     throw new CommunicationException("Could not detach.");
                 }
                 updateLease.stop();
-                connectionPool.closeConnections();
                 connectionPool = null;
             }
         } catch (UnsupportedOperationException e) {
@@ -273,6 +306,35 @@ public class SOAPCommunicator implements Communicator, ActionListener {
         }
         return e;
 
+    }
+
+    @Override
+    public Entity[] entityGetEntityTree(Entity entity, long childIndex, long childSerial) throws CommunicationException{
+        Entity[] e = null;
+        this.checkConnection();
+        SOAPConnection connection = null;
+        try{
+            String xmlEntity = entitySerializer.serializeEntity(entity);
+            SortedMap<String, String> members = new TreeMap<String, String>();
+            members.put("entity", xmlEntity);
+            members.put("childIndex", Long.toString(childIndex));
+            members.put("childSerial", Long.toString(childSerial));
+            SOAPMessage request = this.createRequest("entityGetEntityTree", members);
+
+            connection = connectionPool.acquireConnection();
+            SOAPMessage result = connection.call(request, url);
+
+            String entities = this.getResponse(result);
+            e = entityDeserializer.deserializeEntityList(entities);
+        } catch (SOAPException se) {
+            this.connectionAlive = false;
+            this.checkConnection();
+        } catch(TransformationException te){
+            throw new CommunicationException("Could not resolve child entities.");
+        } finally {
+            connectionPool.releaseConnection(connection);
+        }
+        return e;
     }
 
     @Override
@@ -472,6 +534,55 @@ public class SOAPCommunicator implements Communicator, ActionListener {
             connectionPool.releaseConnection(connection);
         }
         return result;
+    }
+
+    @Override
+    public int participantGetDomainId(Participant participant)
+            throws CommunicationException {
+        int domainId;
+
+        this.checkConnection();
+        SOAPConnection connection = null;
+
+        try {
+            String xmlParticipant = entitySerializer
+                    .serializeEntity(participant);
+
+            SortedMap<String, String> members = new TreeMap<String, String>();
+            members.put("participant", xmlParticipant);
+
+            SOAPMessage request = this.createRequest("participantGetDomainId",
+                    members);
+
+            connection = connectionPool.acquireConnection();
+            SOAPMessage response = connection.call(request, url);
+
+            String result = this.getResponse(response);
+
+            try {
+                domainId = Integer.parseInt(result);
+            } catch (NumberFormatException nfe) {
+                throw new CommunicationException("Received invalid domainId (."
+                        + result + ")");
+            }
+        } catch (SOAPException se) {
+            if (se.getFaultCode() == SOAPException.SOAP_Client) {
+                if (se.getFaultString().contains("not implemented")) {
+                    throw new CommunicationException(
+                            "participant.getDomainId() operation not supported by SOAP server.");
+                }
+            }
+            this.connectionAlive = false;
+            this.checkConnection();
+            throw new CommunicationException(
+                    "Could not obtain domainId for Participant.");
+        } catch (TransformationException e) {
+            throw new CommunicationException(
+                    "Could not obtain domainId for Participant.");
+        } finally {
+            connectionPool.releaseConnection(connection);
+        }
+        return domainId;
     }
 
     @Override
@@ -1120,69 +1231,6 @@ public class SOAPCommunicator implements Communicator, ActionListener {
     }
 
     @Override
-    public void publisherPublish(Publisher p, String expression) throws CommunicationException {
-        this.checkConnection();
-        SOAPConnection connection = null;
-        try {
-            String xmlPublisher = entitySerializer.serializeEntity(p);
-
-            SortedMap<String, String> members = new TreeMap<String, String>();
-            members.put("publisher", xmlPublisher);
-            members.put("expression", expression);
-
-            SOAPMessage request = this.createRequest("publisherPublish", members);
-
-            connection = connectionPool.acquireConnection();
-            SOAPMessage response = connection.call(request, url);
-
-            String xmlResult = this.getResponse(response);
-
-            if(!("<result>OK</result>".equals(xmlResult))){
-                throw new CommunicationException("Publication failed.");
-            }
-        } catch (SOAPException se) {
-            this.connectionAlive = false;
-            this.checkConnection();
-        } catch(TransformationException te){
-            throw new CommunicationException("Publication failed.");
-        } finally {
-            connectionPool.releaseConnection(connection);
-        }
-
-    }
-
-    @Override
-    public void subscriberSubscribe(Subscriber p, String expression) throws CommunicationException {
-        this.checkConnection();
-        SOAPConnection connection = null;
-        try {
-            String xmlSubscriber = entitySerializer.serializeEntity(p);
-
-            SortedMap<String, String> members = new TreeMap<String, String>();
-            members.put("subscriber", xmlSubscriber);
-            members.put("expression", expression);
-
-            SOAPMessage request = this.createRequest("subscriberSubscribe", members);
-
-            connection = connectionPool.acquireConnection();
-            SOAPMessage response = connection.call(request, url);
-
-            String xmlResult = this.getResponse(response);
-
-            if(!("<result>OK</result>".equals(xmlResult))){
-                throw new CommunicationException("Subscription failed.");
-            }
-        } catch (SOAPException se) {
-            this.connectionAlive = false;
-            this.checkConnection();
-        } catch(TransformationException te){
-            throw new CommunicationException("Subscription failed.");
-        } finally {
-            connectionPool.releaseConnection(connection);
-        }
-    }
-
-    @Override
     public Writer writerNew(Publisher p, String name, Topic t, WriterQoS qos) throws CommunicationException {
         Writer entity = null;
         String xmlQos = null;
@@ -1260,13 +1308,16 @@ public class SOAPCommunicator implements Communicator, ActionListener {
         this.checkConnection();
         SOAPConnection connection = null;
         try{
+            SOAPMessage request;
+
             String xmlDataReader = entitySerializer.serializeEntity(dr);
             SortedMap<String, String> members = new TreeMap<String, String>();
             members.put("dataReader", xmlDataReader);
-            members.put("seconds", Integer.toString(time.sec));
+
+            members.put("seconds", Long.toString(time.sec));
             members.put("nanoseconds", Integer.toString(time.nsec));
 
-            SOAPMessage request = this.createRequest("dataReaderWaitForHistoricalData", members);
+            request = this.createRequest("dataReaderWaitForHistoricalData", members);
 
             connection = connectionPool.acquireConnection();
             SOAPMessage response = connection.call(request, url);
@@ -1516,14 +1567,14 @@ public class SOAPCommunicator implements Communicator, ActionListener {
             members.put("entities", xmlEntities);
 
             SOAPMessage request = this.createRequest("entitiesStatistics", members);
-            
+
             connection = connectionPool.acquireConnection();
             SOAPMessage response = connection.call(request, url);
 
             String result = this.getResponse(response);
 
             if((result != null) &&(!("".equals(result)))){
-                statistics = statisticsDeserializer.deserializeStatistics(result, entities);	
+                statistics = statisticsDeserializer.deserializeStatistics(result, entities);
             }
         } catch (SOAPException se) {
             this.connectionAlive = false;
@@ -1535,7 +1586,7 @@ public class SOAPCommunicator implements Communicator, ActionListener {
         }
         return statistics;
     }
-    
+
     @Override
     public void entityResetStatistics(Entity entity, String fieldName) throws CommunicationException {
         this.checkConnection();
@@ -1708,13 +1759,15 @@ public class SOAPCommunicator implements Communicator, ActionListener {
         this.checkConnection();
         SOAPConnection connection = null;
         try{
+            SOAPMessage request;
             String xmlWaitset = entitySerializer.serializeEntity(waitset);
             SortedMap<String, String> members = new TreeMap<String, String>();
             members.put("waitset", xmlWaitset);
-            members.put("seconds", Integer.toString(time.sec));
+
+            members.put("seconds", Long.toString(time.sec));
             members.put("nanoseconds", Integer.toString(time.nsec));
 
-            SOAPMessage request = this.createRequest("waitsetTimedWait", members);
+            request = this.createRequest("waitsetTimedWait", members);
 
             connection = connectionPool.acquireConnection();
             SOAPMessage response = connection.call(request, url);
@@ -2012,15 +2065,225 @@ public class SOAPCommunicator implements Communicator, ActionListener {
         }
     }
 
-    private SOAPMessage createRequest(String method, SortedMap<String, String> members){
+    @Override
+    public void beginCoherentChanges(Publisher publisher)
+            throws CommunicationException {
+        this.checkConnection();
+        SOAPConnection connection = null;
+        try {
+            String xmlPublisher = entitySerializer.serializeEntity(publisher);
+
+            SortedMap<String, String> members = new TreeMap<String, String>();
+            members.put("publisher", xmlPublisher);
+
+            SOAPMessage request = this.createRequest(
+                    "publisherBeginCoherentChanges", members);
+
+            connection = connectionPool.acquireConnection();
+            SOAPMessage response = connection.call(request, url);
+
+            String result = this.getResponse(response);
+
+            if (!("<result>OK</result>".equals(result))) {
+                System.out.println(result);
+                throw new CommunicationException(result.substring(8,
+                        result.length() - 9));
+            }
+        } catch (SOAPException se) {
+            if (se.getFaultCode() == SOAPException.SOAP_Client) {
+                if (se.getFaultString().contains("not implemented")) {
+                    throw new CommunicationException(
+                            "publisher.beginCoherentChanges operation not supported by SOAP server.");
+                }
+            }
+            this.connectionAlive = false;
+            this.checkConnection();
+        } catch (TransformationException e) {
+            throw new CommunicationException(
+                    "Could not begin coherent changes on publisher.");
+        } finally {
+            connectionPool.releaseConnection(connection);
+        }
+        return;
+    }
+
+    @Override
+    public void endCoherentChanges(Publisher publisher)
+            throws CommunicationException {
+        this.checkConnection();
+        SOAPConnection connection = null;
+        try {
+            String xmlPublisher = entitySerializer.serializeEntity(publisher);
+
+            SortedMap<String, String> members = new TreeMap<String, String>();
+            members.put("publisher", xmlPublisher);
+
+            SOAPMessage request = this.createRequest(
+                    "publisherEndCoherentChanges", members);
+
+            connection = connectionPool.acquireConnection();
+            SOAPMessage response = connection.call(request, url);
+
+            String result = this.getResponse(response);
+
+            if (!("<result>OK</result>".equals(result))) {
+                throw new CommunicationException(result.substring(8,
+                        result.length() - 9));
+            }
+        } catch (SOAPException se) {
+            if (se.getFaultCode() == SOAPException.SOAP_Client) {
+                if (se.getFaultString().contains("not implemented")) {
+                    throw new CommunicationException(
+                            "publisher.endCoherentChanges operation not supported by SOAP server.");
+                }
+            }
+            this.connectionAlive = false;
+            this.checkConnection();
+        } catch (TransformationException e) {
+            throw new CommunicationException(
+                    "Could not end coherent changes on publisher.");
+        } finally {
+            connectionPool.releaseConnection(connection);
+        }
+        return;
+    }
+
+    @Override
+    public void beginAccess(Subscriber subscriber)
+            throws CommunicationException {
+        this.checkConnection();
+        SOAPConnection connection = null;
+        try {
+            String xmlSubscriber = entitySerializer.serializeEntity(subscriber);
+
+            SortedMap<String, String> members = new TreeMap<String, String>();
+            members.put("subscriber", xmlSubscriber);
+
+            SOAPMessage request = this.createRequest("subscriberBeginAccess",
+                    members);
+
+            connection = connectionPool.acquireConnection();
+            SOAPMessage response = connection.call(request, url);
+
+            String result = this.getResponse(response);
+
+            if (!("<result>OK</result>".equals(result))) {
+                throw new CommunicationException(result.substring(8,
+                        result.length() - 9));
+            }
+        } catch (SOAPException se) {
+            if (se.getFaultCode() == SOAPException.SOAP_Client) {
+                if (se.getFaultString().contains("not implemented")) {
+                    throw new CommunicationException(
+                            "subscriber.beginAccess operation not supported by SOAP server.");
+                }
+            }
+            this.connectionAlive = false;
+            this.checkConnection();
+        } catch (TransformationException e) {
+            throw new CommunicationException(
+                    "Could not begin access on subscriber.");
+        } finally {
+            connectionPool.releaseConnection(connection);
+        }
+        return;
+    }
+
+    @Override
+    public void endAccess(Subscriber subscriber) throws CommunicationException {
+        this.checkConnection();
+        SOAPConnection connection = null;
+        try {
+            String xmlSubscriber = entitySerializer.serializeEntity(subscriber);
+
+            SortedMap<String, String> members = new TreeMap<String, String>();
+            members.put("subscriber", xmlSubscriber);
+
+            SOAPMessage request = this.createRequest("subscriberEndAccess",
+                    members);
+
+            connection = connectionPool.acquireConnection();
+            SOAPMessage response = connection.call(request, url);
+
+            String result = this.getResponse(response);
+
+            if (!("<result>OK</result>".equals(result))) {
+                throw new CommunicationException(result.substring(8,
+                        result.length() - 9));
+            }
+        } catch (SOAPException se) {
+            if (se.getFaultCode() == SOAPException.SOAP_Client) {
+                if (se.getFaultString().contains("not implemented")) {
+                    throw new CommunicationException(
+                            "subscriber.endAccess operation not supported by SOAP server.");
+                }
+            }
+            this.connectionAlive = false;
+            this.checkConnection();
+        } catch (TransformationException e) {
+            throw new CommunicationException(
+                    "Could not end access on subscriber.");
+        } finally {
+            connectionPool.releaseConnection(connection);
+        }
+        return;
+    }
+
+    @Override
+    public DataReader[] subscriberGetDataReaders(Subscriber subscriber,
+            Mask mask) throws CommunicationException {
+        this.checkConnection();
+        SOAPConnection connection = null;
+        Entity[] entityList = null;
+        DataReader[] dataReaders = null;
+
+        try {
+            String xmlSubscriber = entitySerializer.serializeEntity(subscriber);
+
+            SortedMap<String, String> members = new TreeMap<String, String>();
+            members.put("subscriber", xmlSubscriber);
+            members.put("mask", Integer.toString(mask.getValue()));
+
+            SOAPMessage request = this.createRequest(
+                    "subscriberGetDataReaders",
+                    members);
+
+            connection = connectionPool.acquireConnection();
+            SOAPMessage response = connection.call(request, url);
+
+            String entities = this.getResponse(response);
+            entityList = entityDeserializer.deserializeEntityList(entities);
+            dataReaders = Arrays.asList(entityList).toArray(
+                    new DataReader[entityList.length]);
+        } catch (SOAPException se) {
+            if (se.getFaultCode() == SOAPException.SOAP_Client) {
+                if (se.getFaultString().contains("not implemented")) {
+                    throw new CommunicationException(
+                            "subscriber.getDataReaders operation not supported by SOAP server.");
+                }
+            }
+            this.connectionAlive = false;
+            this.checkConnection();
+        } catch (TransformationException e) {
+            throw new CommunicationException(
+                    "Could not get datareaders on subscriber.");
+        } finally {
+            connectionPool.releaseConnection(connection);
+        }
+        return dataReaders;
+    }
+
+    private SOAPMessage createRequest(String method,
+            SortedMap<String, String> members) {
         SOAPRequest message;
         String value, key;
 
         message = new SOAPRequest();
         message.setMethod(method);
 
-        if(members != null){
-            for (Iterator<Entry<String, String>> it = members.entrySet().iterator(); it.hasNext();) {
+        if (members != null) {
+            for (Iterator<Entry<String, String>> it = members.entrySet()
+                    .iterator(); it.hasNext();) {
                 Map.Entry<String, String> entry = it.next();
                 key = entry.getKey();
                 value = entry.getValue();
@@ -2032,30 +2295,33 @@ public class SOAPCommunicator implements Communicator, ActionListener {
         return message;
     }
 
-    private String getResponse(SOAPMessage response) throws CommunicationException {
+    private String getResponse(SOAPMessage response)
+            throws CommunicationException {
         String result = null;
 
-        if(response == null){
+        if (response == null) {
             throw new CommunicationException("Empty response received.");
         }
         updateLease.restart();
-        result = ((SOAPResponse)response).getBodyContent();
+        result = ((SOAPResponse) response).getBodyContent();
 
         return result;
     }
 
-    private void getEmptyResponse(SOAPMessage response) throws CommunicationException {
-        if(response == null){
+    private void getEmptyResponse(SOAPMessage response)
+            throws CommunicationException {
+        if (response == null) {
             throw new CommunicationException("null input.");
         }
         updateLease.restart();
     }
 
-    private void checkConnection() throws CommunicationException{
-        if(this.initialized && !this.connectionAlive){
+    private void checkConnection() throws CommunicationException {
+        if (this.initialized && !this.connectionAlive) {
             throw new ConnectionLostException();
-        } else if (!this.initialized){
-           throw new CommunicationException("Connection has been closed already");
+        } else if (!this.initialized) {
+            throw new CommunicationException(
+                    "Connection has been closed already");
         }
     }
 }

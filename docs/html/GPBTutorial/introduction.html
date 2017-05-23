@@ -1,0 +1,433 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Introduction &mdash; OpenSplice GPB Tutorial</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice GPB Tutorial" href="index.html" />
+    <link rel="next" title="3. Proto message for a DDS system" href="proto-message.html" />
+    <link rel="prev" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="proto-message.html" title="3. Proto message for a DDS system"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="introduction">
+<span id="id1"></span><h1>2. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="google-protocol-buffers-for-dds">
+<h2>2.1. Google Protocol Buffers for DDS<a class="headerlink" href="#google-protocol-buffers-for-dds" title="Permalink to this headline">¶</a></h2>
+<p><em>Vortex OpenSplice</em> is capable of using the <strong>Google Protocol Buffer</strong>
+(<em>GPB</em>) system for publishing and subscribing GPB messages in a DDS
+system. This makes it possible to use GPB as an alternative to OMG-IDL
+for those who prefer to use GPB rather than IDL. With the
+seamless integration of GPB and DDS technologies there is no need for
+OMG-IDL knowledge or visibility when working with GPB data models, and
+no OMG-DDS data-types are needed in the application (no explicit
+type-mapping between GPB and DDS types is required).</p>
+<p>This results in an easy migration of GPB users to DDS(-based
+data-sharing) with data-centric GPB with support for keys, filters
+and (future) QoS-annotations (ony a few DDS calls are needed).
+Also easy migration of DDS applications to GPB(-based data-modeling),
+only the field accessors change.</p>
+<p>This Tutorial will describe how this is done for the language bindings
+<strong>Java5</strong> and <strong>ISO-C++</strong> by defining a GPB message layout which is
+compiled into proper interfaces for the Vortex DDS system.</p>
+<div class="section" id="gpb-installation-and-usage-with-dds">
+<h3>2.1.1. GPB Installation and usage with DDS<a class="headerlink" href="#gpb-installation-and-usage-with-dds" title="Permalink to this headline">¶</a></h3>
+<p>Google Protocol Buffers (GPB) can be downloaded from the following locations:</p>
+<p>Linux:
+<a class="reference external" href="https://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.gz">https://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.gz</a></p>
+<p>Windows:
+<a class="reference external" href="https://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.zip">https://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.zip</a></p>
+<p>After unpacking follow the install instructions located in install.txt in the unpacked directory.
+For windows there is a visual studio solution file that will build everything that is needed.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd><div class="first last line-block">
+<div class="line">In order for GPB to work with DDS an environment variable <strong>PROTOBUF_HOME</strong> needs to be</div>
+<div class="line">set that points to the unpacked directory.</div>
+<div class="line">For windows also another environment variable <strong>PROTOBUF_LIB_HOME</strong> needs to be set that</div>
+<div class="line">points to the directory that contains the generated libprotobuf.lib.</div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="idl-usage-in-a-dds-system">
+<h3>2.1.2. IDL usage in a DDS system<a class="headerlink" href="#idl-usage-in-a-dds-system" title="Permalink to this headline">¶</a></h3>
+<p>In a Data Distributed System (DDS) as a Global DataSpace (GDS) for
+ubiquitous information-sharing in distributed systems as specified by
+the Object Management Group (OMG), the data is traditionally
+captured in the platform- and language-independent OMG-IDL language.
+The relational model of DDS is supported by the notion of
+identifying key fields in these data structures
+where structure/content-awareness by the middleware allows for
+dynamic querying and filtering of data.</p>
+</div>
+<div class="section" id="google-protocol-buffers">
+<h3>2.1.3. Google Protocol Buffers<a class="headerlink" href="#google-protocol-buffers" title="Permalink to this headline">¶</a></h3>
+<p>Google Protocol Buffers (GPB) are a flexible, efficient, automated
+mechanism for serializing structured data; think XML, but smaller,
+faster, and simpler. One can define how data needs
+to be structured once, after which language-specific source code can
+be generated to easily write and read this structured data to and
+from a variety of data streams using a variety of
+languages. The information structure is defined in so-called <em>protocol
+buffer</em> message types in <tt class="docutils literal"><span class="pre">.proto</span></tt> files. Each protocol buffer message is
+a small logical record of information, containing a series of name-value
+pairs. This approach is quite similar to using IDL for data modeling in
+combination with an IDL compiler (as available in OpenSplice and DDS
+implementations in general).</p>
+<p>Additionally, the GPB data structure can be updated without breaking
+deployed programs that are compiled against the &#8216;old&#8217; format,
+similar to the <em>xTypes</em> concept as defined for DDS.</p>
+<div class="section" id="using-a-gpb-data-model-instead-of-an-idl-data-model">
+<h4>2.1.3.1. Using a GPB data-model instead of an IDL data-model<a class="headerlink" href="#using-a-gpb-data-model-instead-of-an-idl-data-model" title="Permalink to this headline">¶</a></h4>
+<p>For an IDL-OMG based application, the IDL file is compiled with the
+IDL-PP compiler to generate the needed classes.</p>
+<p>For Java as an example, <tt class="docutils literal"><span class="pre">Address.idl</span></tt> will (among others)
+be compiled into:</p>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">Address.java</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">AddressTypesSupport.java</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">AddressDataWriter.java</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">AddressDataReader.java</span></tt></li>
+<li>...</li>
+</ul>
+</div></blockquote>
+<p>Using a GPB data-model, it is not necessary to create IDL files. The
+<tt class="docutils literal"><span class="pre">protoc_gen_ddsJava</span></tt> plug-in in OpenSplice will create them from the
+given <tt class="docutils literal"><span class="pre">.proto</span></tt> data-model.</p>
+<p>For the GPB <tt class="docutils literal"><span class="pre">.proto</span></tt> based application, the <tt class="docutils literal"><span class="pre">.proto</span></tt> file is first
+compiled by the Google <tt class="docutils literal"><span class="pre">protoc</span></tt> compiler. This compiler will call the
+<tt class="docutils literal"><span class="pre">protoc_gen_ddsJava</span></tt> plug-in in OpenSplice with the
+<tt class="docutils literal"><span class="pre">.proto</span></tt> data parsed into a <tt class="docutils literal"><span class="pre">CodeGeneratorRequest</span></tt> protocol
+buffer.</p>
+<p>The OpenSplice plug-in will generate an IDL file from this data. Any
+field member that is marked as key or filterable is explicitly mapped
+to a member in the IDL type.</p>
+<p>The complete serialized <tt class="docutils literal"><span class="pre">.proto</span></tt> message is stored in the generic
+<tt class="docutils literal"><span class="pre">ospl_protobuf_data</span></tt> attribute as a sequence of bytes (making it
+opaque data for DDS). The mapping between data types is
+given in the table <a class="reference internal" href="#mapping-of-gpb-types-to-dds-types">Mapping of GPB types to DDS types</a>.</p>
+<p>As the next step the IDL-PP compiler will generate the previously-named
+files from the idl file needed for the DDS domain.
+The Google <tt class="docutils literal"><span class="pre">protoc</span></tt> compiler will generate the classes needed for the
+GPB domain.</p>
+<p>The dds options for the proto file are given in the
+<a class="reference internal" href="#omg-dds-descriptor-proto">omg/dds/descriptor.proto</a> file listed below.
+This proto file shows how the different dds options on the proto
+file are interpreted, and gives the unique id <tt class="docutils literal"><span class="pre">1016</span></tt> to the dds types.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>Note that the id 1016 has officially been granted to the Vortex product by Google.</strong></div>
+<div class="line">This ensures these options are always unique and won&#8217;t clash with any options used by users.</div>
+</div>
+</dd>
+</dl>
+<p>How mapping is done between the different languages is shown below in
+the table <a class="reference internal" href="#mapping-of-gpb-types-to-dds-types">Mapping of GPB types to DDS types</a>.</p>
+</div>
+<div class="section" id="omg-dds-descriptor-proto">
+<h4>2.1.3.2. omg/dds/descriptor.proto<a class="headerlink" href="#omg-dds-descriptor-proto" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-protobuf"><div class="highlight"><pre><span class="k">import</span> <span class="s">&quot;google/protobuf/descriptor.proto&quot;</span><span class="p">;</span>
+
+<span class="kn">package</span> <span class="nn">omg</span><span class="o">.</span><span class="n">dds</span><span class="p">;</span>
+
+<span class="k">option</span> <span class="na">java_package</span> <span class="o">=</span> <span class="s">&quot;org.omg.dds.protobuf&quot;</span><span class="p">;</span>
+<span class="k">option</span> <span class="na">java_outer_classname</span> <span class="o">=</span> <span class="s">&quot;DescriptorProtos&quot;</span><span class="p">;</span>
+
+<span class="cm">/* These options are required for any .proto message that needs to be available</span>
+<span class="cm"> * in DDS.</span>
+<span class="cm"> *</span>
+<span class="cm"> * - name: An optional scoped name to allow overriding the name of the type in</span>
+<span class="cm"> *   DDS. The dot(&#39;.&#39;) can be used as a scoping separator. In case the name</span>
+<span class="cm"> *   starts with a dot, the name will be interpreted as an absolute scope name.</span>
+<span class="cm"> *   If not, the name will be considered relative to the scope of the message</span>
+<span class="cm"> *   including its &#39;package&#39;.</span>
+<span class="cm"> */</span>
+<span class="kd">message</span> <span class="nc">MessageOptions</span> <span class="p">{</span>
+    <span class="k">optional</span> <span class="kt">string</span> <span class="na">name</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">[</span><span class="k">default</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">];</span>
+<span class="p">}</span>
+ 
+<span class="kd">extend</span> <span class="nc">google</span><span class="o">.</span><span class="n">protobuf.MessageOptions</span> <span class="p">{</span>
+  <span class="k">optional</span> <span class="n">omg.dds.MessageOptions</span> <span class="na">type</span>  <span class="o">=</span> <span class="mi">1016</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="cm">/* These options are provided to assign specific behaviour to a member of a</span>
+<span class="cm"> * DDS-enabled .proto message in DDS. These options will only be applied in case</span>
+<span class="cm"> * the omg.dds.MessageOptions.type has been applied to the message in which the</span>
+<span class="cm"> * member is modeled.</span>
+<span class="cm"> *</span>
+<span class="cm"> * - key: Make the member part of the key of the type in DDS. Each unique</span>
+<span class="cm"> *   key-value will become a separate instance with its own history in DDS. Only</span>
+<span class="cm"> *   &#39;required&#39; members can be made part of the key and key-definitions cannot</span>
+<span class="cm"> *   be modified in future versions of the message. Members that are part of the</span>
+<span class="cm"> *   key are automatically filterable as well.</span>
+<span class="cm"> *</span>
+<span class="cm"> * - filterable: Ensure the member is filterable in DDS using a so-called</span>
+<span class="cm"> *   ContentFilteredTopic or QueryCondition. Only &#39;required&#39; members can be made</span>
+<span class="cm"> *   filterable and filterable definitions cannot be modified in future versions</span>
+<span class="cm"> *   of the message.</span>
+<span class="cm"> *</span>
+<span class="cm"> * - name: Override the name of the member in DDS. This only applies to members</span>
+<span class="cm"> *   that are marked as key and/or filterable.</span>
+<span class="cm"> */</span>
+<span class="kd">message</span> <span class="nc">FieldOptions</span> <span class="p">{</span>
+    <span class="k">optional</span> <span class="kt">bool</span> <span class="na">key</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">[</span><span class="k">default</span> <span class="o">=</span> <span class="kc">false</span><span class="p">];</span>
+    <span class="k">optional</span> <span class="kt">bool</span> <span class="na">filterable</span> <span class="o">=</span> <span class="mi">2</span> <span class="p">[</span><span class="k">default</span> <span class="o">=</span> <span class="kc">false</span><span class="p">];</span>
+    <span class="k">optional</span> <span class="kt">string</span> <span class="na">name</span> <span class="o">=</span> <span class="mi">3</span> <span class="p">[</span><span class="k">default</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="kd">extend</span> <span class="nc">google</span><span class="o">.</span><span class="n">protobuf.FieldOptions</span> <span class="p">{</span>
+  <span class="k">optional</span> <span class="n">omg.dds.FieldOptions</span> <span class="na">member</span> <span class="o">=</span> <span class="mi">1016</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="mapping-of-gpb-types-to-dds-types">
+<h4>2.1.3.3. Mapping of GPB types to DDS types<a class="headerlink" href="#mapping-of-gpb-types-to-dds-types" title="Permalink to this headline">¶</a></h4>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="42%" />
+<col width="11%" />
+<col width="13%" />
+<col width="17%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">.proto Type</th>
+<th class="head">Notes</th>
+<th class="head">C++ Type</th>
+<th class="head">Java Type</th>
+<th class="head">DDS IDL Type</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>double</td>
+<td>&nbsp;</td>
+<td>double</td>
+<td>double</td>
+<td>double</td>
+</tr>
+<tr class="row-odd"><td>float</td>
+<td>&nbsp;</td>
+<td>float</td>
+<td>float</td>
+<td>float</td>
+</tr>
+<tr class="row-even"><td>int32</td>
+<td>Uses variable-length encoding.
+Inefficient for encoding
+negative numbers; if your field
+is likely to have negative values,
+use sint32 instead</td>
+<td>int32</td>
+<td>int</td>
+<td>long</td>
+</tr>
+<tr class="row-odd"><td>int64</td>
+<td>Uses variable-length encoding.
+Inefficient for encoding
+negative numbers; if your field
+is likely to have negative values,
+use sint64 instead</td>
+<td>int64</td>
+<td>long</td>
+<td>long long</td>
+</tr>
+<tr class="row-even"><td>uint32</td>
+<td>Uses variable-length encoding</td>
+<td>uint32</td>
+<td>int</td>
+<td>unsigned long</td>
+</tr>
+<tr class="row-odd"><td>uint64</td>
+<td>Uses variable-length encoding</td>
+<td>uint64</td>
+<td>long</td>
+<td>unsigned long
+long</td>
+</tr>
+<tr class="row-even"><td>sint32</td>
+<td>Uses variable-length encoding.
+Signed int value.
+These encode negative numbers
+more efficiently than regular
+int32s.</td>
+<td>int32</td>
+<td>int</td>
+<td>long</td>
+</tr>
+<tr class="row-odd"><td>sint64</td>
+<td>Uses variable-length encoding.
+Signed int value.
+These encode negative numbers
+more efficiently than regular
+int64s.</td>
+<td>int64</td>
+<td>long</td>
+<td>long long</td>
+</tr>
+<tr class="row-even"><td>fixed32</td>
+<td>Always four bytes.
+More efficient than uint32 if
+values are often greater than 2^28.</td>
+<td>uint32</td>
+<td>int</td>
+<td>unsigned long</td>
+</tr>
+<tr class="row-odd"><td>fixed64</td>
+<td>Always eight bytes.
+More efficient than uint64 if
+values are often greater than 2^56.</td>
+<td>uint64</td>
+<td>long</td>
+<td>unsigned long
+long</td>
+</tr>
+<tr class="row-even"><td>sfixed32</td>
+<td>Always four bytes.</td>
+<td>int32</td>
+<td>int</td>
+<td>long</td>
+</tr>
+<tr class="row-odd"><td>sfixed64</td>
+<td>Always eight bytes.</td>
+<td>int64</td>
+<td>long</td>
+<td>long long</td>
+</tr>
+<tr class="row-even"><td>bool</td>
+<td>&nbsp;</td>
+<td>bool</td>
+<td>boolean</td>
+<td>bool</td>
+</tr>
+<tr class="row-odd"><td>string</td>
+<td>A string must always contain UTF-8
+encoded or 7-bit ASCII text</td>
+<td>string</td>
+<td>String</td>
+<td>string</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Introduction</a><ul>
+<li><a class="reference internal" href="#google-protocol-buffers-for-dds">2.1. Google Protocol Buffers for DDS</a><ul>
+<li><a class="reference internal" href="#gpb-installation-and-usage-with-dds">2.1.1. GPB Installation and usage with DDS</a></li>
+<li><a class="reference internal" href="#idl-usage-in-a-dds-system">2.1.2. IDL usage in a DDS system</a></li>
+<li><a class="reference internal" href="#google-protocol-buffers">2.1.3. Google Protocol Buffers</a><ul>
+<li><a class="reference internal" href="#using-a-gpb-data-model-instead-of-an-idl-data-model">2.1.3.1. Using a GPB data-model instead of an IDL data-model</a></li>
+<li><a class="reference internal" href="#omg-dds-descriptor-proto">2.1.3.2. omg/dds/descriptor.proto</a></li>
+<li><a class="reference internal" href="#mapping-of-gpb-types-to-dds-types">2.1.3.3. Mapping of GPB types to DDS types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="previous chapter">1. Preface</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="proto-message.html"
+                        title="next chapter">3. Proto message for a DDS system</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/introduction.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="proto-message.html" title="3. Proto message for a DDS system"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

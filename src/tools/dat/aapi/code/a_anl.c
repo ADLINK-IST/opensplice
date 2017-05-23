@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
  * For debugging purposes only.
@@ -30,7 +38,7 @@ struct a_anlContext_s {
 	c_long shmSize;          ///< Shared Memory Size
 
 	c_long dataSize;         ///< Computed total object size (header + data)
-	
+
 	a_stsContext stsContext; ///< Context holding and computing statistics
 };
 
@@ -120,7 +128,7 @@ a_anlInit(
  * De-initialises the context.
  *
  * This operation de-initialises the context and frees up memory.
- * 
+ *
  * \param context
  * The context to de-initialise.
  *
@@ -141,7 +149,7 @@ a_anlDeInit(
 
 
 /********************************************************************
- 
+
  ********************************************************************/
 
 
@@ -372,7 +380,7 @@ a_anlOutIndexedElement(
 
 
 /********************************************************************
- GENERAL AIDS (STATIC) - 
+ GENERAL AIDS (STATIC) -
  ********************************************************************/
 
 
@@ -502,7 +510,7 @@ a_anlCheckObject(
 		         || (strcmp(objectName, "c_property"      ) == 0)
 		         || (strcmp(objectName, "c_operation"     ) == 0) ) {
 			result = a_anlCheckObject("c_metaObject", derivedFromName);
-			 
+
 		} else if ( (strcmp(objectName, "c_structure"     ) == 0)
 	    	     || (strcmp(objectName, "c_interface"     ) == 0)
 	        	 || (strcmp(objectName, "c_collectionType") == 0)
@@ -596,7 +604,7 @@ a_anlStepsToC_Class(
  *    - L_DATA  "D"
  *  (and a fifth:
  *    - L_UNDF  "?")
- *  
+ *
  * These types can be defined as:
  *    - object = L_UNDF if its type = NULL
  *    - object = L_CLSS if object == type
@@ -632,7 +640,7 @@ a_anlGetObjectKind(
 				case 1:
 					objectKind = a_anlIsBaseObject(object) ? L_BASE : L_META;
 					break;
-					
+
 				case 0:
 					objectKind = L_CLSS;
 					break;
@@ -776,13 +784,13 @@ a_anlFillListCallBack(
 			size = type->size;
 			typeDesc = a_utlMetaKindStr(c_baseObject(type)->kind);
 			typeName = c_metaObject(type)->name;
-			
+
 			switch (objectKind) {
 				case L_DATA: {
 					objectName = "";
 					break;
 				}
-				
+
 				case L_META: {
 					if (c_checkType(object, "c_metaObject")) {
 						objectName = c_metaObject(object)->name;
@@ -793,7 +801,7 @@ a_anlFillListCallBack(
 					}
 					break;
 				}
-				
+
 				case L_BASE: {
 					if (c_checkType(object, "c_metaObject")) {
 						objectName = c_metaObject(object)->name;
@@ -845,7 +853,7 @@ a_anlFillListCallBack(
 		refCount = -1;
 		objectName = "*NULL*";
 	}
-	
+
 	a_lstInsertNewEntry(context->list, addr, refCount, objectKind, objectName, typeDesc, typeName, alignment, size);
 	if (strlen(addNote)) {
 		a_lstAddEntryNote(context->list, addr, addNote);
@@ -897,7 +905,7 @@ a_anlFillList(
 
 
 /********************************************************************
- GENERAL AIDS (STATIC) - 
+ GENERAL AIDS (STATIC) -
  ********************************************************************/
 
 
@@ -962,7 +970,7 @@ a_anlBaseTypeMembers(
 
 	// Although 'size' is a member of c_type, it is omitted here
 	// because it has already been outputted
-	
+
 	a_anlBaseMetaobjectMembers(context, object, c_metaObject(type));
 }
 
@@ -987,7 +995,7 @@ a_anlBaseInterfaceMembers(
 	c_scopeWalkAction scopeWalkAction = a_anlScopeWalkback;
 	c_interface inherit, reference;
     c_long i;
-		
+
 	a_anlOutBooleanvalue(context, "abstract", (int)abstract);
 	a_anlOutPointervalue(context, "scope", (void *)scope);
 	a_anlAddDataRefs(context, (c_address)object, (c_address)scope, (c_address)&(interface->scope));
@@ -998,7 +1006,7 @@ a_anlBaseInterfaceMembers(
 	a_anlOutLongvalue(context, "#References", (long)refSize);
 
 	a_anlBaseTypeMembers(context, object, c_type(interface));
-	
+
 	context->scopeCounter = 0;
 	c_scopeWalk(scope, scopeWalkAction, context);
 
@@ -1041,10 +1049,10 @@ a_anlBaseClass(
 		a_anlAddDataRefs(context, (c_address)object, (c_address)extends, (c_address)&(class->extends));
 		a_anlAssertType(context, object, c_baseObject(extends), c_getType(extends), "c_class");
 	}
-	a_anlOutLongvalue(context, "#Keys", (long)keysSize);	
+	a_anlOutLongvalue(context, "#Keys", (long)keysSize);
 
 	a_anlBaseInterfaceMembers(context, object, c_interface(class));
-	
+
 	for (i = 0; i < keysSize; i++) {
 		key = class->keys[i];
 		if (key) {
@@ -1147,10 +1155,10 @@ a_anlMetaLiteral(
 	c_value value = literal->value;
 	c_valueKind valueKind = value.kind;
 	a_anlOutLongAndStringvalue(context, "valueKind", (long)valueKind, a_utlValueKindStr(valueKind));
-	
+
 	char *strValue;
 	switch(valueKind) {
-			
+
 		case V_CHAR: {
 			char *localStrValue = a_memAlloc(4);
 			sprintf(localStrValue, "\'%c\'", (char)value.is.Char);
@@ -1166,7 +1174,7 @@ a_anlMetaLiteral(
 			a_memFree(localStrValue);
 			break;
 		}
-			
+
 		case V_STRING: {
 			char *localStrValue = a_memAlloc(strlen((char *)value.is.String) + 3);
 			sprintf(localStrValue, "\"%s\"", (char *)value.is.String);
@@ -1175,7 +1183,7 @@ a_anlMetaLiteral(
 			a_anlAddDataRefs(context, (c_address)literal, (c_address)value.is.String, (c_address)&(literal->value.is));
 			break;
 		}
-			
+
 		case V_WSTRING: {
 			char *localStrValue = a_memAlloc(strlen((char *)value.is.WString) + 3);
 			sprintf(localStrValue, "\"%s\"", (char *)value.is.WString);
@@ -1184,7 +1192,7 @@ a_anlMetaLiteral(
 			a_anlAddDataRefs(context, (c_address)literal, (c_address)value.is.String, (c_address)&(literal->value.is));
 			break;
 		}
-			
+
 		case V_FIXED: {
 			char *localStrValue = a_memAlloc(strlen((char *)value.is.Fixed) + 3);
 			sprintf(localStrValue, "\"%s\"", (char *)value.is.Fixed);
@@ -1193,7 +1201,7 @@ a_anlMetaLiteral(
 			a_anlAddDataRefs(context, (c_address)literal, (c_address)value.is.String, (c_address)&(literal->value.is));
 			break;
 		}
-			 
+
 		case V_OBJECT: {
 			char *localStrValue = a_memAlloc(11);
 			sprintf(localStrValue, "0x%8.8X", (unsigned int)value.is.Object);
@@ -1276,7 +1284,7 @@ a_anlMetaLiteral(
 			strValue = a_memStrdup("(V_UNDEFINED encountered)");
 			break;
 		}
-			
+
 		default: {
 			strValue = a_memStrdup("a_anlMetaLiteral *TODO*");
 			break;
@@ -1460,10 +1468,10 @@ a_anlMetaBase(
 	int i;
 	c_type meta;
 	a_anlOutLabel(context, "Base");
-	
+
 	a_anlOutPointervalue(context, "mm", (void *)base->mm);
 	a_anlAddDataRefs(context, (c_address)base, (c_address)base->mm, (c_address)&(base->mm));
-	
+
 	a_anlOutPointervalue(context, "confidence", (void *)base->confidence);
 
 	a_anlOutPointervalue(context, "bindings", (void *)base->bindings);
@@ -1473,19 +1481,19 @@ a_anlMetaBase(
 
 	a_anlOutPointervalue(context, "bindings->root->left", (void *)base->bindings->root->left);
 //	a_anlAddUnknRef(context, (c_address)base, (c_address)base->bindings->root->left, (c_address)&(base->bindings->root->left));
-	
+
 	a_anlOutPointervalue(context, "bindings->root->right", (void *)base->bindings->root->right);
 //	a_anlAddUnknRef(context, (c_address)base, (c_address)base->bindings->root->right, (c_address)&(base->bindings->root->right));
-	
+
 	// a_anlOutPointervalue(context, "bindLock", (void *)base->bindLock);
 	// a_anlOutPointervalue(context, "schemaLock", (void *)base->schemaLock);
 
 	a_anlOutPointervalue(context, "string_type", (void *)base->string_type);
 	a_anlAddDataRefs(context, (c_address)base, (c_address)base->string_type, (c_address)&(base->string_type));
-	
+
 	a_anlOutPointervalue(context, "firstObject", (void *)base->firstObject);
 	a_anlAddDataRefs(context, (c_address)base, (c_address)base->firstObject, (c_address)&(base->firstObject));
-	
+
 	a_anlOutPointervalue(context, "lastObject", (void *)base->lastObject);
 	a_anlAddDataRefs(context, (c_address)base, (c_address)base->lastObject, (c_address)&(base->lastObject));
 
@@ -1641,7 +1649,7 @@ a_anlMetaInterfaceMembers(
 		a_anlAddDataRefs(context, (c_address)interface, (c_address)scope, (c_address)&(interface->scope));
 		a_anlOutLongvalue(context, "scopeCount", (long)scopeCount);
 	}
-	
+
 	if (inherits) {
 		a_anlOutPointervalue(context, "inherits", (void *)inherits);
 		a_anlAddDataRefs(context, (c_address)interface, (c_address)inherits, (c_address)&(interface->inherits));
@@ -1739,7 +1747,7 @@ a_anlMetaClass(
 	a_anlOutLongvalue(context, "#Keys", (long)arraySize);
 
 	a_anlMetaInterfaceMembers(context, c_interface(class));
-	
+
 	for (i = 0; i < arraySize; i++) {
 		key = class->keys[i];
 		if (key) {
@@ -1816,7 +1824,7 @@ a_anlMetaEnumeration(
 	a_anlOutLongvalue(context, "#Elements", (long)arraySize);
 
 	a_anlMetaTypeMembers(context, c_type(enumeration));
-	
+
 	for (i = 0; i < arraySize; i++) {
 		element = elements[i];
 		if (element) {
@@ -1928,7 +1936,7 @@ a_anlMetaStructure(
 	c_array references = structure->references;
 	c_scope scope = structure->scope;
 	c_scopeWalkAction scopeWalkAction = a_anlScopeWalkback;
-	
+
 	c_long memSize = c_arraySize(members);
 	c_long refSize = c_arraySize(references);
     c_long i;
@@ -1941,7 +1949,7 @@ a_anlMetaStructure(
 
 	c_object referenceObject, *referenceObjectPtr, referencedObject;
 
-	a_anlOutLabel(context, "Structure");	
+	a_anlOutLabel(context, "Structure");
 
 	if (scope) {
 		c_long scopeCount = c_scopeCount(scope);
@@ -1949,7 +1957,7 @@ a_anlMetaStructure(
 		a_anlAddDataRefs(context, (c_address)structure, (c_address)scope, (c_address)&(structure->scope));
 		a_anlOutLongvalue(context, "scopeCount", (long)scopeCount);
 	}
-	
+
 	if (members) {
 		a_anlOutPointervalue(context, "members", (void *)members);
 		a_anlAddDataRefs(context, (c_address)structure, (c_address)members, (c_address)&(structure->members));
@@ -1961,7 +1969,7 @@ a_anlMetaStructure(
 		a_anlAddDataRefs(context, (c_address)structure, (c_address)references, (c_address)&(structure->references));
 	}
 	a_anlOutLongvalue(context, "#References", (long)refSize);
-	
+
 	a_anlMetaTypeMembers(context, c_type(structure));
 
 	if (scope) {
@@ -2044,9 +2052,9 @@ a_anlMetaUnion(
 	c_scopeWalkAction scopeWalkAction = a_anlScopeWalkback;
 	c_long i;
 	c_unionCase unionCase;
-	
+
 	a_anlOutLabel(context, "Union");
-	
+
 	a_anlOutPointervalue(context, "switchType", (void *)switchType);
 	if (switchType) {
 		a_anlAddDataRefs(context, (c_address)unionValue, (c_address)switchType, (c_address)&(unionValue->switchType));
@@ -2070,7 +2078,7 @@ a_anlMetaUnion(
 		a_anlAddDataRefs(context, (c_address)unionValue, (c_address)scope, (c_address)&(unionValue->scope));
 		a_anlOutLongvalue(context, "scopeCount", (long)scopeCount);
 	}
-	
+
 	a_anlMetaTypeMembers(context, c_type(unionValue));
 
 	if (scope) {
@@ -2208,7 +2216,7 @@ a_anlMetaObject(
 	c_type type = c_getType(o);
 	char *name;
 	char *typeName = type ? c_metaObject(type)->name : NULL;
-	
+
 	if (type) {
 		a_anlAssertTypeDerived(context, o, c_baseObject(type), c_getType(type), "c_type");
 	}
@@ -2294,7 +2302,7 @@ a_anlDataClassScopeCallback(
 	c_metaObject definedIn = c_metaObject(attribute)->definedIn;
 	c_string name = c_metaObject(attribute)->name;
 	c_string typeName = type ? c_metaObject(type)->name : NULL;
-	
+
 	a_anlOutIndexedElement(context, "SCP", (long)(scopeContext->scopeCounter++), (c_address)attribute);
 	a_anlOutBooleanvalue(context, "isReadOnly", (int)attribute->isReadOnly);
 	a_anlOutLongvalue(context, "Offset", (long)offset);
@@ -2328,7 +2336,7 @@ a_anlDataInterfaceMembers(
 
 	a_anlOutLongvalue(context, "#Inherits", (long)inhSize);
 	a_anlOutLongvalue(context, "#References", (long)refSize);
-	
+
 	c_scope scope = interface->scope;
 	if (scope) {
 		struct a_anlScopeContext scopeContext;
@@ -2383,9 +2391,9 @@ a_anlDataCollectionArrayElements(
 	c_object currentObject, *currentObjectPtr, referenceObject;
 	c_type subType = array->subType;
 	c_collKind collKind = c_collectionType(array)->kind;
-	
+
 	switch (collKind) {
-		case C_ARRAY:
+		case OSPL_C_ARRAY:
 			a_anlOutLabel(context, "Array");
 			if (array->maxSize == 0) {
 				size = c_arraySize(*((c_array *)object));
@@ -2395,7 +2403,7 @@ a_anlDataCollectionArrayElements(
 				baseObject = object;
 			}
 			break;
-		case C_SEQUENCE:
+		case OSPL_C_SEQUENCE:
 			a_anlOutLabel(context, "Sequence");
 			size = c_arraySize(*((c_array *)object));
 			baseObject = *((c_object *)object);
@@ -2516,7 +2524,7 @@ a_anlDataCollectionScope(
 		a_avlNode head = scope->head;
 		a_avlNode tail = scope->tail;
 		a_avlNode node;
-		
+
 		a_anlOutPointervalue(context, "scope->root", (void *)root);
 		a_anlRmvUnknOcc(context, (c_address)&(scope->root), (c_address)root);
 		a_anlOutPointervalue(context, "scope->head", (void *)head);
@@ -2577,12 +2585,12 @@ a_anlDataCollection(
 
 
 	switch (collKind) {
-		case C_ARRAY:
-		case C_SEQUENCE:
+		case OSPL_C_ARRAY:
+		case OSPL_C_SEQUENCE:
 			a_anlDataCollectionArrayElements(context, object, collectionType);
 			break;
 
-		case C_STRING: {
+		case OSPL_C_STRING: {
 			long ourSize = strlen((char *)object);
 			a_lstSetOurSize(context->list, (c_address)object, ourSize);
 			a_anlOutStringvalue(context, "Value", (char *)object);
@@ -2591,29 +2599,29 @@ a_anlDataCollection(
 //			a_anlAssertType(context, object, c_baseObject(object), c_getType(object), "c_string");  // zinloos, we weten dit al!
 			break;
 		}
-			
-		case C_SET:
-		case C_LIST:
-		case C_BAG:
-		case C_DICTIONARY:
-		case C_QUERY:
+
+		case OSPL_C_SET:
+		case OSPL_C_LIST:
+		case OSPL_C_BAG:
+		case OSPL_C_DICTIONARY:
+		case OSPL_C_QUERY:
 			a_anlDataComplexCollectionElements(context, object, collectionType);  // todo
 			break;
 
-		case C_SCOPE:
+		case OSPL_C_SCOPE:
 		{
 			a_anlOutPointervalue(context, "scope", (void *)object);
 			a_anlDataCollectionScope(context, object);
 			break;
 		}
 
-//		case C_MAP:
-//		case C_WSTRING:
+//		case OSPL_C_MAP:
+//		case OSPL_C_WSTRING:
 //			a_anlOutLabel(context, "*huh?*");
 //			break;
 
-//		case C_COUNT:
-		case C_UNDEFINED:
+//		case OSPL_C_COUNT:
+		case OSPL_C_UNDEFINED:
 			a_anlOutLabel(context, "**?**");
 			break;
 
@@ -2703,7 +2711,7 @@ a_anlDataStructure(
 	c_type type;
 	c_object referenceObject, *referenceObjectPtr, referencedObject;
 
-	a_anlOutLabel(context, "Structure");	
+	a_anlOutLabel(context, "Structure");
 
 	a_anlOutLongvalue(context, "#Members", (long)memSize);
 	a_anlOutLongvalue(context, "#References", (long)refSize);
@@ -2722,7 +2730,7 @@ a_anlDataStructure(
 			a_anlOutStringvalue(context, "typeName", typeName);
 			a_anlOutLongAndStringvalue(context, "kind", (long)kind, a_utlMetaKindStr(kind));
 			a_anlOutLongvalue(context, "offset", offset);
-			
+
 			a_anlAssertType(context, object, c_baseObject(name), c_getType(name), "c_string");
 			a_anlAssertType(context, object, c_baseObject(member), c_getType(member), "c_member");
 
@@ -2747,7 +2755,7 @@ a_anlDataStructure(
 			referenceObject = (c_object)((c_address)object + (c_address)offset);
 			referenceObjectPtr = referenceObject;
 			referencedObject = *referenceObjectPtr;
-			
+
 			a_anlOutIndexedElement(context, "Ref", (long)i, (c_address)referenceObject);
 			a_anlOutPointervalue(context, "", (void *)referencedObject);
 //			a_anlAssertType(context, object, c_baseObject(name), c_getType(name), "c_string");            // zinloos
@@ -2755,7 +2763,7 @@ a_anlDataStructure(
 		}
 	}
 }
-			
+
 
 
 
@@ -2881,7 +2889,7 @@ a_anlDetermineAddrKind(
 	}
 	return result;
 }
-	
+
 
 
 
@@ -2970,7 +2978,7 @@ a_anlAddressIsInShm(
 	return (context->shmAddress <= address) && (address < context->shmAddress + context->shmSize) ? 1 : 0;
 }
 
-	
+
 
 
 
@@ -3085,7 +3093,7 @@ a_anlAnalyseRemainingOccurrencesCallback(
 				}
 			}
 			break;
-		
+
 		case A_ANL_IN_HEADER:
 			{
 				switch (toAddrKind)
@@ -3100,8 +3108,8 @@ a_anlAnalyseRemainingOccurrencesCallback(
 				}
 			}
 			break;
-		
-		
+
+
 		case A_ANL_IS_OBJECT_ADDR:
 		case A_ANL_IN_OBJECT:
 			{
@@ -3158,8 +3166,8 @@ a_anlAnalyseRemainingOccurrencesCallback(
 				}
 			}
 			break;
-		
-		
+
+
 		default:
 			a_anlOutObjectAddress(context, (c_address)address, "*TODO* Uncategorised pointer address");
 			a_anlOutNewline(context);
@@ -3346,7 +3354,7 @@ a_anlComputeRefsEntryCrossReferenceCallback(
 	a_anlContext anlContext = context->anlContext;
 	c_address entryAddress = context->entryAddress;
 	c_address objAddress;
-	// a_anlAddrKind addrKind = 
+	// a_anlAddrKind addrKind =
 	a_anlDetermineAddrKind(anlContext, address, &objAddress);
 	if (objAddress != -1) {
 		printf("Entry: %8.8X: O:%8.8X ObjectAddress:%8.8X ",
@@ -3396,7 +3404,7 @@ a_anlComputeRefsCallback(
 	}
 	c_address nxtAddr = A_NEXTADDR((c_address)*oPtr);
 	c_address prvAddr = A_PREVADDR((c_address)*oPtr);
-	
+
 	a_lstAddRefAddrToEntrySublist(context->list, (c_address)o, nxtAddr, L_REF_REFTOUNKN);
 	a_lstAddRefAddrToEntrySublist(context->list, (c_address)o, prvAddr, L_REF_REFTOUNKN);
 
@@ -3475,7 +3483,7 @@ a_anlScanForMemoryMarkers(
 		c_address shmEndAddress = (c_address)(context->shmAddress + context->shmSize);
 		c_address markerAddress;
 		c_long markerSize = 4 * A_PTRSIZE;
-		
+
 		markerAddress = (c_address)(A_HEADERADDR(firstObjAddr) - markerSize);
 		if (context->shmAddress <= markerAddress) {
 			result = 1;
@@ -3580,7 +3588,7 @@ a_anlComputeRefs(
 	a_anlVerboseOutString(context, "Scanning for all pointers");
 	a_anlCollectOccurrences(context);
 //	a_lstOccurrencesDump(context->list);
-	
+
 	a_anlVerboseOutString(context, "Analysing all database objects and cross-referencing with collected pointers");
 	c_baseObjectWalk(base, walkAction, context);   // c_baseObjectWalk in c_base.h (in debug version only!)
 

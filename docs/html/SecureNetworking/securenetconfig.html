@@ -1,0 +1,991 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Secure Networking Configuration &mdash; Secure Networking Configuration Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Secure Networking Configuration Guide" href="index.html" />
+    <link rel="next" title="4. Secure Networking Tutorial" href="securenettutorial.html" />
+    <link rel="prev" title="2. Overview" href="overview.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="securenettutorial.html" title="4. Secure Networking Tutorial"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="2. Overview"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Secure Networking Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="secure-networking-configuration">
+<span id="id1"></span><h1>3. Secure Networking Configuration<a class="headerlink" href="#secure-networking-configuration" title="Permalink to this headline">¶</a></h1>
+<p><em>This section provides an in-depth description of the OpenSplice
+security configuration by describing the most important
+configuration parameters for the Secure Networking Service.</em></p>
+<p>Each configuration parameter will be explained by means of an
+extensive description together with the tabular summary that
+contains the following information:</p>
+<dl class="docutils">
+<dt><strong>Full path</strong> -</dt>
+<dd>Describes the location of the item within a
+complete configuration. Because the configuration is in XML
+format, an XPath expression is used to point out the name and
+location of the configuration item.</dd>
+<dt><strong>Format</strong> -</dt>
+<dd>Describes the format of the value of the configuration item.</dd>
+<dt><strong>Dimension</strong> -</dt>
+<dd>Describes the unit for the configuration item
+(for instance <em>seconds</em> or <em>bytes</em>).</dd>
+<dt><strong>Default value</strong> -</dt>
+<dd>Describes the default value that is used by
+the service when the configuration item is not
+set in the configuration.</dd>
+<dt><strong>Valid values</strong> -</dt>
+<dd>Describes the valid values for the configuration item.
+This can be a range or a set of values.</dd>
+</dl>
+<p>If the configuration parameter is an XML <em>attribute</em>, the
+table also contains the following information:</p>
+<dl class="docutils">
+<dt><strong>Required</strong> -</dt>
+<dd>Describes whether the attribute is required or if
+it is optional.</dd>
+</dl>
+<p>If the configuration parameter is an XML <em>element</em>, the table
+also contains the following information:</p>
+<dl class="docutils">
+<dt><strong>Occurrences</strong> -</dt>
+<dd>Describes the range of the possible number of
+occurrences of the element in the configuration by specifying
+the minimum and maximum number of occurrences.</dd>
+</dl>
+<div class="section" id="activating-secure-networking">
+<h2>3.1. Activating Secure Networking<a class="headerlink" href="#activating-secure-networking" title="Permalink to this headline">¶</a></h2>
+<p>The OpenSplice Security Service comes as a separate service,
+replacing the regular networking service.</p>
+<p>The secure networking service executable is named <tt class="docutils literal"><span class="pre">snetworking</span></tt>
+on Linux and Solaris and <tt class="docutils literal"><span class="pre">snetworking.exe</span></tt> on Windows.</p>
+<p>It needs to be configured in the OpenSplice configuration XML
+file (see below). In addition, a license is required to enable
+the OpenSplice Secure Networking feature; if a license is not
+found then an error message is printed and the service will not start.</p>
+<div class="section" id="configuring-the-secure-networking-service">
+<h3>3.1.1. Configuring the Secure Networking Service<a class="headerlink" href="#configuring-the-secure-networking-service" title="Permalink to this headline">¶</a></h3>
+<p>OpenSplice services are configured in an OpenSplice
+configuration file, which is located in
+<tt class="docutils literal"><span class="pre">&lt;OSPL_HOME&gt;/etc/configs/ospl.xml</span></tt> by default.</p>
+<p>Within this configuration file the <tt class="docutils literal"><span class="pre">&lt;Domain&gt;</span></tt> element contains
+a set of Service child elements, which are responsible for
+starting services like durability or networking. The default
+configuration file already contains a <tt class="docutils literal"><span class="pre">&lt;Service&gt;</span></tt> element starting
+the networking service. To configure secure networking only the
+name of the service’s executable in the <tt class="docutils literal"><span class="pre">&lt;Command&gt;</span></tt> child element
+needs to be replaced with the value <tt class="docutils literal"><span class="pre">snetworking</span></tt>.</p>
+<p>The following snippet shows an example of an OpenSplice
+configuration starting secure networking service:</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;OpenSplice&gt;
+    &lt;Domain&gt;
+        &lt;Name&gt;OpenSplice Security&lt;/Name&gt;
+        &lt;Database&gt;
+            &lt;Size&gt;10485670&lt;/Size&gt;
+        &lt;/Database&gt;
+        &lt;Lease&gt;
+            &lt;ExpiryTime update_factor=&quot;0.5&quot;&gt;5.0&lt;/ExpiryTime&gt;
+        &lt;/Lease&gt;
+        &lt;Service enabled=&quot;true&quot; name=&quot;networking&quot;&gt;
+            &lt;Command&gt;snetworking&lt;/Command&gt;
+        &lt;/Service&gt;
+    &lt;/Domain&gt;
+    ...
+&lt;/OpenSplice&gt;
+</pre></div>
+</div>
+<p>To check if the service starts correctly the info logfile
+<tt class="docutils literal"><span class="pre">ospl-info.log</span></tt> can be inspected (see also
+<a class="reference internal" href="troubleshoot.html#how-to-diagnose-problems-logging"><em>How to Diagnose Problems - Logging</em></a>
+).</p>
+</div>
+</div>
+<div class="section" id="secure-networking-configuration-elements">
+<h2>3.2. Secure Networking Configuration Elements<a class="headerlink" href="#secure-networking-configuration-elements" title="Permalink to this headline">¶</a></h2>
+<p>The secure networking configuration expects a root element named
+<tt class="docutils literal"><span class="pre">OpenSplice/NetworkingService</span></tt>. Within this root element, the
+networking daemon will look for several sub-elements.</p>
+<p>The configuration elements for secure networking are listed and
+explained below.</p>
+<p>These elements are an extension of the configuration elements for
+the Networking Service described in the
+<em>Vortex OpenSplice Deployment Guide</em> and the
+<em>Vortex OpenSplice Configuration Guide</em>.</p>
+<div class="section" id="element-globalpartition">
+<h3>3.2.1. Element GlobalPartition<a class="headerlink" href="#element-globalpartition" title="Permalink to this headline">¶</a></h3>
+<p>This element specifies the global or default networking
+partition.</p>
+<div class="section" id="attribute-securityprofile">
+<h4>3.2.1.1. Attribute SecurityProfile<a class="headerlink" href="#attribute-securityprofile" title="Permalink to this headline">¶</a></h4>
+<p>In the context of secure networking, the <tt class="docutils literal"><span class="pre">GlobalPartition</span></tt> element
+provides support for the attribute <tt class="docutils literal"><span class="pre">SecurityProfile</span></tt>. The
+attribute is referencing a security profile declared in the
+context of the <tt class="docutils literal"><span class="pre">Security</span></tt> element.</p>
+<p>If the given reference is invalid, the global partition
+configuration is invalid. In this case, the partition will be
+blocked to prevent unwanted information leaks. A configuration
+error message will be logged to the <tt class="docutils literal"><span class="pre">ospl-error.log</span></tt> file. If the
+security feature has been enabled, but no profile is declared,
+then the <tt class="docutils literal"><span class="pre">NULL</span></tt> profile is used by default: this means that no
+security is added to the transport
+(see <a class="reference internal" href="#security-enabled"><em>Attribute Enabled</em></a>).</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>OpenSplice/NetworkService/Partitioning/GlobalPartition[&#64;SecurityProfile]</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>string</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>none</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>any</td>
+</tr>
+<tr class="row-even"><td>Required</td>
+<td>no</td>
+</tr>
+<tr class="row-odd"><td>Remarks</td>
+<td>This attribute is referencing a security profile
+declared in the context of the Security element.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="element-networkpartition">
+<h3>3.2.2. Element NetworkPartition<a class="headerlink" href="#element-networkpartition" title="Permalink to this headline">¶</a></h3>
+<p>The Networking configuration can contain a set of networking
+partitions, which are defined in the context of the
+<tt class="docutils literal"><span class="pre">NetworkPartitions</span></tt> element.</p>
+<div class="section" id="id2">
+<h4>3.2.2.1. Attribute SecurityProfile<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
+<p>In the context of secure networking, the <tt class="docutils literal"><span class="pre">NetworkPartition</span></tt>
+element provides support for the attribute <tt class="docutils literal"><span class="pre">SecurityProfile</span></tt>.
+The attribute is referencing a security profile declared in the
+context of the <tt class="docutils literal"><span class="pre">Security</span></tt> element.</p>
+<p>If the given reference is invalid, the network partition
+configuration is invalid. In this case the partition will be
+blocked to prevent unwanted information leaks. A configuration
+error message will be logged to the <tt class="docutils literal"><span class="pre">ospl-error.log</span></tt> file.
+If the security feature has been enabled but no profile is declared,
+the <tt class="docutils literal"><span class="pre">NULL</span></tt> profile will be used by default.</p>
+<p>The ordering of network partition declarations in the OSPL
+configuration file must be the same for all nodes within the
+OpenSplice domain.</p>
+<p>If certain nodes shall not use one of the network partitions,
+the network partition in question must be declared as <tt class="docutils literal"><span class="pre">connected=&quot;false&quot;</span></tt>.
+In this case the declared security profile would not be evaluated
+or initialized, and the associated secret cipher keys need not to
+be defined for the OpenSplice node in question.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>OpenSplice/NetworkService/NetworkPartitions/NetworkPartition[&#64;SecurityProfile]</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>string</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>none</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>any</td>
+</tr>
+<tr class="row-even"><td>Required</td>
+<td>no</td>
+</tr>
+<tr class="row-odd"><td>Remarks</td>
+<td>This attribute is referencing a security profile
+declared in the context of the Security element.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="element-security">
+<h3>3.2.3. Element Security<a class="headerlink" href="#element-security" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">Security</span></tt> section defines the parameters relevant for secure
+networking. Declaring this element in the OSPL configuration
+file will activate the secure networking feature.</p>
+<p>Without any additional security settings, all network partitions
+of the node would use the <tt class="docutils literal"><span class="pre">NULL</span></tt> cipher encoding. If confidentiality
+and integrity is required for a network partition, the network
+partition must be associated with a security profile (see
+<a class="reference internal" href="#element-securityprofile">Element SecurityProfile</a>).</p>
+<div class="section" id="attribute-enabled">
+<span id="security-enabled"></span><h4>3.2.3.1. Attribute Enabled<a class="headerlink" href="#attribute-enabled" title="Permalink to this headline">¶</a></h4>
+<p>This is an optional attribute.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+If not defined it defaults to <tt class="docutils literal"><span class="pre">true</span></tt> and all network partitions,
+if not specified otherwise, will be encoded using the <tt class="docutils literal"><span class="pre">NULL</span></tt> cipher.
+<strong>The NULL cipher does not provide for any level of integrity
+or confidentiality, and message items will be sent unencrypted.</strong></p>
+<p>If <tt class="docutils literal"><span class="pre">enabled=&quot;false&quot;</span></tt> the security feature will not be
+activated, and the node acts like any other OpenSplice node not
+being security-aware. Security profiles defined in the
+configuration file will not take effect, but will cause the
+system to log warnings.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>OpenSplice/NetworkService/Security[&#64;Enabled]</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>Boolean</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>true</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>true, false</td>
+</tr>
+<tr class="row-even"><td>Required</td>
+<td>no</td>
+</tr>
+<tr class="row-odd"><td>Remarks</td>
+<td>This attribute is a flag to enable or disable
+the secure networking.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="element-securityprofile">
+<h3>3.2.4. Element SecurityProfile<a class="headerlink" href="#element-securityprofile" title="Permalink to this headline">¶</a></h3>
+<p>This element defines the security profile which can be applied
+to one or more network partitions. This element is optional.</p>
+<div class="section" id="attribute-name">
+<h4>3.2.4.1. Attribute Name<a class="headerlink" href="#attribute-name" title="Permalink to this headline">¶</a></h4>
+<p>This is a mandatory attribute. The name must be unique for all
+Security Profiles being declared. If the name is not specified,
+the security profile will be ignored as it cannot be referenced
+anyway.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>OpenSplice/NetworkService/Security[&#64;Enabled]</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>string</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>none</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>any, but must be unique amongst all other
+SecurityProfiles</td>
+</tr>
+<tr class="row-even"><td>Required</td>
+<td>yes</td>
+</tr>
+<tr class="row-odd"><td>Remarks</td>
+<td>This is a required attribute. The given name can be
+referenced by NetworkPartition and GlobalPartition
+elements.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="attribute-cipher">
+<h4>3.2.4.2. Attribute Cipher<a class="headerlink" href="#attribute-cipher" title="Permalink to this headline">¶</a></h4>
+<p>This is a mandatory attribute. Depending on the declared cipher,
+the cipher key must have a specific length, 128 bits, 192 bits,
+256 bits or none at all. The following case-insensitive values
+are supported by the current implementation:</p>
+<ul class="simple">
+<li><strong>aes128</strong>, implements AES cipher with 128 bit cipher-key
+(16 Bytes, 32 hexadecimal characters). This cipher will
+occupy 34 bytes of each UDP packet being sent.</li>
+<li><strong>aes192</strong>, implements the AES cipher with 192 bit cipher-key
+(24 Bytes, 48 hexadecimal characters). This cipher will occupy
+34 bytes of each UDP packet being sent.</li>
+<li><strong>aes256</strong>, implements the AES cipher with 256 bit cipher-key
+(32 Bytes, 64 hexadecimal characters. This cipher will occupy
+34 bytes of each UDP packet being sent.</li>
+<li><strong>blowfish</strong>, implements the Blowfish cipher with 128 bit
+cipher-key (16 Bytes, 32 hexadecimal characters). This cipher
+will occupy 26 bytes of each UDP packet being sent.</li>
+<li><strong>null</strong>, implements the <tt class="docutils literal"><span class="pre">NULL</span></tt> cipher. The only cipher that
+does not require a cipher-key. This cipher will occupy 4 bytes
+of each UDP packet being sent.</li>
+</ul>
+<p>All ciphers except for the <tt class="docutils literal"><span class="pre">NULL</span></tt> cipher are combined with SHA1 to
+achieve data integrity. Also, the <em>rsa-</em> prefix can be added to
+the ciphers. In this case, digital signatures using RSA will be
+available.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>OpenSplice/NetworkingService/Security/SecurityProfile[&#64;Cipher]</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>enumeration</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>none</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>aes128, aes192, aes256, blowfish, rsa-aes128,
+rsa-eas192, rsa-eas256, rsa-blowfish,
+rsa-null, NULL</td>
+</tr>
+<tr class="row-even"><td>Required</td>
+<td>yes</td>
+</tr>
+<tr class="row-odd"><td>Remarks</td>
+<td>All but NULL cipher require attribute CipherKey
+to be set with matching key length.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="attribute-cipherkey">
+<h4>3.2.4.3. Attribute CipherKey<a class="headerlink" href="#attribute-cipherkey" title="Permalink to this headline">¶</a></h4>
+<p>The <tt class="docutils literal"><span class="pre">CipherKey</span></tt> attribute is used to define the secret key
+required by the declared cipher. The value can be a URI
+referencing an external file containing the secret key, or the
+secret key can be defined in-place directly as a string value.
+The key must be defined as a hexadecimal string, each character
+representing 4 bits of the key; for example, <tt class="docutils literal"><span class="pre">1ABC</span></tt> represents
+the 16-bit key <tt class="docutils literal"><span class="pre">0001</span> <span class="pre">1010</span> <span class="pre">1011</span> <span class="pre">1100</span></tt>. The key must not follow a
+well-known pattern and must match <em>exactly</em> the key length
+required by the chosen cipher. If the cipher-keys are malformed,
+the security profile in question will be marked as invalid.
+Moreover, each network partition referring to the invalid
+Security Profile will not be operational and thus traffic will
+be blocked to prevent information leaks.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+As all OpenSplice applications require read access to the XML
+configuration file, for security reasons it is recommended to
+store the secret key in an external file in the file system,
+referenced by the URI in the configuration file. The file must
+be protected against read and write access from other users on
+the host. Verify that access rights are not given to any other
+user or group on the host.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Alternatively, storing the secret key in-place in the XML
+configuration file will give read/write access to all DDS
+applications joining the same OpenSplice node. Because of this,
+the ‘in-place’ method is strongly discouraged.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>OpenSplice/NetworkingService/Security/SecurityProfile[&#64;CipherKey]</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>string</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>none</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>Hexadecimal string or file URI matching the
+pattern: <tt class="docutils literal"><span class="pre">file://.*</span></tt>.</td>
+</tr>
+<tr class="row-even"><td>Required</td>
+<td>yes</td>
+</tr>
+<tr class="row-odd"><td>Remarks</td>
+<td>All but NULL cipher require attribute CipherKey
+to be set with matching key length.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="element-accesscontrol">
+<h3>3.2.5. Element AccessControl<a class="headerlink" href="#element-accesscontrol" title="Permalink to this headline">¶</a></h3>
+<p>The optional <tt class="docutils literal"><span class="pre">AccessControl</span></tt> element defines settings for access
+control enforcement and which access control module shall be
+used.</p>
+<div class="section" id="id3">
+<h4>3.2.5.1. Attribute enabled<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
+<p>The access control feature will be activated when <tt class="docutils literal"><span class="pre">enabled=&quot;true&quot;</span></tt>.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>Security/AccessControl[&#64;enabled]</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>Boolean</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>false</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>false, true</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="attribute-policy">
+<h4>3.2.5.2. Attribute policy<a class="headerlink" href="#attribute-policy" title="Permalink to this headline">¶</a></h4>
+<p>The <tt class="docutils literal"><span class="pre">policy</span></tt> attribute references a file containing the access
+control policy. Configuration elements of this file are
+explained in detail in
+<a class="reference internal" href="accessctrlconfig.html#access-control-policy-elements"><em>Access Control Policy Elements</em></a>.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>Security/AccessControl[&#64;policy]</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>file URI, also see  <a class="reference internal" href="#attribute-cipherkey">Attribute CipherKey</a></td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>none</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>any</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="element-accesscontrolmodule">
+<h3>3.2.6. Element AccessControlModule<a class="headerlink" href="#element-accesscontrolmodule" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">AccessControlModule</span></tt> element defines which access control
+module will be used. More than one module may be defined. All
+defined and enabled modules will be used to determine if access
+should be granted.</p>
+<div class="section" id="id4">
+<h4>3.2.6.1. Attribute enabled<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
+<p>The module specified in the <tt class="docutils literal"><span class="pre">type</span></tt> attribute is used to evaluate
+access control rules when <tt class="docutils literal"><span class="pre">enabled=&quot;true&quot;</span></tt>.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>Security/AccessControl/AccessControlModule[&#64;enabled]</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>Boolean</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>true</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>true, false</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="attribute-type">
+<h4>3.2.6.2. Attribute type<a class="headerlink" href="#attribute-type" title="Permalink to this headline">¶</a></h4>
+<p>The <tt class="docutils literal"><span class="pre">type</span></tt> attribute defines the access control model type.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+OpenSplice currently only supports mandatory access control,
+accordingly the only valid value for this attribute is <tt class="docutils literal"><span class="pre">&quot;MAC&quot;</span></tt>.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>Security/AccessControl/AccessControlModule[&#64;enabled]</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>string</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>none</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>&#8220;MAC&#8221;</td>
+</tr>
+<tr class="row-even"><td>Remarks</td>
+<td>This value is referencing an access control module.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="element-authentication">
+<h3>3.2.7. Element Authentication<a class="headerlink" href="#element-authentication" title="Permalink to this headline">¶</a></h3>
+<p>The optional <tt class="docutils literal"><span class="pre">Authentication</span></tt> element defines whether additional
+sender authorization shall be performed. Enabling Authentication
+requires that a cipher, including RSA (such as <em>rsa-aes256</em>), is
+used.</p>
+<div class="section" id="id5">
+<h4>3.2.7.1. Attribute enabled<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h4>
+<p>Authentication is performed when <tt class="docutils literal"><span class="pre">enabled</span></tt> is set to <tt class="docutils literal"><span class="pre">true</span></tt>.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>Security/Authentication[&#64;enabled]</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>Boolean</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>none</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>true, false</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="element-x509authentication">
+<span id="id6"></span><h4>3.2.7.2. Element X509Authentication<a class="headerlink" href="#element-x509authentication" title="Permalink to this headline">¶</a></h4>
+<p>The <tt class="docutils literal"><span class="pre">X509Authentication</span></tt> element defines where keys and
+certificates required for X509 authentication may be found.</p>
+<div class="section" id="element-credentials">
+<h5>3.2.7.2.1. Element Credentials<a class="headerlink" href="#element-credentials" title="Permalink to this headline">¶</a></h5>
+<p>The <tt class="docutils literal"><span class="pre">Credentials</span></tt> element is an optional element. If it is
+missing, then the node does not sign messages (in other words,
+does not send credentials).</p>
+<div class="section" id="element-key">
+<h6>3.2.7.2.1.1. Element Key<a class="headerlink" href="#element-key" title="Permalink to this headline">¶</a></h6>
+<p>The <tt class="docutils literal"><span class="pre">Key</span></tt> element references the file containing the key.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>Security/Authentication/X509Authentication/Credentials/Key</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>string</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>none</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>any file URI</td>
+</tr>
+<tr class="row-even"><td>Occurrences
+(min-max)</td>
+<td>1 - 1</td>
+</tr>
+<tr class="row-odd"><td>Remarks</td>
+<td>It is recommended that the absolute path is used.
+A relative path will be interpreted relative to the
+directory from which the OpenSplice daemon is started.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="element-cert">
+<h6>3.2.7.2.1.2. Element Cert<a class="headerlink" href="#element-cert" title="Permalink to this headline">¶</a></h6>
+<p>The <tt class="docutils literal"><span class="pre">Cert</span></tt> element references the file containing the certificate.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>Security/Authentication/X509Authentication/Credentials/Cert</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>string</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>none</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>any file URI</td>
+</tr>
+<tr class="row-even"><td>Occurrences
+(min-max)</td>
+<td>1 - 1</td>
+</tr>
+<tr class="row-odd"><td>Remarks</td>
+<td>It is recommended that the absolute path is used.
+A relative path will be interpreted relative to the
+directory from which the OpenSplice daemon is started.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="element-trustedcertificates">
+<span id="id7"></span><h5>3.2.7.2.2. Element TrustedCertificates<a class="headerlink" href="#element-trustedcertificates" title="Permalink to this headline">¶</a></h5>
+<p>The <tt class="docutils literal"><span class="pre">TrustedCertificates</span></tt> element references a file containing the
+trusted certificates.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="81%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Full Path</td>
+<td>Security/Authentication/X509Authentication/TrustedCertificates</td>
+</tr>
+<tr class="row-even"><td>Format</td>
+<td>string</td>
+</tr>
+<tr class="row-odd"><td>Dimension</td>
+<td>none</td>
+</tr>
+<tr class="row-even"><td>Default
+Value</td>
+<td>none</td>
+</tr>
+<tr class="row-odd"><td>Valid
+Values</td>
+<td>any file URI</td>
+</tr>
+<tr class="row-even"><td>Occurrences
+(min-max)</td>
+<td>1 - 1</td>
+</tr>
+<tr class="row-odd"><td>Remarks</td>
+<td>It is recommended that the absolute path is used.
+A relative path will be interpreted relative to the
+directory from which the OpenSplice daemon is started.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="secure-networking-example-configuration">
+<h2>3.3. Secure Networking Example Configuration<a class="headerlink" href="#secure-networking-example-configuration" title="Permalink to this headline">¶</a></h2>
+<p>The following XML is an example of a secure networking
+configuration.</p>
+<div class="highlight-python"><div class="highlight"><pre>&lt;OpenSplice&gt;
+    &lt;Domain&gt;
+        &lt;Name&gt;OpenSplice Security&lt;/Name&gt;
+        &lt;Database&gt;
+            &lt;Size&gt;10485670&lt;/Size&gt;
+        &lt;/Database&gt;
+        &lt;Lease&gt;
+            &lt;ExpiryTime update_factor=&quot;0.5&quot;&gt;5.0&lt;/ExpiryTime&gt;
+        &lt;/Lease&gt;
+        &lt;Service enabled=&quot;true&quot; name=&quot;networking&quot;&gt;
+            &lt;Command&gt;snetworking&lt;/Command&gt;
+        &lt;/Service&gt;
+    &lt;/Domain&gt;
+
+    &lt;NetworkService name=&quot;networking&quot;&gt;
+        &lt;Partitioning&gt;
+            &lt;GlobalPartition Address=&quot;broadcast&quot;
+               SecurityProfile=&quot;GlobalProfile&quot;/&gt;
+            &lt;NetworkPartitions&gt;
+                &lt;NetworkPartition Name=&quot;ChatRoomPartition&quot;
+                   Address=&quot;230.230.230.1&quot;
+                   SecurityProfile=&quot;ChatRoomProfile&quot; /&gt;
+            &lt;/NetworkPartitions&gt;
+            &lt;PartitionMappings&gt;
+                &lt;PartitionMapping DCPSPartitionTopic=&quot;ChatRoom.*&quot;
+                   NetworkPartition=&quot;ChatRoomPartition&quot;/&gt;
+            &lt;/PartitionMappings&gt;
+        &lt;/Partitioning&gt;
+
+      &lt;Security enabled=&quot;true&quot;&gt;
+         &lt;SecurityProfile Name=&quot;GlobalProfile&quot;
+            Cipher=&quot;aes128&quot;
+            CipherKey=&quot;000102030405060708090a0b0c0d0e0f&quot; /&gt;
+         &lt;SecurityProfile Name=&quot;ChatRoomProfile&quot;
+            Cipher=&quot;blowfish&quot;
+            CipherKey=&quot;000102030405060708090a0b0c0d0e0f&quot; /&gt;
+         &lt;SecurityProfile Name=&quot;OtherProfile&quot;
+            Cipher=&quot;rsa-aes128&quot;
+            CipherKey=
+               &quot;file:///my/shared/secrets/aes128.key&quot; /&gt;
+
+         &lt;AccessControl enabled=&quot;true&quot; policy=&quot;file://.....&quot;&gt;
+            &lt;AccessControlModule enabled=&quot;true&quot; type=&quot;MAC&quot;/&gt;
+         &lt;AccessControl/&gt;
+
+         &lt;Authentication enabled=&quot;true&quot;&gt;
+            &lt;X509Authentication&gt;
+               &lt;Credentials&gt;
+                  &lt;Key&gt;
+                    file:///usr/osp/securityConfig/ProxyKey.pem
+                  &lt;/Key&gt;
+                  &lt;Cert&gt;
+                     file:///usr/osp/securityConfig/ \
+                        ProxyCert.pem
+                  &lt;/Cert&gt;
+               &lt;/Credentials&gt;
+               &lt;TrustedCertificates&gt;
+                  file://../../securityConfig/ \
+                     trustedCerts.pem
+               &lt;/TrustedCertificates&gt;
+            &lt;/X509Authentication&gt;
+         &lt;Authentication&gt;
+      &lt;/Security&gt;
+      &lt;Channels&gt;
+            &lt;Channel
+                  enabled=&quot;true&quot; name=&quot;BestEffort&quot;
+                  reliable=&quot;false&quot; default=&quot;true&quot;&gt;
+                &lt;PortNr&gt;3340&lt;/PortNr&gt;
+            &lt;/Channel&gt;
+            &lt;Channel enabled=&quot;true&quot; name=&quot;Reliable&quot; reliable=&quot;true&quot;&gt;
+                &lt;PortNr&gt;3350&lt;/PortNr&gt;
+            &lt;/Channel&gt;
+        &lt;/Channels&gt;
+        &lt;Discovery enabled=&quot;true&quot;&gt;
+            &lt;PortNr&gt;3360&lt;/PortNr&gt;
+        &lt;/Discovery&gt;
+    &lt;/NetworkService&gt;
+&lt;/OpenSplice&gt;
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Secure Networking Configuration</a><ul>
+<li><a class="reference internal" href="#activating-secure-networking">3.1. Activating Secure Networking</a><ul>
+<li><a class="reference internal" href="#configuring-the-secure-networking-service">3.1.1. Configuring the Secure Networking Service</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#secure-networking-configuration-elements">3.2. Secure Networking Configuration Elements</a><ul>
+<li><a class="reference internal" href="#element-globalpartition">3.2.1. Element GlobalPartition</a><ul>
+<li><a class="reference internal" href="#attribute-securityprofile">3.2.1.1. Attribute SecurityProfile</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#element-networkpartition">3.2.2. Element NetworkPartition</a><ul>
+<li><a class="reference internal" href="#id2">3.2.2.1. Attribute SecurityProfile</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#element-security">3.2.3. Element Security</a><ul>
+<li><a class="reference internal" href="#attribute-enabled">3.2.3.1. Attribute Enabled</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#element-securityprofile">3.2.4. Element SecurityProfile</a><ul>
+<li><a class="reference internal" href="#attribute-name">3.2.4.1. Attribute Name</a></li>
+<li><a class="reference internal" href="#attribute-cipher">3.2.4.2. Attribute Cipher</a></li>
+<li><a class="reference internal" href="#attribute-cipherkey">3.2.4.3. Attribute CipherKey</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#element-accesscontrol">3.2.5. Element AccessControl</a><ul>
+<li><a class="reference internal" href="#id3">3.2.5.1. Attribute enabled</a></li>
+<li><a class="reference internal" href="#attribute-policy">3.2.5.2. Attribute policy</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#element-accesscontrolmodule">3.2.6. Element AccessControlModule</a><ul>
+<li><a class="reference internal" href="#id4">3.2.6.1. Attribute enabled</a></li>
+<li><a class="reference internal" href="#attribute-type">3.2.6.2. Attribute type</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#element-authentication">3.2.7. Element Authentication</a><ul>
+<li><a class="reference internal" href="#id5">3.2.7.1. Attribute enabled</a></li>
+<li><a class="reference internal" href="#element-x509authentication">3.2.7.2. Element X509Authentication</a><ul>
+<li><a class="reference internal" href="#element-credentials">3.2.7.2.1. Element Credentials</a><ul>
+<li><a class="reference internal" href="#element-key">3.2.7.2.1.1. Element Key</a></li>
+<li><a class="reference internal" href="#element-cert">3.2.7.2.1.2. Element Cert</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#element-trustedcertificates">3.2.7.2.2. Element TrustedCertificates</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#secure-networking-example-configuration">3.3. Secure Networking Example Configuration</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="overview.html"
+                        title="previous chapter">2. Overview</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="securenettutorial.html"
+                        title="next chapter">4. Secure Networking Tutorial</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/securenetconfig.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="securenettutorial.html" title="4. Secure Networking Tutorial"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="2. Overview"
+             >previous</a> |</li>
+        <li><a href="index.html">Secure Networking Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

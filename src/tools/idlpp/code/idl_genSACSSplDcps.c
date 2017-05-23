@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -34,16 +42,12 @@
 #include "c_base.h"
 #include "c_metabase.h"
 
-#include "os.h"
+#include "vortex_os.h"
 #include <ctype.h>
 #include "c_typebase.h"
 
-    /** indentation level */
+/** indentation level */
 static c_long indent_level = 0;
-    /** enumeration element index */
-static c_long enum_element = 0;
-    /** enumeration enum name */
-static char *enum_enumName = NULL;
 
 static void
 idl_generateDatabaseRepresentation (
@@ -71,9 +75,15 @@ idl_fileOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     /* Generate inclusion of standard OpenSplice DDS type definition files */
     idl_fileOutPrintf(idl_fileCur(), "using DDS;\n");
     idl_fileOutPrintf(idl_fileCur(), "using DDS.OpenSplice.CustomMarshalers;\n");
+    idl_fileOutPrintf(idl_fileCur(), "using DDS.OpenSplice.Database;\n");
+    idl_fileOutPrintf(idl_fileCur(), "using DDS.OpenSplice.Kernel;\n");
     idl_fileOutPrintf(idl_fileCur(), "using System;\n");
     idl_fileOutPrintf(idl_fileCur(), "using System.Runtime.InteropServices;\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
@@ -101,6 +111,9 @@ idl_moduleOpen(
     void *userData)
 {
     SACSSplDcpsUserData *csUserData = (SACSSplDcpsUserData *) userData;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     /* Generate the C# code that opens the namespace. */
     idl_printIndent(indent_level);
@@ -129,6 +142,7 @@ static void
 idl_moduleClose(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
 
     /* Decrease the indentation level back to its original size. */
     indent_level--;
@@ -165,6 +179,7 @@ idl_structureOpen(
     idl_action action;
     SACSSplDcpsUserData *csUserData = (SACSSplDcpsUserData *) userData;
 
+    OS_UNUSED_ARG(scope);
 
     scopedStructName = idl_scopeStackCsharp(
             idl_typeUserScope(idl_typeUser(structSpec)),
@@ -206,6 +221,7 @@ static idl_programControl *
 idl_getControl(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     return &idl_genSACSLoadControl;
 }
 
@@ -247,15 +263,14 @@ idl_genSACSSplDcpsProgram(
 }
 
 static c_char *
-idl_cTypeToCSharp(
+idl_cTypeToCSharpDatabaseRepresentation(
         c_type memberType,
         const c_char *memberTypeName,
         SACSSplDcpsUserData *csUserData)
 {
-    c_longlong nrElements;
-    c_char *dbType = NULL, *dbTypeTmp, *memberTypeNameTmp;
-    c_long dbTypeSize;
+    c_char *dbType = NULL, *memberTypeNameTmp;
 
+    memberType = c_typeActualType(memberType);
     switch (c_baseObjectKind(memberType))
     {
     case M_PRIMITIVE:
@@ -264,19 +279,25 @@ idl_cTypeToCSharp(
         case P_BOOLEAN:
         case P_CHAR:
         case P_OCTET:
-            dbType = os_strdup("char");
+            dbType = os_strdup("byte");
             break;
         case P_SHORT:
-        case P_USHORT:
             dbType = os_strdup("short");
             break;
+        case P_USHORT:
+            dbType = os_strdup("ushort");
+            break;
         case P_LONG:
-        case P_ULONG:
             dbType = os_strdup("int");
             break;
+        case P_ULONG:
+            dbType = os_strdup("uint");
+            break;
         case P_LONGLONG:
-        case P_ULONGLONG:
             dbType = os_strdup("long");
+            break;
+        case P_ULONGLONG:
+            dbType = os_strdup("ulong");
             break;
         case P_FLOAT:
             dbType = os_strdup("float");
@@ -290,7 +311,7 @@ idl_cTypeToCSharp(
         }
         break;
     case M_ENUMERATION:
-        dbType = os_strdup("int");
+        dbType = os_strdup("uint");
         break;
     case M_STRUCTURE:
     case M_UNION:
@@ -303,46 +324,36 @@ idl_cTypeToCSharp(
     case M_COLLECTION:
         switch (c_collectionTypeKind(memberType))
         {
-        case C_STRING:
-        case C_SEQUENCE:
+        case OSPL_C_STRING:
+        case OSPL_C_SEQUENCE:
             dbType = os_strdup("IntPtr");
             break;
-        case C_ARRAY:
-            nrElements = (c_longlong) c_collectionTypeMaxSize(memberType);
-            memberType = c_typeActualType(c_collectionTypeSubType(memberType));
+        case OSPL_C_ARRAY:
             while (c_baseObjectKind(memberType) == M_COLLECTION &&
-                    c_collectionTypeKind(memberType) == C_ARRAY)
+                    c_collectionTypeKind(memberType) == OSPL_C_ARRAY)
             {
-                nrElements *= (c_longlong) c_collectionTypeMaxSize(memberType);
                 memberType = c_typeActualType(c_collectionTypeSubType(memberType));
             }
-            /* Generate a tag to make sure the C# array uses an inline representation. */
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "[MarshalAs(UnmanagedType.ByValArray, SizeConst=%lld)]\n",
-                    nrElements);
             memberTypeNameTmp = idl_scopeStackFromCType(memberType);
-            dbTypeTmp = idl_cTypeToCSharp(memberType, memberTypeNameTmp, csUserData);
-            dbTypeSize = strlen(dbTypeTmp) + 2 /* '[' & ']' */ + 1 /* '\0' */;
-            dbType = os_malloc(dbTypeSize);
-            snprintf(dbType, dbTypeSize, "%s[]", dbTypeTmp);
-            os_free(dbTypeTmp);
+            dbType = idl_cTypeToCSharpDatabaseRepresentation(memberType, memberTypeNameTmp, csUserData);
             os_free(memberTypeNameTmp);
             break;
         default:
             /* Unsupported structure member type */
             assert(FALSE);
+            break;
         }
         break;
     default:
         /* Unsupported structure member type */
         assert(FALSE);
+        break;
     }
 
     return dbType;
 }
 
+#if 0
 static const c_char *
 idl_cTypeToBaseType(
         c_type memberType,
@@ -414,15 +425,37 @@ idl_cTypeToBaseType(
         default:
             /* Other collection types should never reach this part of the code. */
             assert(FALSE);
+            break;
         }
         break;
     default:
         /* This part of the code should never be reached for other types. */
         assert(FALSE);
+        break;
     }
 
     return baseType;
 }
+#endif
+
+static c_ulonglong
+idl_determineDatabaseFlatArraySize(c_type arrayType)
+{
+    c_ulonglong nrElements = 1;
+
+    assert(c_baseObjectKind(arrayType) == M_COLLECTION &&
+                c_collectionTypeKind(arrayType) == OSPL_C_ARRAY);
+
+    while (c_baseObjectKind(arrayType) == M_COLLECTION &&
+            c_collectionTypeKind(arrayType) == OSPL_C_ARRAY)
+    {
+        nrElements *= c_collectionTypeMaxSize(arrayType);
+        arrayType = c_typeActualType(c_collectionTypeSubType(arrayType));
+    }
+
+    return nrElements;
+}
+
 
 static void
 idl_generateDatabaseRepresentation (
@@ -432,7 +465,7 @@ idl_generateDatabaseRepresentation (
 {
     /* Get the meta-data of this datatype from the database. */
     c_type structType = idl_typeSpecDef(idl_typeSpec(typeSpec));
-    c_long i, nrMembers = c_structureMemberCount((c_structure) structType);
+    c_ulong i, nrMembers = c_structureMemberCount((c_structure) structType);
 
     /* Generate the C# code that opens a sealed class. */
     idl_printIndent(indent_level);
@@ -442,7 +475,7 @@ idl_generateDatabaseRepresentation (
     idl_printIndent(indent_level);
     idl_fileOutPrintf(
         idl_fileCur(),
-        "public sealed class __%s\n",
+        "public struct __%s\n",
         structName);
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
@@ -457,28 +490,28 @@ idl_generateDatabaseRepresentation (
 
         /* Get the meta-data of the attribute from the database. */
         c_member structMember = c_structureMember(structType, i);
-        c_type memberType = c_memberType(structMember);
+        c_type memberType = c_typeActualType(c_memberType(structMember));
         c_char *memberName = idl_CsharpId(
                 c_specifierName(structMember),
                 csUserData->customPSM,
                 FALSE);
 
-        /* Dereference possible typedefs first. */
-        while (c_baseObjectKind(memberType) == M_TYPEDEF) {
-            memberType = c_typeDef(memberType)->alias;
-        }
-
         /* Now find and generate the corresponding database representation. */
         memberTypeName = idl_scopeStackFromCType(memberType);
-        dbType = idl_cTypeToCSharp(memberType, memberTypeName, csUserData);
+        dbType = idl_cTypeToCSharpDatabaseRepresentation(memberType, memberTypeName, csUserData);
 
         /* generate the the database representation for the attribute.  */
         idl_printIndent(indent_level);
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "public %s %s;\n",
-            dbType,
-            memberName);
+        if (c_baseObjectKind(memberType) == M_COLLECTION && c_collectionTypeKind(memberType) == OSPL_C_ARRAY) {
+            idl_fileOutPrintf(
+                    idl_fileCur(),
+                    "[MarshalAs(UnmanagedType.ByValArray, SizeConst=%"PA_PRIu64")]\n",
+                    idl_determineDatabaseFlatArraySize(memberType));
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "public %s[] %s;\n", dbType, memberName);
+        } else {
+            idl_fileOutPrintf(idl_fileCur(), "public %s %s;\n", dbType, memberName);
+        }
 
         os_free(dbType);
         os_free(memberTypeName);
@@ -508,45 +541,6 @@ idl_determineFullyScopedName(
     os_free(fullyScopedName);
 }
 
-
-static void
-idl_determineOffsets(
-        c_type structType,
-        const c_char *structName,
-        SACSSplDcpsUserData *csUserData)
-{
-    c_long i, nrMembers = c_structureMemberCount((c_structure) structType);
-
-    /* Generate the code to obtain the C# 'Type' class of the datatype. */
-    idl_printIndent(indent_level);
-    idl_fileOutPrintf(
-            idl_fileCur(),
-            "private static readonly Type type = typeof(__%s);\n",
-            structName);
-    idl_printIndent(indent_level);
-    idl_fileOutPrintf(
-            idl_fileCur(),
-            "public static readonly int Size = Marshal.SizeOf(type);\n\n");
-
-    /* Loop over the attributes of the datatype and process each attribute. */
-    for (i = 0; i < nrMembers; i++) {
-        /* Get the meta-data of the attribute from the database. */
-        c_member structMember = c_structureMember(structType, i);
-        c_char *memberName = idl_CsharpId(
-                c_specifierName(structMember),
-                csUserData->customPSM,
-                FALSE);
-        idl_printIndent(indent_level);
-        idl_fileOutPrintf(
-                idl_fileCur(),
-                "private static readonly int offset_%s = (int)Marshal.OffsetOf(type, \"%s\");\n",
-                memberName,
-                memberName);
-        os_free(memberName);
-    }
-    idl_fileOutPrintf(idl_fileCur(), "\n");
-}
-
 static void
 idl_CreateAttributes(
         c_type structType,
@@ -554,7 +548,10 @@ idl_CreateAttributes(
         SACSSplDcpsUserData *csUserData)
 {
     c_bool isPredefined = FALSE;
-    c_long i, j, nrMembers = c_structureMemberCount((c_structure) structType);
+    c_ulong i, j, nrMembers = c_structureMemberCount((c_structure) structType);
+    c_longlong nrElements;
+
+    OS_UNUSED_ARG(structName);
 
     /* Loop over the attributes of the datatype and process each attribute. */
     for (i = 0; i < nrMembers; i++) {
@@ -584,12 +581,28 @@ idl_CreateAttributes(
         {
         case M_COLLECTION:
             /* Iterate to the element type of the collection. */
+            nrElements = 1;
             for (j = 0; c_baseObjectKind(memberType) == M_COLLECTION; j++) {
                 /* For sequences, cache the database type for CopyIn. */
-                if (c_collectionTypeKind(memberType) == C_SEQUENCE) {
+                if (c_collectionTypeKind(memberType) == OSPL_C_SEQUENCE) {
+                    c_char *subTypeName;
+                    c_char *subTypeCSName;
+
+                    c_type subType = c_typeActualType(c_collectionTypeSubType(memberType));
+                    while (c_baseObjectKind(subType) == M_COLLECTION && c_collectionTypeKind(subType) == OSPL_C_ARRAY) {
+                        nrElements *= (c_longlong) c_collectionTypeMaxSize(subType);
+                        subType = c_typeActualType(c_collectionTypeSubType(subType));
+                    }
+                    subTypeName = idl_scopeStackFromCType(subType);
+                    subTypeCSName = idl_cTypeToCSharpDatabaseRepresentation(subType, subTypeName, csUserData);
                     idl_printIndent(indent_level);
                     idl_fileOutPrintf(idl_fileCur(),
                             "private IntPtr attr%dSeq%dType = IntPtr.Zero;\n", i, j);
+                    idl_printIndent(indent_level);
+                    idl_fileOutPrintf(idl_fileCur(),
+                            "private static readonly int attr%dSeq%dSize = %"PA_PRId64" * Marshal.SizeOf(typeof(%s));\n", i, j, nrElements, subTypeCSName);
+                    os_free(subTypeCSName);
+                    os_free(subTypeName);
                 }
                 memberType = c_typeActualType(c_collectionTypeSubType(memberType));
                 os_free(memberTypeName);
@@ -609,7 +622,7 @@ idl_CreateAttributes(
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                         idl_fileCur(),
-                        "private DatabaseMarshaler attr%dMarshaler;\n", i);
+                        "private %sMarshaler attr%dMarshaler;\n", memberTypeName, i);
             }
             break;
         default:
@@ -628,8 +641,11 @@ idl_CreateInitEmbeddedMarshalers(
         const c_char *structName,
         SACSSplDcpsUserData *csUserData)
 {
-    c_bool isPredefined = FALSE;
-    c_long i, nrMembers = c_structureMemberCount((c_structure) structType);
+    c_bool isPredefined;
+    c_ulong i, nrMembers = c_structureMemberCount((c_structure) structType);
+    OS_UNUSED_ARG(structName);
+
+    OS_UNUSED_ARG(structName);
 
     /* Open the constructor itself and increase the indent. */
     idl_printIndent(indent_level);
@@ -649,16 +665,19 @@ idl_CreateInitEmbeddedMarshalers(
                         c_specifierName(structMember),
                         csUserData->customPSM,
                         FALSE);
+
         if (idl_isPredefined(memberTypeName)) {
             isPredefined = TRUE;
+        } else {
+            isPredefined = FALSE;
         }
 
         /* Dereference possible typedefs/arrays/sequences first. */
         while ( !isPredefined &&
                 ( c_baseObjectKind(memberType) == M_TYPEDEF ||
                 ( c_baseObjectKind(memberType) == M_COLLECTION &&
-                        ( c_collectionTypeKind(memberType) == C_ARRAY ||
-                          c_collectionTypeKind(memberType) == C_SEQUENCE) ) ) ) {
+                        ( c_collectionTypeKind(memberType) == OSPL_C_ARRAY ||
+                          c_collectionTypeKind(memberType) == OSPL_C_SEQUENCE) ) ) ) {
             os_free(memberTypeName);
             if (c_baseObjectKind(memberType) == M_TYPEDEF) {
                 memberType = c_typeDef(memberType)->alias;
@@ -684,8 +703,8 @@ idl_CreateInitEmbeddedMarshalers(
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(
                         idl_fileCur(),
-                        "attr%dMarshaler = DatabaseMarshaler.GetMarshaler(participant, typeof(%s));\n",
-                        i, memberTypeName);
+                        "attr%dMarshaler = DatabaseMarshaler.GetMarshaler(participant, typeof(%s)) as %sMarshaler;\n",
+                        i, memberTypeName, memberTypeName);
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(idl_fileCur(), "if (attr%dMarshaler == null) {\n", i);
                 indent_level++;
@@ -724,42 +743,19 @@ idl_CreateInitEmbeddedMarshalers(
     idl_fileOutPrintf(idl_fileCur(), "}\n\n");
 }
 
-static void
-idl_CreateSampleReaderAlloc(
-        c_type structType,
-        const c_char *structName,
-        SACSSplDcpsUserData *csUserData)
-{
-    /* Open the SampleReaderAlloc operation and increase the indent. */
-    idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "public override object[] SampleReaderAlloc(int length)\n");
-    idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "{\n");
-    indent_level++;
-
-    /* Generate the code that instantiates an array of the specified type and length. */
-    idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "return new %s[length];\n", structName);
-
-    /* Decrease the indent level back to its original value and close the operation. */
-    indent_level--;
-    idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
-}
-
 static c_char *
-idl_CreateArrayIterationIndex(
+idl_CreateCSharpArrayIterationIndex(
         c_type collStartType,
-        c_long dimension)
+        c_ulong dimension)
 {
 #define IDL_INDEX_BUFFER_LENGTH 32
 
-    c_long i;
+    c_ulong i;
     c_type nextType;
     c_type currentType = c_typeActualType(collStartType);
 
-    /* maxResultLength = '\0' + dimension * ('[' + ']' + MaxInt + 'i') */
-    c_long maxResultLength = 1 + dimension * (2 + 10 + 1);
+    /* maxResultLength = '\0' + dimension * ('[' + ']' + nrDecimals(MaxInt) + 'i') */
+    c_ulong maxResultLength = 1 + dimension * (2 + 10 + 1);
     c_char *result = os_malloc(maxResultLength);
     c_char *format = NULL;
     c_char postfix[IDL_INDEX_BUFFER_LENGTH];
@@ -772,7 +768,9 @@ idl_CreateArrayIterationIndex(
 
     /* Assert that startType is always a collection type and has at least
      * the specified number of dimensions. */
+    maxResultLength -= 1;
     os_strncat(result, "[i0", maxResultLength);
+    maxResultLength -= 3;
     for (i = 1; i < dimension; i++) {
         /* Iterate to the subtype. */
         nextType = c_typeActualType(c_collectionTypeSubType(currentType));
@@ -780,12 +778,12 @@ idl_CreateArrayIterationIndex(
         /* Assert currentType and nextType are collection types. */
         switch (c_collectionTypeKind(currentType))
         {
-        case C_SEQUENCE:
+        case OSPL_C_SEQUENCE:
             format = "][i%d";
             (void)snprintf (postfix, IDL_INDEX_BUFFER_LENGTH, format, i);
             break;
-        case C_ARRAY:
-            if (c_collectionTypeKind(nextType) == C_ARRAY)
+        case OSPL_C_ARRAY:
+            if (c_collectionTypeKind(nextType) == OSPL_C_ARRAY)
             {
                 format = ",i%d";
                 (void)snprintf (postfix, IDL_INDEX_BUFFER_LENGTH, format, i);
@@ -806,6 +804,70 @@ idl_CreateArrayIterationIndex(
     os_strncat(result, "]", maxResultLength);
 
     return result;
+}
+
+static c_char *
+idl_CreateDatabaseArrayIterationIndex(
+        c_type collStartType,
+        c_ulong dimension)
+{
+    c_ulong i;
+    c_type nextType;
+    c_type currentType = c_typeActualType(collStartType);
+
+    /* maxResultLength = '\0' + '[' + ']' + (dimension -1 ) * (2 * nrDecimals(MaxInt) + 'i' + '*' + ' + ') + 'i' + nrDecimals(MaxInt) */
+    c_ulong maxResultLength = 1 + 2 + (dimension - 1) * (2 * 10 + 1 + 1 + 3) + 1 + 10;
+    c_char *result = os_malloc(maxResultLength);
+    c_char *format = NULL;
+    c_char postfix[IDL_INDEX_BUFFER_LENGTH];
+
+    assert (result != NULL);
+
+    /* If no dimension specified, return an empty string. */
+    result[0] = '\0';
+    if (dimension < 1) return result;
+
+    /* Assert that startType is always a collection type and has at least
+     * the specified number of dimensions. */
+    maxResultLength -= 1;
+    os_strncat(result, "[", maxResultLength);
+    maxResultLength -= 1;
+    for (i = 0; i < (dimension - 1); i++) {
+        /* Iterate to the subtype. */
+        nextType = c_typeActualType(c_collectionTypeSubType(currentType));
+
+        /* Assert currentType and nextType are collection types. */
+        switch (c_collectionTypeKind(currentType))
+        {
+        case OSPL_C_SEQUENCE:
+            format = "][i%d";
+            (void)snprintf (postfix, IDL_INDEX_BUFFER_LENGTH, format, i);
+            break;
+        case OSPL_C_ARRAY:
+            if (c_collectionTypeKind(nextType) == OSPL_C_ARRAY)
+            {
+                format = "i%d*%d + ";
+                (void)snprintf (postfix, IDL_INDEX_BUFFER_LENGTH, format, i, c_collectionTypeMaxSize(currentType));
+            }
+            else
+            {
+                format = "][i%d";
+                (void)snprintf (postfix, IDL_INDEX_BUFFER_LENGTH, format, i);
+            }
+            break;
+        default:
+            /* Unsupported Collection type. */
+            assert(FALSE);
+        }
+        currentType = nextType;
+        os_strncat (result, postfix, maxResultLength);
+    }
+
+    format = "i%d]";
+    (void)snprintf (postfix, IDL_INDEX_BUFFER_LENGTH, format, i);
+    os_strncat(result, postfix, maxResultLength);
+
+    return result;
 
 #undef IDL_INDEX_BUFFER_LENGTH
 }
@@ -815,47 +877,84 @@ idl_CreateArrayMemberWriteInnerLoopBody(
         c_type collStartType,
         c_type collType,
         c_metaKind collKind,
-        c_long index,
-        c_long dimension,
-        const c_char *fieldName,
-        const c_char *bufName,
-        const c_char *cursorName)
+        c_ulong index,
+        c_ulong dimension,
+        const c_char *fieldName)
 {
-    c_long maxSize;
-    c_char *arrayBrackets = idl_CreateArrayIterationIndex(collStartType, dimension);
+    c_ulong maxSize;
+    c_char *cSharpArrayBrackets = idl_CreateCSharpArrayIterationIndex(collStartType, dimension);
+    c_char *databaseArrayBrackets = idl_CreateDatabaseArrayIterationIndex(collStartType, dimension);
+    c_char *collTypeName;
+
     switch(collKind)
     {
     case M_STRUCTURE:
+        collTypeName = idl_scopeStackFromCType(collType);
         idl_printIndent(indent_level);
-        idl_fileOutPrintf(idl_fileCur(),
-                "if (!attr%dMarshaler.CopyIn(basePtr, from.%s%s, %s, %s)) return false;\n",
-                index, fieldName, arrayBrackets, bufName, cursorName);
+        if (idl_isPredefined((collTypeName))) {
+            idl_fileOutPrintf(idl_fileCur(),
+                    "to.%s%s = from.%s%s;\n", fieldName, databaseArrayBrackets, fieldName, cSharpArrayBrackets);
+        } else {
+            idl_fileOutPrintf(idl_fileCur(), "{\n");
+            idl_printIndent(indent_level + 1);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "V_COPYIN_RESULT result = attr%dMarshaler.CopyIn(typePtr, from.%s%s, ref to.%s%s);\n",
+                    index, fieldName, cSharpArrayBrackets, fieldName, databaseArrayBrackets);
+            idl_printIndent(indent_level + 1);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "if (result != V_COPYIN_RESULT.OK) return result;\n");
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "}\n");
+        }
+        os_free(collTypeName);
         break;
     case M_ENUMERATION:
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(),
-                "Write(%s, %s, (uint) from.%s%s);\n",
-                bufName, cursorName, fieldName, arrayBrackets);
+                "to.%s%s = (uint) from.%s%s;\n",
+                fieldName, databaseArrayBrackets, fieldName, cSharpArrayBrackets);
         break;
     case M_PRIMITIVE:
+        /* Generate code to handle a primitive. */
         idl_printIndent(indent_level);
-        idl_fileOutPrintf(idl_fileCur(),
-                "Write(%s, %s, from.%s%s);\n",
-                bufName, cursorName, fieldName, arrayBrackets);
+        switch (c_primitiveKind(collType))
+        {
+        case P_BOOLEAN:
+            idl_fileOutPrintf(idl_fileCur(),
+                    "to.%s%s = (from.%s%s ? (byte) 1 : (byte) 0);\n",
+                    fieldName, databaseArrayBrackets, fieldName, cSharpArrayBrackets);
+            break;
+        case P_CHAR:
+            idl_fileOutPrintf(idl_fileCur(), "to.%s%s = (byte) (from.%s%s);\n",
+                    fieldName, databaseArrayBrackets, fieldName, cSharpArrayBrackets);
+            break;
+        case P_OCTET:
+        case P_SHORT:       case P_USHORT:
+        case P_LONG:        case P_ULONG:
+        case P_LONGLONG:    case P_ULONGLONG:
+        case P_FLOAT:       case P_DOUBLE:
+            idl_fileOutPrintf(idl_fileCur(),
+                    "to.%s%s = from.%s%s;\n",
+                    fieldName, databaseArrayBrackets, fieldName, cSharpArrayBrackets);
+            break;
+        default:
+            assert(0);
+            break;
+        }
         break;
     case M_COLLECTION:
         /* Assert that this collection is always of type string!! */
-        assert(c_collectionTypeKind(collType) == C_STRING);
+        assert(c_collectionTypeKind(collType) == OSPL_C_STRING);
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(),
-                "if (from.%s%s == null) return false;\n", fieldName, arrayBrackets);
+                "if (from.%s%s == null) return V_COPYIN_RESULT.INVALID;\n", fieldName, cSharpArrayBrackets);
         maxSize = c_collectionTypeMaxSize(collType);
         /* Check for bounds if a maximum bound was specified. */
         if (maxSize > 0)
         {
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
-                    "if (from.%s%s.Length > %d) return false;\n", fieldName, arrayBrackets, maxSize);
+                    "if (from.%s%s.Length > %u) return V_COPYIN_RESULT.INVALID;\n", fieldName, cSharpArrayBrackets, maxSize);
         }
         else
         {
@@ -863,34 +962,133 @@ idl_CreateArrayMemberWriteInnerLoopBody(
             idl_fileOutPrintf(idl_fileCur(), "// Unbounded string: bounds check not required...\n");
         }
         idl_printIndent(indent_level);
-        idl_fileOutPrintf(idl_fileCur(), "Write(basePtr, %s, %s, ref from.%s%s);\n",
-                bufName, cursorName, fieldName, arrayBrackets);
+        idl_fileOutPrintf(idl_fileCur(), "if (!Write(c.getBase(typePtr), ref to.%s%s, from.%s%s)) return V_COPYIN_RESULT.OUT_OF_MEMORY;\n",
+                fieldName, databaseArrayBrackets, fieldName, cSharpArrayBrackets);
         break;
     default:
         /* Unsupported array type. */
         assert(FALSE);
+        break;
     }
 
-    /* Increase the cursor to the next element. */
-    idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "%s += %d;\n", cursorName, c_typeSize(collType));
-    os_free(arrayBrackets);
+    os_free(databaseArrayBrackets);
+    os_free(cSharpArrayBrackets);
+}
+
+static void
+idl_CreateSequenceMemberWriteInnerLoopBody(
+        c_type collStartType,
+        c_type collType,
+        c_metaKind collKind,
+        c_ulong index,
+        c_ulong dimension,
+        const c_char *fieldName,
+        const c_char *bufName)
+{
+    c_ulong maxSize;
+    c_char *cSharpArrayBrackets = idl_CreateCSharpArrayIterationIndex(collStartType, dimension);
+    c_char *collTypeName;
+
+    switch(collKind)
+    {
+    case M_STRUCTURE:
+        collTypeName = idl_scopeStackFromCType(collType);
+        idl_printIndent(indent_level);
+        if (idl_isPredefined((collTypeName))) {
+            idl_fileOutPrintf(idl_fileCur(),
+                    "Write(%s, 0, from.%s%s);\n", bufName, fieldName, cSharpArrayBrackets);
+        } else {
+            idl_fileOutPrintf(idl_fileCur(), "{\n");
+            idl_printIndent(indent_level + 1);
+            idl_fileOutPrintf(idl_fileCur(),
+                               "V_COPYIN_RESULT result = attr%dMarshaler.CopyIn(typePtr, from.%s%s, %s);\n",
+                               index, fieldName, cSharpArrayBrackets, bufName);
+            idl_printIndent(indent_level + 1);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "if (result != V_COPYIN_RESULT.OK) return result;\n");
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "}\n");
+        }
+        os_free(collTypeName);
+        break;
+    case M_ENUMERATION:
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(),
+                "Marshal.WriteInt32(%s, (int) from.%s%s);\n",
+                bufName, fieldName, cSharpArrayBrackets);
+        break;
+    case M_PRIMITIVE:
+        switch(c_primitiveKind(collType))
+        {
+        case P_BOOLEAN:
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "Marshal.WriteByte(%s, from.%s%s ? (byte) 1 : (byte) 0);\n",
+                    bufName, fieldName, cSharpArrayBrackets);
+            break;
+        case P_CHAR:
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "Marshal.WriteByte(%s, (byte) from.%s%s);\n",
+                    bufName, fieldName, cSharpArrayBrackets);
+            break;
+        /* Other primitives should have been handled by the caller already, using Marshal.Copy. */
+        default:
+            assert(0);
+            break;
+        }
+        break;
+    case M_COLLECTION:
+        /* Assert that this collection is always of type string!! */
+        assert(c_collectionTypeKind(collType) == OSPL_C_STRING);
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(),
+                "if (from.%s%s == null) return V_COPYIN_RESULT.INVALID;\n", fieldName, cSharpArrayBrackets);
+        maxSize = c_collectionTypeMaxSize(collType);
+        /* Check for bounds if a maximum bound was specified. */
+        if (maxSize > 0)
+        {
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "if (from.%s%s.Length > %u) return V_COPYIN_RESULT.INVALID;\n", fieldName, cSharpArrayBrackets, maxSize);
+        }
+        else
+        {
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "// Unbounded string: bounds check not required...\n");
+        }
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "IntPtr stringElementPtr = IntPtr.Zero;\n");
+        idl_printIndent(indent_level);
+
+        idl_fileOutPrintf(idl_fileCur(), "if (!Write(c.getBase(typePtr), ref stringElementPtr, from.%s%s)) return V_COPYIN_RESULT.OUT_OF_MEMORY;\n",
+                fieldName, cSharpArrayBrackets);
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "Marshal.WriteIntPtr(%s, stringElementPtr);\n", bufName);
+        break;
+    default:
+        /* Unsupported array type. */
+        assert(FALSE);
+        break;
+    }
+
+    os_free(cSharpArrayBrackets);
 }
 
 static void
 idl_CreateArrayMemberWrite(
         c_type collStartType,
         c_type collType,
-        c_long index,
-        c_long dimension,
+        c_ulong index,
+        c_ulong dimension,
         const c_char *fieldName,
-        const c_char *bufName,
-        const c_char *cursorName)
+        const c_char *bufName)
 {
-    c_long arrLength, seqMaxLength;
-    c_long seqLengthNameSize, seqBufNameSize, seqTypeNameSize, nextCursorNameSize;
-    c_char *seqLengthName, *seqBufName, *seqTypeName, *nextCursorName, *iterationIndex;
+    c_ulong arrLength, seqMaxLength, nextBufTypeSizeLen;
+    c_ulong seqLengthNameSize, seqTypeNameSize;
+    c_char *seqLengthName, *seqTypeName, *nextBufTypeSize, *iterationIndex;
     c_type subType, actualType;
+    c_metaKind actualTypeKind;
 
     c_metaKind collKind = c_baseObjectKind(collType);
     switch(collKind)
@@ -899,20 +1097,18 @@ idl_CreateArrayMemberWrite(
     case M_ENUMERATION:
     case M_PRIMITIVE:
         idl_CreateArrayMemberWriteInnerLoopBody(
-                collStartType, collType, collKind, index, dimension,
-                        fieldName, bufName, cursorName);
+                collStartType, collType, collKind, index, dimension, fieldName);
         break;
     case M_COLLECTION:
         /* Handle Collection type. */
         switch (c_collectionTypeKind(collType))
         {
-        case C_STRING:
+        case OSPL_C_STRING:
             /* Handle strings. */
             idl_CreateArrayMemberWriteInnerLoopBody(
-                    collStartType, collType, collKind, index, dimension,
-                            fieldName, bufName, cursorName);
+                    collStartType, collType, collKind, index, dimension, fieldName);
             break;
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             /* Handle arrays. */
             arrLength = c_collectionTypeMaxSize(collType);
             subType = c_collectionTypeSubType(collType);
@@ -926,40 +1122,33 @@ idl_CreateArrayMemberWrite(
 
             /* Generate the the body to process the next dimension. */
             idl_CreateArrayMemberWrite(collStartType, actualType, index,
-                    dimension + 1, fieldName, bufName, cursorName);
+                    dimension + 1, fieldName, bufName);
 
             /* Close the for loop and decrease the indent level back to its original. */
             indent_level--;
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(), "}\n");
             break;
-        case C_SEQUENCE:
+        case OSPL_C_SEQUENCE:
             /* Handle sequences. */
             subType = c_collectionTypeSubType(collType);
             actualType = c_typeActualType(subType);
+            actualTypeKind = c_baseObjectKind(actualType);
 
             seqLengthNameSize = 13 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
             seqLengthName = os_malloc(seqLengthNameSize);
-            snprintf(seqLengthName, seqLengthNameSize, "attr%dSeq%dLength", index, dimension);
-
-            seqBufNameSize = 10 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
-            seqBufName = os_malloc(seqBufNameSize);
-            snprintf(seqBufName, seqBufNameSize, "attr%dSeq%dBuf", index, dimension);
+            snprintf(seqLengthName, seqLengthNameSize, "attr%uSeq%uLength", index, dimension);
 
             seqTypeNameSize = 11 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
             seqTypeName = os_malloc(seqTypeNameSize);
-            snprintf(seqTypeName, seqTypeNameSize, "attr%dSeq%dType", index, dimension);
-
-            nextCursorNameSize = 10 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
-            nextCursorName = os_malloc(nextCursorNameSize);
-            snprintf(nextCursorName, nextCursorNameSize, "attr%dCursor%d", index, dimension + 1);
+            snprintf(seqTypeName, seqTypeNameSize, "attr%uSeq%uType", index, dimension);
 
             seqMaxLength = c_collectionTypeMaxSize(collType);
-            iterationIndex = idl_CreateArrayIterationIndex(collStartType, dimension);
+            iterationIndex = idl_CreateCSharpArrayIterationIndex(collStartType, dimension);
 
             /* Check whether the sequence is valid. */
             idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "if (from.%s%s == null) return false;\n",
+            idl_fileOutPrintf(idl_fileCur(), "if (from.%s%s == null) return V_COPYIN_RESULT.INVALID;\n",
                     fieldName, iterationIndex);
 
             /* Get its Length, and check it for validity. */
@@ -974,7 +1163,7 @@ idl_CreateArrayMemberWrite(
             else
             {
                 idl_printIndent(indent_level);
-                idl_fileOutPrintf(idl_fileCur(), "if (%s > %d) return false;\n", seqLengthName, seqMaxLength);
+                idl_fileOutPrintf(idl_fileCur(), "if (%s > %u) return V_COPYIN_RESULT.INVALID;\n", seqLengthName, seqMaxLength);
             }
 
             /* Locate the database type-definition of the sequence. */
@@ -982,15 +1171,25 @@ idl_CreateArrayMemberWrite(
             idl_fileOutPrintf(idl_fileCur(), "if (%s == IntPtr.Zero) {\n", seqTypeName);
             indent_level++;
             idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "IntPtr memberOwnerType = DDS.OpenSplice.Database.c.resolve(basePtr, fullyScopedName);\n");
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "IntPtr specifier = DDS.OpenSplice.Database.c.metaResolveSpecifier(memberOwnerType, \"%s\");\n",
-                    fieldName);
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "IntPtr specifierType = DDS.OpenSplice.Database.c.specifierType(specifier);\n");
+            if (dimension == 0) {
+                idl_fileOutPrintf(idl_fileCur(),
+                        "IntPtr memberOwnerType = DDS.OpenSplice.Database.c.resolve(c.getBase(typePtr), fullyScopedName);\n");
+                idl_printIndent(indent_level);
+                idl_fileOutPrintf(idl_fileCur(),
+                        "IntPtr specifier = DDS.OpenSplice.Database.c.metaResolveSpecifier(memberOwnerType, \"%s\");\n",
+                        fieldName);
+                idl_printIndent(indent_level);
+                idl_fileOutPrintf(idl_fileCur(),
+                        "IntPtr specifierType = DDS.OpenSplice.Database.c.specifierType(specifier);\n");
+            } else {
+                idl_fileOutPrintf(idl_fileCur(),
+                        "DDS.OpenSplice.Database.c_collectionType colType = (DDS.OpenSplice.Database.c_collectionType) Marshal.PtrToStructure(\n");
+                idl_printIndent(indent_level);
+                idl_fileOutPrintf(idl_fileCur(),
+                        "        attr%dSeq%dType, typeof(DDS.OpenSplice.Database.c_collectionType));\n", index, dimension -1);
+                idl_printIndent(indent_level);
+                idl_fileOutPrintf(idl_fileCur(), "IntPtr specifierType = colType.subType;\n");
+            }
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
                     "%s = DDS.OpenSplice.Database.c.typeActualType(specifierType);\n",
@@ -1003,45 +1202,114 @@ idl_CreateArrayMemberWrite(
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
                     "IntPtr %s = DDS.OpenSplice.Database.c.newSequence(%s, %s);\n",
-                    seqBufName, seqTypeName, seqLengthName);
+                    bufName, seqTypeName, seqLengthName);
             idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "Write(%s, %s, %s);\n",
-                    bufName, cursorName, seqBufName);
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "%s += %d;\n",
-                    cursorName, c_typeSize(collType));
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "int %s = 0;\n", nextCursorName);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "if (%s == IntPtr.Zero) return V_COPYIN_RESULT.OUT_OF_MEMORY;\n", bufName);
 
-            /* Open a for loop to walk over the current dimension and increase the indent. */
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "for (int i%d = 0; i%d < %s; i%d++) {\n",
-                    dimension, dimension, seqLengthName, dimension);
-            indent_level++;
-
-            /* Generate the the body to process the next dimension. */
-            idl_CreateArrayMemberWrite(collStartType, actualType, index,
-                    dimension + 1, fieldName, seqBufName, nextCursorName);
-
-            /* Close the for loop and decrease the indent level back to its original. */
-            indent_level--;
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "}\n");
+            switch(actualTypeKind)
+            {
+                case M_PRIMITIVE:
+                    switch (c_primitiveKind(actualType))
+                    {
+                    case P_USHORT:
+                    case P_ULONG:
+                    case P_ULONGLONG:
+                    {
+                        const char *signedCounterPart;
+                        if (c_primitiveKind(actualType) == P_USHORT) {
+                            signedCounterPart = "Int16";
+                        } else if (c_primitiveKind(actualType) == P_ULONG) {
+                            signedCounterPart = "Int32";
+                        } else {
+                            signedCounterPart = "Int64";
+                        }
+                        idl_printIndent(indent_level);
+                        idl_fileOutPrintf(idl_fileCur(),
+                                "Marshal.Copy((%s[]) (Array) from.%s%s, 0, %s, %s);\n",
+                                signedCounterPart, fieldName, iterationIndex, bufName, seqLengthName);
+                        break;
+                    }
+                    case P_SHORT:
+                    case P_LONG:
+                    case P_LONGLONG:
+                    case P_FLOAT:
+                    case P_DOUBLE:
+                    case P_OCTET:
+                        idl_printIndent(indent_level);
+                        idl_fileOutPrintf(idl_fileCur(),
+                                "Marshal.Copy(from.%s%s, 0, %s, %s);\n", fieldName, iterationIndex, bufName, seqLengthName);
+                        break;
+                    default:
+                        /* Intentionally fall through to the default handler. */
+                        break;
+                    }
+                    if (c_primitiveKind(actualType) != P_BOOLEAN && c_primitiveKind(actualType) != P_CHAR) break;
+                default:
+                    nextBufTypeSizeLen = 10 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
+                    nextBufTypeSize = os_malloc(nextBufTypeSizeLen);
+                    snprintf(nextBufTypeSize, nextBufTypeSizeLen, "attr%uSeq%uSize", index, dimension);
+                    idl_printIndent(indent_level);
+                    idl_fileOutPrintf(idl_fileCur(), "for (int i%u = 0; i%u < %s; i%u++) {\n",
+                            dimension, dimension, seqLengthName, dimension);
+                    indent_level++;
+                    if (actualTypeKind == M_COLLECTION && c_collectionTypeKind(actualType) != OSPL_C_STRING) {
+                        subType = c_typeActualType(c_collectionTypeSubType(actualType));
+                        if (c_collectionTypeKind(actualType) == OSPL_C_ARRAY && c_baseObjectKind(subType) == M_PRIMITIVE) {
+                            os_free(iterationIndex);
+                            iterationIndex = idl_CreateCSharpArrayIterationIndex(collStartType, dimension + 1);
+                            idl_printIndent(indent_level);
+                            idl_fileOutPrintf(idl_fileCur(), "Marshal.Copy(from.%s%s, 0, %s, %d);\n",
+                                    fieldName, iterationIndex, bufName, c_collectionTypeMaxSize(actualType));
+                        } else {
+                            c_ulong seqBufNameSize = 10 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
+                            c_char *seqBufName = os_malloc(seqBufNameSize);
+                            snprintf(seqBufName, seqBufNameSize, "attr%uSeq%uBuf", index, dimension + 1);
+                            idl_CreateArrayMemberWrite(collStartType, actualType, index,
+                                    dimension + 1, fieldName, seqBufName);
+                            if (c_collectionTypeKind(actualType) == OSPL_C_SEQUENCE) {
+                                if (c_baseObjectKind(subType) == M_PRIMITIVE) {
+                                    idl_printIndent(indent_level);
+                                    idl_fileOutPrintf(idl_fileCur(),
+                                            "Marshal.WriteIntPtr(%s, %s);\n", bufName, seqBufName);
+                                } else {
+                                    idl_printIndent(indent_level);
+                                    idl_fileOutPrintf(idl_fileCur(),
+                                            "Marshal.WriteIntPtr(%s, new IntPtr(%s.ToInt64() - ((long) attr%dSeq%dSize * (long) attr%dSeq%dLength)));\n",
+                                            bufName, seqBufName, index, dimension + 1, index, dimension + 1);
+                                }
+                            }
+                            os_free(seqBufName);
+                        }
+                    } else {
+                        idl_CreateSequenceMemberWriteInnerLoopBody(
+                                collStartType, actualType, actualTypeKind, index, dimension + 1,
+                                fieldName, bufName);
+                    }
+                    idl_printIndent(indent_level);
+                    idl_fileOutPrintf(idl_fileCur(),
+                            "%s = new IntPtr(%s.ToInt64() + %s);\n", bufName, bufName, nextBufTypeSize);
+                    indent_level--;
+                    idl_printIndent(indent_level);
+                    idl_fileOutPrintf(idl_fileCur(), "}\n");
+                    os_free(nextBufTypeSize);
+                    break;
+            }
 
             os_free(iterationIndex);
-            os_free(nextCursorName);
             os_free(seqTypeName);
-            os_free(seqBufName);
             os_free(seqLengthName);
             break;
         default:
             /* Unsupported Collection type. */
             assert(FALSE);
+            break;
         }
         break;
     default:
         /* Unsupported Array type. */
         assert(FALSE);
+        break;
     }
 }
 
@@ -1049,13 +1317,17 @@ static void
 idl_CreateStructMemberWrite(
         c_type memberType,
         const c_char * memberName,
-        c_long index,
+        c_ulong index,
         SACSSplDcpsUserData *csUserData)
 {
-    c_long cursorNameLength, maxSize;
-    c_char *cursorName;
+    c_ulong bufNameLength, maxSize, dimension;
+    c_ulonglong totalNrElements;
+    c_char *bufName = NULL;
     c_bool isPredefined = FALSE;
     c_char *memberTypeName = idl_scopeStackFromCType(memberType);
+    c_type arrType;
+
+    OS_UNUSED_ARG(csUserData);
 
     if (idl_isPredefined(memberTypeName)) {
         isPredefined = TRUE;
@@ -1078,27 +1350,31 @@ idl_CreateStructMemberWrite(
         {
             /* Generate code to use the predefined Write operation in the base marshaler. */
             idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "Write(to, offset + offset_%s, from.%s);\n",
-                    memberName,
-                    memberName);
+            idl_fileOutPrintf(idl_fileCur(), "to.%s = from.%s;\n", memberName, memberName);
         }
         else
         {
             /* Otherwise generate code to use the dedicated marshaler. */
             idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "{\n");
+            idl_printIndent(indent_level + 1);
             idl_fileOutPrintf(idl_fileCur(),
-                    "if (!attr%dMarshaler.CopyIn(basePtr, from.%s, to, offset + offset_%s)) return false;\n",
-                    index,
-                    memberName,
-                    memberName);
+                               "V_COPYIN_RESULT result = attr%dMarshaler.CopyIn(typePtr, from.%s, ref to.%s);\n",
+                               index,
+                               memberName,
+                               memberName);
+            idl_printIndent(indent_level + 1);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "if (result != V_COPYIN_RESULT.OK) return result;\n");
+            idl_printIndent(indent_level);
+                        idl_fileOutPrintf(idl_fileCur(), "}\n");
         }
         break;
     case M_ENUMERATION:
         /* Generate code to handle an enum. */
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(),
-                "Write(to, offset + offset_%s, (uint) from.%s);\n",
+                "to.%s = (uint) from.%s;\n",
                 memberName,
                 memberName);
         break;
@@ -1107,37 +1383,45 @@ idl_CreateStructMemberWrite(
         switch (c_primitiveKind(memberType))
         {
         case P_BOOLEAN:
-        case P_CHAR:        case P_OCTET:
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "to.%s = from.%s ? (byte) 1 : (byte) 0;\n",
+                    memberName,
+                    memberName);
+            break;
+        case P_CHAR:
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "to.%s = (byte) from.%s;\n", memberName, memberName);
+            break;
+        case P_OCTET:
         case P_SHORT:       case P_USHORT:
         case P_LONG:        case P_ULONG:
         case P_LONGLONG:    case P_ULONGLONG:
         case P_FLOAT:       case P_DOUBLE:
             idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "Write(to, offset + offset_%s, from.%s);\n",
-                    memberName,
-                    memberName);
+            idl_fileOutPrintf(idl_fileCur(), "to.%s = from.%s;\n", memberName, memberName);
             break;
         default:
             /* Unsupported primitive type. */
             assert(FALSE);
+            break;
         }
         break;
     case M_COLLECTION:
         /* Generate code to handle Collection types. */
         switch (c_collectionTypeKind(memberType))
         {
-        case C_STRING:
+        case OSPL_C_STRING:
             /* Generate code to handle strings. */
             idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "if (from.%s == null) return false;\n", memberName);
+            idl_fileOutPrintf(idl_fileCur(), "if (from.%s == null) return V_COPYIN_RESULT.INVALID;\n", memberName);
             /* Generate code to check for bounds if a maximum bound was specified. */
             maxSize = c_collectionTypeMaxSize(memberType);
             idl_printIndent(indent_level);
             if (maxSize > 0)
             {
                 idl_fileOutPrintf(idl_fileCur(),
-                        "if (from.%s.Length > %d) return false;\n",
+                        "if (from.%s.Length > %d) return V_COPYIN_RESULT.INVALID;\n",
                         memberName,
                         maxSize);
             }
@@ -1147,33 +1431,63 @@ idl_CreateStructMemberWrite(
             }
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
-                    "Write(basePtr, to, offset + offset_%s, ref from.%s);\n",
+                    "if (!Write(c.getBase(typePtr), ref to.%s, from.%s)) return V_COPYIN_RESULT.OUT_OF_MEMORY;\n",
                     memberName,
                     memberName);
             break;
-        case C_SEQUENCE:
-        case C_ARRAY:
-            /* Generate code to handle arrays or sequences. */
-            cursorNameLength = 12 /* template */ + 10 /* MAX_INT */ + 1 /* '\0' */;
-            cursorName = os_malloc(cursorNameLength);
-            snprintf(cursorName, cursorNameLength, "attr%dCursor0", index);
+        case OSPL_C_ARRAY:
+            /* Check that the input is non-null. */
             idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "int %s = offset + offset_%s;\n",
-                    cursorName,
-                    memberName);
+            idl_fileOutPrintf(idl_fileCur(), "if (from.%s == null) return V_COPYIN_RESULT.INVALID;\n", memberName);
+
+            /* Check that the input has the correct array size. */
+            arrType = memberType;
+            for (dimension = 0; c_baseObjectKind(arrType) == M_COLLECTION && c_collectionTypeKind(arrType) == OSPL_C_ARRAY; dimension++)
+            {
+                idl_printIndent(indent_level);
+                idl_fileOutPrintf(idl_fileCur(), "if (from.%s.GetLength(%d) != %d) return V_COPYIN_RESULT.INVALID;\n",
+                        memberName, dimension, c_collectionTypeMaxSize(arrType));
+                arrType = c_typeActualType(c_collectionTypeSubType(arrType));
+            }
+
+            /* Initialize the database sample to the correct Array size. */
+            totalNrElements = idl_determineDatabaseFlatArraySize(memberType);
+            bufName = idl_cTypeToCSharpDatabaseRepresentation(memberType, memberTypeName, csUserData);
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "to.%s = new %s[%"PA_PRIu64"];\n", memberName, bufName, totalNrElements);
+
+            /* Generate the body of the copying loop. */
             idl_CreateArrayMemberWrite(
-                    memberType, memberType, index, 0, memberName, "to", cursorName);
-            os_free(cursorName);
+                    memberType, memberType, index, 0, memberName, memberName);
+            os_free(bufName);
+            break;
+        case OSPL_C_SEQUENCE:
+            bufNameLength = 10 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
+            bufName = os_malloc(bufNameLength);
+            snprintf(bufName, bufNameLength, "attr%dSeq%dBuf", index, 0);
+
+            idl_CreateArrayMemberWrite(
+                    memberType, memberType, index, 0, memberName, bufName);
+
+            if (c_baseObjectKind(c_typeActualType(c_collectionTypeSubType(memberType))) != M_PRIMITIVE) {
+                idl_printIndent(indent_level);
+                idl_fileOutPrintf(idl_fileCur(),
+                        "to.%s = new IntPtr(%s.ToInt64() - ((long) attr%dSeq0Size * (long) attr%dSeq0Length));\n",
+                        memberName, bufName, index, index);
+            }
+
+            os_free(bufName);
             break;
         default:
             /* Unsupported Collection type. */
             assert(FALSE);
+            break;
         }
         break;
     default:
         /* Unsupported Base type. */
         assert(FALSE);
+        break;
     }
     os_free(memberTypeName);
 }
@@ -1184,11 +1498,11 @@ idl_CreateCopyIn(
         const c_char *structName,
         SACSSplDcpsUserData *csUserData)
 {
-    c_long i, nrMembers = c_structureMemberCount((c_structure) structType);
+    c_ulong i, nrMembers = c_structureMemberCount((c_structure) structType);
 
     /* Open the 1st CopyIn operation and increase the indent. */
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "public override bool CopyIn(System.IntPtr basePtr, System.IntPtr from, System.IntPtr to)\n");
+    idl_fileOutPrintf(idl_fileCur(), "public override V_COPYIN_RESULT CopyIn(System.IntPtr typePtr, System.IntPtr from, System.IntPtr to)\n");
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     indent_level++;
@@ -1197,27 +1511,52 @@ idl_CreateCopyIn(
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "GCHandle tmpGCHandle = GCHandle.FromIntPtr(from);\n");
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "object fromData = tmpGCHandle.Target;\n");
+    idl_fileOutPrintf(idl_fileCur(), "%s fromData = tmpGCHandle.Target as %s;\n", structName, structName);
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "return CopyIn(basePtr, fromData, to, 0);\n");
-
+    idl_fileOutPrintf(idl_fileCur(), "return CopyIn(typePtr, fromData, to);\n");
     /* Decrease the indent level back to its original value and close the 1st CopyIn operation. */
+    indent_level--;
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+
+    /* Generate code that creates a C# projection of the database, invoke the 3rd CopyIn with it, and marshal it into unmanaged memory. */
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "public V_COPYIN_RESULT CopyIn(System.IntPtr typePtr, %s from, System.IntPtr to)\n", structName);
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "{\n");
+    indent_level++;
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "__%s nativeImg = new __%s();\n", structName, structName);
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "V_COPYIN_RESULT result = CopyIn(typePtr, from, ref nativeImg);\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "if (result == V_COPYIN_RESULT.OK)\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "{\n");
+    indent_level++;
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "Marshal.StructureToPtr(nativeImg, to, false);\n");
+    indent_level--;
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "return result;\n");
+
+    /* Decrease the indent level back to its original value and close the 2nd CopyIn operation. */
     indent_level--;
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "}\n\n");
 
     /* Open the 2nd CopyIn operation and increase the indent. */
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "public override bool CopyIn(System.IntPtr basePtr, object untypedFrom, System.IntPtr to, int offset)\n");
+    idl_fileOutPrintf(idl_fileCur(), "public V_COPYIN_RESULT CopyIn(System.IntPtr typePtr, %s from, ref __%s to)\n", structName, structName);
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     indent_level++;
 
     /* Generate code that checks whether the C# input is a valid object. */
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "%s from = untypedFrom as %s;\n", structName, structName);
-    idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "if (from == null) return false;\n");
+    idl_fileOutPrintf(idl_fileCur(), "if (from == null) return V_COPYIN_RESULT.INVALID;\n");
 
     /* Now generate the code that loops through the attributes and generates the appropriate instructions. */
     for (i = 0; i < nrMembers; i++) {
@@ -1234,12 +1573,64 @@ idl_CreateCopyIn(
 
     /* Generate code that returns true when everything went fine so far. */
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "return true;\n");
+    idl_fileOutPrintf(idl_fileCur(), "return V_COPYIN_RESULT.OK;\n");
 
-    /* Decrease the indent level back to its original value and close the 2nd CopyIn operation. */
+    /* Decrease the indent level back to its original value and close the 3rd CopyIn operation. */
     indent_level--;
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+}
+
+static void
+idl_useRecycledArray(
+        idl_typeSpec typeSpec,
+        c_type currentType,
+        c_type subType,
+        const c_char *fieldName,
+        const c_char *seqLengthName,
+        const c_char *arrayBrackets,
+        const c_char *arrayIndex,
+        const c_char *arrayCtor)
+{
+    c_char *arrayNoIndex;
+
+    switch (c_collectionTypeKind(currentType)) {
+        case OSPL_C_SEQUENCE:
+            arrayNoIndex = idl_sequenceCsharpIndexString(
+                typeSpec, SACS_EXCLUDE_INDEXES, seqLengthName);
+            break;
+        case OSPL_C_ARRAY:
+            arrayNoIndex = idl_arrayCsharpIndexString(
+                typeSpec, SACS_EXCLUDE_INDEXES);
+            break;
+        default:
+            assert(FALSE); /* Unsupported collection type. */
+            arrayNoIndex = NULL;
+            break;
+    }
+
+    if (arrayNoIndex != NULL) {
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "%s%s target = new %s%s;\n",
+                arrayCtor, arrayNoIndex, arrayCtor, arrayIndex);
+        if (c_collectionTypeKind(currentType) == OSPL_C_ARRAY &&
+            c_baseObjectKind(subType) == M_COLLECTION &&
+            c_collectionTypeKind(subType) == OSPL_C_ARRAY)
+        {
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "// Rectangular array: recycling not yet possible...\n");
+        }
+        else
+        {
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "initObjectSeq(to.%s%s, target);\n",
+                    fieldName, arrayBrackets);
+        }
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(), "to.%s%s = target;\n",
+                fieldName, arrayBrackets);
+        os_free(arrayNoIndex);
+    }
 }
 
 static void
@@ -1250,9 +1641,10 @@ idl_CreateArrayInitialization(
         const c_char *arrayBrackets,
         SACSSplDcpsUserData *csUserData)
 {
-    c_char *arrayNoIndex = NULL, *arrayIndex = NULL, *arrayCtor;
+    c_char *arrayIndex = NULL, *arrayCtor;
     c_type subType = c_typeActualType(c_collectionTypeSubType(currentType));
     idl_typeSpec typeSpec = idl_makeTypeCollection(c_collectionType(currentType));
+    c_char *subTypeName;
 
     /* Resolve the typename of the current collection. */
     arrayCtor = idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM);
@@ -1260,16 +1652,17 @@ idl_CreateArrayInitialization(
    /* Resolve the index representation for the current collection. */
     switch (c_collectionTypeKind(currentType))
     {
-    case C_SEQUENCE:
+    case OSPL_C_SEQUENCE:
         arrayIndex = idl_sequenceCsharpIndexString(
                 typeSpec, SACS_INCLUDE_INDEXES, seqLengthName);
         break;
-    case C_ARRAY:
+    case OSPL_C_ARRAY:
         arrayIndex = idl_arrayCsharpIndexString(typeSpec, SACS_INCLUDE_INDEXES);
         break;
     default:
         /* Unsupported collection type. */
         assert(FALSE);
+        break;
     }
 
     /* The initialization code for the current collection depends on its subtype. */
@@ -1279,50 +1672,28 @@ idl_CreateArrayInitialization(
     case M_ENUMERATION:
     case M_PRIMITIVE:
         idl_printIndent(indent_level);
-        idl_fileOutPrintf(idl_fileCur(), "dataTo.%s%s = new %s%s;\n",
+        idl_fileOutPrintf(idl_fileCur(), "to.%s%s = new %s%s;\n",
                 fieldName, arrayBrackets, arrayCtor, arrayIndex);
         break;
     /* Object kind, try to recycle elements as much as possible. */
     case M_STRUCTURE:
+        subTypeName = idl_scopeStackFromCType(subType);
+        if (idl_isPredefined(subTypeName)) {
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "to.%s%s = new %s%s;\n",
+                    fieldName, arrayBrackets, arrayCtor, arrayIndex);
+        } else {
+            idl_useRecycledArray(typeSpec, currentType, subType, fieldName, seqLengthName, arrayBrackets, arrayIndex, arrayCtor);
+        }
+        os_free(subTypeName);
+        break;
     case M_COLLECTION:
-        switch (c_collectionTypeKind(currentType)) {
-            case C_SEQUENCE:
-                arrayNoIndex = idl_sequenceCsharpIndexString(
-                    typeSpec, SACS_EXCLUDE_INDEXES, seqLengthName);
-                break;
-            case C_ARRAY:
-                arrayNoIndex = idl_arrayCsharpIndexString(
-                    typeSpec, SACS_EXCLUDE_INDEXES);
-                break;
-            default:
-                assert(FALSE); /* Unsupported collection type. */
-                break;
-        }
-
-        idl_printIndent(indent_level);
-        idl_fileOutPrintf(idl_fileCur(), "%s%s target = new %s%s;\n",
-                arrayCtor, arrayNoIndex, arrayCtor, arrayIndex);
-        if (c_collectionTypeKind(currentType) == C_ARRAY &&
-            c_baseObjectKind(subType) == M_COLLECTION &&
-            c_collectionTypeKind(subType) == C_ARRAY)
-        {
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "// Rectangular array: recycling not yet possible...\n");
-        }
-        else
-        {
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "initObjectSeq(dataTo.%s%s, target);\n",
-                    fieldName, arrayBrackets);
-        }
-        idl_printIndent(indent_level);
-        idl_fileOutPrintf(idl_fileCur(), "dataTo.%s%s = target as %s%s;\n",
-                fieldName, arrayBrackets, arrayCtor, arrayNoIndex);
-        os_free(arrayNoIndex);
+        idl_useRecycledArray(typeSpec, currentType, subType, fieldName, seqLengthName, arrayBrackets, arrayIndex, arrayCtor);
         break;
     default:
         /* Unsupported collection type. */
         assert(FALSE);
+        break;
     }
     os_free(arrayIndex);
     os_free(arrayCtor);
@@ -1334,15 +1705,18 @@ idl_CreateArrayMemberReadInnerLoopBody(
         c_type collStartType,
         c_type collType,
         c_metaKind collKind,
-        c_long index,
-        c_long dimension,
+        c_ulong index,
+        c_ulong dimension,
         const c_char *fieldName,
         const c_char *bufName,
-        const c_char *cursorName,
         SACSSplDcpsUserData *csUserData)
 {
-    c_char *arrayBrackets = idl_CreateArrayIterationIndex(collStartType, dimension);
+    c_char *cSharpArrayBrackets = idl_CreateCSharpArrayIterationIndex(collStartType, dimension);
+    c_char *databaseArrayBrackets = idl_CreateDatabaseArrayIterationIndex(collStartType, dimension);
     c_char *colTypeName = idl_scopeStackFromCType(collType);
+
+    OS_UNUSED_ARG(index);
+    OS_UNUSED_ARG(bufName);
 
     switch(collKind)
     {
@@ -1350,78 +1724,172 @@ idl_CreateArrayMemberReadInnerLoopBody(
         if (idl_isPredefined(colTypeName)) {
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
-                    "dataTo.%s%s = (%s) Read%s(%s, %s);\n",
-                    fieldName, arrayBrackets, colTypeName,
-                    idl_cTypeToBaseType(collType, colTypeName),
-                    bufName, cursorName);
+                    "to.%s%s = from.%s%s;\n",
+                    fieldName, cSharpArrayBrackets, fieldName, databaseArrayBrackets);
         } else {
             /* Get the CSharp specific name of the member type. */
             c_char *prevColTypeName = colTypeName;
             colTypeName = idl_CsharpId(prevColTypeName, csUserData->customPSM, FALSE);
             os_free(prevColTypeName);
-
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
-                    "object elementObj = dataTo.%s%s;\n", fieldName, arrayBrackets);
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "attr%dMarshaler.CopyOut(%s, ref elementObj, %s);\n",
-                    index, bufName, cursorName);
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "if (dataTo.%s%s == null) {\n", fieldName, arrayBrackets);
-            indent_level++;
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "dataTo.%s%s = elementObj as %s;\n",
-                    fieldName, arrayBrackets, colTypeName);
-            indent_level--;
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "}\n");
+                    "%sMarshaler.CopyOut(ref from.%s%s, ref to.%s%s);\n",
+                    colTypeName, fieldName, databaseArrayBrackets, fieldName, cSharpArrayBrackets);
         }
         break;
     case M_ENUMERATION:
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(),
-                "dataTo.%s%s = (%s) ReadUInt32(%s, %s);\n",
-                fieldName, arrayBrackets, colTypeName, bufName, cursorName);
+                "to.%s%s = (%s) from.%s%s;\n",
+                fieldName, cSharpArrayBrackets, colTypeName, fieldName, databaseArrayBrackets);
         break;
     case M_PRIMITIVE:
+        /* Generate code to handle a primitive. */
+        idl_printIndent(indent_level);
+        switch (c_primitiveKind(collType))
+        {
+        case P_BOOLEAN:
+            idl_fileOutPrintf(idl_fileCur(),
+                    "to.%s%s = (from.%s%s != 0 ? true : false);\n",
+                    fieldName, databaseArrayBrackets, fieldName, cSharpArrayBrackets);
+            break;
+        case P_CHAR:
+            idl_fileOutPrintf(idl_fileCur(), "(to.%s%s) = (char) (from.%s%s);\n",
+                    fieldName, databaseArrayBrackets, fieldName, cSharpArrayBrackets);
+            break;
+        case P_OCTET:
+        case P_SHORT:       case P_USHORT:
+        case P_LONG:        case P_ULONG:
+        case P_LONGLONG:    case P_ULONGLONG:
+        case P_FLOAT:       case P_DOUBLE:
+            idl_fileOutPrintf(idl_fileCur(),
+                    "to.%s%s = from.%s%s;\n",
+                    fieldName, cSharpArrayBrackets, fieldName, databaseArrayBrackets);
+            break;
+        default:
+            assert(0);
+            break;
+        }
+        break;
     case M_COLLECTION: /* Assert that this collection is always of type string!! */
+        assert(c_collectionTypeKind(collType) == OSPL_C_STRING);
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(),
-                "dataTo.%s%s = Read%s(%s, %s);\n",
-                fieldName, arrayBrackets,
-                idl_cTypeToBaseType(collType, colTypeName),
-                bufName, cursorName);
+                "to.%s%s = ReadString(from.%s%s);\n",
+                fieldName, cSharpArrayBrackets, fieldName, databaseArrayBrackets);
         break;
     default:
         /* Unsupported Array type. */
         assert(FALSE);
+        break;
     }
-    idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "%s += %d;\n", cursorName, c_typeSize(collType));
-
     os_free(colTypeName);
-    os_free(arrayBrackets);
+    os_free(databaseArrayBrackets);
+    os_free(cSharpArrayBrackets);
+}
+
+static void
+idl_CreateSequenceMemberReadInnerLoopBody(
+        c_type collStartType,
+        c_type collType,
+        c_metaKind collKind,
+        c_ulong index,
+        c_ulong dimension,
+        const c_char *fieldName,
+        const c_char *bufName,
+        SACSSplDcpsUserData *csUserData)
+{
+
+    c_char *cSharpArrayBrackets = idl_CreateCSharpArrayIterationIndex(collStartType, dimension);
+    c_char *colTypeName = idl_scopeStackFromCType(collType);
+
+    OS_UNUSED_ARG(index);
+
+    switch(collKind)
+    {
+    case M_STRUCTURE:
+        idl_printIndent(indent_level);
+        if (idl_isPredefined(colTypeName)) {
+            /* Function below returns const string, so no need to free it afterward. */
+            const c_char *predefinedTypeName = idl_translateIfPredefined(colTypeName);
+            /* Now remove the preceeding 'DDS.' from the typename, so start reading at character position 4. */
+            idl_fileOutPrintf(idl_fileCur(),
+                    "to.%s%s = Read%s(%s, 0);\n",
+                    fieldName, cSharpArrayBrackets, &predefinedTypeName[4], bufName);
+        } else {
+            /* Get the CSharp specific name of the member type. */
+            c_char *prevColTypeName = colTypeName;
+            colTypeName = idl_CsharpId(prevColTypeName, csUserData->customPSM, FALSE);
+            os_free(prevColTypeName);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "%sMarshaler.StaticCopyOut(%s, ref to.%s%s);\n",
+                    colTypeName, bufName, fieldName, cSharpArrayBrackets);
+        }
+        break;
+    case M_ENUMERATION:
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(),
+                "to.%s%s = (%s) ReadInt32(%s);\n",
+                fieldName, cSharpArrayBrackets, colTypeName, bufName);
+        break;
+    case M_PRIMITIVE:
+        switch (c_primitiveKind(collType))
+        {
+        case P_BOOLEAN:
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "to.%s%s = Marshal.ReadByte(%s) != 0 ? true : false;\n",
+                    fieldName, cSharpArrayBrackets, bufName);
+            break;
+        case P_CHAR:
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "to.%s%s = (char) Marshal.ReadByte(%s);\n",
+                    fieldName, cSharpArrayBrackets, bufName);
+            break;
+        /* Other primitives should have been handled by the caller already, using Marshal.Copy. */
+        default:
+            assert(0);
+            break;
+        }
+        break;
+    case M_COLLECTION: /* Assert that this collection is always of type string!! */
+        assert(c_collectionTypeKind(collType) == OSPL_C_STRING);
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(),
+                "IntPtr stringElementPtr = Marshal.ReadIntPtr(%s);\n",
+                bufName);
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(idl_fileCur(),
+                "to.%s%s = ReadString(stringElementPtr);\n",
+                fieldName, cSharpArrayBrackets);
+        break;
+    default:
+        /* Unsupported Array type. */
+        assert(FALSE);
+        break;
+    }
+    os_free(colTypeName);
+    os_free(cSharpArrayBrackets);
 }
 
 static void
 idl_CreateArrayMemberRead(
         c_type collStartType,
         c_type collType,
-        c_long index,
-        c_long dimension,
+        c_ulong index,
+        c_ulong dimension,
         const c_char *fieldName,
         const c_char *bufName,
-        const c_char *cursorName,
         SACSSplDcpsUserData *csUserData)
 {
-    c_long i, arrLength, dimensionCheckSize;
-    c_long seqLengthNameSize, seqBufNameSize, seqTypeNameSize, nextCursorNameSize;
-    c_char *seqLengthName, *seqBufName, *seqTypeName, *nextCursorName, *arrayBrackets;
+    c_ulong i, arrLength;
+    os_size_t dimensionCheckSize;
+    c_ulong seqLengthNameSize, nextBufTypeSizeLen;
+    c_char *seqLengthName, *nextBufTypeSize, *arrayBrackets;
     c_char *dimensionCheck;
     c_type subType, actualType, parentType;
+    c_metaKind actualTypeKind;
 
     c_metaKind collKind = c_baseObjectKind(collType);
     switch(collKind)
@@ -1430,23 +1898,23 @@ idl_CreateArrayMemberRead(
     case M_ENUMERATION:
     case M_PRIMITIVE:
         idl_CreateArrayMemberReadInnerLoopBody(collStartType, collType, collKind,
-                index, dimension, fieldName, bufName, cursorName, csUserData);
+                index, dimension, fieldName, bufName, csUserData);
         break;
     case M_COLLECTION:
         /* Handle Collection type. */
         switch (c_collectionTypeKind(collType))
         {
-        case C_STRING:
+        case OSPL_C_STRING:
             /* Handle strings. */
             idl_CreateArrayMemberReadInnerLoopBody(collStartType, collType, collKind,
-                    index, dimension, fieldName, bufName, cursorName, csUserData);
+                    index, dimension, fieldName, bufName, csUserData);
             break;
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             /* Handle arrays. */
             arrLength = c_collectionTypeMaxSize(collType);
             subType = c_collectionTypeSubType(collType);
             actualType = c_typeActualType(subType);
-            arrayBrackets = idl_CreateArrayIterationIndex(collStartType, dimension);
+            arrayBrackets = idl_CreateCSharpArrayIterationIndex(collStartType, dimension);
 
             /* Check if this dimension is part of a prior rectangular array by checking
              * whether its parent is also an array.
@@ -1458,17 +1926,17 @@ idl_CreateArrayMemberRead(
             }
             if (parentType == collStartType ||
                     (c_baseObjectKind(parentType) != M_COLLECTION &&
-                     c_collectionTypeKind(parentType) != C_ARRAY))
+                     c_collectionTypeKind(parentType) != OSPL_C_ARRAY))
             {
                 /* If no prior rectangular dimensions, then check the current dimensions. */
-                c_long curDim;
+                c_ulong curDim;
                 subType = c_typeActualType(collType);
                 dimensionCheckSize = 15 + strlen(fieldName) + strlen (arrayBrackets) + 1;
                 dimensionCheck = os_malloc(dimensionCheckSize);
                 snprintf(dimensionCheck, dimensionCheckSize,
-                        "dataTo.%s%s == null", fieldName, arrayBrackets);
+                        "to.%s%s == null", fieldName, arrayBrackets);
                 for (i = 0; c_baseObjectKind(subType) == M_COLLECTION &&
-                            c_collectionTypeKind(subType) == C_ARRAY; i++)
+                            c_collectionTypeKind(subType) == OSPL_C_ARRAY; i++)
                 {
                     c_char *prevdimensionCheck = dimensionCheck;
                     curDim = c_collectionTypeMaxSize(subType);
@@ -1476,7 +1944,7 @@ idl_CreateArrayMemberRead(
                             strlen(arrayBrackets) + 2 * 10 /* MAX_INT */ + 1;
                     dimensionCheck = os_malloc(dimensionCheckSize);
                     snprintf(dimensionCheck, dimensionCheckSize,
-                            "%s || dataTo.%s%s.GetLength(%d) != %d",
+                            "%s || to.%s%s.GetLength(%d) != %d",
                             prevdimensionCheck, fieldName, arrayBrackets, i, curDim);
                     os_free(prevdimensionCheck);
                     subType = c_typeActualType(c_collectionTypeSubType(subType));
@@ -1500,73 +1968,132 @@ idl_CreateArrayMemberRead(
                     dimension, dimension, arrLength, dimension);
             indent_level++;
             idl_CreateArrayMemberRead(collStartType, actualType, index,
-                    dimension + 1, fieldName, bufName, cursorName, csUserData);
+                    dimension + 1, fieldName, bufName, csUserData);
             indent_level--;
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(), "}\n");
+            os_free(arrayBrackets);
             break;
-        case C_SEQUENCE:
+        case OSPL_C_SEQUENCE:
             /* Handle sequences. */
             subType = c_collectionTypeSubType(collType);
             actualType = c_typeActualType(subType);
+            actualTypeKind = c_baseObjectKind(actualType);
 
             seqLengthNameSize = 13 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
             seqLengthName = os_malloc(seqLengthNameSize);
-            snprintf(seqLengthName, seqLengthNameSize, "attr%dSeq%dLength", index, dimension);
+            snprintf(seqLengthName, seqLengthNameSize, "attr%uSeq%uLength", index, dimension);
 
-            seqBufNameSize = 10 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
-            seqBufName = os_malloc(seqBufNameSize);
-            snprintf(seqBufName, seqBufNameSize, "attr%dSeq%dBuf", index, dimension);
+            arrayBrackets = idl_CreateCSharpArrayIterationIndex(collStartType, dimension);
 
-            seqTypeNameSize = 11 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
-            seqTypeName = os_malloc(seqTypeNameSize);
-            snprintf(seqTypeName, seqTypeNameSize, "attr%dSeq%dType", index, dimension);
-
-            nextCursorNameSize = 10 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
-            nextCursorName = os_malloc(nextCursorNameSize);
-            snprintf(nextCursorName, nextCursorNameSize, "attr%dCursor%d", index, dimension + 1);
-
-            arrayBrackets = idl_CreateArrayIterationIndex(collStartType, dimension);
-
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "IntPtr %s = ReadIntPtr(%s, %s);\n",
-                    seqBufName, bufName, cursorName);
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
                     "int %s = DDS.OpenSplice.Database.c.arraySize(%s);\n",
-                    seqLengthName, seqBufName);
+                    seqLengthName, bufName);
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
-                    "if (dataTo.%s%s == null || dataTo.%s%s.Length != %s) {\n",
+                    "if (to.%s%s == null || to.%s%s.Length != %s) {\n",
                     fieldName, arrayBrackets, fieldName, arrayBrackets, seqLengthName);
             indent_level++;
             idl_CreateArrayInitialization(collType, fieldName, seqLengthName, arrayBrackets, csUserData);
             indent_level--;
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(), "}\n");
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "%s += %d;\n", cursorName, c_typeSize(collType));
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "int %s = 0;\n", nextCursorName);
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "for (int i%d = 0; i%d < %s; i%d++) {\n",
-                    dimension, dimension, seqLengthName, dimension);
-            indent_level++;
-            idl_CreateArrayMemberRead(collStartType, actualType, index,
-                    dimension + 1, fieldName, seqBufName, nextCursorName, csUserData);
-            indent_level--;
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "}\n");
+            switch(actualTypeKind)
+            {
+                case M_PRIMITIVE:
+                    switch (c_primitiveKind(actualType))
+                    {
+                    case P_USHORT:
+                    case P_ULONG:
+                    case P_ULONGLONG:
+                    {
+                        const char *signedCounterPart;
+                        if (c_primitiveKind(actualType) == P_USHORT) {
+                            signedCounterPart = "short";
+                        } else if (c_primitiveKind(actualType) == P_ULONG) {
+                            signedCounterPart = "int";
+                        } else {
+                            signedCounterPart = "long";
+                        }
+                        idl_printIndent(indent_level);
+                        idl_fileOutPrintf(idl_fileCur(),
+                                "if(%s > 0) Marshal.Copy(%s, (%s[]) (Array) to.%s%s, 0, %s);\n",
+                                seqLengthName, bufName, signedCounterPart, fieldName, arrayBrackets, seqLengthName);
+                        break;
+                    }
+                    case P_SHORT:
+                    case P_LONG:
+                    case P_LONGLONG:
+                    case P_FLOAT:
+                    case P_DOUBLE:
+                    case P_OCTET:
+                        idl_printIndent(indent_level);
+                        idl_fileOutPrintf(idl_fileCur(),
+                                "if(%s > 0) Marshal.Copy(%s, to.%s%s, 0, %s);\n",
+                                seqLengthName, bufName, fieldName, arrayBrackets, seqLengthName);
+                        break;
+                    default:
+                        /* Intentionally break through to use the default handler. */
+                        break;
+                    }
+                    if (c_primitiveKind(actualType) != P_BOOLEAN && c_primitiveKind(actualType) != P_CHAR) break;
+                default:
+                    nextBufTypeSizeLen = 10 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
+                    nextBufTypeSize = os_malloc(nextBufTypeSizeLen);
+                    snprintf(nextBufTypeSize, nextBufTypeSizeLen, "attr%uSeq%uSize", index, dimension);
+                    idl_printIndent(indent_level);
+                    idl_fileOutPrintf(idl_fileCur(), "for (int i%d = 0; i%d < %s; i%d++) {\n",
+                            dimension, dimension, seqLengthName, dimension);
+                    indent_level++;
+                    if (actualTypeKind == M_COLLECTION && c_collectionTypeKind(actualType) != OSPL_C_STRING) {
+                        subType = c_typeActualType(c_collectionTypeSubType(actualType));
+                        if (c_collectionTypeKind(actualType) == OSPL_C_ARRAY && c_baseObjectKind(subType) == M_PRIMITIVE) {
+                            os_free(arrayBrackets);
+                            arrayBrackets = idl_CreateCSharpArrayIterationIndex(collStartType, dimension + 1);
+                            idl_printIndent(indent_level);
+                            idl_fileOutPrintf(idl_fileCur(), "Marshal.Copy(%s, to.%s%s, 0, %d);\n",
+                                    bufName, fieldName, arrayBrackets, c_collectionTypeMaxSize(actualType));
+                        } else {
+                            c_ulong seqBufNameSize = 10 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
+                            c_char *seqBufName = os_malloc(seqBufNameSize);
+                            snprintf(seqBufName, seqBufNameSize, "attr%uSeq%uBuf", index, dimension + 1);
+                            if (c_collectionTypeKind(actualType) == OSPL_C_SEQUENCE) {
+                                idl_printIndent(indent_level);
+                                idl_fileOutPrintf(idl_fileCur(),
+                                        "IntPtr %s = Marshal.ReadIntPtr(%s);\n", seqBufName, bufName);
+                            }
+                            idl_CreateArrayMemberRead(collStartType, actualType, index,
+                                    dimension + 1, fieldName, seqBufName, csUserData);
+                            os_free(seqBufName);
+                        }
+                    } else {
+                        idl_CreateSequenceMemberReadInnerLoopBody(
+                                collStartType, actualType, actualTypeKind, index, dimension + 1,
+                                fieldName, bufName, csUserData);
+                    }
+                    idl_printIndent(indent_level);
+                    idl_fileOutPrintf(idl_fileCur(),
+                            "%s = new IntPtr(%s.ToInt64() + %s);\n", bufName, bufName, nextBufTypeSize);
+                    indent_level--;
+                    idl_printIndent(indent_level);
+                    idl_fileOutPrintf(idl_fileCur(), "}\n");
+                    os_free(arrayBrackets);
+                    os_free(nextBufTypeSize);
+                    os_free(seqLengthName);
+                    break;
+            }
             break;
         default:
             /* Unsupported Collection type. */
             assert(FALSE);
+            break;
         }
         break;
     default:
         /* Unsupported Array type. */
         assert(FALSE);
+        break;
     }
 }
 
@@ -1574,11 +2101,11 @@ static void
 idl_CreateStructMemberRead(
         c_type memberType,
         const char *memberName,
-        c_long index,
+        c_ulong index,
         SACSSplDcpsUserData *csUserData)
 {
-    c_long cursorNameLength;
-    c_char *cursorName;
+    c_ulong bufNameLength;
+    c_char *bufName = NULL;
     c_bool isPredefined = FALSE;
     c_char *memberTypeName = idl_scopeStackFromCType(memberType);
 
@@ -1604,10 +2131,7 @@ idl_CreateStructMemberRead(
         {
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
-                    "dataTo.%s = Read%s(from, offset + offset_%s);\n",
-                    memberName,
-                    idl_cTypeToBaseType(memberType, memberTypeName),
-                    memberName);
+                    "to.%s = from.%s;\n", memberName, memberName);
         }
         else
         /* Other types should use their corresponding Marshaler. */
@@ -1617,33 +2141,18 @@ idl_CreateStructMemberRead(
             memberTypeName = idl_CsharpId(prevTypeName, csUserData->customPSM, FALSE);
             os_free(prevTypeName);
 
-            /* Pick a holder for the read result. */
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "object attr%dVal = dataTo.%s;\n", index, memberName);
-
             /* Invoke the Marshaler. */
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
-                    "attr%dMarshaler.CopyOut(from, ref attr%dVal, offset + offset_%s);\n",
-                    index, index, memberName);
-
-            /* If the target did not yet instantiate its attribute, replace it by the holder. */
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "if (dataTo.%s == null) {\n", memberName);
-            indent_level++;
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "dataTo.%s = attr%dVal as %s;\n", memberName, index, memberTypeName);
-            indent_level--;
-            idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(), "}\n");
+                    "%sMarshaler.CopyOut(ref from.%s, ref to.%s);\n",
+                    memberTypeName, memberName, memberName);
         }
         break;
     case M_ENUMERATION:
         /* Enums are read as Int32 types. */
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(),
-                "dataTo.%s = (%s) ReadUInt32(from, offset + offset_%s);\n",
+                "to.%s = (%s) from.%s;\n",
                 memberName, memberTypeName, memberName);
         break;
     case M_PRIMITIVE:
@@ -1651,17 +2160,20 @@ idl_CreateStructMemberRead(
         switch (c_primitiveKind(memberType))
         {
         case P_BOOLEAN:
-        case P_CHAR:        case P_OCTET:
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "to.%s = from.%s != 0 ? true : false;\n", memberName, memberName);
+            break;
+        case P_CHAR:
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "to.%s = (char) from.%s;\n", memberName, memberName);
+            break;
+        case P_OCTET:
         case P_SHORT:       case P_USHORT:
         case P_LONG:        case P_ULONG:
         case P_LONGLONG:    case P_ULONGLONG:
         case P_FLOAT:       case P_DOUBLE:
             idl_printIndent(indent_level);
-            idl_fileOutPrintf(idl_fileCur(),
-                    "dataTo.%s = Read%s(from, offset + offset_%s);\n",
-                    memberName,
-                    idl_cTypeToBaseType(memberType, memberTypeName),
-                    memberName);
+            idl_fileOutPrintf(idl_fileCur(), "to.%s = from.%s;\n", memberName, memberName);
             break;
         default:
             /* Unsupported primitive type */
@@ -1672,26 +2184,28 @@ idl_CreateStructMemberRead(
         /* Handle Collection type. */
         switch (c_collectionTypeKind(memberType))
         {
-        case C_STRING:
+        case OSPL_C_STRING:
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
-                    "dataTo.%s = ReadString(from, offset + offset_%s);\n",
-                    memberName, memberName);
+                    "to.%s = ReadString(from.%s);\n", memberName, memberName);
             break;
-        case C_SEQUENCE:
-        case C_ARRAY:
-            /* Handle arrays. */
-            cursorNameLength = 12 /* template */ + 10 /* MAX_INT */ + 1 /* '\0' */;
-            cursorName = os_malloc(cursorNameLength);
-            snprintf(cursorName, cursorNameLength, "attr%dCursor0", index);
+        case OSPL_C_ARRAY:
+            idl_CreateArrayMemberRead(
+                    memberType, memberType, index, 0, memberName, memberName, csUserData);
+            break;
+        case OSPL_C_SEQUENCE:
+            bufNameLength = 10 + 2 * 10 + 1; /* tmpl-size + 2 * MAX_INT + '\0'. */
+            bufName = os_malloc(bufNameLength);
+            snprintf(bufName, bufNameLength, "attr%dSeq%dBuf", index, 0);
+
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
-                    "int %s = offset + offset_%s;\n",
-                    cursorName,
-                    memberName);
+                    "IntPtr %s = from.%s;\n", bufName, memberName);
+
             idl_CreateArrayMemberRead(
-                    memberType, memberType, index, 0, memberName, "from", cursorName, csUserData);
-            os_free(cursorName);
+                    memberType, memberType, index, 0, memberName, bufName, csUserData);
+
+            os_free(bufName);
             break;
         default:
             /* Unsupported Collection type. */
@@ -1711,7 +2225,7 @@ idl_CreateCopyOut(
         const c_char *structName,
         SACSSplDcpsUserData *csUserData)
 {
-    c_long i, nrMembers = c_structureMemberCount((c_structure) structType);
+    c_ulong i, nrMembers = c_structureMemberCount((c_structure) structType);
 
     /* Open the 1st CopyOut operation and increase the indent. */
     idl_printIndent(indent_level);
@@ -1722,13 +2236,16 @@ idl_CreateCopyOut(
 
     /* Generate a body that retrieves the C# object and invokes the appropriate CopyOut. */
     idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "__%s nativeImg = (__%s) Marshal.PtrToStructure(from, typeof(__%s));\n",
+            structName, structName, structName);
+    idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "GCHandle tmpGCHandleTo = GCHandle.FromIntPtr(to);\n");
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "object toObj = tmpGCHandleTo.Target;\n");
+    idl_fileOutPrintf(idl_fileCur(), "%s toObj = tmpGCHandleTo.Target as %s;\n", structName, structName);
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "CopyOut(from, ref toObj, 0);\n");
+    idl_fileOutPrintf(idl_fileCur(), "CopyOut(ref nativeImg, ref toObj);\n");
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "if (toObj != tmpGCHandleTo.Target) tmpGCHandleTo.Target = toObj;\n");
+    idl_fileOutPrintf(idl_fileCur(), "tmpGCHandleTo.Target = toObj;\n");
 
     /* Decrease the indent level back to its original value and close the CopyOut operation. */
     indent_level--;
@@ -1737,21 +2254,55 @@ idl_CreateCopyOut(
 
     /* Open the 2nd CopyOut operation and increase the indent. */
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "public override void CopyOut(System.IntPtr from, ref object to, int offset)\n");
+    idl_fileOutPrintf(idl_fileCur(), "public override void CopyOut(System.IntPtr from, ref %s to)\n", structName);
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "{\n");
+    indent_level++;
+
+    /* Generate a body that retrieves the C# object and invokes the appropriate CopyOut. */
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "__%s nativeImg = (__%s) Marshal.PtrToStructure(from, typeof(__%s));\n",
+            structName, structName, structName);
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "CopyOut(ref nativeImg, ref to);\n");
+
+    /* Decrease the indent level back to its original value and close the CopyOut operation. */
+    indent_level--;
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+
+    /* Open the 3rd CopyOut operation and increase the indent. */
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "public static void StaticCopyOut(System.IntPtr from, ref %s to)\n", structName);
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "{\n");
+    indent_level++;
+
+    /* Generate a body that retrieves the C# object and invokes the appropriate CopyOut. */
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "__%s nativeImg = (__%s) Marshal.PtrToStructure(from, typeof(__%s));\n",
+            structName, structName, structName);
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "CopyOut(ref nativeImg, ref to);\n");
+
+    /* Decrease the indent level back to its original value and close the CopyOut operation. */
+    indent_level--;
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+
+    /* Open the 4th CopyOut operation and increase the indent. */
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "public static void CopyOut(ref __%s from, ref %s to)\n", structName, structName);
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     indent_level++;
 
     /* Cast the object to its proper type and if no yet allocated, allocate it. */
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "%s dataTo = to as %s;\n", structName, structName);
-    idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "if (dataTo == null) {\n");
+    idl_fileOutPrintf(idl_fileCur(), "if (to == null) {\n");
     indent_level++;
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "dataTo = new %s();\n", structName);
-    idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "to = dataTo;\n");
+    idl_fileOutPrintf(idl_fileCur(), "to = new %s();\n", structName);
     indent_level--;
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "}\n");
@@ -1790,8 +2341,8 @@ idl_generateMarshaler (
     idl_printIndent(indent_level);
     idl_fileOutPrintf(
         idl_fileCur(),
-        "public sealed class %sMarshaler : DDS.OpenSplice.CustomMarshalers.DatabaseMarshaler\n",
-        structName);
+        "public sealed class %sMarshaler : DDS.OpenSplice.CustomMarshalers.FooDatabaseMarshaler<%s>\n",
+        structName, structName);
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
 
@@ -1800,10 +2351,8 @@ idl_generateMarshaler (
 
     /* Create the constructor of the Marshaler. */
     idl_determineFullyScopedName(structType);
-    idl_determineOffsets(structType, structName, csUserData);
     idl_CreateAttributes(structType, structName, csUserData);
     idl_CreateInitEmbeddedMarshalers(structType, structName, csUserData);
-    idl_CreateSampleReaderAlloc(structType, structName, csUserData);
     idl_CreateCopyIn(structType, structName, csUserData);
     idl_CreateCopyOut(structType, structName, csUserData);
 

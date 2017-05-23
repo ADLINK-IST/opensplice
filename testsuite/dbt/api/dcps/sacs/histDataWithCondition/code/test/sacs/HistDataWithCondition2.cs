@@ -81,9 +81,8 @@ namespace test.sacs
             @params[0] = "5";
             @params[1] = "6";
 
-            // TODO: JLS, WaitForHistoricalDataWithCondition is missing
-            //			ddsReturnCode = reader.WaitForHistoricalDataWithCondition("long_1 < %0 AND long_2 < %1"
-            //				, @params, minSourceTime, maxSourceTime, resource, maxWait);
+            ddsReturnCode = reader.WaitForHistoricalDataWithCondition(
+                    "long_1 < %0 AND long_2 < %1", @params, minSourceTime, maxSourceTime, resource, maxWait);
             if (ddsReturnCode != DDS.ReturnCode.Ok)
             {
                 result.Result = "wait_for_historical_data_w_condition failed";

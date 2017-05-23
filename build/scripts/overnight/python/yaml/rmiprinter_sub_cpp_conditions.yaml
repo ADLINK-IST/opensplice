@@ -1,0 +1,44 @@
+parseconditions:
+    desc: RMI Printer LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    conditions: 
+
+        - name: brother_activated
+          type: line
+          inst: 1
+          required: yes
+          line: "Printer BrotherHL-5280 activated."
+
+        - name: epson_activated
+          type: line
+          inst: 1
+          required: yes
+          line: "Printer EPSON-EPL-7500 activated."
+
+        - name: hplaser_activated
+          type: line
+          inst: 1
+          required: yes
+          line: "Printer HPLaserJetColor activated."
+
+        - name: print_doc0
+          type: line
+          inst: 1
+          required: yes
+          line: "Printing document Document_0 ..."
+
+        - name: print_doc1
+          type: line
+          inst: 1
+          required: yes
+          line: "Printing document Document_1 ..."
+
+        - name: print_doc3
+          type: line
+          inst: 1
+          required: yes
+          line: "Printing document Document_3 ..."

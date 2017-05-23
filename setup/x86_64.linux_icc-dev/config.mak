@@ -25,4 +25,3 @@ CC=icc
 CFLAGS_STRICT=
 LD_EXE=gcc
 LD_SO=gcc
-FILTER=

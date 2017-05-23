@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.transform.xml;
@@ -17,6 +25,7 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.logging.Level;
 
+import org.opensplice.cm.Time;
 import org.opensplice.cm.data.GID;
 import org.opensplice.cm.data.Message;
 import org.opensplice.cm.data.Sample;
@@ -183,77 +192,86 @@ public class SampleHandler extends CommonHandler {
         if (s == null) {
             s = "";
         }
+        if ((scope.startsWith("object.previous.")) && (!("NULL".equals(s)))) {
+            historyDepth++;
+            String temp = scope.substring(16);
 
-        if (s != null) {
-            if ((scope.startsWith("object.previous.")) && (!("NULL".equals(s)))) {
+            while (temp.startsWith("previous.")) {
                 historyDepth++;
-                String temp = scope.substring(16);
-
-                while (temp.startsWith("previous.")) {
-                    historyDepth++;
-                    temp = temp.substring(9);
-                }
-
-                while (history.size() < (historyDepth + 1)) {
-                    UserData hUserData = new UserData(userDataType);
-                    GID wGid = new GID(-1, -1);
-                    GID iGid = new GID(-1, -1);
-                    MessageQoS msgQos = null;
-                    State state = new State(State.WRITE);
-                    Message hMessage = new Message(state, -1, -1, wGid, iGid,
-                            0, msgQos, hUserData);
-                    Sample hSample = new Sample(-1, -1, new State(0), -1, -1,
-                            hMessage);
-                    history.add(hSample);
-                    ArrayList<FlatElement> hFlatData = new ArrayList<FlatElement>();
-                    flatDataHistory.add(hFlatData);
-                }
-                sam = (history.get(historyDepth));
-                mes = sam.getMessage();
-                flatDH = flatDataHistory.get(historyDepth);
-                scope = "object." + temp;
+                temp = temp.substring(9);
             }
 
-            if (scope.startsWith("object.message.userData.")) {
-                String fieldName = scope.substring(24);
-                FlatElement fe = new FlatElement(fieldName, s);
-                flatDH.add(fe);
-            } else if (scope.equals("object.insertTime.seconds")) {
-                sam.setInsertTimeSec(Long.parseLong(s));
-            } else if (scope.equals("object.insertTime.nanoseconds")) {
-                sam.setInsertTimeNanoSec(Long.parseLong(s));
-            } else if (scope.equals("object.sampleState")) {
-                sam.setState(new State(Integer.parseInt(s)));
-            } else if (scope.equals("object.disposeCount")) {
-                sam.setDisposeCount(Long.parseLong(s));
-            } else if (scope.equals("object.noWritersCount")) {
-                sam.setNoWritersCount(Long.parseLong(s));
-            } else if (scope.equals("object.message.nodeState")) {
-                mes.setNodeState(new State(Integer.parseInt(s)));
-            } else if (scope.equals("object.message.writeTime.seconds")) {
-                mes.setWriteTimeSec(Long.parseLong(s));
-            } else if (scope.equals("object.message.writeTime.nanoseconds")) {
-                mes.setWriteTimeNanoSec(Long.parseLong(s));
-            } else if (scope.equals("object.message.writerGID.localId")) {
-                mes.getWriterGid().setLocalId(Long.parseLong(s));
-            } else if (scope.equals("object.message.writerGID.systemId")) {
-                mes.getWriterGid().setSystemId(Long.parseLong(s));
-            } else if (scope.equals("object.message.writerInstanceGID.localId")) {
-                mes.getInstanceGid().setLocalId(Long.parseLong(s));
-            } else if (scope.equals("object.message.writerInstanceGID.systemId")) {
-                mes.getInstanceGid().setSystemId(Long.parseLong(s));
-            } else if (scope.equals("object.message.sampleSequenceNumber")) {
-                mes.setSampleSequenceNumber(Long.parseLong(s));
-            } else if (scope.equals("object.message.qos.size")) {
-                mes.setQos(new MessageQoS(new int[Integer.parseInt(s)]));
-            } else if (scope.equals("object.message.qos.element")) {
-                mes.getQos().addElement(Integer.parseInt(s));
-            } else {
-                logger.logp(Level.FINE, "SampleHandler", "endElement",
-                        "UNKNOWN scope: " + scope + " = " + s);
+            while (history.size() < (historyDepth + 1)) {
+                UserData hUserData = new UserData(userDataType);
+                GID wGid = new GID(-1, -1);
+                GID iGid = new GID(-1, -1);
+                MessageQoS msgQos = null;
+                State state = new State(State.WRITE);
+                Message hMessage = new Message(state, -1, -1, wGid, iGid, 0,
+                        msgQos, hUserData);
+                Sample hSample = new Sample(-1, -1, new State(0), -1, -1,
+                        hMessage);
+                history.add(hSample);
+                ArrayList<FlatElement> hFlatData = new ArrayList<FlatElement>();
+                flatDataHistory.add(hFlatData);
             }
-            dataBuffer = null;
+            sam = (history.get(historyDepth));
+            mes = sam.getMessage();
+            flatDH = flatDataHistory.get(historyDepth);
+            scope = "object." + temp;
         }
+        if (scope.startsWith("object.message.userData.")) {
+            String fieldName = scope.substring(24);
+            FlatElement fe = new FlatElement(fieldName, s);
+            flatDH.add(fe);
+        } else if (scope.equals("object.insertTime.seconds")) {
+            sam.setInsertTimeSec(Long.parseLong(s));
+        } else if (scope.equals("object.insertTime.nanoseconds")) {
+            sam.setInsertTimeNanoSec(Long.parseLong(s));
+        } else if (scope.equals("object.insertTime") && !s.equals("")) {
+            long _t = Long.parseLong(s);
+            long _sec = _t / Time.NANOSECONDS;
+            long _nsec = _t % Time.NANOSECONDS;
+            sam.setInsertTimeSec(_sec);
+            sam.setInsertTimeNanoSec(_nsec);
+        } else if (scope.equals("object.sampleState")) {
+            sam.setState(new State(Integer.parseInt(s)));
+        } else if (scope.equals("object.disposeCount")) {
+            sam.setDisposeCount(Long.parseLong(s));
+        } else if (scope.equals("object.noWritersCount")) {
+            sam.setNoWritersCount(Long.parseLong(s));
+        } else if (scope.equals("object.message.nodeState")) {
+            mes.setNodeState(new State(Integer.parseInt(s)));
+        } else if (scope.equals("object.message.writeTime.seconds")) {
+            mes.setWriteTimeSec(Long.parseLong(s));
+        } else if (scope.equals("object.message.writeTime.nanoseconds")) {
+            mes.setWriteTimeNanoSec(Long.parseLong(s));
+        } else if (scope.equals("object.message.writeTime") && !s.equals("")) {
+            long _t = Long.parseLong(s);
+            long _sec = _t / Time.NANOSECONDS;
+            long _nsec = _t % Time.NANOSECONDS;
+            mes.setWriteTimeSec(_sec);
+            mes.setWriteTimeNanoSec(_nsec);
+        } else if (scope.equals("object.message.writerGID.localId")) {
+            mes.getWriterGid().setLocalId(Long.parseLong(s));
+        } else if (scope.equals("object.message.writerGID.systemId")) {
+            mes.getWriterGid().setSystemId(Long.parseLong(s));
+        } else if (scope.equals("object.message.writerInstanceGID.localId")) {
+            mes.getInstanceGid().setLocalId(Long.parseLong(s));
+        } else if (scope.equals("object.message.writerInstanceGID.systemId")) {
+            mes.getInstanceGid().setSystemId(Long.parseLong(s));
+        } else if (scope.equals("object.message.sampleSequenceNumber")) {
+            mes.setSampleSequenceNumber(Long.parseLong(s));
+        } else if (scope.equals("object.message.qos.size")) {
+            mes.setQos(new MessageQoS(new int[Integer.parseInt(s)]));
+        } else if (scope.equals("object.message.qos.element")) {
+            mes.getQos().addElement(Integer.parseInt(s));
+        } else {
+            logger.logp(Level.FINE, "SampleHandler", "endElement",
+                    "UNKNOWN scope: " + scope + " = " + s);
+        }
+        dataBuffer = null;
+
         this.scopeRemoveLast();
 
         if ("previous".equals(qName)) {

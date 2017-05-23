@@ -57,10 +57,6 @@ template <typename T> typename T::const_iterator end(const T& t)
  *
  *  @ingroup sequences
  *
- *  Meets the requirements of a <a href="tables.html#65">container</a>, a
- *  <a href="tables.html#66">reversible container</a>, and a
- *  <a href="tables.html#67">sequence</a>.
- *
  *  Sets support for random access iterators.
  *
  *  @param  Tp  Type of element. Required to be a complete type.
