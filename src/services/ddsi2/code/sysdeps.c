@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <assert.h>
 #include <stdlib.h>
 
@@ -6,6 +25,8 @@
 #include "os_heap.h"
 #include "os_thread.h"
 #include "os_socket.h"
+#include "os_atomics.h"
+#include "os_errno.h"
 
 #include "q_error.h"
 #include "q_log.h"
@@ -59,7 +80,7 @@ os_ssize_t recvmsg (os_handle fd, struct msghdr *message, int flags)
      which presumably means it returned as much of the message as it
      could - so we return that the message was 1 byte larger than the
      available space, and set MSG_TRUNC if we can. */
-  if (ret == -1 && os_sockError () == WSAEMSGSIZE) {
+  if (ret == -1 && os_getErrno () == WSAEMSGSIZE) {
     ret = message->msg_iov[0].iov_len + 1;
 #if SYSDEPS_MSGHDR_FLAGS
     message->msg_flags |= MSG_TRUNC;
@@ -71,6 +92,7 @@ os_ssize_t recvmsg (os_handle fd, struct msghdr *message, int flags)
 #endif
 
 #if ! SYSDEPS_HAVE_SENDMSG
+#if !(defined _WIN32 && !defined WINCE)
 os_ssize_t sendmsg (os_handle fd, const struct msghdr *message, int flags)
 {
   char stbuf[3072], *buf;
@@ -119,11 +141,11 @@ os_ssize_t sendmsg (os_handle fd, const struct msghdr *message, int flags)
   while (TRUE)
   {
     ret = sendto (fd, buf + sent, sz - sent, flags, message->msg_name, message->msg_namelen);
-    if (ret == -1)
+    if (ret < 0)
     {
       break;
     }
-    sent += ret;
+    sent += (os_size_t) ret;
     if (sent == sz)
     {
       ret = sent;
@@ -137,6 +159,38 @@ os_ssize_t sendmsg (os_handle fd, const struct msghdr *message, int flags)
   }
   return ret;
 }
+#else /* _WIN32 && !WINCE */
+os_ssize_t sendmsg (os_handle fd, const struct msghdr *message, int flags)
+{
+  WSABUF stbufs[128], *bufs;
+  DWORD sent;
+  unsigned i;
+  os_ssize_t ret;
+
+#if SYSDEPS_MSGHDR_ACCRIGHTS
+  assert (message->msg_accrightslen == 0);
+#else
+  assert (message->msg_controllen == 0);
+#endif
+
+  if (message->msg_iovlen <= (int)(sizeof(stbufs) / sizeof(*stbufs)))
+    bufs = stbufs;
+  else
+    bufs = os_malloc (message->msg_iovlen * sizeof (*bufs));
+  for (i = 0; i < message->msg_iovlen; i++)
+  {
+    bufs[i].buf = (void *) message->msg_iov[i].iov_base;
+    bufs[i].len = (unsigned) message->msg_iov[i].iov_len;
+  }
+  if (WSASendTo (fd, bufs, message->msg_iovlen, &sent, flags, (SOCKADDR *) message->msg_name, message->msg_namelen, NULL, NULL) == 0)
+    ret = (os_ssize_t) sent;
+  else
+    ret = -1;
+  if (bufs != stbufs)
+    os_free (bufs);
+  return ret;
+}
+#endif
 #endif
 
 #ifndef SYSDEPS_HAVE_RANDOM
@@ -210,6 +264,58 @@ int __S_exchange_and_add (volatile int *mem, int val)
                        : "r" (lock)
                        : "memory");
   return result;
+}
+#endif
+
+#if !(defined __APPLE__ || defined __linux) || (__GNUC__ > 0 && (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) < 40100)
+void log_stacktrace (const char *name, os_threadId tid)
+{
+  OS_UNUSED_ARG (name);
+  OS_UNUSED_ARG (tid);
+}
+#else
+#include <execinfo.h>
+
+static pa_uint32_t log_stacktrace_flag = PA_UINT32_INIT(0);
+
+static void log_stacktrace_sigh (int sig __attribute__ ((unused)))
+{
+  void *stk[64];
+  char **strs;
+  int i, n;
+  nn_log (~0u, "-- stack trace follows --\n");
+  n = backtrace (stk, (int) (sizeof (stk) / sizeof (*stk)));
+  strs = backtrace_symbols (stk, n);
+  for (i = 0; i < n; i++)
+    nn_log (~0u, "%s\n", strs[i]);
+  free (strs);
+  nn_log (~0u, "-- end of stack trace --\n");
+  pa_inc32 (&log_stacktrace_flag);
+}
+
+void log_stacktrace (const char *name, os_threadId tid)
+{
+  if (config.enabled_logcats == 0)
+    ; /* no op if nothing logged */
+  else if (!config.noprogress_log_stacktraces)
+    nn_log (~0u, "-- stack trace of %s requested, but traces disabled --\n", name);
+  else
+  {
+    const os_duration d = OS_DURATION_INIT(0, 1000000);
+    struct sigaction act, oact;
+    nn_log (~0u, "-- stack trace of %s requested --\n", name);
+    act.sa_handler = log_stacktrace_sigh;
+    act.sa_flags = 0;
+    sigfillset (&act.sa_mask);
+    while (!pa_cas32 (&log_stacktrace_flag, 0, 1))
+      os_sleep (d);
+    sigaction (SIGXCPU, &act, &oact);
+    pthread_kill (tid, SIGXCPU);
+    while (!pa_cas32 (&log_stacktrace_flag, 2, 3))
+      os_sleep (d);
+    sigaction (SIGXCPU, &oact, NULL);
+    pa_st32 (&log_stacktrace_flag, 0);
+  }
 }
 #endif
 

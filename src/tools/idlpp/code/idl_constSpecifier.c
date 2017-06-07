@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**
@@ -31,39 +39,39 @@ operatorImage (
     char *opImage = NULL;
 
     switch (exprKind) {
-    case idl_or:
-	opImage = "|";
-	break;
-    case idl_xor:
-	opImage = "^";
-	break;
-    case idl_and:
-	opImage = "&";
-	break;
-    case idl_shiftright:
-	opImage = ">>";
-	break;
-    case idl_shiftleft:
-	opImage = "<<";
-	break;
-    case idl_plus:
-	opImage = "+";
-	break;
-    case idl_minus:
-	opImage = "-";
-	break;
-    case idl_mul:
-	opImage = "*";
-	break;
-    case idl_div:
-	opImage = "/";
-	break;
-    case idl_mod:
-	opImage = "%";
-	break;
-    case idl_not:
-	opImage = "~";
-	break;
+        case idl_or:
+            opImage = "|";
+            break;
+        case idl_xor:
+            opImage = "^";
+            break;
+        case idl_and:
+            opImage = "&";
+            break;
+        case idl_shiftright:
+            opImage = ">>";
+            break;
+        case idl_shiftleft:
+            opImage = "<<";
+            break;
+        case idl_plus:
+            opImage = "+";
+            break;
+        case idl_minus:
+            opImage = "-";
+            break;
+        case idl_mul:
+            opImage = "*";
+            break;
+        case idl_div:
+            opImage = "/";
+            break;
+        case idl_mod:
+            opImage = "%";
+            break;
+        case idl_not:
+            opImage = "~";
+            break;
     }
     return opImage;
 }
@@ -87,6 +95,7 @@ void
 idl_operandDeinit (
     idl_operand operand)
 {
+    OS_UNUSED_ARG(operand);
 }
 
 void
@@ -95,14 +104,14 @@ idl_operandFree (
 {
     switch (operand->kind) {
     case idl_cExpr:
-	idl_constExpressionFree (idl_constExpression(operand));
-	break;
+        idl_constExpressionFree (idl_constExpression(operand));
+        break;
     case idl_cLit:
-	idl_constLiteralFree (idl_constLiteral(operand));
-	break;
+        idl_constLiteralFree (idl_constLiteral(operand));
+        break;
     case idl_cOper:
-	idl_constOperandFree (idl_constOperand(operand));
-	break;
+        idl_constOperandFree (idl_constOperand(operand));
+        break;
     }
 }
 
@@ -113,15 +122,15 @@ idl_operandImage (
     char *image = NULL;
 
     switch (operand->kind) {
-    case idl_cExpr:
-	image = idl_constExpressionImage (idl_constExpression(operand));
-	break;
-    case idl_cLit:
-	image = idl_constLiteralImage (idl_constLiteral(operand));
-	break;
-    case idl_cOper:
-	image = idl_constOperandImage (idl_constOperand(operand));
-	break;
+        case idl_cExpr:
+            image = idl_constExpressionImage (idl_constExpression(operand));
+            break;
+        case idl_cLit:
+            image = idl_constLiteralImage (idl_constLiteral(operand));
+            break;
+        case idl_cOper:
+            image = idl_constOperandImage (idl_constOperand(operand));
+            break;
     }
     return image;
 }
@@ -142,10 +151,10 @@ idl_constExpressionNew (
     idl_constExpression constExpr = os_malloc (C_SIZEOF(idl_constExpression));
 
     if (constExpr) {
-	memset (constExpr, 0, C_SIZEOF(idl_constExpression));
-	idl_operandInit (idl_operand(constExpr), idl_cExpr);
-	constExpr->kind = expression;
-	constExpr->operands = c_iterNew (NULL);
+        memset (constExpr, 0, C_SIZEOF(idl_constExpression));
+        idl_operandInit (idl_operand(constExpr), idl_cExpr);
+        constExpr->kind = expression;
+        constExpr->operands = c_iterNew (NULL);
     }
     return constExpr;
 }
@@ -155,7 +164,7 @@ idl_constExpressionFree (
     idl_constExpression constExpression)
 {
     while (c_iterLength (constExpression->operands)) {
-	idl_operandFree (idl_operand(c_iterTakeFirst (constExpression->operands)));
+        idl_operandFree (idl_operand(c_iterTakeFirst (constExpression->operands)));
     }
     c_iterFree (constExpression->operands);
 }
@@ -166,58 +175,58 @@ idl_constExpressionImage (
 {
     char *image = NULL;
     char *operandImage = NULL;
-    int i;
-    int newLen = 0;
+    c_ulong i;
+    os_size_t newLen = 0;
 
     if (c_iterLength (constExpression->operands) == 1) {
-	/* Unary operator */
-	operandImage = idl_operandImage (idl_operand(c_iterObject (constExpression->operands, 0)));
-	newLen = strlen (operatorImage(constExpression->kind)) + strlen (operandImage) + 3;
-	image = os_malloc (newLen);
-	snprintf (image, newLen, "(%s%s)", operatorImage(constExpression->kind), operandImage);
-	os_free (operandImage);
+        /* Unary operator */
+        operandImage = idl_operandImage (idl_operand(c_iterObject (constExpression->operands, 0)));
+        newLen = strlen (operatorImage(constExpression->kind)) + strlen (operandImage) + 3;
+        image = os_malloc (newLen);
+        snprintf (image, newLen, "(%s%s)", operatorImage(constExpression->kind), operandImage);
+        os_free (operandImage);
     } else {
-	/* Binary operator */
+        /* Binary operator */
         for (i = 0; i < c_iterLength (constExpression->operands); i++) {
-	    operandImage = idl_operandImage (idl_operand(c_iterObject (constExpression->operands, i)));
-	    if (image == NULL) {
-	        newLen = strlen (operandImage) + 2;
-	        image = os_malloc (newLen);
-	       os_strncpy (image, "(", newLen);
-	    } else {
-	        newLen = strlen (image) + strlen (operatorImage(constExpression->kind)) + strlen (operandImage) + 4;
-	        image = os_realloc (image, newLen);
-		strncat (image, " ", newLen);
-	        os_strncat (image, operatorImage(constExpression->kind), newLen);
-		strncat (image, " ", newLen);
-	    }
-	    os_strncat (image, operandImage, newLen);
-	    os_free (operandImage);
+            operandImage = idl_operandImage (idl_operand(c_iterObject (constExpression->operands, i)));
+            if (image == NULL) {
+                newLen = strlen (operandImage) + 2;
+                image = os_malloc (newLen);
+                os_strncpy (image, "(", newLen);
+            } else {
+                newLen = strlen (image) + strlen (operatorImage(constExpression->kind)) + strlen (operandImage) + 4;
+                image = os_realloc (image, newLen);
+                strncat (image, " ", newLen);
+                os_strncat (image, operatorImage(constExpression->kind), newLen);
+                strncat (image, " ", newLen);
+            }
+            os_strncat (image, operandImage, newLen);
+            os_free (operandImage);
         }
-	strncat (image, ")", newLen);
+        strncat (image, ")", newLen);
     }
     return image;
 }
 
 void
 idl_constExpressionAdd (
-    idl_constExpression constExpression, 
+    idl_constExpression constExpression,
     idl_operand operand)
 {
     constExpression->operands = c_iterAppend (constExpression->operands, operand);
 }
 
-c_long
+c_ulong
 idl_constExpressionSize (
     idl_constExpression constExpression)
 {
-    return (c_long)c_iterLength (constExpression->operands);
+    return c_iterLength (constExpression->operands);
 }
 
 idl_operand
 idl_constExpressionMember (
-    idl_constExpression constExpression, 
-    c_long index)
+    idl_constExpression constExpression,
+    c_ulong index)
 {
     return (idl_operand)c_iterObject (constExpression->operands, index);
 }
@@ -237,8 +246,8 @@ idl_constLiteralNew (
     idl_constLiteral constLit = os_malloc (C_SIZEOF(idl_constLiteral));
 
     if (constLit) {
-	constLit->valueImage = os_strdup(value_image);
-	idl_operandInit (idl_operand(constLit), idl_cLit);
+        constLit->valueImage = os_strdup(value_image);
+        idl_operandInit (idl_operand(constLit), idl_cLit);
     }
     return constLit;
 }
@@ -273,8 +282,8 @@ idl_constOperandNew (
     idl_constOperand constOper = os_malloc (C_SIZEOF(idl_constOperand));
 
     if (constOper) {
-	constOper->constSpec = constSpec;
-	idl_operandInit (idl_operand(constOper), idl_cOper);
+        constOper->constSpec = constSpec;
+        idl_operandInit (idl_operand(constOper), idl_cOper);
     }
     return constOper;
 }
@@ -329,10 +338,10 @@ idl_constSpecNew (
     idl_constSpec constSpec = os_malloc (C_SIZEOF(idl_constSpec));
 
     if (constSpec) {
-	memset (constSpec, 0, C_SIZEOF(idl_constSpec));
-	constSpec->constantName = os_strdup (name);
-	constSpec->constantType = type;
-	constSpec->scope = scope;
+        memset (constSpec, 0, C_SIZEOF(idl_constSpec));
+        constSpec->constantName = os_strdup (name);
+        constSpec->constantType = type;
+        constSpec->scope = scope;
     }
     return constSpec;
 }
@@ -348,7 +357,7 @@ idl_constSpecFree (
 
 void
 idl_constSpecOperandSet (
-    idl_constSpec constSpec, 
+    idl_constSpec constSpec,
     idl_operand operand)
 {
     constSpec->operand = operand;

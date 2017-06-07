@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -16,9 +24,11 @@
  * Implements multiple reader writer lock for POSIX
  */
 
+#include "os_report.h"
+#include "os_abstract.h"
 #include "os_rwlock.h"
+#include "os_errno.h"
 #include "os_init.h"
-#include <errno.h>
 #include <assert.h>
 
 /** \brief Initialize the rwlock taking the rwlock attributes into account
@@ -37,19 +47,23 @@
  */
 os_result
 os_rwlockInit (
-    os_rwlock *rwlock, 
+    os_rwlock *rwlock,
     const os_rwlockAttr *rwlockAttr)
 {
     pthread_rwlockattr_t rwattr;
     int result;
     os_result rv;
+    os_rwlockAttr defAttr;
 
     assert (rwlock != NULL);
-    assert (rwlockAttr != NULL);
     pthread_rwlockattr_init (&rwattr);
 
-    /* In single process mode only "private" variables are required */
-    if (rwlockAttr->scopeAttr == OS_SCOPE_SHARED && !os_serviceGetSingleProcess ()) {
+    if(!rwlockAttr) {
+        os_rwlockAttrInit(&defAttr);
+        rwlockAttr = &defAttr;
+    }
+
+    if (rwlockAttr->scopeAttr == OS_SCOPE_SHARED) {
         result = pthread_rwlockattr_setpshared (&rwattr, PTHREAD_PROCESS_SHARED);
     } else {
         result = pthread_rwlockattr_setpshared (&rwattr, PTHREAD_PROCESS_PRIVATE);
@@ -59,7 +73,7 @@ os_rwlockInit (
     }
     pthread_rwlockattr_destroy (&rwattr);
     if (result == 0) {
-	rv = os_resultSuccess;
+        rv = os_resultSuccess;
     } else {
         rv = os_resultFail;
     }
@@ -71,23 +85,22 @@ os_rwlockInit (
  * \b os_rwlockDestroy calls \b pthread_rwlock_destroy to destroy the
  * posix \b rwlock.
  */
-os_result
+void
 os_rwlockDestroy (
     os_rwlock *rwlock)
 {
     int result;
-    os_result rv;
 
     assert (rwlock != NULL);
     result = pthread_rwlock_destroy (rwlock);
-    if (result == 0) {
-	rv = os_resultSuccess;
-    } else if (result == EBUSY) {
-        rv = os_resultBusy;
-    } else {
-        rv = os_resultFail;
+    if (result != 0) {
+        OS_REPORT(OS_FATAL,"os_rwlockDestroy",0,
+                    "Operation failed: rwlock 0x%"PA_PRIxADDR", result = %d",
+                    (os_address)rwlock,
+                    result);
+        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        abort ();
     }
-    return rv;
 }
 
 /** \brief Acquire the rwlock while intending to read only
@@ -95,21 +108,22 @@ os_rwlockDestroy (
  * \b os_rwlockRead calls \b pthread_rwlock_rdlock to acquire
  * the posix \b rwlock for reading purposes.
  */
-os_result
+void
 os_rwlockRead (
     os_rwlock *rwlock)
 {
     int result;
-    os_result rv;
 
     assert (rwlock != NULL);
     result = pthread_rwlock_rdlock (rwlock);
-    if (result == 0) {
-	rv = os_resultSuccess;
-    } else {
-        rv = os_resultFail;
+    if (result != 0) {
+        OS_REPORT(OS_FATAL,"os_rwlockRead",0,
+                    "Operation failed: rwlock 0x%"PA_PRIxADDR", result = %d",
+                    (os_address)rwlock,
+                    result);
+        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        abort ();
     }
-    return rv;
 }
 
 /** \brief Acquire the rwlock while intending to write
@@ -117,21 +131,22 @@ os_rwlockRead (
  * \b os_rwlockWrite calls \b pthread_rwlock_wrlock to acquire
  * the posix \b rwlock for writing purposes.
  */
-os_result
+void
 os_rwlockWrite (
     os_rwlock *rwlock)
 {
     int result;
-    os_result rv;
 
     assert (rwlock != NULL);
     result = pthread_rwlock_wrlock (rwlock);
-    if (result == 0) {
-	rv = os_resultSuccess;
-    } else {
-        rv = os_resultFail;
+    if (result != 0) {
+        OS_REPORT(OS_FATAL,"os_rwlockWrite",0,
+                    "Operation failed: rwlock 0x%"PA_PRIxADDR", result = %d",
+                    (os_address)rwlock,
+                    result);
+        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        abort ();
     }
-    return rv;
 }
 
 /** \brief Try to acquire the rwlock while intending to read only
@@ -149,11 +164,17 @@ os_rwlockTryRead (
     assert (rwlock != NULL);
     result = pthread_rwlock_tryrdlock (rwlock);
     if (result == 0) {
-	rv = os_resultSuccess;
+        rv = os_resultSuccess;
     } else if (result == EBUSY) {
-	rv = os_resultBusy;
+        rv = os_resultBusy;
     } else {
+        OS_REPORT(OS_FATAL,"os_rwlockTryRead",0,
+                    "Operation failed: rwlock 0x%"PA_PRIxADDR", result = %d",
+                    (os_address)rwlock,
+                    result);
         rv = os_resultFail;
+        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        abort ();
     }
     return rv;
 }
@@ -173,11 +194,17 @@ os_rwlockTryWrite (
     assert (rwlock != NULL);
     result = pthread_rwlock_trywrlock (rwlock);
     if (result == 0) {
-	rv = os_resultSuccess;
+        rv = os_resultSuccess;
     } else if (result == EBUSY) {
-	rv = os_resultBusy;
+        rv = os_resultBusy;
     } else {
+        OS_REPORT(OS_FATAL,"os_rwlockTryWrite",0,
+                    "Operation failed: rwlock 0x%"PA_PRIxADDR", result = %d",
+                    (os_address)rwlock,
+                    result);
         rv = os_resultFail;
+        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        abort ();
     }
     return rv;
 }
@@ -187,19 +214,20 @@ os_rwlockTryWrite (
  * \b os_rwlockUnlock calls \b pthread_rwlock_unlock to release
  * the posix \b rwlock.
  */
-os_result
+void
 os_rwlockUnlock (
     os_rwlock *rwlock)
 {
     int result;
-    os_result rv;
 
     assert (rwlock != NULL);
     result = pthread_rwlock_unlock (rwlock);
-    if (result == 0) {
-	rv = os_resultSuccess;
-    } else {
-        rv = os_resultFail;
+    if (result != 0) {
+        OS_REPORT(OS_FATAL,"os_rwlockUnlock",0,
+                    "Operation failed: rwlock 0x%"PA_PRIxADDR", result = %d",
+                    (os_address)rwlock,
+                    result);
+        os_report_dumpStack(__FUNCTION__, __FILE__, __LINE__);
+        abort ();
     }
-    return rv;
 }

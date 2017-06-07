@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "mm_metakindNames.h"
@@ -14,15 +22,16 @@
 #include "c_base.h"
 #include "c__base.h"
 #include "ut_collection.h"
+#include "os_errno.h"
 #include "os_abstract.h"
 #include "os_stdlib.h"
 #include "c_module.h"
+#include "os_atomics.h"
 
 #include "mm_trc.h"
 
 #include <sys/types.h>
 #include <regex.h>
-#include <errno.h>
 #include <math.h>
 
 #define MM_HEADER_SIZE  16  /* Assumed header size */
@@ -30,8 +39,10 @@
 /* c_base definitions */
 #define CONFIDENCE (0x504F5448)
 
+#ifdef OBJECT_WALK
 #define c_oid(o)    ((c_object)(C_ADDRESS(o) + HEADERSIZE))
 #define c_header(o) ((c_header)(C_ADDRESS(o) - HEADERSIZE))
+#endif
 
 #define MIN_DB_SIZE     (150000)
 #define MAXREFCOUNT     (50000)
@@ -63,18 +74,20 @@ C_STRUCT(monitor_trc) {
     c_long objectCountLimit;
     char *filterExpression;
     regex_t expression;
-    ut_collection extTree;
+    ut_table extTree;
     os_address totalCount;
     long totalExtentCount;
     orderKind oKind;
     int orderCount;
     int index;
-    ut_collection orderedList;
+    ut_table orderedList;
     unsigned int cycleNr;
     c_bool delta;
 };
 
+#ifdef OBJECT_WALK
 static const c_address HEADERSIZE = ALIGNSIZE(C_SIZEOF(c_header));
+#endif
 
 C_CLASS(refLeaf);
 C_STRUCT(refLeaf) {
@@ -84,17 +97,6 @@ C_STRUCT(refLeaf) {
     unsigned int cycleNr;
 };
 
-static c_type nullType = (c_type)0xffffffff;
-
-static void
-freeNode (
-    c_object o,
-    c_voidp arg
-    )
-{
-    free (o);
-}
-
 static refLeaf
 monitor_typeExtent (
     c_type o,
@@ -103,20 +105,20 @@ monitor_typeExtent (
 {
     refLeaf ted = NULL;
 
-    ted = (refLeaf)ut_get (trace->extTree, o);
+    ted = (refLeaf)ut_get (ut_collection(trace->extTree), o);
     if (ted) {
         if (ted->cycleNr != trace->cycleNr) {
             ted->ecp = ted->ec;
-            ted->ec = o->objectCount;
+            ted->ec = pa_ld32 (&o->objectCount);
             ted->cycleNr = trace->cycleNr;
         }
     } else {
         ted = malloc (C_SIZEOF(refLeaf));
         ted->tr = o;
-        ted->ec = o->objectCount;
+        ted->ec = pa_ld32 (&o->objectCount);
         ted->ecp = 0;
         ted->cycleNr = trace->cycleNr;
-        ut_tableInsert(ut_table(trace->extTree), o, ted);
+        (void) ut_tableInsert(trace->extTree, o, ted);
     }
     return ted;
 }
@@ -128,6 +130,7 @@ compareLeafs (
     c_voidp args
     )
 {
+    OS_UNUSED_ARG(args);
     if (o1 < o2) {
         return OS_LT;
     } else if (o1 > o2) {
@@ -141,6 +144,11 @@ compareLeafs (
  * The second sorting algorithm is required to prevent different types sharing the
  * same sizes from overwriting eachother.
  */
+static long long absdelta_uns (unsigned a, unsigned b)
+{
+    return (long long) (a > b ? a - b : b - a);
+}
+
 static os_equality
 orderLeafs (
     c_object o1,
@@ -161,18 +169,20 @@ orderLeafs (
         switch (trace->oKind)
         {
             case ORDER_BY_COUNT:
-                n1 = (long long) abs(ted1->ec - ted1->ecp);
-                n2 = (long long) abs(ted2->ec - ted2->ecp);
+                n1 = absdelta_uns (ted1->ec, ted1->ecp);
+                n2 = absdelta_uns (ted2->ec, ted2->ecp);
                 break;
             case ORDER_BY_SIZE:
                 n1 = (long long) c_type(o1)->size;
                 n2 = (long long) c_type(o2)->size;
                 break;
             case ORDER_BY_TOTAL:
-                n1 = (long long) abs((ted1->ec - ted1->ecp) * (long long) c_type(o1)->size);
-                n2 = (long long) abs((ted2->ec - ted2->ecp) * (long long) c_type(o2)->size);
+                n1 = absdelta_uns (ted1->ec, ted1->ecp) * (long long) c_type(o1)->size;
+                n2 = absdelta_uns (ted2->ec, ted2->ecp) * (long long) c_type(o2)->size;
                 break;
             default:
+                n1 = 0;
+                n2 = 0;
                 assert(FALSE);
         }
     }
@@ -182,18 +192,20 @@ orderLeafs (
         switch (trace->oKind)
         {
             case ORDER_BY_COUNT:
-                n1 = (long long) c_type(o1)->objectCount;
-                n2 = (long long) c_type(o2)->objectCount;
+                n1 = (long long) pa_ld32 (&c_type(o1)->objectCount);
+                n2 = (long long) pa_ld32 (&c_type(o2)->objectCount);
                 break;
             case ORDER_BY_SIZE:
                 n1 = (long long) c_type(o1)->size;
                 n2 = (long long) c_type(o2)->size;
                 break;
             case ORDER_BY_TOTAL:
-                n1 = (long long) c_type(o1)->objectCount * (long long) c_type(o1)->size;
-                n2 = (long long) c_type(o2)->objectCount * (long long) c_type(o2)->size;
+                n1 = (long long) pa_ld32 (&c_type(o1)->objectCount) * (long long) c_type(o1)->size;
+                n2 = (long long) pa_ld32 (&c_type(o2)->objectCount) * (long long) c_type(o2)->size;
                 break;
             default:
+                n1 = 0;
+                n2 = 0;
                 assert(FALSE);
         }
     }
@@ -219,47 +231,37 @@ monitor_trcNew (
     const char*filterExpression,
     orderKind oKind,
     int orderCount,
-    c_bool delta
-    )
+    c_bool delta)
 {
-   char expressionError [1024];
-   monitor_trc o = malloc (C_SIZEOF(monitor_trc));
+    char expressionError [1024];
+    monitor_trc o = malloc (C_SIZEOF(monitor_trc));
 
-   if (o)
-   {
-      o->objectCountLimit = objectCountLimit;
-      if (filterExpression)
-      {
-         o->filterExpression = os_strdup(filterExpression);
-      }
-      else
-      {
-         o->filterExpression = NULL;
-      }
-      if (o->filterExpression)
-      {
-         if (regcomp (&o->expression, o->filterExpression, REG_EXTENDED) != 0)
-         {
-            regerror (errno,
-                      &o->expression,
-                      expressionError,
-                      sizeof(expressionError));
-            printf ("Filter expression error: %s\r\n", expressionError);
-            fflush(stdout);
-            regfree (&o->expression);
-            free (o->filterExpression);
+    if (o) {
+        o->objectCountLimit = objectCountLimit;
+        if (filterExpression) {
+            o->filterExpression = os_strdup(filterExpression);
+        } else {
             o->filterExpression = NULL;
-         }
-      }
-      o->extTree = ut_tableNew (compareLeafs, NULL);
-      o->delta = delta;
-      o->oKind = oKind;
-      o->orderCount = orderCount;
-      o->index = 0;
-      o->orderedList = NULL;
-      o->cycleNr = 0;
-   }
-   return o;
+        }
+        if (o->filterExpression) {
+            if (regcomp (&o->expression, o->filterExpression, REG_EXTENDED) != 0) {
+                regerror (os_getErrno(), &o->expression, expressionError, sizeof(expressionError));
+                printf ("Filter expression error: %s\r\n", expressionError);
+                fflush(stdout);
+                regfree (&o->expression);
+                os_free (o->filterExpression);
+                o->filterExpression = NULL;
+            }
+        }
+        o->extTree = ut_tableNew (compareLeafs, NULL, NULL, NULL, NULL, NULL);
+        o->delta = delta;
+        o->oKind = oKind;
+        o->orderCount = orderCount;
+        o->index = 0;
+        o->orderedList = NULL;
+        o->cycleNr = 0;
+    }
+    return o;
 }
 
 void
@@ -272,7 +274,8 @@ monitor_trcFree (
             os_free (o->filterExpression);
             regfree (&o->expression);
         }
-        ut_collectionFree (o->extTree, freeNode, NULL);
+        ut_tableFree(o->extTree);
+        o->extTree = NULL;
         free (o);
     }
 }
@@ -303,6 +306,7 @@ metaobject (
     monitor_trc trace = (monitor_trc)trace_voidp;
     regmatch_t match[1];
     refLeaf ted;
+    c_long result;
 
     if (c_baseObject(o)->kind < M_COUNT) {
         switch (c_baseObject(o)->kind) {
@@ -323,23 +327,24 @@ metaobject (
                 break;
             case M_COLLECTION:
                 switch (c_collectionType(o)->kind) {
-                    case C_UNDEFINED:
-                    case C_LIST:
-                    case C_ARRAY:
-                    case C_BAG:
-                    case C_SET:
-                    case C_MAP:
-                    case C_DICTIONARY:
-                    case C_SEQUENCE:
-                    case C_STRING:
-                    case C_WSTRING:
-                    case C_QUERY:
-                    case C_SCOPE:
-                    case C_COUNT:
+                    case OSPL_C_UNDEFINED:
+                    case OSPL_C_LIST:
+                    case OSPL_C_ARRAY:
+                    case OSPL_C_BAG:
+                    case OSPL_C_SET:
+                    case OSPL_C_MAP:
+                    case OSPL_C_DICTIONARY:
+                    case OSPL_C_SEQUENCE:
+                    case OSPL_C_STRING:
+                    case OSPL_C_WSTRING:
+                    case OSPL_C_QUERY:
+                    case OSPL_C_SCOPE:
+                    case OSPL_C_COUNT:
                         if (trace->delta) {
                             ted = monitor_typeExtent (c_type(o), trace);
                             if (ted) {
-                                if ((ted->ec - ted->ecp) >= trace->objectCountLimit) {
+                                result = ted->ec - ted->ecp;
+                                if (result >= trace->objectCountLimit) {
                                     if (trace->filterExpression) {
                                         if (regexec (&trace->expression, o->name, 1, match, 0) == REG_NOMATCH) {
                                             break;
@@ -363,23 +368,24 @@ metaobject (
                                 }
                             }
                         } else {
-                            if (c_type(o)->objectCount >= trace->objectCountLimit) {
+                            result = pa_ld32 (&c_type(o)->objectCount);
+                            if (result >= trace->objectCountLimit) {
                                 if (trace->filterExpression) {
                                     if (regexec (&trace->expression, o->name, 1, match, 0) == REG_NOMATCH) {
                                         break;
                                     }
                                 }
                                 printf ("%8d %8d %12lld %-15s %-15s ",
-                                        c_type(o)->objectCount,
+                                        pa_ld32 (&c_type(o)->objectCount),
                                         (int)c_type(o)->size,
-                                        (long long)((long long)c_type(o)->size * c_type(o)->objectCount),
+                                        (long long)((long long)c_type(o)->size * pa_ld32 (&c_type(o)->objectCount)),
                                         baseKind[c_baseObject(o)->kind],
                                         collectionKind[c_collectionType(o)->kind]);
                                 printScope (o->definedIn);
                                 printf ("::%s\r\n", o->name);
                                 fflush(stdout);
-                                trace->totalCount += c_type(o)->size * c_type(o)->objectCount;
-                                trace->totalExtentCount += c_type(o)->objectCount;
+                                trace->totalCount += c_type(o)->size * pa_ld32 (&c_type(o)->objectCount);
+                                trace->totalExtentCount += pa_ld32 (&c_type(o)->objectCount);
                                 trace->index++;
                             }
                         }
@@ -397,7 +403,8 @@ metaobject (
                 if (trace->delta) {
                     ted = monitor_typeExtent (c_type(o), trace);
                     if (ted) {
-                        if ((ted->ec - ted->ecp) >= trace->objectCountLimit) {
+                        result = ted->ec - ted->ecp;
+                        if (result >= trace->objectCountLimit) {
                             if (trace->filterExpression) {
                                 if (regexec (&trace->expression, o->name, 1, match, 0) == REG_NOMATCH) {
                                     break;
@@ -420,23 +427,24 @@ metaobject (
                         }
                     }
                 } else {
-                    if (c_type(o)->objectCount >= trace->objectCountLimit) {
+                    result = pa_ld32 (&c_type(o)->objectCount);
+                    if (result >= trace->objectCountLimit) {
                         if (trace->filterExpression) {
                             if (regexec (&trace->expression, o->name, 1, match, 0) == REG_NOMATCH) {
                                 break;
                             }
                         }
                         printf ("%8d %8d %12lld %-15s ",
-                                c_type(o)->objectCount,
+                                pa_ld32 (&c_type(o)->objectCount),
                                 (int)c_type(o)->size,
-                                (long long)((long long)c_type(o)->size * c_type(o)->objectCount),
+                                (long long)((long long)c_type(o)->size * pa_ld32 (&c_type(o)->objectCount)),
                                 baseKind[c_baseObject(o)->kind]);
                         printf ("                ");
                         printScope (o->definedIn);
                         printf ("::%s\r\n", o->name);
                         fflush(stdout);
-                        trace->totalCount += c_type(o)->size * c_type(o)->objectCount;
-                        trace->totalExtentCount += c_type(o)->objectCount;
+                        trace->totalCount += c_type(o)->size * pa_ld32 (&c_type(o)->objectCount);
+                        trace->totalExtentCount += pa_ld32 (&c_type(o)->objectCount);
                         trace->index++;
                     }
                 }
@@ -473,7 +481,7 @@ orderedWalk (
         case M_COUNT:
             break;
         default:
-            ut_tableInsert(ut_table(trace->orderedList), o, o);
+            (void) ut_tableInsert(trace->orderedList, o, o);
             break;
     }
 }
@@ -498,7 +506,7 @@ orderedAction(void *o, void *arg)
 
 void
 monitor_trcAction (
-    v_entity entity,
+    v_public entity,
     c_voidp args
     )
 {
@@ -548,10 +556,10 @@ monitor_trcAction (
     }
     else
     {
-        trace->orderedList = ut_tableNew (orderLeafs, trace);
+        trace->orderedList = ut_tableNew (orderLeafs, trace, NULL, NULL, NULL, NULL);
         c_metaWalk (c_metaObject (base), orderedWalk, trace);
-        ut_walk(trace->orderedList, orderedAction, trace);
-        ut_tableFree(ut_table (trace->orderedList), NULL, NULL, NULL, NULL);
+        ut_walk(ut_collection(trace->orderedList), orderedAction, trace);
+        ut_tableFree(trace->orderedList);
         trace->orderedList = NULL;
     }
     printf ("\r\n");
@@ -560,7 +568,7 @@ monitor_trcAction (
         trace->totalExtentCount,
         (PA_ADDRCAST) C_SIZEOF(c_header), MM_HEADER_SIZE);
     totalSize = trace->totalCount + trace->totalExtentCount * (C_SIZEOF(c_header)  + MM_HEADER_SIZE);
-    printf ("Total : %d  (%.2f KB)\r\n", totalSize, (double)totalSize/1024.0);
+    printf ("Total : "PA_ADDRFMT"  (%.2f KB)\r\n", totalSize, (double)totalSize/1024.0);
     fflush(stdout);
     trace->cycleNr++;
 }

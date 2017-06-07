@@ -9,9 +9,6 @@ CC  = $(WINCMD) cl
 CXX = $(WINCMD) cl
 CSC = $(WINCMD) Csc
 
-# Binary used for filtering: in the future must be empty
-FILTER =
-
 # Binary used for linking
 LD_SO            = $(WINCMD) link
 	# Binary used for linking executables
@@ -76,10 +73,11 @@ ifneq (,$(or $(findstring 15,$(VS_VER)),$(findstring 16,$(VS_VER))))
 # VS2008 & VS 2010
    VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
    VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include"
- 
+
    VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib/amd64"
    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib/x64"
 else
+ ifneq (,$(or $(findstring 17,$(VS_VER)),$(findstring 18,$(VS_VER))))
 # VS2012 onwards
    VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
    VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/shared" -I"$(WINDOWSSDKDIR)/Include/um"
@@ -90,16 +88,33 @@ else
    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/winv6.3/um/x64"
 
    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib/x64"
+else
+# VS2015
+   VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
+   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/10.0.10150.0/ucrt"
+   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/../8.1/Include/um"
+   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/../8.1/Include/shared"
+   
+   VS_LIB_FLAGS += -L"$(VS_HOME)/VC/lib/amd64"
+   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/10.0.10150.0/ucrt/x64"
+   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/../8.1/Lib/winv6.3/um/x64"
+   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/../8.1/lib/x64"
 endif
+endif 
 
-# Set compiler options for single threaded process
+# We have to target at least Windows XP SP2. This currently is hardcoded for all build-machines.
+# Preferably though, this should be part of the target/tied to the platform code.
+CFLAGS += -D_WIN32_WINNT=0x0502
+CPPFLAGS += -D_WIN32_WINNT=0x0502
+
+# Set compiler options
 #    The definition _CRT_SECURE_NO_DEPRECATE is to suppress warnings, remove when not using deprecated functions
-CFLAGS	= -TC $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	= -EHsc -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CFLAGS	+= -TC $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(MTCFLAGS)
+CXXFLAGS	+= -EHsc -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(MTCFLAGS)
 CSFLAGS	= -noconfig -nowarn:1701,1702 -errorreport:prompt -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # Set CPP flags
-CPPFLAGS	 = -nologo -DOSPL_ENV_$(SPECIAL) -DWIN32 -DWIN64 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE $(VS_INCLUDE)
+CPPFLAGS	 += -nologo -DOSPL_ENV_$(SPECIAL) -DWIN32 -DWIN64 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE $(VS_INCLUDE)
 
 # Set compiler options for multi threaded process
 # notify usage of posix threads
@@ -124,15 +139,11 @@ SHLDLIBS	 =
 
 # Set component specific libraries that are platform dependent
 LDLIBS_CXX =
-LDLIBS_NW = -lws2_32
+LDLIBS_NW = -lws2_32 -lIphlpapi
 LDLIBS_OS = -lkernel32 -lAdvapi32
 LDLIBS_CMS = -lws2_32
 LDLIBS_JAVA = -ljvm
 LDLIBS_ODBC= -lodbc32
-
-LDLIBS_ZLIB = -lzlib
-LDFLAGS_ZLIB = "-L$(ZLIB_HOME)"
-CINCS_ZLIB = "-I$(ZLIB_HOME)"
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .obj
@@ -156,3 +167,4 @@ CSEXEC_DBG_POSTFIX = .pdb
 CSMOD_DBG_POSTFIX = .pdb
 CSLIB_DBG_POSTFIX = .pdb
 CS_LIBPATH_SEP = ;
+

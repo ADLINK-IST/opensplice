@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2012 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef OSPL_DDS_SUB_STATUS_DATASTATE_HPP_
@@ -42,7 +50,7 @@ inline const SampleState SampleState::not_read()
 
 inline const SampleState SampleState::any()
 {
-    return SampleState(~0u);
+    return SampleState(0xffff);
 }
 
 inline const ViewState ViewState::new_view()
@@ -57,7 +65,7 @@ inline const ViewState ViewState::not_new_view()
 
 inline const ViewState ViewState::any()
 {
-    return ViewState(~0u);
+    return ViewState(0xffff);
 }
 
 inline const InstanceState InstanceState::alive()
@@ -82,7 +90,7 @@ inline const InstanceState InstanceState::not_alive_mask()
 
 inline const InstanceState InstanceState::any()
 {
-    return InstanceState(~0u);
+    return InstanceState(0xffff);
 }
 
 } /* namespace status */

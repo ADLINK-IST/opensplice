@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #if OS_SOCKET_USE_FCNTL == 1
 os_result
 os_sockSetNonBlocking(
@@ -22,7 +41,7 @@ os_sockSetNonBlocking(
             r = os_resultFail;
         }
     } else {
-        switch(errno){
+        switch(os_getErrno()){
             case EAGAIN:
                 r = os_resultBusy;
                 break;
@@ -53,7 +72,7 @@ os_sockSetNonBlocking(
 
     if ( ioctl(s, FIONBIO, &nonblockingvalue) == -1 )
     {
-        switch(errno)
+        switch(os_getErrno())
         {
             case EAGAIN:
                 r = os_resultBusy;

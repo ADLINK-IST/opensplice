@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef C_COLLECTION_H
@@ -99,11 +107,14 @@
 #include "c_iterator.h"
 #include "q_expr.h"
 #include "c_querybase.h"
+#include "c_list_tmpl.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
 #include "os_if.h"
+
+C__LIST_TYPES_TMPL(c__listImpl, c_object, struct c_mm_s *mm;, 32)
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -130,6 +141,23 @@ typedef c_collection c_set;
 typedef c_collection c_bag;
 typedef c_collection c_table;
 typedef c_collection c_query;
+
+struct c_collectionIter {
+    void * (*next) (struct c_collectionIter *it);
+    c_collection source;
+    union {
+        struct c__listImplIter_s list;
+    } u;
+};
+
+struct c_collectionIterD {
+    void * (*next) (struct c_collectionIterD *it);
+    void (*remove) (struct c_collectionIterD *it);
+    c_collection source;
+    union {
+        struct c__listImplIterD_s list;
+    } u;
+};
 
 /**
  * \brief This operation constructs a list collection object.
@@ -264,7 +292,7 @@ c_subType (
  * \return The object that is found to be an element of the collection.
  */
 OS_API c_object
-c_insert (
+ospl_c_insert (
     c_collection c,
     c_object o);
 
@@ -323,6 +351,10 @@ c_replace(
     c_replaceCondition condition,
     c_voidp arg);
 
+OS_API void
+c_clear(
+    c_collection c);
+
 /**
  * \brief This operation will check if the specified object is a member of the
  *        specified collection.
@@ -368,7 +400,7 @@ c_find (
  *
  * \return This operation will return 0 when an illegal collection is specified.
  */
-OS_API c_long
+OS_API c_ulong
 c_count (
     c_collection c);
 
@@ -449,9 +481,8 @@ c_tableReadCircular (
     c_voidp arg);
 
 /**
- * \brief
- *
- *
+ * \brief This operation will take one object at the time from the set and pass it
+ *        to the action operation until action returns FALSE or the set is empty.
  *
  * \param
  *
@@ -599,49 +630,7 @@ OS_API c_object
 c_replaceAt (
     c_list list,
     c_object o,
-    c_long index);
-
-/**
- * \brief This operation will insert an object after a specific object in a
- *        given list.
- *
- * This operation will insert the given object in the specified list after
- * the nth element that is identified by the index parameter.
- *
- * \param list The list that this method operates on.
- * \param o The object that must be inserted.
- * \param index The position in the list of the list element where after the
- *              object must be inserted.
- *
- * \return TRUE if the given object is successfully inserted.
- *         Otherwise FALSE if the specified index is out of range.
- */
-OS_API c_bool
-c_insertAfter (
-    c_list list,
-    c_object o,
-    c_long index);
-
-/**
- * \brief This operation will insert an object beforea specific object in a
- *        given list.
- *
- * This operation will insert the given object in the specified list before
- * the nth element that is identified by the index parameter.
- *
- * \param list The list that this method operates on.
- * \param o The object that must be inserted.
- * \param index The position in the list of the list element where before the
- *              object must be inserted.
- *
- * \return TRUE if the given object is successfully inserted.
- *         Otherwise FALSE if the specified index is out of range.
- */
-OS_API c_bool
-c_insertBefore (
-    c_list list,
-    c_object o,
-    c_long index);
+    c_ulong index);
 
 /**
  * \brief This operation will return a reference to the list element
@@ -659,7 +648,7 @@ c_insertBefore (
 OS_API c_object
 c_readAt (
     c_list list,
-    c_long index);
+    c_ulong index);
 
 /**
  * \brief This operation will remove and return the list element identified by
@@ -677,7 +666,7 @@ c_readAt (
 OS_API c_object
 c_removeAt (
     c_list list,
-    c_long index);
+    c_ulong index);
 
 /**
  * \brief This operation will return a reference to the last list element.
@@ -786,19 +775,19 @@ c_querySetPred(
  *
  * \return The number of keys returned in the array
  */
-OS_API c_long
+OS_API c_ulong
 c_tableGetKeyValues (
     c_table _this,
     c_object object,
     c_value *values);
 
-OS_API c_long
+OS_API c_ulong
 c_tableSetKeyValues (
     c_table _this,
     c_object object,
     c_value *values);
 
-OS_API c_long
+OS_API c_ulong
 c_tableNofKeys (
     c_table _this);
 
@@ -810,7 +799,7 @@ OS_API c_char *
 c_tableKeyExpr (
     c_table _this);
 
-OS_API c_long
+OS_API c_ulong
 c_tableCount (
     c_table _this);
 
@@ -840,7 +829,7 @@ c_tableWalk(
     c_action action,
     c_voidp actionArg);
 
-OS_API c_long
+OS_API c_ulong
 c_setCount(
     c_set _this);
 
@@ -862,7 +851,7 @@ c_setWalk(
     c_action action,
     c_voidp actionArg);
 
-OS_API c_long
+OS_API c_ulong
 c_bagCount(
     c_bag _this);
 
@@ -877,7 +866,7 @@ c_bagWalk(
     c_action action,
     c_voidp actionArg);
 
-OS_API c_long
+OS_API c_ulong
 c_listCount(
     c_list _this);
 
@@ -898,16 +887,55 @@ c_listTemplateRemove (
     c_action condition,
     c_voidp arg);
 
+OS_API c_object
+c_listTemplateFind (
+    c_list _this,
+    c_action condition,
+    c_voidp arg);
+
 OS_API c_array
 c_arrayNew(
     c_type subType,
-    c_long length);
+    c_ulong length);
+
+OS_API c_array
+c_arrayNew_s(
+    c_type subType,
+    c_ulong length);
 
 OS_API c_sequence
 c_sequenceNew(
     c_type subType,
-    c_long maxsize,
-    c_long length);
+    c_ulong maxsize,
+    c_ulong length);
+
+OS_API c_sequence
+c_sequenceNew_s(
+    c_type subType,
+    c_ulong maxsize,
+    c_ulong length);
+
+OS_API c_object
+c_collectionIterFirst(
+    c_collection _this,
+    struct c_collectionIter *it);
+
+OS_API c_object
+c_collectionIterNext(
+    struct c_collectionIter *it);
+
+OS_API c_object
+c_collectionIterDFirst(
+    c_collection _this,
+    struct c_collectionIterD *it);
+
+OS_API c_object
+c_collectionIterDNext(
+    struct c_collectionIterD *it);
+
+OS_API void
+c_collectionIterDRemove(
+    struct c_collectionIterD *it);
 
 #define c_sequence(c) ((c_sequence)(c))
 

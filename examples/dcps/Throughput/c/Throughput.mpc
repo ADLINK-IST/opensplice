@@ -1,0 +1,38 @@
+
+project (SA_C*Types) : _repetitive_sac_new_example_types {
+}
+
+project (SA_C*Impl) : _repetitive_sac_example_impl {
+}
+
+project (SA_C*Publisher) : c_or_cplusplus_example, sac_dcps_application {
+    after += SA_C*Impl
+    includes += .
+    Source_Files {
+        publisher.c
+    }
+
+    exename = publisher
+
+    libs += SA_C*Impl SA_C*Types
+
+    Documentation_Files {
+        ../.
+    }
+}
+
+project (SA_C*Subscriber) : c_or_cplusplus_example, sac_dcps_application {
+    after += SA_C*Impl
+    includes += .
+    Source_Files {
+        subscriber.c
+    }
+
+    exename = subscriber
+
+    libs += SA_C*Impl SA_C*Types
+
+    Documentation_Files {
+        ../.
+    }
+}

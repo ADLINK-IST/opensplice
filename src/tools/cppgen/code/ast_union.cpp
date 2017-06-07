@@ -1,69 +1,4 @@
 /*
- 
-COPYRIGHT
- 
-Copyright 1992, 1993, 1994 Sun Microsystems, Inc.  Printed in the United
-States of America.  All Rights Reserved.
- 
-This product is protected by copyright and distributed under the following
-license restricting its use.
- 
-The Interface Definition Language Compiler Front End (CFE) is made
-available for your use provided that you include this license and copyright
-notice on all media and documentation and the software program in which
-this product is incorporated in whole or part. You may copy and extend
-functionality (but may not remove functionality) of the Interface
-Definition Language CFE without charge, but you are not authorized to
-license or distribute it to anyone else except as part of a product or
-program developed by you or with the express written consent of Sun
-Microsystems, Inc. ("Sun").
- 
-The names of Sun Microsystems, Inc. and any of its subsidiaries or
-affiliates may not be used in advertising or publicity pertaining to
-distribution of Interface Definition Language CFE as permitted herein.
- 
-This license is effective until terminated by Sun for failure to comply
-with this license.  Upon termination, you shall destroy or return all code
-and documentation for the Interface Definition Language CFE.
- 
-INTERFACE DEFINITION LANGUAGE CFE IS PROVIDED AS IS WITH NO WARRANTIES OF
-ANY KIND INCLUDING THE WARRANTIES OF DESIGN, MERCHANTIBILITY AND FITNESS
-FOR A PARTICULAR PURPOSE, NONINFRINGEMENT, OR ARISING FROM A COURSE OF
-DEALING, USAGE OR TRADE PRACTICE.
- 
-INTERFACE DEFINITION LANGUAGE CFE IS PROVIDED WITH NO SUPPORT AND WITHOUT
-ANY OBLIGATION ON THE PART OF Sun OR ANY OF ITS SUBSIDIARIES OR AFFILIATES
-TO ASSIST IN ITS USE, CORRECTION, MODIFICATION OR ENHANCEMENT.
- 
-SUN OR ANY OF ITS SUBSIDIARIES OR AFFILIATES SHALL HAVE NO LIABILITY WITH
-RESPECT TO THE INFRINGEMENT OF COPYRIGHTS, TRADE SECRETS OR ANY PATENTS BY
-INTERFACE DEFINITION LANGUAGE CFE OR ANY PART THEREOF.
- 
-IN NO EVENT WILL SUN OR ANY OF ITS SUBSIDIARIES OR AFFILIATES BE LIABLE FOR
-ANY LOST REVENUE OR PROFITS OR OTHER SPECIAL, INDIRECT AND CONSEQUENTIAL
-DAMAGES, EVEN IF SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
- 
-Use, duplication, or disclosure by the government is subject to
-restrictions as set forth in subparagraph (c)(1)(ii) of the Rights in
-Technical Data and Computer Software clause at DFARS 252.227-7013 and FAR
-52.227-19.
- 
-Sun, Sun Microsystems and the Sun logo are trademarks or registered
-trademarks of Sun Microsystems, Inc.
- 
-SunSoft, Inc.  
-2550 Garcia Avenue 
-Mountain View, California  94043
- 
-NOTE:
- 
-SunOS, SunSoft, Sun, Solaris, Sun Microsystems or the Sun logo are
-trademarks or registered trademarks of Sun Microsystems, Inc.
- 
- */
-
-
-/*
  * ast_union.cc - Implementation of class AST_Union
  *
  * AST_Union nodes represent IDL union declarations.
@@ -76,101 +11,22 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * to compute coercions for labels based on the expected discriminator type.
  */
 
-#include "idl.h"
-#include "idl_extern.h"
+#include <idl.h>
+#include <idl_extern.h>
 
-/*
- * Constructor(s) and destructor
- */
-AST_Union::AST_Union()
+AST_Union::AST_Union ()
+   : pd_defined (false)
 {}
 
-AST_Union::AST_Union(AST_ConcreteType *dt, UTL_ScopedName *n, const UTL_Pragmas &p)
-      : AST_Decl(AST_Decl::NT_union, n, p),
-      UTL_Scope(AST_Decl::NT_union, n, p)
+AST_Union::AST_Union (UTL_ScopedName * n, const UTL_Pragmas & p)
+: 
+   AST_Decl (AST_Decl::NT_union, n, p),
+   UTL_Scope (AST_Decl::NT_union, n, p),
+   pd_disc_type (0),
+   pd_udisc_type (AST_Expression::EV_none),
+   pd_defined (false)
 {
-   AST_PredefinedType *pdt;
-
-   if (dt == NULL)
-   {
-      pd_disc_type = NULL;
-      pd_udisc_type = AST_Expression::EV_none;
-      return ;
-   }
-
-   /*
-    * If the discriminator type is a predefined type
-    * then install the equivalent coercion target type in
-    * the pd_udisc_type field.
-    */
-   if (dt->node_type() == AST_Decl::NT_pre_defined)
-   {
-      pdt = AST_PredefinedType::narrow_from_decl(dt);
-
-      if (pdt == NULL)
-      {
-         pd_disc_type = NULL;
-         pd_udisc_type = AST_Expression::EV_none;
-         return ;
-      }
-
-      pd_disc_type = dt;
-
-      switch (pdt->pt())
-      {
-
-            case AST_PredefinedType::PT_long:
-            pd_udisc_type = AST_Expression::EV_long;
-            break;
-
-            case AST_PredefinedType::PT_ulong:
-            pd_udisc_type = AST_Expression::EV_ulong;
-            break;
-
-            case AST_PredefinedType::PT_short:
-            pd_udisc_type = AST_Expression::EV_short;
-            break;
-
-            case AST_PredefinedType::PT_ushort:
-            pd_udisc_type = AST_Expression::EV_ushort;
-            break;
-
-            case AST_PredefinedType::PT_char:
-            pd_udisc_type = AST_Expression::EV_char;
-            break;
-
-            case AST_PredefinedType::PT_octet:
-            pd_udisc_type = AST_Expression::EV_octet;
-            break;
-
-            case AST_PredefinedType::PT_boolean:
-            pd_udisc_type = AST_Expression::EV_bool;
-            break;
-
-            default:
-            pd_udisc_type = AST_Expression::EV_none;
-            pd_disc_type = NULL;
-            break;
-      }
-   }
-   else if (dt->node_type() == AST_Decl::NT_enum)
-   {
-      pd_udisc_type = AST_Expression::EV_any;
-      pd_disc_type = dt;
-   }
-   else
-   {
-      pd_udisc_type = AST_Expression::EV_none;
-      pd_disc_type = NULL;
-   }
-
-   if (pd_disc_type == NULL)
-      idl_global->err()->error2(UTL_Error::EIDL_DISC_TYPE, this, dt);
 }
-
-/*
- * Private operations
- */
 
 /*
  * Look up the default branch in union
@@ -302,7 +158,7 @@ AST_Union::lookup_enum(AST_UnionBranch *b)
    /*
     * See if the symbol defines a constant in the discriminator enum
     */
-   d = e->lookup_by_name(v->n(), I_TRUE);
+   d = e->lookup_by_name(v->n(), true);
 
    if (d == NULL || d->defined_in() != e)
    {
@@ -399,7 +255,7 @@ AST_UnionBranch *AST_Union::fe_add_union_branch(AST_UnionBranch *t)
    if (t == NULL || t->label() == NULL)
       return NULL;
 
-   if (local() != I_TRUE)
+   if (local() != true)
    {
       set_local(t->field_type()->local());
    }
@@ -441,7 +297,7 @@ AST_UnionBranch *AST_Union::fe_add_union_branch(AST_UnionBranch *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -453,7 +309,7 @@ AST_Union *AST_Union::fe_add_union(AST_Union *t)
 {
    AST_Decl *d;
 
-   if (local() != I_TRUE)
+   if (local() != true)
    {
       set_local(t->local());
    }
@@ -491,7 +347,7 @@ AST_Union *AST_Union::fe_add_union(AST_Union *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -503,7 +359,7 @@ AST_Structure *AST_Union::fe_add_structure(AST_Structure *t)
 {
    AST_Decl *d;
 
-   if (local() != I_TRUE)
+   if (local() != true)
    {
       set_local(t->local());
    }
@@ -541,7 +397,7 @@ AST_Structure *AST_Union::fe_add_structure(AST_Structure *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -586,7 +442,7 @@ AST_Enum *AST_Union::fe_add_enum(AST_Enum *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -634,7 +490,7 @@ AST_EnumVal *AST_Union::fe_add_enum_val(AST_EnumVal *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -679,7 +535,7 @@ AST_Typedef *AST_Union::fe_add_typedef(AST_Typedef *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -703,14 +559,88 @@ AST_Union::dump(ostream &o)
  * Data accessors
  */
 
-AST_ConcreteType *
-AST_Union::disc_type()
+AST_ConcreteType * AST_Union::disc_type ()
 {
    return pd_disc_type;
 }
 
-AST_Expression::ExprType
-AST_Union::udisc_type()
+void AST_Union::update_type ()
+{
+   /* Virtual function used to update type info in derived XBE class */
+}
+
+void AST_Union::set_disc_type (AST_ConcreteType * dt)
+{
+   AST_PredefinedType *pdt;
+
+   pd_disc_type = dt;
+   if (dt->node_type () == AST_Decl::NT_pre_defined)
+   {
+      pdt = AST_PredefinedType::narrow_from_decl(dt);
+
+      if (pdt == NULL)
+      {
+         pd_disc_type = NULL;
+         pd_udisc_type = AST_Expression::EV_none;
+         return ;
+      }
+
+      pd_disc_type = dt;
+
+      switch (pdt->pt())
+      {
+         case AST_PredefinedType::PT_long:
+         pd_udisc_type = AST_Expression::EV_long;
+         break;
+
+         case AST_PredefinedType::PT_ulong:
+         pd_udisc_type = AST_Expression::EV_ulong;
+         break;
+
+         case AST_PredefinedType::PT_short:
+         pd_udisc_type = AST_Expression::EV_short;
+         break;
+
+         case AST_PredefinedType::PT_ushort:
+         pd_udisc_type = AST_Expression::EV_ushort;
+         break;
+
+         case AST_PredefinedType::PT_char:
+         pd_udisc_type = AST_Expression::EV_char;
+         break;
+
+         case AST_PredefinedType::PT_octet:
+         pd_udisc_type = AST_Expression::EV_octet;
+         break;
+
+         case AST_PredefinedType::PT_boolean:
+         pd_udisc_type = AST_Expression::EV_bool;
+         break;
+
+         default:
+         pd_udisc_type = AST_Expression::EV_none;
+         pd_disc_type = NULL;
+         break;
+      }
+   }
+   else if (dt->node_type() == AST_Decl::NT_enum)
+   {
+      pd_udisc_type = AST_Expression::EV_any;
+      pd_disc_type = dt;
+   }
+   else
+   {
+      pd_udisc_type = AST_Expression::EV_none;
+      pd_disc_type = NULL;
+   }
+
+   if (pd_disc_type == NULL)
+      idl_global->err()->error2(UTL_Error::EIDL_DISC_TYPE, this, dt);
+
+   update_type ();
+}
+
+AST_Expression::ExprType AST_Union::udisc_type ()
 {
    return pd_udisc_type;
 }

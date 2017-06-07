@@ -1,0 +1,4 @@
+. configs/common-inner
+. configs/`hostname`/dev_build_64bit
+unset TAO_ROOT
+export OVERRIDE_STRICT_CHECKS=no

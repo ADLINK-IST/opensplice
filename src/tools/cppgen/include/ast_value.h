@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef _AST_VALUE_AST_VALUE_HH
@@ -30,9 +38,9 @@ public:
    AST_Value();
    AST_Value
    (
-      idl_bool abstract,
-      idl_bool custom,
-      idl_bool truncatable,
+      bool abstract,
+      bool custom,
+      bool truncatable,
       UTL_ScopedName *n,
       AST_Value **ih,
       long nih,
@@ -44,12 +52,12 @@ public:
    {}
 
    // Data Accessors
-   idl_bool is_abstract ();
-   idl_bool is_custom ();
-   idl_bool is_truncatable ();
+   bool is_abstract ();
+   bool is_custom ();
+   bool is_truncatable ();
 
-   void set_custom (idl_bool v);
-   void set_truncatable (idl_bool v);
+   void set_custom (bool v);
+   void set_truncatable (bool v);
 
    AST_Value **value_inherits();
    
@@ -67,15 +75,15 @@ public:
 
 private:
    // Data
-   idl_bool pd_abstract;
+   bool pd_abstract;
 
    AST_Value **pd_value_inherits; // Inherited values
    // This is an array of pointers
    // to the inherited values
    long pd_n_value_inherits; // How many of them?
-   idl_bool pd_truncatable;
+   bool pd_truncatable;
 
-   idl_bool pd_custom;
+   bool pd_custom;
 
    // Scope Management Protocol
    friend int yyparse();

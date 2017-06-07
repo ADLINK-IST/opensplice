@@ -80,34 +80,33 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 class AST_Module : public virtual AST_Decl, public virtual UTL_Scope
 {
-
 public:
-   // Operations
 
-   // Constructor(s)
-   AST_Module();
-   AST_Module(UTL_ScopedName *n, const UTL_Pragmas &p);
-   virtual ~AST_Module()
-   {}
+   AST_Module ();
+   AST_Module (UTL_ScopedName *n, const UTL_Pragmas &p);
+   virtual ~AST_Module () {}
 
-   // Narrowing
-   DEF_NARROW_METHODS2(AST_Module, AST_Decl, UTL_Scope);
-   DEF_NARROW_FROM_DECL(AST_Module);
-   DEF_NARROW_FROM_SCOPE(AST_Module);
+   virtual void dump (ostream &o);
 
-   // AST Dumping
-   virtual void dump(ostream &o);
+   DEF_NARROW_METHODS2 (AST_Module, AST_Decl, UTL_Scope);
+   DEF_NARROW_FROM_DECL (AST_Module);
+   DEF_NARROW_FROM_SCOPE (AST_Module);
+
+protected:
+
+    virtual void virt_set_gen_any (void);
 
 private:
-   friend void fe_populate(AST_Module *m);
-   friend int yyparse();
+
+   friend void fe_populate (AST_Module *m);
+   friend int yyparse ();
 
    // Scope Management Protocol
 
    virtual AST_PredefinedType *fe_add_predefined_type(AST_PredefinedType *t);
    virtual AST_Module *fe_add_module(AST_Module *m);
    virtual AST_Interface *fe_add_interface(AST_Interface *i);
-   virtual AST_InterfaceFwd *fe_add_interface_fwd(AST_InterfaceFwd *i);
+   virtual AST_InterfaceFwd *fe_add_interface_fwd (AST_InterfaceFwd *i);
    virtual AST_Constant *fe_add_constant(AST_Constant *c);
    virtual AST_Exception *fe_add_exception(AST_Exception *e);
    virtual AST_Union *fe_add_union(AST_Union *u);
@@ -119,7 +118,6 @@ private:
    virtual AST_Value *fe_add_valuetype(AST_Value *v);
    virtual AST_BoxedValue *fe_add_boxed_valuetype(AST_BoxedValue *b);
    virtual AST_ValueFwd *fe_add_valuetype_fwd(AST_ValueFwd *v);
-
 };
 
-#endif           // _AST_MODULE_AST_MODULE_HH
+#endif

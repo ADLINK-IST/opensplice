@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**
@@ -88,10 +96,10 @@ FUNCTION(jniInitialise)(
     const c_char* result = "<result>OK</result>";
     char* ldPreload;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     if (strcmp(result, "<result>OK</result>") == 0){
-        thisCopy = this;
 
         ldPreload = os_getenv("LD_PRELOAD");
         if(ldPreload){
@@ -134,9 +142,9 @@ FUNCTION(jniDetach)(
 {
     const c_char* result;
     jstring jresult;
-    jobject thisCopy;
 
-    thisCopy = this;
+    OS_UNUSED_ARG(this);
+
     cmj_checkConnection(env);
     result = cmx_detach();
 
@@ -168,10 +176,10 @@ FUNCTION(jniEntityFree)(
 {
     const c_char* xmlEntity;
     c_char* entity;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     xmlEntity = (*env)->GetStringUTFChars(env, jentity, 0);
     entity = (c_char*)(os_malloc(strlen(xmlEntity) + 1));
     os_strcpy(entity, xmlEntity);
@@ -202,10 +210,10 @@ FUNCTION(jniEntityStatus)(
     const c_char* xmlEntity;
     c_char* xmlStatus;
     jstring jstatus;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jstatus = NULL;
     xmlEntity = (*env)->GetStringUTFChars(env, jentity, 0);
     xmlStatus = cmx_entityStatus(xmlEntity);
@@ -241,10 +249,10 @@ FUNCTION(jniEntityQoS)(
     const c_char* xmlEntity;
     c_char* xmlQoS;
     jstring jqos;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jqos = NULL;
     xmlEntity = (*env)->GetStringUTFChars(env, jentity, 0);
     xmlQoS = cmx_entityQoS(xmlEntity);
@@ -280,11 +288,11 @@ FUNCTION(jniEntityResetStatistics)(
     const c_char* xmlEntity;
     const c_char* fieldName;
     const c_char* result;
-    jobject thisCopy;
     jstring jresult;
 
+    OS_UNUSED_ARG(this);
+
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     fieldName = NULL;
     xmlEntity = (*env)->GetStringUTFChars(env, jentity, 0);
@@ -323,11 +331,11 @@ FUNCTION(jniEntityGetStatistics)(
 {
     const c_char* xmlEntity;
     c_char* statistics;
-    jobject thisCopy;
     jstring jresult;
 
+    OS_UNUSED_ARG(this);
+
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     xmlEntity = (*env)->GetStringUTFChars(env, jentity, 0);
 
@@ -361,11 +369,10 @@ FUNCTION(jniEntitiesGetStatistics)(
 {
     const c_char* xmlEntities;
     c_char* statistics;
-    jobject thisCopy;
     jstring jresult;
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     xmlEntities = (*env)->GetStringUTFChars(env, jentities, 0);
     statistics = cmx_entitiesStatistics(xmlEntities);
@@ -386,7 +393,7 @@ FUNCTION(jniEntitiesGetStatistics)(
  * - Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
  *
  * @param env The JNI environment.
- * @param this THe Java object that called this function.
+ * @param this The Java object that called this function.
  * @param jentity The entity, where to apply the QoS to.
  * @param jqos The new QoS for the supplied entity.
  * @return The result of the apply action.
@@ -402,11 +409,11 @@ FUNCTION(jniEntitySetQoS)(
     const c_char* xmlQos;
     const c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
     xmlQos = NULL;
-    thisCopy = this;
     jresult = NULL;
     xmlEntity = (*env)->GetStringUTFChars(env, jentity, 0);
 
@@ -448,10 +455,10 @@ FUNCTION(jniEntityEnable)(
     const c_char* xmlEntity;
     const c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
 
     xmlEntity = (*env)->GetStringUTFChars(env, jentity, 0);
@@ -490,10 +497,10 @@ FUNCTION(jniGetOwnedEntities)(
     const c_char* xmlFilter;
     c_char* xmlEntities;
     jstring jentities;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jentities = NULL;
     xmlEntity = (*env)->GetStringUTFChars(env, jentity, 0);
     xmlFilter = (*env)->GetStringUTFChars(env, jfilter, 0);
@@ -502,6 +509,60 @@ FUNCTION(jniGetOwnedEntities)(
 
     (*env)->ReleaseStringUTFChars(env, jentity, xmlEntity);
     (*env)->ReleaseStringUTFChars(env, jfilter, xmlFilter);
+
+    if(xmlEntities != NULL){
+       jentities = (*env)->NewStringUTF(env, xmlEntities);
+       os_free(xmlEntities);
+    }
+
+    return jentities;
+}
+
+/**
+ * @brief Resolves the hierarchial entity path from the specified entity
+ *           to the entity denoted by the childIndex and childSerial.
+ *
+ * - Class:     JniCommunicator
+ * - Method:    jniGetEntityTree
+ * - Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ *
+ * @param env The JNI environment.
+ * @param this The Java object that called this function.
+ * @param jentity The XML representation of the entity used as root node to
+ *             find the entity path to the entity with childIndex.
+ * @param jchildIndex The index of the child to find in the directly/indirectly
+ *                 owned entities of the supplied entity
+ * @param jchildSerial The serial of the child to find in the directly/indirectly
+ *                     owned entities of the supplied entity
+ * @return The xml serialized entities in order from top to bottom or empty
+ *         list if and entity denoted by the childIndex and childSerial has not been found
+ */
+JNIEXPORT jstring JNICALL
+FUNCTION(jniGetEntityTree)(
+    JNIEnv *env,
+    jobject this,
+    jstring jentity,
+    jstring jchildIndex,
+    jstring jchildSerial)
+{
+    const c_char* xmlEntity;
+    const c_char* xmlChildIndex;
+    const c_char* xmlChildSerial;
+    c_char* xmlEntities;
+    jstring jentities;
+    OS_UNUSED_ARG(this);
+
+    cmj_checkConnection(env);
+    jentities = NULL;
+    xmlEntity = (*env)->GetStringUTFChars(env, jentity, 0);
+    xmlChildIndex = (*env)->GetStringUTFChars(env, jchildIndex, 0);
+    xmlChildSerial = (*env)->GetStringUTFChars(env, jchildSerial, 0);
+
+    xmlEntities = cmx_entityGetEntityTree(xmlEntity, xmlChildIndex, xmlChildSerial);
+
+    (*env)->ReleaseStringUTFChars(env, jentity, xmlEntity);
+    (*env)->ReleaseStringUTFChars(env, jchildIndex, xmlChildIndex);
+    (*env)->ReleaseStringUTFChars(env, jchildSerial, xmlChildSerial);
 
     if(xmlEntities != NULL){
        jentities = (*env)->NewStringUTF(env, xmlEntities);
@@ -537,10 +598,10 @@ FUNCTION(jniGetDependantEntities)(
     const c_char* xmlFilter;
     c_char* xmlEntities;
     jstring jentities;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jentities = NULL;
     xmlEntity = (*env)->GetStringUTFChars(env, jentity, 0);
     xmlFilter = (*env)->GetStringUTFChars(env, jfilter, 0);
@@ -584,15 +645,19 @@ FUNCTION(jniCreateParticipant)(
     jstring jqos)
 {
     const c_char* uri;
+    const c_char* urip;
+    const c_char* domainId;
+    u_domainId_t did;
+    int pos;
     const c_char* name;
     const c_char* qos;
     c_char* xmlParticipant;
     jstring jparticipant;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
     qos = NULL;
-    thisCopy = this;
     jparticipant = NULL;
     uri = (*env)->GetStringUTFChars(env, juri, 0);
     name = (*env)->GetStringUTFChars(env, jname, 0);
@@ -600,7 +665,18 @@ FUNCTION(jniCreateParticipant)(
     if(jqos != NULL){
         qos = (*env)->GetStringUTFChars(env, jqos, 0);
     }
-    xmlParticipant = cmx_participantNew(uri, (c_long)jtimeout, name, qos);
+
+    /* The uri may contain a domainId or a URI. Since we don't want to duplicate
+     * URI-scheme checking here, we just try to parse it as an integer */
+    if (uri && sscanf (uri, "%d%n", &did, &pos) == 1 && uri[pos] == '\0') {
+        urip = NULL;
+        domainId = uri;
+    } else {
+        urip = uri;
+        domainId = ""; /* U_DOMAIN_ID_ANY */
+    }
+
+    xmlParticipant = cmx_participantNew(urip, domainId, (c_long)jtimeout, name, qos);
 
     if(jqos != NULL){
         (*env)->ReleaseStringUTFChars(env, jqos, qos);
@@ -639,10 +715,10 @@ FUNCTION(jniParticipantAllParticipants)(
     const c_char* xmlParticipant;
     c_char* xmlEntities;
     jstring jentities;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jentities = NULL;
     xmlParticipant = (*env)->GetStringUTFChars(env, jparticipant, 0);
     xmlEntities = cmx_participantAllParticipants(xmlParticipant);
@@ -679,10 +755,10 @@ FUNCTION(jniParticipantAllTopics)(
     const c_char* xmlParticipant;
     c_char* xmlEntities;
     jstring jentities;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jentities = NULL;
     xmlParticipant = (*env)->GetStringUTFChars(env, jparticipant, 0);
     xmlEntities = cmx_participantAllTopics(xmlParticipant);
@@ -719,10 +795,10 @@ FUNCTION(jniParticipantAllDomains)(
     const c_char* xmlParticipant;
     c_char* xmlEntities;
     jstring jentities;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jentities = NULL;
     xmlParticipant = (*env)->GetStringUTFChars(env, jparticipant, 0);
     xmlEntities = cmx_participantAllDomains(xmlParticipant);
@@ -760,9 +836,9 @@ FUNCTION(jniParticipantFindTopic)(
     const c_char* xmlName;
     c_char* xmlEntities;
     jstring jentities;
-    jobject thisCopy;
 
-    thisCopy = this;
+    OS_UNUSED_ARG(this);
+
     jentities = NULL;
     xmlName = NULL;
 
@@ -786,6 +862,46 @@ FUNCTION(jniParticipantFindTopic)(
 }
 
 /**
+ * @brief Obtains the domainId of the domain the participant is participating
+ *        in.
+ *
+ * - Class:     org_opensplice_cm_com_JniCommunicator
+ * - Method:    jniParticipantGetDomainId
+ * - Signature: (Ljava/lang/String;)Ljava/lang/String;
+ *
+ * @param env The JNI environment.
+ * @param this The Java object that called this function.
+ * @param jparticipant The participant that is used to determine the domain to
+ *                     look in.
+ * @return The domainId for the participant.
+ */
+JNIEXPORT jstring JNICALL
+FUNCTION(jniParticipantGetDomainId)(
+    JNIEnv *env,
+    jobject this,
+    jstring jparticipant)
+{
+    const c_char* xmlParticipant;
+    c_char* xmlResult;
+    jstring jresult;
+
+    OS_UNUSED_ARG(this);
+
+    cmj_checkConnection(env);
+    xmlParticipant = (*env)->GetStringUTFChars(env, jparticipant, 0);
+    xmlResult = cmx_participantDomainId(xmlParticipant);
+
+    (*env)->ReleaseStringUTFChars(env, jparticipant, xmlParticipant);
+
+    assert(xmlResult != NULL);
+    jresult = (*env)->NewStringUTF(env, xmlResult);
+    os_free(xmlResult);
+
+    return jresult;
+}
+
+
+/**
  * @brief Registers the supplied XML type in the domain the supplied
  *        participant participates in.
  *
@@ -806,14 +922,14 @@ FUNCTION(jniRegisterType)(
     jstring jparticipant,
     jstring jtype)
 {
-    jobject thisCopy;
     const c_char* xmlParticipant;
     const c_char* xmlType;
     const c_char* xmlResult;
     jstring jresult;
 
+    OS_UNUSED_ARG(this);
+
     cmj_checkConnection(env);
-    thisCopy = this;
     xmlParticipant = (*env)->GetStringUTFChars(env, jparticipant, 0);
     xmlType = (*env)->GetStringUTFChars(env, jtype, 0);
 
@@ -852,10 +968,10 @@ FUNCTION(jniGetTopicDataType)(
     const c_char* xmlTopic;
     c_char* xmlDatatype;
     jstring jdatatype;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jdatatype = NULL;
     xmlTopic = (*env)->GetStringUTFChars(env, jtopic, 0);
     xmlDatatype = cmx_topicDataType(xmlTopic);
@@ -890,10 +1006,10 @@ FUNCTION(jniReaderDataType)(
     const c_char* xmlReader;
     c_char* xmlDatatype;
     jstring jdatatype;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jdatatype = NULL;
     xmlReader = (*env)->GetStringUTFChars(env, jreader, 0);
     xmlDatatype = cmx_readerDataType(xmlReader);
@@ -929,10 +1045,10 @@ FUNCTION(jniReaderTake)(
     const c_char* xmlReader;
     c_char* xmlSample;
     jstring jsample;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jsample = NULL;
     xmlReader = (*env)->GetStringUTFChars(env, jreader, 0);
     xmlSample = cmx_readerTake(xmlReader);
@@ -972,10 +1088,10 @@ FUNCTION(jniReaderReadNext)(
     const c_char* xmlExtId;
     c_char* xmlSample;
     jstring jsample;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jsample = NULL;
 
     if(jreader != NULL){
@@ -1019,10 +1135,10 @@ FUNCTION(jniReaderRead)(
     const c_char* xmlReader;
     c_char* xmlSample;
     jstring jsample;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jsample = NULL;
     xmlReader = (*env)->GetStringUTFChars(env, jreader, 0);
     xmlSample = cmx_readerRead(xmlReader);
@@ -1058,10 +1174,10 @@ FUNCTION(jniGetServiceState)(
     const c_char* xmlService;
     c_char* xmlState;
     jstring jstate;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jstate = NULL;
     xmlService = (*env)->GetStringUTFChars(env, jservice, 0);
     xmlState = cmx_serviceGetState(xmlService);
@@ -1093,7 +1209,8 @@ FUNCTION(jniGetVersion)(
 {
     c_char* xmlVersion;
     jstring jversion;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
     jversion = NULL;
@@ -1128,10 +1245,10 @@ FUNCTION(jniReaderSnapshotNew)(
     c_char* result;
     const c_char* reader;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     reader = (*env)->GetStringUTFChars(env, jreader, 0);
     result = cmx_readerSnapshotNew(reader);
@@ -1166,10 +1283,10 @@ FUNCTION(jniWriterSnapshotNew)(
     c_char* result;
     const c_char* writer;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     writer = (*env)->GetStringUTFChars(env, jwriter, 0);
     result = cmx_writerSnapshotNew(writer);
@@ -1201,10 +1318,10 @@ FUNCTION(jniSnapshotFree)(
 {
     const c_char* snapshot;
     c_char* snapshotCopy;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     snapshot = (*env)->GetStringUTFChars(env, jsnapshot, 0);
     snapshotCopy = (c_char*)(os_malloc(strlen(snapshot) + 1));
     os_strcpy(snapshotCopy, snapshot);
@@ -1234,10 +1351,10 @@ FUNCTION(jniSnapshotRead)(
     const c_char* snapshot;
     c_char* result;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
 
     snapshot = (*env)->GetStringUTFChars(env, jsnapshot, 0);
@@ -1273,10 +1390,10 @@ FUNCTION(jniSnapshotTake)(
     const c_char* snapshot;
     c_char* result;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
 
     snapshot = (*env)->GetStringUTFChars(env, jsnapshot, 0);
@@ -1312,10 +1429,10 @@ FUNCTION(jniWriterDataType)(
     const c_char* xmlWriter;
     c_char* xmlDatatype;
     jstring jdatatype;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jdatatype = NULL;
     xmlWriter = (*env)->GetStringUTFChars(env, jwriter, 0);
     xmlDatatype = cmx_writerDataType(xmlWriter);
@@ -1353,10 +1470,10 @@ FUNCTION(jniWriterWrite)(
     const c_char* xmlData;
     const c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     xmlData = NULL;
     xmlResult = NULL;
@@ -1400,10 +1517,10 @@ FUNCTION(jniWriterDispose)(
     const c_char* xmlData;
     const c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     xmlData = NULL;
     xmlResult = NULL;
@@ -1447,10 +1564,10 @@ FUNCTION(jniWriterWriteDispose)(
     const c_char* xmlData;
     const c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     xmlData = NULL;
     xmlResult = NULL;
@@ -1494,10 +1611,10 @@ FUNCTION(jniWriterRegister)(
     const c_char* xmlData;
     const c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     xmlData = NULL;
     xmlResult = NULL;
@@ -1541,10 +1658,10 @@ FUNCTION(jniWriterUnregister)(
     const c_char* xmlData;
     const c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     xmlData = NULL;
     xmlResult = NULL;
@@ -1591,11 +1708,11 @@ FUNCTION(jniPublisherNew)(
     const c_char* xmlQos;
     c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
     xmlQos = NULL;
-    thisCopy = this;
     jresult = NULL;
 
     if(jqos != NULL){
@@ -1617,6 +1734,66 @@ FUNCTION(jniPublisherNew)(
         os_free(xmlResult);
     }
 
+    return jresult;
+}
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniBeginCoherentChanges
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+FUNCTION(jniBeginCoherentChanges)(
+    JNIEnv *env,
+    jobject this,
+    jstring jpublisher)
+{
+    const c_char* xmlPublisher;
+    const c_char* xmlResult;
+    jstring jresult;
+
+    OS_UNUSED_ARG(this);
+
+    cmj_checkConnection(env);
+    jresult = NULL;
+
+    xmlPublisher = (*env)->GetStringUTFChars(env, jpublisher, 0);
+    xmlResult = cmx_publisherCoherentBegin(xmlPublisher);
+    (*env)->ReleaseStringUTFChars(env, jpublisher, xmlPublisher);
+
+    if(xmlResult != NULL){
+        jresult = (*env)->NewStringUTF(env, xmlResult);
+    }
+    return jresult;
+}
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniEndCoherentChanges
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+FUNCTION(jniEndCoherentChanges)(
+    JNIEnv *env,
+    jobject this,
+    jstring jpublisher)
+{
+    const c_char* xmlPublisher;
+    const c_char* xmlResult;
+    jstring jresult;
+
+    OS_UNUSED_ARG(this);
+
+    cmj_checkConnection(env);
+    jresult = NULL;
+
+    xmlPublisher = (*env)->GetStringUTFChars(env, jpublisher, 0);
+    xmlResult = cmx_publisherCoherentEnd(xmlPublisher);
+    (*env)->ReleaseStringUTFChars(env, jpublisher, xmlPublisher);
+
+    if(xmlResult != NULL){
+        jresult = (*env)->NewStringUTF(env, xmlResult);
+    }
     return jresult;
 }
 
@@ -1647,11 +1824,11 @@ FUNCTION(jniSubscriberNew)(
     const c_char* xmlQos;
     c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
     xmlQos = NULL;
-    thisCopy = this;
     jresult = NULL;
 
     if(jqos != NULL){
@@ -1673,6 +1850,99 @@ FUNCTION(jniSubscriberNew)(
     }
     return jresult;
 }
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniBeginAccess
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+FUNCTION(jniBeginAccess)(
+    JNIEnv *env,
+    jobject this,
+    jstring jsubscriber)
+{
+    const c_char* xmlSubscriber;
+    const c_char* xmlResult;
+    jstring jresult;
+
+    OS_UNUSED_ARG(this);
+
+    cmj_checkConnection(env);
+    jresult = NULL;
+
+    xmlSubscriber = (*env)->GetStringUTFChars(env, jsubscriber, 0);
+    xmlResult = cmx_subscriberBeginAccess(xmlSubscriber);
+    (*env)->ReleaseStringUTFChars(env, jsubscriber, xmlSubscriber);
+
+    if(xmlResult != NULL){
+        jresult = (*env)->NewStringUTF(env, xmlResult);
+    }
+    return jresult;
+}
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniEndAccess
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+FUNCTION(jniEndAccess)(
+    JNIEnv *env,
+    jobject this,
+    jstring jsubscriber)
+{
+    const c_char* xmlSubscriber;
+    const c_char* xmlResult;
+    jstring jresult;
+
+    OS_UNUSED_ARG(this);
+
+    cmj_checkConnection(env);
+    jresult = NULL;
+
+    xmlSubscriber = (*env)->GetStringUTFChars(env, jsubscriber, 0);
+    xmlResult = cmx_subscriberEndAccess(xmlSubscriber);
+    (*env)->ReleaseStringUTFChars(env, jsubscriber, xmlSubscriber);
+
+    if(xmlResult != NULL){
+        jresult = (*env)->NewStringUTF(env, xmlResult);
+    }
+    return jresult;
+}
+
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniGetDataReaders
+ * Signature: (Ljava/lang/String;I)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+FUNCTION(jniGetDataReaders)(
+    JNIEnv *env,
+    jobject this,
+    jstring jsubscriber,
+    jint mask)
+{
+    const c_char* xmlSubscriber;
+    const c_char* xmlResult;
+    jstring jresult;
+
+    OS_UNUSED_ARG(this);
+
+    cmj_checkConnection(env);
+    jresult = NULL;
+
+    xmlSubscriber = (*env)->GetStringUTFChars(env, jsubscriber, 0);
+    xmlResult = cmx_subscriberGetDataReaders(xmlSubscriber, (c_ulong)mask);
+    (*env)->ReleaseStringUTFChars(env, jsubscriber, xmlSubscriber);
+
+    if(xmlResult != NULL){
+        jresult = (*env)->NewStringUTF(env, xmlResult);
+    }
+    return jresult;
+}
+
 
 /**
  * @brief Creates a new domain.
@@ -1698,10 +1968,10 @@ FUNCTION(jniDomainNew)(
     const c_char* xmlName;
     c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     xmlParticipant = (*env)->GetStringUTFChars(env, jparticipant, 0);
     xmlName = (*env)->GetStringUTFChars(env, jname, 0);
@@ -1750,11 +2020,11 @@ FUNCTION(jniTopicNew)(
     const c_char* xmlQos;
     c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
     xmlQos = NULL;
-    thisCopy = this;
     jresult = NULL;
     xmlParticipant = (*env)->GetStringUTFChars(env, jparticipant, 0);
     xmlName = (*env)->GetStringUTFChars(env, jname, 0);
@@ -1816,10 +2086,10 @@ FUNCTION(jniViewNew)(
     const c_char* xmlQos;
     c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     xmlParticipant = (*env)->GetStringUTFChars(env, jparticipant, 0);
     xmlName = (*env)->GetStringUTFChars(env, jname, 0);
@@ -1874,10 +2144,10 @@ FUNCTION(jniQueryNew)(
     const c_char* xmlExpression;
     c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     xmlReader = (*env)->GetStringUTFChars(env, jreader, 0);
     xmlName = (*env)->GetStringUTFChars(env, jname, 0);
@@ -1892,51 +2162,6 @@ FUNCTION(jniQueryNew)(
     if(xmlResult != NULL){
         jresult = (*env)->NewStringUTF(env, xmlResult);
         os_free(xmlResult);
-    }
-
-    return jresult;
-}
-
-/**
- * @brief Makes the publisher publish in the domains that match the supplied
- * expression.
- *
- * - Class:     org_opensplice_api_cm_com_JniCommunicator
- * - Method:    jniPublisherPublish
- * - Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
- *
- * @param env The JNI environment.
- * @param this The Java object that called this function.
- * @param jpublisher The publisher.
- * @param jexpression The domain expression.
- * @return Whether or not the action succeeded.
- */
-JNIEXPORT jstring JNICALL
-FUNCTION(jniPublisherPublish)(
-    JNIEnv *env,
-    jobject this,
-    jstring jpublisher,
-    jstring jexpression)
-{
-    const c_char* xmlPublisher;
-    const c_char* xmlExpression;
-    const c_char* xmlResult;
-    jstring jresult;
-    jobject thisCopy;
-
-    cmj_checkConnection(env);
-    thisCopy = this;
-    jresult = NULL;
-    xmlPublisher = (*env)->GetStringUTFChars(env, jpublisher, 0);
-    xmlExpression = (*env)->GetStringUTFChars(env, jexpression, 0);
-
-    xmlResult = cmx_publisherPublish(xmlPublisher, xmlExpression);
-
-    (*env)->ReleaseStringUTFChars(env, jexpression, xmlExpression);
-    (*env)->ReleaseStringUTFChars(env, jpublisher, xmlPublisher);
-
-    if(xmlResult != NULL){
-        jresult = (*env)->NewStringUTF(env, xmlResult);
     }
 
     return jresult;
@@ -1972,11 +2197,11 @@ FUNCTION(jniCreateWriter)(
     const c_char* xmlQos;
     c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
     xmlQos = NULL;
-    thisCopy = this;
     jresult = NULL;
     xmlPublisher = (*env)->GetStringUTFChars(env, jpublisher, 0);
     xmlName = (*env)->GetStringUTFChars(env, jname, 0);
@@ -1997,51 +2222,6 @@ FUNCTION(jniCreateWriter)(
     if(xmlResult != NULL){
         jresult = (*env)->NewStringUTF(env, xmlResult);
         os_free(xmlResult);
-    }
-
-    return jresult;
-}
-
-/**
- * @brief Makes the subscriber subscribe to the domains that match the supplied
- * expression.
- *
- * - Class:     org_opensplice_api_cm_com_JniCommunicator
- * - Method:    jniSubscriberSubscribe
- * - Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
- *
- * @param env The JNI environment.
- * @param this The Java object that called this function.
- * @param jsubscriber The subscriber.
- * @param jexpression The domain expression.
- * @return Whether or not the action succeeded.
- */
-JNIEXPORT jstring JNICALL
-FUNCTION(jniSubscriberSubscribe)(
-    JNIEnv *env,
-    jobject this,
-    jstring jsubscriber,
-    jstring jexpression)
-{
-    const c_char* xmlSubscriber;
-    const c_char* xmlExpression;
-    const c_char* xmlResult;
-    jstring jresult;
-    jobject thisCopy;
-
-    cmj_checkConnection(env);
-    thisCopy = this;
-    jresult = NULL;
-    xmlSubscriber = (*env)->GetStringUTFChars(env, jsubscriber, 0);
-    xmlExpression = (*env)->GetStringUTFChars(env, jexpression, 0);
-
-    xmlResult = cmx_subscriberSubscribe(xmlSubscriber, xmlExpression);
-
-    (*env)->ReleaseStringUTFChars(env, jexpression, xmlExpression);
-    (*env)->ReleaseStringUTFChars(env, jsubscriber, xmlSubscriber);
-
-    if(xmlResult != NULL){
-        jresult = (*env)->NewStringUTF(env, xmlResult);
     }
 
     return jresult;
@@ -2077,11 +2257,11 @@ FUNCTION(jniCreateDataReader)(
     const c_char* xmlQos;
     c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
     xmlQos = NULL;
-    thisCopy = this;
     jresult = NULL;
     xmlSubscriber = (*env)->GetStringUTFChars(env, jsubscriber, 0);
     xmlName = (*env)->GetStringUTFChars(env, jname, 0);
@@ -2128,10 +2308,10 @@ FUNCTION(jniWaitsetNew)(
     const c_char* xmlParticipant;
     c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
     xmlParticipant = (*env)->GetStringUTFChars(env, jparticipant, 0);
     xmlResult = cmx_waitsetNew(xmlParticipant);
@@ -2168,10 +2348,10 @@ FUNCTION(jniWaitsetAttach)(
     const c_char* xmlEntity;
     const c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
 
     xmlWaitset = (*env)->GetStringUTFChars(env, jwaitset, 0);
@@ -2212,10 +2392,10 @@ FUNCTION(jniWaitsetDetach)(
     const c_char* xmlEntity;
     const c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
 
     xmlWaitset = (*env)->GetStringUTFChars(env, jwaitset, 0);
@@ -2253,10 +2433,10 @@ FUNCTION(jniWaitsetWait)(
     const c_char* xmlWaitset;
     c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
 
     xmlWaitset = (*env)->GetStringUTFChars(env, jwaitset, 0);
@@ -2293,15 +2473,14 @@ FUNCTION(jniWaitsetTimedWait)(
     const c_char* xmlWaitset;
     c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
-    c_time timeout;
+    os_duration timeout;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
 
-    timeout.seconds = (c_long)jsec;
-    timeout.nanoseconds = (c_ulong)jnsec;
+    timeout = OS_DURATION_INIT(jsec, jnsec);
 
     xmlWaitset = (*env)->GetStringUTFChars(env, jwaitset, 0);
     xmlResult = cmx_waitsetTimedWait(xmlWaitset, timeout);
@@ -2314,6 +2493,50 @@ FUNCTION(jniWaitsetTimedWait)(
     }
     return jresult;
 }
+
+/**
+ * @brief Waits maxim jwait (ns) time until the supplied waitset is triggered.
+ *
+ * - Class:     org_opensplice_api_cm_com_JniCommunicator
+ * - Method:    jniWaitsetTimedWaitTime64
+ * - Signature: (Ljava/lang/String;II)Ljava/lang/String;
+ *
+ * @param env The JNI environment.
+ * @param this The Java object that called this function.
+ * @param jwaitset The waitset where to wait for.
+ * @return A list of entities that had an event.
+ */
+JNIEXPORT jstring JNICALL
+FUNCTION(jniWaitsetTimedWaitTime64)(
+    JNIEnv *env,
+    jobject this,
+    jstring jwaitset,
+    jlong jwaittime)
+{
+    const c_char* xmlWaitset;
+    c_char* xmlResult;
+    jstring jresult;
+    os_duration timeout;
+
+    OS_UNUSED_ARG(this);
+
+    cmj_checkConnection(env);
+    jresult = NULL;
+
+    timeout = jwaittime;
+
+    xmlWaitset = (*env)->GetStringUTFChars(env, jwaitset, 0);
+    xmlResult = cmx_waitsetTimedWait(xmlWaitset, timeout);
+
+    (*env)->ReleaseStringUTFChars(env, jwaitset, xmlWaitset);
+
+    if(xmlResult != NULL){
+        jresult = (*env)->NewStringUTF(env, xmlResult);
+        os_free(xmlResult);
+    }
+    return jresult;
+}
+
 
 /**
  * @brief Resolves the event mask of the supplied waitset.
@@ -2335,10 +2558,10 @@ FUNCTION(jniWaitsetGetEventMask)(
 {
     const c_char* xmlWaitset;
     jint jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = 0;
 
     xmlWaitset = (*env)->GetStringUTFChars(env, jwaitset, 0);
@@ -2371,10 +2594,10 @@ FUNCTION(jniWaitsetSetEventMask)(
     const c_char* xmlWaitset;
     const c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
 
     xmlWaitset = (*env)->GetStringUTFChars(env, jwaitset, 0);
@@ -2431,15 +2654,14 @@ FUNCTION(jniDataReaderWaitForHistoricalData)(
     const c_char* xmlDataReader;
     const c_char* xmlResult;
     jstring jresult;
-    jobject thisCopy;
-    c_time timeout;
+    os_duration timeout;
+
+    OS_UNUSED_ARG(this);
 
     cmj_checkConnection(env);
-    thisCopy = this;
     jresult = NULL;
 
-    timeout.seconds = (c_long)jsec;
-    timeout.nanoseconds = (c_ulong)jnsec;
+    timeout = OS_DURATION_INIT(jsec, jnsec);
 
     xmlDataReader = (*env)->GetStringUTFChars(env, jdataReader, 0);
     xmlResult = cmx_dataReaderWaitForHistoricalData(xmlDataReader, timeout);
@@ -2452,6 +2674,35 @@ FUNCTION(jniDataReaderWaitForHistoricalData)(
     return jresult;
 }
 
+JNIEXPORT jstring JNICALL
+FUNCTION(jniDataReaderWaitForHistoricalDataTime64)(
+    JNIEnv *env,
+    jobject this,
+    jstring jdataReader,
+    jlong jtimeout)
+{
+    const c_char* xmlDataReader;
+    const c_char* xmlResult;
+    jstring jresult;
+    os_duration timeout;
+
+    OS_UNUSED_ARG(this);
+
+    cmj_checkConnection(env);
+    jresult = NULL;
+
+    timeout = jtimeout;
+
+    xmlDataReader = (*env)->GetStringUTFChars(env, jdataReader, 0);
+    xmlResult = cmx_dataReaderWaitForHistoricalData(xmlDataReader, timeout);
+
+    (*env)->ReleaseStringUTFChars(env, jdataReader, xmlDataReader);
+
+    if(xmlResult != NULL){
+        jresult = (*env)->NewStringUTF(env, xmlResult);
+    }
+    return jresult;
+}
 
 JNIEXPORT jstring JNICALL
 FUNCTION(jniStorageOpen) (
@@ -2461,10 +2712,10 @@ FUNCTION(jniStorageOpen) (
 {
     const c_char* attrs;
     c_char* xmlStorage;
-    jobject unusedThis;
     jstring jresult;
 
-    unusedThis = this;
+    OS_UNUSED_ARG(this);
+
     jresult = NULL;
 
     cmj_checkConnection(env);
@@ -2490,10 +2741,10 @@ FUNCTION(jniStorageClose) (
 {
     const c_char* xmlStorage;
     c_char* xmlResult;
-    jobject unusedThis;
     jstring jresult;
 
-    unusedThis = this;
+    OS_UNUSED_ARG(this);
+
     jresult = NULL;
 
     cmj_checkConnection(env);
@@ -2522,10 +2773,10 @@ FUNCTION(jniStorageAppend) (
     const c_char* xmlMetadata;
     const c_char* xmlData;
     c_char* xmlResult;
-    jobject unusedThis;
     jstring jresult;
 
-    unusedThis = this;
+    OS_UNUSED_ARG(this);
+
     jresult = NULL;
 
     cmj_checkConnection(env);
@@ -2554,10 +2805,10 @@ FUNCTION(jniStorageRead) (
 {
     const c_char* xmlStorage;
     c_char* xmlResult;
-    jobject unusedThis;
     jstring jresult;
 
-    unusedThis = this;
+    OS_UNUSED_ARG(this);
+
     jresult = NULL;
 
     cmj_checkConnection(env);
@@ -2584,10 +2835,10 @@ FUNCTION(jniStorageGetType) (
     const c_char* xmlStorage;
     const c_char* xmlTypeName;
     c_char* xmlResult;
-    jobject unusedThis;
     jstring jresult;
 
-    unusedThis = this;
+    OS_UNUSED_ARG(this);
+
     jresult = NULL;
 
     cmj_checkConnection(env);

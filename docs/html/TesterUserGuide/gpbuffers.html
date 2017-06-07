@@ -1,0 +1,238 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>8. Google Protocol Buffers &mdash; Test Tool User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Test Tool User Guide" href="index.html" />
+    <link rel="next" title="9. Python Scripting Engine" href="pythonscripting.html" />
+    <link rel="prev" title="7. Message Interfaces" href="messageinterfaces.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="pythonscripting.html" title="9. Python Scripting Engine"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="messageinterfaces.html" title="7. Message Interfaces"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="google-protocol-buffers">
+<span id="id1"></span><h1>8. Google Protocol Buffers<a class="headerlink" href="#google-protocol-buffers" title="Permalink to this headline">¶</a></h1>
+<p><em>This section describes Tester features for Google Protocol Buffers.</em></p>
+<div class="section" id="about-google-protocol-buffers-in-tester">
+<h2>8.1. About Google Protocol Buffers in Tester<a class="headerlink" href="#about-google-protocol-buffers-in-tester" title="Permalink to this headline">¶</a></h2>
+<p>In versions of Vortex OpenSplice that support Google Protocol Buffers, Tester is able to
+read from protocol buffer topics and display its samples as regular field name and
+value pairs, just as if it were from a regular IDL-defined topic.</p>
+<p>The Tester feature for Google Protocol Buffer topic reading is enabled only on
+Vortex OpenSplice middleware installs where Google Protocol Buffer support is included.
+For installations where it is not included, the feature is disabled in Tester.</p>
+</div>
+<div class="section" id="viewing-type-evolutions">
+<h2>8.2. Viewing type evolutions<a class="headerlink" href="#viewing-type-evolutions" title="Permalink to this headline">¶</a></h2>
+<p>The main feature of using Google Protocol Buffers as the type definition for a topic
+is the ability to change, or ‘evolve’, a topic’s type. Tester can become aware of
+changes to a protocol buffer topic’s type, and can display the topic type definition
+for each type evolution that is registered.</p>
+<p>To view the type evolutions for a protocol buffer topic, right-click the topic in the
+<em>Topics</em> tab, and select <em>View Topic Type</em> from the pop-up menu.</p>
+<p class="centered" id="view-topic-type-from-the-topics-list">
+<strong><strong>View Topic Type from the Topics list</strong></strong></p><a class="reference internal image-reference" href="_images/088_viewtopictype.png"><img alt="View Topic Type from the Topics list" class="align-center" src="_images/088_viewtopictype.png" style="width: 90mm;" /></a>
+<div class="section" id="view-topic-type-window">
+<h3>8.2.1. View Topic Type Window<a class="headerlink" href="#view-topic-type-window" title="Permalink to this headline">¶</a></h3>
+<p>Upon selection of the menu item, the <em>View Topic Type</em> window will appear for the
+selected topic. By default, it shows the type name for the topic and the DDS type
+definition. If the topic is a protocol buffer topic, it will display additional
+information:</p>
+<ul class="simple">
+<li>The <em>Evolutions</em> for the type are displayed in a drop-down combo box.
+It lists the known evolutions for the type according to the time it was
+registered in the DDS system. The most recent evolution is at the top
+of the list and is selected by default.</li>
+<li>The <em>Type Hash</em> is an non-editable text field that displays the 128-bit hash that
+uniquely identifies the selected type evolution for the topic type. The field is
+highlightable for easy copy/pasting.</li>
+<li>The <em>Proto Typedef</em> tab is added when viewing protocol buffer topic types. It
+displays a description for all fields and nested types defined in the protocol
+buffer message for the currently-selected evolution, in a text format emulating
+the original <tt class="docutils literal"><span class="pre">.proto</span></tt> file format. Message type fields found in the typedef that
+are not defined as nested messages inside the main DDS message type are defined
+under a separate section, <tt class="docutils literal"><span class="pre">External</span> <span class="pre">Definitions</span></tt>. These messages have their fully-
+qualified type name to indicate where they were defined. Please note that this
+typedef reconstruction is only meant to give the user an idea as to what type of
+data is found in the topic type. It is not guaranteed to be a 100% reconstruction
+of the original <tt class="docutils literal"><span class="pre">.proto</span></tt> file as it was written, or to be compilable by the <tt class="docutils literal"><span class="pre">protoc</span></tt>
+compiler.</li>
+<li>The <em>DDS Typedef</em> tab contains the same kind of type decription as it would for a
+normal topic, but for protocol buffer topics, it describes the field names and
+field types for the currently-selected type evolution as it is understood by
+Tester for sample editing.</li>
+</ul>
+<p class="centered" id="view-topic-type-window-for-a-protocol-buffer-topic">
+<strong><strong>View Topic Type window for a protocol buffer topic</strong></strong></p><a class="reference internal image-reference" href="_images/089_buffertopic.png"><img alt="View Topic Type window for a protocol buffer topic" class="align-center" src="_images/089_buffertopic.png" style="width: 90mm;" /></a>
+<p class="centered" id="proto-typedef-with-external-definitions">
+<strong><strong>Proto Typedef with external definitions</strong></strong></p><a class="reference internal image-reference" href="_images/090_prototypedef.png"><img alt="Proto Typedef with external definitions" class="align-center" src="_images/090_prototypedef.png" style="width: 90mm;" /></a>
+</div>
+</div>
+<div class="section" id="reading-protocol-buffer-topics">
+<h2>8.3. Reading protocol buffer topics<a class="headerlink" href="#reading-protocol-buffer-topics" title="Permalink to this headline">¶</a></h2>
+<p>Tester reads protocol buffer data by reading in the byte sequence data contained in
+the user data, and then replacing all fields with regular field name and value pairs
+just as if it were data from a regular topic. The process for creating readers for
+protocol buffer topics is almost identical to the process described in Section 3.3.3,
+To Add a Reader from the Topic list, on page 24.</p>
+<ul class="simple">
+<li>When creating a reader for a protocol buffer topic <em>via</em> the <em>Create Default Reader</em>
+right-click menu option on the <em>Topic</em> list, all default settings will be used as
+before, but with the addition that all incoming samples will be decoded as the most
+recently-registered type evolution.</li>
+<li>When creating a reader for a protocol buffer topic <em>via</em> the <em>Create Reader</em>
+right-click menu option on the <em>Topic</em> list, or <em>via</em> the <em>File &gt; Add Reader</em>
+main menu option, the <em>Add Reader</em> dialog will be presented, as normal. However,
+it is presented with an extra field to choose the desired type evolution to use
+to view user data.</li>
+</ul>
+<p class="centered" id="add-reader-dialog-with-type-evolution-chooser">
+<strong><strong>Add Reader dialog with type evolution chooser</strong></strong></p><a class="reference internal image-reference" href="_images/091_typeevolution.png"><img alt="Add Reader dialog with type evolution chooser" class="align-center" src="_images/091_typeevolution.png" style="width: 70mm;" /></a>
+</div>
+<div class="section" id="reading-protocol-buffer-topics-via-script">
+<h2>8.4. Reading protocol buffer topics <em>via</em> script<a class="headerlink" href="#reading-protocol-buffer-topics-via-script" title="Permalink to this headline">¶</a></h2>
+<p>It is possible to declare which type evolution to read protocol buffer topics as,
+<em>via</em> the <tt class="docutils literal"><span class="pre">Reader</span></tt> script command (defined in Section 5.2.15, Reader, on page 83).
+The <tt class="docutils literal"><span class="pre">topicname</span></tt> parameter for the reader command can be modified with a type
+evolution’s type hash to specify which type evolution view protocol buffer user data
+as. The type hash can be viewed and copied from the <em>View Topic Type</em> window (see
+Section 7.2.1 on page 96).</p>
+<ul>
+<li><p class="first">To create a default reader with the most recently-registered type evolution,
+the command is:</p>
+<blockquote>
+<div><p><tt class="docutils literal"><span class="pre">reader(Person);</span></tt></p>
+</div></blockquote>
+</li>
+<li><p class="first">To create a reader with a specific type evolution, the command is the same,
+but with the type hash pasted in after the topic name, separated by a <tt class="docutils literal"><span class="pre">‘#’</span></tt>:</p>
+<blockquote>
+<div><p><tt class="docutils literal"><span class="pre">reader(Person#73979410269545042249851605221960719319);</span></tt></p>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="editing-protocol-buffer-topic-samples">
+<h2>8.5. Editing protocol buffer topic samples<a class="headerlink" href="#editing-protocol-buffer-topic-samples" title="Permalink to this headline">¶</a></h2>
+<p>Editing samples from protocol buffer topics is the same as samples from a regular
+topic. Protobuf fields can be declared as optional or required, so to reflect that
+in the <em>Sample Edit</em> window (see Section 3.4.1.1, To Write Sample Topic data, on page 28),
+a Cyan color highlight is added to required protocol buffer fields. In all other senses,
+though, editing samples in either the <em>Sample Edit</em> window or in scripting is precisely
+the same as it is for normal topics.</p>
+<p class="centered" id="the-sample-edit-window-for-a-protocol-buffer-sample">
+<strong><strong>The Sample Edit Window for a protocol buffer sample</strong></strong></p><a class="reference internal image-reference" href="_images/092_buffersample.png"><img alt="The Sample Edit Window for a protocol buffer sample" class="align-center" src="_images/092_buffersample.png" style="width: 90mm;" /></a>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">8. Google Protocol Buffers</a><ul>
+<li><a class="reference internal" href="#about-google-protocol-buffers-in-tester">8.1. About Google Protocol Buffers in Tester</a></li>
+<li><a class="reference internal" href="#viewing-type-evolutions">8.2. Viewing type evolutions</a><ul>
+<li><a class="reference internal" href="#view-topic-type-window">8.2.1. View Topic Type Window</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reading-protocol-buffer-topics">8.3. Reading protocol buffer topics</a></li>
+<li><a class="reference internal" href="#reading-protocol-buffer-topics-via-script">8.4. Reading protocol buffer topics <em>via</em> script</a></li>
+<li><a class="reference internal" href="#editing-protocol-buffer-topic-samples">8.5. Editing protocol buffer topic samples</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="messageinterfaces.html"
+                        title="previous chapter">7. Message Interfaces</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pythonscripting.html"
+                        title="next chapter">9. Python Scripting Engine</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/gpbuffers.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="pythonscripting.html" title="9. Python Scripting Engine"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="messageinterfaces.html" title="7. Message Interfaces"
+             >previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

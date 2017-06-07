@@ -1,18 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef C_METABASE_H
 #define C_METABASE_H
 
 #include "c_typebase.h"
+#include "os_defs.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -75,14 +84,15 @@ typedef enum c_metaKind {
     M_UNION, M_UNIONCASE,
     M_COUNT
 } c_metaKind;
+C_ALIGNMENT_TYPE (c_metaKind);
 
 /* Note: if c_collKind is updated a corresponding update to the collectionKind
    array in common/mm_metakindNames.c for mmstat is also required */
 typedef enum c_collKind {
-    C_UNDEFINED,
-    C_LIST, C_ARRAY, C_BAG, C_SET, C_MAP, C_DICTIONARY,
-    C_SEQUENCE, C_STRING, C_WSTRING, C_QUERY, C_SCOPE,
-    C_COUNT
+    OSPL_C_UNDEFINED,
+    OSPL_C_LIST, OSPL_C_ARRAY, OSPL_C_BAG, OSPL_C_SET, OSPL_C_MAP, OSPL_C_DICTIONARY,
+    OSPL_C_SEQUENCE, OSPL_C_STRING, OSPL_C_WSTRING, OSPL_C_QUERY, OSPL_C_SCOPE,
+    OSPL_C_COUNT
 } c_collKind;
 
 typedef enum c_primKind {
@@ -91,6 +101,7 @@ typedef enum c_primKind {
     P_SHORT, P_USHORT, P_LONG, P_ULONG, P_LONGLONG, P_ULONGLONG,
     P_FLOAT, P_DOUBLE, P_VOIDP,
     P_MUTEX, P_LOCK, P_COND,
+    P_PA_UINT32, P_PA_UINTPTR, P_PA_VOIDP,
     P_COUNT
 } c_primKind;
 
@@ -114,32 +125,32 @@ typedef enum c_direction {
 /*============================================================================*/
 
 /* Search Type Qualifiers */
-#define CQ_ATTRIBUTE       (1 << (M_ATTRIBUTE-1))
-#define CQ_ANNOTATION      (1 << (M_ANNOTATION-1))
-#define CQ_CLASS           (1 << (M_CLASS-1))
-#define CQ_COLLECTION      (1 << (M_COLLECTION-1))
-#define CQ_CONSTANT            (1 << (M_CONSTANT-1))
-#define CQ_CONSTOPERAND    (1 << (M_CONSTOPERAND-1))
-#define CQ_ENUMERATION     (1 << (M_ENUMERATION-1))
-#define CQ_EXCEPTION       (1 << (M_EXCEPTION-1))
-#define CQ_EXPRESSION      (1 << (M_EXPRESSION-1))
-#define CQ_INTERFACE       (1 << (M_INTERFACE-1))
-#define CQ_LITERAL         (1 << (M_LITERAL-1))
-#define CQ_MEMBER          (1 << (M_MEMBER-1))
-#define CQ_MODULE          (1 << (M_MODULE-1))
-#define CQ_OPERATION       (1 << (M_OPERATION-1))
-#define CQ_PARAMETER       (1 << (M_PARAMETER-1))
-#define CQ_PRIMITIVE       (1 << (M_PRIMITIVE-1))
-#define CQ_RELATION            (1 << (M_RELATION-1))
-#define CQ_BASE            (1 << (M_BASE-1))
-#define CQ_STRUCTURE       (1 << (M_STRUCTURE-1))
-#define CQ_TYPEDEF             (1 << (M_TYPEDEF-1))
-#define CQ_UNION           (1 << (M_UNION-1))
-#define CQ_UNIONCASE       (1 << (M_UNIONCASE-1))
+#define CQ_ATTRIBUTE       (1u << (M_ATTRIBUTE-1))
+#define CQ_ANNOTATION      (1u << (M_ANNOTATION-1))
+#define CQ_CLASS           (1u << (M_CLASS-1))
+#define CQ_COLLECTION      (1u << (M_COLLECTION-1))
+#define CQ_CONSTANT        (1u << (M_CONSTANT-1))
+#define CQ_CONSTOPERAND    (1u << (M_CONSTOPERAND-1))
+#define CQ_ENUMERATION     (1u << (M_ENUMERATION-1))
+#define CQ_EXCEPTION       (1u << (M_EXCEPTION-1))
+#define CQ_EXPRESSION      (1u << (M_EXPRESSION-1))
+#define CQ_INTERFACE       (1u << (M_INTERFACE-1))
+#define CQ_LITERAL         (1u << (M_LITERAL-1))
+#define CQ_MEMBER          (1u << (M_MEMBER-1))
+#define CQ_MODULE          (1u << (M_MODULE-1))
+#define CQ_OPERATION       (1u << (M_OPERATION-1))
+#define CQ_PARAMETER       (1u << (M_PARAMETER-1))
+#define CQ_PRIMITIVE       (1u << (M_PRIMITIVE-1))
+#define CQ_RELATION        (1u << (M_RELATION-1))
+#define CQ_BASE            (1u << (M_BASE-1))
+#define CQ_STRUCTURE       (1u << (M_STRUCTURE-1))
+#define CQ_TYPEDEF         (1u << (M_TYPEDEF-1))
+#define CQ_UNION           (1u << (M_UNION-1))
+#define CQ_UNIONCASE       (1u << (M_UNIONCASE-1))
 
 /* Search Directives */
 #define CQ_CASEINSENSITIVE (1U << 31) /* Search case insensitive, which is slower */
-#define CQ_FIXEDSCOPE      (1 << 30) /* Only search in the provided namespace */
+#define CQ_FIXEDSCOPE      (1U << 30) /* Only search in the provided namespace */
 
 /* Search Specifiers Directive */
 #define CQ_SPECIFIERS \
@@ -172,7 +183,7 @@ typedef enum c_direction {
 
 /* Check If baseObject type is in the mask */
 #define CQ_KIND_IN_MASK(object,set) \
-        ((1 << (c_baseObject(object)->kind-1)) & (set))
+        ((1u << (c_baseObject(object)->kind-1)) & (set))
 
 /*============================================================================*/
 /* Meta Abstract Base Types                                                   */
@@ -181,36 +192,42 @@ typedef enum c_direction {
 C_STRUCT(c_baseObject) {
     c_metaKind kind;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_baseObject);
 
 C_STRUCT(c_operand) {
     C_EXTENDS(c_baseObject);
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_operand);
 
 C_STRUCT(c_specifier) {
     C_EXTENDS(c_baseObject);
     c_string name;
     c_type type;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_specifier);
 
 C_STRUCT(c_metaObject) {
     C_EXTENDS(c_baseObject);
     c_metaObject definedIn;
     c_string name;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_metaObject);
 
 C_STRUCT(c_property) {
     C_EXTENDS(c_metaObject);
-    c_ulong offset;      /* implementation memory mapping */
+    os_size_t offset;      /* implementation memory mapping */
     c_type type;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_property);
 
 C_STRUCT(c_type) {
     C_EXTENDS(c_metaObject);
-    c_address alignment;
+    os_size_t alignment;
     c_base base;
-    c_ulong objectCount;
-    c_address size;
+    pa_uint32_t objectCount;
+    os_size_t size;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_type);
 
 /*============================================================================*/
 /* Meta Operand Types                                                         */
@@ -220,17 +237,20 @@ C_STRUCT(c_literal) {
     C_EXTENDS(c_operand);
     c_value value;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_literal);
 
 C_STRUCT(c_constOperand) {
     C_EXTENDS(c_operand);
     c_constant constant;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_constOperand);
 
 C_STRUCT(c_expression) {
     C_EXTENDS(c_operand);
     c_exprKind kind;
     c_array operands;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_expression);
 
 /*============================================================================*/
 /* Meta Specifier Types                                                       */
@@ -240,16 +260,19 @@ C_STRUCT(c_parameter) {
     C_EXTENDS(c_specifier);
     c_direction mode;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_parameter);
 
 C_STRUCT(c_member) {
     C_EXTENDS(c_specifier);
-    c_address offset;      /* implementation memory mapping */
+    os_size_t offset;      /* implementation memory mapping */
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_member);
 
 C_STRUCT(c_unionCase) {
     C_EXTENDS(c_specifier);
     c_array labels;     /* c_literal */
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_unionCase);
 
 /*============================================================================*/
 /* Meta Property Types                                                        */
@@ -259,11 +282,13 @@ C_STRUCT(c_attribute) {
     C_EXTENDS(c_property);
     c_bool isReadOnly;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_attribute);
 
 C_STRUCT(c_relation) {
     C_EXTENDS(c_property);
     c_string inverse;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_relation);
 
 /*============================================================================*/
 /* Meta Object Types                                                          */
@@ -274,17 +299,20 @@ C_STRUCT(c_constant) {
     c_operand operand;
     c_type type;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_constant);
 
 C_STRUCT(c_operation) {
     C_EXTENDS(c_metaObject);
     c_array parameters;
     c_type result;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_operation);
 
 C_STRUCT(c_typeDef) {
     C_EXTENDS(c_type);
     c_type alias;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_typeDef);
 
 /*============================================================================*/
 /* Meta Type Types                                                            */
@@ -294,26 +322,30 @@ C_CLASS(c_blob);
 
 C_STRUCT(c_blob) {
     c_long size;
-    c_address offset;
+    os_size_t offset;
     c_array members;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_blob);
 
 C_STRUCT(c_collectionType) {
     C_EXTENDS(c_type);
     c_collKind kind;
-    c_long maxSize;
+    c_ulong maxSize;
     c_type subType;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_collectionType);
 
 C_STRUCT(c_primitive) {
     C_EXTENDS(c_type);
     c_primKind kind;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_primitive);
 
 C_STRUCT(c_enumeration) {
     C_EXTENDS(c_type);
     c_array elements;   /* c_constant */
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_enumeration);
 
 C_STRUCT(c_union) {
     C_EXTENDS(c_type);
@@ -322,6 +354,8 @@ C_STRUCT(c_union) {
     c_scope scope;
     c_type switchType;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_union);
+
 
 C_STRUCT(c_structure) {
     C_EXTENDS(c_type);
@@ -329,10 +363,12 @@ C_STRUCT(c_structure) {
     c_array references; /* optimization */
     c_scope scope;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_structure);
 
 C_STRUCT(c_exception) {
     C_EXTENDS(c_structure);
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_exception);
 
 C_STRUCT(c_interface) {
     C_EXTENDS(c_type);
@@ -341,12 +377,14 @@ C_STRUCT(c_interface) {
     c_array references; /* optimization */
     c_scope scope;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_interface);
 
 C_STRUCT(c_class) {
     C_EXTENDS(c_interface);
     c_class extends;
     c_array keys;       /* c_string */
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_class);
 
 /*============================================================================*/
 /* Meta Miscelanious Types                                                    */
@@ -357,15 +395,19 @@ C_STRUCT(c_fixed) {
     c_ushort digits;
     c_short scale;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_fixed);
 
 C_STRUCT(c_valueType) {
     C_EXTENDS(c_interface);
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_valueType);
+
 
 C_STRUCT(c_annotation) {
     C_EXTENDS(c_interface);
     c_annotation extends;
 };
+C_ALIGNMENT_C_STRUCT_TYPE (c_annotation);
 
 /*============================================================================*/
 /* Meta Cast Macro's                                                          */
@@ -410,15 +452,27 @@ typedef enum c_metaEquality {
 } c_metaEquality;
 
 typedef void   *c_metaWalkActionArg;
-typedef void   (*c_metaWalkAction)    (c_metaObject metaObject, c_metaWalkActionArg arg);
+typedef void   (*c_metaWalkAction)     (c_metaObject metaObject, c_metaWalkActionArg arg);
+typedef c_bool (*c_metaWalkBoolAction) (c_metaObject metaObject, c_metaWalkActionArg arg);
 
 OS_API c_object
 c_metaDefine(
     c_metaObject scope,
     c_metaKind kind);
 
+OS_API c_object
+c_metaDefine_s(
+    c_metaObject scope,
+    c_metaKind kind);
+
 OS_API c_metaObject
 c_metaDeclare(
+    c_metaObject scope,
+    const c_char *name,
+    c_metaKind kind);
+
+OS_API c_metaObject
+c_metaDeclare_s(
     c_metaObject scope,
     const c_char *name,
     c_metaKind kind);
@@ -429,6 +483,12 @@ c_metaFinalize(
 
 OS_API c_metaObject
 c_metaBind(
+    c_metaObject scope,
+    const c_char *name,
+    c_metaObject object);
+
+OS_API c_metaObject
+c_metaBind_s(
     c_metaObject scope,
     const c_char *name,
     c_metaObject object);
@@ -457,7 +517,7 @@ OS_API c_baseObject
 c_metaFindByName(
     c_metaObject scope,
     const char *name,
-    c_long metaFilter);
+    c_ulong metaFilter);
 
 /*
  * Walks over all the elements in the c_scope of the given metaObject.
@@ -471,9 +531,21 @@ c_metaWalk(
     c_metaWalkActionArg arg);
 
 /*
+ * Walks over all the elements in the c_scope of the given metaObject.
+ * Action 'action' is called for each element, and as arguments to that action,
+ * the element and 'arg' are passed on. If action returns false, the walk is aborted
+ * and false is returned.
+ */
+OS_API c_bool
+c_metaWalkBool(
+    c_metaObject scope,
+    c_metaWalkBoolAction action,
+    c_metaWalkActionArg arg);
+
+/*
  * Returns the number of elements in the c_scope of the given c_metaObject.
  */
-OS_API c_long
+OS_API c_ulong
 c_metaCount(
     c_metaObject scope);
 
@@ -485,7 +557,7 @@ OS_API c_string
 c_metaName(
     c_metaObject object);
 
-OS_API c_long
+OS_API size_t
 c_metaNameLength(
     c_metaObject object);
 
@@ -501,6 +573,12 @@ c_metaCompare(
 OS_API c_valueKind
 c_metaValueKind(
     c_metaObject object);
+
+OS_API c_constant
+c_metaDeclareEnumElement(
+    c_metaObject scope,
+    const c_char *name);
+
 OS_API c_bool
 c_isFinal(
     c_metaObject object);
@@ -522,7 +600,7 @@ OS_API c_bool
 c_typeHasRef(
     c_type type);
 
-OS_API c_long
+OS_API os_size_t
 c_typeSize(
     c_type type);
 
@@ -574,6 +652,9 @@ c_typeActualType(
 #define c_memberOffset(_this) \
         c_member(_this)->offset
 
+#define c_unionUnionSwitchType(_this) \
+        c_union(_this)->switchType
+
 #define c_unionUnionCaseCount(_this) \
         c_arraySize(c_union(_this)->cases)
 
@@ -620,7 +701,7 @@ OS_API c_type c_unionCase_t (c_base _this);
  *
  * \return The size in elements of the given array.
  */
-OS_API c_long
+OS_API c_ulong
 c_arraySize (
     c_array a);
 
@@ -634,7 +715,7 @@ c_arraySize (
  *
  * \return The size in elements of the given sequence.
  */
-OS_API c_long
+OS_API c_ulong
 c_sequenceSize (
     c_sequence s);
 
@@ -645,14 +726,28 @@ c_metaArrayTypeNew(
     c_metaObject scope,
     const c_char *name,
     c_type subType,
-    c_long maxSize);
+    c_ulong maxSize);
+
+OS_API c_type
+c_metaArrayTypeNew_s(
+    c_metaObject scope,
+    const c_char *name,
+    c_type subType,
+    c_ulong maxSize);
 
 OS_API c_type
 c_metaSequenceTypeNew(
     c_metaObject scope,
     const c_char *name,
     c_type subType,
-    c_long maxSize);
+    c_ulong maxSize);
+
+OS_API c_type
+c_metaSequenceTypeNew_s(
+    c_metaObject scope,
+    const c_char *name,
+    c_type subType,
+    c_ulong maxSize);
 
 #undef OS_API
 

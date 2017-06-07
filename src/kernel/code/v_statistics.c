@@ -1,29 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "v_statistics.h"
 #include "os_report.h"
-#include "v_kernelStatistics.h"
-#include "v_writerStatistics.h"
-#include "v_readerStatistics.h"
-#include "v_queryStatistics.h"
-#include "v_networkReaderStatistics.h"
-#include "v_networkingStatistics.h"
-#include "v_durabilityStatistics.h"
-#include "v_cmsoapStatistics.h"
-#include "v_rnrStatistics.h"
-#include "v_groupQueueStatistics.h"
-#include "v_time.h"
-#include "os.h"
+#include "vortex_os.h"
 
 void
 v_statisticsInit(
@@ -31,11 +28,11 @@ v_statisticsInit(
 {
     assert(C_TYPECHECK(s, v_statistics));
 
-    s->lastReset.seconds     = 0;
-    s->lastReset.nanoseconds = 0;
+    s->lastReset = OS_TIMEW_ZERO;
 
     return;
 }
+
 c_bool
 v_statisticsResetField(
     v_statistics s,
@@ -51,6 +48,10 @@ v_statisticsResetField(
     c_valueKind kind;
     c_bool isMin = FALSE;
 
+    assert(s);
+    assert(fieldName);
+    assert(C_TYPECHECK(s, v_statistics));
+
     type = c_getType(c_object(s));
     fieldNameCopy = os_strdup(fieldName);
 
@@ -64,13 +65,9 @@ v_statisticsResetField(
 
     if (strcmp(subFieldName, "avg") == 0) {
         buf = os_malloc(strlen(fieldNameCopy)+1+5+1);
-        if (buf) {
-            os_sprintf(buf, "%s.count", fieldNameCopy);
-            result = v_statisticsResetField(s, buf);
-            os_free(buf);
-        } else {
-            result = FALSE;
-        }
+        os_sprintf(buf, "%s.count", fieldNameCopy);
+        result = v_statisticsResetField(s, buf);
+        os_free(buf);
     } else {
         if (strcmp(subFieldName, "min") == 0) {
             isMin = TRUE;
@@ -112,13 +109,13 @@ v_statisticsResetField(
 
                 default:
                     if(fieldName){
-                        OS_REPORT_2(OS_ERROR,"Kernel", 0,
+                        OS_REPORT(OS_ERROR,"Kernel", V_RESULT_ILL_PARAM,
                                     "Value kind %d unsupported "
                                     "(fieldName: '%s')",
                                     kind, fieldName);
                     } else {
-                        OS_REPORT_1(OS_ERROR,
-                                    "Kernel", 0,"Value kind %d unsupported",
+                        OS_REPORT(OS_ERROR,"Kernel", V_RESULT_ILL_PARAM,
+                                    "Value kind %d unsupported",
                                     kind);
                     }
                     result = FALSE;
@@ -132,58 +129,3 @@ v_statisticsResetField(
 
     return result;
 }
-
-c_bool
-v_statisticsResetAllFields(
-    v_statistics s)
-{
-    OS_UNUSED_ARG(s);
-    OS_REPORT(OS_INFO, "v_statisticsReset", 0,
-              "Resetting of fields in unknown statistics class not supported");
-    return FALSE;
-}
-
-
-c_bool
-v_statisticsReset(
-    v_statistics s,
-    const c_char *fieldName)
-{
-    c_bool result = FALSE;
-    c_type type;
-
-    type = c_getType(c_object(s));
-
-    if (fieldName != NULL) {
-        result = v_statisticsResetField(s, fieldName);
-    } else {
-        c_char * typename = ((c_metaObject)type)->name;
-        s->lastReset = v_timeGet();
-
-        if (strcmp(typename, "v_kernelStatistics")==0 ) {
-            result = v_kernelStatisticsReset(v_kernelStatistics(s), NULL);
-        } else if (strcmp(typename, "v_writerStatistics")==0 ) {
-            result = v_writerStatisticsReset(v_writerStatistics(s), NULL);
-        } else if (strcmp(typename, "v_readerStatistics")==0 ) {
-            result = v_readerStatisticsReset(v_readerStatistics(s), NULL);
-        } else if (strcmp(typename, "v_queryStatistics")==0 ) {
-            result = v_queryStatisticsReset(v_queryStatistics(s), NULL);
-        } else if (strcmp(typename, "v_networkReaderStatistics")==0 ) {
-            result = v_networkReaderStatisticsReset(v_networkReaderStatistics(s), NULL);
-        } else if (strcmp(typename, "v_durabilityStatistics")==0 ) {
-            result = v_durabilityStatisticsReset(v_durabilityStatistics(s), NULL);
-        } else if (strcmp(typename, "v_cmsoapStatistics")==0 ) {
-            result = v_cmsoapStatisticsReset(v_cmsoapStatistics(s), NULL);
-        } else if (strcmp(typename, "v_networkingStatistics")==0 ) {
-            result = v_networkingStatisticsReset(v_networkingStatistics(s), NULL);
-        } else if (strcmp(typename, "v_rnrStatistics")==0 ) {
-            result = v_rnrStatisticsReset(v_rnrStatistics(s), NULL);
-        } else if (strcmp(typename, "v_groupQueueStatistics") ==0 ) {
-            result = v_groupQueueStatisticsReset(v_groupQueueStatistics(s), NULL);
-        } else {
-            result = v_statisticsResetAllFields(s);
-        }
-    }
-    return result;
-}
-

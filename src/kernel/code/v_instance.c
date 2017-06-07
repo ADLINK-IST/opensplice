@@ -1,153 +1,52 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "v_instance.h"
 
-#include "v_time.h"
+#include "v_public.h"
 #include "v__dataReaderInstance.h"
 
-#include "os.h"
+#include "vortex_os.h"
 #include "os_report.h"
 
 void
 v_instanceInit(
-    v_instance instance)
+    v_instance _this,
+    v_entity entity)
 {
-    assert(C_TYPECHECK(instance, v_instance));
+    assert(C_TYPECHECK(_this, v_instance));
 
     /* Public part is initialised at reader or writer */
 
-    instance->next = instance;
-    instance->prev = instance;
-    instance->lastDeadlineResetTime = C_TIME_MIN_INFINITE;
+    v_publicInit(v_public(_this));
+    _this->state = L_EMPTY | L_NOWRITERS;
+    _this->entity = (c_voidp)entity;
 }
 
 void
 v_instanceDeinit(
-    v_instance instance)
+    v_instance _this)
 {
-    assert(C_TYPECHECK(instance, v_instance));
-    /* possible since next and prev are void pointers,
-     * so c_free does not crash on this */
-    v_instanceRemove(instance);
-}
+    assert(C_TYPECHECK(_this, v_instance));
 
-void
-v_instanceInsert(
-    v_instance instance,
-    v_instance prev)
-{
-    assert(C_TYPECHECK(instance, v_instance));
-    assert(C_TYPECHECK(prev, v_instance));
-    assert(v_instanceAlone(prev));
-
-    v_instance(instance->prev)->next = prev;
-    prev->prev = instance->prev;
-    instance->prev = prev;
-    prev->next = instance;
-}
-
-void
-v_instanceAppend(
-    v_instance instance,
-    v_instance next)
-{
-    assert(C_TYPECHECK(instance, v_instance));
-    assert(C_TYPECHECK(next, v_instance));
-    assert(v_instanceAlone(next));
-
-    v_instance(instance->next)->prev = next;
-    next->next = instance->next;
-    instance->next = next;
-    next->prev = instance;
-}
-
-void
-v_instanceRemove(
-    v_instance instance)
-{
-    assert(C_TYPECHECK(instance, v_instance));
-
-    v_instance(instance->next)->prev = instance->prev;
-    v_instance(instance->prev)->next = instance->next;
-    instance->next = instance;
-    instance->prev = instance;
-}
-
-c_bool
-v_instanceAlone(
-    v_instance instance)
-{
-    assert(C_TYPECHECK(instance, v_instance));
-
-    return (instance->next == instance);
-}
-
-void
-v_instanceUpdate(
-    v_instance instance,
-    c_time timestamp)
-{
-    assert(C_TYPECHECK(instance, v_instance));
-
-    instance->lastDeadlineResetTime = timestamp;
-}
-
-v_writeResult
-v_instanceWrite(
-    v_instance instance,
-    v_message message)
-{
-    c_char *metaName;
-
-    assert(C_TYPECHECK(instance, v_instance));
-
-    switch (v_objectKind(instance)) {
-    case K_DATAREADERINSTANCE:
-        return v_dataReaderInstanceWrite(v_dataReaderInstance(instance),message);
-    default:
-        metaName = c_metaName(c_metaObject(c_getType(instance)));
-        OS_REPORT_1(OS_ERROR,
-                    "v_instanceWrite",0,
-                    "Unknown instance type <%s>",
-                    metaName);
-        c_free(metaName);
-        return V_WRITE_PRE_NOT_MET;
-    }
-}
-
-void
-v_instanceUnregister (
-    v_instance instance,
-    v_registration registration,
-    c_time timestamp)
-{
-    c_char* metaName;
-
-    assert(C_TYPECHECK(instance, v_instance));
-
-    switch (v_objectKind(instance)) {
-    case K_DATAREADERINSTANCE:
-        v_dataReaderInstanceUnregister(v_dataReaderInstance(instance),
-                registration, timestamp);
-    break;
-    default:
-        metaName = c_metaName(c_metaObject(c_getType(instance)));
-        OS_REPORT_1(OS_ERROR,
-                    "v_instanceUnregister",0,
-                    "Unknown instance type <%s>",
-                    metaName);
-        c_free(metaName);
-    break;
-    }
+    _this->entity = NULL;
+    v_publicDeinit(v_public(_this));
 }
 

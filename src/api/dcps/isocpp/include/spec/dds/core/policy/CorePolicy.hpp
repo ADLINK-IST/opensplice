@@ -153,6 +153,15 @@ typedef ::dds::core::policy::detail::DurabilityService
 DurabilityService;
 #endif  // OMG_DDS_PERSISTENCE_SUPPORT
 
+typedef dds::core::policy::detail::Share
+Share;
+
+typedef dds::core::policy::detail::ProductData
+ProductData;
+
+typedef dds::core::policy::detail::SubscriptionKey
+SubscriptionKey;
+
 #ifdef OMG_DDS_EXTENSIBLE_AND_DYNAMIC_TOPIC_TYPE_SUPPORT
 /** @todo - Known issue. */
 #endif
@@ -188,6 +197,10 @@ OMG_DDS_POLICY_TRAITS(Lifespan,             21)
 #ifdef  OMG_DDS_PERSISTENCE_SUPPORT
 OMG_DDS_POLICY_TRAITS(DurabilityService,    22)
 #endif  // OMG_DDS_PERSISTENCE_SUPPORT
+
+OMG_DDS_POLICY_TRAITS(Share,                23)
+OMG_DDS_POLICY_TRAITS(ProductData,          24)
+OMG_DDS_POLICY_TRAITS(SubscriptionKey,      25)
 
 
 

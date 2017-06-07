@@ -3,6 +3,70 @@ Release Notes                                              {#release_notes}
 
 [TOC]
 
+Available in 6.5.1                                                                              {#release_notes_10}
+====================
+- Fixed implementation of the CoherentSet and CoherentAccess class, which will provided topic, 
+  instance or group coherency. 
+ 
+Available in 6.4.3p1                                                                            {#release_notes_9}
+===============
+- Added new ISO C++ Streams DCPS API and documentation. See \ref streams_mainpage for more information.
+
+Available in 6.4.2p1                                                                            {#release_notes_8}
+===============
+- Improved ISO C++ documentation layout and content.
+
+Available in 6.4.1p1                                                                            {#release_notes_7}
+================
+- Added operator= overload to dds::sub::Sample.
+
+Available in 6.4.0p4                                                                            {#release_notes_6}
+====================
+- [QoS Provider](#release_notes_qosprovider640p4)
+- [Shared Samples](#release_notes_sharedsamples640p4)
+
+QoS Provider                                                                      {#release_notes_qosprovider640p4}
+----------------------------------------
+The QoS provider API allows users to extract (by name) pre-configured QoS policy values from an XML resource file,
+so that these QoS values can be used by their applications to create DDS entities without the need to hard-code their QoS settings into the application code.
+
+- Construct a QosProvider
+~~~~~~~~~~~~~~~{.cpp}
+                            //URI                           //Profile
+dds::core::QosProvider qp("file:///home/user/defaults.xml", "DefaultQosProfile");
+// OR
+dds::core::QosProvider qp("file:///home/user/defaults.xml");
+~~~~~~~~~~~~~~~
+
+- Using QosProvider
+~~~~~~~~~~~~~~~{.cpp}
+dds::domain::qos::DomainParticipantQos dpq  = qp.participant_qos();
+// OR
+dds::domain::qos::DomainParticipantQos dpq  = qp.participant_qos("DefaultQosProfile::DerivedQos");
+
+dds::sub::qos::SubscriberQos sq = qp.subscriber_qos();
+dds::pub::qos::PublisherQos pq = qp.publisher_qos("DefaultQosProfile::DerivedQos");
+dds::sub::qos::DataReaderQos drq = qp.datareader_qos();
+dds::pub::qos::DataWriterQos dwq = qqp.datawriter_qos("Qos")
+~~~~~~~~~~~~~~~
+
+Shared Samples                                                                     {#release_notes_sharedsamples640p4}
+----------------------------------------
+The SharedSamples class allows data that has been taken or read into a LoanedSamples object
+to persist even when the LoanedSamples object has gone out of scope. Usually when a LoanedSamples
+object goes out of scope the containing data loan would be returned however, passing it into a
+SharedSamples object created in a parent scope will prevent this.
+
+- Using SharedSamples
+~~~~~~~~~~~~~~~{.cpp}
+dds::sub::SharedSamples<SAMPLE> sharedSamples;
+{
+    dds::sub::LoanedSamples<SAMPLE> loanedSamples = reader.read();
+    sharedSamples = loanedSamples;
+}
+//loanedSamples is now out of scope but it's data is still contained in sharedSamples at this point
+~~~~~~~~~~~~~~~
+
 Available in 6.4.0                                                                            {#release_notes_5}
 ====================
 - [New IDL type mapping](#release_notes_newtypes640)
@@ -264,7 +328,7 @@ DataWriter                                                                      
 dw << sample;
 ~~~~~~~~~~~~~~~
 
-Known Issues and Currently Unsupported Features                                                                    {#release_notes_6}
+Known Issues and Currently Unsupported Features                                                                    {#release_notes_known_issues}
 =====================================
 
 Although the ISO C++ DCPS API implements the majority of commonly used features, some functionality
@@ -307,24 +371,15 @@ OpenSplice API extensions                                                       
 -------------------------
 The implementation contains only API features that are present in the OMG DCPS specification at this time.
 Other OpenSplice language bindings contain extensions to the specification such as additional QoS,
-Entity operations, and even Entities (e.g. DataReaderView). These features are not yet available.
+Entity operations, and Entities. These features are not yet available.
 
 Other Known Issues                                                                        {#release_notes_other_known_issues}
 ------------------
 - dds::sub::DataReader<T> >> dds::sub::DataReaderQos
     - Attempting to extract a QoS from a DataReader using the >> operator will cause an exception.
 
-- dds::sub::CoherentAccess, dds::sub::CoherentSet, dds::sub::SuspendedPublication
-    - The above classes are currently not supported.
-
 - dds::sub::AnyDataReader::parent()
     - The above function is not currently supported.
-
-- dds::sub::SharedSamples
-    - SharedSamples are not currently supported.
-
-- dds::core::QosProvider
-    - The QosProvider is not currently supported.
 
 - dds::topic::MultiTopic
     - MultiTopics are not currently supported.
@@ -333,3 +388,6 @@ Other Known Issues                                                              
     - The above policy classes are only partially supported. For each class, the constructor that
     takes either two pointers or two iterators is not currently supported, nor are the begin or end
     functions if present.
+
+- Release/Debug DLL mismatch issue
+    - In order to build applications in DEBUG mode on Windows the ISO C++ library must match, this can be done by recompiling the custom lib as documented @ref isocpp_customlibs "here"

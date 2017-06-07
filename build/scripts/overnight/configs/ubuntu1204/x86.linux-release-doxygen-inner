@@ -1,1 +1,3 @@
 . configs/common-inner
+
+export MONO_HOME=/usr/share/mono

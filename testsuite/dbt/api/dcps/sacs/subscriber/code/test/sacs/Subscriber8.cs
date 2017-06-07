@@ -17,7 +17,7 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             DDS.ISubscriber subscriber;
-            string expResult = "Functions not supported yet.";
+            string expResult = "Functions are implemented.";
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
@@ -25,18 +25,18 @@ namespace test.sacs
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
             subscriber.NotifyDataReaders();
             rc = subscriber.BeginAccess();
-            if (rc != DDS.ReturnCode.Unsupported)
+            if (rc == DDS.ReturnCode.Unsupported)
             {
-                result.Result = "subscriber.begin_access has been implemented.";
+                result.Result = "subscriber.begin_access has not been implemented.";
                 return result;
             }
             rc = subscriber.EndAccess();
-            if (rc != DDS.ReturnCode.Unsupported)
+            if (rc == DDS.ReturnCode.Unsupported)
             {
-                result.Result = "subscriber.end_access has been implemented.";
+                result.Result = "subscriber.end_access has no been implemented.";
                 return result;
             }
-            result.Result = "Functions not supported yet.";
+            result.Result = "Functions are implemented.";
             result.Verdict = Test.Framework.TestVerdict.Pass;
             return result;
         }

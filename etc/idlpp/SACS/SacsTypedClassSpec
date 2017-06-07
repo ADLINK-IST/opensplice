@@ -72,12 +72,12 @@ $sp($(spaces))        int maxSamples,
 $sp($(spaces))        IReadCondition readCondition);
 
 $sp($(spaces))    ReturnCode ReadNextSample(
-$sp($(spaces))        $(typename) dataValue,
-$sp($(spaces))        SampleInfo sampleInfo);
+$sp($(spaces))        ref $(typename) dataValue,
+$sp($(spaces))        ref SampleInfo sampleInfo);
 
 $sp($(spaces))    ReturnCode TakeNextSample(
-$sp($(spaces))        $(typename) dataValue,
-$sp($(spaces))        SampleInfo sampleInfo);
+$sp($(spaces))        ref $(typename) dataValue,
+$sp($(spaces))        ref SampleInfo sampleInfo);
 
 $sp($(spaces))    ReturnCode ReadInstance(
 $sp($(spaces))        ref $(typename)[] dataValues,

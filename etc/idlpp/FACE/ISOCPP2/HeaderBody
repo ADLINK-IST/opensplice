@@ -1,0 +1,32 @@
+/********** $(scopedtypename) ***********/
+
+namespace FACE { 
+namespace TS {
+
+void $(DLL_IMPORTEXPORT) Receive_Message(
+        /* in    */ const FACE::CONNECTION_ID_TYPE &connection_id,
+        /* in    */ const FACE::TIMEOUT_TYPE &timeout,
+        /* inout */       FACE::TRANSACTION_ID_TYPE &transaction_id,
+        /* inout */       $(scopedtypename) &message,
+        /* inout */       FACE::MESSAGE_TYPE_GUID &message_type_id,
+        /* inout */       FACE::MESSAGE_SIZE_TYPE &message_size,
+        /* out   */       FACE::RETURN_CODE_TYPE &return_code);
+
+void $(DLL_IMPORTEXPORT) Send_Message(
+        /* in    */ const FACE::CONNECTION_ID_TYPE &connection_id,
+        /* in    */ const FACE::TIMEOUT_TYPE &timeout,
+        /* inout */       FACE::TRANSACTION_ID_TYPE &transaction_id,
+        /* inout */       $(scopedtypename) &message,
+        /* in    */ const FACE::MESSAGE_TYPE_GUID &message_type_id,
+        /* in    */ const FACE::MESSAGE_SIZE_TYPE &message_size,
+        /* out   */       FACE::RETURN_CODE_TYPE &return_code);
+
+void $(DLL_IMPORTEXPORT) Register_Callback(
+        /* in    */ const    FACE::CONNECTION_ID_TYPE &connection_id,
+        /* in    */ const    FACE::WAITSET_TYPE &waitset,
+        /* inout */          FACE::Read_Callback<$(scopedtypename)>::send_event  data_callback,
+        /* in    */ const    FACE::MESSAGE_SIZE_TYPE &max_message_size,
+        /* out   */          FACE::RETURN_CODE_TYPE &return_code);
+
+} /* namespace TS */
+} /* namespace FACE */

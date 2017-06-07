@@ -5,8 +5,6 @@ CC		 = gcc -std=gnu99 -m32 #-v
 CXX		 = g++ -m32 #-v
 CSC      = gmcs
 
-    # Binary used for filtering
-FILTER           = filter_gcc
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
@@ -71,14 +69,14 @@ SOAPCPP		= soapcpp2
 SHCFLAGS         = -dynamiclib #-fno-common
 
 # Values of compiler flags can be overruled
-CFLAGS_OPT       = -O4 -DNDEBUG
+CFLAGS_OPT       = -O3 -DNDEBUG
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
 #CFLAGS_STRICT	 = -Wall
 CFLAGS_STRICT	 = -Wall -W -pedantic
 
-# Set compiler options for single threaded process
-CFLAGS		 = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+# Set compiler options
+CFLAGS		 = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(MTCFLAGS)
+CXXFLAGS	 = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(MTCFLAGS)
 CSFLAGS	     = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 
@@ -93,8 +91,7 @@ endif
 
 # Set compiler options for multi threaded process
 	# notify usage of posix threads
-#MTCFLAGS	 = -D_POSIX_C_SOURCE=199506L
-MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
+MTCFLAGS	 = -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
 LDFLAGS		 = -static-libgcc -L$(SPLICE_LIBRARY_PATH) -Wl,-flat_namespace
@@ -145,10 +142,6 @@ CS_LIBPATH_SEP = ,
 CSTARGET_LIB = -target:library
 CSTARGET_MOD = -target:module
 CSTARGET_EXEC = -target:exe
-
-LDLIBS_ZLIB      = -lz
-LDFLAGS_ZLIB     =
-CINCS_ZLIB       =
 
 ifdef LKST_HOME
 CPPFLAGS += -I$(LKST_HOME) -DHAVE_LKST

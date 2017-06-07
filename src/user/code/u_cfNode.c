@@ -1,16 +1,24 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
-#include "os.h"
+#include "vortex_os.h"
 
 #include "u_user.h"
 
@@ -19,6 +27,7 @@
 #include "u__cfAttribute.h"
 #include "u__cfData.h"
 #include "u__participant.h"
+#include "u__observable.h"
 #include "u__entity.h"
 #include "v_public.h"
 #include "v_cfNode.h"
@@ -30,93 +39,79 @@
 
 u_result
 u_cfNodeReadClaim(
-    u_cfNode node,
+    const u_cfNode node,
     v_cfNode* kernelNode)
 {
     v_participant kp;
     v_configuration config;
     u_result r;
 
+    assert(node != NULL);
+    assert(kernelNode != NULL);
+
     *kernelNode = NULL;
-    if (node != NULL || kernelNode == NULL) {
-        r = u_entityReadClaim(u_entity(node->participant),(v_entity*)&kp);
+    r = u_observableReadClaim(u_observable(node->participant),(v_public*)&kp, C_MM_RESERVATION_ZERO);
+    if (r == U_RESULT_OK) {
+        r = u_handleClaim(node->configuration, &config);
         if (r == U_RESULT_OK) {
-            r = u_handleClaim(node->configuration, &config);
-            if (r == U_RESULT_OK) {
-                if(config != NULL){
-                    *kernelNode = v_configurationGetNode(config, node->id);
-                    if (*kernelNode == NULL) {
-                        r = U_RESULT_INTERNAL_ERROR;
-                        u_entityRelease(u_entity(node->participant));
-                    }
-                } else {
+            if(config != NULL){
+                *kernelNode = v_configurationGetNode(config, node->id);
+                if (*kernelNode == NULL) {
                     r = U_RESULT_INTERNAL_ERROR;
-                    u_entityRelease(u_entity(node->participant));
-                    OS_REPORT(OS_ERROR, "u_cfNodeReadClaim", 0,
-                              "Internal error");
+                    u_observableRelease(u_observable(node->participant), C_MM_RESERVATION_ZERO);
                 }
             } else {
-                u_entityRelease(u_entity(node->participant));
-                OS_REPORT(OS_ERROR, "u_cfNodeReadClaim", 0,
-                          "Could not claim configuration data");
+                r = U_RESULT_INTERNAL_ERROR;
+                u_observableRelease(u_observable(node->participant), C_MM_RESERVATION_ZERO);
+                OS_REPORT(OS_ERROR, "u_cfNodeReadClaim", r,
+                          "Internal error");
             }
         } else {
-            OS_REPORT(OS_ERROR, "u_cfNodeReadClaim", 0,
-                      "Could not protect kernel access, "
-                      "Therefore failed to claim configuration data");
+            u_observableRelease(u_observable(node->participant), C_MM_RESERVATION_ZERO);
+            OS_REPORT(OS_ERROR, "u_cfNodeReadClaim", r,
+                      "Could not claim configuration data");
         }
     } else {
-        r = U_RESULT_ILL_PARAM;
-        OS_REPORT(OS_ERROR, "u_cfNodeReadClaim", 0,
-                  "No configuration data specified to claim");
-    }
-    return r;
-}
-
-u_result
-u_cfNodeRelease(
-    u_cfNode node)
-{
-    u_result r;
-
-    if (node != NULL) {
-        u_handleRelease(node->configuration);
-        r = u_entityRelease(u_entity(node->participant));
-        if (r != U_RESULT_OK) {
-            OS_REPORT(OS_ERROR, "u_cfNodeRelease", 0,
-                      "Release Participant failed.");
-        }
-    } else {
-        r = U_RESULT_ILL_PARAM;
-        OS_REPORT(OS_ERROR, "u_cfNodeRelease", 0,
-                  "No configuration data specified to release");
+        OS_REPORT(OS_ERROR, "u_cfNodeReadClaim", r,
+                  "Could not protect kernel access, "
+                  "Therefore failed to claim configuration data");
     }
     return r;
 }
 
 void
+u_cfNodeRelease(
+    const u_cfNode node)
+{
+    assert(node != NULL);
+    u_handleRelease(node->configuration);
+    u_observableRelease(u_observable(node->participant), C_MM_RESERVATION_ZERO);
+}
+
+void
 u_cfNodeInit(
     u_cfNode _this,
-    u_participant participant,
-    v_cfNode kNode)
+    const u_participant participant,
+    const v_cfNode kNode)
 {
     v_configuration config;
 
-    if (_this != NULL) {
-        config = v_cfNodeConfiguration(kNode);
-        _this->configuration = u_handleNew(v_public(config));
-        _this->participant = participant;
-        _this->kind = v_cfNodeKind(kNode);
-        _this->id = kNode->id;
-    } else {
-        OS_REPORT(OS_ERROR, "u_cfNodeInit", 0, "This reference is NIL");
-    }
+    assert(_this != NULL);
+    assert(participant != NULL);
+    assert(kNode != NULL);
+
+    config = v_cfNodeConfiguration(kNode);
+    _this->configuration = u_handleNew(v_public(config));
+    _this->participant = participant;
+    _this->kind = v_cfNodeKind(kNode);
+    _this->id = kNode->id;
 }
 
 void
 u_cfNodeDeinit(
     u_cfNode node)
 {
+    OS_UNUSED_ARG(node);
 }
 
 void
@@ -140,21 +135,16 @@ u_cfNodeFree (
 
 u_participant
 u_cfNodeParticipant(
-    u_cfNode node)
+    const u_cfNode node)
 {
-    u_participant p;
+    assert(node != NULL);
 
-    if (node == NULL) {
-        p = NULL;
-    } else {
-        p = node->participant;
-    }
-    return p;
+    return node->participant;
 }
 
 v_cfKind
 u_cfNodeKind(
-    u_cfNode node)
+    const u_cfNode node)
 {
     assert(node != NULL);
 
@@ -163,25 +153,23 @@ u_cfNodeKind(
 
 c_char *
 u_cfNodeName(
-    u_cfNode node)
+    const u_cfNode node)
 {
     v_cfNode kNode;
     const c_char *vname;
     c_char *name;
-    c_ulong length;
     u_result result;
 
+    assert(node != NULL);
+
     name = NULL;
-    if (node != NULL) {
-        result = u_cfNodeReadClaim(node, &kNode);
-        if (result == U_RESULT_OK) {
-            vname = v_cfNodeGetName(kNode);
-            length = (c_ulong)strlen(vname);
-            name = os_malloc(length + 1U);
-            os_strncpy(name, vname, length);
-            name[length] = 0;
-            u_cfNodeRelease(node);
+    result = u_cfNodeReadClaim(node, &kNode);
+    if (result == U_RESULT_OK) {
+        vname = v_cfNodeGetName(kNode);
+        if (vname != NULL) {
+            name = os_strdup(vname);
         }
+        u_cfNodeRelease(node);
     }
     return name;
 }

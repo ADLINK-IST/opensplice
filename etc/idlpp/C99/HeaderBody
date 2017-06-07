@@ -1,0 +1,5 @@
+$(DLL_IMPORTEXPORT) extern const dds_topic_descriptor_t $(uniquetypename)_desc;
+
+
+#define $(uniquetypename)_free(d,o) dds_sample_free ((d), &$(uniquetypename)_desc, (o))
+

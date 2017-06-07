@@ -85,7 +85,7 @@ public:
 
    // Constructor(s)
    AST_Attribute();
-   AST_Attribute(idl_bool readonly,
+   AST_Attribute(bool readonly,
                  AST_Type *ft,
                  UTL_ScopedName *n,
                  const UTL_Pragmas &p);
@@ -93,7 +93,7 @@ public:
    {}
 
    // Data Accessors
-   idl_bool readonly ();
+   bool readonly ();
 
    // Narrowing
    DEF_NARROW_METHODS1(AST_Attribute, AST_Field);
@@ -104,7 +104,7 @@ public:
 
 private:
    // Data
-   const idl_bool pd_readonly; // Is attribute read-only?
+   const bool pd_readonly; // Is attribute read-only?
 };
 
 #endif           // _AST_ATTRIBUTE_AST_ATTRIBUTE_HH

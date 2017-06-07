@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cmx__reader.h"
@@ -17,6 +25,7 @@
 #include "cmx__factory.h"
 #include "sd_serializerXML.h"
 #include "sd_serializerXMLMetadata.h"
+#include "u_observable.h"
 #include "u_entity.h"
 #include "u_reader.h"
 #include "v_query.h"
@@ -63,21 +72,22 @@ c_char*
 cmx_readerDataType(
     const c_char* reader)
 {
-    u_entity entity;
+    cmx_entity ce;
     struct cmx_readerArg arg;
 
-    entity = cmx_entityUserEntity(reader);
+    ce = cmx_entityClaim(reader);
     arg.result = NULL;
 
-    if(entity != NULL){
-        u_entityAction(entity, cmx_readerDataTypeAction, &arg);
+    if(ce != NULL){
+        (void)u_observableAction(u_observable(ce->uentity), cmx_readerDataTypeAction, &arg);
+        cmx_entityRelease(ce);
     }
     return arg.result;
 }
 
 void
 cmx_readerDataTypeAction(
-    v_entity entity,
+    v_public entity,
     c_voidp args)
 {
     sd_serializer ser;
@@ -142,14 +152,16 @@ cmx_readerRead(
     const c_char* reader)
 {
     u_reader ureader;
+    cmx_entity ce;
     struct cmx_readerArg arg;
 
     arg.result = NULL;
+    ce = cmx_entityClaim(reader);
 
-    ureader = u_reader(cmx_entityUserEntity(reader));
-
-    if(ureader != NULL){
-        u_readerRead(ureader, cmx_readerReadCopy, &arg);
+    if(ce != NULL){
+        ureader = u_reader(ce->uentity);
+        u_readerRead(ureader, U_STATE_ANY, cmx_readerReadCopy, &arg, OS_DURATION_ZERO);
+        cmx_entityRelease(ce);
     }
     return arg.result;
 }
@@ -159,14 +171,16 @@ cmx_readerTake(
     const c_char* reader)
 {
     u_reader ureader;
+    cmx_entity ce;
     struct cmx_readerArg arg;
 
     arg.result = NULL;
+    ce = cmx_entityClaim(reader);
 
-    ureader = u_reader(cmx_entityUserEntity(reader));
-
-    if(ureader != NULL){
-        u_readerTake(ureader, cmx_readerCopy, &arg);
+    if(ce != NULL){
+        ureader = u_reader(ce->uentity);
+        u_readerTake(ureader, U_STATE_ANY, cmx_readerCopy, &arg, OS_DURATION_ZERO);
+        cmx_entityRelease(ce);
     }
     return arg.result;
 }
@@ -192,7 +206,7 @@ cmx_readerReadNext(
 
     if(ureader != NULL){
         kernelArg = cmx_entityKernelArg(os_malloc(C_SIZEOF(cmx_entityKernelArg)));
-        u_entityAction(u_entity(ureader), cmx_entityKernelAction, (c_voidp)kernelArg);
+        u_objectAction(u_object(ureader), cmx_entityKernelAction, (c_voidp)kernelArg);
         sscanf(localId, "%u", &loid);
         sscanf(extId, "%u", &liid);
 
@@ -205,6 +219,9 @@ cmx_readerReadNext(
     }
     return arg.result;
     */
+    OS_UNUSED_ARG(extId);
+    OS_UNUSED_ARG(localId);
+
     return cmx_readerRead(reader);
 }
 

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -21,38 +29,5 @@
 
 #include "../common/code/os_time.c"
 #include "../posix/code/os_time.c"
+#include "../common/code/os_time_ctime.c"
 
-/** \brief Translate calendar time into readable string representation
- *
- * ctime_r provides a re-entrant translation function.
- * ctime_r function adds '\n' to the string which must be removed.
- */
-char *
-os_ctime_r (
-    os_time *t,
-    char *buf)
-{
-    time_t tt = t->tv_sec;
-    if (buf) {
-        ctime_r(&tt, buf);
-    }
-    return buf;
-}
-
-/** \brief Get high resolution relative time
- *
- */
-os_time
-os_hrtimeGet (
-    void
-    )
-{
-    os_time t;
-    struct timespec tv;
-
-    clock_gettime (CLOCK_REALTIME, &tv);
-    t.tv_sec = tv.tv_sec;
-    t.tv_nsec = tv.tv_nsec;
-
-    return t;
-}

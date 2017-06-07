@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -34,15 +42,16 @@
 #include <ctype.h>
 #include "os_stdlib.h"
 #include "c_typebase.h"
+#include "os_heap.h"
 
-	/** indentation level */
+/** indentation level */
 static c_long indent_level = 0;
-	/** enumeration element index */
-static c_long enum_element = 0;
+    /** enumeration element index */
+static c_ulong enum_element = 0;
 /* test_mode ensures no dependencies to other idlpp generated files are generated */
-c_bool test_mode = FALSE;
-os_char* includeFile = NULL;
-c_bool useVoidPtrs = FALSE;
+static c_bool test_mode = FALSE;
+static os_char* includeFile = NULL;
+static c_bool useVoidPtrs = FALSE;
 
 void
 idl_genSpliceTypeSetTestMode (
@@ -55,6 +64,7 @@ void
 idl_genSpliceTypeSetIncludeFileName (
     os_char* val)
 {
+    os_free(includeFile);
     includeFile = os_strdup(val);
 }
 
@@ -89,10 +99,10 @@ idl_macroFromBasename(
     c_long i;
 
     for (i = 0; i < (c_long)strlen(basename); i++) {
-        macro[i] = toupper(basename[i]);
+        macro[i] = (c_char) toupper(basename[i]);
         macro[i+1] = '\0';
     }
-    os_strncat(macro, append, (size_t)sizeof(macro));
+    os_strncat(macro, append, sizeof(macro));
 
     return macro;
 }
@@ -114,28 +124,14 @@ idl_fileOpen(
     const char *name,
     void *userData)
 {
-    c_long i;
+    c_ulong i;
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
 
     /* Generate multiple inclusion prevention code */
     idl_fileOutPrintf(idl_fileCur(), "#ifndef %s\n", idl_macroFromBasename(name, "SPLTYPES_H"));
     idl_fileOutPrintf(idl_fileCur(), "#define %s\n", idl_macroFromBasename(name, "SPLTYPES_H"));
     idl_fileOutPrintf(idl_fileCur(), "\n");
-    if(!test_mode)
-    {
-        char *dot = strrchr(includeFile, '.');
-        if (dot && !strcmp(dot, ".hpp"))
-        {
-            idl_fileOutPrintf(idl_fileCur(), "#include \"%s\"\n", includeFile);
-        }
-        else
-        {
-            idl_fileOutPrintf(idl_fileCur(), "#include \"%s.h\"\n", includeFile);
-        }
-        if(idl_dllGetHeader() != NULL)
-        {
-            idl_fileOutPrintf(idl_fileCur(), "%s\n", idl_dllGetHeader());
-        }
-    }
 
     /* Generate inclusion of standard OpenSpliceDDS type definition files */
     idl_fileOutPrintf(idl_fileCur(), "#include <c_base.h>\n");
@@ -143,14 +139,37 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "#include <c_sync.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "#include <c_collection.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "#include <c_field.h>\n");
+    idl_fileOutPrintf(idl_fileCur(), "#include <v_copyIn.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
+
+    if(!test_mode)
+    {
+        idl_fileOutPrintf(idl_fileCur(), "#include \"%s\"\n", includeFile);
+    }
 
     /* Generate code for inclusion of application specific include files */
     for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
-        idl_fileOutPrintf(idl_fileCur(), "#include \"%sSpl%s.h\"\n", idl_depGet (idl_depDefGet(), i), test_mode ? "Type" : "Dcps");
+        /* For ISOCPP2, the main include file should always come first for each dependency. It subsequently includes the others. */
+        if (idl_getIsISOCpp2()) {
+            const char *inclBaseName = idl_depGet (idl_depDefGet(), i);
+            const char *inclBasePath;
+            /* If dependency is on our builtin types, then add the relative path to the generated files. */
+            if (strcmp(inclBaseName, "dds_builtinTopics") == 0 || strcmp(inclBaseName, "dds_dcps_builtintopics") == 0) {
+                inclBasePath = "dds/core/detail/";
+            } else {
+                inclBasePath = "";
+            }
+            idl_fileOutPrintf(idl_fileCur(), "#include \"%s%s%s\"\n", inclBasePath, inclBaseName, test_mode ? "Type.h" : "_DCPS.hpp");
+        } else {
+            idl_fileOutPrintf(idl_fileCur(), "#include \"%sSpl%s.h\"\n", idl_depGet (idl_depDefGet(), i), test_mode ? "Type" : "Dcps");
+        }
     }
     if (idl_depLength(idl_depDefGet()) > 0) {
         idl_fileOutPrintf(idl_fileCur(), "\n");
+    }
+    if(idl_dllGetHeader() != NULL)
+    {
+        idl_fileOutPrintf(idl_fileCur(), "%s\n\n", idl_dllGetHeader());
     }
     /* return idl_explore to indicate that the rest of the file needs to be processed */
     return idl_explore;
@@ -165,7 +184,9 @@ static void
 idl_fileClose(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     /* Generate closure of multiple inclusion prevention code */
+    idl_fileOutPrintf(idl_fileCur(), "#undef OS_API\n");
     idl_fileOutPrintf(idl_fileCur(), "#endif\n");
 }
 
@@ -196,9 +217,11 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     idl_fileOutPrintf(idl_fileCur(), "extern c_metaObject __%s_%s__load (c_base base);\n",
-	idl_scopeBasename(scope),
-	idl_scopeStack(scope, "_", name));
+    idl_scopeBasename(scope),
+    idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf(idl_fileCur(), "\n");
 
     /* return idl_explore to indicate that the rest of the module needs to be processed */
@@ -253,16 +276,16 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
+    char *fullyScopedName = idl_scopeStack(scope, "_", name);
+    OS_UNUSED_ARG(structSpec);
+    OS_UNUSED_ARG(userData);
+
     if (idl_scopeStackSize(scope) == 0 || idl_scopeElementType (idl_scopeCur(scope)) == idl_tModule) {
-	/* define the prototype of the function for metadata load */
-        idl_fileOutPrintf(idl_fileCur(), "extern c_metaObject __%s__load (c_base base);\n",
-	        idl_scopeStack(scope, "_", name));
-	/* define the prototype of the function for querying the keys */
-        idl_fileOutPrintf(idl_fileCur(), "extern const char * __%s__keys (void);\n",
-	        idl_scopeStack(scope, "_", name));
-	/* define the prototype of the function for querying scoped structure name */
-        idl_fileOutPrintf(idl_fileCur(), "extern const char * __%s__name (void);\n",
-	        idl_scopeStack(scope, "_", name));
+        idl_fileOutPrintf(idl_fileCur(), "extern const char *%s_metaDescriptor[];\n",fullyScopedName);
+        idl_fileOutPrintf(idl_fileCur(), "extern const int %s_metaDescriptorArrLength;\n",fullyScopedName);
+        idl_fileOutPrintf(idl_fileCur(), "extern const int %s_metaDescriptorLength;\n",fullyScopedName);
+        /* define the prototype of the function for metadata load */
+        idl_fileOutPrintf(idl_fileCur(), "extern c_metaObject __%s__load (c_base base);\n",fullyScopedName);
         if(!test_mode)
         {
             /* define the prototype of the function for performing copyIn/copyOut. This needs to be
@@ -272,43 +295,45 @@ idl_structureOpen(
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "struct _%s ;\n",
-                idl_scopeStack(scope, "_", name));
+                fullyScopedName);
 
             if(useVoidPtrs)
             {
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "extern %s c_bool __%s__copyIn(c_base base, void *from, void *to);\n",
+                    "extern %s v_copyin_result __%s__copyIn(c_base base, const void *from, void *to);\n",
                     idl_dllGetMacro(),
-                    idl_scopeStack(scope, "_", name));
+                    fullyScopedName);
             } else
             {
+                char *tmpfullyScopedName = idl_scopeStack(scope, "::", name);
                 if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
                 {
                   idl_fileOutPrintf(
                       idl_fileCur(),
-                      "extern %s c_bool __%s__copyIn(c_base base, class %s *from, struct _%s *to);\n",
+                      "extern %s v_copyin_result __%s__copyIn(c_base base, const class %s *from, struct _%s *to);\n",
                       idl_dllGetMacro(),
-                      idl_scopeStack(scope, "_", name),
-                      idl_scopeStack(scope, "::", name),
-                      idl_scopeStack(scope, "_", name));
+                      fullyScopedName,
+                      tmpfullyScopedName,
+                      fullyScopedName);
                 }
                 else
                 {
                   idl_fileOutPrintf(
                       idl_fileCur(),
-                      "extern %s c_bool __%s__copyIn(c_base base, struct %s *from, struct _%s *to);\n",
+                      "extern %s v_copyin_result __%s__copyIn(c_base base, const struct %s *from, struct _%s *to);\n",
                       idl_dllGetMacro(),
-                      idl_scopeStack(scope, "_", name),
-                      idl_scopeStack(scope, "::", name),
-                      idl_scopeStack(scope, "_", name));
+                      fullyScopedName,
+                      tmpfullyScopedName,
+                      fullyScopedName);
                 }
+                os_free(tmpfullyScopedName);
             }
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "extern %s void __%s__copyOut(void *_from, void *_to);\n",
+                "extern %s void __%s__copyOut(const void *_from, void *_to);\n",
                 idl_dllGetMacro(),
-                idl_scopeStack(scope, "_", name));
+                fullyScopedName);
         }
 
     }
@@ -316,9 +341,9 @@ idl_structureOpen(
     idl_fileOutPrintf(
         idl_fileCur(),
         "struct _%s {\n",
-        idl_scopeStack(scope, "_", name));
+        fullyScopedName);
     indent_level++;
-
+    os_free(fullyScopedName);
     /* return idl_explore to indicate that the rest of the structure needs to be processed */
     return idl_explore;
 }
@@ -346,6 +371,9 @@ idl_structureClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     indent_level--;
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "};\n\n");
@@ -381,10 +409,10 @@ idl_structureClose (
  * If the type specification is a user defined idl_ttypedef, idl_tenum,
  * idl_tstruct or idl_tunion a scoped name mapping will be generated.
  * @verbatim
-	<typedef-name> <name>;     => enum <scope-elements>_<typedef-name> <name>;
-	<enum-name> <name>;        => enum <scope-elements>_<enum-name> <name>;
-	<struct-name> <name>;      => struct <scope-elements>_<structure-name> <name>;
-	<union-name> <name>;       => struct <scope-elements>_<union-name> <name>;
+    <typedef-name> <name>;     => enum <scope-elements>_<typedef-name> <name>;
+    <enum-name> <name>;        => enum <scope-elements>_<enum-name> <name>;
+    <struct-name> <name>;      => struct <scope-elements>_<structure-name> <name>;
+    <union-name> <name>;       => struct <scope-elements>_<union-name> <name>;
    @endverbatim
  * If the type specification is idl_tarray then generate a scoped name
  * with the array specifiers:
@@ -448,7 +476,7 @@ idl_structureMemberOpenClose(
             {
                 idl_arrayDimensions(idl_typeArray(typeDereffered), OS_TRUE);
             }
-            idl_fileOutPrintf(idl_fileCur(), "[%d];\n", idl_typeBasicMaxlen(idl_typeBasic(baseTypeDereffered))+1);
+            idl_fileOutPrintf(idl_fileCur(), "[%u];\n", idl_typeBasicMaxlen(idl_typeBasic(baseTypeDereffered))+1);
         } else
         {
             /* generate code for a standard mapping or a typedef, enum, struct or union user-type mapping */
@@ -488,7 +516,7 @@ idl_structureMemberOpenClose(
                 "c_char %s",
                 idl_languageId(name));
             idl_arrayDimensions(idl_typeArray(typeSpec), OS_TRUE);
-            idl_fileOutPrintf(idl_fileCur(),"[%d]", idl_typeBasicMaxlen(idl_typeBasic(baseTypeDereffered))+1);
+            idl_fileOutPrintf(idl_fileCur(),"[%u]", idl_typeBasicMaxlen(idl_typeBasic(baseTypeDereffered))+1);
             idl_fileOutPrintf(idl_fileCur(), ";\n");
         } else
         {
@@ -508,13 +536,13 @@ idl_structureMemberOpenClose(
             idl_fileOutPrintf(idl_fileCur(), ";\n");
         }
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-	/* generate code for a sequence mapping */
+    /* generate code for a sequence mapping */
         idl_printIndent(indent_level);
         if (idl_typeSeqMaxSize (idl_typeSeq(typeSpec)) == 0) {
-	    /* unbounded sequence */
+        /* unbounded sequence */
             idl_fileOutPrintf(idl_fileCur(), "c_sequence %s", idl_languageId(name));
         } else {
-	    /* bounded sequence */
+        /* bounded sequence */
             idl_fileOutPrintf (idl_fileCur(), "c_sequence %s", idl_languageId(name));
         }
         idl_fileOutPrintf (idl_fileCur(), ";\n");
@@ -577,9 +605,9 @@ idl_structureMemberOpenClose(
    @endverbatim
  * Then depending on the type of the switch (integral type is required) any of the following:
  * @verbatim
-	    enum <enum-type> _d;		// for an enumeration
-	    <scope-elements>_<typedef-name> _d;	// for an typedeffed enum or basic type
-	    <basic-type-mapping> _d;		// for an integral basic type
+        enum <enum-type> _d;		// for an enumeration
+        <scope-elements>_<typedef-name> _d;	// for an typedeffed enum or basic type
+        <basic-type-mapping> _d;		// for an integral basic type
    @endverbatim
  * Then open the union part:
  * @verbatim
@@ -598,20 +626,23 @@ idl_unionOpen(
     idl_typeUnion unionSpec,
     void *userData)
 {
+    char *fullyScopedName = idl_scopeStack(scope, "_", name);
+    OS_UNUSED_ARG(userData);
+
     if (idl_scopeStackSize(scope) == 0 || idl_scopeElementType (idl_scopeCur(scope)) == idl_tModule) {
-	/* define the prototype of the function for metadata load */
-        idl_fileOutPrintf(idl_fileCur(), "extern c_metaObject __%s__load (c_base base);\n",
-	    idl_scopeStack(scope, "_", name));
-	/* define the prototype of the function for querying the keys */
-        idl_fileOutPrintf(idl_fileCur(), "extern const char * __%s__keys (void);\n",
-	    idl_scopeStack(scope, "_", name));
-	/* define the prototype of the function for querying scoped union name */
-        idl_fileOutPrintf(idl_fileCur(), "extern const char * __%s__name (void);\n",
-	    idl_scopeStack(scope, "_", name));
+        idl_fileOutPrintf(idl_fileCur(), "extern const char *%s_metaDescriptor[];\n",fullyScopedName);
+        idl_fileOutPrintf(idl_fileCur(), "extern const int %s_metaDescriptorArrLength;\n",fullyScopedName);
+        idl_fileOutPrintf(idl_fileCur(), "extern const int %s_metaDescriptorLength;\n",fullyScopedName);
+        /* define the prototype of the function for metadata load */
+        idl_fileOutPrintf(idl_fileCur(), "extern c_metaObject __%s__load (c_base base);\n", fullyScopedName);
+        /* define the prototype of the function for querying the keys */
+        idl_fileOutPrintf(idl_fileCur(), "extern const char * __%s__keys (void);\n", fullyScopedName);
+        /* define the prototype of the function for querying scoped union name */
+        idl_fileOutPrintf(idl_fileCur(), "extern const char * __%s__name (void);\n", fullyScopedName);
     }
     /* open the struct */
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "struct _%s {\n", idl_scopeStack(scope, "_", name));
+    idl_fileOutPrintf(idl_fileCur(), "struct _%s {\n", fullyScopedName);
     indent_level++;
     /* generate code for the switch */
     if (idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) == idl_tbasic) {
@@ -625,8 +656,8 @@ idl_unionOpen(
         case idl_tbasic:
         case idl_tenum:
             idl_printIndent(indent_level); idl_fileOutPrintf (idl_fileCur(), "%s _d;\n",
-	        idl_scopedSplTypeName(idl_typeUnionSwitchKind(unionSpec)));
-	    break;
+            idl_scopedSplTypeName(idl_typeUnionSwitchKind(unionSpec)));
+        break;
         default:
             printf ("idl_unionOpen: Unsupported switchkind\n");
         }
@@ -637,6 +668,7 @@ idl_unionOpen(
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "union {\n");
     indent_level++;
+    os_free(fullyScopedName);
 
     /* return idl_explore to indicate that the rest of the union needs to be processed */
     return idl_explore;
@@ -670,6 +702,9 @@ idl_unionClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     indent_level--;
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "} _u;\n");
@@ -713,10 +748,10 @@ idl_unionClose (
  * If the type specification is a user defined idl_ttypedef, idl_tenum,
  * idl_tstruct or idl_tunion a scoped name mapping will be generated.
  * @verbatim
-	<typedef-name> <name>;     => enum <scope-elements>_<typedef-name> <name>;
-	<enum-name> <name>;        => enum <scope-elements>_<enum-name> <name>;
-	<struct-name> <name>;      => struct <scope-elements>_<structure-name> <name>;
-	<union-name> <name>;       => struct <scope-elements>_<union-name> <name>;
+    <typedef-name> <name>;     => enum <scope-elements>_<typedef-name> <name>;
+    <enum-name> <name>;        => enum <scope-elements>_<enum-name> <name>;
+    <struct-name> <name>;      => struct <scope-elements>_<structure-name> <name>;
+    <union-name> <name>;       => struct <scope-elements>_<union-name> <name>;
    @endverbatim
  * If the type specification is idl_tarray then generate a scoped name
  * with the array specifiers:
@@ -743,12 +778,15 @@ idl_unionCaseOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
+
     if (idl_typeSpecType(typeSpec) == idl_ttypedef ||
         idl_typeSpecType(typeSpec) == idl_tenum ||
         idl_typeSpecType(typeSpec) == idl_tstruct ||
         idl_typeSpecType(typeSpec) == idl_tunion ||
         idl_typeSpecType(typeSpec) == idl_tbasic) {
-	/* generate code for a standard mapping or a typedef, enum, struct or union user-type mapping */
+    /* generate code for a standard mapping or a typedef, enum, struct or union user-type mapping */
         idl_printIndent(indent_level);
         idl_fileOutPrintf(
             idl_fileCur(),
@@ -823,9 +861,11 @@ idl_enumerationOpen(
     idl_typeEnum enumSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     if (idl_scopeStackSize(scope) == 0 || idl_scopeElementType (idl_scopeCur(scope)) == idl_tModule) {
         idl_fileOutPrintf(idl_fileCur(), "extern c_metaObject __%s__load (c_base base);\n",
-	    idl_scopeStack(scope, "_", name));
+        idl_scopeStack(scope, "_", name));
     }
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "enum _%s {\n", idl_scopeStack (scope, "_", name));
@@ -859,6 +899,9 @@ idl_enumerationClose(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     indent_level--;
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "};\n\n");
@@ -881,7 +924,7 @@ idl_enumerationClose(
    @endverbatim
  * For any but the last element generate:
  * @verbatim
-	<element-name>,
+    <element-name>,
    @endverbatim
  *
  * @param scope Current scope
@@ -893,11 +936,13 @@ idl_enumerationElementOpenClose(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     enum_element--;
     if (enum_element == 0) {
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(), "_%s\n",
-	    idl_scopeStack(scope, "_", name));
+        idl_scopeStack(scope, "_", name));
     } else {
         idl_printIndent(indent_level);
         idl_fileOutPrintf(
@@ -948,15 +993,15 @@ idl_arrayDimensions (
    @endverbatim
  * If the type specification is idl_tbasic a standard mapping will be applied:
  * @verbatim
-	typedef <basic-type-mapping> <scope-elements>_<name>;
+    typedef <basic-type-mapping> <scope-elements>_<name>;
    @endverbatim
  * If the type specification is a user defined idl_ttypedef, idl_tenum,
  * idl_tstruct or idl_tunion a scoped name mapping will be generated.
  * @verbatim
-	<typedef-name> <name>;     => typedef enum <scope-elements>_<typedef-name> <scope-elements>_<name>;
-	<enum-name> <name>;        => typedef enum <scope-elements>_<enum-name> <scope-elements>_<name>;
-	<struct-name> <name>;      => typedef struct <scope-elements>_<structure-name> <scope-elements>_<name>;
-	<union-name> <name>;       => typedef struct <scope-elements>_<union-name> <scope-elements>_<name>;
+    <typedef-name> <name>;     => typedef enum <scope-elements>_<typedef-name> <scope-elements>_<name>;
+    <enum-name> <name>;        => typedef enum <scope-elements>_<enum-name> <scope-elements>_<name>;
+    <struct-name> <name>;      => typedef struct <scope-elements>_<structure-name> <scope-elements>_<name>;
+    <union-name> <name>;       => typedef struct <scope-elements>_<union-name> <scope-elements>_<name>;
    @endverbatim
  * If the type specification is idl_tarray then generate a scoped name
  * with the array specifiers:
@@ -987,6 +1032,8 @@ idl_typedefOpenClose(
     idl_typeDef defSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     if (idl_scopeStackSize(scope) == 0 || idl_scopeElementType (idl_scopeCur(scope)) == idl_tModule) {
         idl_fileOutPrintf(
             idl_fileCur(),
@@ -1000,7 +1047,7 @@ idl_typedefOpenClose(
                 idl_fileCur(),
                 "extern const char * __%s__keys (void);\n",
                 idl_scopeStack(scope, "_", name));
-	    /* define the prototype of the function for querying scoped structure name */
+        /* define the prototype of the function for querying scoped structure name */
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "extern const char * __%s__name (void);\n",
@@ -1028,18 +1075,18 @@ idl_typedefOpenClose(
             idl_scopedSplTypeIdent(idl_typeArrayActual (idl_typeArray(idl_typeDefRefered(defSpec)))),
             idl_scopeStack(scope, "_", name));
         idl_arrayDimensions(idl_typeArray(idl_typeDefRefered(defSpec)), OS_FALSE);
-	    idl_fileOutPrintf(idl_fileCur(), ";\n\n");
+        idl_fileOutPrintf(idl_fileCur(), ";\n\n");
     } else if (idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tseq) {
         /* generate code for a sequence mapping */
         idl_printIndent(indent_level);
         if (idl_typeSeqMaxSize (idl_typeSeq(idl_typeDefRefered(defSpec))) == 0) {
-	    /* unbounded sequence */
+        /* unbounded sequence */
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "typedef c_sequence _%s",
                 idl_scopeStack (scope, "_", name));
         } else {
-	    /* bounded sequence */
+        /* bounded sequence */
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "typedef c_sequence _%s",
@@ -1069,6 +1116,7 @@ static idl_programControl *
 idl_getControl(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     return &idl_genSpliceLoadControl;
 }
 

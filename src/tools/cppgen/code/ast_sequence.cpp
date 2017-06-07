@@ -85,16 +85,17 @@ AST_Sequence::AST_Sequence () :
    pd_base_type (NULL)
 {}
 
-AST_Sequence::AST_Sequence (AST_Expression *ms, AST_Type *bt) : 
+AST_Sequence::AST_Sequence (AST_Expression *ms, AST_Type *bt) 
+: 
    AST_Decl
    (
       AST_Decl::NT_sequence,
-      new UTL_ScopedName (new Identifier ("sequence", 1, 0, I_FALSE), NULL)
+      new UTL_ScopedName (new Identifier ("sequence"), NULL)
    ),
    pd_max_size (ms),
    pd_base_type (bt)
 {
-   set_local(bt->local());
+   set_local (bt->local());
 }
 
 /*
@@ -112,8 +113,7 @@ AST_Sequence::AST_Sequence (AST_Expression *ms, AST_Type *bt) :
 /*
  * Dump this AST_Sequence node to the ostream o
  */
-void
-AST_Sequence::dump(ostream &o)
+void AST_Sequence::dump (ostream &o)
 {
    o << "sequence <";
    pd_base_type->dump(o);
@@ -126,18 +126,16 @@ AST_Sequence::dump(ostream &o)
  * Data accessors
  */
 
-AST_Expression *
-AST_Sequence::max_size()
+AST_Expression * AST_Sequence::max_size ()
 {
    return pd_max_size;
 }
 
-AST_Type *
-AST_Sequence::base_type()
+AST_Type * AST_Sequence::base_type ()
 {
    return pd_base_type;
 }
 
 // Narrowing
-IMPL_NARROW_METHODS1(AST_Sequence, AST_ConcreteType)
-IMPL_NARROW_FROM_DECL(AST_Sequence)
+IMPL_NARROW_METHODS1 (AST_Sequence, AST_ConcreteType)
+IMPL_NARROW_FROM_DECL (AST_Sequence)

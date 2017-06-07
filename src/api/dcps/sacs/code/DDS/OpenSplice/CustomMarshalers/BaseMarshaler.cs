@@ -1,21 +1,21 @@
-// The OpenSplice DDS Community Edition project.
-//
-// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
-// Copyright (C) 2009  L-3 Communications / IS
-// 
-//  This library is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License Version 3 dated 29 June 2007, as published by the
-//  Free Software Foundation.
-// 
-//  This library is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-// 
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
 
 using System;
 using System.Collections.Generic;
@@ -27,49 +27,58 @@ namespace DDS.OpenSplice.CustomMarshalers
     public abstract class BaseMarshaler
     {
         #region Writers
-        public static void Write(IntPtr to, int offset, long from)
+        public static bool Write(IntPtr to, int offset, long from)
         {
             Marshal.WriteInt64(to, offset, from);
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, ulong from)
+        public static bool Write(IntPtr to, int offset, ulong from)
         {
             Marshal.WriteInt64(to, offset, (long)from);
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, int from)
+        public static bool Write(IntPtr to, int offset, int from)
         {
             Marshal.WriteInt32(to, offset, from);
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, uint from)
+        public static bool Write(IntPtr to, int offset, uint from)
         {
             Marshal.WriteInt32(to, offset, (int)from);
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, short from)
+        public static bool Write(IntPtr to, int offset, short from)
         {
             Marshal.WriteInt16(to, offset, from);
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, ushort from)
+        public static bool Write(IntPtr to, int offset, ushort from)
         {
             Marshal.WriteInt16(to, offset, (short)from);
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, bool from)
+        public static bool Write(IntPtr to, int offset, bool from)
         {
             Marshal.WriteByte(to, offset, (byte)(from ? 1 : 0));
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, byte from)
+        public static bool Write(IntPtr to, int offset, byte from)
         {
             Marshal.WriteByte(to, offset, from);
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, char from)
+        public static bool Write(IntPtr to, int offset, char from)
         {
             Marshal.WriteByte(to, offset, (byte)from);
+            return true;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -81,11 +90,12 @@ namespace DDS.OpenSplice.CustomMarshalers
             public long theLong;
         }
 
-        public static void Write(IntPtr to, int offset, double from)
+        public static bool Write(IntPtr to, int offset, double from)
         {
             DoubleToLong dtl = new DoubleToLong();
             dtl.theDouble = from;
             Marshal.WriteInt64(to, offset, dtl.theLong);
+            return true;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -97,47 +107,97 @@ namespace DDS.OpenSplice.CustomMarshalers
             public int theInt;
         }
 
-        public static void Write(IntPtr to, int offset, float from)
+        public static bool Write(IntPtr to, int offset, float from)
         {
             SingleToInt sti = new SingleToInt();
             sti.theSingle = from;
             Marshal.WriteInt32(to, offset, sti.theInt);
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, Duration from)
+        public static bool Write(IntPtr to, int offset, Duration from)
         {
             Marshal.WriteInt32(to, offset, from.Sec);
             Marshal.WriteInt32(to, offset + 4, (int)from.NanoSec);
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, Time from)
+        public static bool Write(ref Duration to, Duration from)
+        {
+            to.Sec = from.Sec;
+            to.NanoSec = from.NanoSec;
+            return true;
+        }
+
+        public static bool Write(IntPtr to, int offset, Time from)
         {
             Marshal.WriteInt32(to, offset, from.Sec);
             Marshal.WriteInt32(to, offset + 4, (int)from.NanoSec);
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, InstanceHandle from)
+        public static bool Write(ref Time to, Time from)
+        {
+            to.Sec = from.Sec;
+            to.NanoSec = from.NanoSec;
+            return true;
+        }
+
+        public static bool Write(IntPtr to, int offset, InstanceHandle from)
         {
             Marshal.WriteInt64(to, offset, from);
+            return true;
         }
 
-        public static void Write(IntPtr basePtr, IntPtr to, int offset, ref string from)
+        public static bool Write(IntPtr basePtr, IntPtr to, int offset, ref string from)
         {
             IntPtr strPtr = Database.c.stringNew(basePtr, from);
+	    if (strPtr == IntPtr.Zero) return false;
             Marshal.WriteIntPtr(to, offset, strPtr);
+            return true;
         }
 
-        public static void Write(IntPtr basePtr, IntPtr to, int offset, ref object[] from)
+        public static bool Write(IntPtr basePtr, ref IntPtr to, string from)
         {
-            //IntPtr strPtr = Gapi.DDSDatabase.stringNew(basePtr, from);
-            //Marshal.WriteIntPtr(to, offset, strPtr);
+            to = Database.c.stringNew(basePtr, from);
+            if (to == IntPtr.Zero) return false;
+            return true;
         }
 
-        public static void Write(IntPtr to, int offset, IntPtr from)
+        public static bool Write(IntPtr to, int offset, IntPtr from)
         {
             Marshal.WriteIntPtr(to, offset, from);
+            return true;
         }
 
+        public static void WriteString(ref IntPtr to, string from)
+        {
+            if (from != null) {
+#if COMPACT_FRAMEWORK
+                int strLength = from.Length;
+                to = os.malloc(strLength + 1);
+                Marshal.Copy(Encoding.ASCII.GetBytes(from), 0, to, strLength);
+                Write(to, strLength, '\0');
+#else
+                to = Marshal.StringToHGlobalAnsi(from);
+#endif
+            } else {
+                to = IntPtr.Zero;
+            }
+        }
+        
+        public static void ReleaseString(ref IntPtr to)
+        {
+            if (to != IntPtr.Zero) {
+#if COMPACT_FRAMEWORK
+                os.free(to);
+#else
+                Marshal.FreeHGlobal(to);
+#endif
+                to = IntPtr.Zero;
+            }
+        }
+        
         #endregion
 
         #region Readers
@@ -231,6 +291,27 @@ namespace DDS.OpenSplice.CustomMarshalers
         public static IntPtr ReadIntPtr(IntPtr from, int offset)
         {
             return Marshal.ReadIntPtr(from, offset);
+        }
+        
+        public static string ReadString(IntPtr from)
+        {
+            string result;
+            
+            if (from != IntPtr.Zero)
+            {
+#if COMPACT_FRAMEWORK
+                int strLen = Gapi.GenericAllocRelease.string_len(from);
+                byte[] strBuf = new byte[strLen];
+                Marshal.Copy(from, strBuf, 0, strLen);
+                result = Encoding.ASCII.GetString(strBuf, 0, strLen);
+#else
+                result = Marshal.PtrToStringAnsi(from);
+#endif
+            } else {
+               result = null;
+            }
+            
+            return result;
         }
 
         #endregion

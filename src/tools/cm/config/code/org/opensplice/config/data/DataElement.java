@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.config.data;
@@ -89,16 +97,14 @@ public class DataElement extends DataNode {
             if(count == ((MetaElement)nodeMeta).getMaxOccurrences()){
                 throw new DataException("Maximum number of occurrences for " + 
                         ((MetaElement)nodeMeta).getName()+ " reached.");
-            } else {
-                if (addToDOM == 1) {
-                    ((Element)this.node).appendChild(node.getNode());
-                    Text textNode = this.owner.getDocument().createTextNode("\n");
-                    this.node.appendChild(textNode);
-                } else if (addToDOM == 2) {
-                    replaceChild(node.getNode(), value);
-                    Text textNode = this.owner.getDocument().createTextNode("\n");
-                    this.node.appendChild(textNode);
-                }
+            } else if (addToDOM == 1) {
+                ((Element) this.node).appendChild(node.getNode());
+                Text textNode = this.owner.getDocument().createTextNode("\n");
+                this.node.appendChild(textNode);
+            } else if (addToDOM == 2) {
+                replaceChild(node.getNode(), value);
+                Text textNode = this.owner.getDocument().createTextNode("\n");
+                this.node.appendChild(textNode);
             }
         } else if(nodeMeta instanceof MetaAttribute){
             if (nodeMeta.getVersion().equals(ConfigModeIntializer.COMMERCIAL)
@@ -167,41 +173,19 @@ public class DataElement extends DataNode {
             if(child.getMetadata().equals(nodeMeta)){
                 count++;
             }
-            /*
-            if(child instanceof DataValue){
-                if(node instanceof DataValue){
-                    count++;
-                }
-            } else if(child instanceof DataElement){
-                if(node instanceof DataElement){
-                    if(((MetaElement)child.getMetadata()).getName().equals(
-                       ((MetaElement)nodeMeta).getName())) {
-                        count++;
-                    }
-                }
-            } else if(child instanceof DataAttribute){
-                if(node instanceof DataAttribute){
-                    if(((MetaAttribute)child.getMetadata()).getName().equals(
-                       ((MetaAttribute)nodeMeta).getName())) {
-                        count++;
-                    }
-                }
-            }
-            */
         }
         if(nodeMeta instanceof MetaElement){
             if(count == ((MetaElement)nodeMeta).getMinOccurrences()){
                 throw new DataException("Minimum number of occurrences for " + 
                         ((MetaElement)nodeMeta).getName()+ " reached.");
+            } else if (ConfigModeIntializer.CONFIGURATOR_MODE == ConfigModeIntializer.COMMERCIAL_MODE) {
+                ((Element) this.node).removeChild(node.getNode());
             } else {
-                if (ConfigModeIntializer.CONFIGURATOR_MODE == ConfigModeIntializer.COMMERCIAL_MODE) {
-                    ((Element)this.node).removeChild(node.getNode());
-                }
-                else {
-                    if (!nodeMeta.getVersion().equals(ConfigModeIntializer.COMMERCIAL)) {
-                        if (!node.getOwner().getCommercialServices().contains(node.getNode())) {
-                            ((Element) this.node).removeChild(node.getNode());
-                        }
+                if (!nodeMeta.getVersion().equals(
+                        ConfigModeIntializer.COMMERCIAL)) {
+                    if (!node.getOwner().getCommercialServices()
+                            .contains(node.getNode())) {
+                        ((Element) this.node).removeChild(node.getNode());
                     }
                 }
             }
@@ -209,22 +193,20 @@ public class DataElement extends DataNode {
             if(((MetaAttribute)nodeMeta).isRequired()){
                 throw new DataException("Cannot remove required attribute " + 
                         ((MetaAttribute)nodeMeta).getName()+ ".");
+            } else if (ConfigModeIntializer.CONFIGURATOR_MODE == ConfigModeIntializer.COMMERCIAL_MODE) {
+                ((Element) this.node)
+                        .removeAttributeNode((Attr) node.getNode());
             } else {
-                if (ConfigModeIntializer.CONFIGURATOR_MODE == ConfigModeIntializer.COMMERCIAL_MODE) {
+                if (!nodeMeta.getVersion().equals(
+                        ConfigModeIntializer.COMMERCIAL)) {
                     ((Element)this.node).removeAttributeNode((Attr)node.getNode());
-                }
-                else {
-                    if (!nodeMeta.getVersion().equals(ConfigModeIntializer.COMMERCIAL)) {
-                        ((Element)this.node).removeAttributeNode((Attr)node.getNode());
-                    }
                 }
             }
         } else {
             ((Element)this.node).removeChild(node.getNode());
         }
         this.children.remove(node);
-        //node.setParent(null);
-        //node.setOwner(null);
+
         return;
     }
     

@@ -74,7 +74,7 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 /*
 ** DEPENDENCIES: NONE
 **
-** USE: Included from idl.hh
+** USE: Included from idl.h
 */
 
 #include "utl_scoped_name.h" // Define UTL_ScopedName

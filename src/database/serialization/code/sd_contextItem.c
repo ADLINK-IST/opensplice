@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "sd__contextItem.h"
@@ -53,12 +61,8 @@ static sd_contextItem
 sd_contextItemScopeNew (
     void)
 {
-    sd_contextItemScope item;
-
-    item = (sd_contextItemScope)os_malloc(C_SIZEOF(sd_contextItemScope));
-    if ( item ) {
-        sd_contextItemScopeInit(item, SD_CONTEXT_ITEM_SCOPE);
-    }
+    sd_contextItemScope item = os_malloc(C_SIZEOF(sd_contextItemScope));
+    sd_contextItemScopeInit(item, SD_CONTEXT_ITEM_SCOPE);
     return sd_contextItem(item);
 }
 
@@ -67,12 +71,8 @@ static sd_contextItem
 sd_contextItemModuleNew (
     void)
 {
-    sd_contextItemModule item;
-
-    item = (sd_contextItemModule)os_malloc(C_SIZEOF(sd_contextItemModule));
-    if ( item ) {
-        sd_contextItemScopeInit(sd_contextItemScope(item), SD_CONTEXT_ITEM_MODULE);
-    }
+    sd_contextItemModule item = os_malloc(C_SIZEOF(sd_contextItemModule));
+    sd_contextItemScopeInit(sd_contextItemScope(item), SD_CONTEXT_ITEM_MODULE);
     return sd_contextItem(item);
 }
 
@@ -80,12 +80,8 @@ static sd_contextItem
 sd_contextItemStructureNew (
     void)
 {
-    sd_contextItemStructure item;
-
-    item = (sd_contextItemStructure)os_malloc(C_SIZEOF(sd_contextItemStructure));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_STRUCTURE);
-    }
+    sd_contextItemStructure item = os_malloc(C_SIZEOF(sd_contextItemStructure));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_STRUCTURE);
     return sd_contextItem(item);
 }
 
@@ -93,12 +89,8 @@ static sd_contextItem
 sd_contextItemMemberNew (
     void)
 {
-    sd_contextItemMember item;
-
-    item = (sd_contextItemMember)os_malloc(C_SIZEOF(sd_contextItemMember));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_MEMBER);
-    }
+    sd_contextItemMember item = os_malloc(C_SIZEOF(sd_contextItemMember));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_MEMBER);
     return sd_contextItem(item);
 }
 
@@ -106,12 +98,8 @@ static sd_contextItem
 sd_contextItemTypeNew (
     void)
 {
-    sd_contextItemType item;
-
-    item = (sd_contextItemType)os_malloc(C_SIZEOF(sd_contextItemType));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_TYPE);
-    }
+    sd_contextItemType item = os_malloc(C_SIZEOF(sd_contextItemType));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_TYPE);
     return sd_contextItem(item);
 }
 
@@ -119,12 +107,8 @@ static sd_contextItem
 sd_contextItemTypedefNew (
     void)
 {
-    sd_contextItemTypedef item;
-
-    item = (sd_contextItemTypedef)os_malloc(C_SIZEOF(sd_contextItemTypedef));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_TYPEDEF);
-    }
+    sd_contextItemTypedef item = os_malloc(C_SIZEOF(sd_contextItemTypedef));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_TYPEDEF);
     return sd_contextItem(item);
 }
 
@@ -132,12 +116,8 @@ static sd_contextItem
 sd_contextItemPrimitiveNew (
     void)
 {
-    sd_contextItemPrimitive item;
-
-    item = (sd_contextItemPrimitive)os_malloc(C_SIZEOF(sd_contextItemPrimitive));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_PRIMITIVE);
-    }
+    sd_contextItemPrimitive item = os_malloc(C_SIZEOF(sd_contextItemPrimitive));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_PRIMITIVE);
     return sd_contextItem(item);
 }
 
@@ -145,12 +125,8 @@ static sd_contextItem
 sd_contextItemTimeNew (
     void)
 {
-    sd_contextItemTime item;
-
-    item = (sd_contextItemTime)os_malloc(C_SIZEOF(sd_contextItemTime));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_TIME);
-    }
+    sd_contextItemTime item = os_malloc(C_SIZEOF(sd_contextItemTime));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_TIME);
     return sd_contextItem(item);
 }
 
@@ -160,7 +136,7 @@ sd_contextItemCollectionInit (
     sd_contextItemKind kind)
 {
     sd_contextItemInit(sd_contextItem(item), kind);
-    item->kind = C_UNDEFINED;
+    item->kind = OSPL_C_UNDEFINED;
     item->maxSize = 0;
 }
 
@@ -168,12 +144,8 @@ static sd_contextItem
 sd_contextItemCollectionNew (
     void)
 {
-    sd_contextItemCollection item;
-
-    item = (sd_contextItemCollection)os_malloc(C_SIZEOF(sd_contextItemCollection));
-    if ( item ) {
-        sd_contextItemCollectionInit(item, SD_CONTEXT_ITEM_COLLECTION);
-    }
+    sd_contextItemCollection item = os_malloc(C_SIZEOF(sd_contextItemCollection));
+    sd_contextItemCollectionInit(item, SD_CONTEXT_ITEM_COLLECTION);
     return sd_contextItem(item);
 }
 
@@ -181,15 +153,10 @@ static sd_contextItem
 sd_contextItemStringNew (
     void)
 {
-    sd_contextItemString item;
-    sd_contextItemCollection coll;
-
-    item = (sd_contextItemString)os_malloc(C_SIZEOF(sd_contextItemString));
-    if ( item ) {
-        coll = sd_contextItemCollection(item);
-        sd_contextItemCollectionInit(coll, SD_CONTEXT_ITEM_STRING);
-        coll->kind = C_STRING;
-    }
+    sd_contextItemString item = os_malloc(C_SIZEOF(sd_contextItemString));
+    sd_contextItemCollection coll = sd_contextItemCollection(item);
+    sd_contextItemCollectionInit(coll, SD_CONTEXT_ITEM_STRING);
+    coll->kind = OSPL_C_STRING;
     return sd_contextItem(item);
 }
 
@@ -197,15 +164,10 @@ static sd_contextItem
 sd_contextItemArrayNew (
     void)
 {
-    sd_contextItemArray item;
-    sd_contextItemCollection coll;
-
-    item = (sd_contextItemArray)os_malloc(C_SIZEOF(sd_contextItemArray));
-    if ( item ) {
-        coll = sd_contextItemCollection(item);
-        sd_contextItemCollectionInit(coll, SD_CONTEXT_ITEM_ARRAY);
-        coll->kind = C_ARRAY;
-    }
+    sd_contextItemArray item = os_malloc(C_SIZEOF(sd_contextItemArray));
+    sd_contextItemCollection coll = sd_contextItemCollection(item);
+    sd_contextItemCollectionInit(coll, SD_CONTEXT_ITEM_ARRAY);
+    coll->kind = OSPL_C_ARRAY;
     return sd_contextItem(item);
 }
 
@@ -213,15 +175,10 @@ static sd_contextItem
 sd_contextItemSequenceNew (
     void)
 {
-    sd_contextItemSequence item;
-    sd_contextItemCollection coll;
-
-    item = (sd_contextItemSequence)os_malloc(C_SIZEOF(sd_contextItemSequence));
-    if ( item ) {
-        coll = sd_contextItemCollection(item);
-        sd_contextItemCollectionInit(coll, SD_CONTEXT_ITEM_SEQUENCE);
-        coll->kind = C_SEQUENCE;
-    }
+    sd_contextItemSequence item = os_malloc(C_SIZEOF(sd_contextItemSequence));
+    sd_contextItemCollection coll = sd_contextItemCollection(item);
+    sd_contextItemCollectionInit(coll, SD_CONTEXT_ITEM_SEQUENCE);
+    coll->kind = OSPL_C_SEQUENCE;
     return sd_contextItem(item);
 }
 
@@ -229,12 +186,8 @@ static sd_contextItem
 sd_contextItemEnumerationNew (
     void)
 {
-    sd_contextItemEnumeration item;
-
-    item = (sd_contextItemEnumeration)os_malloc(C_SIZEOF(sd_contextItemEnumeration));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_ENUMERATION);
-    }
+    sd_contextItemEnumeration item = os_malloc(C_SIZEOF(sd_contextItemEnumeration));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_ENUMERATION);
     return sd_contextItem(item);
 }
 
@@ -242,12 +195,8 @@ static sd_contextItem
 sd_contextItemUnionSwitchNew (
     void)
 {
-    sd_contextItemUnionSwitch item;
-
-    item = (sd_contextItemUnionSwitch)os_malloc(C_SIZEOF(sd_contextItemUnionSwitch));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_UNIONSWITCH);
-    }
+    sd_contextItemUnionSwitch item = os_malloc(C_SIZEOF(sd_contextItemUnionSwitch));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_UNIONSWITCH);
     return sd_contextItem(item);
 }
 
@@ -255,12 +204,8 @@ static sd_contextItem
 sd_contextItemUnionNew (
     void)
 {
-    sd_contextItemUnion item;
-
-    item = (sd_contextItemUnion)os_malloc(C_SIZEOF(sd_contextItemUnion));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_UNION);
-    }
+    sd_contextItemUnion item = os_malloc(C_SIZEOF(sd_contextItemUnion));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_UNION);
     return sd_contextItem(item);
 }
 
@@ -268,12 +213,8 @@ static sd_contextItem
 sd_contextItemUnionCaseNew (
     void)
 {
-    sd_contextItemUnionCase item;
-
-    item = (sd_contextItemUnionCase)os_malloc(C_SIZEOF(sd_contextItemUnionCase));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_UNIONCASE);
-    }
+    sd_contextItemUnionCase item = os_malloc(C_SIZEOF(sd_contextItemUnionCase));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_UNIONCASE);
     return sd_contextItem(item);
 }
 
@@ -281,14 +222,10 @@ static sd_contextItem
 sd_contextItemLiteralNew (
     void)
 {
-    sd_contextItemLiteral item;
-
-    item = (sd_contextItemLiteral)os_malloc(C_SIZEOF(sd_contextItemLiteral));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_LITERAL);
-        item->type = NULL;
-        item->value = c_undefinedValue();
-    }
+    sd_contextItemLiteral item = os_malloc(C_SIZEOF(sd_contextItemLiteral));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_LITERAL);
+    item->type = NULL;
+    item->value = c_undefinedValue();
     return sd_contextItem(item);
 }
 
@@ -296,12 +233,8 @@ static sd_contextItem
 sd_contextItemLabelNew (
     void)
 {
-    sd_contextItemLabel item;
-
-    item = (sd_contextItemLabel)os_malloc(C_SIZEOF(sd_contextItemLabel));
-    if ( item ) {
-        sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_LABEL);
-    }
+    sd_contextItemLabel item = os_malloc(C_SIZEOF(sd_contextItemLabel));
+    sd_contextItemInit(sd_contextItem(item), SD_CONTEXT_ITEM_LABEL);
     return sd_contextItem(item);
 }
 
@@ -310,69 +243,47 @@ sd_contextItem
 sd_contextItemNew (
     sd_contextItemKind kind)
 {
-    sd_contextItem item = NULL;
 
     switch ( kind ) {
         case SD_CONTEXT_ITEM_SCOPE:
-            item = sd_contextItemScopeNew();
-            break;
+            return sd_contextItemScopeNew();
         case SD_CONTEXT_ITEM_MODULE:
-            item = sd_contextItemModuleNew();
-            break;
+            return sd_contextItemModuleNew();
         case SD_CONTEXT_ITEM_STRUCTURE:
-            item = sd_contextItemStructureNew();
-            break;
+            return sd_contextItemStructureNew();
         case SD_CONTEXT_ITEM_MEMBER:
-            item = sd_contextItemMemberNew();
-            break;
+            return sd_contextItemMemberNew();
         case SD_CONTEXT_ITEM_TYPE:
-            item = sd_contextItemTypeNew();
-            break;
+            return sd_contextItemTypeNew();
         case SD_CONTEXT_ITEM_TYPEDEF:
-            item = sd_contextItemTypedefNew();
-            break;
+            return sd_contextItemTypedefNew();
         case SD_CONTEXT_ITEM_PRIMITIVE:
-            item = sd_contextItemPrimitiveNew();
-            break;
+            return sd_contextItemPrimitiveNew();
         case SD_CONTEXT_ITEM_STRING:
-            item = sd_contextItemStringNew();
-            break;
+            return sd_contextItemStringNew();
         case SD_CONTEXT_ITEM_TIME:
-            item = sd_contextItemTimeNew();
-            break;
+            return sd_contextItemTimeNew();
         case SD_CONTEXT_ITEM_COLLECTION:
-            item = sd_contextItemCollectionNew();
-            break;
+            return sd_contextItemCollectionNew();
         case SD_CONTEXT_ITEM_ARRAY:
-            item = sd_contextItemArrayNew();
-            break;
+            return sd_contextItemArrayNew();
         case SD_CONTEXT_ITEM_SEQUENCE:
-            item = sd_contextItemSequenceNew();
-            break;
+            return sd_contextItemSequenceNew();
         case SD_CONTEXT_ITEM_ENUMERATION:
-            item = sd_contextItemEnumerationNew();
-            break;
+            return sd_contextItemEnumerationNew();
         case SD_CONTEXT_ITEM_UNION:
-            item = sd_contextItemUnionNew();
-            break;
+            return sd_contextItemUnionNew();
         case SD_CONTEXT_ITEM_UNIONCASE:
-            item = sd_contextItemUnionCaseNew();
-            break;
+            return sd_contextItemUnionCaseNew();
         case SD_CONTEXT_ITEM_UNIONSWITCH:
-            item = sd_contextItemUnionSwitchNew();
-            break;
+            return sd_contextItemUnionSwitchNew();
         case SD_CONTEXT_ITEM_LITERAL:
-            item = sd_contextItemLiteralNew();
-            break;
+            return sd_contextItemLiteralNew();
         case SD_CONTEXT_ITEM_LABEL:
-            item = sd_contextItemLabelNew();
-            break;
+            return sd_contextItemLabelNew();
         default:
-            item = NULL;
-            break;
+            return NULL;
     }
-
-    return item;
 }
 
 void
@@ -523,8 +434,8 @@ sd_contextItemCompare (
     void *arg)
 {
     c_bool result = TRUE;
-    sd_contextItem item = (sd_contextItem) obj;
-    sd_contextItemFindArg *findArg = (sd_contextItemFindArg*) arg;
+    sd_contextItem item = obj;
+    sd_contextItemFindArg *findArg = arg;
 
     if ( item->kind == findArg->kind ) {
         findArg->item = item;
@@ -568,8 +479,8 @@ sd_contextItemWalkAction (
     void *obj,
     void *arg)
 {
-    sd_contextItem item = (sd_contextItem) obj;
-    sd_contextItemWalkArg *walkArg = (sd_contextItemWalkArg*) arg;
+    sd_contextItem item = obj;
+    sd_contextItemWalkArg *walkArg = arg;
 
     return walkArg->action(item, walkArg->arg);
 }
@@ -579,8 +490,8 @@ sd_contextItemDeepWalkAction (
     void *obj,
     void *arg)
 {
-    sd_contextItem item = (sd_contextItem) obj;
-    sd_contextItemWalkArg *walkArg = (sd_contextItemWalkArg*) arg;
+    sd_contextItem item = obj;
+    sd_contextItemWalkArg *walkArg = arg;
 
     walkArg->proceed = walkArg->action(item, walkArg->arg);
 
@@ -708,7 +619,7 @@ findItemByObject (
     sd_contextItem item,
     void           *arg)
 {
-    sd_findItemByObject *info = (sd_findItemByObject *) arg;
+    sd_findItemByObject *info = arg;
     c_bool proceed = TRUE;
 
     assert(info);

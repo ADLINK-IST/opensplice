@@ -1,3 +1,7 @@
+using System;
+using System.Threading;
+using System.Collections.Generic;
+
 namespace test.sacs
 {
     /// <date>Jun 8, 2005</date>
@@ -22,12 +26,27 @@ namespace test.sacs
 
         public bool onSampleLostCalled = false;
         public DDS.SampleLostStatus slStatus;
+        Dictionary<DDS.StatusKind, Semaphore> semaphores = new Dictionary<DDS.StatusKind, Semaphore>();
+
+        public MyDataReaderListener(Dictionary<DDS.StatusKind, Semaphore> s)
+        {
+            semaphores = s;
+        }
+
+        public MyDataReaderListener()
+        {
+        }
 
         public virtual void OnRequestedDeadlineMissed(DDS.IDataReader reader, DDS.RequestedDeadlineMissedStatus
              status)
         {
             onRequestedDeadlineMissedCalled = true;
             rdmStatus = status;
+            Semaphore sem = null;
+            if (semaphores.TryGetValue(DDS.StatusKind.RequestedDeadlineMissed, out sem) == true)
+            {
+                sem.Release();
+            }
         }
 
         public virtual void OnRequestedIncompatibleQos(DDS.IDataReader reader, DDS.RequestedIncompatibleQosStatus
@@ -35,6 +54,12 @@ namespace test.sacs
         {
             onRequestedIncompatibleQosCalled = true;
             riqStatus = status;
+            Semaphore sem = null;
+            if (semaphores.TryGetValue(DDS.StatusKind.RequestedIncompatibleQos, out sem) == true)
+            {
+                sem.Release();
+            }
+
         }
 
         public virtual void OnSampleRejected(DDS.IDataReader reader, DDS.SampleRejectedStatus
@@ -42,19 +67,34 @@ namespace test.sacs
         {
             onSampleRejectedCalled = true;
             srStatus = status;
+            Semaphore sem = null;
+            if (semaphores.TryGetValue(DDS.StatusKind.SampleRejected, out sem) == true)
+            {
+                sem.Release();
+            }
         }
 
         public virtual void OnLivelinessChanged(DDS.IDataReader reader, DDS.LivelinessChangedStatus
              status)
         {
-            
+
             onLivelinessChangedCalled = true;
             lcStatus = status;
+            Semaphore sem = null;
+            if (semaphores.TryGetValue(DDS.StatusKind.LivelinessChanged, out sem) == true)
+            {
+                sem.Release();
+            }
         }
 
         public virtual void OnDataAvailable(DDS.IDataReader reader)
         {
             onDataAvailableCalled = true;
+            Semaphore sem = null;
+            if (semaphores.TryGetValue(DDS.StatusKind.DataAvailable, out sem) == true)
+            {
+                sem.Release();
+            }
         }
 
         public virtual void OnSubscriptionMatched(DDS.IDataReader reader, DDS.SubscriptionMatchedStatus
@@ -62,6 +102,11 @@ namespace test.sacs
         {
             onSubscriptionMatchCalled = true;
             smStatus = status;
+            Semaphore sem = null;
+            if (semaphores.TryGetValue(DDS.StatusKind.SubscriptionMatched, out sem) == true)
+            {
+                sem.Release();
+            }
         }
 
         public virtual void OnSampleLost(DDS.IDataReader reader, DDS.SampleLostStatus status
@@ -69,6 +114,11 @@ namespace test.sacs
         {
             onSampleLostCalled = true;
             slStatus = status;
+            Semaphore sem = null;
+            if (semaphores.TryGetValue(DDS.StatusKind.SampleLost, out sem) == true)
+            {
+                sem.Release();
+            }
         }
 
         public virtual void Reset()

@@ -60,8 +60,7 @@
      <family>Lucida Grande</family>
      <pointsize>10</pointsize>
      <weight>75</weight>
-
-
+     <bold>true</bold>
     </font>
    </property>
    <property name="frameShape">
@@ -84,8 +83,7 @@
       <family>Lucida Grande</family>
       <pointsize>10</pointsize>
       <weight>75</weight>
-
-
+      <bold>true</bold>
      </font>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -103,8 +101,7 @@
              <family>Lucida Grande</family>
              <pointsize>10</pointsize>
              <weight>75</weight>
-
-
+             <bold>true</bold>
              <stylestrategy>PreferAntialias</stylestrategy>
              <kerning>false</kerning>
             </font>
@@ -127,8 +124,7 @@
              <family>Lucida Grande</family>
              <pointsize>10</pointsize>
              <weight>75</weight>
-
-
+             <bold>true</bold>
              <stylestrategy>PreferAntialias</stylestrategy>
              <kerning>false</kerning>
             </font>
@@ -148,8 +144,7 @@
              <family>Lucida Grande</family>
              <pointsize>10</pointsize>
              <weight>75</weight>
-
-
+             <bold>true</bold>
              <stylestrategy>PreferAntialias</stylestrategy>
              <kerning>false</kerning>
             </font>
@@ -169,8 +164,7 @@
              <family>Lucida Grande</family>
              <pointsize>10</pointsize>
              <weight>75</weight>
-
-
+             <bold>true</bold>
              <stylestrategy>PreferAntialias</stylestrategy>
              <kerning>false</kerning>
             </font>
@@ -197,8 +191,7 @@
              <family>Lucida Grande</family>
              <pointsize>10</pointsize>
              <weight>50</weight>
-
-
+             <bold>false</bold>
              <stylestrategy>PreferAntialias</stylestrategy>
              <kerning>false</kerning>
             </font>
@@ -227,8 +220,7 @@
              <family>Lucida Grande</family>
              <pointsize>10</pointsize>
              <weight>50</weight>
-
-
+             <bold>false</bold>
              <stylestrategy>PreferAntialias</stylestrategy>
              <kerning>false</kerning>
             </font>
@@ -282,8 +274,7 @@
              <family>Lucida Grande</family>
              <pointsize>10</pointsize>
              <weight>75</weight>
-
-
+             <bold>true</bold>
             </font>
            </property>
            <property name="minimum">
@@ -322,8 +313,7 @@
              <family>Lucida Grande</family>
              <pointsize>10</pointsize>
              <weight>75</weight>
-
-
+             <bold>true</bold>
             </font>
            </property>
            <property name="minimum">
@@ -372,8 +362,7 @@
          <family>Lucida Grande</family>
          <pointsize>10</pointsize>
          <weight>75</weight>
-
-
+         <bold>true</bold>
          <stylestrategy>PreferAntialias</stylestrategy>
          <kerning>false</kerning>
         </font>
@@ -409,8 +398,7 @@ p, li { white-space: pre-wrap; }
          <family>Lucida Grande</family>
          <pointsize>10</pointsize>
          <weight>75</weight>
-
-
+         <bold>true</bold>
          <stylestrategy>PreferAntialias</stylestrategy>
          <kerning>false</kerning>
         </font>
@@ -444,8 +432,7 @@ p, li { white-space: pre-wrap; }
      <family>Lucida Grande</family>
      <pointsize>10</pointsize>
      <weight>75</weight>
-
-
+     <bold>true</bold>
     </font>
    </property>
    <property name="frameShape">
@@ -468,8 +455,7 @@ p, li { white-space: pre-wrap; }
       <family>Lucida Grande</family>
       <pointsize>10</pointsize>
       <weight>75</weight>
-
-
+      <bold>true</bold>
      </font>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -482,8 +468,7 @@ p, li { white-space: pre-wrap; }
            <family>Lucida Grande</family>
            <pointsize>10</pointsize>
            <weight>75</weight>
-
-
+           <bold>true</bold>
            <stylestrategy>PreferAntialias</stylestrategy>
            <kerning>false</kerning>
           </font>
@@ -503,8 +488,7 @@ p, li { white-space: pre-wrap; }
            <family>Lucida Grande</family>
            <pointsize>10</pointsize>
            <weight>50</weight>
-
-
+           <bold>false</bold>
            <stylestrategy>PreferAntialias</stylestrategy>
            <kerning>false</kerning>
           </font>
@@ -535,8 +519,7 @@ p, li { white-space: pre-wrap; }
          <family>Lucida Grande</family>
          <pointsize>10</pointsize>
          <weight>75</weight>
-
-
+         <bold>true</bold>
          <stylestrategy>PreferAntialias</stylestrategy>
          <kerning>false</kerning>
         </font>
@@ -560,8 +543,7 @@ p, li { white-space: pre-wrap; }
          <family>Lucida Grande</family>
          <pointsize>10</pointsize>
          <weight>75</weight>
-
-
+         <bold>true</bold>
          <stylestrategy>PreferAntialias</stylestrategy>
          <kerning>false</kerning>
         </font>
@@ -585,8 +567,7 @@ p, li { white-space: pre-wrap; }
          <family>Lucida Grande</family>
          <pointsize>10</pointsize>
          <weight>75</weight>
-
-
+         <bold>true</bold>
          <stylestrategy>PreferAntialias</stylestrategy>
          <kerning>false</kerning>
         </font>
@@ -702,8 +683,7 @@ p, li { white-space: pre-wrap; }
      <family>Lucida Grande</family>
      <pointsize>10</pointsize>
      <weight>75</weight>
-
-
+     <bold>true</bold>
     </font>
    </property>
    <property name="autoFillBackground">
@@ -715,6 +695,25 @@ p, li { white-space: pre-wrap; }
    <property name="frameShadow">
     <enum>QFrame::Raised</enum>
    </property>
+   <widget class="QLabel" name="PausedLabel">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>101</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Sans Serif</family>
+      <pointsize>20</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Paused</string>
+    </property>
+   </widget>
   </widget>
   <zorder>frame_2</zorder>
   <zorder>renderFrame</zorder>

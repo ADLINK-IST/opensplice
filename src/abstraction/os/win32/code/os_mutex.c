@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file os/win32/code/os_mutex.c
@@ -14,23 +22,15 @@
  *
  * Implements mutual exclusion semaphore for WIN32
  */
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <Windows.h>
-#include "os_stdlib.h"
 #include "os_mutex.h"
-#include "os_report.h"
+#include "os__sync.h"
 #include "os_init.h"
-#include "os__debug.h"
-#include "os__service.h"
-#include "os__sharedmem.h"
-
-#include <stdio.h>
-#include <assert.h>
 
 #include "../common/code/os_mutex_attr.c"
 
+#ifndef NDEBUG
+#define OS__MUTEX_SIG 0x8C11EE5E /* Ate cheese */
+#endif
 
 /*** Public functions *****/
 
@@ -43,6 +43,7 @@ os_result
 os_mutexSetPriorityInheritanceMode(
     os_boolean enabled)
 {
+    OS_UNUSED_ARG(enabled);
     /* Priority Inheritance is not supported on this platform (yet) */
     return os_resultSuccess;
 }
@@ -62,74 +63,39 @@ os_mutexSetPriorityInheritanceMode(
  * because there is no need for "shared" multi process variables in
  * single process mode.
  */
+_Check_return_
 os_result
-os_mutexInit (
-    os_mutex *mutex,
-    const os_mutexAttr *mutexAttr)
+os_mutexInit(
+    _Out_ _When_(return != os_resultSuccess, _Post_invalid_) os_mutex *mutex,
+    _In_opt_ const os_mutexAttr *mutexAttr)
 {
-    char *pipename;
-    struct os_servicemsg request;
-    struct os_servicemsg reply;
-    BOOL result;
-    DWORD nRead;
-    DWORD lastError;
-    os_result osr;
+    os_result r = os_resultFail;
 
-    assert(mutex != NULL);
+    assert(mutex);
 
-    mutex->scope = mutexAttr->scopeAttr;
-    mutex->lockCount = 0;
+    if(!mutexAttr){
+        os_mutexAttr defAttr;
 
-
-    /* In single process mode only "private" variables are required */
-    if (os_serviceGetSingleProcess ()) {
-        mutex->scope = OS_SCOPE_PRIVATE;
+        os_mutexAttrInit(&defAttr);
+        mutex->scope = defAttr.scopeAttr;
+    } else {
+        mutex->scope = mutexAttr->scopeAttr;
     }
 
-    if (mutex->scope == OS_SCOPE_SHARED) {
-        pipename = os_createPipeNameFromMutex(mutex); /*os_servicePipeName();*/
-        if (pipename == NULL) {
-            pipename = os_servicePipeName();
-            OS_DEBUG_1("os_mutexInit", "Failed to get a domain name from mutex, using default: %s", pipename);
-        }
-        request.kind = OS_SRVMSG_CREATE_EVENT;
-        reply.result = os_resultFail;
-        reply.kind = OS_SRVMSG_UNDEFINED;
-
-        do {
-            result = CallNamedPipe(
-                TEXT(pipename),
-                &request, sizeof(request),
-                &reply, sizeof(reply),
-                &nRead,
-                NMPWAIT_USE_DEFAULT_WAIT);
-
-            if(!result){
-                lastError = GetLastError();
-            } else {
-                lastError = ERROR_SUCCESS;
-            }
-        } while((!result) && (lastError == ERROR_PIPE_BUSY));
-
-
-        if (!result || (nRead != sizeof(reply))) {
-            OS_DEBUG_4("os_mutexInit", "Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
-            osr = os_resultFail;
-        } else {
-            if ((reply.result == os_resultSuccess) &&
-                (reply.kind == OS_SRVMSG_CREATE_EVENT)) {
-                mutex->id = reply._u.id;
-                osr = os_resultSuccess;
-            } else {
-                osr = os_resultFail;
-            }
-        }
-    } else { /* private so don't get one from pool */
-        mutex->id = (long)CreateEvent(NULL, FALSE, FALSE, NULL);
-        osr = os_resultSuccess;
+    switch(mutex->scope) {
+        case OS_SCOPE_PRIVATE:
+            r = os_syncLockInitialize(&mutex->lock.priv);
+            break;
+        case OS_SCOPE_SHARED:
+            r = os_syncSharedLockInitialize(&mutex->lock.sha);
+            break;
     }
 
-    return osr;
+#ifndef NDEBUG
+    mutex->signature = OS__MUTEX_SIG;
+#endif
+
+    return r;
 }
 
 /** \brief Destroy the mutex
@@ -137,64 +103,25 @@ os_mutexInit (
  * \b os_mutexDestroy calls \b pthread_mutex_destroy to destroy the
  * posix \b mutex.
  */
-os_result
-os_mutexDestroy (
-    os_mutex *mutex)
+void
+os_mutexDestroy(
+    _Inout_ _Post_invalid_ os_mutex *mutex)
 {
-    char *pipename;
-    struct os_servicemsg request;
-    struct os_servicemsg reply;
-    BOOL result;
-    DWORD nRead;
-    DWORD lastError;
-    os_result osr;
+    assert(mutex);
 
-    assert(mutex != NULL);
-    /* assert(mutex->lockCount == 0); */
+#ifndef NDEBUG
+    assert(mutex->signature == OS__MUTEX_SIG);
+    mutex->signature = 0;
+#endif
 
-
-    if (mutex->scope == OS_SCOPE_SHARED) {
-        pipename = os_createPipeNameFromMutex(mutex); /*os_servicePipeName();*/
-        if (pipename == NULL) {
-            pipename = os_servicePipeName();
-            OS_DEBUG_1("os_mutexInit", "Failed to get a domain name from mutex, using default: %s", pipename);
-        }
-        request.kind = OS_SRVMSG_DESTROY_EVENT;
-        request._u.id = mutex->id;
-        reply.result = os_resultFail;
-        reply.kind = OS_SRVMSG_UNDEFINED;
-
-        do{
-           result = CallNamedPipe(
-               TEXT(pipename),
-               &request, sizeof(request),
-               &reply, sizeof(reply),
-               &nRead,
-               NMPWAIT_USE_DEFAULT_WAIT);
-
-           if(!result){
-              lastError = GetLastError();
-           } else {
-              lastError = ERROR_SUCCESS;
-           }
-        } while((!result) && (lastError == ERROR_PIPE_BUSY));
-
-        if (!result  || (nRead != sizeof(reply))) {
-           OS_DEBUG_4("os_mutexDestroy", "Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
-           osr = os_resultFail;
-        } else {
-           if ((reply.result == os_resultSuccess) &&
-               (reply.kind == OS_SRVMSG_DESTROY_EVENT)) {
-              osr = os_resultSuccess;
-           } else {
-              osr = os_resultFail;
-           }
-        }
-    } else { /* private so don't return to pool */
-        CloseHandle((HANDLE)mutex->id);
-        osr = os_resultSuccess;
+    switch(mutex->scope) {
+        case OS_SCOPE_PRIVATE:
+            os_syncLockDelete(&mutex->lock.priv);
+            break;
+        case OS_SCOPE_SHARED:
+            os_syncSharedLockDelete(&mutex->lock.sha);
+            break;
     }
-    return osr;
 }
 
 /** \brief Acquire the mutex
@@ -202,52 +129,40 @@ os_mutexDestroy (
  * \b os_mutexLock calls \b pthread_mutex_lock to acquire
  * the posix \b mutex.
  */
+_Check_return_
+_When_(return == os_resultSuccess, _Acquires_nonreentrant_lock_(&mutex->lock))
 os_result
-os_mutexLock(
-    os_mutex *mutex)
+os_mutexLock_s(
+    _Inout_ os_mutex *mutex)
 {
-    HANDLE mutexHandle;
-    char name[OS_SERVICE_ENTITY_NAME_MAX];
-    DWORD result;
-    os_result r;
-    long lc;
+    assert(mutex);
 
-    assert(mutex != NULL);
+#ifndef NDEBUG
+    assert(mutex->signature == OS__MUTEX_SIG);
+#endif
 
-    r = os_resultSuccess;
-    lc = InterlockedIncrement(&mutex->lockCount);
-    if (lc > 1) {
-        if (mutex->scope == OS_SCOPE_SHARED) {
-            if (_snprintf(name, sizeof(name), "%s%s%d%s",
-                (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
-                OS_SERVICE_EVENT_NAME_PREFIX,
-                mutex->id,
-                os_getShmDomainKeyForPointer(mutex)) <= 0) {
-                OS_REPORT_1(OS_ERROR, "mutexLock", 0,
-                    "Event name exceeds maximum allowed length (%d)", OS_SERVICE_ENTITY_NAME_MAX);
-                return os_resultFail;
-            }
-
-            mutexHandle = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
-            if (mutexHandle == NULL) {
-                OS_DEBUG_2("os_mutexLock", "Failed to open event with name %s (Error: %d)", name, GetLastError());
-                assert(mutexHandle != NULL);
-                return os_resultFail;
-            }
-        } else {
-            mutexHandle = (HANDLE)mutex->id;
-        }
-        result = WaitForSingleObject(mutexHandle, INFINITE);
-        assert(result == WAIT_OBJECT_0);
-        if (mutex->scope == OS_SCOPE_SHARED) {
-            CloseHandle(mutexHandle);
-        }
-        if (result != WAIT_OBJECT_0) {
-            r = os_resultFail;
-        }
+    switch(mutex->scope) {
+        case OS_SCOPE_PRIVATE:
+            /* Native locks can't fail on Windows, so even the os_mutexLockError
+             * will always return os_resultSuccess. */
+            os_syncLockAcquireExclusive(&mutex->lock.priv);
+            return os_resultSuccess;
+        case OS_SCOPE_SHARED:
+            return os_syncSharedLockAcquireExclusive(&mutex->lock.sha);
     }
 
-    return r;
+    /* Silence the compiler about the code-path for non-existing enum-labels. */
+    return os_resultFail;
+}
+
+_Acquires_nonreentrant_lock_(&mutex->lock)
+void
+os_mutexLock(
+    _Inout_ os_mutex *mutex)
+{
+    if (os_mutexLock_s (mutex) != os_resultSuccess) {
+        abort ();
+    }
 }
 
 /** \brief Try to acquire the mutex, immediately return if the mutex
@@ -256,22 +171,27 @@ os_mutexLock(
  * \b os_mutexTryLock calls \b pthread_mutex_trylock to acquire
  * the posix \b mutex.
  */
+_Check_return_
+_When_(return == os_resultSuccess, _Acquires_nonreentrant_lock_(&mutex->lock))
 os_result
 os_mutexTryLock (
-    os_mutex *mutex)
+    _Inout_ os_mutex *mutex)
 {
-    os_result r;
-    long lc;
+    assert(mutex);
 
-    assert(mutex != NULL);
+#ifndef NDEBUG
+    assert(mutex->signature == OS__MUTEX_SIG);
+#endif
 
-    r = os_resultSuccess;
-    lc = InterlockedCompareExchange(&mutex->lockCount, 1, 0);
-    if (lc > 0) {
-        r = os_resultBusy;
+    switch(mutex->scope) {
+        case OS_SCOPE_PRIVATE:
+            return os_syncLockTryAcquireExclusive(&mutex->lock.priv);
+        case OS_SCOPE_SHARED:
+            return os_syncSharedLockTryAcquireExclusive(&mutex->lock.sha);
     }
-    return r;
 
+    /* Silence the compiler about the code-path for non-existing enum-labels. */
+    return os_resultBusy;
 }
 
 /** \brief Release the acquired mutex
@@ -279,50 +199,23 @@ os_mutexTryLock (
  * \b os_mutexUnlock calls \b pthread_mutex_unlock to release
  * the posix \b mutex.
  */
-os_result
+_Releases_nonreentrant_lock_(&mutex->lock)
+void
 os_mutexUnlock (
-    os_mutex *mutex)
+    _Inout_ os_mutex *mutex)
 {
-    HANDLE mutexHandle;
-    long lc;
-    char name[OS_SERVICE_ENTITY_NAME_MAX];
-    BOOL r;
-    os_result result;
+    assert(mutex);
 
-    assert(mutex != NULL);
+#ifndef NDEBUG
+    assert(mutex->signature == OS__MUTEX_SIG);
+#endif
 
-    result = os_resultSuccess;
-    lc = InterlockedDecrement(&mutex->lockCount);
-    if (lc > 0) {
-        if (mutex->scope == OS_SCOPE_SHARED) {
-            if (_snprintf(name, sizeof(name), "%s%s%d%s",
-                (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
-                OS_SERVICE_EVENT_NAME_PREFIX,
-                mutex->id,
-                os_getShmDomainKeyForPointer(mutex)) <= 0) {
-                OS_REPORT_1(OS_ERROR, "mutexUnlock", 0,
-                    "Event name exceeds maximum allowed length (%d)", OS_SERVICE_ENTITY_NAME_MAX);
-                return os_resultFail;
-            }
-
-            mutexHandle = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
-            if (mutexHandle == NULL) {
-                OS_DEBUG_2("os_mutexUnlock", "Failed to open event with name %s (Error: %d)", name, GetLastError());
-                assert(mutexHandle != NULL);
-                return os_resultFail;
-            }
-        } else {
-            mutexHandle = (HANDLE)mutex->id;
-        }
-        r = SetEvent(mutexHandle);
-        assert(r == TRUE);
-        if (mutex->scope == OS_SCOPE_SHARED) {
-            CloseHandle(mutexHandle);
-        }
-        if (r == FALSE) {
-            result = os_resultFail;
-        }
+    switch(mutex->scope) {
+        case OS_SCOPE_PRIVATE:
+            os_syncLockReleaseExclusive(&mutex->lock.priv);
+            break;
+        case OS_SCOPE_SHARED:
+            os_syncSharedLockReleaseExclusive(&mutex->lock.sha);
+            break;
     }
-
-    return result;
 }

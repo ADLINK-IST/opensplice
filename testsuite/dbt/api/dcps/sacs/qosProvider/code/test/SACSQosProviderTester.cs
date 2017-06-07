@@ -7,7 +7,7 @@ namespace test
     {
         public static void Main (string[] args)
         {
-            string OSPL_HOME = System.Environment.GetEnvironmentVariable ("OSPL_HOME");
+            string OSPL_HOME = System.Environment.GetEnvironmentVariable ("OSPL_HOME_NORMALIZED");
             string base_uri = "file://" + OSPL_HOME + "/testsuite/dbt/api/dcps/sacs/qosProvider/code";
 
             Test.Framework.TestSuite suite = new Test.Framework.TestSuite();

@@ -1,0 +1,528 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>13. Integrity &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="14. Windows CE" href="windowsce.html" />
+    <link rel="prev" title="12. VxWorks 6.x Kernel Mode" href="vxworks-6-kernel.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="windowsce.html" title="14. Windows CE"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="vxworks-6-kernel.html" title="12. VxWorks 6.x Kernel Mode"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="integrity">
+<span id="id1"></span><h1>13. Integrity<a class="headerlink" href="#integrity" title="Permalink to this headline">¶</a></h1>
+<p><em>This chapter provides a brief description of how to deploy Vortex OpenSplice
+on Integrity.</em></p>
+<div class="section" id="integrity-and-ghs-multi">
+<h2>13.1. Integrity and GHS Multi<a class="headerlink" href="#integrity-and-ghs-multi" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> tool is in the <tt class="docutils literal"><span class="pre">HDE/bin</span></tt> directory of the DDS
+distribution. It is a convenience tool provided for the Integrity
+platform in order to aid in the creation of GHS Multi projects for
+running the DDS-supplied PingPong example, the Touchstone performance
+suite, and the Chatter Tutorial. If desired, these generated projects
+can be adapted to suit user requirements by using Multi and the
+<tt class="docutils literal"><span class="pre">ospl_xml2int</span></tt> tool, which is also described in this chapter.</p>
+</div>
+<div class="section" id="the-ospl-projgen-command">
+<h2>13.2. The ospl_projgen Command<a class="headerlink" href="#the-ospl-projgen-command" title="Permalink to this headline">¶</a></h2>
+<p><strong>Usage</strong></p>
+<div class="highlight-bash"><div class="highlight"><pre>ospl_projgen -h
+
+ospl_projgen <span class="o">[</span>-s &lt;flash<span class="se">\|</span>ram&gt;<span class="se">\|</span>-d<span class="o">]</span> <span class="o">[</span>-n<span class="o">]</span> <span class="o">[</span>-v<span class="o">]</span> <span class="o">[</span>-t &lt;target&gt;<span class="o">]</span>
+             <span class="o">[</span>-l &lt;c<span class="se">\|</span>c++&gt;<span class="se">\|</span>c++onc<span class="o">]</span> <span class="o">[</span>-u &lt;URI&gt;<span class="o">]</span> -b &lt;bsp name&gt;
+             <span class="o">[</span>-m &lt;board model&gt;<span class="o">]</span> -o &lt;directory&gt; <span class="o">[</span>-f<span class="o">]</span>
+</pre></div>
+</div>
+<p>Arguments shown between square brackets <em>[ ]</em> are optional; other
+arguments are mandatory. Arguments may be supplied in any order. All of
+the arguments are described in detail below.</p>
+<p><strong>Arguments</strong></p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">-h</span></tt></dt>
+<dd>List the command line arguments and give brief reminders of their
+functions.</dd>
+<dt><tt class="docutils literal"><span class="pre">-s</span> <span class="pre">&lt;flash</span> <span class="pre">|</span> <span class="pre">ram&gt;</span></tt></dt>
+<dd>Use this argument if you wish to generate a project
+that will be statically linked with the kernel. The two options for this
+argument determine whether the resulting kernel image will be a
+flashable image or a loadable image. If both this argument and the <tt class="docutils literal"><span class="pre">-d</span></tt>
+argument are omitted the default of a statically-linked ram-loadable
+image will be generated.</dd>
+<dt><tt class="docutils literal"><span class="pre">-d</span></tt></dt>
+<dd>Use this argument to produce a project file that will yield a
+dynamic download image.</dd>
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Arguments <tt class="docutils literal"><span class="pre">-s</span></tt> and <tt class="docutils literal"><span class="pre">-d</span></tt> are mutually exclusive.</dd>
+<dt><tt class="docutils literal"><span class="pre">-n</span></tt></dt>
+<dd>Use this argument if you want to include the GHS network stack in
+your project.</dd>
+<dt><tt class="docutils literal"><span class="pre">-v</span></tt></dt>
+<dd>Use this argument if you want to include filesystem support in
+your project.</dd>
+<dt><tt class="docutils literal"><span class="pre">-t</span> <span class="pre">&lt;target&gt;</span></tt></dt>
+<dd>Use this argument to specify which address spaces to
+include in your project. Use <tt class="docutils literal"><span class="pre">-t</span> <span class="pre">list</span></tt> to show a list of available
+targets. (Targets available initially are examples supplied with
+Vortex OpenSplice and Integrity itself.)</dd>
+<dt><tt class="docutils literal"><span class="pre">-l</span> <span class="pre">&lt;c</span> <span class="pre">|</span> <span class="pre">c++</span> <span class="pre">|</span> <span class="pre">c++onc&gt;</span></tt></dt>
+<dd>Use this argument to specify the language for
+your project. The default is <tt class="docutils literal"><span class="pre">c++</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">-u</span> <span class="pre">&lt;URI&gt;</span></tt></dt>
+<dd>Use this argument to identify which configuration file to
+use. You can omit this argument if you have the environment variable
+<tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> set, or use it if you want to use a different configuration
+file from the one referred to by <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt>. The default is
+<tt class="docutils literal"><span class="pre">$OSPL_URI</span></tt>. The <tt class="docutils literal"><span class="pre">xml2int</span></tt> tool uses this configuration file when
+generating the Integrate file for your project.</dd>
+<dt><tt class="docutils literal"><span class="pre">-b</span> <span class="pre">&lt;bsp</span> <span class="pre">name&gt;</span></tt></dt>
+<dd>Use this argument to specify the BSP name of your
+target board. Use <tt class="docutils literal"><span class="pre">-b</span> <span class="pre">list</span></tt> to show a list of supported target boards.</dd>
+<dt><tt class="docutils literal"><span class="pre">-m</span> <span class="pre">&lt;board</span> <span class="pre">model&gt;</span></tt></dt>
+<dd>Use this argument to specify the model number for
+the target board. Use <tt class="docutils literal"><span class="pre">-b</span> <span class="pre">&lt;bsp</span> <span class="pre">name&gt;</span> <span class="pre">-m</span> <span class="pre">list</span></tt> to show a list of
+supported model numbers. (There are no separate model numbers for
+<em>pcx86</em> boards.)</dd>
+<dt><tt class="docutils literal"><span class="pre">-o</span> <span class="pre">&lt;directory&gt;</span></tt></dt>
+<dd>Use this argument to specify the output directory for
+the project files. The name you supply here will also be used as the
+name for the image file that will be downloaded/flashed onto the
+Integrity board.</dd>
+<dt><tt class="docutils literal"><span class="pre">-f</span></tt></dt>
+<dd>Use this argument to force overwrite of the output directory.</dd>
+</dl>
+<p>When you run the tool, the output directory specified with the <tt class="docutils literal"><span class="pre">-o</span></tt>
+argument will be created. Go into this directory, run GHS Multi, and
+load the generated project.</p>
+<p>If the output directory already exists and the <em>-f</em> argument has been
+omitted, <em>ospl_projgen</em> will exit without generating any code and will
+notify you that it has stopped.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><em>NOTE:</em> The <em>NetworkInterfaceAddress</em> configuration parameter is
+<strong>required</strong> for Integrity nodes which have more than one ethernet
+interface, as it is not possible to determine which are
+broadcast/multicast enabled. (See sections <em>3.5.2.1</em> and <em>3.9.2.1</em>
+<em>Element NetworkInterfaceAddress</em> in the <em>Vortex Deployment Guide</em>.)</dd>
+</dl>
+<div class="section" id="using-mmstat-and-shmdump-diagnostic-tools-on-integrity">
+<h3>13.2.1. Using mmstat and shmdump diagnostic tools on Integrity<a class="headerlink" href="#using-mmstat-and-shmdump-diagnostic-tools-on-integrity" title="Permalink to this headline">¶</a></h3>
+<p>When <tt class="docutils literal"><span class="pre">mmstat</span></tt> or <tt class="docutils literal"><span class="pre">shmdump</span></tt> targets are specified to <tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> an
+address space will be added to the generated project. There will also be
+an appropriate <tt class="docutils literal"><span class="pre">mmstat.c</span></tt> or <tt class="docutils literal"><span class="pre">shmdump.c</span></tt> file generated into the
+project. In order to configure these, the command line arguments can be
+edited in the generated <tt class="docutils literal"><span class="pre">.c</span></tt> files. The <tt class="docutils literal"><span class="pre">mmstat</span></tt> tool can be controlled
+<em>via</em> telnet on port <tt class="docutils literal"><span class="pre">2323</span></tt> (by default).</p>
+</div>
+</div>
+<div class="section" id="pingpong-example">
+<h2>13.3. PingPong Example<a class="headerlink" href="#pingpong-example" title="Permalink to this headline">¶</a></h2>
+<p>(Please refer to the <a class="reference internal" href="install-configure.html#examples"><em>Examples</em></a> section for a description of this example
+application.)</p>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p>To generate a project for the C++ PingPong example, follow these steps:</p>
+<p><strong>Step 1</strong></p>
+<p>The <tt class="docutils literal"><span class="pre">I_INSTALL_DIR</span></tt> environment variable must be set to point to the
+Integrity installation directory on the host machine before running
+<tt class="docutils literal"><span class="pre">ospl_projgen</span></tt>. For example:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">export </span><span class="nv">I_INSTALL_DIR</span><span class="o">=</span>/usr/ghs/int509
+</pre></div>
+</div>
+<p><strong>Step 2</strong></p>
+<p>Navigate to the <tt class="docutils literal"><span class="pre">examples/dcps/standalone/C++/PingPong</span></tt> directory</p>
+<p><strong>Step 3</strong></p>
+<p>Run <tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> with the following arguments:</p>
+<div class="highlight-bash"><div class="highlight"><pre>ospl_projgen -s ram -v -n -t pingpong -l c++ -b pcx86 -o projgen
+</pre></div>
+</div>
+<p><strong>Step 4</strong></p>
+<p>Go into the <tt class="docutils literal"><span class="pre">projgen</span></tt> directory, which contains <tt class="docutils literal"><span class="pre">default.gpj</span></tt> and a
+<tt class="docutils literal"><span class="pre">src</span></tt> directory. (<tt class="docutils literal"><span class="pre">default.gpj</span></tt> is the default Multi project that will
+build all the sub-projects found in the <tt class="docutils literal"><span class="pre">src</span></tt> directory, and the <tt class="docutils literal"><span class="pre">src</span></tt>
+directory contains all the sub-projects and generated files produced by
+the tool.)</p>
+<p><strong>Step 5</strong></p>
+<p>Start Multi:</p>
+<div class="highlight-bash"><div class="highlight"><pre>multi default.gpj
+</pre></div>
+</div>
+<p>You should see a screen similar to the screenshot
+<a class="reference internal" href="#integrity-project-defaults">Integrity: project defaults</a> below:</p>
+<div class="figure" id="integrity-project-defaults">
+<a class="reference internal image-reference" href="_images/Integrity-projectDefaults.png"><img alt="Integrity: project defaults" src="_images/Integrity-projectDefaults.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>Integrity: project defaults</strong></p>
+</div>
+<p>If no changes are required to the project, right-click on <tt class="docutils literal"><span class="pre">default.gpj</span></tt>
+and then click <em>Build</em> to build the project.</p>
+<p>Upon successful completion of the build process, an image is generated
+(in our case called <tt class="docutils literal"><span class="pre">projgen</span></tt>) in the <tt class="docutils literal"><span class="pre">src</span></tt> directory and you are now
+ready to either dynamically download the resulting image to the board or
+to load the kernel image onto the board (depending on the arguments you
+have specified) and run the PingPong example.</p>
+<p>If <tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> is run and the project built as described above, the
+generated image will contain:</p>
+<ul class="simple">
+<li>GHS Integrity OS (Kernel, Networking, and Filesystem support)</li>
+<li>Vortex OpenSplice (including <tt class="docutils literal"><span class="pre">spliced</span></tt> and the services described in the
+<tt class="docutils literal"><span class="pre">ospl.xml</span></tt> file)</li>
+<li>The PingPong example</li>
+</ul>
+<p>Once the image has been downloaded to the board, the <tt class="docutils literal"><span class="pre">pong</span></tt> &#8220;Initial
+task&#8221; should be started and then the <tt class="docutils literal"><span class="pre">ping</span></tt> AddressSpace can be started
+in the same way, so that the example begins the data transfer.
+Parameters are not required to be passed to the Integrity processes
+because the <tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> tool generates code with particular values
+that simulate the passing of parameters.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>This also applies to the Chat Tutorial (see <a class="reference internal" href="install-configure.html#examples"><em>Examples</em></a>), if
+<tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> is run with the <tt class="docutils literal"><span class="pre">-t</span> <span class="pre">chat</span></tt> argument.</dd>
+</dl>
+</div>
+<div class="section" id="changing-the-ospl-projgen-arguments">
+<h2>13.4. Changing the ospl_projgen Arguments<a class="headerlink" href="#changing-the-ospl-projgen-arguments" title="Permalink to this headline">¶</a></h2>
+<p>If changes are subsequently required to the arguments that were
+originally specified to the <tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> tool, there are two choices:</p>
+<ol class="loweralpha simple">
+<li>Re-run the tool and amend the arguments accordingly</li>
+</ol>
+<p><em>or</em></p>
+<ol class="loweralpha simple" start="2">
+<li>Make your changes through the Multi tool.</li>
+</ol>
+<p>The first method guarantees that your project files will be produced
+correctly and build without needing manual changes to the project files.
+To use this method, simply follow the procedure described above but
+supply different arguments.</p>
+<p>The second method is perhaps a more flexible approach, but as well as
+making some changes using Multi you will have to make other changes by
+hand in order for the project to build correctly.</p>
+<p>The following section describes the second method.</p>
+<div class="section" id="changing-the-generated-opensplice-dds-project-using-multi">
+<h3>13.4.1. Changing the generated OpenSplice DDS project using <em>Multi</em><a class="headerlink" href="#changing-the-generated-opensplice-dds-project-using-multi" title="Permalink to this headline">¶</a></h3>
+<p>You can make changes to any of the settings you specified with
+<tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> by following these steps:</p>
+<p><strong>Step 1</strong></p>
+<p>Right-click on the highlighted <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> file (as shown above) and
+click <em>Set Options...</em>.</p>
+<p><strong>Step 2</strong></p>
+<p>Select the <em>All Options</em> tab and expand the <em>Advanced</em> section.</p>
+<p><strong>Step 3</strong></p>
+<p>Select <em>Advanced OpenSplice DDS XML To Int Convertor Options</em>. In the
+right-hand pane you will see the options that you have set with the
+<tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> tool with their values, similar to
+<a class="reference internal" href="#integrity-changing-project-options-in-multi">Integrity: changing project options in Multi</a> below.</p>
+<div class="figure" id="integrity-changing-project-options-in-multi">
+<a class="reference internal image-reference" href="_images/Integrity-projectOptionsMulti.png"><img alt="Integrity: changing project options in Multi" src="_images/Integrity-projectOptionsMulti.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>Integrity: changing project options in Multi</strong></p>
+</div>
+<p>Right-click on the parameter that you want to change. For example, if
+you don&#8217;t need filesystem support to be included in the kernel image,
+right-click on <em>Include filesystem support</em> and set the option to <tt class="docutils literal"><span class="pre">Off</span></tt>.</p>
+<p>The arguments for <tt class="docutils literal"><span class="pre">xml2int</span></tt> in the bottom pane are updated to reflect
+any changes that you make. If you switch off filesystem support, the
+<tt class="docutils literal"><span class="pre">-v</span></tt> argument is removed from the arguments. (The <tt class="docutils literal"><span class="pre">xml2int</span></tt> tool is used
+to generate the <tt class="docutils literal"><span class="pre">ospl.int</span></tt> Integrate file that will be used during the
+Integrate phase of the project. For more information on <tt class="docutils literal"><span class="pre">xml2int</span></tt>
+please see section <a class="reference internal" href="#the-ospl-xml2int-command">The ospl_xml2int command</a>.)</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that if you do remove filesystem support from the kernel image you
+should also remove all references to the <tt class="docutils literal"><span class="pre">ivfs</span></tt> library, and make
+appropriate changes to the <tt class="docutils literal"><span class="pre">ospl_log.c</span></tt> file as well. See section
+<a class="reference internal" href="#amending-opensplice-dds-configuration-with-multi">Amending OpenSplice DDS Configuration with Multi</a> for information
+about <tt class="docutils literal"><span class="pre">ospl_log.c</span></tt>.</dd>
+</dl>
+<p>Similarly you can change any other option and the changes are applied
+instantly.</p>
+<p>When the changes are complete, rebuild the project by right-clicking on
+<em>default.gpj</em> and then click <em>Build</em> to build the project.</p>
+</div>
+<div class="section" id="the-ospl-xml2int-tool">
+<h3>13.4.2. The ospl_xml2int Tool<a class="headerlink" href="#the-ospl-xml2int-tool" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">ospl_xml2int</span></tt> tool is used to inspect your OpenSplice DDS
+configuration file (<tt class="docutils literal"><span class="pre">ospl.xml</span></tt>) and generate an appropriate Integrate
+file (<tt class="docutils literal"><span class="pre">ospl.int</span></tt>). For more information on Integrate files please
+consult the Integrity manual.</p>
+</div>
+<div class="section" id="the-ospl-xml2int-command">
+<h3>13.4.3. The ospl_xml2int command<a class="headerlink" href="#the-ospl-xml2int-command" title="Permalink to this headline">¶</a></h3>
+<p><strong>Usage</strong></p>
+<div class="highlight-bash"><div class="highlight"><pre>ospl_xml2int -h
+
+ospl_xml2int <span class="o">[</span>-s<span class="p">|</span>-d<span class="o">]</span> <span class="o">[</span>-v<span class="o">]</span> <span class="o">[</span>-n<span class="o">]</span> <span class="o">[</span>-t &lt;target&gt;<span class="o">]</span> <span class="o">[</span>-u &lt;URI&gt;<span class="o">]</span>
+             <span class="o">[</span>-o &lt;file&gt;<span class="o">]</span>
+</pre></div>
+</div>
+<p>Arguments shown between square brackets <em>[ ]</em> are optional; other
+arguments are mandatory. Arguments may be supplied in any order. All of
+the arguments are described in detail below.</p>
+<p><strong>Arguments</strong></p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">-h</span></tt></dt>
+<dd>List the command line arguments and give brief reminders of their
+functions.</dd>
+<dt><tt class="docutils literal"><span class="pre">-s</span></tt></dt>
+<dd>Generate for static linkage with kernel.</dd>
+<dt><tt class="docutils literal"><span class="pre">-d</span></tt></dt>
+<dd>Use this argument to generate an Integrate file that will yield
+a dynamic download image. If both this argument and the <tt class="docutils literal"><span class="pre">-s</span></tt> argument are
+omitted the default of a statically-linked image will be generated.</dd>
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>The arguments <tt class="docutils literal"><span class="pre">-s</span></tt> and <tt class="docutils literal"><span class="pre">-d</span></tt> are mutually exclusive.</dd>
+<dt><tt class="docutils literal"><span class="pre">-v</span></tt></dt>
+<dd>Include filesystem support.</dd>
+<dt><tt class="docutils literal"><span class="pre">-n</span></tt></dt>
+<dd>Include network support.</dd>
+<dt><tt class="docutils literal"><span class="pre">-t</span> <span class="pre">&lt;target&gt;</span></tt></dt>
+<dd><dl class="first docutils">
+<dt>Available targets:</dt>
+<dd><div class="first last line-block">
+<div class="line"><tt class="docutils literal"><span class="pre">chat</span></tt> include chat tutorial</div>
+<div class="line"><tt class="docutils literal"><span class="pre">pingpong</span></tt> include PingPong example</div>
+<div class="line"><tt class="docutils literal"><span class="pre">touchstone</span></tt> include Touchstone</div>
+<div class="line"><tt class="docutils literal"><span class="pre">mmstat</span></tt> include mmstat</div>
+<div class="line"><tt class="docutils literal"><span class="pre">shmdump</span></tt> include shmdump</div>
+</div>
+</dd>
+</dl>
+<p class="last">Multiple <tt class="docutils literal"><span class="pre">-t</span></tt> arguments may be given. This enables you to use
+<tt class="docutils literal"><span class="pre">mmstat</span></tt> and/or <tt class="docutils literal"><span class="pre">shmdump</span></tt> (see
+<a class="reference internal" href="#using-mmstat-and-shmdump-diagnostic-tools-on-integrity">Using mmstat and shmdump diagnostic tools on Integrity</a>)
+in conjunction with one of the examples.</p>
+</dd>
+<dt><tt class="docutils literal"><span class="pre">-u</span> <span class="pre">&lt;URI&gt;</span></tt></dt>
+<dd>Identifies the configuration file to use (default:
+<tt class="docutils literal"><span class="pre">${OSPL_URI}</span></tt>).</dd>
+<dt><tt class="docutils literal"><span class="pre">-o</span> <span class="pre">&lt;file&gt;</span></tt></dt>
+<dd>Name of the generated Integrate file.</dd>
+</dl>
+<p>Applications linking with OpenSplice DDS must comply with the following
+requirements:</p>
+<ul class="simple">
+<li>The <tt class="docutils literal"><span class="pre">First</span></tt> and <tt class="docutils literal"><span class="pre">Length</span></tt> parameters must match those of <tt class="docutils literal"><span class="pre">spliced</span></tt>
+address space (these are generated from <tt class="docutils literal"><span class="pre">ospl.xml</span></tt>).</li>
+<li>The address space entry for your application in the Integrate file must
+include entries as shown in the example below.</li>
+</ul>
+<p>Have a look at the <tt class="docutils literal"><span class="pre">ospl.int</span></tt> for the PingPong example if in doubt as to
+what the format should be. (Make sure that you have built the project
+first or else the file will be empty.)</p>
+<p>Example <tt class="docutils literal"><span class="pre">ospl.int</span></tt> contents:</p>
+<div class="highlight-bash"><div class="highlight"><pre>AddressSpace
+  .
+  .
+  .
+  Object 10
+         Link                  ResourceStore
+         Name                  ResCon
+         OtherObjectName       DDS_Connection
+  EndObject
+
+  Object 11
+         Link                  ResourceStore
+         Name                  ConnectionLockLink
+         OtherObjectName       DDS_ConnectionLock
+  EndObject
+
+  Object 12
+         MemoryRegion          your_app_name_database
+         MapTo                 splice_database
+         First 0x20000000
+         Length 33554432
+         Execute <span class="nb">true</span>
+<span class="nb">         </span>Read <span class="nb">true</span>
+<span class="nb">         </span>Write <span class="nb">true</span>
+<span class="nb">  </span>EndObject
+  .
+  .
+  .
+EndAddressSpace
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><em>Note:</em> If you make any changes to the <tt class="docutils literal"><span class="pre">ospl.int</span></tt> file generated by the
+project and then you make any changes to the <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> file and rebuild
+the project, the changes to the <tt class="docutils literal"><span class="pre">ospl.int</span></tt> file will be overwritten.</dd>
+</dl>
+<p>Make sure that you also edit the <tt class="docutils literal"><span class="pre">global_table.c</span></tt> and <tt class="docutils literal"><span class="pre">mounttable.c</span></tt>
+files to match your setup. These files can be found under
+<tt class="docutils literal"><span class="pre">src/projgen/kernel.gpj/kernel_kernel.gpj</span></tt> and
+<tt class="docutils literal"><span class="pre">src/projgen.gpj/kernel.gpj/ivfs_server.gpj</span></tt> as shown in
+<a class="reference internal" href="#integrity-changing-global-table-c-and-mounttable-c">Integrity: changing global_table.c and mounttable.c</a> below:</p>
+<div class="figure" id="integrity-changing-global-table-c-and-mounttable-c">
+<a class="reference internal image-reference" href="_images/Integrity-changeMounttable.png"><img alt="Integrity: changing global_table.c and mounttable.c" src="_images/Integrity-changeMounttable.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>Integrity: changing global_table.c and mounttable.c</strong></p>
+</div>
+<p>Once you have made all of the required changes to <tt class="docutils literal"><span class="pre">ospl.int</span></tt>, you must
+rebuild the whole project. Your changes will be picked up by OpenSplice
+DDS automatically.</p>
+</div>
+</div>
+<div class="section" id="critical-warning-about-object-10-and-object-11">
+<h2>13.5. Critical Warning about <em>Object 10</em> and <em>Object 11</em><a class="headerlink" href="#critical-warning-about-object-10-and-object-11" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>  <a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><p class="first">We have used <tt class="docutils literal"><span class="pre">Object</span> <span class="pre">10</span></tt> and <tt class="docutils literal"><span class="pre">Object</span> <span class="pre">11</span></tt> in various address spaces to
+declare a semaphore and a connection object, but they may already be in
+use on your system.</p>
+<p>You <em>can</em> change these numbers in the <tt class="docutils literal"><span class="pre">ospl.int</span></tt> file, but if you do then
+you <strong>must</strong> change <strong>all</strong> of the address spaces where <tt class="docutils literal"><span class="pre">Object</span> <span class="pre">10</span></tt> and
+<tt class="docutils literal"><span class="pre">Object</span> <span class="pre">11</span></tt> are defined (except those for <tt class="docutils literal"><span class="pre">ResourceStore</span></tt> as noted
+below). The value replacing <tt class="docutils literal"><span class="pre">10</span></tt> must be the same for every address
+space, and likewise for the value replacing <tt class="docutils literal"><span class="pre">11</span></tt>. You <strong>must</strong> change
+<strong>all</strong> references in order for OpenSplice DDS to work correctly.</p>
+<p class="last"><em>The only exception is the</em> <tt class="docutils literal"><span class="pre">ResourceStore</span></tt> <em>address space.</em>
+<tt class="docutils literal"><span class="pre">Object</span> <span class="pre">10</span></tt> <em>and</em> <tt class="docutils literal"><span class="pre">Object</span> <span class="pre">11</span></tt> <em>are unique to the OpenSplice DDS</em>
+<em>ResourceStore and they</em> <strong>MUST NOT</strong> <em>be altered.</em>
+<em>If you do change them, OpenSplice DDS</em>  <strong>WILL NOT WORK!</strong></p>
+</dd>
+</dl>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></p>
+</div>
+<div class="section" id="amending-opensplice-dds-configuration-with-multi">
+<h2>13.6. Amending OpenSplice DDS Configuration with <em>Multi</em><a class="headerlink" href="#amending-opensplice-dds-configuration-with-multi" title="Permalink to this headline">¶</a></h2>
+<p>You can make changes to the OpenSplice DDS configuration from Multi by
+editing the files under the project
+<tt class="docutils literal"><span class="pre">src/projgen.gpj/opensplice_configuration.gpj/libospl_cfg.gpj</span></tt>. See
+<a class="reference internal" href="#integrity-changing-opensplice-dds-configuration-in-multi">Integrity: changing OpenSplice DDS configuration in Multi</a> below:</p>
+<div class="figure" id="integrity-changing-opensplice-dds-configuration-in-multi">
+<a class="reference internal image-reference" href="_images/Integrity-DDSconfigMulti.png"><img alt="Integrity: changing OpenSplice DDS configuration in Multi" src="_images/Integrity-DDSconfigMulti.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>Integrity: changing OpenSplice DDS configuration in Multi</strong></p>
+</div>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>There are five files here but you may <em>only</em> change <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> and
+<tt class="docutils literal"><span class="pre">ospl_log.c</span></tt>. The others must <strong>NOT</strong> be altered!</dd>
+<dt><tt class="docutils literal"><span class="pre">ospl.xml</span></tt></dt>
+<dd>This is your OpenSplice DDS configuration file. (See
+<a class="reference internal" href="install-configure.html#configuration"><em>Configuration</em></a> for more information about the options an OpenSplice DDS
+configuration file may have.)</dd>
+<dt><tt class="docutils literal"><span class="pre">ospl_log.c</span></tt></dt>
+<dd>This file determines where the log entries (errors,
+warnings and informational messages) from OpenSplice DDS go. The way the
+default file is generated by <tt class="docutils literal"><span class="pre">ospl_projgen</span></tt> depends on whether you have
+specified filesystem support or not. (See comments within the file for
+more information.)</dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">13. Integrity</a><ul>
+<li><a class="reference internal" href="#integrity-and-ghs-multi">13.1. Integrity and GHS Multi</a></li>
+<li><a class="reference internal" href="#the-ospl-projgen-command">13.2. The ospl_projgen Command</a><ul>
+<li><a class="reference internal" href="#using-mmstat-and-shmdump-diagnostic-tools-on-integrity">13.2.1. Using mmstat and shmdump diagnostic tools on Integrity</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pingpong-example">13.3. PingPong Example</a></li>
+<li><a class="reference internal" href="#changing-the-ospl-projgen-arguments">13.4. Changing the ospl_projgen Arguments</a><ul>
+<li><a class="reference internal" href="#changing-the-generated-opensplice-dds-project-using-multi">13.4.1. Changing the generated OpenSplice DDS project using <em>Multi</em></a></li>
+<li><a class="reference internal" href="#the-ospl-xml2int-tool">13.4.2. The ospl_xml2int Tool</a></li>
+<li><a class="reference internal" href="#the-ospl-xml2int-command">13.4.3. The ospl_xml2int command</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#critical-warning-about-object-10-and-object-11">13.5. Critical Warning about <em>Object 10</em> and <em>Object 11</em></a></li>
+<li><a class="reference internal" href="#amending-opensplice-dds-configuration-with-multi">13.6. Amending OpenSplice DDS Configuration with <em>Multi</em></a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="vxworks-6-kernel.html"
+                        title="previous chapter">12. VxWorks 6.x Kernel Mode</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="windowsce.html"
+                        title="next chapter">14. Windows CE</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/integrity.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="windowsce.html" title="14. Windows CE"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="vxworks-6-kernel.html" title="12. VxWorks 6.x Kernel Mode"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

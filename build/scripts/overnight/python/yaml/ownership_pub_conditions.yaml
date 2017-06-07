@@ -1,0 +1,13 @@
+parseconditions:
+    desc: Ownership LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    conditions: 
+        - name: sending_prices
+          type: line
+          inst: 1
+          required: yes
+          line: "sending * prices*"

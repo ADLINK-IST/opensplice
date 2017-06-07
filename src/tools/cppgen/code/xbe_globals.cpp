@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl.h"
@@ -68,6 +76,7 @@ pbbool BE_Globals::isocpp = pbfalse;
 pbbool BE_Globals::isocpp_new_types = pbfalse;
 pbbool BE_Globals::gen_equality = pbfalse;
 pbbool BE_Globals::isocpp_test_methods = pbfalse;
+pbbool BE_Globals::lite = pbfalse;
 pbbool BE_Globals::collocated_direct = pbfalse;
 
 unsigned long BE_Globals::max_char_per_line = 1024;
@@ -232,8 +241,10 @@ DDS_StdString BE_Globals::resolveScope
 
          // Advance ptrs to next label or end of string
 
-         if ((wp = strchr(wp, ':')) && *(wp++) && *(wp++)) ;
-         if ((ep = strchr(ep, ':')) && *(ep++) && *(ep++)) ;
+         if ((wp = strchr(wp, ':')) != 0 && *(wp++) && *(wp++))
+           ;
+         if ((ep = strchr(ep, ':')) != 0 && *(ep++) && *(ep++))
+           ;
 
          wscope = OuterMostScope (wp);
          escope = OuterMostScope (ep);

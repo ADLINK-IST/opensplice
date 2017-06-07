@@ -1,0 +1,11 @@
+
+project (saj5*sub) : java_only, java_example, java_ospl_dcpssaj5 {
+    specific {
+        compile_flags += -sourcepath ..<%slash%>src
+        obj_dir_flat = 1
+    }
+
+    Source_Files {
+        BuildInTopicsDataSubscriber.java
+    }
+}

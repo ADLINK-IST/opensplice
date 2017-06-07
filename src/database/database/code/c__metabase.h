@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -16,13 +24,15 @@
 #include "c_metabase.h"
 
 #define C_META_OFFSET_(t,f) \
-        ((c_address)(&((t)0)->f))
+        ((os_size_t)(&((t)0)->f))
 
 #define C_META_ATTRIBUTE_(c,o,n,t) \
         c_metaAttributeNew(o,#n,t,C_META_OFFSET_(c,n))
 
-#define C_META_TYPEINIT_(o,t) \
-        (c_metaTypeInit(o,C_SIZEOF(t),C_ALIGNMENT(C_STRUCT(t))))
+#define C_META_TYPEINIT_(o,t) do { \
+        C_ALIGNMENT_C_STRUCT_TYPE(t); \
+        c_metaTypeInit(o,C_SIZEOF(t),C_ALIGNMENT_C_STRUCT(t)); \
+    } while(0)
 
 #if defined (__cplusplus)
 extern "C" {
@@ -42,13 +52,13 @@ c_metaAttributeNew (
     c_metaObject scope,
     const c_char *name,
     c_type type,
-    c_address offset);
+    os_size_t offset);
 
 void
 c_metaTypeInit (
     c_object _this,
-    c_long size,
-    c_long alignment);
+    os_size_t size,
+    os_size_t alignment);
 
 void
 c_metaCopy (

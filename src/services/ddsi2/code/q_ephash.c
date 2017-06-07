@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <stddef.h>
 #include <assert.h>
 
@@ -5,14 +24,14 @@
 #include "os_mutex.h"
 #include "os_cond.h"
 #include "os_thread.h"
-#include "sysdeps.h" /* pa_membar_..., ASSERT_MUTEX_HELD */
+#include "sysdeps.h"
+#include "os_atomics.h"
 
 #include "ut_avl.h"
 #include "q_ephash.h"
 #include "q_config.h"
 #include "q_globals.h"
 #include "q_entity.h"
-#include "sysdeps.h" /* pa_membar_..., ASSERT_MUTEX_HELD */
 #include "q_rtps.h" /* guid_t */
 #include "q_thread.h" /* for assert(thread is awake) */
 
@@ -49,29 +68,16 @@ static void ephash_update_enums_on_delete (struct ephash *h, struct ephash_chain
 
 static int hash_gid (const v_gid *gid, int nbitskey)
 {
-  /* Universal hashing relying on 64-bit arithmetic, using localId and
-   serial, which are both 32-bit integers.
-
-   SystemId is a constant for local writers and needn't be taken
-   into account.
-
-   Could consider ignoring "serial" altogether, because two localIds
-   with the same serial is not very likely to happen, and if it
-   happens, the older of the two will be removed shortly.
-
-   See, e.g., http://en.wikipedia.org/wiki/Universal_hash_function. */
+  /* Universal hashing relying on 64-bit arithmetic. SystemId is a constant for local writers, but with bridging support requires handling entities from all over the domain and hence is needed in at least some cases. Easiest is to always take it into account. See, e.g., http://en.wikipedia.org/wiki/Universal_hash_function. */
   return
-  (int) ((((os_uint32) gid->localId + unihashconsts[0]) *
-          ((os_uint32) gid->serial  + unihashconsts[1]))
+  (int) (((((os_uint32) gid->systemId + unihashconsts[0]) *
+           ((os_uint32) gid->localId + unihashconsts[1])) +
+          ((os_uint32) gid->serial * unihashconsts[2]))
          >> (64 - nbitskey));
 }
 
 static int hash_guid (const struct nn_guid *guid, int nbitskey)
 {
-  /* Universal hashing relying on 64-bit arithmetic, using localId and
-     serial, which are both 32-bit integers.
-
-     See, e.g., http://en.wikipedia.org/wiki/Universal_hash_function. */
   return
     (int) (((((os_uint32) guid->prefix.u[0] + unihashconsts[0]) *
              ((os_uint32) guid->prefix.u[1] + unihashconsts[1])) +
@@ -96,7 +102,8 @@ struct ephash *ephash_new (os_uint32 soft_limit)
 {
   struct ephash *ephash;
   os_uint32 limit;
-  int i, nbitskey, init_size;
+  int nbitskey;
+  unsigned i, init_size;
 
   /* We use soft_limit to compute hash table size; 70% occupancy
      supposedly is ok so (3/2) * soft_limit should be okay-ish. We
@@ -111,11 +118,10 @@ struct ephash *ephash_new (os_uint32 soft_limit)
     limit >>= 1;
     nbitskey++;
   }
-  init_size = 1 << nbitskey;
+  init_size = 1u << nbitskey;
   TRACE (("ephash_new: soft_limit %u nbitskey %d init_size %d l.f. %f\n", soft_limit, nbitskey, init_size, (double) soft_limit / init_size));
-  if ((ephash = os_malloc (sizeof (*ephash))) == NULL)
-    goto fail_ephash;
-  if (os_mutexInit (&ephash->lock, &gv.mattr) != os_resultSuccess)
+  ephash = os_malloc (sizeof (*ephash));
+  if (os_mutexInit (&ephash->lock, NULL) != os_resultSuccess)
     goto fail_mutex;
   ephash->nbitskey = nbitskey;
   if ((ephash->heads = os_malloc (init_size * sizeof (*ephash->heads))) == NULL)
@@ -130,7 +136,6 @@ struct ephash *ephash_new (os_uint32 soft_limit)
   os_mutexDestroy (&ephash->lock);
  fail_mutex:
   os_free (ephash);
- fail_ephash:
   return NULL;
 }
 
@@ -153,7 +158,7 @@ static void ephash_insert (struct ephash *ephash, int idx, struct ephash_chain_e
     ce->next->prev = ce;
   /* pa_membar ensures that the transmit and receive threads will see
      a properly linked hash chain */
-  pa_membar_producer ();
+  pa_fence_rel ();
   ephash->heads[idx] = ce;
 
   /* enumerate support (temporary ... I hope) */
@@ -215,9 +220,9 @@ static void *ephash_lookup_guid (const struct ephash *ephash, const struct nn_gu
   for (ce = ephash->heads[idx]; ce; ce = ce->next)
   {
     struct entity_common *e = CONTAINER_OF (ce, struct entity_common, guid_hash_chain);
-    if (guid_eq (guid, &e->guid))
+    if (guid_eq (guid, &e->guid) && (e->kind == kind))
     {
-      return (e->kind == kind) ? e : NULL;
+      return e;
     }
   }
   return NULL;

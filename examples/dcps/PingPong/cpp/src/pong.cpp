@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -54,27 +62,27 @@ int OSPL_MAIN (int argc, char ** argv)
 #endif
 {
     DomainId_t                        myDomain           = DOMAIN_ID_DEFAULT;
-    DomainParticipantFactory_ptr      dpf                = NULL;
-    DomainParticipant_ptr             dp                 = NULL;
-    Publisher_ptr                     p                  = NULL;
-    Subscriber_ptr                    s                  = NULL;
+    DomainParticipantFactory_var      dpf;
+    DomainParticipant_var             dp;
+    Publisher_var                     p;
+    Subscriber_var                    s;
     DataWriter_ptr                    dw                 = NULL;
     DataReader_ptr                    dr                 = NULL;
 
-    PP_min_msgDataWriter_ptr          PP_min_writer      = NULL;
-    PP_seq_msgDataWriter_ptr          PP_seq_writer      = NULL;
-    PP_string_msgDataWriter_ptr       PP_string_writer   = NULL;
-    PP_fixed_msgDataWriter_ptr        PP_fixed_writer    = NULL;
-    PP_array_msgDataWriter_ptr        PP_array_writer    = NULL;
-    PP_bseq_msgDataWriter_ptr         PP_bseq_writer     = NULL;
+    PP_min_msgDataWriter_var          PP_min_writer;
+    PP_seq_msgDataWriter_var          PP_seq_writer;
+    PP_string_msgDataWriter_var       PP_string_writer;
+    PP_fixed_msgDataWriter_var        PP_fixed_writer;
+    PP_array_msgDataWriter_var        PP_array_writer;
+    PP_bseq_msgDataWriter_var         PP_bseq_writer;
 
-    PP_min_msgDataReader_ptr          PP_min_reader      = NULL;
-    PP_seq_msgDataReader_ptr          PP_seq_reader      = NULL;
-    PP_string_msgDataReader_ptr       PP_string_reader   = NULL;
-    PP_fixed_msgDataReader_ptr        PP_fixed_reader    = NULL;
-    PP_array_msgDataReader_ptr        PP_array_reader    = NULL;
-    PP_bseq_msgDataReader_ptr         PP_bseq_reader     = NULL;
-    PP_quit_msgDataReader_ptr         PP_quit_reader     = NULL;
+    PP_min_msgDataReader_var          PP_min_reader;
+    PP_seq_msgDataReader_var          PP_seq_reader;
+    PP_string_msgDataReader_var       PP_string_reader;
+    PP_fixed_msgDataReader_var        PP_fixed_reader;
+    PP_array_msgDataReader_var        PP_array_reader;
+    PP_bseq_msgDataReader_var         PP_bseq_reader;
+    PP_quit_msgDataReader_var         PP_quit_reader;
 
     PP_min_msgTypeSupport             PP_min_dt;
     PP_seq_msgTypeSupport             PP_seq_dt;
@@ -92,21 +100,21 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_bseq_msgSeq_var                PP_bseq_dataList   = new PP_bseq_msgSeq;
     PP_quit_msgSeq_var                PP_quit_dataList   = new PP_quit_msgSeq;
 
-    StatusCondition_ptr               PP_min_sc;
-    StatusCondition_ptr               PP_seq_sc;
-    StatusCondition_ptr               PP_string_sc;
-    StatusCondition_ptr               PP_fixed_sc;
-    StatusCondition_ptr               PP_array_sc;
-    StatusCondition_ptr               PP_bseq_sc;
-    StatusCondition_ptr               PP_quit_sc;
+    StatusCondition_var               PP_min_sc;
+    StatusCondition_var               PP_seq_sc;
+    StatusCondition_var               PP_string_sc;
+    StatusCondition_var               PP_fixed_sc;
+    StatusCondition_var               PP_array_sc;
+    StatusCondition_var               PP_bseq_sc;
+    StatusCondition_var               PP_quit_sc;
 
-    Topic_ptr                         PP_min_topic       = NULL;
-    Topic_ptr                         PP_seq_topic       = NULL;
-    Topic_ptr                         PP_string_topic    = NULL;
-    Topic_ptr                         PP_fixed_topic     = NULL;
-    Topic_ptr                         PP_array_topic     = NULL;
-    Topic_ptr                         PP_bseq_topic     = NULL;
-    Topic_ptr                         PP_quit_topic      = NULL;
+    Topic_var                         PP_min_topic;
+    Topic_var                         PP_seq_topic;
+    Topic_var                         PP_string_topic;
+    Topic_var                         PP_fixed_topic;
+    Topic_var                         PP_array_topic;
+    Topic_var                         PP_bseq_topic;
+    Topic_var                         PP_quit_topic;
 
     ConditionSeq_var                  conditionList      = new ConditionSeq;
     SampleInfoSeq_var                 infoList           = new SampleInfoSeq;
@@ -134,9 +142,11 @@ int OSPL_MAIN (int argc, char ** argv)
     //
 
 #ifdef INTEGRITY
-    read_partition = "PongRead";
-    write_partition = "PongWrite";
-#else
+    if (argc == 1) {
+       read_partition = "PongRead";
+       write_partition = "PongWrite";
+    }
+#endif
     if (argc != 1) {
         if (argc != 3) {
             printf ("Invalid.....\n Usage: %s [READ_PARTITION WRITE_PARTITION]\n", argv[0]);
@@ -145,7 +155,6 @@ int OSPL_MAIN (int argc, char ** argv)
         read_partition  = argv[1];
         write_partition = argv[2];
     }
-#endif
 
     //
     // Create participant
@@ -434,6 +443,14 @@ int OSPL_MAIN (int argc, char ** argv)
             }
         }
     }
+
+    result = w.detach_condition (PP_min_sc);
+    result = w.detach_condition (PP_seq_sc);
+    result = w.detach_condition (PP_string_sc);
+    result = w.detach_condition (PP_fixed_sc);
+    result = w.detach_condition (PP_array_sc);
+    result = w.detach_condition (PP_bseq_sc);
+    result = w.detach_condition (PP_quit_sc);
 
     result = s->delete_datareader (PP_min_reader);
     result = p->delete_datawriter (PP_min_writer);

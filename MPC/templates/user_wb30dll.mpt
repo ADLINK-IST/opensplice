@@ -8,16 +8,16 @@ VxWorksRTP {
   project_type = RealTimeProcessProject
   platform_includes = $(WIND_BASE)/target/usr/h $(WIND_BASE)/target/usr/h/wrn/coreip
   platform_makefilevars = WIND_BASE WIND_USR
-  wrprj_macros = VX_CPU_FAMILY CPU TOOL_FAMILY TOOL TOOL_PATH CC_ARCH_SPEC
+  wrprj_macros = VX_CPU_FAMILY CPU VXCPU TOOL_FAMILY TOOL TOOL_PATH CC_ARCH_SPEC
   common_defines = VXWORKS_RTP USE_CLOCK_GETTIME USE_NANOSLEEP
   buildspecs = NO_PLATFORM // Deliberate invalid value
   default_buildspec = NO_PLATFORM // Deliberate invalid value
   librarian_objects = @$(PRJ_ROOT_DIR)/filelist.txt
   exe_buildtool = Linker
   project_type_macro = RTP
-  platform_asflags = -mrtp -D_VX_CPU=_VX_$(CPU) -D_VX_TOOL_FAMILY=$(TOOL_FAMILY) -D_VX_TOOL=$(TOOL)
-  platform_cxxflags = -mrtp -D_VX_CPU=_VX_$(CPU) -D_VX_TOOL_FAMILY=$(TOOL_FAMILY) -D_VX_TOOL=$(TOOL)
-  platform_ccflags = -mrtp -D_VX_CPU=_VX_$(CPU) -D_VX_TOOL_FAMILY=$(TOOL_FAMILY) -D_VX_TOOL=$(TOOL)
+  platform_asflags = -mrtp -D_VX_CPU=_VX_$(VXCPU) -D_VX_TOOL_FAMILY=$(TOOL_FAMILY) -D_VX_TOOL=$(TOOL)
+  platform_cxxflags = -mrtp -D_VX_CPU=_VX_$(VXCPU) -D_VX_TOOL_FAMILY=$(TOOL_FAMILY) -D_VX_TOOL=$(TOOL)
+  platform_ccflags = -mrtp -D_VX_CPU=_VX_$(VXCPU) -D_VX_TOOL_FAMILY=$(TOOL_FAMILY) -D_VX_TOOL=$(TOOL)
   link_groups = 1
 }
 
@@ -26,6 +26,7 @@ VxWorksRTP {
 MIPSI32R2sfgnu_RTP {
   cc_arch_spec = -G 0 -mno-branch-likely -mips32r2 -mgp32 -mfp32 -EB -fno-strict-aliasing -msoft-float -DMIPSEB -DSOFT_FLOAT
   cpu = MIPSI32R2
+  vxcpu = MIPSI32R2
   tool_family = gnu
   tool = sfgnu
   vx_cpu_family = mips
@@ -58,6 +59,7 @@ MIPSI32R2sfgnu_RTP {
 PENTIUMgnu_RTP {
   cc_arch_spec =
   cpu = PENTIUM
+  vxcpu = PENTIUM
   tool_family = gnu
   tool = gnu
   vx_cpu_family = pentium
@@ -90,6 +92,7 @@ PENTIUMgnu_RTP {
 PENTIUMgnu {
   cc_arch_spec = -mtune=pentium -march=pentium -nostdlib -fno-builtin -fno-defer-pop -fno-implicit-fp
   cpu = PENTIUM
+  vxcpu = PENTIUM
   tool_family = gnu
   tool = gnu
   vx_cpu_family = pentium
@@ -122,6 +125,7 @@ PENTIUMgnu {
 SIMPENTIUMgnu_RTP {
   cc_arch_spec = -mtune=i486 -march=i486
   cpu = SIMPENTIUM
+  vxcpu = SIMPENTIUM
   tool_family = gnu
   tool = gnu
   vx_cpu_family = pentium
@@ -155,6 +159,7 @@ SIMPENTIUMgnu_RTP {
 PENTIUM3gnu_RTP {
   cc_arch_spec = -mtune=pentium3 -march=pentium3
   cpu = PENTIUM3
+  vxcpu = PENTIUM3
   tool_family = gnu
   tool = gnu
   vx_cpu_family = pentium
@@ -187,6 +192,7 @@ PENTIUM3gnu_RTP {
 PENTIUM4gnu_RTP {
   cc_arch_spec = -mtune=pentium4 -march=pentium4
   cpu = PENTIUM4
+  vxcpu = PENTIUM4
   tool_family = gnu
   tool = gnu
   vx_cpu_family = pentium
@@ -211,7 +217,38 @@ PENTIUM4gnu_RTP {
   part_dbgflags =
   part_nondbgflags =
   // Default to < 6.8 link location. See splice_targets.mpb for 'later versions' override
-  linker_flags = $(CC_ARCH_SPEC) -mrtp -L '$(WIND_BASE)/target/usr/lib/pentium/PENTIUM4/common'
+  linker_flags = $(CC_ARCH_SPEC) -mrtp -non-static -L '$(WIND_BASE)/target/usr/lib/pentium/PENTIUM4/common'
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+}
+
+ATOMgnu_RTP {
+  cc_arch_spec = -march=atom
+  cpu =
+  vxcpu = ATOM
+  tool_family = gnu
+  tool = gnu
+  vx_cpu_family =
+  cc = ccpentium
+  cxx = c++pentium
+  ar = arpentium
+  nm = nmpentium
+  munchflag = pentium
+  cxx_flags = -ansi -Wall -MD -MP -fexceptions -frtti -fweak -Wunused -P
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ass_flags = -ansi -xassembler-with-cpp -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  c_flags = -ansi -Wall -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
   linker_dbgflags = -g
   linker_nondbgflags = -O2 -fstrength-reduce -fno-builtin
 }
@@ -219,6 +256,7 @@ PENTIUM4gnu_RTP {
 PPC32gnu_RTP {
   cc_arch_spec = -mhard-float -mstrict-align -mregnames
   cpu = PPC32
+  vxcpu = PPC32
   tool_family = gnu
   tool = gnu
   vx_cpu_family = ppc
@@ -251,6 +289,7 @@ PPC32gnu_RTP {
 PPC32e500v2gnu_RTP {
   cc_arch_spec = -te500v2 -mcpu=8548 -mfloat-gprs=double -mspe=yes -mabi=spe -mstrict-align -mregnames -mhard-float
   cpu = PPC32
+  vxcpu = PPC32
   tool_family = gnu
   tool = e500v2
   vx_cpu_family = ppc
@@ -284,6 +323,7 @@ PPC32e500v2gnu_RTP {
 PENTIUM4gnu {
   cc_arch_spec = -mtune=pentium4 -march=pentium4
   cpu = PENTIUM4
+  vxcpu = PENTIUM4
   tool_family = gnu
   tool = gnu
   vx_cpu_family = pentium
@@ -315,6 +355,7 @@ PENTIUM4gnu {
 PENTIUM4gnu_SMP {
   cc_arch_spec = -mtune=pentium4 -march=pentium4
   cpu = PENTIUM4
+  vxcpu = PENTIUM4
   tool_family = gnu
   tool = gnu
   vx_cpu_family = pentium
@@ -347,6 +388,7 @@ PENTIUM4gnu_SMP {
 PPC85XXe500v2gnu {
   cc_arch_spec = -te500v2 -mhard-float -fno-implicit-fp -mstrict-align -fno-zero-initialized-in-bss
   cpu = PPC85XX
+  vxcpu = PPC85XX
   tool_family = gnu
   tool = e500v2gnu
   vx_cpu_family = ppc

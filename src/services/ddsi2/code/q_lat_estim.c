@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <ctype.h>
 #include <stddef.h>
 
@@ -32,7 +51,7 @@ void nn_lat_estim_update (struct nn_lat_estim *le, os_int64 est)
   float tmp[NN_LAT_ESTIM_MEDIAN_WINSZ];
   if (est <= 0)
     return;
-  fest = est / 1e3; /* we do latencies in microseconds */
+  fest = (float) est / 1e3f; /* we do latencies in microseconds */
   le->window[le->index] = fest;
   if (++le->index == NN_LAT_ESTIM_MEDIAN_WINSZ)
     le->index = 0;
@@ -41,7 +60,7 @@ void nn_lat_estim_update (struct nn_lat_estim *le, os_int64 est)
   med = tmp[NN_LAT_ESTIM_MEDIAN_WINSZ / 2];
   if (le->smoothed == 0 && le->index == 0)
     le->smoothed = med;
-  else if (le->smoothed)
+  else if (le->smoothed != 0)
     le->smoothed = (1.0f - alpha) * le->smoothed + alpha * med;
 }
 

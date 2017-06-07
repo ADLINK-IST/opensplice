@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v__observable.h"
@@ -19,27 +27,6 @@
 
 #define _USE_HANDLE_
 
-typedef struct findProxyArgument {
-    v_handle observer;
-    v_proxy proxy;
-} findProxyArgument;
-
-static c_bool
-findProxy(
-    c_object o,
-    c_voidp arg)
-{
-    v_proxy proxy = (v_proxy)o;
-    findProxyArgument *a = (findProxyArgument *)arg;
-
-    if (v_handleIsEqual(proxy->source,a->observer)) {
-        a->proxy = proxy;
-        return FALSE;
-    } else {
-        return TRUE;
-    }
-}
-
 c_bool
 v_observableAddObserver(
     v_observable o,
@@ -47,7 +34,7 @@ v_observableAddObserver(
     c_voidp userData)
 {
     v_proxy proxy;
-    findProxyArgument arg;
+    v_handle handle;
 
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observable));
@@ -56,23 +43,23 @@ v_observableAddObserver(
     assert(o != v_observable(observer));
 
     c_mutexLock(&o->mutex);
-    arg.observer = v_publicHandle(v_public(observer));
-    arg.proxy = NULL;
-    c_setWalk(o->observers,findProxy,&arg);
-    if (arg.proxy == NULL) { /* no proxy to the observer exists */
-        proxy = v_proxyNew(v_objectKernel(o),
-                           arg.observer, userData);
-/* remnant of proto typing hard referenced proxy objects in stead of
- * using handles. Needs some clean-up activity.
- * Also see the undefined _USE_HANDLE_ macro.
- */
-proxy->source2 = observer;
-        proxy->userData = userData;
-        c_insert(o->observers,proxy);
-        c_free(proxy);
-    } else {
-        arg.proxy->userData = userData; /* replace userData */
+    handle = v_publicHandle(v_public(observer));
+    proxy = o->observers;
+    while (proxy) {
+        if (v_handleIsEqual(proxy->source, handle)) break;
+        proxy = proxy->next;
     }
+    if (!proxy) {
+        proxy = v_proxyNew(v_objectKernel(o), handle, userData);
+        /* remnant of proto typing hard referenced proxy objects in stead of
+         * using handles. Needs some clean-up activity.
+         * Also see the undefined _USE_HANDLE_ macro.
+         */
+        proxy->source2 = observer;
+        proxy->next = o->observers;
+        o->observers = proxy;
+    }
+    proxy->userData = userData;
     c_mutexUnlock(&o->mutex);
     return TRUE;
 }
@@ -83,8 +70,8 @@ v_observableRemoveObserver(
     v_observer observer,
     void** userData)
 {
-    v_proxy found;
-    findProxyArgument arg;
+    v_proxy proxy, prev;
+    v_handle handle;
     c_bool result = FALSE;
 
     assert(o != NULL);
@@ -94,18 +81,26 @@ v_observableRemoveObserver(
     assert(o != v_observable(observer));
 
     c_mutexLock(&o->mutex);
-    arg.observer = v_publicHandle(v_public(observer));
-    arg.proxy = NULL;
-    c_setWalk(o->observers,findProxy,&arg);
-    if (arg.proxy != NULL) { /* proxy to the observer found */
-        found = c_remove(o->observers,arg.proxy,NULL,NULL);
-        assert(found == arg.proxy);
-        if(found && userData)
-        {
-            *userData = found->userData;
+    handle = v_publicHandle(v_public(observer));
+    prev = NULL;
+    proxy = o->observers;
+    while (proxy) {
+        if (v_handleIsEqual(proxy->source, handle)) {
+            if (userData) {
+                *userData = proxy->userData;
+            }
+            if (prev) {
+                prev->next = proxy->next;
+            } else {
+                o->observers = proxy->next;
+            }
+            proxy->next = NULL;
+            c_free(proxy);
+            result = TRUE;
+            break;
         }
-        c_free(found);
-        result = TRUE;
+        prev = proxy;
+        proxy = proxy->next;
     }
     c_mutexUnlock(&o->mutex);
     return result;
@@ -113,40 +108,24 @@ v_observableRemoveObserver(
 
 void
 v_observableInit(
-    v_observable o,
-    const c_char *name,
-    v_statistics s,
-    c_bool enable)
+    v_observable o)
 {
-    c_type proxyType;
-    v_kernel kernel;
-
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observable));
 
-    kernel = v_objectKernel(o);
-    proxyType = v_kernelType(kernel,K_PROXY);
-    o->observers = c_setNew(proxyType);
-    assert(o->observers);
-    c_mutexInit(&o->mutex,SHARED_MUTEX);
-    v_entityInit(v_entity(o), name, s, enable);
+    o->observers = NULL;
+    c_mutexInit(c_getBase(o), &o->mutex);
+    v_publicInit(v_public(o));
 }
 
 void
 v_observableFree(
     v_observable o)
 {
-    v_proxy found;
-
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observable));
 
-    found = c_take(o->observers);
-    while (found != NULL) {
-        c_free(found);
-        found = c_take(o->observers);
-    }
-    v_entityFree(v_entity(o));
+    v_publicFree(v_public(o));
 }
 
 void
@@ -156,48 +135,7 @@ v_observableDeinit(
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observable));
 
-    v_entityDeinit(v_entity(o));
-}
-
-struct proxyNotifyArg {
-    v_event event;
-    v_observable myself;
-    c_iter  deadProxies;
-};
-
-static c_bool
-v_proxyNotify(
-    c_object proxy,
-    c_voidp arg)
-{
-    v_proxy p = v_proxy(proxy);
-    struct proxyNotifyArg *a = (struct proxyNotifyArg *)arg;
-    v_observer o;
-    v_observer* oPtr;
-#ifdef _USE_HANDLE_
-    v_handleResult r;
-
-    oPtr = &o;
-    r = v_handleClaim(p->source,(v_object *)oPtr);
-    if (r == V_HANDLE_OK) {
-#else
-        o = p->source2;
-#endif
-        if (v_observable(o) == a->myself) {
-            v_observerNotify(o,a->event,p->userData);
-        } else {
-            v_observerLock(o);
-            v_observerNotify(o,a->event, p->userData);
-            v_observerUnlock(o);
-        }
-#ifdef _USE_HANDLE_
-        r = v_handleRelease(p->source);
-    } else {
-        /* The source has already left the system */
-        a->deadProxies = c_iterInsert(a->deadProxies, proxy);
-    }
-#endif
-    return TRUE;
+    v_publicDeinit(v_public(o));
 }
 
 void
@@ -205,28 +143,48 @@ v_observableNotify(
     v_observable o,
     v_event event)
 {
-    struct proxyNotifyArg pna;
-    v_proxy proxy, foundProxy;
+    v_proxy proxy, prev, next;
+    v_observer ob;
+    v_observer* oPtr;
+    v_handleResult r;
 
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observable));
 
-    if(c_setCount(o->observers) > 0) {
-        c_mutexLock(&o->mutex);
-        pna.event = event;
-        pna.myself = o;
-        pna.deadProxies = NULL;
-        c_setWalk(o->observers,v_proxyNotify,&pna);
+    prev = NULL;
+    c_mutexLock(&o->mutex);
+    proxy = o->observers;
+    while (proxy) {
+        next = proxy->next;
 #ifdef _USE_HANDLE_
-        proxy = c_iterTakeFirst(pna.deadProxies);
-        while (proxy != NULL) {
-            foundProxy = c_remove(o->observers, proxy, NULL, NULL);
-            assert(foundProxy == proxy);
-            c_free(proxy);
-            proxy = c_iterTakeFirst(pna.deadProxies);
-        }
-        c_iterFree(pna.deadProxies);
+        oPtr = &ob;
+        r = v_handleClaim(proxy->source,(v_object *)oPtr);
+        if (r == V_HANDLE_OK) {
+#else
+            ob = proxy->source2;
 #endif
-        c_mutexUnlock(&o->mutex);
+            if (v_observable(ob) == o) {
+                v_observerNotify(ob,event,proxy->userData);
+            } else {
+                v_observerLock(ob);
+                v_observerNotify(ob,event, proxy->userData);
+                v_observerUnlock(ob);
+            }
+            prev = proxy;
+#ifdef _USE_HANDLE_
+            (void) v_handleRelease(proxy->source);
+        } else {
+            /* The source has already left the system */
+            if (prev) {
+                prev->next = next;
+            } else {
+                o->observers = next;
+            }
+            proxy->next = NULL;
+            c_free(proxy);
+        }
+#endif
+        proxy = next;
     }
+    c_mutexUnlock(&o->mutex);
 }

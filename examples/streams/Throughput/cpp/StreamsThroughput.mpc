@@ -1,0 +1,59 @@
+project (SA_Cxx*Types) : streams_sacpp_typesupport, sacpp_typesupport, _example_dcps_type_lib, _example_streams_type_lib, c_or_cplusplus_example, ospl_streamssacpp {
+    requires += dcps_sacpp_example
+
+    StreamsTypes_Files{
+        ../idl/Throughput.idl
+    }
+
+    TypeSupport_Files {
+        splice_ts_flags += -i -I ../idl
+        ThroughputStreams.idl
+    }
+
+    Source_Files {
+    }
+
+     Documentation_Files {
+        ../.
+    }
+}
+
+project (SA_Cxx*Impl) : _repetitive_sacpp_example_impl, ospl_streamssacpp{
+    Source_Files {
+        entities.cpp
+    }
+}
+
+project (SA_Cxx*Publisher) : c_or_cplusplus_example, sacpp_dcps_application, ospl_streamssacpp {
+    after += SA_Cxx*Impl
+    requires += dcps_sacpp_example
+    includes += .
+    Source_Files {
+        publisher.cpp
+    }
+
+    exename = publisher
+
+    libs += SA_Cxx*Impl SA_Cxx*Types
+
+    Documentation_Files {
+        ../.
+    }
+}
+
+project (SA_Cxx*Subscriber) : c_or_cplusplus_example, sacpp_dcps_application, ospl_streamssacpp {
+    after += SA_Cxx*Impl
+    requires += dcps_sacpp_example
+    includes += .
+    Source_Files {
+        subscriber.cpp
+    }
+
+    exename = subscriber
+
+    libs += SA_Cxx*Impl SA_Cxx*Types
+
+    Documentation_Files {
+        ../.
+    }
+}

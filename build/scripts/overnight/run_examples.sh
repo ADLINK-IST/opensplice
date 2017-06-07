@@ -1,8 +1,33 @@
 #set -x
 
+# For platforms which have suid busybox as /bin/sh so reset LD_LIBRARY_PATH 
+if [ "$OVERRIDE_LD_LIBRARY_PATH" != "" ]
+then
+   echo "Setting LD_LIBRARY_PATH from OVERRIDE_LD_LBIRARY_PATH"
+   LD_LIBRARY_PATH="$OVERRIDE_LD_LIBRARY_PATH"
+   export LD_LIBRARY_PATH
+fi
+
+echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+# For platforms which have suid busybox as /bin/sh put a non suid sh on the path
+if [ "$WORKAROUND_PATH" != "" ]
+then
+   echo "Adding workaround path"
+   PATH="$WORKAROUND_PATH:$PATH"
+   export PATH
+fi
+
 . $BASE/example_results_fns 
 
-PATH="$JAVA_HOME/bin:$PATH"
+if [ "$JAVA_HOME" != "" ]
+then
+   PATH="$JAVA_HOME/bin:$PATH"
+fi
+
+if [ -n "$PERC_HOME" ]
+then
+   PATH="$PERC_HOME/bin:$PATH"
+fi
 PATH="$PATH:$TAO_ROOT/bin:$JACORB_HOME/bin"
 
 CLASSPATH="$CLASSPATH:$JACORB_HOME/lib/endorsed/jacorb.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$JACORB_HOME/lib/idl.jar"
@@ -38,7 +63,7 @@ else
     NEWXMLFILE=`echo $XMLFILE | sed 's/ospl_sp_ddsi.xml$/ospl_sp_ddsi_uniq.xml/'`
 
 
-    if [ -n "$UNIQE_MC_ADDRESS" ]
+    if [ -n "$UNIQUE_MC_ADDRESS" ]
     then 
         grep SPDPMulticastAddress $XMLFILE
         if [ $? = 0 ]
@@ -48,7 +73,7 @@ else
         fi
         sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
             -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" \
-            -e "s@</DDSI2Service>@<Discovery><SPDPMulticastAddress>$UNIQE_MC_ADDRESS</SPDPMulticastAddress></Discovery></DDSI2Service>@" < $XMLFILE > $NEWXMLFILE
+            -e "s@</DDSI2Service>@<Discovery><SPDPMulticastAddress>$UNIQUE_MC_ADDRESS</SPDPMulticastAddress></Discovery></DDSI2Service>@" < $XMLFILE > $NEWXMLFILE
         grep SPDPMulticastAddress $NEWXMLFILE
         if [ $? = 1 ]
         then
@@ -145,7 +170,9 @@ do
         #the durability examples actually goes to .txt files
         touch run.log
         echo " ### Project: $PROJECT Begin ### " >> run.log
-
+	echo "  WORKAROUND_PATH=$WORKAROUND_PATH" >> run.log
+	echo "  PATH=$PATH" >> run.log
+	echo "  which sh is `which sh`" >> run.log
         if [ $run = "yes" ];
         then
             #Create a directory using the project directory location, ommitting the slashes

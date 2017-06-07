@@ -1,27 +1,35 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "v__serviceManager.h"
 #include "v_participant.h"
+#include "v_spliced.h"
 #include "v_service.h"
 #include "v__service.h"
 #include "v__serviceState.h"
 #include "v__lease.h"
 #include "v__observer.h"
 #include "v_observable.h"
-#include "v_entity.h"
+#include "v__entity.h"
 #include "v_public.h"
 #include "v_event.h"
-#include "v_time.h"
 #include "c_collection.h"
 #include "c_iterator.h"
 #include "os_report.h"
@@ -67,9 +75,9 @@ v_serviceManagerInit(
 
     k = v_objectKernel(sm);
 
-    v_observerInit(v_observer(sm), "ServiceManager", NULL, TRUE);
+    v_entityInit(v_entity(sm), "ServiceManager", TRUE);
 
-    c_mutexInit(&sm->mutex, SHARED_MUTEX);
+    c_mutexInit(c_getBase(sm), &sm->mutex);
     sm->serviceStates = c_tableNew(v_kernelType(k, K_SERVICESTATE), "name");
 }
 
@@ -106,7 +114,7 @@ v_serviceManagerNotify(
        event may be NULL in case of termination.
     */
     if ((event != NULL) && (event->kind != V_EVENT_SERVICESTATE_CHANGED)) {
-        OS_REPORT(OS_WARNING, "v_serviceManager", 0, "Unexpected event");
+        OS_REPORT(OS_WARNING, "v_serviceManager", V_RESULT_INTERNAL_ERROR, "Unexpected event");
         assert(FALSE);
     }
 }
@@ -131,7 +139,7 @@ v_serviceManagerRegister(
     if (state != NULL) {
         c_mutexLock(&serviceManager->mutex);
 
-        found = c_insert(serviceManager->serviceStates, state);
+        found = ospl_c_insert(serviceManager->serviceStates, state);
 
         if (found != state) {
             c_free(state);
@@ -154,7 +162,7 @@ v_serviceManagerGetServiceState(
     const c_char *serviceName)
 {
     v_serviceState state;
-    c_iter list; 
+    c_iter list;
     c_collection q;
     q_expr expr;
     c_value params[1];
@@ -244,14 +252,14 @@ v_serviceManagerRemoveService(
         c_mutexLock(&serviceManager->mutex);
         removed = c_remove(serviceManager->serviceStates, state, NULL, NULL);
         if (state != removed) {
-            OS_REPORT_1(OS_ERROR, "v_serviceManagerRemoveService", 0,
+            OS_REPORT(OS_ERROR, "v_serviceManagerRemoveService", V_RESULT_INTERNAL_ERROR,
                       "Could not remove the service %s form the serviceset",serviceName);
         } else {
             result = TRUE;
         }
         c_mutexUnlock(&serviceManager->mutex);
     } else {
-        OS_REPORT_1(OS_ERROR, "v_serviceManagerRemoveService", 0,
+        OS_REPORT(OS_ERROR, "v_serviceManagerRemoveService", V_RESULT_INTERNAL_ERROR,
                    "Could not get the service state for service %s",serviceName);
     }
     return result;

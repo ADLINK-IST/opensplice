@@ -1,0 +1,481 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Installation and Configuration &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="6. Using Vortex OpenSplice with Vortex Cloud and Vortex Fog" href="using-with-cloud.html" />
+    <link rel="prev" title="4. Documentation and Support" href="documentation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="using-with-cloud.html" title="6. Using Vortex OpenSplice with Vortex Cloud and Vortex Fog"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="documentation.html" title="4. Documentation and Support"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation-and-configuration">
+<span id="id1"></span><h1>5. Installation and Configuration<a class="headerlink" href="#installation-and-configuration" title="Permalink to this headline">¶</a></h1>
+<p><em>Follow the instructions in this chapter to install and configure
+Vortex OpenSplice and its tools. Information on running the OpenSplice
+examples are provided at the end of the chapter under</em> <a class="reference internal" href="#examples">Examples</a>.</p>
+<div class="section" id="vortex-opensplice-development-and-run-time">
+<h2>5.1. Vortex OpenSplice Development and Run-Time<a class="headerlink" href="#vortex-opensplice-development-and-run-time" title="Permalink to this headline">¶</a></h2>
+<p>Vortex OpenSplice is provided in two installers. The <strong>HDE</strong> (Host
+Development Environment) is the standard and it requires approximately
+60 Mb of disk space after installation; the <strong>RTS</strong> (Run Time System)
+requires approximately 35 Mb of disk space.</p>
+<p>The HDE contains all of the services, libraries, header files and tools
+needed to develop applications using OpenSplice, and the RTS is a subset
+of the HDE which contains all of the services, libraries and tools
+needed to deploy applications using OpenSplice.</p>
+</div>
+<div class="section" id="installation-for-unix-and-windows-platforms">
+<span id="id2"></span><h2>5.2. Installation for UNIX and Windows Platforms<a class="headerlink" href="#installation-for-unix-and-windows-platforms" title="Permalink to this headline">¶</a></h2>
+<p>This section describes the normal procedure to install Vortex OpenSplice
+on a UNIX or Windows platform. The exception is the procedure to install
+Vortex OpenSplice on a UNIX ARM platform which is described in section <a class="reference internal" href="unixarm.html#unix-arm-platform"><em>UNIX ARM platform</em></a></p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><p><em>Install Vortex OpenSplice.</em></p>
+<p>Run the installation wizard for your
+particular installation, using:</p>
+<p><tt class="docutils literal"><span class="pre">P&lt;code&gt;-VortexOpenSplice&lt;version&gt;-&lt;E&gt;-&lt;platform&gt;.&lt;os&gt;-&lt;comp&gt;-&lt;type&gt;-&lt;target&gt;-installer.&lt;ext&gt;</span></tt></p>
+<p>where, some being optional,</p>
+<p><em>&lt;code&gt;</em> - PrismTech&#8217;s code for the platform
+<em>&lt;version&gt;</em> - the Vortex OpenSplice version number,
+for example <tt class="docutils literal"><span class="pre">V6.0</span></tt></p>
+<p><em>&lt;E&gt;</em> - the environment, either <tt class="docutils literal"><span class="pre">HDE</span></tt> or <tt class="docutils literal"><span class="pre">RTS</span></tt></p>
+<p><em>&lt;platform&gt;</em> - the platform architecture,
+for example <tt class="docutils literal"><span class="pre">sparc</span></tt> or <tt class="docutils literal"><span class="pre">x86</span></tt></p>
+<p><em>&lt;os&gt;</em> - the operating system
+for example <tt class="docutils literal"><span class="pre">solaris8</span></tt> or <tt class="docutils literal"><span class="pre">linux2.6</span></tt></p>
+<p><em>&lt;comp&gt;</em> - the compiler or glibc version</p>
+<p><em>&lt;type&gt;</em> - release, debug or dev, which is release with symbols</p>
+<p><em>&lt;target&gt;</em> - the target architecture for host/target builds.</p>
+<p><em>&lt;ext&gt;</em> - the platform executable extension,
+either <tt class="docutils literal"><span class="pre">run</span></tt> or <tt class="docutils literal"><span class="pre">exe</span></tt></p>
+<p>The directories in the Vortex OpenSplice distribution are named after the
+installation package they contain. Each package consists of an archive
+and its installation procedure.</p>
+</div></blockquote>
+<p><strong>Step 2</strong></p>
+<p><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div><p><em>Configure the Vortex OpenSplice environment variables.</em></p>
+<p>(This is only necessary on UNIX, as the Windows environment
+is configured by the OpenSplice installer.)</p>
+<p>Go to the <em>&lt;install_dir&gt;/&lt;E&gt;/&lt;platform&gt;</em> directory, where <em>&lt;E&gt;</em> is <tt class="docutils literal"><span class="pre">HDE</span></tt>
+or <tt class="docutils literal"><span class="pre">RTS</span></tt> and <em>&lt;platform&gt;</em> is, for example, <tt class="docutils literal"><span class="pre">x86.linux2.6</span></tt>.</p>
+<p>Source the <tt class="docutils literal"><span class="pre">release.com</span></tt> file from the shell command line.</p>
+<p>This step performs all the required environment configuration.</p>
+</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Usually not required, but install your desired ORB when the C++ language mapping is used with
+CORBA cohabitation. Ensure your chosen ORB and compiler is appropriate
+for the CCPP library being used (either OpenSplice&#8217;s default library or
+other custom-built library). Refer to the <em>Release Notes</em> for ORB and
+compiler information pertaining to Vortex OpenSplice&#8217; default CCPP library.</div></blockquote>
+</div>
+<div class="section" id="installation-on-other-platforms">
+<h2>5.3. Installation on Other Platforms<a class="headerlink" href="#installation-on-other-platforms" title="Permalink to this headline">¶</a></h2>
+<p>Please refer to <a class="reference internal" href="platforms.html#platform-specific-information"><em>Platform-specific Information</em></a>
+for information about using Vortex OpenSplice on platforms
+other than Unix/Linux and Windows.</p>
+</div>
+<div class="section" id="configuration">
+<span id="id3"></span><h2>5.4. Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<p>Vortex OpenSplice is configured using an XML configuration file, as
+shown under <a class="reference internal" href="#example-xml-configuration-settings">Example XML Configuration Settings</a> .
+It is advisable to use the <tt class="docutils literal"><span class="pre">osplconf</span></tt> tool (UNIX)
+or <em>OpenSplice DDS Configurator Tool</em> (Windows <em>Start Menu</em> ) to
+edit your xml files. The configurator tool provides
+explanations of each attribute and also validates the input.</p>
+<p>The default configuration file is <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> located in
+<tt class="docutils literal"><span class="pre">$OSPL_HOME/etc/config</span></tt> (alternative configuration files may also be
+available in this directory, to assist in other scenarios). The default
+value of the environment variable <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> is set to this
+configuration file.</p>
+<p>The configuration file defines and configures the following OpenSplice
+services:</p>
+<dl class="docutils">
+<dt><em>spliced</em></dt>
+<dd>The default service, also called the domain service; the
+domain service is responsible for starting and monitoring all other
+services.</dd>
+<dt><em>durability</em></dt>
+<dd>This service is responsible for storing non-volatile data and
+keeping it consistent within the domain (optional).</dd>
+<dt><em>networking</em></dt>
+<dd>This service realizes user-configured communication between the nodes
+in a domain.</dd>
+<dt><em>tuner</em></dt>
+<dd>This service provides a SOAP interface for the OpenSplice Tuner to connect
+to the node remotely from any other reachable node.</dd>
+</dl>
+<p>The default deployment specified by the XML configuration file is for a
+<em>Single Process</em> deployment. This means that the OpenSplice Domain
+Service, database administration and associated services are all started
+within the DDS application process. This is implicitly done when the
+user&#8217;s application invokes the DDS <em>create_participant</em> operation.</p>
+<p>The deployment mode and other configurable properties can be changed by
+using a different <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> file. Several sample configuration files
+are provided at the same location.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>If using a shared memory configuration, a <em>&lt;Database&gt;</em> attribute
+is specified in the XML configuration.
+The default Database Size that is mapped on
+a shared memory segment is 10 Megabytes.</dd>
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><em>Note:</em> The maximum user-creatable shared-memory segment is limited
+on certain machines, including Solaris, so it must either be
+adjusted or OpenSplice must be started as root.</dd>
+</dl>
+<p>A complete configuration file that enables durability as well as
+Real Time Native Networking is shown below. (The relevant lines are not enabled in
+the default configuration file, but editing them will allow you to
+enable support for <em>PERSISTENT</em> data (instead of just <em>TRANSIENT</em> or
+<em>VOLATILE</em> data) and to use multicast instead of broadcast.)</p>
+<p>Adding support for <em>PERSISTENT</em> data requires you to add the
+<em>&lt;Persistent&gt;</em> element to the <em>&lt;DurabilityService&gt;</em> content (see the
+relevant lines in the XML example shown below). In this <em>&lt;Persistent&gt;</em>
+element you can then specify the actual path to the directory for
+persistent-data storage (if it does not exist, the directory will be
+created). In the example below this directory is <tt class="docutils literal"><span class="pre">/tmp/Pdata</span></tt>.</p>
+<p>For the networking service, the network interface-address that is to be
+used is specified by the <em>&lt;NetworkInterfaceAddress&gt;</em> element. The
+default value is set to <tt class="docutils literal"><span class="pre">first</span> <span class="pre">available</span></tt> , meaning that OpenSplice will
+determine the first available interface that is broadcast or multicast
+enabled. However, an alternative address may be specified as well
+(specify as <tt class="docutils literal"><span class="pre">a.b.c.d</span></tt>).</p>
+<p>The network service may use separate channels, each with their own name
+and their own parameters (for example the port-number, the queue size,
+and, if multicast enabled, the multicast address). Channels are either
+reliable (all data flowing through them is delivered reliably on the
+network level, regardless of QoS settings of the corresponding writers)
+or not reliable (all data flowing through them is delivered at most
+once, regardless of QoS settings of the corresponding writers). The idea
+its that the network service chooses the most appropriate channel for
+each DataWriter, <em>i.e.</em> the channel that fits its QoS settings the best.</p>
+<p>Usually, networking shall be configured to support at least one reliable
+and one non-reliable channel. Otherwise, the service might not be
+capable of offering the requested reliability. If the service is not
+capable of selecting a correct channel, the message is sent through the
+default channel. The example configuration defines both a reliable and
+a non-reliable channel.</p>
+<p>The current configuration uses broadcast as the networking distribution
+mechanism. This is achieved by setting the <em>Address</em> attribute in the
+<em>GlobalPartition</em> element to broadcast, which happens to be the default
+value anyway. This <em>Address</em> attribute can be set to any multicast
+address in the notation <tt class="docutils literal"><span class="pre">a.b.c.d</span></tt> in order to use multicast.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>If multicast is required to be used instead of broadcast, then the
+operating system&#8217;s multicast routing capabilities must be configured
+correctly.</dd>
+</dl>
+<p>See the <em>Vortex OpenSplice Deployment Manual</em> for more advanced configuration
+settings.</p>
+<p id="example-xml-configuration-settings"><strong>Example XML Configuration Settings</strong></p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;OpenSpliceDDS&gt;</span>
+    <span class="nt">&lt;Domain&gt;</span>
+        <span class="nt">&lt;Name&gt;</span>OpenSpliceDDSV6.6<span class="nt">&lt;/Name&gt;</span>
+        <span class="nt">&lt;Database&gt;</span>
+            <span class="nt">&lt;Size&gt;</span>10485670<span class="nt">&lt;/Size&gt;</span>
+        <span class="nt">&lt;/Database&gt;</span>
+        <span class="nt">&lt;Lease&gt;</span>
+            <span class="nt">&lt;ExpiryTime</span> <span class="na">update_factor=</span><span class="s">”0.05”</span><span class="nt">&gt;</span>60.0<span class="nt">&lt;/ExpiryTime&gt;</span>
+        <span class="nt">&lt;/Lease&gt;</span>
+        <span class="nt">&lt;Service</span> <span class="na">name=</span><span class="s">&quot;networking&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;Command&gt;</span>networking<span class="nt">&lt;/Command&gt;</span>
+        <span class="nt">&lt;/Service&gt;</span>
+        <span class="nt">&lt;Service</span> <span class="na">name=</span><span class="s">&quot;durability&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;Command&gt;</span>durability<span class="nt">&lt;/Command&gt;</span>
+        <span class="nt">&lt;/Service&gt;</span>
+    <span class="nt">&lt;/Domain&gt;</span>
+    <span class="nt">&lt;NetworkService</span> <span class="na">name=</span><span class="s">&quot;networking&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;General&gt;</span>
+            <span class="nt">&lt;NetworkInterfaceAddress&gt;</span>
+                first available
+            <span class="nt">&lt;/NetworkInterfaceAddress&gt;</span>
+        <span class="nt">&lt;/General&gt;</span>
+        <span class="nt">&lt;Partitioning&gt;</span>
+          <span class="nt">&lt;GlobalPartition</span> <span class="na">Address=</span><span class="s">&quot;broadcast&quot;</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/Partitioning&gt;</span>
+        <span class="nt">&lt;Channels&gt;</span>
+           <span class="nt">&lt;Channel</span> <span class="na">name=</span><span class="s">&quot;BestEffort&quot;</span> <span class="na">reliable=</span><span class="s">&quot;false&quot;</span>
+              <span class="na">default=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;</span>
+                <span class="nt">&lt;PortNr&gt;</span>3340<span class="nt">&lt;/PortNr&gt;</span>
+            <span class="nt">&lt;/Channel&gt;</span>
+            <span class="nt">&lt;Channel</span> <span class="na">name=</span><span class="s">&quot;Reliable&quot;</span> <span class="na">reliable=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;</span>
+                <span class="nt">&lt;PortNr&gt;</span>3350<span class="nt">&lt;/PortNr&gt;</span>
+            <span class="nt">&lt;/Channel&gt;</span>
+        <span class="nt">&lt;/Channels&gt;</span>
+    <span class="nt">&lt;/NetworkService&gt;</span>
+    <span class="nt">&lt;DurabilityService</span> <span class="na">name=</span><span class="s">&quot;durability&quot;</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;Network&gt;</span>
+            <span class="nt">&lt;InitialDiscoveryPeriod&gt;</span>2.0<span class="nt">&lt;/InitialDiscoveryPeriod&gt;</span>
+            <span class="nt">&lt;Alignment&gt;</span>
+                <span class="nt">&lt;RequestCombinePeriod&gt;</span>
+                    <span class="nt">&lt;Initial&gt;</span>2.5<span class="nt">&lt;/Initial&gt;</span>
+                    <span class="nt">&lt;Operational&gt;</span>0.1<span class="nt">&lt;/Operational&gt;</span>
+                <span class="nt">&lt;/RequestCombinePeriod&gt;</span>
+            <span class="nt">&lt;/Alignment&gt;</span>
+            <span class="nt">&lt;WaitForAttachment</span> <span class="na">maxWaitCount=</span><span class="s">&quot;10&quot;</span><span class="nt">&gt;</span>
+                <span class="nt">&lt;ServiceName&gt;</span>networking<span class="nt">&lt;/ServiceName&gt;</span>
+            <span class="nt">&lt;/WaitForAttachment&gt;</span>
+        <span class="nt">&lt;/Network&gt;</span>
+        <span class="nt">&lt;NameSpaces&gt;</span>
+            <span class="nt">&lt;NameSpace</span> <span class="na">durabilityKind=</span><span class="s">&quot;Durable&quot;</span>
+                <span class="na">alignmentKind=</span><span class="s">&quot;Initial_and_Aligner&quot;</span><span class="nt">&gt;</span>
+                <span class="nt">&lt;Partition&gt;</span>*<span class="nt">&lt;/Partition&gt;</span>
+            <span class="nt">&lt;/NameSpace&gt;</span>
+        <span class="nt">&lt;/NameSpaces&gt;</span>
+        <span class="nt">&lt;Persistent&gt;</span>
+            <span class="nt">&lt;StoreDirectory&gt;</span>/tmp/Pdata<span class="nt">&lt;/StoreDirectory&gt;</span>
+        <span class="nt">&lt;/Persistent&gt;</span>
+    <span class="nt">&lt;/DurabilityService&gt;</span>
+<span class="nt">&lt;/OpenSplice&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="example-configuration-files">
+<h3>5.4.1. Example configuration files<a class="headerlink" href="#example-configuration-files" title="Permalink to this headline">¶</a></h3>
+<p>Vortex OpenSplice is delivered with a set of ready-made configuration files
+which provide a quick way of achieving different setups.</p>
+<dl class="docutils">
+<dt><em>ospl_shmem_ddsi.xml</em></dt>
+<dd>Federated deployment using shared-memory and
+standard DDSI networking.</dd>
+<dt><em>ospl_shmem_ddsi2e.xml</em></dt>
+<dd>Federated deployment using shared-memory
+and extended DDSI networking.</dd>
+<dt><em>ospl_shmem_nativeRT.xml</em></dt>
+<dd>Federated deployment using shared-memory
+and RTNetworking.</dd>
+<dt><em>ospl_shmem_no_network.xml</em></dt>
+<dd>Federated deployment using
+shared-memory only (<em>i.e.</em> without networking).</dd>
+<dt><em>ospl_shmem_secure_nativeRT.xml</em></dt>
+<dd>Federated deployment using
+shared-memory and secure RTNetworking.</dd>
+<dt><em>ospl_sp_ddsi.xml</em></dt>
+<dd>Stand-alone &#8216;single-process&#8217; deployment and
+standard DDSI networking.</dd>
+<dt><em>ospl_sp_ddsi_nativeRT_cohabitation.xml</em></dt>
+<dd>Stand-alone &#8216;single-process&#8217; deployment using DDSI
+and RTNetworking in cohabitation mode.</dd>
+<dt><em>ospl_sp_nativeRT.xml</em></dt>
+<dd>Stand-alone &#8216;single-process&#8217; deployment
+using RTNetworking.</dd>
+<dt><em>ospl_sp_ddsi_statistics.xml</em></dt>
+<dd>Stand-alone &#8216;single-process&#8217;
+deployment with DDSI networking and enabled statistics.</dd>
+<dt><em>ospl_sp_no_network.xml</em></dt>
+<dd>Stand-alone &#8216;single-process&#8217; deployment
+without networking connectivity.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="examples">
+<span id="id4"></span><h2>5.5. Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>A great way to get started with Vortex OpenSplice is to try running the
+examples provided with the product. There are many examples in different
+languages and some with the CORBA cohabitation, showing different
+aspects of the DCPS API. To give you a feel for how powerful DDS is then
+we recommend trying <em>PingPong</em> and the <em>Tutorial</em>, as well as the RoundTrip
+and Throughput.</p>
+<p>The way to build and run the examples is dependent on the Platform you
+are using. Each example has HTML documentation explaining how to build
+and run it on Unix/Linux and Windows systems.</p>
+<p>For VxWorks and Integrity, please refer to <a class="reference internal" href="vxworks-551.html#vxworks-5-5-1"><em>VxWorks 5.5.1</em></a>,
+<a class="reference internal" href="vxworks-6-rtp.html#vxworks-6-x-rtp"><em>VxWorks 6.x RTP</em></a>, and <a class="reference internal" href="integrity.html#integrity"><em>Integrity</em></a> in this <em>Guide</em>.</p>
+<div class="section" id="using-the-opensplice-tools">
+<h3>5.5.1. Using the OpenSplice Tools<a class="headerlink" href="#using-the-opensplice-tools" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><em>Note:</em> The following instructions apply only to the <em>shared memory</em>
+deployment of Vortex OpenSplice. When deploying in single process
+configuration, there is no need to manually start the OpenSplice
+infrastructure prior to running a DDS application process, as the
+administration will be created within the application process. Please
+refer to the Vortex OpenSplice <em>Deployment Guide</em> for a discussion of these
+deployment architectures.</dd>
+</dl>
+<p>The Vortex OpenSplice infrastructure can be stopped and started from the
+Windows <em>Start Menu</em> , as well as the Tuner and Configurator.</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><p><em>Manually start the OpenSplice infrastructure</em></p>
+<ol class="arabic simple">
+<li>Enter <tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">start</span></tt> on the command line <a class="footnote-reference" href="#f1" id="id5">[1]</a>.
+This starts the OpenSplice services.</li>
+</ol>
+<p>These log files may be created in the current directory when OpenSplice
+is started:</p>
+<blockquote>
+<div><p><em>ospl-info.log</em> - contains information and warning reports</p>
+<p><em>ospl-error.log</em> - contains error reports</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>If Vortex OpenSplice is used as a Windows Service then the log files are
+re-directed to the path specified by <tt class="docutils literal"><span class="pre">OSPL_LOGPATH</span></tt>. (Use the <em>set</em>
+command in the Vortex OpenSplice command prompt to see the <tt class="docutils literal"><span class="pre">OSPL_LOGPATH</span></tt>
+value.)</dd>
+</dl>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div><p><em>Start the OpenSplice Tuner Tool</em></p>
+<ol class="arabic simple">
+<li>Read the <em>OpenSplice Tuner Guide</em> (<tt class="docutils literal"><span class="pre">TunerGuide.pdf</span></tt>)
+before running the Tuner Tool.</li>
+<li>Start the tool by entering <tt class="docutils literal"><span class="pre">ospltun</span></tt> on the command line.</li>
+</ol>
+</div></blockquote>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><p class="first">The URI required to connect is set in the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt>
+environment variable (the default
+URI is: <tt class="docutils literal"><span class="pre">file://$OSPL_HOME/etc/config/ospl.xml</span></tt>).</p>
+<p class="last">The OpenSplice system can now be monitored.</p>
+</dd>
+</dl>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div><p><em>Experiment with the OpenSplice tools and applications</em></p>
+<p>Use the OpenSplice Tuner to monitor all DDS entities and
+their (dynamic) relationships.</p>
+</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div><p><em>Manually stop the OpenSplice infrastructure</em></p>
+<ol class="arabic simple">
+<li>Choose <em>File &gt; Disconnect</em> from the OpenSplice Tuner menu.</li>
+<li>Enter <tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">stop</span></tt> on the command line; this stops all
+OpenSplice services.</li>
+</ol>
+</div></blockquote>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="f1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[1]</a></td><td><tt class="docutils literal"><span class="pre">ospl</span></tt> is the command executable for OpenSplice DDS.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Installation and Configuration</a><ul>
+<li><a class="reference internal" href="#vortex-opensplice-development-and-run-time">5.1. Vortex OpenSplice Development and Run-Time</a></li>
+<li><a class="reference internal" href="#installation-for-unix-and-windows-platforms">5.2. Installation for UNIX and Windows Platforms</a></li>
+<li><a class="reference internal" href="#installation-on-other-platforms">5.3. Installation on Other Platforms</a></li>
+<li><a class="reference internal" href="#configuration">5.4. Configuration</a><ul>
+<li><a class="reference internal" href="#example-configuration-files">5.4.1. Example configuration files</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples">5.5. Examples</a><ul>
+<li><a class="reference internal" href="#using-the-opensplice-tools">5.5.1. Using the OpenSplice Tools</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="documentation.html"
+                        title="previous chapter">4. Documentation and Support</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="using-with-cloud.html"
+                        title="next chapter">6. Using Vortex OpenSplice with Vortex Cloud and Vortex Fog</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/install-configure.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="using-with-cloud.html" title="6. Using Vortex OpenSplice with Vortex Cloud and Vortex Fog"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="documentation.html" title="4. Documentation and Support"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

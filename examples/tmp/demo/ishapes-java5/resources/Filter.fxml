@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+                                Vortex Cafe
+
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+
+-->
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.collections.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane id="AnchorPane" fx:id="filterPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="200.0" prefWidth="400.0" style="-fx-background-color:lightgrey" xmlns:fx="http://javafx.com/fxml" fx:controller="FilterController">
+  <children>
+    <TitledPane animated="false" prefHeight="389.0" prefWidth="303.0" text="Content Filter" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <content>
+        <GridPane id="GridPane">
+          <children>
+            <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" GridPane.columnIndex="0" GridPane.rowIndex="2">
+              <children>
+                <RadioButton fx:id="enableButton" mnemonicParsing="false" onAction="#onEnableSelected" selected="true" text="Enable">
+                  <toggleGroup>
+                    <ToggleGroup fx:id="enableGroup" />
+                  </toggleGroup>
+                  <HBox.margin>
+                    <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" fx:id="x1" />
+                  </HBox.margin>
+                </RadioButton>
+                <RadioButton fx:id="disableButton" mnemonicParsing="false" onAction="#onDisableSelected" selected="false" text="Disable" toggleGroup="$enableGroup" HBox.margin="$x1" />
+              </children>
+            </HBox>
+            <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="3" GridPane.valignment="CENTER">
+              <children>
+                <Button id="filterCancelButton" mnemonicParsing="false" onAction="#onCancel" prefWidth="88.0" text="Cancel" HBox.margin="$x1" />
+                <Button id="filterOKButton" mnemonicParsing="false" onAction="#onOK" prefWidth="88.0" text="OK" HBox.margin="$x1" />
+              </children>
+            </HBox>
+            <TextArea fx:id="jsCodeArea" disable="false" prefHeight="79.0" prefWidth="281.0" wrapText="true" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+            <TextArea editable="false" opacity="1.0" prefHeight="51.0" prefWidth="396.0" style="-fx-background-color:lightgrey;&#10;-fx-font: italic 12pt &quot;Arial&quot;;" text="Enter DDS SQL query expression. E.g.:&#10; - x &gt; 100 &amp;&amp; x &lt; 200&#10; - color = (&quot;RED&quot;) OR color = (&quot;BLUE&quot;)" wrapText="true" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+          </children>
+          <columnConstraints>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" />
+          </columnConstraints>
+          <rowConstraints>
+            <RowConstraints maxHeight="61.0" minHeight="10.0" prefHeight="52.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="98.0" minHeight="10.0" prefHeight="69.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="116.0" minHeight="10.0" prefHeight="26.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="73.0" minHeight="10.0" prefHeight="27.0" vgrow="SOMETIMES" />
+          </rowConstraints>
+        </GridPane>
+      </content>
+    </TitledPane>
+  </children>
+</AnchorPane>

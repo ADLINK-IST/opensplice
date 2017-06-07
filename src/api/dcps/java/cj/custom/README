@@ -1,5 +1,5 @@
-This file describes how to generate the dcps CJ (CORBA Java) interface with an ORB of 
-choice. 
+This file describes how to generate the dcps CJ (CORBA Java) interface with an ORB of
+choice.
 
 REQUIREMENTS
 ------------
@@ -8,10 +8,13 @@ It is assumed that the user will make sure the following preconditions are met:
 
 - A Java compiler and VM compatible with Java 1.5 or greater is available
 - ORB idl processor is available
-- The path is setup to include the preceding items 
+- The path is setup to include the preceding items
 - Library paths are set (as required by the compiler, the ORB, etc)
-- ORB specific environment variables are set 
+- ORB specific environment variables are set
 - The OpenSplice release.com script has been run
+- The CJ lib can be generated with and without DDS_Time support for after year 2038.
+  To generate the CJ lib for the new Time definition set the environment variable OSPL_Y2038_READY_FLAG to -DOSPL_DDS_Y2038_READY in "orbdeps" file.
+  For more information about this new time definition see the deployment guide section Time stamps and year 2038 limit.
 
 GENERATING THE CJ FOR THE SUPPORTED ORBs - JacORB/RTOrb
 -------------------------------------------------------
@@ -25,7 +28,7 @@ sh BUILD
 GENERATING FOR ANOTHER ORB
 --------------------------
 
-If you wish to compile the dcps CJ interface with another ORB, you will have to ammend the "orbdeps" file accordingly:
+If you wish to compile the dcps CJ interface with another ORB, you will have to amend the "orbdeps" file accordingly:
 
 - Amend the value of JAVA_ORB_IDL_COMPILER with the name of the executable of the Java ORB IDL compiler you wish to use.
 
@@ -33,7 +36,7 @@ If you wish to compile the dcps CJ interface with another ORB, you will have to 
 
 - Amend the value of EXTRA_FLAGS with any extra flags your compiler requires
 
-NOTE: The script will create a dcpscj.jar in the directory from where you run the script. You will need to copy the generated jar file in the 
+NOTE: The script will create a dcpscj.jar in the directory from where you run the script. You will need to copy the generated jar file in the
 $OSPL_HOME/jar directory. MAKE A COPY of the existing $OSPL_HOME/jar/dcpscj.jar before replacing it with the new jar file.
 
 

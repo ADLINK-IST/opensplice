@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>10. Built-in DDS data types &mdash; IDL PreProcessor Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="IDL PreProcessor Guide" href="index.html" />
+    <link rel="next" title="11. References" href="bibliography.html" />
+    <link rel="prev" title="9. Extensible and Dynamic Topic Types for DDS annotation support" href="topictypes.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="bibliography.html" title="11. References"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="topictypes.html" title="9. Extensible and Dynamic Topic Types for DDS annotation support"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="built-in-dds-data-types">
+<span id="id1"></span><h1>10. Built-in DDS data types<a class="headerlink" href="#built-in-dds-data-types" title="Permalink to this headline">¶</a></h1>
+<p>The Vortex OpenSplice IDL Pre-processor and the Vortex OpenSplice runtime system
+support the following DDS data types to be used in application IDL definitions:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">Duration_t</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">Time_t</span></tt></li>
+</ul>
+<p>When building C or Java application programs, no special actions have to be taken
+other than enabling the Vortex OpenSplice IDL Pre-processor built-in DDS data types
+using the <tt class="docutils literal"><span class="pre">-o</span> <span class="pre">dds-types</span></tt> option.</p>
+<p>For C++, however, attention must be paid to the ORB IDL compiler, which is also
+involved in the application building process. The ORB IDL compiler is not aware of
+any DDS data types, so the supported DDS types must be provided by means of
+inclusion of an IDL file (<tt class="docutils literal"><span class="pre">dds_dcps.idl</span></tt>) that defines these types. This file must
+not be included for the Vortex OpenSplice IDL Pre-processor, which has the type
+definitions built-in. Therefore <tt class="docutils literal"><span class="pre">dds_dcps.idl</span></tt> must be included conditionally. The
+condition can be controlled <em>via</em> the macro definition <tt class="docutils literal"><span class="pre">OSPL_IDL_COMPILER</span></tt>, which
+is defined when the Vortex OpenSplice IDL Pre-processor is invoked, but <em>not</em> when
+the ORB IDL compiler is invoked:</p>
+<div class="highlight-xml"><div class="highlight"><pre>#ifndef OSPL_IDL_COMPILER
+#include <span class="nt">&lt;dds_dcps.idl&gt;</span>
+#endif
+
+module example {
+  struct example_struct {
+    DDS::Time_ttime;
+  };
+};
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></p>
+<p>The ORB IDL compiler must be called <em>with</em> the <tt class="docutils literal"><span class="pre">-I$OSPL_HOME/etc/idlpp</span></tt>
+option in order to define the include path for the <tt class="docutils literal"><span class="pre">dds_dcps.idl</span></tt> file.
+The Vortex OpenSplice IDL Pre-processor must be called <em>without</em> this option.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="topictypes.html"
+                        title="previous chapter">9. Extensible and Dynamic Topic Types for DDS annotation support</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bibliography.html"
+                        title="next chapter">11. References</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/ddsdatatypes.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="bibliography.html" title="11. References"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="topictypes.html" title="9. Extensible and Dynamic Topic Types for DDS annotation support"
+             >previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

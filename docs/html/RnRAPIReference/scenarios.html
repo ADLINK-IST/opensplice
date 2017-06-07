@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Scenarios &mdash; Vortex OpenSplice Record and Replay API Reference</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Vortex OpenSplice Record and Replay API Reference" href="index.html" />
+    <link rel="next" title="4. Topic API Overview" href="topic-api-overview.html" />
+    <link rel="prev" title="2. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="topic-api-overview.html" title="4. Topic API Overview"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="scenarios">
+<span id="id1"></span><h1>3. Scenarios<a class="headerlink" href="#scenarios" title="Permalink to this headline">¶</a></h1>
+<p><em>The actions of a Record and Replay service are organized in</em>
+<strong>scenarios</strong>.</p>
+<p>A <em>scenario</em> is an instance of the scenario topic, a group of commands
+sharing the same <tt class="docutils literal"><span class="pre">scenarioName</span></tt>. Each service subscribes to the
+command topic and uses a content filter to only process commands with an
+<tt class="docutils literal"><span class="pre">rnrId</span></tt> matching the service name (or <tt class="docutils literal"><span class="pre">*</span></tt>).</p>
+<p>It is possible to create an intricate nesting of scenarios by defining
+a scenario that includes control commands targeting other scenarios.</p>
+<div class="section" id="different-versions-of-the-scenario-topic">
+<h2>3.1. Different versions of the scenario topic<a class="headerlink" href="#different-versions-of-the-scenario-topic" title="Permalink to this headline">¶</a></h2>
+<p>Starting with Vortex OpenSplice V6.5.2, the Record and Replay service
+provides two versions of the scenario topic: <tt class="docutils literal"><span class="pre">rr_scenario</span></tt> and
+<tt class="docutils literal"><span class="pre">rr_scenario_v2</span></tt>. The new <tt class="docutils literal"><span class="pre">rr_scenario_v2</span></tt> topic is contained
+in the <tt class="docutils literal"><span class="pre">RnR_V2</span></tt> IDL module, please see
+<a class="reference internal" href="appendixab.html#appendix-a"><em>the RnR Topic API IDL specification</em></a>
+in the <a class="reference internal" href="appendixab.html#appendix-a"><em>Appendix</em></a> for details of the changes
+between the original and version 2 of the data-model.
+Both versions will co-exist until a major version upgrade
+allows the merging of all features into a single module and topic.
+This will probably coincide with a migration of the data-model to
+Google Protocol Buffers (<em>GPB</em>) or a different extensible type scheme
+supported by Vortex OpenSplice at that time.</p>
+<p>The original topic is still supported for backwards compatibility with
+applications developed for a previous version of OpenSplice or Record
+and Replay scenarios stored for re-use, <em>i.e.</em> in a persistent store.
+Also, because of the nature of the RnR service, the topic definitions of
+RnR may have been introduced in production environments that cannot
+easily be upgraded and/or restarted to replace the old topics with new
+ones. A topic mis-match would prevent a new version of RnR from starting
+on any node attached to the same domain. In those circumstances a new
+topic using new type-names is the only viable approach to support new
+RnR features. Transformations (partition, QoS) of data during replay are
+only available on the <tt class="docutils literal"><span class="pre">rr_scenario_v2</span></tt> topic because these new
+features require an extension of the <tt class="docutils literal"><span class="pre">ADD_REPLAY</span></tt> and <tt class="docutils literal"><span class="pre">REMOVE_REPLAY</span></tt>
+commands.</p>
+<p>The  next chapter describes all command-types, highlighting differences
+between the original and version 2.</p>
+<p>Since all original features are also available using the
+<tt class="docutils literal"><span class="pre">rr_scenario_v2</span></tt> topic, it is not recommended to mix usage of the
+two topics in a single  application. The service does support scenarios
+that use both original and V2 commands but order preservation cannot
+be guaranteed, since a scenario is no longer contained in a single
+instance but is in two instances on two different topics, necessitating
+two individual readers. In practice this can only introduce order reversal
+of commands when both <tt class="docutils literal"><span class="pre">rr_scenario</span></tt> and <tt class="docutils literal"><span class="pre">rr_scenario_v2</span></tt> commands
+arrive at the same time.</p>
+</div>
+<div class="section" id="builtinscenario">
+<h2>3.2. BuiltinScenario<a class="headerlink" href="#builtinscenario" title="Permalink to this headline">¶</a></h2>
+<p>Since commands are targeted at a service <em>and</em> a scenario, the service
+must start an initial scenario. If not, there wouldn’t be anything to
+address commands to.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></p>
+<p>During startup, the service starts this initial scenario, called the
+<tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt>. This is a special scenario that is always running
+while the service is operational. It serves as the starting hook for any
+new scenarios. To run a new scenario, a <em>start</em> command must be
+published for the <tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt>. Like any scenario, the
+<tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt> can also process other commands like record and/or
+replay commands.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> Note that the <tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt> can not be stopped.</p>
+<p>Since one can assume that the <tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt> is always available
+and running, it is a safe choice to address config and control commands
+to the <tt class="docutils literal"><span class="pre">BuiltinScenario</span></tt>. In a dynamic and distributed environment, in
+which DDS is regularly used, this can be especially helpful when
+interacting with the service through scripts or perhaps when injecting
+commands stored in a persistent store.</p>
+</div>
+<div class="section" id="command-durability">
+<h2>3.3. Command durability<a class="headerlink" href="#command-durability" title="Permalink to this headline">¶</a></h2>
+<p>The command subscriber of the service is capable to read commands of any
+durability (<tt class="docutils literal"><span class="pre">VOLATILE</span></tt>, <tt class="docutils literal"><span class="pre">TRANSIENT</span></tt>, <tt class="docutils literal"><span class="pre">PERSISTENT</span></tt>). If commands
+are published with a <em>transient</em> and/or <em>persistent</em> durability, it is
+important to understand that these commands are managed by the
+middleware in addition to the service. Immediately after a scenario is
+started, any commands still managed by the middleware in transient or
+persistent stores are delivered to the service and processed as part of
+the scenario.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> This is of special importance when ‘re-starting’ scenarios.</dt>
+<dd>Note that a scenario, strictly, is <em>not</em> restarted. It is removed and
+a <em>new scenario</em> with an identical name is created. If any of the
+commands of the original scenario were published (whether transient
+or persistent), these are delivered and processed again by the
+<em>new</em> scenario.</dd>
+</dl>
+<p>Since transient and persistent commands exist in the middleware and are
+not stored or processed by the service as long as the corresponding
+scenario isn’t started, the start command for a scenario does not have
+to be published before the scenario is defined, as one might assume.
+By changing the durability of different commands compromising a scenario,
+advanced use cases are possible using relatively simple scenarios.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Scenarios</a><ul>
+<li><a class="reference internal" href="#different-versions-of-the-scenario-topic">3.1. Different versions of the scenario topic</a></li>
+<li><a class="reference internal" href="#builtinscenario">3.2. BuiltinScenario</a></li>
+<li><a class="reference internal" href="#command-durability">3.3. Command durability</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">2. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="topic-api-overview.html"
+                        title="next chapter">4. Topic API Overview</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/scenarios.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="topic-api-overview.html" title="4. Topic API Overview"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

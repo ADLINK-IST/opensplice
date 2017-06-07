@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2012 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef OSPL_DDS_PUB_DATAWRITER_HPP_
@@ -54,7 +62,7 @@ public:
         ::dds::core::TEntity< DELEGATE<T> >(new DELEGATE<T>(pub,
                                             topic,
                                             pub.default_datawriter_qos(),
-                                            dds::core::status::StatusMask::all()))
+                                            dds::core::status::StatusMask::none()))
     {
         org::opensplice::core::EntityRegistry<DDS::DataWriter_ptr, DataWriter<T, DELEGATE> >::insert(this->delegate()->get_raw_writer(), *this);
     }
@@ -74,7 +82,7 @@ public:
                const dds::core::status::StatusMask& mask
 #                                   else
                dds::pub::DataWriterListener<T>* listener = NULL,
-               const dds::core::status::StatusMask& mask = ::dds::core::status::StatusMask::all()
+               const dds::core::status::StatusMask& mask = ::dds::core::status::StatusMask::none()
 #                                   endif
               ) :
         ::dds::core::TEntity< DELEGATE<T> >(new DELEGATE<T>(pub,
@@ -394,6 +402,144 @@ public:
         this->delegate()->dispose_instance(i, ts);
         return *this;
     }
+
+#if OSPL_EXPLICIT_WRITEDISPOSE
+#ifndef OSPL_2893_COMPILER_BUG
+    template <typename T, template <typename Q> class DELEGATE>
+#endif
+    void
+#ifndef OSPL_2893_COMPILER_BUG
+    DataWriter<T, DELEGATE>::
+#endif
+    writedispose(const T& sample)
+    {
+        this->delegate()->writedispose(sample);
+    }
+
+#ifndef OSPL_2893_COMPILER_BUG
+    template <typename T, template <typename Q> class DELEGATE>
+#endif
+    void
+#ifndef OSPL_2893_COMPILER_BUG
+    DataWriter<T, DELEGATE>::
+#endif
+    writedispose(const T& sample, const dds::core::Time& timestamp)
+    {
+        this->delegate()->writedispose(sample, timestamp);
+    }
+
+#ifndef OSPL_2893_COMPILER_BUG
+    template <typename T, template <typename Q> class DELEGATE>
+#endif
+    void
+#ifndef OSPL_2893_COMPILER_BUG
+    DataWriter<T, DELEGATE>::
+#endif
+    writedispose(const T& data, const ::dds::core::InstanceHandle& instance)
+    {
+        this->delegate()->writedispose(data, instance);
+    }
+
+#ifndef OSPL_2893_COMPILER_BUG
+    template <typename T, template <typename Q> class DELEGATE>
+#endif
+    void
+#ifndef OSPL_2893_COMPILER_BUG
+    DataWriter<T, DELEGATE>::
+#endif
+    writedispose(const T& data,
+          const ::dds::core::InstanceHandle& instance,
+          const dds::core::Time& timestamp)
+    {
+        this->delegate()->writedispose(data, instance, timestamp);
+    }
+
+#ifndef OSPL_2893_COMPILER_BUG
+    template <typename T, template <typename Q> class DELEGATE>
+#endif
+    template <typename FWIterator>
+    void
+#ifndef OSPL_2893_COMPILER_BUG
+    DataWriter<T, DELEGATE>::
+#endif
+    writedispose(const FWIterator& begin, const FWIterator& end)
+    {
+        FWIterator b = begin;
+        while(b != end)
+        {
+            this->delegate()->writedispose(*b);
+            ++b;
+        }
+    }
+
+#ifndef OSPL_2893_COMPILER_BUG
+    template <typename T, template <typename Q> class DELEGATE>
+#endif
+    template <typename FWIterator>
+    void
+#ifndef OSPL_2893_COMPILER_BUG
+    DataWriter<T, DELEGATE>::
+#endif
+    writedispose(const FWIterator& begin, const FWIterator& end,
+          const dds::core::Time& timestamp)
+    {
+        FWIterator b = begin;
+        while(b != end)
+        {
+            this->delegate()->writedispose(*b, timestamp);
+            ++b;
+        }
+    }
+
+#ifndef OSPL_2893_COMPILER_BUG
+    template <typename T, template <typename Q> class DELEGATE>
+#endif
+    template <typename SamplesFWIterator, typename HandlesFWIterator>
+    void
+#ifndef OSPL_2893_COMPILER_BUG
+    DataWriter<T, DELEGATE>::
+#endif
+    writedispose(const SamplesFWIterator& data_begin,
+          const SamplesFWIterator& data_end,
+          const HandlesFWIterator& handle_begin,
+          const HandlesFWIterator& handle_end)
+    {
+        SamplesFWIterator data = data_begin;
+        HandlesFWIterator handle = handle_begin;
+
+        while(data != data_end && handle != handle_end)
+        {
+            this->delegate()->writedispose(*data, *handle);
+            ++data;
+            ++handle;
+        }
+    }
+
+#ifndef OSPL_2893_COMPILER_BUG
+    template <typename T, template <typename Q> class DELEGATE>
+#endif
+    template <typename SamplesFWIterator, typename HandlesFWIterator>
+    void
+#ifndef OSPL_2893_COMPILER_BUG
+    DataWriter<T, DELEGATE>::
+#endif
+    writedispose(const SamplesFWIterator& data_begin,
+          const SamplesFWIterator& data_end,
+          const HandlesFWIterator& handle_begin,
+          const HandlesFWIterator& handle_end,
+          const dds::core::Time& timestamp)
+    {
+        SamplesFWIterator data = data_begin;
+        HandlesFWIterator handle = handle_begin;
+
+        while(data != data_end && handle != handle_end)
+        {
+            this->delegate()->writedispose(*data, *handle, timestamp);
+            ++data;
+            ++handle;
+        }
+    }
+#endif
 
 #ifndef OSPL_2893_COMPILER_BUG
     template <typename T, template <typename Q> class DELEGATE>

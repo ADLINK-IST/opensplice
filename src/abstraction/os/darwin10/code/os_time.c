@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -14,130 +22,109 @@
  *  \brief Darwin time management
  *
  * Implements time management for Darwin
- * by including the common services and
- * the SVR4 os_timeGet implementation and
- * the POSIX os_nanoSleep implementation
  */
-
-#ifdef SOMETHING_NOT_DEFFED
-
-#include <os_report.h>
-
-#include <time.h>
-#include <errno.h>
+#include <os_errno.h>
+#include <stdint.h>
 #include <sys/time.h>
-
-#endif
+#include <mach/mach_time.h>
 
 #include <../common/code/os_time.c>
-#include <../posix/code/os_time.c>
+#include <../common/code/os_time_ctime.c>
 
-/** \brief Translate calendar time into readable string representation
- *
- * ctime_r provides a re-entrant translation function.
- * ctime_r function adds '\n' to the string which must be removed.
+
+/*  \brief Get the current time
  */
-char *
-os_ctime_r (
-    os_time *t,
-    char *buf)
+static os_timeW
+os__timeWGet (
+    void)
 {
-/*
-    if (buf) {
-        ctime_r((const time_t *)(&t->tv_sec), buf);
+    static int timeshift = INT_MAX;
+    struct timeval tv;
+    os_timeW rt;
+
+    if(timeshift == INT_MAX) {
+        const char *p = getenv("OSPL_TIMESHIFT");
+        timeshift = (p == NULL) ? 0 : atoi(p);
     }
-    return buf;
-*/
-    time_t tt = t->tv_sec;
-    if (buf) {
-        ctime_r(&tt, buf);
-    }
-    return buf;
+
+    (void) gettimeofday (&tv, NULL);
+
+    rt = OS_TIMEW_INIT(tv.tv_sec + timeshift, tv.tv_usec*1000);
+
+    return rt;
 }
 
 /** \brief Get high resolution relative time
  *
  */
-os_time
-os_hrtimeGet (
-    void
-    )
+os_timeM
+os_timeMGet (
+    void)
 {
-    os_time t;
-    struct timeval tv;
+    static mach_timebase_info_data_t timeInfo;
+    os_timeM t;
+    uint64_t mt;
 
-    gettimeofday (&tv, NULL);
-    t.tv_sec = tv.tv_sec;
-    t.tv_nsec = 1000 * tv.tv_usec;
+    /* The Mach absolute time returned by mach_absolute_time is very similar to
+     * the QueryPerformanceCounter on Windows. The update-rate isn't fixed, so
+     * that information needs to be resolved to provide a clock with real-time
+     * progression.
+     *
+     * The mach_absolute_time does include time spent during sleep (on Intel
+     * CPU's, not on PPC), but not the time spent during suspend.
+     *
+     * The result is not adjusted based on NTP, so long-term progression by this
+     * clock may not match the time progression made by the real-time clock. */
+    mt = mach_absolute_time();
+
+    if( timeInfo.denom == 0) {
+        (void) mach_timebase_info(&timeInfo);
+    }
+    t.mt = mt * timeInfo.numer / timeInfo.denom;
 
     return t;
 }
 
-/*static os_time (*clockGet)(void) = NULL;*/
-
-#ifdef SOMETHING_NOT_DEFFED
-
-/** \brief Get the current time
+/** \brief Get elapsed time.
  *
- * \b os_timeGet gets the current time by calling 
- * \b clock_gettime with clock ID \b CLOCK_REALTIME
- * and converting the result in \b struct
- * \b timespec format into \b os_time format.
+ * \return elapsed time since some unspecified fixed past time
+ * \return os_timeMGet() otherwise
  */
-os_time
-os_timeGet (
+os_timeE
+os_timeEGet (
     void)
 {
-    struct timeval t;
-    os_time rt;
+    /* Elapsed time clock not (yet) supported on this platform. */
+    os_timeM mt = os_timeMGet();
+    os_timeE t;
+    t.et = mt.mt;
 
-    if (clockGet) {
-        rt = clockGet ();
-    } else {
-      gettimeofday (&t, NULL);
-      rt.tv_sec = t.tv_sec;
-      rt.tv_nsec = 1000 * t.tv_usec;
-    } 
-    return rt;
-}
-
-/** \brief Set the user clock
- *
- * \b os_timeSetUserClock sets the current time source
- * get function.
- */
-void
-os_timeSetUserClock (
-    os_time (*userClock)(void)
-    )
-{
-    clockGet = userClock;
+    return t;
 }
 
 /** \brief Suspend the execution of the calling thread for the specified time
  *
  * \b os_nanoSleep suspends the calling thread for the required
  * time by calling \b nanosleep. First it converts the \b delay in
- * \b os_time definition into a time in \b struct \b timeval definition.
+ * \b os_duration definition into a time in \b struct \b timeval definition.
  * In case the \b nanosleep is interrupted, the call is re-entered with
  * the remaining time.
  */
 os_result
-os_nanoSleep (
-    os_time delay)
+os_sleep(
+    os_duration delay)
 {
     struct timespec t;
     struct timespec r;
     int result;
     os_result rv;
 
-    assert (delay.tv_nsec >= 0);
-    assert (delay.tv_nsec < 1000000000);
-    if( delay.tv_sec >= 0 ) {
-        t.tv_sec = delay.tv_sec;
-        t.tv_nsec = delay.tv_nsec;
+    if (OS_DURATION_ISPOSITIVE(delay)) {
+        /* Time should be normalized */
+        t.tv_sec = (time_t) OS_DURATION_GET_SECONDS(delay);
+        t.tv_nsec = OS_DURATION_GET_NANOSECONDS(delay);
         result = nanosleep (&t, &r);
-        while (result && errno == EINTR) {
+        while (result && os_getErrno() == EINTR) {
             t = r;
             result = nanosleep (&t, &r);
         }
@@ -147,13 +134,7 @@ os_nanoSleep (
             rv = os_resultFail;
         }
     } else {
-        /* Negative time-interval gives an illegal param error in most posix implementations.
-         * However, VxWorks casts it to an unsigned int, and waits for years.
-         */
         rv = os_resultFail;
     }
     return rv;
 }
-
-#endif
-

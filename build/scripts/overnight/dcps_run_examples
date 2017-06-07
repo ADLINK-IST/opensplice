@@ -50,8 +50,16 @@ add_example()
 {
    if check_platform
    then
-      if test -f "$1/Makefile"
+      # The protobuf example is not built with MPC so there is no
+      # Makefile and the example should be added as we check it has
+      # been built before we add it anyway.
+      if [ "$1" != "protobuf/java5/standalone" -a "$1" != "protobuf/isocpp2/standalone" ]
       then
+         if test -f "$1/Makefile"
+         then
+            EXAMPLES="$EXAMPLES $1 "
+         fi
+      else
          EXAMPLES="$EXAMPLES $1 "
       fi
    else
@@ -147,32 +155,74 @@ else
 
     OUTER_BASE_DIR=`pwd`
 
-    if [ -d "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/" ]
+    if [ -f "${DEPWORKDIR}/release_info/RELEASE" ]
     then
-        cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/"
-        INSTALLDIRUP="$WORKDIR"
-        INSTALLDIR="$WORKDIR/$EXAMPLE_INSTALL_DIR"
-        EXAMPLESDIR="$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/examples"
+        . "${DEPWORKDIR}/release_info/RELEASE"
+    elif [ -f "${OSPL_BUILD_HOME}/release_info/RELEASE" ]
+    then
+        . "${OSPL_BUILD_HOME}/release_info/RELEASE"
+    else
+        echo "ERROR: release info not found"
+    fi
+
+    EDITION=
+
+    if [ -d "$WORKDIR/$EXAMPLE_INSTALL_DIR/Vortex$VORTEX_VERSION/Device/VortexOpenSpliceRTE" ]
+    then
+       EDITION=RTE
+    fi
+
+# Due to issues with long file names a new TEST installer is generated for windows overnight tests
+# and it is installed into a shorter directory name
+    if [ "$CURRENT_PL_CYGWIN" != "" ]
+    then
+        VORTEX_INSTALL_DIR=$PACKAGE_VERSION
+        if [ "$DEP" = "none" ]
+        then
+            INSTALLERDIR=${WORKDIR}/build/install
+        else
+            INSTALLERDIR=${DEPWORKDIR}/install
+        fi
+# Using same check for TEST installer as is used in the dcps_build_examples script
+        INSTALLER_FILENAME_TMP=`echo ${INSTALLERDIR}/VC/P*OpenSplice*TEST*installer.*`
+        if [ -f ${INSTALLER_FILENAME_TMP} ]
+        then
+            INSTTYPE=TEST
+        else
+# It is possible that the TEST installer did not exist and the HDE installer is used as fallback
+            INSTTYPE=HDE
+        fi
+    else
+        VORTEX_INSTALL_DIR=Vortex$VORTEX_VERSION/Device/VortexOpenSplice$EDITION/$PACKAGE_VERSION
+        INSTTYPE=HDE
+    fi
+
+    if [ -d "$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/" ]
+    then
+        cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/"
+        INSTALLDIRUP="$WORKDIR/$EXAMPLE_INSTALL_DIR/Vortex$VORTEX_VERSION/Device/VortexOpenSplice$EDITION"
+        INSTALLDIR="$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR"
+        EXAMPLESDIR="$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/examples"
     else
         cd $DEPWORKDIR/install/HDE/$SHORTSETUP/
         INSTALLDIRUP="$DEPWORKDIR"
-        INSTALLDIR="$DEPWORKDIR/install"
-        EXAMPLESDIR="$DEPWORKDIR/install/HDE/$SHORTSETUP/examples"
+        INSTALLDIR="$DEPWORKDIR/install/$VORTEX_INSTALL_DIR"
+        EXAMPLESDIR="$DEPWORKDIR/install/$VORTEX_INSTALL_DIR/HDE/$SHORTSETUP/examples"
     fi
 
-    if [ -f "$WORKDIR/$RTS_INSTALL_DIR" ]
+    if [ -d "$WORKDIR/$RTS_INSTALL_DIR" ]
     then
-        OSPL_RTS_HOME="$WORKDIR/$RTS_INSTALL_DIR/RTS/$SHORTSETUP"
+        OSPL_RTS_HOME="$WORKDIR/$RTS_INSTALL_DIR/$VORTEX_INSTALL_DIR/RTS/$SHORTSETUP"
     else
-        OSPL_RTS_HOME="$DEPWORKDIR/install/RTS/$SHORTSETUP"
+        OSPL_RTS_HOME="$DEPWORKDIR/install/$VORTEX_INSTALL_DIR/RTS/$SHORTSETUP"
     fi
     export OSPL_RTS_HOME
 
     #Copy license in place for the ospldcg
-    if [ -f "$OSPL_BASE_DIR/etc/license.lic" ]
+    if [ -f "$OSPL_OUTER_HOME/etc/license.lic" ]
     then
         echo "Copying License in for tools to work"
-        cp $OSPL_BASE_DIR/etc/license.lic etc/.
+        cp $OSPL_OUTER_HOME/etc/license.lic etc/.
     fi
 
     if [ -f "$OSPL_BUILD_HOME/exec/$LONGSETUP/ospl_unique_domainID" ]
@@ -189,6 +239,10 @@ else
 
     if check_platform
     then
+       if [ -n "$PERC_HOME" ]
+       then
+          . $PERC_HOME/bin/percenv.sh
+       fi
        unset OSPL_HOME_NORMALIZED
        more release.com
        . ./release.com
@@ -224,6 +278,7 @@ else
     add_example dcps/BuiltInTopics/cpp/standalone
     add_example dcps/RoundTrip/c/
     add_example dcps/RoundTrip/cpp/
+    add_example dcps/Throughput/c/
     add_example dcps/Throughput/cpp/
 
     # isocpp - need to check for more than a directory because the
@@ -244,18 +299,52 @@ else
         add_example dcps/WaitSet/isocpp
     fi
 
+    # isocpp2 - need to check for more than a directory because the
+    # run scripts are copied in as a whole so there will always be
+    # an isocpp2 directory
+    if [ -f "$EXAMPLESDIR/dcps/HelloWorld/isocpp2/HelloWorld.mpc" ]
+    then
+        add_example dcps/BuiltInTopics/isocpp2
+        add_example dcps/ContentFilteredTopic/isocpp2
+        add_example dcps/HelloWorld/isocpp2
+        add_example dcps/Lifecycle/isocpp2
+        add_example dcps/Listener/isocpp2
+        add_example dcps/Ownership/isocpp2
+        add_example dcps/QueryCondition/isocpp2
+        add_example dcps/RoundTrip/isocpp2
+        add_example dcps/Throughput/isocpp2
+        add_example dcps/Tutorial/isocpp2
+        add_example dcps/WaitSet/isocpp2
+    fi
+
     # cpp corba
     add_example dcps/HelloWorld/cpp/corba
 
     #  java standalone
     add_example dcps/ContentFilteredTopic/java/standalone
     add_example dcps/HelloWorld/java/standalone
+    add_example dcps/HelloWorld/java5/
     add_example dcps/Lifecycle/java/standalone
     add_example dcps/Listener/java/standalone
     add_example dcps/Ownership/java/standalone
     add_example dcps/QueryCondition/java/standalone
     add_example dcps/WaitSet/java/standalone
     add_example dcps/BuiltInTopics/java/standalone
+    add_example dcps/RoundTrip/java
+    add_example dcps/Throughput/java
+    add_example dcps/RoundTrip/java5
+    add_example dcps/Throughput/java5
+    add_example dcps/Tutorial/java5
+    add_example dcps/PingPong/java5/corba
+    add_example dcps/PingPong/java5/standalone
+    add_example dcps/BuiltInTopics/java5
+    add_example dcps/ContentFilteredTopic/java5
+    add_example dcps/Lifecycle/java5
+    add_example dcps/Listener/java5
+    add_example dcps/Ownership/java5
+    add_example dcps/QueryCondition/java5
+    add_example dcps/WaitSet/java5
+
 
     # Java Corba
     add_example dcps/HelloWorld/java/corba
@@ -272,16 +361,15 @@ else
         add_example rmi/HelloWorld/java
     fi
 
-    # Some examples are not included in an inner only build so only add them if doing an outer build
-    if [ "$DEP" != "none" ]
+    if [ -d "$EXAMPLESDIR/streams/Throughput/idl" ]
     then
-        # Check for the existence of the StreamsExample idl directory to make sure the
-        # example is included in this build.  (there will be a StreamsExample/cpp
-        # directory because the RUN scripts are copied in as a whole.
-        if [ -d "$EXAMPLESDIR/streams/StreamsExample/idl" ]
-        then
-            add_example streams/StreamsExample/cpp/standalone
-        fi
+        add_example streams/Throughput/cpp/
+    fi
+
+    if [ -d "$EXAMPLESDIR/face/HelloWorld/idl" ]
+    then
+        add_example face/HelloWorld/cpp
+        add_example face/HelloWorld/java
     fi
 
     # C#
@@ -303,19 +391,19 @@ else
         #add_example dcps/Durability/cs/standalone
     fi
 
-    # The Durability and DBMS connect examples have their own config files
-    # so run them last
-    add_example dcps/Durability/c/standalone
-    add_example dcps/Durability/cpp/standalone
-    add_example dcps/Durability/java/standalone
-
-    # Always need to check for more than the isocpp directory as
-    # the run scripts are copied in regardless so there will always
-    # be an isocpp directory.  run the durability example last as
-    # it has a it's own config file.
-    if [ -f "$EXAMPLESDIR/dcps/Durability/isocpp/Durability.mpc" ]
+    #Add the protobuf example if it has built successfully - just check for the publishers
+    if [ -f "$EXAMPLESDIR/protobuf/java5/standalone/saj5-protobuf-publisher.jar" ]
     then
-        add_example dcps/Durability/isocpp
+        add_example protobuf/java5/standalone
+    fi
+    if [ -f "$EXAMPLESDIR/protobuf/isocpp2/standalone/publisher" ]
+    then
+        add_example protobuf/isocpp2/standalone
+    else
+        if [ -f "$EXAMPLESDIR/protobuf/isocpp2/standalone/publisher.exe" ]
+        then
+            add_example protobuf/isocpp2/standalone
+        fi
     fi
 
     if [ "$DEP" != "none" ]
@@ -334,6 +422,7 @@ else
 
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$TAO_ROOT/lib"
     export LD_LIBRARY_PATH
+    SUMMARY_HTML="$LOGDIR/examples/run_$EXRUNTYPE/summary.html"
 
     if [ -z "$SPLICE_TARGET_HOST" ]
     then
@@ -343,16 +432,30 @@ else
             export PATH
 
             XPATH="$(cygpath -w $BASE)";
-
-            echo "Running examples "
-            cmd.exe /C $XPATH/run_examples.bat
+            
+            echo "Running examples "  
+            cmd.exe /C $XPATH/run_python_examples.bat  >> $LOGDIR/examples/run_$EXRUNTYPE/run_results.txt
+            grep "Examples Failed = 0" $SUMMARY_HTML
             RESULT=$?
         else
             if [ -z `echo $SETUP_TYPE | grep vxworks` ]
             then
                 export BASE
-                sh $BASE/run_examples.sh
-                RESULT=$?
+
+                #some platforms have HOSTNAME set but not exported for some reason
+                #so export it here as a precaution
+                export HOSTNAME
+
+                # If it's a valgrind run then use the old run script as the valgrind commands aren't
+                # currently catered for in the python scripts..
+                if [ "$VALGRIND" = "yes" ]
+                then
+                    sh $BASE/run_examples.sh >> $LOGDIR/examples/run_$EXRUNTYPE/run_results.txt
+                else
+                    sh $BASE/run_python_examples.sh >> $LOGDIR/examples/run_$EXRUNTYPE/run_results.txt
+                fi
+                grep "Examples Failed = 0" $SUMMARY_HTML
+                RESULT=$?	
             else
                 echo "Running VxWorks examples"
                 cd ..
@@ -364,34 +467,45 @@ else
             fi
         fi
     else
-        echo '#!/bin/bash' > $INSTALLDIR/remoterun.sh
-        #echo 'set -x' > $INSTALLDIR/remoterun.sh
-        if [ -n "$UNIQE_MC_ADDRESS" ]
+        RRSCRIPT=$INSTALLDIR/HDE/$SHORTSETUP/remoterun.sh
+        echo '#!/bin/sh' > $RRSCRIPT
+        #echo 'set -x' > $RRSCRIPT
+        if [ -n "$UNIQUE_MC_ADDRESS" ]
         then
-            echo UNIQE_MC_ADDRESS=$UNIQE_MC_ADDRESS export UNIQE_MC_ADDRESS >> $INSTALLDIR/remoterun.sh
+            echo UNIQUE_MC_ADDRESS=$UNIQE_MC_ADDRESS export UNIQE_MC_ADDRESS >> $RRSCRIPT
         fi
-        cat $WORKDIR/build/build/scripts/overnight/configs/$SPLICE_TARGET_HOST/runtime.$SHORTSETUP >> $INSTALLDIR/remoterun.sh
-        echo LOGDIR=$LOGDIR export LOGDIR >> $INSTALLDIR/remoterun.sh
-        echo EXRUNTYPE=$EXRUNTYPE export EXRUNTYPE >> $INSTALLDIR/remoterun.sh
-        echo EXAMPLES=\"$EXAMPLES\" export EXAMPLES >> $INSTALLDIR/remoterun.sh
-        echo EXCLUDED_TESTS=\"$EXCLUDED_TESTS\" export EXCLUDED_TESTS >> $INSTALLDIR/remoterun.sh
-        echo mkdir -p $INSTALLDIRUP/log/examples/run_$EXRUNTYPE >> $INSTALLDIR/remoterun.sh
-        sed -e s#/host/lib#/lib:.# $INSTALLDIR/HDE/$SHORTSETUP/release.com >> $INSTALLDIR/remoterun.sh
-        echo cd $EXAMPLESDIR >> $INSTALLDIR/remoterun.sh
-        echo sh ./run_examples.sh >> $INSTALLDIR/remoterun.sh
-        chmod +x $INSTALLDIR/remoterun.sh
+        cat $WORKDIR/build/build/scripts/overnight/configs/$SPLICE_TARGET_HOST/runtime.$SHORTSETUP >> $RRSCRIPT
+	echo >> $RRSCRIPT
+        echo LOGDIR=$LOGDIR export LOGDIR >> $RRSCRIPT
+        echo EXRUNTYPE=$EXRUNTYPE export EXRUNTYPE >> $RRSCRIPT
+        echo EXAMPLES=\"$EXAMPLES\" export EXAMPLES >> $RRSCRIPT
+        echo EXCLUDED_TESTS=\"$EXCLUDED_TESTS\" export EXCLUDED_TESTS >> $RRSCRIPT
+	echo PROTOBUF_LIB_HOME=\"$PROTOBUF_LIB_HOME\" export PROTOBUF_LIB_HOME >> $RRSCRIPT
+        echo mkdir -p $LOGDIR/examples/run_$EXRUNTYPE >> $RRSCRIPT
+        sed -e s#/host/lib#/lib:.# $INSTALLDIR/HDE/$SHORTSETUP/release.com >> $RRSCRIPT
+        echo cd $EXAMPLESDIR >> $RRSCRIPT
+        echo BASE=$EXAMPLESDIR export BASE >> $RRSCRIPT
+        echo WORKAROUND_PATH=$WORKAROUND_PATH >> $RRSCRIPT
+        echo export WORKAROUND_PATH >> $RRSCRIPT
+        echo LD_LIBRARY_PATH='$PROTOBUF_LIB_HOME:$LD_LIBRARY_PATH' >> $RRSCRIPT
+        echo export LD_LIBRARY_PATH >> $RRSCRIPT
+        echo OVERRIDE_LD_LIBRARY_PATH='$LD_LIBRARY_PATH' >> $RRSCRIPT
+        echo export OVERRIDE_LD_LIBRARY_PATH >> $RRSCRIPT
+        echo sh ./run_examples.sh >> $RRSCRIPT
+        chmod +x $RRSCRIPT
         cp $BASE/run_examples.sh $EXAMPLESDIR
+        cp $BASE/example_results_fns $EXAMPLESDIR
 
         if [ -z "$SPLICE_SSH" ] ; then SPLICE_SSH=ssh ; fi
         if [ -z "$SPLICE_SCP" ] ; then SPLICE_SCP="scp -q" ; fi
 
         if [ -z "$SPLICE_TARGET_HOST_SHAREDFS" ]
         then
-            $SPLICE_SSH $SPLICE_TARGET_HOST rm -rf $INSTALLDIRUP
+            $SPLICE_SSH $SPLICE_TARGET_HOST rm -rf $INSTALLDIRUP $LOGDIR
             $SPLICE_SSH $SPLICE_TARGET_HOST mkdir -p $INSTALLDIRUP
             $SPLICE_SCP -r $INSTALLDIR $SPLICE_TARGET_HOST:$INSTALLDIRUP
         fi
-        $SPLICE_SSH $SPLICE_TARGET_HOST $INSTALLDIR/remoterun.sh
+        $SPLICE_SSH $SPLICE_TARGET_HOST $RRSCRIPT
         RESULT=$?
         if [ "$SPLICE_SSH" = "rsh" ]
         then
@@ -401,7 +515,7 @@ else
         fi
         if [ -z "$SPLICE_TARGET_HOST_SHAREDFS" ]
         then
-            $SPLICE_SCP -r $SPLICE_TARGET_HOST:$LOGDIR $INSTALLDIRUP
+            $SPLICE_SCP -r $SPLICE_TARGET_HOST:$LOGDIR/examples $LOGDIR
         fi
     fi
 
@@ -409,11 +523,27 @@ else
     SUMMARY_LOG="$LOGDIR/examples/run_$EXRUNTYPE/examples.log"
     TOTALS_LOG="$LOGDIR/examples/run_$EXRUNTYPE/totals.log"
 
-    cat $RUN_SUMMARY_LOG  >> $SUMMARY_LOG
-    sleep 10
+    if [ -f  "$OSPL_HOME/etc/BUILDINFO" ]
+    then
+        OSPLI_REV=`grep -n REV $OSPL_HOME/etc/BUILDINFO`
+        OSPLI_SHA=${OSPLI_REV#*=}
+    fi
 
-    rm $RUN_SUMMARY_LOG
-    sleep 5
+    if [ -f  "$OSPL_OUTER_HOME/etc/BUILDINFO" ]
+    then
+        OSPLO_REV=`grep -n REV $OSPL_OUTER_HOME/etc/BUILDINFO | grep -v PARENT`
+        OSPLO_SHA=${OSPLO_REV#*=}
+    fi
+
+    # Only do the next bit if we don't already have a summary.html file - one of which
+    # will be generated if the run_python_examples script is run
+    if [ ! -f $SUMMARY_HTML ]
+    then
+        cat $RUN_SUMMARY_LOG  >> $SUMMARY_LOG
+        sleep 10
+
+        rm $RUN_SUMMARY_LOG
+        sleep 5
 
 cat <<EOF > summary.html
     <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
@@ -437,6 +567,12 @@ cat <<EOF >> summary.html
     </TABLE>
     </HTML>
 EOF
+    fi
+
+    # Add the version and sha details after the html is generated
+    echo "VortexOpenSplice version : ${PACKAGE_VERSION}" >> $SUMMARY_LOG
+    echo "ospli revision : $OSPLI_SHA" >> $SUMMARY_LOG
+    echo "osplo revision : $OSPLO_SHA" >> $SUMMARY_LOG
 
     sleep 10
 

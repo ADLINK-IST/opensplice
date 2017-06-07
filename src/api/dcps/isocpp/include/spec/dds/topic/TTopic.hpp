@@ -50,6 +50,8 @@ class TopicListener;
  *
  * Topic is the only TopicDescription that can be used for publications and
  * therefore associated with a DataWriter.
+ *
+ * For more information see \ref DCPS_Modules_TopicDefinition "The Topic-Definition Module"
  */
 template <typename T, template <typename Q> class DELEGATE>
 class dds::topic::Topic : public dds::topic::TopicDescription <T, DELEGATE>
@@ -97,7 +99,7 @@ public:
           const std::string& topic_name,
           const dds::topic::qos::TopicQos& qos,
           dds::topic::TopicListener<T>* listener = NULL,
-          const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::all());
+          const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::none());
 
     /**
      * Create a new topic.
@@ -114,7 +116,7 @@ public:
           const std::string& type_name,
           const dds::topic::qos::TopicQos& qos,
           dds::topic::TopicListener<T>* listener = NULL,
-          const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::all());
+          const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::none());
 
     #if defined (OMG_DDS_X_TYPE_DYNAMIC_TYPE_SUPPORT)
     /**
@@ -148,7 +150,7 @@ public:
           const dds::core::xtypes::DynamicType type
           const dds::topic::qos::TopicQos& qos,
           dds::topic::TopicListener<T>* listener = NULL,
-          const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::all());
+          const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::none());
 
     #endif /* OMG_DDS_X_TYPE_DYNAMIC_TYPE_SUPPORT */
 

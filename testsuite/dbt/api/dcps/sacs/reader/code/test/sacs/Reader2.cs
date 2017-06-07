@@ -1,3 +1,5 @@
+using System;
+using System.Threading;
 namespace test.sacs
 {
     /// <date>Jun 20, 2005</date>
@@ -19,8 +21,8 @@ namespace test.sacs
             DDS.ISubscriber subscriber;
             DDS.ISubscriber subscriber2;
             Test.Framework.TestResult result;
-			DDS.InstanceHandle[] handles = null;
-			DDS.PublicationBuiltinTopicData data = null;
+            DDS.InstanceHandle[] handles = null;
+            DDS.PublicationBuiltinTopicData data = null;
             DDS.ReturnCode rc;
             string expResult = "All Functions supported.";
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
@@ -43,16 +45,23 @@ namespace test.sacs
             rc = reader.WaitForHistoricalData(new DDS.Duration(3, 0));
             if (rc != DDS.ReturnCode.Ok)
             {
-                result.Result = "wait_for_historical_data failed.";
+                result.Result = "wait_for_historical_data failed to return ok.";
                 return result;
             }
+
+            try {
+                Thread.Sleep(1000); /* give reader time to discover its connected writers */
+            } catch (Exception e) {
+                Console.WriteLine(e.ToString());
+            }
+
             rc = reader.GetMatchedPublications(ref handles);
             if (rc != DDS.ReturnCode.Ok || handles.Length != 1)
             {
-                result.Result = "get_matched_publications failed.";
+                result.Result = "get_matched_publications failed. (rc: " + rc + ", handles: " + handles.Length + ")";
                 return result;
-            } 
-            else 
+            }
+            else
             {
 	            rc = reader.GetMatchedPublicationData(ref data, handles[0]);
 	            if (rc != DDS.ReturnCode.Ok)

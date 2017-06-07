@@ -1,0 +1,69 @@
+$sp($(spaces))typedef $(typename)StreamDataWriterInterface_var $(typename)StreamDataWriter_var;
+$sp($(spaces))typedef $(typename)StreamDataReaderInterface_var $(typename)StreamDataReader_var;
+$sp($(spaces))typedef $(typename)StreamDataWriterInterface_ptr $(typename)StreamDataWriter_ptr;
+$sp($(spaces))typedef $(typename)StreamDataReaderInterface_ptr $(typename)StreamDataReader_ptr;
+
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)StreamDataWriter :
+$sp($(spaces))    public ::DDS::Streams::TStreamDataWriter_impl<
+$sp($(spaces))        $(typename),
+$sp($(spaces))        $(typename)StreamDataWriterInterface,
+$sp($(spaces))        $(typename)StreamSampleDataWriter,
+$sp($(spaces))        $(typename)StreamSample>
+$sp($(spaces)){
+$sp($(spaces))public:
+$sp($(spaces))    $(typename)StreamDataWriter(
+$sp($(spaces))        DDS::Publisher_ptr publisher,
+$sp($(spaces))        DDS::Streams::StreamDataWriterQos &sqos,
+$sp($(spaces))        const char * streamName);
+
+$sp($(spaces))    $(typename)StreamDataWriter(
+$sp($(spaces))        DDS::DomainId_t domainId,
+$sp($(spaces))        DDS::Streams::StreamDataWriterQos &sqos,
+$sp($(spaces))        const char * streamName);
+
+$sp($(spaces))    $(typename)StreamDataWriter(
+$sp($(spaces))        DDS::Streams::StreamDataWriterQos &sqos,
+$sp($(spaces))        const char * streamName);
+
+$sp($(spaces))    $(typename)StreamDataWriter(
+$sp($(spaces))        DDS::Publisher_ptr publisher,
+$sp($(spaces))        const char * streamName);
+
+$sp($(spaces))    $(typename)StreamDataWriter(
+$sp($(spaces))        DDS::DomainId_t domainId,
+$sp($(spaces))        const char * streamName);
+$sp($(spaces))};
+
+$sp($(spaces))class $(DLL_IMPORTEXPORT) $(typename)StreamDataReader :
+$sp($(spaces))    public ::DDS::Streams::TStreamDataReader_impl<
+$sp($(spaces))        $(typename),
+$sp($(spaces))        $(typename)StreamDataReaderInterface,
+$sp($(spaces))        $(typename)StreamSampleDataReader,
+$sp($(spaces))        $(typename)StreamSample,
+$sp($(spaces))        $(typename)StreamFilterCallback_ptr,
+$sp($(spaces))        $(typename)StreamBuf,
+$sp($(spaces))        $(typename)StreamSampleSeq>
+$sp($(spaces)){
+$sp($(spaces))public:
+$sp($(spaces))    $(typename)StreamDataReader(
+$sp($(spaces))        DDS::Subscriber_ptr subscriber,
+$sp($(spaces))        DDS::Streams::StreamDataReaderQos &sqos,
+$sp($(spaces))        const char * streamName);
+
+$sp($(spaces))    $(typename)StreamDataReader(
+$sp($(spaces))        DDS::DomainId_t domainId,
+$sp($(spaces))        DDS::Streams::StreamDataReaderQos &sqos,
+$sp($(spaces))        const char * streamName);
+
+$sp($(spaces))    $(typename)StreamDataReader(
+$sp($(spaces))        DDS::Streams::StreamDataReaderQos &sqos,
+$sp($(spaces))        const char * streamName);
+
+$sp($(spaces))    $(typename)StreamDataReader(
+$sp($(spaces))        DDS::Subscriber_ptr subscriber,
+$sp($(spaces))        const char * streamName);
+
+$sp($(spaces))    $(typename)StreamDataReader(
+$sp($(spaces))        DDS::DomainId_t domainId,
+$sp($(spaces))        const char * streamName);
+$sp($(spaces))};

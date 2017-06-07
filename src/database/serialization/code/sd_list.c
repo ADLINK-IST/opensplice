@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "sd_list.h"
@@ -41,13 +49,11 @@ sd_listNew (
     sd_list list;
     sd_listNode node;
 
-    list = (sd_list) os_malloc(C_SIZEOF(sd_list));
-    if ( list ) {
-        node = sd_listNode(list);
-        node->prev = node;
-        node->next = node;
-        node->object = NULL;
-    }
+    list = os_malloc(C_SIZEOF(sd_list));
+    node = sd_listNode(list);
+    node->prev = node;
+    node->next = node;
+    node->object = NULL;
 
     return list;
 }
@@ -71,16 +77,14 @@ sd_listInsert (
     sd_listNode node;
     sd_listNode after = (sd_listNode)list;
 
-    node = (sd_listNode)os_malloc(C_SIZEOF(sd_listNode));
-    if ( node ) {
-        node->object = object;
-        node->prev = after;
-        node->next = after->next;
-        after->next->prev = node;
-        after->next = node;
-    }
+    node = os_malloc(C_SIZEOF(sd_listNode));
+    node->object = object;
+    node->prev = after;
+    node->next = after->next;
+    after->next->prev = node;
+    after->next = node;
 }
-        
+
 void
 sd_listAppend (
     sd_list list,
@@ -89,14 +93,12 @@ sd_listAppend (
     sd_listNode node;
     sd_listNode before = (sd_listNode)list;
 
-    node = (sd_listNode)os_malloc(C_SIZEOF(sd_listNode));
-    if ( node ) {
-        node->object = object;
-        node->next = before;
-        node->prev = before->prev;
-        before->prev->next = node;
-        before->prev = node;
-    }
+    node = os_malloc(C_SIZEOF(sd_listNode));
+    node->object = object;
+    node->next = before;
+    node->prev = before->prev;
+    before->prev->next = node;
+    before->prev = node;
 }
 
 c_bool
@@ -104,9 +106,9 @@ sd_listIsEmpty (
     sd_list list)
 {
     c_bool empty = FALSE;
-    
+
     assert(list);
-    
+
     if ( sd_listNode(list)->next == sd_listNode(list) ) {
         assert(sd_listNode(list)->prev == sd_listNode(list));
         empty = TRUE;
@@ -154,7 +156,7 @@ sd_listReadFirst (
     assert(list);
     return sd_listNode(list)->next->object;
 }
-    
+
 void *
 sd_listReadLast (
     sd_list list)
@@ -168,7 +170,7 @@ sd_listTakeFirst (
     sd_list list)
 {
     void *object = sd_listReadFirst(list);
-    
+
     sd_listRemoveFirst(list);
 
     return object;
@@ -179,9 +181,9 @@ sd_listTakeLast (
     sd_list list)
 {
     void *object = sd_listReadLast(list);
-    
+
     sd_listRemoveLast(list);
-    
+
     return object;
 }
 
@@ -192,8 +194,8 @@ sd_listRemove (
 {
     sd_listNode node;
     c_bool  found = FALSE;
-    void   *result = NULL;
-    
+    void *result = NULL;
+
     assert(list);
 
     node = sd_listNode(list)->next;
@@ -213,8 +215,8 @@ sd_listRemove (
         result = object;
     }
 
-    return object;
-}   
+    return result;
+}
 
 void
 sd_listWalk (
@@ -235,15 +237,13 @@ sd_listWalk (
     }
 }
 
-static c_bool 
+static c_bool
 sd_listAddIterator (
     void *object,
     void *arg)
 {
-    c_iter iter = (c_iter) arg;
-
+    c_iter iter = arg;
     c_iterAppend(iter, object);
-
     return TRUE;
 }
 
@@ -252,16 +252,9 @@ sd_listIterator (
     sd_list list)
 {
 
-    c_iter iter;
-
+    c_iter iter = c_iterNew(NULL);
     assert(list);
-
-    iter = c_iterNew(NULL);
-
-    if ( iter ) {
-        sd_listWalk(list, sd_listAddIterator, iter);
-    }
-
+    sd_listWalk(list, sd_listAddIterator, iter);
     return iter;
 }
 
@@ -270,12 +263,9 @@ countElements (
     void *obj,
     void *arg)
 {
-    c_ulong *count = (c_ulong *) arg;
-
+    c_ulong *count = arg;
     OS_UNUSED_ARG(obj);
-
     (*count)++;
-
     return TRUE;
 }
 
@@ -284,11 +274,8 @@ sd_listSize (
     sd_list list)
 {
     c_ulong size = 0;
-    
     assert(list);
-    
     sd_listWalk(list, countElements, &size);
-
     return size;
 }
 
@@ -304,9 +291,9 @@ compareObject (
     void *object,
     void *arg)
 {
-    compareObjectArg *argument = (compareObjectArg *)arg;
+    compareObjectArg *argument = arg;
     c_bool proceed = TRUE;
-   
+
     if ( argument->compare ) {
         if ( argument->compare(object, argument->arg) ) {
             argument->result = object;
@@ -334,7 +321,7 @@ sd_listFindObject (
     argument.compare = NULL;
     argument.arg     = object;
     argument.result  = NULL;
-    
+
     sd_listWalk(list, compareObject, &argument);
 
     return argument.result;
@@ -354,11 +341,11 @@ sd_listFind (
     argument.compare = compare;
     argument.arg     = arg;
     argument.result  = NULL;
-    
+
     sd_listWalk(list, compareObject, &argument);
 
     return argument.result;
-    
+
 }
 
 void *
@@ -368,7 +355,7 @@ sd_listAt (
 {
     c_ulong      i      = 0;
     sd_listNode  node;
-    
+
     assert(list);
 
     node = sd_listNode(list)->next;
@@ -385,7 +372,7 @@ sd_listIndexOf (
     sd_list list,
     void *obj)
 {
-    c_long      i      = 0;
+    c_ulong      i      = 0;
     sd_listNode  node;
 
     assert(list);
@@ -421,15 +408,12 @@ sd_listInsertAt(
         after = after->next;
     }
 
-    node = (sd_listNode)os_malloc(C_SIZEOF(sd_listNode));
-    if ( node ) {
-        node->object = object;
-        node->prev = after->prev;
-        node->next = after;
-        after->prev->next = node;
-        after->prev = node;
-    }
-
+    node = os_malloc(C_SIZEOF(sd_listNode));
+    node->object = object;
+    node->prev = after->prev;
+    node->next = after;
+    after->prev->next = node;
+    after->prev = node;
 }
 
 /*
@@ -474,14 +458,12 @@ sd_listInsertBefore(
         if(node == (sd_listNode)list){
             sd_listInsert(list, object);
         } else {
-            insert = (sd_listNode)os_malloc(C_SIZEOF(sd_listNode));
-            if ( insert ) {
-                insert->object = object;
-                insert->prev = node->prev;
-                insert->next = node;
-                node->prev->next = insert;
-                node->prev = insert;
-            }
+            insert = os_malloc(C_SIZEOF(sd_listNode));
+            insert->object = object;
+            insert->prev = node->prev;
+            insert->next = node;
+            node->prev->next = insert;
+            node->prev = insert;
         }
     }
 }

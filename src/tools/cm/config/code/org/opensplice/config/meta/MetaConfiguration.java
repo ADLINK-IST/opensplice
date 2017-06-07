@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.config.meta;
@@ -22,10 +30,12 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.opensplice.common.util.ConfigModeIntializer;
 import org.opensplice.common.util.Report;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.ErrorHandler;
@@ -33,20 +43,29 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 public class MetaConfiguration {
+
     private double version;
     private final MetaElement rootElement;
     private final ArrayList<MetaElement> services;
     private static HashMap<String, String> serviceMapping = new HashMap<String, String>();
-    private static final double LATEST_VERSION = 6.1;
+    private static final double LATEST_VERSION_OSPL = 6.1;
+    private static MetaConfiguration instance = null;
+    private final boolean showHidden;
 
-    private MetaConfiguration(float version, MetaElement rootElement, ArrayList<MetaElement> services) {
+
+    private MetaConfiguration(double version, MetaElement rootElement, ArrayList<MetaElement> services, boolean showHidden) {
         this.version = version;
         this.rootElement = rootElement;
         this.services = services;
+        this.showHidden = showHidden;
     }
 
     public MetaElement getRootElement() {
         return this.rootElement;
+    }
+
+    public boolean showHidden() {
+        return showHidden;
     }
 
     public boolean addService(MetaElement element){
@@ -75,7 +94,7 @@ public class MetaConfiguration {
         return this.version;
     }
 
-    private static MetaConfiguration load(String fileName, double version){
+    private static MetaConfiguration load(String fileName){
         MetaConfiguration config = null;
 
         InputStream is = ClassLoader.getSystemResourceAsStream(fileName);
@@ -83,21 +102,18 @@ public class MetaConfiguration {
         if(is != null){
             config = load(is);
             if (config != null) {
-                config.version = version;
+                config.version = LATEST_VERSION_OSPL;
             }
         }
         return config;
     }
 
     public static MetaConfiguration getInstance(){
-        return MetaConfiguration.getInstance(MetaConfiguration.LATEST_VERSION);
-    }
-
-    public static MetaConfiguration getInstance(double version){
-        String strVersion = Double.toString(version);
-        String fileName = "splice_metaconfig_" + strVersion + ".xml";
-
-        return MetaConfiguration.load(fileName, version);
+        if (instance == null) {
+            String fileName = "metaconfig.xml";
+            instance = MetaConfiguration.load(fileName);
+        }
+        return instance;
     }
 
     private static MetaConfiguration load(InputStream is){
@@ -161,6 +177,8 @@ public class MetaConfiguration {
         MetaElement metaElement, rootMetaElement = null;
         MetaConfiguration configuration = null;
         boolean res = true;
+        /* for future use if we also want to display hidden elements */
+        boolean showHidden = false;
 
         try{
             ArrayList<MetaElement> metaElements = new ArrayList<MetaElement>();
@@ -176,17 +194,24 @@ public class MetaConfiguration {
 
                 if(childElement instanceof Element){
                     if("rootElement".equals(childName)){
-                        rootMetaElement = parseElement((Element)childElement, true);
+                        rootMetaElement = parseElement((Element)childElement, true,showHidden);
+                        if (rootMetaElement.getName().equals("Lite")){
+                            ConfigModeIntializer.setMode(ConfigModeIntializer.LITE_MODE);
+                        }
                     } else if("element".equals(childName)){
-                        metaElement = parseElement((Element)childElement, false);
+                        metaElement = parseElement((Element)childElement, false,showHidden);
                         if(metaElement != null){
                             if(rootMetaElement == null){
                                 throw new MetaException("Could not resolve meta configuration.");
                             }
-                            rootMetaElement.addChild(metaElement);
-                            metaElements.add(metaElement);
+                            if (!metaElement.isHidden()) {
+                                rootMetaElement.addChild(metaElement);
+                                metaElements.add(metaElement);
+                            }
                         }
-                    } else if ("serviceMapping".equals(childName)) {
+                    } else if ("serviceMapping".equals(childName)
+                            && ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.LITE_MODE) {
+                        // Service mapping only for configuring OSPL systems.
                         res = parseServiceMapping((Element) childElement, false);
                         if (!res) {
                             throw new MetaException("Could not resolve meta configuration for service mapping.");
@@ -196,7 +221,7 @@ public class MetaConfiguration {
             }
 
             if((rootMetaElement != null) && (version != 0.0)){
-                configuration = new MetaConfiguration(version, rootMetaElement, metaElements);
+                configuration = new MetaConfiguration(version, rootMetaElement, metaElements, showHidden);
 
             }
         } catch(Exception exc){
@@ -204,9 +229,49 @@ public class MetaConfiguration {
         }
 
         if (configuration == null) {
-             Report.getInstance().writeInfoLog("config null");
+            Report.getInstance().writeErrorLog(
+                    "Parsing of meta configuration failed.");
         }
         return configuration;
+    }
+
+    private static String getDimension(Node node) {
+        if (node == null) {
+            return null;
+        }
+        if (!(node instanceof Element)) {
+            return null;
+        }
+        NodeList children = node.getChildNodes();
+
+        if (children == null) {
+            return null;
+        }
+        if (children.getLength() == 0) {
+            return null;
+        }
+        Node child = children.item(0);
+
+        return child.getNodeValue();
+    }
+
+    private static String getDimensionChild(Element element) {
+        if (element == null) {
+            return null;
+        }
+        String dimension = null;
+        NodeList children = element.getChildNodes();
+
+        if (children != null) {
+            for (int i = 0; i < children.getLength() && dimension == null; i++) {
+                Node child = children.item(i);
+
+                if ("dimension".equals(child.getNodeName())) {
+                    dimension = getDimension(child);
+                }
+            }
+        }
+        return dimension;
     }
 
     public static long createLongValuefromSizeValue(String strValue) {
@@ -249,7 +314,7 @@ public class MetaConfiguration {
         return lValue;
     }
 
-    private static MetaElement parseElement(Element element, boolean isRootElement) throws MetaException{
+    private static MetaElement parseElement(Element element, boolean isRootElement, boolean showHidden) throws MetaException{
         MetaElement result, tmp;
         MetaAttribute tmpAttr;
         ArrayList<MetaNode> metaChildren;
@@ -259,10 +324,14 @@ public class MetaConfiguration {
         int minOccurrences, maxOccurrences;
         String comment = null;
         String version = null;
+        String dimension = null;
+        boolean hidden = false;
 
         try{
             name           = element.getAttribute("name");
             version           = element.getAttribute("version");
+            hidden           = Boolean.parseBoolean(element.getAttribute("hidden"));
+
             //if(!isRootElement){
                 minOccurrences = Integer.parseInt(element.getAttribute("minOccurrences"));
                 maxOccurrences = Integer.parseInt(element.getAttribute("maxOccurrences"));
@@ -295,31 +364,40 @@ public class MetaConfiguration {
                         comment = buf.toString();
                     } else if("element".equals(nodeName)){
                         if(!isRootElement){
-                            tmp = parseElement((Element)node, isRootElement);
+                            tmp = parseElement((Element)node, isRootElement, showHidden);
 
-                            if(tmp != null){
+                            if(tmp != null  && !tmp.isHidden()){
+                                metaChildren.add(tmp);
+                            } else if (tmp != null && showHidden) {
                                 metaChildren.add(tmp);
                             }
                         }
                     } else if(nodeName.startsWith("attribute")){
                         tmpAttr = parseAttribute((Element)node);
 
-                        if(tmpAttr != null){
+                        if(tmpAttr != null && !tmpAttr.isHidden()){
+                            metaChildren.add(tmpAttr);
+                        } else if (tmpAttr != null && showHidden) {
                             metaChildren.add(tmpAttr);
                         }
                     } else if(nodeName.startsWith("leaf")){
                         if(!isRootElement){
                             tmp = parseLeaf((Element)node);
 
-                            if(tmp != null){
+                            if(tmp != null && !tmp.isHidden()){
+                                metaChildren.add(tmp);
+                            } else if (tmp != null &&showHidden) {
                                 metaChildren.add(tmp);
                             }
                         }
+                    } else if("dimension".equals(nodeName)){
+                        dimension = getDimension(node);
                     }
                 }
             }
             if(name != null){
-                result = new MetaElement(comment, name, minOccurrences, maxOccurrences, metaChildren, version);
+                result = new MetaElement(comment, name, minOccurrences,
+                        maxOccurrences, metaChildren, version, dimension, hidden);
             } else {
                 throw getException(element, "No name found");
             }
@@ -368,18 +446,20 @@ public class MetaConfiguration {
         MetaValue data;
         ArrayList<MetaNode> metaChildren;
         NodeList children;
-        String name, comment, nodeName, version;
+        String name, comment, nodeName, version, dimension;
         int minOccurrences, maxOccurrences;
         Node node;
         NodeList nodes;
+        boolean hidden;
 
         try{
-
+            dimension = null;
             comment        = parseComment(element);
             name           = element.getAttribute("name");
             version        = element.getAttribute("version");
             minOccurrences = Integer.parseInt(element.getAttribute("minOccurrences"));
             maxOccurrences = Integer.parseInt(element.getAttribute("maxOccurrences"));
+            hidden         = Boolean.parseBoolean((element.getAttribute("hidden")));
 
             if(maxOccurrences == 0){
                 maxOccurrences = Integer.MAX_VALUE;
@@ -412,17 +492,20 @@ public class MetaConfiguration {
                             } else if(nodeName.startsWith("attribute")){
                                 tmpAttr = parseAttribute((Element)node);
 
-                                if(tmpAttr != null){
+                                if(tmpAttr != null && !tmpAttr.isHidden()){
                                     metaChildren.add(tmpAttr);
                                 }
                             } else if(nodeName.startsWith("leaf")){
                                 throw getException(element, "Leaf is not allowed to contain leaf.");
                             } else if("element".equals(nodeName)){
                                 throw getException(element, "Leaf is not allowed to contain element.");
+                            } else if ("dimension".equals(nodeName)) {
+                                dimension = getDimension(node);
                             }
                         }
                     }
-                    result = new MetaElement(comment, name, minOccurrences, maxOccurrences, metaChildren, version);
+                    result = new MetaElement(comment, name, minOccurrences,
+                            maxOccurrences, metaChildren, version, dimension, hidden);
                 } else {
                     throw getException(element, "No data found");
                 }
@@ -440,24 +523,30 @@ public class MetaConfiguration {
         MetaValue data;
         String name, comment, version;
         boolean required;
+        boolean hidden;
+        String dimension;
 
         try{
             comment        = parseComment(element);
             name           = element.getAttribute("name");
             required       = Boolean.parseBoolean(element.getAttribute("required"));
+            hidden       = Boolean.parseBoolean(element.getAttribute("hidden"));
             version        = element.getAttribute("version");
 
             if(name != null){
                 data = parseValue(element, element.getNodeName().substring(9));
 
                 if(data != null){
-                    result = new MetaAttribute(comment, name, required, data, version);
+                    dimension = getDimensionChild(element);
+                    result = new MetaAttribute(comment, name, required, data,
+                            version, dimension, hidden);
                 } else {
                     throw getException(element, "No data found");
                 }
             } else {
                 throw getException(element, "No name found");
             }
+
         } catch(NumberFormatException nfe){
             throw getException(element, "NumberFormatException occurred: " + nfe.getMessage());
         }
@@ -498,6 +587,7 @@ public class MetaConfiguration {
         NodeList list;
         Node node;
         String name;
+        String dimension;
         float minimum, maximum, defaultValue;
 
         boolean foundDefault  = false;
@@ -505,6 +595,7 @@ public class MetaConfiguration {
         minimum      = Float.MIN_VALUE;
         maximum      = Float.MAX_VALUE;
         defaultValue = 0;
+        dimension = null;
 
         list = typeElement.getChildNodes();
 
@@ -513,41 +604,48 @@ public class MetaConfiguration {
             name = node.getNodeName();
             node = node.getFirstChild();
 
-            if("minimum".equals(name)) {
-                if(node == null) {
-                    throw getException(typeElement, "Invalid value of element 'minimum' found.");
-                } else {
-                    try {
-                        minimum = Float.parseFloat(node.getNodeValue());
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'minimum' found.");
-                    }
+            if ("minimum".equals(name)) {
+                if (node == null) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'minimum' found.");
                 }
-            } else if("maximum".equals(name)) {
-                if(node == null) {
-                    throw getException(typeElement, "Invalid value of element 'maximum' found.");
-                } else {
-                    try {
-                        maximum = Float.parseFloat(node.getNodeValue());
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'maximum' found.");
-                    }
+                try {
+                    minimum = Float.parseFloat(node.getNodeValue());
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'minimum' found.");
                 }
-            } else if("default".equals(name)) {
-                if(node == null) {
-                    throw getException(typeElement, "Invalid value of element 'default' found.");
-                } else {
-                    try {
-                        defaultValue = Float.parseFloat(node.getNodeValue());
-                        foundDefault = true;
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'default' found.");
-                    }
+
+            } else if ("maximum".equals(name)) {
+                if (node == null) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'maximum' found.");
                 }
+                try {
+                    maximum = Float.parseFloat(node.getNodeValue());
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'maximum' found.");
+                }
+            } else if ("default".equals(name)) {
+                if (node == null) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'default' found.");
+                }
+                try {
+                    defaultValue = Float.parseFloat(node.getNodeValue());
+                    foundDefault = true;
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'default' found.");
+                }
+            } else if ("dimension".equals(name)) {
+                dimension = getDimension(node.getParentNode());
             }
         }
         if(foundDefault) {
-            metaNode = new MetaValueFloat(null, defaultValue, maximum, minimum);
+            metaNode = new MetaValueFloat(null, defaultValue, maximum, minimum,
+                    dimension);
         } else {
             throw getException(typeElement, "Element 'default' not found for contentType 'FLOAT'");
         }
@@ -558,7 +656,7 @@ public class MetaConfiguration {
         MetaValueLong metaNode = null;
         NodeList list;
         Node node;
-        String name;
+        String name, dimension;
         long minimum, maximum, defaultValue;
 
         boolean foundDefault  = false;
@@ -566,6 +664,7 @@ public class MetaConfiguration {
         minimum      = Long.MIN_VALUE;
         maximum      = Long.MAX_VALUE;
         defaultValue = 0;
+        dimension = null;
 
         list = typeElement.getChildNodes();
 
@@ -575,40 +674,43 @@ public class MetaConfiguration {
             node = node.getFirstChild();
 
             if("minimum".equals(name)) {
-                if(node == null) {
+                if (node == null) {
                     throw getException(typeElement, "Invalid value of element 'minimum' found.");
-                } else {
-                    try {
-                        minimum = Long.parseLong(node.getNodeValue());
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'minimum' found.");
-                    }
+                }
+                try {
+                    minimum = Long.parseLong(node.getNodeValue());
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'minimum' found.");
                 }
             } else if("maximum".equals(name)) {
-                if(node == null) {
+                if (node == null) {
                     throw getException(typeElement, "Invalid value of element 'maximum' found.");
-                } else {
-                    try {
-                        maximum = Long.parseLong(node.getNodeValue());
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'maximum' found.");
-                    }
+                }
+                try {
+                    maximum = Long.parseLong(node.getNodeValue());
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'maximum' found.");
                 }
             } else if("default".equals(name)) {
-                if(node == null) {
+                if (node == null) {
                     throw getException(typeElement, "Invalid value of element 'default' found.");
-                } else {
-                    try {
-                        defaultValue = Long.parseLong(node.getNodeValue());
-                        foundDefault = true;
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'default' found.");
-                    }
                 }
+                try {
+                    defaultValue = Long.parseLong(node.getNodeValue());
+                    foundDefault = true;
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'default' found.");
+                }
+            } else if ("dimension".equals(name)) {
+                dimension = getDimension(node.getParentNode());
             }
         }
         if(foundDefault) {
-            metaNode = new MetaValueLong(null, defaultValue, maximum, minimum);
+            metaNode = new MetaValueLong(null, defaultValue, maximum, minimum,
+                    dimension);
         } else {
             throw getException(typeElement, "Element 'default' not found for contentType 'LONG'");
         }
@@ -619,7 +721,7 @@ public class MetaConfiguration {
         MetaValueSize metaNode = null;
         NodeList list;
         Node node;
-        String name;
+        String name, dimension;
         long minimum, maximum, defaultValue;
 
         boolean foundDefault  = false;
@@ -627,6 +729,7 @@ public class MetaConfiguration {
         minimum      = Long.MIN_VALUE;
         maximum      = Long.MAX_VALUE;
         defaultValue = 0;
+        dimension = null;
 
         list = typeElement.getChildNodes();
 
@@ -637,40 +740,44 @@ public class MetaConfiguration {
 
 
             if("minimum".equals(name)) {
-                if(node == null) {
+                if (node == null) {
                     throw getException(typeElement, "Invalid value of element 'minimum' found.");
-                } else {
-                    try {
-                        minimum = createLongValuefromSizeValue(node.getNodeValue());
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'minimum' found.");
-                    }
+                }
+                try {
+                    minimum = createLongValuefromSizeValue(node.getNodeValue());
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'minimum' found.");
                 }
             } else if("maximum".equals(name)) {
-                if(node == null) {
+                if (node == null) {
                     throw getException(typeElement, "Invalid value of element 'maximum' found.");
-                } else {
-                    try {
-                        maximum = createLongValuefromSizeValue(node.getNodeValue());
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'maximum' found.");
-                    }
+                }
+                try {
+                    maximum = createLongValuefromSizeValue(node.getNodeValue());
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'maximum' found.");
                 }
             } else if("default".equals(name)) {
-                if(node == null) {
+                if (node == null) {
                     throw getException(typeElement, "Invalid value of element 'default' found.");
-                } else {
-                    try {
-                        defaultValue = createLongValuefromSizeValue(node.getNodeValue());
-                        foundDefault = true;
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'default' found.");
-                    }
                 }
+                try {
+                    defaultValue = createLongValuefromSizeValue(node
+                            .getNodeValue());
+                    foundDefault = true;
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'default' found.");
+                }
+            } else if ("dimension".equals(name)) {
+                dimension = getDimension(node.getParentNode());
             }
         }
         if(foundDefault) {
-            metaNode = new MetaValueSize(null, defaultValue, maximum, minimum);
+            metaNode = new MetaValueSize(null, defaultValue, maximum, minimum,
+                    dimension);
         } else {
             throw getException(typeElement, "Element 'default' not found for contentType 'SIZE'");
         }
@@ -681,11 +788,12 @@ public class MetaConfiguration {
         MetaValueBoolean metaNode = null;
         NodeList list;
         Node node;
-        String name;
+        String name, dimension;
         boolean defaultValue;
 
         boolean foundDefault  = false;
         defaultValue          = false;
+        dimension = null;
 
 
         list = typeElement.getChildNodes();
@@ -698,18 +806,20 @@ public class MetaConfiguration {
             if("default".equals(name)) {
                 if(node == null) {
                     throw getException(typeElement, "Invalid value of element 'default' found.");
-                } else {
-                    try {
-                        defaultValue = Boolean.parseBoolean(node.getNodeValue());
-                        foundDefault = true;
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'default' found.");
-                    }
                 }
+                try {
+                    defaultValue = Boolean.parseBoolean(node.getNodeValue());
+                    foundDefault = true;
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'default' found.");
+                }
+            } else if ("dimension".equals(name)) {
+                dimension = getDimension(node.getParentNode());
             }
         }
         if(foundDefault) {
-            metaNode = new MetaValueBoolean(null, defaultValue);
+            metaNode = new MetaValueBoolean(null, defaultValue, dimension);
         } else {
             throw getException(typeElement, "Element 'default' not found for contentType 'BOOLEAN'");
         }
@@ -720,8 +830,7 @@ public class MetaConfiguration {
         MetaValueString metaNode = null;
         NodeList list;
         Node node;
-        String name;
-        String defaultValue;
+        String name, defaultValue, dimension;
         int maxLength;
 
         boolean foundDefault   = false;
@@ -729,6 +838,7 @@ public class MetaConfiguration {
 
         defaultValue = null;
         maxLength = 0;
+        dimension = null;
 
         list = typeElement.getChildNodes();
 
@@ -740,13 +850,13 @@ public class MetaConfiguration {
             if("maxLength".equals(name)) {
                 if(node == null) {
                     throw getException(typeElement, "Invalid value of element 'maxLength' found.");
-                } else {
-                    try {
-                        maxLength = Integer.parseInt(node.getNodeValue());
-                        foundMaxLength = true;
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'maxLength' found.");
-                    }
+                }
+                try {
+                    maxLength = Integer.parseInt(node.getNodeValue());
+                    foundMaxLength = true;
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'maxLength' found.");
                 }
             } else if("default".equals(name)) {
                 if(node == null) {
@@ -760,10 +870,13 @@ public class MetaConfiguration {
                         throw getException(typeElement, "Invalid value of element 'default' found.");
                     }
                 }
+            } else if ("dimension".equals(name)) {
+                dimension = getDimension(node.getParentNode());
             }
         }
         if(foundDefault && foundMaxLength) {
-            metaNode = new MetaValueString(null, defaultValue, maxLength);
+            metaNode = new MetaValueString(null, defaultValue, maxLength,
+                    dimension);
         } else if(!foundDefault){
             throw getException(typeElement, "Element 'default' not found for contentType 'STRING'");
         } else {
@@ -775,6 +888,7 @@ public class MetaConfiguration {
     private static MetaValueEnum parseMetaValueEnum(Element typeElement) throws MetaException {
         MetaValueEnum metaNode = null;
         String defaultValue = null;
+        String dimension = null;
         ArrayList<String> values = new ArrayList<String>();
         NodeList list;
         Node node;
@@ -791,28 +905,30 @@ public class MetaConfiguration {
             if("value".equals(name)) {
                 if(node == null) {
                     throw getException(typeElement, "Invalid value of element 'value' found.");
-                } else {
-                    try {
-                        values.add(node.getNodeValue());
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'value' found.");
-                    }
+                }
+                try {
+                    values.add(node.getNodeValue());
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'value' found.");
                 }
             } else if("default".equals(name)) {
                 if(node == null) {
                     throw getException(typeElement, "Invalid value of element 'default' found.");
-                } else {
-                    try {
-                        defaultValue = node.getNodeValue();
-                        foundDefault = true;
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'default' found.");
-                    }
                 }
+                try {
+                    defaultValue = node.getNodeValue();
+                    foundDefault = true;
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'default' found.");
+                }
+            } else if ("dimension".equals(name)) {
+                dimension = getDimension(node.getParentNode());
             }
         }
        if(foundDefault) {
-           metaNode = new MetaValueEnum(null, defaultValue, values);
+            metaNode = new MetaValueEnum(null, defaultValue, values, dimension);
        }  else {
            throw getException(typeElement, "Element 'default' not found for contentType 'ENUM'");
        }
@@ -824,7 +940,7 @@ public class MetaConfiguration {
         MetaValueInt metaNode = null;
         NodeList list;
         Node node;
-        String name;
+        String name, dimension;
         int minimum, maximum, defaultValue;
 
         boolean foundDefault  = false;
@@ -832,6 +948,7 @@ public class MetaConfiguration {
         minimum      = Integer.MIN_VALUE;
         maximum      = Integer.MAX_VALUE;
         defaultValue = 0;
+        dimension = null;
 
         list = typeElement.getChildNodes();
 
@@ -843,38 +960,41 @@ public class MetaConfiguration {
             if("minimum".equals(name)) {
                 if(node == null) {
                     throw getException(typeElement, "Invalid value of element 'minimum' found.");
-                } else {
-                    try {
-                        minimum = Integer.parseInt(node.getNodeValue());
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'minimum' found.");
-                    }
+                }
+                try {
+                    minimum = Integer.parseInt(node.getNodeValue());
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'minimum' found.");
                 }
             } else if("maximum".equals(name)) {
                 if(node == null) {
                     throw getException(typeElement, "Invalid value of element 'maximum' found.");
-                } else {
-                    try {
-                        maximum = Integer.parseInt(node.getNodeValue());
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'maximum' found.");
-                    }
+                }
+                try {
+                    maximum = Integer.parseInt(node.getNodeValue());
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'maximum' found.");
                 }
             } else if("default".equals(name)) {
                 if(node == null) {
                     throw getException(typeElement, "Invalid value of element 'default' found.");
-                } else {
-                    try {
-                        defaultValue = Integer.parseInt(node.getNodeValue());
-                        foundDefault = true;
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'default' found.");
-                    }
                 }
+                try {
+                    defaultValue = Integer.parseInt(node.getNodeValue());
+                    foundDefault = true;
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'default' found.");
+                }
+            } else if ("dimension".equals(name)) {
+                dimension = getDimension(node.getParentNode());
             }
         }
         if(foundDefault) {
-            metaNode = new MetaValueInt(null, defaultValue, maximum, minimum);
+            metaNode = new MetaValueInt(null, defaultValue, maximum, minimum,
+                    dimension);
         } else {
             throw getException(typeElement, "Element 'default' not found for contentType 'INT'");
         }
@@ -885,7 +1005,7 @@ public class MetaConfiguration {
         MetaValueDouble metaNode = null;
         NodeList list;
         Node node;
-        String name;
+        String name, dimension;
         double minimum, maximum, defaultValue;
 
         boolean foundDefault  = false;
@@ -893,6 +1013,7 @@ public class MetaConfiguration {
         minimum      = Double.MIN_VALUE;
         maximum      = Double.MAX_VALUE;
         defaultValue = 0;
+        dimension = null;
 
         list = typeElement.getChildNodes();
 
@@ -904,38 +1025,41 @@ public class MetaConfiguration {
             if("minimum".equals(name)) {
                 if(node == null) {
                     throw getException(typeElement, "Invalid value of element 'minimum' found.");
-                } else {
-                    try {
-                        minimum = Double.parseDouble(node.getNodeValue());
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'minimum' found.");
-                    }
+                }
+                try {
+                    minimum = Double.parseDouble(node.getNodeValue());
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'minimum' found.");
                 }
             } else if("maximum".equals(name)) {
                 if(node == null) {
                     throw getException(typeElement, "Invalid value of element 'maximum' found.");
-                } else {
-                    try {
-                        maximum = Double.parseDouble(node.getNodeValue());
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'maximum' found.");
-                    }
+                }
+                try {
+                    maximum = Double.parseDouble(node.getNodeValue());
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'maximum' found.");
                 }
             } else if("default".equals(name)) {
                 if(node == null) {
                     throw getException(typeElement, "Invalid value of element 'default' found.");
-                } else {
-                    try {
-                        defaultValue = Double.parseDouble(node.getNodeValue());
-                        foundDefault = true;
-                    } catch(NumberFormatException exc) {
-                        throw getException(typeElement, "Invalid value of element 'default' found.");
-                    }
                 }
+                try {
+                    defaultValue = Double.parseDouble(node.getNodeValue());
+                    foundDefault = true;
+                } catch (NumberFormatException exc) {
+                    throw getException(typeElement,
+                            "Invalid value of element 'default' found.");
+                }
+            } else if ("dimension".equals(name)) {
+                dimension = getDimension(node.getParentNode());
             }
         }
         if(foundDefault) {
-            metaNode = new MetaValueDouble(null, defaultValue, maximum, minimum);
+            metaNode = new MetaValueDouble(null, defaultValue, maximum,
+                    minimum, dimension);
         } else {
             throw getException(typeElement, "Element 'default' not found for contentType 'DOUBLE'");
         }
@@ -976,13 +1100,31 @@ public class MetaConfiguration {
         } else {
             message = "";
         }
-        return new MetaException(text + message + "Path: '" + getPath(node) + "'.",
+        return new MetaException(text + ". " + message + "Path: '"
+                + getPath(node) + "'.",
                 MetaExceptionType.META_CONFIG_PARSE_ERROR);
+    }
+
+    private static String getNodePlusNameAttr(Node node) {
+        if (node == null) {
+            return "";
+        }
+        String result = node.getNodeName();
+        NamedNodeMap attrs = node.getAttributes();
+
+        if (attrs != null) {
+            Node attr = attrs.getNamedItem("name");
+
+            if (attr != null) {
+                result += "[@name=\"" + attr.getNodeValue() + "\"]";
+            }
+        }
+        return result;
     }
 
     private static String getPath(Node node) {
         Node parent;
-        String result = node.getNodeName();
+        String result = getNodePlusNameAttr(node);
 
         if(result == null) {
             result = "";
@@ -993,7 +1135,7 @@ public class MetaConfiguration {
             if(parent instanceof Document) {
                 result = "/" + result;
             } else {
-                result = parent.getNodeName() + "/" + result;
+                result = getNodePlusNameAttr(parent) + "/" + result;
             }
             parent = parent.getParentNode();
         }

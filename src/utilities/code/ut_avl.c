@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include <limits.h>
@@ -91,8 +99,10 @@ static const char *conode_from_node (const ut_avlTreedef_t *td, const ut_avlNode
     }
 }
 
-static void treedef_init_common (ut_avlTreedef_t *td, os_int32 avlnodeoffset, os_int32 keyoffset, int (*cmp) (), ut_avlAugment_t augment, os_uint32 flags)
+static void treedef_init_common (ut_avlTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, int (*cmp) (void), ut_avlAugment_t augment, os_uint32 flags)
 {
+    assert (avlnodeoffset <= 0x7fffffff);
+    assert (keyoffset <= 0x7fffffff);
     td->avlnodeoffset = avlnodeoffset;
     td->keyoffset = keyoffset;
     td->u.cmp = cmp;
@@ -102,13 +112,13 @@ static void treedef_init_common (ut_avlTreedef_t *td, os_int32 avlnodeoffset, os
 
 void ut_avlTreedefInit (ut_avlTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_t comparekk, ut_avlAugment_t augment, os_uint32 flags)
 {
-    treedef_init_common (td, avlnodeoffset, keyoffset, (int (*) ()) comparekk, augment, flags);
+    treedef_init_common (td, avlnodeoffset, keyoffset, (int (*) (void)) comparekk, augment, flags);
 }
 
 void ut_avlTreedefInit_r (ut_avlTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_r_t comparekk_r, void *cmp_arg, ut_avlAugment_t augment, os_uint32 flags)
 {
     td->cmp_arg = cmp_arg;
-    treedef_init_common (td, avlnodeoffset, keyoffset, (int (*) ()) comparekk_r, augment, flags | UT_AVL_TREEDEF_FLAG_INDKEY);
+    treedef_init_common (td, avlnodeoffset, keyoffset, (int (*) (void)) comparekk_r, augment, flags | UT_AVL_TREEDEF_FLAG_R);
 }
 
 void ut_avlInit (const ut_avlTreedef_t *td, ut_avlTree_t *tree)
@@ -368,7 +378,7 @@ void *ut_avlLookupIPath (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, co
             path->p.pnode[path->p.depth] = NULL;
         } else {
             const ut_avlNode_t *cursor = node;
-            const ut_avlNode_t *prev = path->p.parent;
+            const ut_avlNode_t *prev;
             int c, dir;
             do {
                 c = comparenk (td, cursor, key);
@@ -394,6 +404,7 @@ void ut_avlInsertIPath (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *vno
     if (td->augment) {
         augment (td, node);
     }
+    assert (path->p.pnode[path->p.depth]);
     assert ((*path->p.pnode[path->p.depth]) == NULL);
     *path->p.pnode[path->p.depth] = node;
     path->p.depth--;
@@ -939,13 +950,13 @@ void *ut_avlRoot (const ut_avlTreedef_t *td, const ut_avlTree_t *tree)
 
 void ut_avlCTreedefInit (ut_avlCTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_t comparekk, ut_avlAugment_t augment, os_uint32 flags)
 {
-    treedef_init_common (&td->t, avlnodeoffset, keyoffset, (int (*) ()) comparekk, augment, flags);
+    treedef_init_common (&td->t, avlnodeoffset, keyoffset, (int (*) (void)) comparekk, augment, flags);
 }
 
 void ut_avlCTreedefInit_r (ut_avlCTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_r_t comparekk_r, void *cmp_arg, ut_avlAugment_t augment, os_uint32 flags)
 {
     td->t.cmp_arg = cmp_arg;
-    treedef_init_common (&td->t, avlnodeoffset, keyoffset, (int (*) ()) comparekk_r, augment, flags | UT_AVL_TREEDEF_FLAG_INDKEY);
+    treedef_init_common (&td->t, avlnodeoffset, keyoffset, (int (*) (void)) comparekk_r, augment, flags | UT_AVL_TREEDEF_FLAG_R);
 }
 
 void ut_avlCInit (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree)
@@ -1022,14 +1033,14 @@ void ut_avlCDelete (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *node)
 void ut_avlCInsertIPath (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *node, ut_avlIPath_t *path)
 {
     tree->count++;
-    ut_avlInsertIPath (&td->t, NULL, node, path);
+    ut_avlInsertIPath (&td->t, &tree->t, node, path);
 }
 
 void ut_avlCDeleteDPath (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *node, ut_avlDPath_t *path)
 {
     assert (tree->count > 0);
     tree->count--;
-    ut_avlDeleteDPath (&td->t, NULL, node, path);
+    ut_avlDeleteDPath (&td->t, &tree->t, node, path);
 }
 
 void ut_avlCSwapNode (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *old, void *new)
@@ -1049,7 +1060,7 @@ int ut_avlCIsEmpty (const ut_avlCTree_t *tree)
 
 int ut_avlCIsSingleton (const ut_avlCTree_t *tree)
 {
-    return ut_avlIsEmpty (&tree->t);
+    return ut_avlIsSingleton (&tree->t);
 }
 
 os_size_t ut_avlCCount (const ut_avlCTree_t *tree)

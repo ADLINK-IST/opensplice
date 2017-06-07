@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm;
@@ -18,6 +26,8 @@ import org.opensplice.cm.com.CommunicationException;
 import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.com.JniCommunicator;
 import org.opensplice.cm.com.SOAPCommunicator;
+import org.opensplice.cm.com.SOAPConnectionPool;
+import org.opensplice.cm.com.SOAPException;
 import org.opensplice.cm.impl.ParticipantImpl;
 import org.opensplice.cm.impl.StorageImpl;
 import org.opensplice.cm.qos.ParticipantQoS;
@@ -55,6 +65,14 @@ public class CMFactory {
             communicators.clear();
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
+        } finally {
+            if (communicators.isEmpty()) {
+                try {
+                    SOAPConnectionPool.getInstance().closeConnections();
+                } catch (SOAPException e) {
+                    throw new CMException(e.getMessage());
+                }
+            }
         }
     }
 
@@ -69,6 +87,14 @@ public class CMFactory {
             }
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
+        } finally {
+            if(communicators.isEmpty()){
+                try {
+                    SOAPConnectionPool.getInstance().closeConnections();
+                } catch (SOAPException e) {
+                    throw new CMException(e.getMessage());
+                }
+            }
         }
     }
 
@@ -81,38 +107,37 @@ public class CMFactory {
      *             initialised.
      */
     private synchronized static Communicator getCommunicator(String domain) throws CMException {
-    	Communicator c = communicators.get(domain);
+        Communicator c = communicators.get(domain);
 
         if(c == null){
-        	try {
-        		if (domain.toLowerCase().startsWith("http://") && !domain.equalsIgnoreCase("http://")) {
-					c = new SOAPCommunicator();
-	        	} else {
-	        		c = new JniCommunicator();
-	        	}
-        		c.initialise(domain);
-        	} catch (CommunicationException e) {
-				throw new CMException(e.getMessage());
-			}  catch (NoClassDefFoundError ne){
+            try {
+                if (domain.toLowerCase().startsWith("http://") && !domain.equalsIgnoreCase("http://")) {
+                    c = new SOAPCommunicator(domain);
+                } else {
+                    c = new JniCommunicator(domain);
+                }
+            } catch (CommunicationException e) {
+                throw new CMException(e.getMessage());
+            }  catch (NoClassDefFoundError ne){
                 throw new CMException("Required Java SOAP extensions not available.");
             }
-        	communicators.put(domain, c);
+            communicators.put(domain, c);
         }
         return c;
     }
 
     public static Participant createParticipant(int domain, int timeout, String name, ParticipantQoS qos)
-            throws CMException {
-    	return createParticipant(Integer.toString(domain),timeout,name,qos);
+            throws CMCompatibilityException, CMException {
+       return createParticipant(Integer.toString(domain),timeout,name,qos);
     }
 
 
     public static Participant createParticipant(String domain, int timeout, String name, ParticipantQoS qos)
-            throws CMException {
+            throws CMCompatibilityException, CMException {
         try {
             matchCMVersions(getLocalVersion(), getVersion(domain));
         } catch (NoSuchMethodError er) {
-        	/* Ignore and continue */
+               /* Ignore and continue */
         }
         return new ParticipantImpl(CMFactory.getCommunicator(domain), domain, timeout, name, qos);
     }
@@ -144,17 +169,18 @@ public class CMFactory {
         if(communicator == null){
             try {
                 if (domain.toLowerCase().startsWith("http://") && !domain.equalsIgnoreCase("http://")) {
-                    communicator = new SOAPCommunicator();
+                    communicator = new SOAPCommunicator(domain);
                 } else {
-                    communicator = new JniCommunicator();
+                    communicator = new JniCommunicator(domain);
                 }
-                communicator.initialise(domain);
                 version = communicator.getVersion();
             } catch (CommunicationException e) {
                 throw new CMException(e.getMessage());
             } finally {
                 try {
-                    communicator.detach();
+                    if (communicator != null) {
+                        communicator.detach();
+                    }
                 } catch (CommunicationException e) {
                     throw new CMException(e.getMessage());
                 }
@@ -190,29 +216,28 @@ public class CMFactory {
         return result;
     }
 
-    public static void matchCMVersions(String local, String remote) throws CMException {
+    public static void matchCMVersions(String local, String remote) throws CMCompatibilityException {
 
         if (!local.equals("N.A.") && !remote.equals("N.A.") && !local.equals(remote)) {
-            String[] localVersion = local.split("\\.");
-            String[] remoteVersion = remote.split("\\.");
-            if (localVersion != null && remoteVersion != null) {
-                if (localVersion[0].equals(remoteVersion[0])) {
-                    if (!localVersion[1].equals(remoteVersion[1])) {
-                        int localMinor = new Integer(localVersion[1]).intValue();
-                        int remoteMinor = new Integer(remoteVersion[1]).intValue();
-                        if (localMinor > remoteMinor) {
-                            throw new CMException("CM API Minor version mismatch, remote version " + remoteVersion[0]
-                                    + "." + remoteMinor + " is lower than local " + localVersion[0] + "." + +localMinor
-                                    + " version");
-                        }
-                    }
-                } else {
-                    throw new CMException("CM API Major version mismatch, local version " + local + " remote version "
-                            + remote);
+            String[] localVersion = local.replaceFirst("V", "").split("\\.");
+            String[] remoteVersion = remote.replaceFirst("V", "").split("\\.");
+            int localMajor = new Integer(localVersion[0]);
+            int localMinor = new Integer(localVersion[1]);
+            int remoteMajor = new Integer(remoteVersion[0]);
+            int remoteMinor = new Integer(remoteVersion[1]);
+            final String devLabel = "non-PrismTech build";
+            boolean isLocalDev = local.contains(devLabel);
+            boolean isRemoteDev = local.contains(devLabel);
+
+            double localMajorMinor = new Double(localMajor+"."+localMinor);
+            double remoteMajorMinor = new Double(remoteMajor+"."+remoteMinor);
+            if(!isLocalDev || !isRemoteDev){
+                //Check here that 6.5 is minimum version required to be used before anything else
+                if(remoteMajorMinor < 6.5){
+                    String message = String.format("Both local and remote CM API versions be must minimum 6.5 to be compatible, local version %.1f remote version %.1f.",
+                            localMajorMinor, remoteMajorMinor);
+                    throw new CMCompatibilityException(message, localMajor, localMinor, remoteMajor, remoteMinor);
                 }
-            } else {
-                throw new CMException("CM API Major version mismatch, local version " + local + " remote version "
-                        + remote);
             }
         }
     }

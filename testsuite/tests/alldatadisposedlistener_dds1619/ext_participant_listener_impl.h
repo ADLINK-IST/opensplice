@@ -15,14 +15,8 @@ class ExtParticipantListenerImpl : virtual public ExtDomainParticipantListener
   public:
     ExtParticipantListenerImpl(void)
     {
-        os_mutexAttr mutexAttr;
-        mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
-        os_mutexInit(&mutex, &mutexAttr);
-
-        os_condAttr condAttr;
-        condAttr.scopeAttr = OS_SCOPE_PRIVATE;
-
-        os_condInit(&cond, &mutex, &condAttr);
+        os_mutexInit(&mutex, NULL);
+        os_condInit(&cond, &mutex, NULL);
         reset();
     }
 
@@ -105,18 +99,16 @@ class ExtParticipantListenerImpl : virtual public ExtDomainParticipantListener
     ::DDS::ReturnCode_t wait_for_on_all_data_disposed(DDS::Duration_t timeout)
     {
         ::DDS::ReturnCode_t result = 0;
-        os_time os_timeout;
-        os_timeout.tv_sec = timeout.sec;
-        os_timeout.tv_nsec = timeout.nanosec;
-        os_time dead_line = os_timeAdd(os_hrtimeGet(), os_timeout);
+        os_duration os_timeout = OS_DURATION_INIT(timeout.sec, timeout.nanosec);
+        os_timeW dead_line = os_timeWAdd(os_timeWGet(), os_timeout);
 
         os_mutexLock(&mutex);
-            os_time time = os_hrtimeGet();
-            while(on_all_data_diposed_conter == 0 && os_timeCompare(time, dead_line) == OS_LESS)
+            os_timeW time = os_timeWGet();
+            while(on_all_data_diposed_conter == 0 && os_timeWCompare(time, dead_line) == OS_LESS)
             {
-                os_time time_to_wait = os_timeSub(dead_line, time);
-                os_condTimedWait(&cond, &mutex, &time_to_wait);
-                time = os_hrtimeGet();
+                os_duration time_to_wait = os_timeWDiff(dead_line, time);
+                os_condTimedWait(&cond, &mutex, time_to_wait);
+                time = os_timeWGet();
             }
         if(    on_all_data_diposed_conter == 0)
         {

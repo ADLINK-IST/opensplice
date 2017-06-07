@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file os/win32/code/os_process.c
@@ -14,8 +22,10 @@
  *
  * Implements process management for WIN32
  */
+#include "os_errno.h"
 #include "os_process.h"
 #include "os__process.h"
+#include "os__signalHandler.h"
 #include "os__thread.h"
 #include "os_thread.h"
 #include "os_stdlib.h"
@@ -25,16 +35,14 @@
 #include "os_signal.h"
 #include "os_init.h"
 #include "os__debug.h"
+#include "os_atomics.h"
 
-#include <stdio.h>
-#include <assert.h>
 #include <process.h>
+#include "os_win32incs.h"
 
 /* List of exithandlers */
-typedef void *(*_ospl_exitHandler)(void);
-
 struct _ospl_handlerList_t {
-    _ospl_exitHandler          handler;
+    void (*handler)(void);
     struct _ospl_handlerList_t *next;
 };
 
@@ -51,295 +59,79 @@ struct _ospl_handlerList_t {
 static const os_schedClass TIMESHARE_DEFAULT_SCHED_CLASS = NORMAL_PRIORITY_CLASS;
 static const os_schedClass REALTIME_DEFAULT_SCHED_CLASS  = REALTIME_PRIORITY_CLASS;
 
-
-static struct _ospl_handlerList_t *_ospl_handlerList = (struct _ospl_handlerList_t *)0;
-static HANDLE _ospl_exceptionHandlerThreadId         = 0;
-static int    _ospl_exceptionHandlerThreadTerminate  = 0;
-static HANDLE _ospl_exceptionEvent                   = 0;
-static os_procTerminationHandler _ospl_termHandler   = (os_procTerminationHandler)0;
-/* The signal emulator has to be removed in the future. */
-static HANDLE _ospl_signalEmulatorHandle             = INVALID_HANDLE_VALUE;
-static HANDLE _ospl_signalEmulatorThreadId           = 0;
+static pa_voidp_t _ospl_handlerList                  = PA_VOIDP_INIT(0);
 static char* processName                             = NULL;
-
-static BOOL
-CtrlHandler(
-    DWORD fdwCtrlType)
-{
-    os_int32 terminate;
-
-    switch (fdwCtrlType) {
-    case CTRL_LOGOFF_EVENT:
-        /* It is not correct to ever exit when this event is received. see dds#2732
-        From MSDN re CTRL_LOGOFF_EVENT:
-        "A signal that the system sends to all console processes when a user is
-        logging off. This signal does not indicate which user is logging off, so
-        no assumptions can be made. Note that this signal is received only by
-        services. Interactive applications are terminated at logoff, so they are
-        not present when the system sends this signal." */
-        return TRUE;
-    }
-/*
-    BOOL result;
-
-    switch (fdwCtrlType) {
-    case CTRL_C_EVENT:
-        result = TRUE;
-        break;
-    case CTRL_CLOSE_EVENT:
-        result = TRUE;
-        break;
-    case CTRL_BREAK_EVENT:
-        result = TRUE;
-        break;
-    case CTRL_LOGOFF_EVENT:
-        result = TRUE;
-        break;
-    case CTRL_SHUTDOWN_EVENT:
-        result = TRUE;
-        break;
-    default:
-        all other types just refer to next handler
-        result = FALSE;
-        break;
-    }
-*/
-    if(os_serviceGetSingleProcess())
-    {
-        /* ES 08-aug-2011 in case of ctrl-c being used in single process mode,
-         * then bypass everything and terminate without calling any exit handlers.
-         * This is a temporary measure.
-         */
-        _exit(0);
-    }
-    if (_ospl_termHandler) {
-        terminate = _ospl_termHandler(OS_TERMINATION_NORMAL);
-    } else {
-        terminate = 1;
-    }
-
-    if (terminate) {
-        os_procCallExitHandlers();
-        return FALSE; /* always call the next control handler */
-    } else {
-        return TRUE; /* do not call the next control handler */
-    }
-}
-
-static void *
-exceptionHandlerThread(
-    void *arg)
-{
-    DWORD result;
-
-    do {
-        result = WaitForSingleObject(_ospl_exceptionEvent, INFINITE);
-    } while (result != WAIT_OBJECT_0);
-
-    if (!_ospl_exceptionHandlerThreadTerminate) {
-        os_procCallExitHandlers();
-    }
-
-    return NULL;
-}
-
-static LONG CALLBACK exceptionHandler(
-  __in PEXCEPTION_POINTERS ExceptionInfo)
-{
-    DWORD nRead;
-    os_result osr;
-
-    /* We need to clear the Direction Flag first as we might have received this
-     * exception during copy constructions (like memcpy, strcpy etc, and then
-     * the direction flag is set).
-     * The instruction movs is used to copy source string into the destination.
-     * Since we'd like to move several bytes at a time, movs instructions are
-     * done in batches using rep prefix. The number of movements is specified
-     * by CX register. See the example below:
-     *     :
-     *    lds   si, [src]
-     *    les   di, [dest]
-     *    cld
-     *    mov   cx, 100
-     *    rep   movsb
-     *     :
-     *
-     * This example will copy 100 bytes from src to dest. If you remove the rep
-     * prefix, the CX register will have no effect. You will move one byte. Assembly
-     * gurus use this instruction a lot, because arrays can be copied in the very
-     * same way. You can use this to emulate C/C++'s strcpy
-     *
-     */
-    //__asm__ __volatile__ ("pushfq ; popq %0" : "=g" (rflags));
-    //__asm__ __volatile__ ("cld")
-    printf("Exception code: %d\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
-    SetEvent(_ospl_exceptionEvent);
-    if (GetExitCodeThread(_ospl_exceptionHandlerThreadId, &nRead) == 0) {
-        printf("GetExitCodeThread Failed %d", (int)GetLastError());
-        osr = os_resultFail;
-    } else {
-        while (nRead == STILL_ACTIVE) {
-            Sleep(500);
-            if (GetExitCodeThread(_ospl_exceptionHandlerThreadId, &nRead) == 0) {
-                printf("GetExitCodeThread Failed %d", (int)GetLastError());
-                osr = os_resultFail;
-                nRead = 0; /* break loop */
-            }
-            printf("Wait for exception handler\n");
-        }
-        printf("exception handler done\n");
-    }
-    //if (rflags & (1 << 10)) { /* direction flag was set, so reset */
-    //__asm__ __volatile__ ("std");
-    //}
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
-static void *
-signalEmulatorThread(
-    void *arg)
-{
-    os_int32 sig;
-    DWORD nread;
-    BOOL result;
-    os_time delay = { 0, 100000000 }; /* 100millesec */
-    int terminate = 0;
-
-    os_threadSetThreadName(-1, "ospSigEmulator OSPL Signal Emulator Thread");
-
-    while (!terminate) {
-        result = (ConnectNamedPipe(_ospl_signalEmulatorHandle, NULL)?TRUE:(GetLastError() == ERROR_PIPE_CONNECTED));
-        if (result) {
-            /* read signal */
-            sig = 0;
-            result = ReadFile(_ospl_signalEmulatorHandle, &sig, sizeof(sig), &nread, NULL);
-            if (result && (nread > 0)) {
-                OS_DEBUG_1("signalEmulatorThread", "Received signal %d", sig);
-                terminate = 1;
-            }
-        } else {
-            os_nanoSleep(delay);
-        }
-    }
-    if (sig == OS_SIGKILL) {
-        exit(0);
-    }
-    if (sig > 0) {
-        if (_ospl_termHandler) {
-            _ospl_termHandler(OS_TERMINATION_NORMAL);
-        }
-    }
-    CloseHandle(_ospl_signalEmulatorHandle);
-    _ospl_signalEmulatorHandle = INVALID_HANDLE_VALUE;
-
-    return NULL;
-}
+static os_boolean _ospl_threadsTerminatedByAtExit    = FALSE;
 
 static void
-installSignalEmulator(void)
+os__procExit(
+    void)
 {
-    DWORD threadIdent;
-    char pname[256];
-
-/* First create the pipe */
-if (_ospl_signalEmulatorHandle == INVALID_HANDLE_VALUE) {
-    snprintf(pname, 256, "\\\\.\\pipe\\osplpipe_%d", _getpid());
-    _ospl_signalEmulatorHandle = CreateNamedPipe(pname,
-           PIPE_ACCESS_INBOUND,
-           PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
-           1 /* max instances */,
-           sizeof(os_int32),
-           sizeof(os_int32),
-           200 /* timeout in millisec */,
-           NULL);
-    if (_ospl_signalEmulatorHandle == INVALID_HANDLE_VALUE) {
-        OS_DEBUG_1("installSignalEmulator", "failure named pipe: %d", GetLastError());
-        assert(_ospl_signalEmulatorHandle != INVALID_HANDLE_VALUE);
-        return;
-    }
-
-    _ospl_signalEmulatorThreadId = CreateThread(NULL,
-                    (SIZE_T)1024*1024,
-                    (LPTHREAD_START_ROUTINE)signalEmulatorThread,
-                    (LPVOID)0,
-                    (DWORD)0, &threadIdent);
+    /* When this function is called all threads may be ungracefully terminated. */
+    _ospl_threadsTerminatedByAtExit = TRUE;
 }
-}
-#define _OS_PROC_PROCES_NAME_LEN (512)
+
 /* Protected functions */
 void
 os_processModuleInit(void)
 {
-/*    DWORD threadIdent;*/
-
-    installSignalEmulator();
-
-    /* first setup termination handling */
-    SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
-
-    /* Setup exception handling to ensure proper disconnect when
-     * exception (like SEGV) occurs
-     */
-#if 0
-    _ospl_exceptionEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-
-    AddVectoredExceptionHandler(1, exceptionHandler);
-
-    _ospl_exceptionHandlerThreadId = CreateThread(NULL,
-                (SIZE_T)128*1024,
-                (LPTHREAD_START_ROUTINE)exceptionHandlerThread,
-                (LPVOID)0,
-                (DWORD)0, &threadIdent);
+    /* Register an atexit to signal the abstraction layer that all threads may
+     * be forcefully terminated.
+     *
+     * The restrictions imposed by atexit(...) and process termination under
+     * Windows make that it doesn't make sense to run the routines registered
+     * with os_procAtExit(...), since code in the atexit may not access shared
+     * resources (like SHM and u_userDetach(...)) that can be left in an
+     * undefined state. */
+    (void) atexit(os__procExit);
+#ifndef LITE
+    (void) os__signalHandlerNew();
 #endif
+    return;
 }
-#undef _OS_PROC_PROCES_NAME_LEN
+
 
 void
 os_processModuleExit(void)
 {
-    os_int32 signal = -15; /* use negative number to stop the thread */
-    DWORD written;
+    struct _ospl_handlerList_t *oldHandler, *nextHandler;
+#ifndef LITE
+    os__signalHandlerFree();
+#endif
+    os_free(processName);
 
-    SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, FALSE);
-    if (processName) {
-        os_free(processName);
+    /* Free the handlers registered through os_procAtExit(...) */
+    do {
+        oldHandler = pa_ldvoidp(&_ospl_handlerList);
+    } while (!pa_casvoidp(&_ospl_handlerList, oldHandler, NULL));
+
+    while(oldHandler){
+        nextHandler = oldHandler->next;
+        os_free(oldHandler);
+        oldHandler = nextHandler;
     }
-
-    if (_ospl_signalEmulatorHandle != INVALID_HANDLE_VALUE) {
-        WriteFile(_ospl_signalEmulatorHandle, &signal, sizeof(os_int32), &written, NULL);
-    }
-
-/*    RemoveVectoredExceptionHandler(exceptionHandler);
-    _ospl_exceptionHandlerThreadTerminate = 1;
-    SetEvent(_ospl_exceptionEvent); /* terminate exceptionHandlerThread */
 }
 
 void
 os_procCallExitHandlers(void)
 {
-    struct _ospl_handlerList_t *handler;
+    struct _ospl_handlerList_t *oldHandler, *nextHandler;
 
-    handler = _ospl_handlerList;
-    while (handler) {
-        handler->handler();
-        handler = handler->next;
-        os_free(_ospl_handlerList);
-        _ospl_handlerList = handler;
+    do {
+        oldHandler = pa_ldvoidp(&_ospl_handlerList);
+    } while (!pa_casvoidp(&_ospl_handlerList, oldHandler, NULL));
+
+    while(oldHandler){
+        if(!_ospl_threadsTerminatedByAtExit) {
+            oldHandler->handler();
+        }
+        nextHandler = oldHandler->next;
+        os_free(oldHandler);
+        oldHandler = nextHandler;
     }
 }
 
 /* Public functions */
-
-os_procTerminationHandler
-os_procSetTerminationHandler(
-    os_procTerminationHandler handler)
-{
-    os_procTerminationHandler oldHandler;
-
-    oldHandler = _ospl_termHandler;
-    _ospl_termHandler = handler;
-    return oldHandler;
-}
 
 /** \brief Register an process exit handler
  *
@@ -352,28 +144,49 @@ os_result
 os_procAtExit(
     void (*function)(void))
 {
-    struct _ospl_handlerList_t *handler;
+    struct _ospl_handlerList_t *handler, *old;
     os_result result;
 
     assert(function != NULL);
 
-    /**
-     * Do not use 'atexit()' for windows, since windows
-     * calls the handlers too late (after all threads
-     * have been terminated.
-     * Instead we keep our own administration.
-     */
-    handler = os_malloc(sizeof(struct _ospl_handlerList_t));
+    /* We don't implement 'atexit()' for Windows, since Windows calls the
+     * handlers too late (after all threads have been terminated).
+     *
+     * The restrictions imposed by atexit(...) and process termination under
+     * Windows make that it doesn't make sense to run the routines registered
+     * with os_procAtExit(...), since code in the atexit may not access shared
+     * resources (like SHM and u_userDetach(...)) that can be left in an
+     * undefined state.
+     *
+     * The routines are stored for the case when os_procExit(...) is used to
+     * terminate the process (e.g., as done in our service-wrappers), but they
+     * aren't invoked on atexit(...). */
+
+    handler = os_malloc(sizeof *handler);
     if (handler) {
-        handler->handler = (_ospl_exitHandler)function;
-        handler->next = _ospl_handlerList;
-        _ospl_handlerList = handler;
+        handler->handler = function;
+        do {
+            old = pa_ldvoidp(&_ospl_handlerList);
+            handler->next = old;
+        } while (!pa_casvoidp(&_ospl_handlerList, old, handler));
         result = os_resultSuccess;
-    } else
-    {
+    } else {
         result = os_resultFail;
     }
     return result;
+}
+
+/** \brief Returns if threads are terminated by atexit
+ *
+ * Return values:
+ * TRUE - if threads are ungracefully terminated by atexit
+ * FALSE - all other situations
+ */
+os_boolean
+os_procAreThreadsTerminatedByAtExit(
+    void)
+{
+    return _ospl_threadsTerminatedByAtExit;
 }
 
 /** \brief Terminate the process and return the status
@@ -385,19 +198,7 @@ void
 os_procExit(
     os_exitStatus status)
 {
-    struct _ospl_handlerList_t *handler;
-
-    assert((status != OS_EXIT_SUCCESS) || (status != OS_EXIT_FAILURE));
-    /**
-     * First call all exit handlers then call exit()
-     */
-    handler = _ospl_handlerList;
-    while (handler) {
-        handler->handler();
-        handler = handler->next;
-        os_free(_ospl_handlerList);
-        _ospl_handlerList = handler;
-    }
+    os_procCallExitHandlers();
     exit((int)status);
 }
 
@@ -436,8 +237,6 @@ os_procCreate(
     LPTCH environment;
     LPTCH environmentCopy;
 
-    SECURITY_ATTRIBUTES saAttr;
-
     os_schedClass effective_process_class;
     os_int32 effective_priority;
     //    assert(executable_file != NULL);
@@ -457,9 +256,6 @@ os_procCreate(
     si.cb = sizeof(STARTUPINFO);
 
     if (procAttr->activeRedirect) {
-        saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
-        saAttr.bInheritHandle = TRUE;
-        saAttr.lpSecurityDescriptor = NULL;
         si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
         si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
         si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
@@ -517,9 +313,9 @@ os_procCreate(
         }
         FreeEnvironmentStrings(environment);
     } else {
-        OS_REPORT_1(OS_ERROR,
+        OS_REPORT(OS_ERROR,
                 "os_procCreate", 1,
-                "GetEnvironmentStrings failed, environment will be inherited from parent-process without modifications.", (int)GetLastError());
+                "GetEnvironmentStrings failed, environment will be inherited from parent-process without modifications.", os_getErrno());
     }
 
     if (CreateProcess(executable_file,
@@ -532,7 +328,7 @@ os_procCreate(
                       NULL,                     // CurrentDirectory
                       &si,
                       &process_info) == 0) {
-        const DWORD errorCode= GetLastError();
+        const os_int errorCode = os_getErrno ();
         OS_DEBUG_2("os_procCreate", "Process creation for exe file %s failed with %d", executable_file, errorCode);
         os_free(inargs);
         return (ERROR_FILE_NOT_FOUND == errorCode ||
@@ -544,8 +340,7 @@ os_procCreate(
     if(environmentCopy){
         os_free(environmentCopy);
     }
-
-    *procId = (os_procId)process_info.hProcess;
+    *procId = process_info.dwProcessId;
 
     os_free(inargs);
 
@@ -559,7 +354,7 @@ os_procCreate(
         effective_process_class = TIMESHARE_DEFAULT_SCHED_CLASS;
     }
     if (SetPriorityClass(process_info.hProcess, effective_process_class) == 0) {
-        OS_DEBUG_1("os_procCreate", "SetPriorityClass failed with %d", (int)GetLastError());
+        OS_DEBUG_1("os_procCreate", "SetPriorityClass failed with %d", os_getErrno());
     }
 
     effective_priority = procAttr->schedPriority;
@@ -580,10 +375,9 @@ os_procCreate(
     }
     if (effective_priority != THREAD_PRIORITY_NORMAL) {
         if (SetThreadPriority(process_info.hThread, procAttr->schedPriority) == 0) {
-            OS_DEBUG_1("os_procCreate", "SetThreadPriority failed with %d", (int)GetLastError());
+            OS_DEBUG_1("os_procCreate", "SetThreadPriority failed with %d", os_getErrno());
         }
     }
-    CloseHandle(process_info.hThread);
 
     return os_resultSuccess;
 }
@@ -609,18 +403,20 @@ os_procCheckStatus(
     os_int32 *status)
 {
     DWORD tr;
-    DWORD err;
+    int err;
+    HANDLE procHandle;
     register int callstatus;
 
     if (procId == OS_INVALID_PID) {
         return os_resultInvalid;
     }
     assert(status != NULL);
+    procHandle = os_procIdToHandle(procId);
 
-    callstatus = GetExitCodeProcess(procId, &tr);
-
+    callstatus = GetExitCodeProcess(procHandle, &tr);
     if (callstatus == 0) {
-        err = GetLastError();
+        err = os_getErrno();
+        CloseHandle (procHandle);
         if (err == ERROR_INVALID_HANDLE) {
             return os_resultUnavailable;
         }
@@ -628,12 +424,12 @@ os_procCheckStatus(
         OS_DEBUG_1("os_procCheckStatus", "os_procCheckStatus GetExitCodeProcess Failed %d", err);
         return os_resultFail;
     }
+    CloseHandle (procHandle);
 
     if (tr == STILL_ACTIVE) {
         return os_resultBusy;
     }
 
-    CloseHandle (procId);
     *status = (os_int32)tr;
     return os_resultSuccess;
 }
@@ -663,31 +459,35 @@ os_procDestroy(
     HANDLE ph;
     os_result result;
     DWORD written;
-    char* errMsg;
-    int id = os_procIdToInteger(procId);
+    const os_char* errMsg;
+    HANDLE procHandle;
 
     if (procId == OS_INVALID_PID) {
         return os_resultInvalid;
     }
+    procHandle = os_procIdToHandle(procId);
+    if (!procHandle)
+    {
+        errMsg = os_strError(os_getErrno());
+    }
     if (signal == OS_SIGKILL)
     {
-        result = (TerminateProcess(procId, 1) == 0 ? os_resultFail : os_resultSuccess);
+        result = (TerminateProcess(procHandle, 1) == 0 ? os_resultFail : os_resultSuccess);
         if (result == os_resultFail)
         {
-            if (GetLastError() == ERROR_ACCESS_DENIED)
+            if (os_getErrno() == ERROR_ACCESS_DENIED)
             {
-                OS_REPORT_1 (OS_ERROR, "os_procDestroy", 0,
+                OS_REPORT (OS_ERROR, "os_procDestroy", 0,
                         "OS_SIGKILL / TerminateProcess of PID %d failed - HANDLE procId lacks TERMINATE_PROCESS "
-                        OS_REPORT_NL "access right or process has already terminated.", id);
+                        OS_REPORT_NL "access right or process has already terminated.", procId);
             }
             else
             {
-                errMsg = os_reportErrnoToString(GetLastError());
-                OS_REPORT_2 (OS_ERROR, "os_procDestroy", 0,
-                        "OS_SIGKILL / TerminateProcess of PID %d failed: %s", id, errMsg);
-                os_free(errMsg);
+                OS_REPORT (OS_ERROR, "os_procDestroy", 0,
+                        "OS_SIGKILL / TerminateProcess of PID %d failed: %s", procId, os_strError (os_getErrno ()));
             }
         }
+        CloseHandle(procHandle);
         return result;
     }
 
@@ -699,13 +499,13 @@ os_procDestroy(
     }
 
     result = os_resultSuccess;
-    snprintf(pname, 256, "\\\\.\\pipe\\osplpipe_%d", id);
+    snprintf(pname, 256, "\\\\.\\pipe\\osplpipe_%d", procId);
     ph = CreateFile(pname,
                     GENERIC_WRITE, 0,
                     NULL, OPEN_EXISTING,
                     0, NULL);
     if (ph != INVALID_HANDLE_VALUE) {
-       if (GetLastError() != ERROR_PIPE_BUSY) {
+       if (os_getErrno() != ERROR_PIPE_BUSY) {
           written = 0;
           WriteFile(ph, &signal, sizeof(os_int32), &written, NULL);
           if (written == 0) {
@@ -714,9 +514,13 @@ os_procDestroy(
        }
        CloseHandle(ph);
     } else {
-       result = os_resultFail;
+        if (os_getErrno() == ERROR_FILE_NOT_FOUND ) {
+            result = os_resultUnavailable;
+        } else {
+            result = os_resultFail;
+        }
     }
-
+    CloseHandle(procHandle);
     return result;
 }
 
@@ -737,22 +541,20 @@ os_procServiceDestroy(
 {
     os_result osr;
     os_int32 procBusyChecks = 0;
-    BOOL result;
-    HANDLE hProcess;
+    os_procId procID;
+    HANDLE procHandle;
     os_int32 procResult;
 
-    hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
-
-    if (hProcess == INVALID_HANDLE_VALUE)
+    procID = (os_procId)pid;
+    if (procID == OS_INVALID_PID)
     {
-        int err = GetLastError();
         return os_resultFail;
     }
-    else if (hProcess == NULL)
+    else if (os_procIdToHandle(procID) == 0)
     {
-        if (GetLastError() == ERROR_ACCESS_DENIED)
+        if (os_getErrno() == ERROR_ACCESS_DENIED)
         {
-            OS_REPORT_1(OS_INFO,"ospl",0, "Failed to open process %d no access", pid);
+            OS_REPORT(OS_INFO,"ospl",0, "Failed to open process %d no access", pid);
             return os_resultFail;
         }
         /* the process already died so no need to remove it */
@@ -760,12 +562,12 @@ os_procServiceDestroy(
     else
     {
         /* remove process*/
-        osr = os_procDestroy((os_procId)hProcess, OS_SIGTERM);
+        osr = os_procDestroy(procID, OS_SIGTERM);
         if(osr != os_resultSuccess)
         {
-            OS_REPORT_1(OS_INFO,"ospl",0, "Failed to send the SIGTERM signal to the splice daemon process %d", (os_procId)hProcess);
+            OS_REPORT(OS_INFO,"ospl",0, "Failed to send the SIGTERM signal to the splice daemon process %d", procID);
         }
-        osr = os_procCheckStatus((os_procId)hProcess, &procResult);
+        osr = os_procCheckStatus(procID, &procResult);
 
         procBusyChecks = checkcount;
         while ((osr == os_resultBusy) && (procBusyChecks > 0)) {
@@ -773,36 +575,35 @@ os_procServiceDestroy(
             if ((procBusyChecks % 10) == 0) printf (".");
             fflush(stdout);
             Sleep(100);
-            osr = os_procCheckStatus((os_procId)hProcess, &procResult);
+            osr = os_procCheckStatus(procID, &procResult);
 
         }
         printf ("\n");
         fflush(stdout);
 
-        CloseHandle(hProcess);
-
         if (osr == os_resultBusy)
         {
             /* If we're going to try a pseudo sigkill we need the PROCESS_TERMINATE access control right */
-            hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | (OS_SIGKILL ? PROCESS_TERMINATE : 0),
+            procHandle = OpenProcess(PROCESS_QUERY_INFORMATION | (OS_SIGKILL ? PROCESS_TERMINATE : 0),
                                     FALSE, pid);
-            if(hProcess != INVALID_HANDLE_VALUE)
+            procID = os_handleToProcId(procHandle);
+            if (procHandle != INVALID_HANDLE_VALUE)
             {
-                if (os_procCheckStatus((os_procId)hProcess, &procResult) == os_resultBusy)
+                if (os_procCheckStatus(procID, &procResult) == os_resultBusy)
                 {
                     /* A process is still running with specified PID.
                     Check the handles process creation times against those in the iterator
                     process info to make sure they are the same process. */
 
-                    OS_REPORT_1(OS_INFO,"ospl", 0,
+                    OS_REPORT(OS_INFO,"ospl", 0,
                                             "OpenSplice service process PID %u still running after spliced terminated." OS_REPORT_NL
                                             "Sending SIGKILL signal.",pid);
-                    os_procDestroy ((os_procId)hProcess, OS_SIGKILL);
+                    os_procDestroy (procID, OS_SIGKILL);
 
-                    CloseHandle(hProcess);
+                    CloseHandle(procHandle);
                 }
 
-                if (os_procCheckStatus((os_procId)hProcess, &procResult) == os_resultBusy)
+                if (os_procCheckStatus(procID, &procResult) == os_resultBusy)
                 {
                     /* A process is still running with specified PID.
 
@@ -810,25 +611,25 @@ os_procServiceDestroy(
                     /* (100 x 0.1) Ten seconds for an orphaned process to expire subject
                     to a *kill* should be way more than enough (?). */
                     procBusyChecks = checkcount;
-                    osr = os_procCheckStatus((os_procId)hProcess, &procResult);
+                    osr = os_procCheckStatus(procID, &procResult);
                     while ((osr == os_resultBusy) && (procBusyChecks > 0))
                     {
                         procBusyChecks--;
                         if ((procBusyChecks % 10) == 0) printf (".");
                         fflush(stdout);
                         Sleep(100);
-                        osr = os_procCheckStatus((os_procId)hProcess, &procResult);
+                        osr = os_procCheckStatus(procID, &procResult);
                     }
                     printf ("\n");
                     fflush(stdout);
 
                     if (osr == os_resultBusy)
                     {
-                        OS_REPORT_1(OS_CRITICAL,"ospl", 0,
+                        OS_REPORT(OS_CRITICAL,"ospl", 0,
                                                 "OpenSplice service process PID %u could not be terminated.",pid);
                     }
                 }
-                CloseHandle(hProcess);
+                CloseHandle(procHandle);
             }
             else
             {
@@ -856,7 +657,7 @@ os_procServiceDestroy(
  * Set \b procAttr->userCred.gid to 0
  * (don't change the gid of the process)
  */
-os_result
+void
 os_procAttrInit(
     os_procAttr *procAttr)
 {
@@ -867,20 +668,6 @@ os_procAttrInit(
     procAttr->userCred.uid = 0;
     procAttr->userCred.gid = 0;
     procAttr->activeRedirect = 0;
-
-    return os_resultSuccess;
-}
-
-/** \brief Return the integer representation of the given process ID
- *
- * Possible Results:
- * - returns the integer representation of the given process ID
- */
-os_int
-os_procIdToInteger(os_procId id)
-{
-   /* arg id has actual of type HANDLE */
-   return (int)GetProcessId (id);
 }
 
 /** \brief Return the process ID of the calling process
@@ -892,7 +679,17 @@ os_procId
 os_procIdSelf(void)
 {
    /* returns a pseudo HANDLE to process, no need to close it */
-   return GetCurrentProcess();
+   return GetProcessId (GetCurrentProcess());
+}
+HANDLE
+os_procIdToHandle(os_procId procId)
+{
+    return OpenProcess(PROCESS_QUERY_INFORMATION | SYNCHRONIZE | PROCESS_TERMINATE, FALSE, procId);
+}
+os_procId
+os_handleToProcId(HANDLE procHandle)
+{
+    return GetProcessId(procHandle);
 }
 
 /** \brief Figure out the identity of the current process
@@ -923,12 +720,12 @@ os_procFigureIdentity(
 
     if (size > 0) {
         size = snprintf(procIdentity, procIdentitySize, "%s <%d>",
-                process_name, os_procIdToInteger(os_procIdSelf()));
+                process_name, os_procIdSelf());
     }
     else {
         /* No processname could be determined, so default to PID */
         size = snprintf(procIdentity, procIdentitySize, "<%d>",
-                os_procIdToInteger(os_procIdSelf()));
+                os_procIdSelf());
     }
 
     return (os_int32)size;
@@ -1061,11 +858,4 @@ os_procMUnlockAll(void)
 {
     OS_REPORT(OS_ERROR, "os_procMUnlockAll", 0, "Page locking not support on WIN32");
     return os_resultFail;
-}
-
-void
-os_procSetSignalHandlingEnabled(
-    os_uint enabled)
-{
-    return;
 }

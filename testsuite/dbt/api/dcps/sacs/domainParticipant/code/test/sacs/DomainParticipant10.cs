@@ -139,6 +139,8 @@ namespace test.sacs
             if (filteredTopic1 != null)
             {
                 participant.DeleteContentFilteredTopic(filteredTopic1);
+                this.testFramework.TestMessage(Test.Framework.TestMessage.Note, "See OSPL-2628: Query parameter checking should be added.");
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 result.Result = "could create a ContentFilteredTopic with 100 expression parameters (10).";
                 return result;
             }

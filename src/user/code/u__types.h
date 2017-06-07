@@ -1,99 +1,122 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #ifndef U__TYPES_H
 #define U__TYPES_H
 
-#include "os.h"
-#include "os_heap.h"
+#include "u_types.h"
+#include "v_handle.h"
 #include "c_iterator.h"
-#include "u__domain.h"
-#include "u_writer.h"
-#include "u_reader.h"
-#include "u_dispatcher.h"
-#include "u_serviceTerminationThread.h"
+#include "vortex_os.h"
+#include "os_heap.h"
 
-/*#define PROFILER*/
-#ifdef PROFILER
-#include "c_laptime.h"
-#endif
-
-C_STRUCT(u_entity) {
-    u_participant participant;
-    u_kind kind;
-    u_handle handle;
-    /* only use magic for v_gidClaim and v_gidRelease. */
-    v_kernel magic;
-    v_gid gid;
-    c_voidp userData;
-    c_bool enabled;
-    /* flags indicates how entity is created....
-      see U_ECREATE_* in u__entity.h */
-    c_ulong flags;
-    os_mutex mutex;
-    c_ulong refCount;
-};
+typedef v_handle u_handle;
 
 C_STRUCT(u_dispatcher)
 {
-    C_EXTENDS(u_entity);
-    c_iter                   listeners;
+    u_observable             observable;
+    c_iter                   callbacks;
     os_mutex                 mutex;
     os_threadId              threadId;
     c_ulong                  event;
-    u_dispatcherThreadAction startAction;
-    u_dispatcherThreadAction stopAction;
-    c_voidp                  actionData;
+};
+
+typedef u_result (*u_deinitFunction_t)(void *_this);
+typedef void (*u_freeFunction_t)(void *_this);
+
+C_STRUCT(u_object) {
+    /* The kind attribute uniquely identifis the type of the user layer object.
+     */
+    u_kind kind;
+
+    pa_voidp_t deinit;
+    u_freeFunction_t free;
+};
+
+C_STRUCT(u_observable) {
+    C_EXTENDS(u_object);
+
+    u_domain domain;
+
+    /* The handle attribute is the smart reference to the shared domain object
+     * this proxy object is associated with.
+     */
+    u_handle handle;
+    u_bool isService;
+
+    /* The magic attribute is an optimization used by v_gidClaim and v_gidRelease
+     * for validity checking.
+     */
+    v_kernel magic;
+
+    /* The gid attribute is the global unique id of the associated shared domain object.
+     */
+    v_gid gid;
+
+    /* Each object can create a dispatcher (thread) to handle events if
+     * a listener is set. This mechanism is only used by user layer
+     * activities (watching service liveliness or creation of new groups)
+     * There are some fundamental issues with this mechanism and therefore
+     * it is subject to be replaced in the near future.
+     */
+    u_dispatcher dispatcher;
+
+    /* userData is passed to listeners together with the event that occurred.
+     * This is typically the language binding object on which the listener was set.
+     */
+    void *userData;
+};
+
+C_STRUCT(u_entity) {
+    C_EXTENDS(u_observable);
+    /* The enabled flag is actually implemented in the kernel but is cached is
+     * here to avoid going to the kernel for each call. For as long as the entity
+     * is not enabled each call will go to the kernel to fetch the actual state but
+     * as soon as it is enabled it will cache the state and never go to the kernel
+     * again because once enabled it will always be enabled.
+     */
+    u_bool enabled;
 };
 
 C_STRUCT(u_publisher) {
-    C_EXTENDS(u_dispatcher);
-    u_participant participant;
-    c_iter writers;
+    C_EXTENDS(u_entity);
 };
 
 C_STRUCT(u_writer) {
-    C_EXTENDS(u_dispatcher);
-    u_publisher publisher;
-    u_writerCopy copy;
-    os_time autoLeasePeriod;
-    os_time resendPeriod;
-#ifdef PROFILER
-c_laptime t1,t2,t3,t4,t5,t6;
-#endif
+    C_EXTENDS(u_entity);
 };
 
 C_STRUCT(u_subscriber) {
-    C_EXTENDS(u_dispatcher);
-    u_participant participant;
-    c_iter readers;
+    C_EXTENDS(u_entity);
 };
 
 C_STRUCT(u_reader) {
-    C_EXTENDS(u_dispatcher);
-    c_iter queries;
-    os_mutex mutex;
+    C_EXTENDS(u_entity);
 };
 
 C_STRUCT(u_dataReader) {
     C_EXTENDS(u_reader);
-    u_subscriber subscriber;
-    u_topic topic;
-    c_iter views;
 };
 
 C_STRUCT(u_networkReader) {
     C_EXTENDS(u_reader);
-    u_subscriber subscriber;
 };
 
 C_STRUCT(u_groupQueue) {
@@ -101,19 +124,15 @@ C_STRUCT(u_groupQueue) {
 };
 
 C_STRUCT(u_query) {
-    C_EXTENDS(u_dispatcher);
-    u_reader source;
-    c_char *name;
-    q_expr predicate;
+    C_EXTENDS(u_entity);
 };
 
 C_STRUCT(u_dataView) {
-    C_EXTENDS(u_reader);
-    u_dataReader source;
+    C_EXTENDS(u_entity);
 };
 
 C_STRUCT(u_group) {
-    C_EXTENDS(u_entity);
+    C_EXTENDS(u_observable);
 };
 
 C_STRUCT(u_partition) {
@@ -121,60 +140,120 @@ C_STRUCT(u_partition) {
 };
 
 C_STRUCT(u_topic) {
-    C_EXTENDS(u_dispatcher);
-    u_participant participant;
-    c_char *name;
+    C_EXTENDS(u_entity);
+    os_char *name;
+    u_participant participant; /* Is really this required? */
 };
 
-C_STRUCT(u_contentFilteredTopic) {
-    C_EXTENDS(u_topic);
-    u_topic topic;
-    c_char *expression;
-    c_iter parameters;
+C_STRUCT(u_waitsetEntry) {
+    C_EXTENDS(u_observable);
+    os_mutex mutex;
+    u_handle handle;
+    os_threadId thread;
+    u_bool alive;
+    c_ulong waitCount;
+    u_waitset waitset;
 };
 
 C_STRUCT(u_waitset) {
-    C_EXTENDS(u_entity);
+    C_EXTENDS(u_object);
+    os_mutex mutex;
+    os_cond  cv;
+    c_iter   entries; /* u_waitsetEntry */
+    c_ulong  eventMask;
+    u_bool   alive;
+    u_bool   waitBusy;
+    c_ushort detachCnt;
+    os_cond  waitCv;
+    os_boolean multi_mode;
+    u_bool eventsEnabled;
+    os_boolean notifyDetached;
+    pa_uint32_t useCount;
+};
+
+C_STRUCT(u_listener) {
+    C_EXTENDS(u_observable);
+};
+
+C_STRUCT(u_statusCondition) {
+    C_EXTENDS(u_observable);
 };
 
 C_STRUCT(u_participant)
 {
-    C_EXTENDS(u_dispatcher);
-    c_iter topics;
-    c_iter publishers;
-    c_iter subscribers;
-    u_subscriber builtinSubscriber;
-    c_ulong      builtinTopicCount;
-    os_threadId  threadId;
-    os_threadId  threadIdResend;
-    u_domain     domain;
+    C_EXTENDS(u_entity);
+    os_threadId       threadId;
+    os_threadId       threadIdResend;
+    pa_uint32_t       useCount;
+    os_mutex          mutex;
+    os_cond           cv;
+    os_uint32         threadWaitCount;
+};
+
+C_STRUCT(u_serviceManager) {
+    C_EXTENDS(u_entity);
+    u_serviceSplicedaemonListener callback;
+    void *usrData;
 };
 
 C_STRUCT(u_service) {
     C_EXTENDS(u_participant);
-    c_voidp privateData;
-    u_serviceKind serviceKind;
-    u_serviceTerminationThread stt;
+    u_serviceManager serviceManager;
 };
 
 C_STRUCT(u_spliced) {
     C_EXTENDS(u_service);
 };
 
-C_STRUCT(u_serviceManager) {
-    C_EXTENDS(u_dispatcher);
-};
+#define U_DOMAIN_STATE_ALIVE                ((os_uint32)(0))
+#define U_DOMAIN_STATE_DETACHING            ((os_uint32)(1 << 0))
+#define U_DOMAIN_STATE_DELETE               ((os_uint32)(1 << 1))
+#define U_DOMAIN_BLOCK_IN_USER              ((os_uint32)(1 << 29))
+#define U_DOMAIN_DELETE_ENTITIES            ((os_uint32)(1 << 30))
+#define U_DOMAIN_BLOCK_IN_KERNEL            ((os_uint32)(1 << 31))
 
 C_STRUCT(u_domain) {
-    C_EXTENDS(u_dispatcher);
+    C_EXTENDS(u_entity);
+    pa_uint32_t     refCount; /* number of domain pointers in user layer objects */
+    os_uint32       openCount; /* number of participants, waitset entries, &c. */
+    int             closing; /* Indicates that the domain is being closed and cannot be opened.
+                              * This flag is set when the last application participant is
+                              * deleted. In case of single process there may still be services
+                              * using the domain, therefore the state flag can not be used for
+                              * this purpose. */
     v_kernel        kernel;
+    v_processInfo   procInfo;
     os_sharedHandle shm;
+    os_threadId     spliced_thread; /* OS_THREAD_ID_NONE for SHM domains */
     c_iter          participants;
-    c_char          *uri;
-    c_char          *name;
+    c_iter          waitsets;
+    os_char         *uri;
+    os_char         *name;
     os_lockPolicy   lockPolicy;
     os_uint32       protectCount;
-    os_int32        id;
+    os_uint32       serial;
+    u_domainId_t    id;
+    os_boolean      owner; /* Used by u_domainClose to destroy SHM if called by spliced */
+    os_mutex        mutex;
+    os_cond         cond; /* Used to synchronize the domain detach operation */
+    os_mutex        deadlock; /* Trying to obtain this mutex will cause a guaranteed deadlock */
+    u_bool          inProcessExceptionHandling;
+    u_bool          y2038Ready; /* Indicates that the configuration option y2038ready is set.
+                                 * Timestamps sent by this federation will deviate from the
+                                 * previously used c_type representation and now sends out
+                                 * os_timeW. When this option is set it's not possible to
+                                 * correctly communicate with federation which don't support
+                                 * this option. */
+    u_bool          isService;
+    /* No threads can have access to the kernel during destruction of the user domain,
+     * the state flag will be set when destruction is initiated and
+     * reject all subsequent access by returning already deleted.
+     * The only thread that must have access is the thread executing the destruction.
+     */
+    pa_uint32_t     state;
+    pa_uint32_t     claimed; /* Used to protect access to the process info */
+    os_threadId     threadWithAccess;
+    c_iter          reportPlugins;
 };
 
 #endif

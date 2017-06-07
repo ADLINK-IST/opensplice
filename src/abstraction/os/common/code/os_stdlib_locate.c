@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include "os_stdlib.h"
 #include <assert.h>
 
@@ -9,7 +28,7 @@
 
 typedef struct std_splitList_s {
     char **strings;
-    int  size;
+    unsigned size;
 } *std_splitList;
 
 
@@ -19,8 +38,8 @@ std_splitListNew(
     char separator)
 {
     std_splitList result = NULL;
-    int count;
-    int i;
+    unsigned count;
+    unsigned i;
     char *copy;
     char *ptr;
     int inString;
@@ -48,7 +67,9 @@ std_splitListNew(
             ptr = &ptr[1];
         }
         /* For confidence checking only */
+        OS_UNUSED_ARG(tail);
         tail = ptr;
+        (void) tail;
 
         if (count > 0) {
             result = (std_splitList)os_malloc(sizeof(*result));
@@ -82,7 +103,7 @@ static void
 std_splitListFree(
     std_splitList list)
 {
-    int i;
+    unsigned i;
 
     if (list) {
         for (i=0; i<list->size; i++) {
@@ -93,11 +114,11 @@ std_splitListFree(
     }
 }
 
-static int
+static unsigned
 std_splitListSize(
     std_splitList list)
 {
-    int result = 0;
+    unsigned result = 0;
 
     if (list) {
         result = list->size;
@@ -109,7 +130,7 @@ std_splitListSize(
 static char *
 std_splitListGet(
     std_splitList list,
-    int index)
+    unsigned index)
 {
     char *result = NULL;
 
@@ -135,9 +156,9 @@ os_locate(
     char *fullName;
     os_result osr;
     std_splitList dirs;
-    int dirsSize;
+    unsigned dirsSize;
     char *curDir;
-    int i;
+    unsigned i;
 
     if (name) {
         fsep = os_fileSep();

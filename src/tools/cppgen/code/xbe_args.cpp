@@ -1,17 +1,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl.h"
 #include "idl_extern.h"
-#include "idl_bool.h"
+#include "bool.h"
 #include "xbe_globals.h"
 #include "xbe_utils.h"
 
@@ -32,7 +40,7 @@ DDSStripArg(int& argc, char** argv, int index)
    argc--;
 }
 
-void BE_prep_arg (char * arg, idl_bool)
+void BE_prep_arg (char * arg, bool)
 {}
 
 void BE_param_copy (char * trg, int argc, char **argv)
@@ -74,7 +82,7 @@ DDS_BE_parse_args(int &argc, char **argv)
    // PARSE COMMAND LINE
    BE_Globals::client_only = pbtrue;
    BE_Globals::isocpp_new_types = pbfalse;
-   idl_global->set_warn(I_FALSE);
+   idl_global->set_warn(false);
 
    for (int i = 0; i < argc; i++)
    {
@@ -122,7 +130,7 @@ DDS_BE_parse_args(int &argc, char **argv)
       else if (strcmp(argv[i], "-ignore_interfaces") == 0)
       {
          BE_Globals::ignore_interfaces = pbtrue;
-         idl_global->set_ignore_interfaces(I_TRUE);
+         idl_global->set_ignore_interfaces(true);
          DDSStripArg(argc, argv, i);
          i = 0;
       }
@@ -156,6 +164,12 @@ DDS_BE_parse_args(int &argc, char **argv)
          BE_Globals::gen_equality = pbtrue;
          DDSStripArg(argc, argv, i);
          i = 0;
+      }
+      else if (0 == strcmp(argv[i], "-lite"))
+      {
+          BE_Globals::lite = pbtrue;
+          DDSStripArg(argc, argv, i);
+          i = 0;
       }
       else if (strncmp(argv[i], "-output=", sizeof("-output=") -1) == 0)
       {
@@ -225,7 +239,7 @@ DDS_BE_parse_args(int &argc, char **argv)
       }
 //       else if (strcmp(argv[i], "-no_warn") == 0)
 //       {
-//          idl_global->set_warn(I_FALSE);
+//          idl_global->set_warn(false);
 //          DDSStripArg(argc, argv, i);
 //          i = 0;
 //       }

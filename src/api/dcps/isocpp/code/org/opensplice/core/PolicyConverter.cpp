@@ -1,12 +1,20 @@
 /*
 *                         OpenSplice DDS
 *
-*   This software and documentation are Copyright 2006 to 2012 PrismTech
-*   Limited and its licensees. All rights reserved. See file:
-*
-*                     $OSPL_HOME/LICENSE
-*
-*   for full copyright notice and license terms.
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
 *
 */
 
@@ -185,7 +193,7 @@ dds::core::policy::GroupData
 org::opensplice::core::policy::convertPolicy(const DDS::GroupDataQosPolicy& from)
 {
     dds::core::ByteSeq seq;
-    for(u_int i = 0; i < from.value.length(); i++)
+    for(unsigned int i = 0; i < from.value.length(); i++)
     {
         seq.push_back(from.value[i]);
     }
@@ -365,7 +373,7 @@ dds::core::policy::Partition
 org::opensplice::core::policy::convertPolicy(const DDS::PartitionQosPolicy& from)
 {
     dds::core::StringSeq ss;
-    for(u_int i = 0; i < from.name.length(); i++)
+    for(unsigned int i = 0; i < from.name.length(); i++)
     {
         ss.push_back(from.name[i]);
     }
@@ -452,8 +460,16 @@ org::opensplice::core::policy::convertPolicy(const dds::core::policy::ReaderData
     to.autopurge_nowriter_samples_delay.nanosec = from.autopurge_nowriter_samples_delay().nanosec();
     to.autopurge_disposed_samples_delay.sec = static_cast<int32_t>(from.autopurge_disposed_samples_delay().sec());
     to.autopurge_disposed_samples_delay.nanosec = from.autopurge_disposed_samples_delay().nanosec();
+    to.autopurge_dispose_all = false;
     to.enable_invalid_samples = true;
-    to.invalid_sample_visibility.kind = DDS::MINIMUM_INVALID_SAMPLES;
+    if(from->no_invalid_samples)
+    {
+        to.invalid_sample_visibility.kind = DDS::NO_INVALID_SAMPLES;
+    }
+    else
+    {
+        to.invalid_sample_visibility.kind = DDS::MINIMUM_INVALID_SAMPLES;
+    }
     return to;
 }
 
@@ -462,12 +478,11 @@ org::opensplice::core::policy::convertPolicy(const dds::core::policy::ReaderData
 dds::core::policy::Reliability
 org::opensplice::core::policy::convertPolicy(const DDS::ReliabilityQosPolicy& from)
 {
+    dds::core::Duration d(from.max_blocking_time.sec, from.max_blocking_time.nanosec);
     if(from.kind == DDS::BEST_EFFORT_RELIABILITY_QOS)
     {
-        return dds::core::policy::Reliability::BestEffort();
+        return dds::core::policy::Reliability::BestEffort(d);
     }
-
-    dds::core::Duration d(from.max_blocking_time.sec, from.max_blocking_time.nanosec);
     return dds::core::policy::Reliability::Reliable(d);
 }
 
@@ -531,7 +546,7 @@ dds::core::policy::TopicData
 org::opensplice::core::policy::convertPolicy(const DDS::TopicDataQosPolicy& from)
 {
     dds::core::ByteSeq seq;
-    for(u_int i = 0; i < from.value.length(); i++)
+    for(unsigned int i = 0; i < from.value.length(); i++)
     {
         seq.push_back(from.value[i]);
     }
@@ -572,7 +587,7 @@ dds::core::policy::UserData
 org::opensplice::core::policy::convertPolicy(const DDS::UserDataQosPolicy& from)
 {
     dds::core::ByteSeq seq;
-    for(u_int i = 0; i < from.value.length(); i++)
+    for(unsigned int i = 0; i < from.value.length(); i++)
     {
         seq.push_back(from.value[i]);
     }

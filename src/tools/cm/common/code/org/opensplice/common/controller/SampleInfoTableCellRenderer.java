@@ -1,17 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.controller;
 
 import org.opensplice.common.model.table.SampleInfoTableModel;
+
 import java.awt.Component;
 import java.awt.Font;
 
@@ -57,6 +66,7 @@ public class SampleInfoTableCellRenderer extends JLabel implements TableCellRend
      * @param row The row of the cell in the table.
      * @param column The column of the cell in the table.
      */
+    @Override
     public Component getTableCellRendererComponent(JTable table, Object value,
             boolean isSelected, boolean hasFocus, int row, int column) {
         if(!table.isEnabled()){
@@ -69,21 +79,8 @@ public class SampleInfoTableCellRenderer extends JLabel implements TableCellRend
             super.setBackground(table.getSelectionBackground());
         } else {
             super.setForeground(table.getForeground());
-            
-            if(!model.isCellValueReliableInSnapshot(row, column)){
-                if(!("N/A".equals(value))){
-                    super.setForeground(Config.getInactiveColor());
-                    String attr = model.getValueAt(row, column-1).toString();
-                    setToolTipText("The value '" + value.toString() + "' for SampleInfo field '" + attr + "' may not be correct.");
-                    setFont(table.getFont().deriveFont(Font.ITALIC));
-                } else {
-                    super.setBackground(table.getBackground());
-                    setFont(table.getFont());
-                }
-            } else {
-                super.setBackground(table.getBackground());
-                setFont(table.getFont());
-            }
+            super.setBackground(table.getBackground());
+            setFont(table.getFont());
         }
         
         if (hasFocus) {

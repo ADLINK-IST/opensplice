@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -19,8 +27,56 @@
 #include "idl_genCorbaCxxHelper.h"
 #include "idl_genCxxHelper.h"
 #include "idl_tmplExp.h"
+#include "idl_genMetaHelper.h"
 
 #include "c_typebase.h"
+#include "os_heap.h"
+
+/* Add a copy of the specified metadata for datatypes that serve as topics
+   (i.e. have a keylist). This list if metadata will be used for later processing,
+   when the type's lock is available again.
+ */
+void
+idl_metaCxxAddType(
+        idl_scope scope,
+        const char *name,
+        idl_typeSpec typeSpec,
+        os_iter *metaList)
+{
+    c_type type = idl_typeSpecDef(typeSpec);
+    idl_metaCxx *metaElmnt = idl_metaCxxNew(type, NULL);
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    *metaList = os_iterAppend(*metaList, metaElmnt);
+}
+
+idl_metaCxx *
+idl_metaCxxNew(c_type type, c_char *descriptor)
+{
+    idl_metaCxx *idl_metaElmnt = os_malloc(sizeof(idl_metaCxx));
+    idl_metaElmnt->type = type;
+    idl_metaElmnt->descriptor = descriptor;
+    idl_metaElmnt->descriptorLength = descriptor ? strlen(descriptor) : 0;
+    return idl_metaElmnt;
+}
+
+void
+idl_metaCxxSerialize2XML(
+        void *_metaElmnt,
+        void *args)
+{
+    idl_metaCxx  *metaElmnt = _metaElmnt;
+
+    OS_UNUSED_ARG(args);
+
+    if (!metaElmnt->descriptor)
+    {
+        metaElmnt->descriptor = idl_cutXMLmeta(idl_genXMLmeta(metaElmnt->type), &metaElmnt->nrElements, &metaElmnt->descriptorLength);
+    }
+}
+
+
+
 
 /* idl_null is an empty function, used to bypass QAC errors */
 static void
@@ -39,6 +95,10 @@ idl_fileOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -52,6 +112,10 @@ idl_moduleOpen (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     return idl_explore;
 }
 
@@ -78,6 +142,9 @@ idl_structureOpen (
     void *userData)
 {
     const c_char *key_list;
+
+    OS_UNUSED_ARG(structSpec);
+    OS_UNUSED_ARG(userData);
 
     idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(idl_fileCur(), "__%s__name(void)\n",
@@ -127,6 +194,9 @@ idl_unionOpen (
     void *userData)
 {
     const c_char *key_list;
+
+    OS_UNUSED_ARG(unionSpec);
+    OS_UNUSED_ARG(userData);
 
     idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(idl_fileCur(), "__%s__name(void)\n",

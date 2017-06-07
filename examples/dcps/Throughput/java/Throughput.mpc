@@ -1,0 +1,62 @@
+
+project (saj*types) : saj_typesupport, java_only, java_example, java_ospl_dcpssaj {
+
+    TypeSupport_Files {
+        ../idl/Throughput.idl >> ./ThroughputModule/*.java
+    }
+
+}
+
+project (saj*Publisher) : java_only, java_example, java_ospl_dcpssaj {
+    after += saj*types
+    libs += saj*types.jar
+
+    specific {
+        obj_dir_flat = 1
+    }
+    Source_Files {
+       publisher.java
+       Publisher_impl.java
+       PubEntities.java
+       ExampleUtilities.java
+       ExampleError.java
+    }
+    verbatim (ospljavamake, macros) {
+        CLASSES       += classes/Publisher_impl*.class
+        JARCLASSES    += Publisher_impl*.class
+        JARCLASSES    += ExampleUtilities*.class
+    }
+    specific (javabat) {
+        extra_jar_classes = Publisher_impl*.class
+        extra_jar_classes += ExampleUtilities*.class
+        postclean = <%rm%> classes<%slash%>Publisher_impl*.class
+        postclean += <%rm%> classes<%slash%>ExampleUtilities*.class
+    }
+}
+
+project (saj*Subscriber) : java_only, java_example, java_ospl_dcpssaj {
+    after += saj*types
+    libs += saj*types.jar
+
+    specific {
+        obj_dir_flat = 1
+    }
+    Source_Files {
+        subscriber.java
+        Subscriber_impl.java
+        SubEntities.java
+        ExampleUtilities.java
+        ExampleError.java
+    }
+    verbatim (ospljavamake, macros) {
+        CLASSES       += classes/Subscriber_impl*.class
+        JARCLASSES    += Subscriber_impl*.class
+        JARCLASSES    += ExampleUtilities*.class
+    }
+    specific (javabat) {
+        extra_jar_classes = Subscriber_impl*.class
+        extra_jar_classes += ExampleUtilities*.class
+        postclean = <%rm%> classes<%slash%>Subscriber_impl*.class
+        postclean += <%rm%> classes<%slash%>ExampleUtilities*.class
+    }
+}

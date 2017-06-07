@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -29,16 +37,20 @@ saj_exceptionThrow (
     va_start (valist, format);
     os_vsnprintf (memo, sizeof(memo), format, valist);
     va_end (valist);
-    jmemo = (*env)->NewStringUTF (env, memo);
+    jmemo = NEW_STRING_UTF(env, memo);
     if (jmemo) {
-    jexception = (*env)->CallStaticObjectMethod (
-        env,
-        GET_CACHED(utilities_class),
-        GET_CACHED(utilities_throwException_mid),
-        (jint)errorCode,
-        jmemo);
-    (*env)->Throw (env, jexception);
-    (*env)->DeleteLocalRef (env, jexception);
-    (*env)->DeleteLocalRef (env, jmemo);
+        jexception = CALL_STATIC_OBJECT_METHOD(
+            env,
+            GET_CACHED(utilities_class),
+            GET_CACHED(utilities_throwException_mid),
+            (jint)errorCode,
+            jmemo);
+        DELETE_LOCAL_REF(env, jmemo);
+        /* Following JNI calls cannot check for exceptions because this
+         * will always be true as one will be thrown.
+         */
+        (*env)->Throw(env, jexception);
+        (*env)->DeleteLocalRef(env, jexception);
     }
+    CATCH_EXCEPTION:;
 }

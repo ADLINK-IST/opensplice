@@ -1,199 +1,211 @@
-extern c_bool
-__$(uniquetypename)__copyIn(
+extern v_copyin_result
+__$(uniquetypename)__copyIn (
     c_base base,
-    $(class_or_struct) $(scopedtypename) *from,
+    const $(class_or_struct) $(scopedtypename) *from,
     struct _$(uniquetypename) *to);
 
 extern void
-__$(uniquetypename)__copyOut(
-    void *_from,
+__$(uniquetypename)__copyOut (
+    const void *_from,
     void *_to);
 
-// DDS $(scopedtypename) TypeSupportFactory Object Body
-
-::DDS::DataWriter_ptr
-$(scopedtypename)TypeSupportFactory::create_datawriter (gapi_dataWriter handle)
+// DDS $(scopedtypename) TypeSupportMetaHolder Object Body
+$(scopedtypename)TypeSupportMetaHolder::$(typename)TypeSupportMetaHolder () :
+        DDS::OpenSplice::TypeSupportMetaHolder ("$(scopedtypename)", "$(internaltypename)", "$(keyList)")
 {
-    return new $(scopedtypename)DataWriter_impl(handle);
+    copyIn = (DDS::OpenSplice::cxxCopyIn) __$(uniquetypename)__copyIn;
+    copyOut = (DDS::OpenSplice::cxxCopyOut) __$(uniquetypename)__copyOut;
+    metaDescriptorArrLength = $(meta-descriptorArrLength);
+    metaDescriptorLength = $(meta-descriptorLength);
+    const char *tmp[] = {"$(meta-descriptor)"};
+    metaDescriptor = new const char*[metaDescriptorArrLength];
+    memcpy(metaDescriptor, tmp, sizeof(tmp));
 }
 
-::DDS::DataReader_ptr
-$(scopedtypename)TypeSupportFactory::create_datareader (gapi_dataReader handle)
+$(scopedtypename)TypeSupportMetaHolder::~$(typename)TypeSupportMetaHolder ()
 {
-    return new $(scopedtypename)DataReader_impl (handle);
+    // Rely on parent destructor.
 }
 
-
-::DDS::DataReaderView_ptr
-$(scopedtypename)TypeSupportFactory::create_view (gapi_dataReaderView handle)
+::DDS::OpenSplice::DataWriter *
+$(scopedtypename)TypeSupportMetaHolder::create_datawriter ()
 {
-    return new $(scopedtypename)DataReaderView_impl (handle);
+    return new $(scopedtypename)DataWriter_impl();
+}
+
+::DDS::OpenSplice::DataReader *
+$(scopedtypename)TypeSupportMetaHolder::create_datareader ()
+{
+    return new $(scopedtypename)DataReader_impl();
+}
+
+::DDS::OpenSplice::DataReaderView *
+$(scopedtypename)TypeSupportMetaHolder::create_view ()
+{
+    return new $(scopedtypename)DataReaderView_impl();
 }
 
 // DDS $(scopedtypename) TypeSupport Object Body
-
-$(scopedtypename)TypeSupport::$(typename)TypeSupport(void) :
-    TypeSupport_impl(
-        __$(uniquetypename)__name(),
-        __$(uniquetypename)__keys(),
-        $(scopedtypename)TypeSupport::metaDescriptor,
-        (gapi_copyIn) __$(uniquetypename)__copyIn,
-        (gapi_copyOut) __$(uniquetypename)__copyOut,
-        (gapi_readerCopy) ::DDS::ccpp_DataReaderCopy<$(scopedtypename)Seq, $(scopedtypename)>,
-        new  $(scopedtypename)TypeSupportFactory(),
-        $(scopedtypename)TypeSupport::metaDescriptorArrLength)
+$(scopedtypename)TypeSupport::$(typename)TypeSupport () :
+        DDS::OpenSplice::TypeSupport()
 {
-    // Parent constructor takes care of everything.
+    tsMetaHolder = new $(scopedtypename)TypeSupportMetaHolder();
 }
 
-$(scopedtypename)TypeSupport::~$(typename)TypeSupport(void)
+$(scopedtypename)TypeSupport::~$(typename)TypeSupport ()
 {
-    // Parent destructor takes care of everything.
-}
-
-::DDS::ReturnCode_t
-$(scopedtypename)TypeSupport::register_type(
-    ::DDS::DomainParticipant_ptr domain,
-    const char * type_name) THROW_ORB_EXCEPTIONS
-{
-    return TypeSupport_impl::register_type(domain, type_name);
-}
-
-char *
-$(scopedtypename)TypeSupport::get_type_name() THROW_ORB_EXCEPTIONS
-{
-    return TypeSupport_impl::get_type_name();
+    DDS::release(tsMetaHolder);
 }
 
 // DDS $(scopedtypename) DataWriter_impl Object Body
-
-$(scopedtypename)DataWriter_impl::$(typename)DataWriter_impl (
-    gapi_dataWriter handle
-) : ::DDS::DataWriter_impl(handle)
+$(scopedtypename)DataWriter_impl::$(typename)DataWriter_impl ()
 {
     // Parent constructor takes care of everything.
 }
 
-$(scopedtypename)DataWriter_impl::~$(typename)DataWriter_impl(void)
+$(scopedtypename)DataWriter_impl::~$(typename)DataWriter_impl ()
 {
     // Parent destructor takes care of everything.
 }
 
+::DDS::ReturnCode_t
+$(scopedtypename)DataWriter_impl::init (
+        DDS::OpenSplice::Publisher *publisher,
+        DDS::OpenSplice::DomainParticipant *participant,
+        const DDS::DataWriterQos &qos,
+        DDS::OpenSplice::Topic *a_topic,
+        const char *name,
+        DDS::OpenSplice::cxxCopyIn copyIn,
+        DDS::OpenSplice::cxxCopyOut copyOut)
+{
+    return DDS::OpenSplice::FooDataWriter_impl::nlReq_init(publisher, participant, qos, a_topic, name, copyIn, copyOut);
+}
+
 ::DDS::InstanceHandle_t
-$(scopedtypename)DataWriter_impl::register_instance(
+$(scopedtypename)DataWriter_impl::register_instance (
     const $(scopedtypename) & instance_data) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::register_instance(&instance_data);
+    return DDS::OpenSplice::FooDataWriter_impl::register_instance(&instance_data);
 }
 
 ::DDS::InstanceHandle_t
-$(scopedtypename)DataWriter_impl::register_instance_w_timestamp(
+$(scopedtypename)DataWriter_impl::register_instance_w_timestamp (
     const $(typename) & instance_data,
     const ::DDS::Time_t & source_timestamp) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::register_instance_w_timestamp(&instance_data, source_timestamp);
+    return DDS::OpenSplice::FooDataWriter_impl::register_instance_w_timestamp(&instance_data, source_timestamp);
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataWriter_impl::unregister_instance(
+$(scopedtypename)DataWriter_impl::unregister_instance (
     const $(scopedtypename) & instance_data,
     ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::unregister_instance(&instance_data, handle);
+    return DDS::OpenSplice::FooDataWriter_impl::unregister_instance(&instance_data, handle);
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataWriter_impl::unregister_instance_w_timestamp(
+$(scopedtypename)DataWriter_impl::unregister_instance_w_timestamp (
     const $(typename) & instance_data,
     ::DDS::InstanceHandle_t handle,
     const ::DDS::Time_t & source_timestamp) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::unregister_instance_w_timestamp(&instance_data, handle, source_timestamp);
+    return DDS::OpenSplice::FooDataWriter_impl::unregister_instance_w_timestamp(&instance_data, handle, source_timestamp);
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataWriter_impl::write(
+$(scopedtypename)DataWriter_impl::write (
     const $(scopedtypename) & instance_data,
     ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::write(&instance_data, handle);
+    return DDS::OpenSplice::FooDataWriter_impl::write(&instance_data, handle);
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataWriter_impl::write_w_timestamp(
+$(scopedtypename)DataWriter_impl::write_w_timestamp (
     const $(typename) & instance_data,
     ::DDS::InstanceHandle_t handle,
     const ::DDS::Time_t & source_timestamp) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::write_w_timestamp(&instance_data, handle, source_timestamp);
+    return DDS::OpenSplice::FooDataWriter_impl::write_w_timestamp(&instance_data, handle, source_timestamp);
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataWriter_impl::dispose(
+$(scopedtypename)DataWriter_impl::dispose (
     const $(scopedtypename) & instance_data,
     ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::dispose(&instance_data, handle);
+    return DDS::OpenSplice::FooDataWriter_impl::dispose(&instance_data, handle);
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataWriter_impl::dispose_w_timestamp(
+$(scopedtypename)DataWriter_impl::dispose_w_timestamp (
     const $(typename) & instance_data,
     ::DDS::InstanceHandle_t handle,
     const ::DDS::Time_t & source_timestamp) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::dispose_w_timestamp(&instance_data, handle, source_timestamp);
+    return DDS::OpenSplice::FooDataWriter_impl::dispose_w_timestamp(&instance_data, handle, source_timestamp);
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataWriter_impl::writedispose(
+$(scopedtypename)DataWriter_impl::writedispose (
     const $(scopedtypename) & instance_data,
     ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::writedispose(&instance_data, handle);
+    return DDS::OpenSplice::FooDataWriter_impl::writedispose(&instance_data, handle);
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataWriter_impl::writedispose_w_timestamp(
+$(scopedtypename)DataWriter_impl::writedispose_w_timestamp (
     const $(typename) & instance_data,
     ::DDS::InstanceHandle_t handle,
     const ::DDS::Time_t & source_timestamp) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::writedispose_w_timestamp(&instance_data, handle, source_timestamp);
+    return DDS::OpenSplice::FooDataWriter_impl::writedispose_w_timestamp(&instance_data, handle, source_timestamp);
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataWriter_impl::get_key_value(
+$(scopedtypename)DataWriter_impl::get_key_value (
     $(typename) & key_holder,
     ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::get_key_value(&key_holder, handle);
+    return DDS::OpenSplice::FooDataWriter_impl::get_key_value(&key_holder, handle);
 }
 
 ::DDS::InstanceHandle_t
-$(scopedtypename)DataWriter_impl::lookup_instance(
+$(scopedtypename)DataWriter_impl::lookup_instance (
     const $(scopedtypename) & instance_data) THROW_ORB_EXCEPTIONS
 {
-    return DataWriter_impl::lookup_instance(&instance_data);
+    return DDS::OpenSplice::FooDataWriter_impl::lookup_instance(&instance_data);
 }
 
 // DDS $(scopedtypename) DataReader_impl Object Body
-
-$(scopedtypename)DataReader_impl::$(typename)DataReader_impl (
-    gapi_dataReader handle
-) : ::DDS::DataReader_impl(handle, ::DDS::ccpp_DataReaderParallelDemarshallingMain<$(scopedtypename)Seq>)
+$(scopedtypename)DataReader_impl::$(typename)DataReader_impl ()
 {
     // Parent constructor takes care of everything.
 }
 
-$(scopedtypename)DataReader_impl::~$(typename)DataReader_impl(void)
+$(scopedtypename)DataReader_impl::~$(typename)DataReader_impl ()
 {
     // Parent destructor takes care of everything.
 }
 
+DDS::ReturnCode_t
+$(scopedtypename)DataReader_impl::init (
+    DDS::OpenSplice::Subscriber *subscriber,
+    const DDS::DataReaderQos &qos,
+    DDS::OpenSplice::TopicDescription *a_topic,
+    const char *name,
+    DDS::OpenSplice::cxxCopyIn copyIn,
+    DDS::OpenSplice::cxxCopyOut copyOut)
+{
+    return DDS::OpenSplice::FooDataReader_impl::nlReq_init(
+            subscriber, qos, a_topic, name, copyIn, copyOut,
+            this->dataSeqAlloc, this->dataSeqLength, this->dataSeqGetBuffer, this->dataSeqCopyOut);
+}
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::read(
+$(scopedtypename)DataReader_impl::read (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -201,17 +213,17 @@ $(scopedtypename)DataReader_impl::read(
     ::DDS::ViewStateMask view_states,
     ::DDS::InstanceStateMask instance_states) THROW_ORB_EXCEPTIONS
 {
-    ::DDS::ReturnCode_t status;
+    ::DDS::ReturnCode_t status = DDS::RETCODE_OK;
 
     status = check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReader_impl::read(&received_data, info_seq, max_samples, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReader_impl::read(&received_data, info_seq, max_samples, sample_states, view_states, instance_states);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::take(
+$(scopedtypename)DataReader_impl::take (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -219,68 +231,65 @@ $(scopedtypename)DataReader_impl::take(
     ::DDS::ViewStateMask view_states,
     ::DDS::InstanceStateMask instance_states) THROW_ORB_EXCEPTIONS
 {
-    ::DDS::ReturnCode_t status;
+    ::DDS::ReturnCode_t status = DDS::RETCODE_OK;
 
     status = check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReader_impl::take(&received_data, info_seq, max_samples, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReader_impl::take(&received_data, info_seq, max_samples, sample_states, view_states, instance_states);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::read_w_condition(
+$(scopedtypename)DataReader_impl::read_w_condition (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
     ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS
 {
-    ::DDS::ReturnCode_t status;
+    ::DDS::ReturnCode_t status = DDS::RETCODE_OK;
 
     status = check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReader_impl::read_w_condition(&received_data, info_seq, max_samples, a_condition);
+        status = DDS::OpenSplice::FooDataReader_impl::read_w_condition(&received_data, info_seq, max_samples, a_condition);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::take_w_condition(
+$(scopedtypename)DataReader_impl::take_w_condition (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
     ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS
 {
-    ::DDS::ReturnCode_t status;
+    ::DDS::ReturnCode_t status = DDS::RETCODE_OK;
 
     status = check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReader_impl::take_w_condition(&received_data, info_seq, max_samples, a_condition);
+        status = DDS::OpenSplice::FooDataReader_impl::take_w_condition(&received_data, info_seq, max_samples, a_condition);
     }
     return status;
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::read_next_sample(
+$(scopedtypename)DataReader_impl::read_next_sample (
     $(scopedtypename) & received_data,
     ::DDS::SampleInfo & sample_info) THROW_ORB_EXCEPTIONS
 {
-    return DataReader_impl::read_next_sample(&received_data, sample_info);
+    return DDS::OpenSplice::FooDataReader_impl::read_next_sample(&received_data, sample_info);
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::take_next_sample(
+$(scopedtypename)DataReader_impl::take_next_sample (
     $(scopedtypename) & received_data,
     ::DDS::SampleInfo & sample_info) THROW_ORB_EXCEPTIONS
 {
-    return DataReader_impl::take_next_sample(&received_data, sample_info);
+    return DDS::OpenSplice::FooDataReader_impl::take_next_sample(&received_data, sample_info);
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::read_instance(
+$(scopedtypename)DataReader_impl::read_instance (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -293,13 +302,13 @@ $(scopedtypename)DataReader_impl::read_instance(
 
     status = check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReader_impl::read_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReader_impl::read_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::take_instance(
+$(scopedtypename)DataReader_impl::take_instance (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -312,13 +321,13 @@ $(scopedtypename)DataReader_impl::take_instance(
 
     status = check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReader_impl::take_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReader_impl::take_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::read_next_instance(
+$(scopedtypename)DataReader_impl::read_next_instance (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -331,13 +340,13 @@ $(scopedtypename)DataReader_impl::read_next_instance(
 
     status = check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReader_impl::read_next_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReader_impl::read_next_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::take_next_instance(
+$(scopedtypename)DataReader_impl::take_next_instance (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -350,14 +359,13 @@ $(scopedtypename)DataReader_impl::take_next_instance(
 
     status = check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReader_impl::take_next_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReader_impl::take_next_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
     }
     return status;
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::read_next_instance_w_condition(
+$(scopedtypename)DataReader_impl::read_next_instance_w_condition (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -368,14 +376,13 @@ $(scopedtypename)DataReader_impl::read_next_instance_w_condition(
 
     status = check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReader_impl::read_next_instance_w_condition(&received_data, info_seq, max_samples, a_handle, a_condition);
+        status = DDS::OpenSplice::FooDataReader_impl::read_next_instance_w_condition(&received_data, info_seq, max_samples, a_handle, a_condition);
     }
     return status;
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::take_next_instance_w_condition(
+$(scopedtypename)DataReader_impl::take_next_instance_w_condition (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -386,104 +393,187 @@ $(scopedtypename)DataReader_impl::take_next_instance_w_condition(
 
     status = check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReader_impl::take_next_instance_w_condition(&received_data, info_seq, max_samples, a_handle, a_condition);
+        status = DDS::OpenSplice::FooDataReader_impl::take_next_instance_w_condition(&received_data, info_seq, max_samples, a_handle, a_condition);
     }
     return status;
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::return_loan(
+$(scopedtypename)DataReader_impl::return_loan (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq) THROW_ORB_EXCEPTIONS
 {
-    ::DDS::ReturnCode_t status = ::DDS::RETCODE_OK;
+    ::DDS::ReturnCode_t result = ::DDS::RETCODE_OK;
 
-    if ( received_data.length() > 0 ) {
-        if (received_data.length() == info_seq.length() &&
-            received_data.release() == info_seq.release() ) {
-            if (!received_data.release()) {
-                status = DataReader_impl::return_loan( received_data.get_buffer(),
-                                                       info_seq.get_buffer() );
-
-                if ( status == ::DDS::RETCODE_OK ) {
-                    if ( !received_data.release() ) {
-                        $(scopedtypename)Seq::freebuf( received_data.get_buffer(false) );
-                        received_data.replace(0, 0, NULL, false);
-                        ::DDS::SampleInfoSeq::freebuf( info_seq.get_buffer(false) );
-                        info_seq.replace(0, 0, NULL, false);
-                    }
-                } else if ( status == ::DDS::RETCODE_NO_DATA ) {
-                    if ( received_data.release() ) {
-                        status = ::DDS::RETCODE_OK;
-                    } else {
-                        status = ::DDS::RETCODE_PRECONDITION_NOT_MET;
+    result = this->write_lock ();
+    if (result == DDS::RETCODE_OK) {
+        if ( received_data.length() > 0 ) {
+            if (received_data.length() == info_seq.length() &&
+                received_data.release() == info_seq.release() ) {
+                if (!received_data.release()) {
+                    result = DDS::OpenSplice::FooDataReader_impl::wlReq_return_loan( received_data.get_buffer(),
+                                                                                     info_seq.get_buffer() );
+                    if ( result == ::DDS::RETCODE_OK ) {
+                        if ( !received_data.release() ) {
+                            $(scopedtypename)Seq::freebuf( received_data.get_buffer(false) );
+                            received_data.replace(0, 0, NULL, false);
+                            ::DDS::SampleInfoSeq::freebuf( info_seq.get_buffer(false) );
+                            info_seq.replace(0, 0, NULL, false);
+                        }
                     }
                 }
+            } else {
+                result = ::DDS::RETCODE_PRECONDITION_NOT_MET;
             }
-        } else {
-            status = ::DDS::RETCODE_PRECONDITION_NOT_MET;
         }
+        this->unlock();
     }
-    return status;
+    return result;
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::get_key_value(
+$(scopedtypename)DataReader_impl::get_key_value (
     $(scopedtypename) & key_holder,
     ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS
 {
-    return DataReader_impl::get_key_value(&key_holder, handle);
+    return DDS::OpenSplice::FooDataReader_impl::get_key_value(&key_holder, handle);
 }
 
 ::DDS::InstanceHandle_t
-$(scopedtypename)DataReader_impl::lookup_instance(
+$(scopedtypename)DataReader_impl::lookup_instance (
     const $(scopedtypename) & instance) THROW_ORB_EXCEPTIONS
 {
-    return DataReader_impl::lookup_instance(&instance);
+    return DDS::OpenSplice::FooDataReader_impl::lookup_instance(&instance);
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReader_impl::check_preconditions(
+$(scopedtypename)DataReader_impl::check_preconditions (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples)
 {
-    ::DDS::ReturnCode_t status = ::DDS::RETCODE_PRECONDITION_NOT_MET;
+    if ((max_samples < 0) && (max_samples != DDS::LENGTH_UNLIMITED)) {
+        return DDS::RETCODE_BAD_PARAMETER;
+    }
 
-    if ( received_data.length() == info_seq.length() &&
-         received_data.maximum() == info_seq.maximum() &&
-         received_data.release() == info_seq.release() ) {
-        if ( received_data.maximum() == 0 || received_data.release() ) {
-            if (received_data.maximum() == 0 ||
-                max_samples <= static_cast<DDS::Long>(received_data.maximum()) ||
-                max_samples == ::DDS::LENGTH_UNLIMITED ) {
-                status = ::DDS::RETCODE_OK;
-            }
+    /* Rule 1 : The values of len, max_len, and owns
+     * for the two collections must be identical.
+     */
+    if ((received_data.length()  != info_seq.length())  ||
+        (received_data.maximum() != info_seq.maximum()) ||
+        (received_data.release() != info_seq.release()))
+    {
+        return DDS::RETCODE_PRECONDITION_NOT_MET;
+    }
+
+    /* Rule 4: If the input max_len>0 and the input owns==FALSE,
+     * then the read operation will fail.
+     */
+    if ((info_seq.maximum() > 0) &&
+        (info_seq.release() == false))
+    {
+        return DDS::RETCODE_PRECONDITION_NOT_MET;
+    }
+
+    /* Rule 5: If input max_len>0 and the input owns==TRUE,
+     * then the read operation will...
+     */
+    if (info_seq.maximum() > 0) { /* owns is true, because of rule 4. */
+        /* Rule 5a: If max_samples = LENGTH_UNLIMITED,
+         * then at most max_len values will be copied.
+         * Rule 5b: If max_samples <= max_len,
+         * then at most max_samples values will be copied.
+         */
+        /* Rule 5c: If max_samples > max_len,
+         * then the read operation will fail.
+         */
+        if ((max_samples != DDS::LENGTH_UNLIMITED) &&
+            ((DDS::ULong)max_samples > info_seq.maximum())) {
+            return DDS::RETCODE_PRECONDITION_NOT_MET;
         }
     }
-    return status;
+
+    if ((max_samples == 0) ||
+        ((info_seq.maximum() == 0) && (info_seq.release()))) {
+        return DDS::RETCODE_NO_DATA;
+    }
+
+    return DDS::RETCODE_OK;
+}
+
+void *
+$(scopedtypename)DataReader_impl::dataSeqAlloc (
+    void * received_data,
+    DDS::ULong len)
+{
+    $(scopedtypename)Seq *data_seq = reinterpret_cast<$(scopedtypename)Seq *>(received_data);
+    data_seq->replace(len, len, data_seq->allocbuf(len), false);
+    return data_seq->get_buffer();
+}
+
+void *
+$(scopedtypename)DataReader_impl::dataSeqGetBuffer (
+    void * received_data,
+    DDS::ULong index)
+{
+	$(scopedtypename)Seq *data_seq = reinterpret_cast<$(scopedtypename)Seq *>(received_data);
+	return &((*data_seq)[index]);
+}
+
+void
+$(scopedtypename)DataReader_impl::dataSeqLength (
+    void * received_data,
+    DDS::ULong len)
+{
+    $(scopedtypename)Seq *data_seq = reinterpret_cast<$(scopedtypename)Seq *>(received_data);
+    data_seq->length(len);
+}
+
+void
+$(scopedtypename)DataReader_impl::dataSeqCopyOut (
+    const void * from,
+    void * to)
+{
+    $(scopedtypename) *data = reinterpret_cast<$(scopedtypename) *>(to);
+    __$(uniquetypename)__copyOut(from, data);
+}
+
+void
+$(scopedtypename)DataReader_impl::copyDataOut (
+    const void * from,
+    void * to)
+{
+    $(scopedtypename) *data = reinterpret_cast<$(scopedtypename) *>(to);
+    __$(uniquetypename)__copyOut(from, data);
 }
 
 
 // DDS $(scopedtypename) DataReaderView_impl Object Body
-
-$(scopedtypename)DataReaderView_impl::$(typename)DataReaderView_impl (
-    gapi_dataReaderView handle
-) : ::DDS::DataReaderView_impl(handle)
+$(scopedtypename)DataReaderView_impl::$(typename)DataReaderView_impl ()
 {
     // Parent constructor takes care of everything.
 }
 
-$(scopedtypename)DataReaderView_impl::~$(typename)DataReaderView_impl(void)
+$(scopedtypename)DataReaderView_impl::~$(typename)DataReaderView_impl ()
 {
     // Parent destructor takes care of everything.
 }
 
+DDS::ReturnCode_t
+$(scopedtypename)DataReaderView_impl::init (
+    DDS::OpenSplice::DataReader *reader,
+    const char *name,
+    const DDS::DataReaderViewQos &qos,
+    DDS::OpenSplice::cxxCopyIn copyIn,
+    DDS::OpenSplice::cxxCopyOut copyOut)
+{
+    return DDS::OpenSplice::FooDataReaderView_impl::nlReq_init(
+            reader, name, qos, copyIn, copyOut, $(scopedtypename)DataReader_impl::dataSeqAlloc,
+            $(scopedtypename)DataReader_impl::dataSeqLength);
+}
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::read(
+$(scopedtypename)DataReaderView_impl::read (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -495,13 +585,13 @@ $(scopedtypename)DataReaderView_impl::read(
 
     status = $(scopedtypename)DataReader_impl::check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReaderView_impl::read(&received_data, info_seq, max_samples, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReaderView_impl::read(&received_data, info_seq, max_samples, sample_states, view_states, instance_states);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::take(
+$(scopedtypename)DataReaderView_impl::take (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -513,13 +603,13 @@ $(scopedtypename)DataReaderView_impl::take(
 
     status = $(scopedtypename)DataReader_impl::check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReaderView_impl::take(&received_data, info_seq, max_samples, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReaderView_impl::take(&received_data, info_seq, max_samples, sample_states, view_states, instance_states);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::read_w_condition(
+$(scopedtypename)DataReaderView_impl::read_w_condition (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -529,13 +619,13 @@ $(scopedtypename)DataReaderView_impl::read_w_condition(
 
     status = $(scopedtypename)DataReader_impl::check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReaderView_impl::read_w_condition(&received_data, info_seq, max_samples, a_condition);
+        status = DDS::OpenSplice::FooDataReaderView_impl::read_w_condition(&received_data, info_seq, max_samples, a_condition);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::take_w_condition(
+$(scopedtypename)DataReaderView_impl::take_w_condition (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -545,32 +635,29 @@ $(scopedtypename)DataReaderView_impl::take_w_condition(
 
     status = $(scopedtypename)DataReader_impl::check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReaderView_impl::take_w_condition(&received_data, info_seq, max_samples, a_condition);
+        status = DDS::OpenSplice::FooDataReaderView_impl::take_w_condition(&received_data, info_seq, max_samples, a_condition);
     }
     return status;
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::read_next_sample(
+$(scopedtypename)DataReaderView_impl::read_next_sample (
     $(scopedtypename) & received_data,
     ::DDS::SampleInfo & sample_info) THROW_ORB_EXCEPTIONS
 {
-    return DataReaderView_impl::read_next_sample(&received_data, sample_info);
+    return DDS::OpenSplice::FooDataReaderView_impl::read_next_sample(&received_data, sample_info);
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::take_next_sample(
+$(scopedtypename)DataReaderView_impl::take_next_sample (
     $(scopedtypename) & received_data,
     ::DDS::SampleInfo & sample_info) THROW_ORB_EXCEPTIONS
 {
-    return DataReaderView_impl::take_next_sample(&received_data, sample_info);
+    return DDS::OpenSplice::FooDataReaderView_impl::take_next_sample(&received_data, sample_info);
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::read_instance(
+$(scopedtypename)DataReaderView_impl::read_instance (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -583,13 +670,13 @@ $(scopedtypename)DataReaderView_impl::read_instance(
 
     status = $(scopedtypename)DataReader_impl::check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReaderView_impl::read_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReaderView_impl::read_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::take_instance(
+$(scopedtypename)DataReaderView_impl::take_instance (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -602,13 +689,13 @@ $(scopedtypename)DataReaderView_impl::take_instance(
 
     status = $(scopedtypename)DataReader_impl::check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReaderView_impl::take_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReaderView_impl::take_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::read_next_instance(
+$(scopedtypename)DataReaderView_impl::read_next_instance (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -621,13 +708,13 @@ $(scopedtypename)DataReaderView_impl::read_next_instance(
 
     status = $(scopedtypename)DataReader_impl::check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReaderView_impl::read_next_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReaderView_impl::read_next_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
     }
     return status;
 }
 
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::take_next_instance(
+$(scopedtypename)DataReaderView_impl::take_next_instance (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -640,14 +727,13 @@ $(scopedtypename)DataReaderView_impl::take_next_instance(
 
     status = $(scopedtypename)DataReader_impl::check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReaderView_impl::take_next_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
+        status = DDS::OpenSplice::FooDataReaderView_impl::take_next_instance(&received_data, info_seq, max_samples, a_handle, sample_states, view_states, instance_states);
     }
     return status;
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::read_next_instance_w_condition(
+$(scopedtypename)DataReaderView_impl::read_next_instance_w_condition (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -658,14 +744,13 @@ $(scopedtypename)DataReaderView_impl::read_next_instance_w_condition(
 
     status = $(scopedtypename)DataReader_impl::check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReaderView_impl::read_next_instance_w_condition(&received_data, info_seq, max_samples, a_handle, a_condition);
+        status = DDS::OpenSplice::FooDataReaderView_impl::read_next_instance_w_condition(&received_data, info_seq, max_samples, a_handle, a_condition);
     }
     return status;
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::take_next_instance_w_condition(
+$(scopedtypename)DataReaderView_impl::take_next_instance_w_condition (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
     ::DDS::Long max_samples,
@@ -676,63 +761,62 @@ $(scopedtypename)DataReaderView_impl::take_next_instance_w_condition(
 
     status = $(scopedtypename)DataReader_impl::check_preconditions(received_data, info_seq, max_samples);
     if ( status == ::DDS::RETCODE_OK ) {
-        status = DataReaderView_impl::take_next_instance_w_condition(&received_data, info_seq, max_samples, a_handle, a_condition);
+        status = DDS::OpenSplice::FooDataReaderView_impl::take_next_instance_w_condition(&received_data, info_seq, max_samples, a_handle, a_condition);
     }
     return status;
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::return_loan(
+$(scopedtypename)DataReaderView_impl::return_loan (
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq) THROW_ORB_EXCEPTIONS
 {
-    ::DDS::ReturnCode_t status = ::DDS::RETCODE_OK;
+    ::DDS::ReturnCode_t result = ::DDS::RETCODE_OK;
 
-    if ( received_data.length() > 0 ) {
-        if (received_data.length() == info_seq.length() &&
-            received_data.release() == info_seq.release() ) {
-            if (!received_data.release()) {
-                status = DataReaderView_impl::return_loan( received_data.get_buffer(),
-                                                       info_seq.get_buffer() );
+    result = this->write_lock ();
+    if (result == DDS::RETCODE_OK) {
+        if ( received_data.length() > 0 ) {
+            if (received_data.length() == info_seq.length() &&
+                received_data.release() == info_seq.release() ) {
+                if (!received_data.release()) {
+                    result = DDS::OpenSplice::FooDataReaderView_impl::wlReq_return_loan( received_data.get_buffer(),
+                                                           info_seq.get_buffer() );
 
-                if ( status == ::DDS::RETCODE_OK ) {
-                    if ( !received_data.release() ) {
-                        $(scopedtypename)Seq::freebuf( received_data.get_buffer(false) );
-                        received_data.replace(0, 0, NULL, false);
-                        ::DDS::SampleInfoSeq::freebuf( info_seq.get_buffer(false) );
-                        info_seq.replace(0, 0, NULL, false);
-                    }
-                } else if ( status == ::DDS::RETCODE_NO_DATA ) {
-                    if ( received_data.release() ) {
-                        status = ::DDS::RETCODE_OK;
-                    } else {
-                        status = ::DDS::RETCODE_PRECONDITION_NOT_MET;
+                    if ( result == ::DDS::RETCODE_OK ) {
+                        if ( !received_data.release() ) {
+                            $(scopedtypename)Seq::freebuf( received_data.get_buffer(false) );
+                            received_data.replace(0, 0, NULL, false);
+                            ::DDS::SampleInfoSeq::freebuf( info_seq.get_buffer(false) );
+                            info_seq.replace(0, 0, NULL, false);
+                        }
+                    } else if ( result == ::DDS::RETCODE_NO_DATA ) {
+                        if ( received_data.release() ) {
+                            result = ::DDS::RETCODE_OK;
+                        } else {
+                            result = ::DDS::RETCODE_PRECONDITION_NOT_MET;
+                        }
                     }
                 }
+            } else {
+                result = ::DDS::RETCODE_PRECONDITION_NOT_MET;
             }
-        } else {
-            status = ::DDS::RETCODE_PRECONDITION_NOT_MET;
         }
+        this->unlock();
     }
-    return status;
+    return result;
 }
 
-
 ::DDS::ReturnCode_t
-$(scopedtypename)DataReaderView_impl::get_key_value(
+$(scopedtypename)DataReaderView_impl::get_key_value (
     $(scopedtypename) & key_holder,
     ::DDS::InstanceHandle_t handle) THROW_ORB_EXCEPTIONS
 {
-    return DataReaderView_impl::get_key_value(&key_holder, handle);
+    return DDS::OpenSplice::FooDataReaderView_impl::get_key_value(&key_holder, handle);
 }
 
 ::DDS::InstanceHandle_t
-$(scopedtypename)DataReaderView_impl::lookup_instance(
+$(scopedtypename)DataReaderView_impl::lookup_instance (
     const $(scopedtypename) & instance) THROW_ORB_EXCEPTIONS
 {
-    return DataReaderView_impl::lookup_instance(&instance);
+    return DDS::OpenSplice::FooDataReaderView_impl::lookup_instance(&instance);
 }
-
-
-

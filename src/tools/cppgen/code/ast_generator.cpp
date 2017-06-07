@@ -1,3 +1,4 @@
+
 /*
  
 COPYRIGHT
@@ -73,24 +74,9 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * of every AST class.
  */
 
-#include "idl.h"
-#include "idl_extern.h"
+#include <idl.h>
+#include <idl_extern.h>
 
-/*
- * Constructors
- */
-
-/*
- * Private operations
- */
-
-/*
- * Public operations
- */
-
-/*
- * Construct an AST_PredefinedType node (a predefined type)
- */
 AST_PredefinedType *
 AST_Generator::create_predefined_type(AST_PredefinedType::PredefinedType t,
                                       UTL_ScopedName *n,
@@ -121,36 +107,40 @@ AST_Generator::create_root(UTL_ScopedName *n,
 /*
  * Construct an AST_Interface node (an interface)
  */
-AST_Interface *
-AST_Generator::create_interface(idl_bool local,
-                                UTL_ScopedName *n,
-                                AST_Interface **ih,
-                                long nih,
-                                const UTL_Pragmas &p)
+AST_Interface * AST_Generator::create_interface
+(
+   bool local,
+   bool abstract,
+   UTL_ScopedName *n,
+   AST_Interface **ih,
+   long nih,
+   const UTL_Pragmas &p
+)
 {
-   return new AST_Interface(local, n, ih, nih, p);
+   return new AST_Interface (local, abstract, n, ih, nih, p);
 }
 
 /*
  * Construct an AST_InterfaceFwd node (a node representing the forward
  * declaration of an interface)
  */
-AST_InterfaceFwd *
-AST_Generator::create_interface_fwd(idl_bool local,
-                                    UTL_ScopedName *n, 
-                                    const UTL_Pragmas &p)
+
+AST_InterfaceFwd * AST_Generator::create_interface_fwd
+(
+   bool local,
+   bool abstract,
+   UTL_ScopedName *n, 
+   const UTL_Pragmas &p
+)
 {
-   return new AST_InterfaceFwd(local, n, p);
+   return new AST_InterfaceFwd (local, abstract, n, p);
 }
 
-/*
- * Construct an AST_Value node (a valuetype)
- */
-AST_Value *AST_Generator::create_valuetype
+AST_Value * AST_Generator::create_valuetype
 (
-   idl_bool abstract,
-   idl_bool custom,
-   idl_bool truncatable,
+   bool abstract,
+   bool custom,
+   bool truncatable,
    UTL_ScopedName *n,
    AST_Value **ih,
    long nih,
@@ -160,22 +150,22 @@ AST_Value *AST_Generator::create_valuetype
 )
 {
    return new AST_Value
-      (
-         abstract,
-         custom,
-         truncatable,
-         n,
-         ih,
-         nih,
-         supports,
-         nsupports,
-         p
-      );
+   (
+      abstract,
+      custom,
+      truncatable,
+      n,
+      ih,
+      nih,
+      supports,
+      nsupports,
+      p
+   );
 }
 
 AST_ValueFwd *AST_Generator::create_valuetype_fwd
 (
-   idl_bool abstract,
+   bool abstract,
    UTL_ScopedName *n,
    const UTL_Pragmas &p
 )
@@ -188,7 +178,7 @@ AST_ValueFwd *AST_Generator::create_valuetype_fwd
  */
 AST_StateMember *AST_Generator::create_state_member
 (
-   idl_bool public_access,
+   bool public_access,
    AST_Type *ft,
    UTL_ScopedName *n,
    const UTL_Pragmas &p
@@ -231,10 +221,13 @@ AST_Generator::create_exception(UTL_ScopedName *n, const UTL_Pragmas &p)
 /*
  * Construct an AST_Structure node (a struct)
  */
-AST_Structure *
-AST_Generator::create_structure(UTL_ScopedName *n, const UTL_Pragmas &p)
+AST_Structure * AST_Generator::create_structure
+(
+   UTL_ScopedName * n,
+   const UTL_Pragmas &p
+)
 {
-   return new AST_Structure(n, p);
+   return new AST_Structure (n, p);
 }
 
 /*
@@ -283,7 +276,7 @@ AST_Generator::create_argument(AST_Argument::Direction d,
  * Construct an AST_Attribute node (an attribute)
  */
 AST_Attribute *
-AST_Generator::create_attribute(idl_bool ro,
+AST_Generator::create_attribute(bool ro,
                                 AST_Type *ft,
                                 UTL_ScopedName *n,
                                 const UTL_Pragmas &p)
@@ -294,12 +287,14 @@ AST_Generator::create_attribute(idl_bool ro,
 /*
  * Construct an AST_Union node (a union)
  */
-AST_Union *
-AST_Generator::create_union(AST_ConcreteType *dt,
-                            UTL_ScopedName *n,
-                            const UTL_Pragmas &p)
+
+AST_Union * AST_Generator::create_union
+(
+   UTL_ScopedName * n,
+   const UTL_Pragmas & p
+)
 {
-   return new AST_Union(dt, n, p);
+   return new AST_Union (n, p);
 }
 
 /*
@@ -339,8 +334,7 @@ AST_Generator::create_constant(AST_Expression::ExprType et,
 /*
  * Construct an AST_Expression node denoting a symbolic name
  */
-AST_Expression *
-AST_Generator::create_expr(UTL_ScopedName *n)
+AST_Expression * AST_Generator::create_expr (UTL_ScopedName * n)
 {
    return new AST_Expression(n);
 }
@@ -379,10 +373,9 @@ AST_Generator::create_expr(long v)
  * Construct an AST_Expression node denoting a long integer being used
  * as a boolean
  */
-AST_Expression *
-AST_Generator::create_expr(long v, AST_Expression::ExprType t)
+AST_Expression * AST_Generator::create_expr (long v, AST_Expression::ExprType t)
 {
-   return new AST_Expression(v, t);
+   return new AST_Expression (v, t);
 }
 
 /*

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.view;
@@ -31,11 +39,13 @@ public class TabbedDialogWindow extends DialogWindow {
     /**
      * This method initializes the dialog window. 
      */
+    @Override
     void initialize() {
         this.setSize(1200, 1600);
         this.setResizable(false);
         this.setTitle(title);
         this.addWindowListener(new WindowAdapter() {
+            @Override
             public void windowClosing(WindowEvent e) {
                 controller.actionPerformed(
                     new ActionEvent(cancelButton, 0, "cancel"));
@@ -48,6 +58,7 @@ public class TabbedDialogWindow extends DialogWindow {
      * 
      * @return The created or already existing content pane.
      */
+    @Override
     JPanel getJContentPane() {
         if (jContentPane == null) {
             jContentPane = new JPanel();
@@ -64,8 +75,9 @@ public class TabbedDialogWindow extends DialogWindow {
      * 
      * @return The map of values. The key is the name of the field <fieldName, value>.
      */
-    public HashMap getValues(){
-        HashMap values = new HashMap();
+    @Override
+    public HashMap<String, Object> getValues() {
+        HashMap<String, Object> values = new HashMap<String, Object>();
         
         for(int i=0; i<fields.length; i++){
             values.put(fields[i].getName(), fields[i].getValue());
@@ -79,8 +91,9 @@ public class TabbedDialogWindow extends DialogWindow {
      * @param fieldName The fieldName of the field to get the value of.
      * @return The value of the field.
      */
+    @Override
     public Object getValue(String fieldName){
-        NameValuePanel nv = (NameValuePanel)(field.getField(fieldName));
+        NameValuePanel nv = field.getField(fieldName);
         
         if(nv == null){
             return "";
@@ -93,6 +106,7 @@ public class TabbedDialogWindow extends DialogWindow {
      * 
      * @return true if all fields have a compatible value, false otherwise.
      */
+    @Override
     public boolean isInputValid(){
         NameValuePanel nvp    = null;
         Object test           = null;
@@ -111,10 +125,12 @@ public class TabbedDialogWindow extends DialogWindow {
         return true;
     }
     
+    @Override
     public NameValuePanel getField(String name){
-        return (NameValuePanel)(field.getField(name));
+        return field.getField(name);
     }
     
+    @Override
     public NameValuePanel[] getFields(){
         return field.getFields();
     }

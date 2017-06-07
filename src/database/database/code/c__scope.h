@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef C__SCOPE_H
@@ -32,6 +40,7 @@ extern "C" {
 typedef c_bool (*c_scopeCondition) (c_metaObject o1, c_metaObject o2);
 typedef void  *c_scopeWalkActionArg;
 typedef void (*c_scopeWalkAction) (c_metaObject o, c_scopeWalkActionArg actionArg);
+typedef c_bool (*c_scopeWalkBoolAction) (c_metaObject o, c_scopeWalkActionArg actionArg);
 
 /* Declaration of c_binding for c_scope */
 C_CLASS(c_binding);
@@ -47,50 +56,68 @@ C_STRUCT(c_scope) {
 
 OS_API c_scope
 c_scopeNew(
-    c_base base);
+    c_base base) __nonnull_all__;
+
+OS_API c_scope
+c_scopeNew_s(
+    c_base base) __nonnull_all__;
+
 
 OS_API void
 c_scopeWalk(
     c_scope scope,
     c_scopeWalkAction action,
-    c_scopeWalkActionArg actionArg);
+    c_scopeWalkActionArg actionArg)
+    __nonnull((1, 2));
 
-OS_API c_long
+OS_API c_bool
+c_scopeWalkBool(
+    c_scope scope,
+    c_scopeWalkBoolAction action,
+    c_scopeWalkActionArg actionArg)
+    __nonnull((1, 2));
+
+OS_API c_ulong
 c_scopeCount(
-    c_scope scope);
+    c_scope scope) __nonnull_all__;
 
 void
-c_scopeInit(c_scope scope);
+c_scopeInit(c_scope scope) __nonnull_all__;
 
 void
 c_scopeDeinit(
-    c_scope scope);
+    c_scope scope) __nonnull_all__;
 
 c_metaObject
 c_scopeInsert (
     c_scope _this,
-    c_metaObject object);
+    c_metaObject object) __nonnull_all__;
 
 c_baseObject
 c_scopeResolve (
     c_scope _this,
     const char *name,
-    c_long metaFilter);
+    c_ulong metaFilter) __nonnull_all__;
 
 c_metaObject
 c_scopeLookup (
     c_scope _this,
     const c_char *name,
-    c_long metaFilter);
+    c_ulong metaFilter) __nonnull_all__;
 
 c_metaObject
 c_scopeRemove (
     c_scope _this,
-    const c_char *name);
+    const c_char *name) __nonnull_all__;
+
+c_bool
+c_scopeExists (
+    c_scope _this,
+    const c_char *name) __nonnull_all__;
 
 void
 c_scopeClean (
-    c_scope _this);
+    c_scope _this) __nonnull_all__;
 
 #undef OS_API
 

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**
@@ -54,10 +62,10 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
- * The XML implementation of an EntityDeserializer. It is capable of 
+ * The XML implementation of an EntityDeserializer. It is capable of
  * transforming a serialized XML representation to an Entity object.
  * 
- * @date Aug 27, 2004 
+ * @date Aug 27, 2004
  */
 public class EntityDeserializerXML implements EntityDeserializer {
     /**
@@ -72,43 +80,46 @@ public class EntityDeserializerXML implements EntityDeserializer {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setValidating(false);
         factory.setNamespaceAware(false);
-        builder = factory.newDocumentBuilder(); 
+        builder = factory.newDocumentBuilder();
         logger = Logger.getLogger("org.opensplice.api.cm.transform.xml");
     }
-    
+
+    @Override
     public Entity deserializeEntity(Object serialized)  throws TransformationException{
         if(serialized == null){
             throw new TransformationException("Supplied Entity is not valid.");
         }
         Entity entity = null;
         Document document;
-        
+
         if(serialized instanceof String){
             String xmlEntity = (String)serialized;
             /*
-            logger.logp(Level.FINEST, "EntityDeserializerXML", "deserializeEntity", 
-                                       "Deserializing entity from string:\n'" + 
+            logger.logp(Level.FINEST, "EntityDeserializerXML", "deserializeEntity",
+                                       "Deserializing entity from string:\n'" +
                                        xmlEntity + "'");
-            */       
+             */
             try {
-                document = builder.parse(new InputSource(new StringReader(xmlEntity)));
+                synchronized(builder){
+                    document = builder.parse(new InputSource(new StringReader(xmlEntity)));
+                }
             }
             catch (SAXException se) {
-                logger.logp(Level.SEVERE,  "EntityDeserializerXML", 
-                                           "deserializeEntity", 
-                                           "SAXException occurred, Entity could not be deserialized");
+                logger.logp(Level.SEVERE,  "EntityDeserializerXML",
+                        "deserializeEntity",
+                        "SAXException occurred, Entity could not be deserialized");
                 throw new TransformationException(se.getMessage());
             }
             catch (IOException ie) {
-                logger.logp(Level.SEVERE,  "EntityDeserializerXML", 
-                                           "deserializeEntity", 
-                                           "IOException occurred, Entity could not be deserialized");
+                logger.logp(Level.SEVERE,  "EntityDeserializerXML",
+                        "deserializeEntity",
+                        "IOException occurred, Entity could not be deserialized");
                 throw new TransformationException(ie.getMessage());
             }
-            
+
             if(document == null){
-                logger.logp(Level.SEVERE,  "EntityDeserializerXML", 
-                        "deserializeEntity", 
+                logger.logp(Level.SEVERE,  "EntityDeserializerXML",
+                        "deserializeEntity",
                         "Received NULL document");
                 throw new TransformationException("Supplied Entity is not valid");
             }
@@ -117,37 +128,40 @@ public class EntityDeserializerXML implements EntityDeserializer {
         }
         return entity;
     }
-    
+
+    @Override
     public Entity[] deserializeEntityList(Object serialized) throws TransformationException{
         if(serialized == null){
             throw new TransformationException("Supplied Entity list is not valid");
         }
         Entity[] entities = new Entity[0];
-        
+
         if(serialized instanceof String){
             Document document;
-            ArrayList entityList = new ArrayList();
+            ArrayList<Entity> entityList = new ArrayList<Entity>();
             Element entityElement;
-            
+
             String xmlEntities = (String)serialized;
             /*
-            logger.logp(Level.FINEST, "EntityDeserializerXML", "deserializeEntityList", 
-                                       "Deserializing entity from string:\n" + 
+            logger.logp(Level.FINEST, "EntityDeserializerXML", "deserializeEntityList",
+                                       "Deserializing entity from string:\n" +
                                        xmlEntities);
-            */       
+             */
             try {
-                document = builder.parse(new InputSource(new StringReader(xmlEntities)));
+                synchronized(builder){
+                    document = builder.parse(new InputSource(new StringReader(xmlEntities)));
+                }
             }
             catch (SAXException se) {
-                logger.logp(Level.SEVERE,  "EntityDeserializerXML", 
-                                           "deserializeEntityList", 
-                                           "SAXException occurred, Entity could not be deserialized");
+                logger.logp(Level.SEVERE,  "EntityDeserializerXML",
+                        "deserializeEntityList",
+                        "SAXException occurred, Entity could not be deserialized");
                 throw new TransformationException(se.getMessage());
             }
             catch (IOException ie) {
-                logger.logp(Level.SEVERE,  "EntityDeserializerXML", 
-                                           "deserializeEntityList", 
-                                           "IOException occurred, Entity could not be deserialized");
+                logger.logp(Level.SEVERE,  "EntityDeserializerXML",
+                        "deserializeEntityList",
+                        "IOException occurred, Entity could not be deserialized");
                 throw new TransformationException(ie.getMessage());
             }
             if(document == null){
@@ -155,37 +169,37 @@ public class EntityDeserializerXML implements EntityDeserializer {
             }
             Element rootElement = document.getDocumentElement();
             NodeList entityNodes = rootElement.getChildNodes();
-            
+
             for(int i=0; i<entityNodes.getLength(); i++){
                 entityElement = (Element)(entityNodes.item(i));
                 entityList.add(this.buildEntity(entityElement));
             }
-            entities = (Entity[])entityList.toArray(entities);            
+            entities = entityList.toArray(entities);
         }
         return entities;
     }
-    
+
     private Entity buildEntity(Element el){
         if(el == null){
             return null;
         }
-        
+
         NodeList list = el.getElementsByTagName("kind");
         String kind = null;
         EntityImpl result = null;
-        
+
         if(list.getLength() > 0){
             Element elmt = (Element)(list.item(0));
             kind = elmt.getFirstChild().getNodeValue();
         }
-        
+
         long index = this.resolveIndex(el);
         long serial = this.resolveSerial(el);
         String pointer = this.resolvePointer(el);
         String name = this.resolveName(el);
         boolean enabled = this.resolveEnabled(el);
-        
-        
+
+
         if("TOPIC".equals(kind)){
             NodeList topicList = el.getElementsByTagName("typename");
             String typeName = null;
@@ -199,21 +213,21 @@ public class EntityDeserializerXML implements EntityDeserializer {
             NodeList queryList = el.getElementsByTagName("expression");
             String expression = null;
             Element typeEl;
-            
+
             if(queryList.getLength() > 0){
                 typeEl = (Element)(queryList.item(0));
-                
+
                 if(typeEl.getFirstChild() != null){
                     expression = typeEl.getFirstChild().getNodeValue();
                 }
             }
-            
+
             queryList = el.getElementsByTagName("params");
             String params = null;
 
             if(queryList.getLength() > 0){
                 typeEl = (Element)(queryList.item(0));
-                
+
                 if(typeEl.getFirstChild() != null){
                     params = typeEl.getFirstChild().getNodeValue();
                 }
@@ -223,7 +237,7 @@ public class EntityDeserializerXML implements EntityDeserializer {
 
             if(queryList.getLength() > 0){
                 typeEl = (Element)(queryList.item(0));
-                
+
                 if(typeEl.getFirstChild() != null){
                     instanceState = Integer.parseInt(typeEl.getFirstChild().getNodeValue());
                 }
@@ -233,7 +247,7 @@ public class EntityDeserializerXML implements EntityDeserializer {
 
             if(queryList.getLength() > 0){
                 typeEl = (Element)(queryList.item(0));
-                
+
                 if(typeEl.getFirstChild() != null){
                     sampleState = Integer.parseInt(typeEl.getFirstChild().getNodeValue());
                 }
@@ -243,13 +257,13 @@ public class EntityDeserializerXML implements EntityDeserializer {
 
             if(queryList.getLength() > 0){
                 typeEl = (Element)(queryList.item(0));
-                
+
                 if(typeEl.getFirstChild() != null){
                     viewState = Integer.parseInt(typeEl.getFirstChild().getNodeValue());
                 }
             }
             result = new QueryImpl(getCommunicator(), index, serial, pointer, name, expression, params,
-                        new State(instanceState), new State(sampleState), new State(viewState));
+                    new State(instanceState), new State(sampleState), new State(viewState));
         } else if("DOMAIN".equals(kind)){
             result = new PartitionImpl(getCommunicator(), index, serial, pointer, name);
         } else if("DATAREADER".equals(kind)){
@@ -281,12 +295,12 @@ public class EntityDeserializerXML implements EntityDeserializer {
                 stateName = stateEl.getFirstChild().getNodeValue();
             }
             stateList = el.getElementsByTagName("state");
-            
+
             if(stateList.getLength() > 0){
                 Element stateEl = (Element)(stateList.item(0));
                 stateKind = stateEl.getFirstChild().getNodeValue();
             }
-            
+
             if("INITIALISING".equals(stateKind)){
                 ssk = ServiceStateKind.INITIALISING;
             } else if("OPERATIONAL".equals(stateKind)){
@@ -305,53 +319,53 @@ public class EntityDeserializerXML implements EntityDeserializer {
             result = new WaitsetImpl(getCommunicator(), index, serial, pointer, name);
         } else{
             assert false: "Deserialize entity XML: received unknown entity: " + kind;
-            logger.logp(Level.SEVERE,  "EntityDeserializerXML", 
-                       "buildEntity", 
-                       "Unknown Entity kind found: " + kind);
+        logger.logp(Level.SEVERE,  "EntityDeserializerXML",
+                "buildEntity",
+                "Unknown Entity kind found: " + kind);
         }
         if(result != null){
             result.setEnabled(enabled);
         }
         return result;
     }
-    
+
     private String resolveKeyList(Element entityElement){
         NodeList list = entityElement.getElementsByTagName("keyList");
         String result = null;
-        
+
         if(list.getLength() > 0){
             Element el = (Element)(list.item(0));
             Node value = el.getFirstChild();
-            
+
             if(value != null){
                 result = value.getNodeValue();
             }
         }
         return result;
     }
-    
+
     private String resolvePointer(Element entityElement){
         NodeList list = entityElement.getElementsByTagName("pointer");
         String result = null;
-        
+
         if(list.getLength() > 0){
             Element el = (Element)(list.item(0));
             result = el.getFirstChild().getNodeValue();
         }
         return result;
     }
-    
+
     private String resolveName(Element entityElement){
         NodeList list = entityElement.getElementsByTagName("name");
         String result = null;
-        
+
         if(list.getLength() > 0){
             Element el = (Element)(list.item(0));
             Node first = el.getFirstChild();
-            
+
             if(first != null){
                 result = first.getNodeValue();
-                
+
                 if(result.equals("NULL")){
                     result = null;
                 }
@@ -361,33 +375,33 @@ public class EntityDeserializerXML implements EntityDeserializer {
         }
         return result;
     }
-    
+
     private long resolveIndex(Element entityElement){
         NodeList list = entityElement.getElementsByTagName("handle_index");
         long result = -1;
-        
+
         if(list.getLength() > 0){
             Element el = (Element)(list.item(0));
             result = Long.parseLong(el.getFirstChild().getNodeValue());
         }
         return result;
     }
-    
+
     private long resolveSerial(Element entityElement){
         NodeList list = entityElement.getElementsByTagName("handle_serial");
         long result = -1;
-        
+
         if(list.getLength() > 0){
             Element el = (Element)(list.item(0));
             result = Long.parseLong(el.getFirstChild().getNodeValue());
         }
         return result;
     }
-    
+
     private boolean resolveEnabled(Element entityElement){
         NodeList list = entityElement.getElementsByTagName("enabled");
         boolean result = true;
-        
+
         if(list.getLength() > 0){
             Element el = (Element)(list.item(0));
             result = Boolean.valueOf(el.getFirstChild().getNodeValue()).booleanValue();
@@ -396,18 +410,18 @@ public class EntityDeserializerXML implements EntityDeserializer {
     }
 
     protected Communicator getCommunicator() {
-      return communicator;
+        return communicator;
     }
-    
+
     /**
      * Builder that is capable of creating a DOM tree from an XML string.
      */
-    private DocumentBuilder builder;
-    
+    private final DocumentBuilder builder;
+
     /**
      * Logging facilities for the deserializer.
      */
-    private Logger logger;
+    private final Logger logger;
 
-    private Communicator communicator;
+    private final Communicator communicator;
 }

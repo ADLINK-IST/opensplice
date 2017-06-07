@@ -3,6 +3,8 @@
 SPLICE_HOST=armv7l.linux-dev
 SPLICE_TARGET=armv7l.linux-dev
 export SPLICE_HOST SPLICE_TARGET
+SPLICE_TARGET_FULL=armv7l.linux
+export SPLICE_TARGET_FULL
 echo
 
 ERRS=0
@@ -16,6 +18,8 @@ javac_check || ERRS=1
 gmcs_check || ERRS=1
 tao_check || ERRS=1
 jacorb_check || ERRS=1
+protoc_check || ERRS=1
+c99_check || ERRS=1
 
 if [ -z $REPORT ]
 then

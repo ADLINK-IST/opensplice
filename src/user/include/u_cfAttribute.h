@@ -1,18 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef U_CFATTRIBUTE_H
 #define U_CFATTRIBUTE_H
 
-#include "c_typebase.h"
+#include "u_types.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -59,10 +67,10 @@ u_cfAttributeFree(
  * \return TRUE, when the value is correctly retrieved as string type
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfAttributeStringValue(
-    u_cfAttribute attr,
-    c_char **str);
+    const u_cfAttribute attr,
+    os_char **str);
 
 /**
  * \brief Retrieves the attribute value as a boolean type.
@@ -78,10 +86,10 @@ u_cfAttributeStringValue(
  * \return TRUE, when the value is correctly retrieved as boolean type
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfAttributeBoolValue(
-    u_cfAttribute attr,
-    c_bool *b);
+    const u_cfAttribute attr,
+    u_bool *b);
 
 /**
  * \brief Retrieves the attribute value as a long type.
@@ -95,10 +103,10 @@ u_cfAttributeBoolValue(
  * \return TRUE, when the value is correctly retrieved as long type
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfAttributeLongValue(
-    u_cfAttribute attr,
-    c_long *lv);
+    const u_cfAttribute attr,
+    os_int32 *lv);
 
 /**
  * \brief Retrieves the attribute value as an unsigned long type.
@@ -112,10 +120,27 @@ u_cfAttributeLongValue(
  * \return TRUE, when the value is correctly retrieved as unsigned long type
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfAttributeULongValue(
-    u_cfAttribute attr,
-    c_ulong *ul);
+    const u_cfAttribute attr,
+    os_uint32 *ul);
+
+/**
+ * \brief Retrieves the attribute value as an unsigned char type.
+ *
+ * The attribute value is only stored in the last parameter, when it is
+ * succesfully retrieved.
+ *
+ * \param attribute the proxy to the kernel configuration attribute
+ * \param uc the storage location of the attribute value
+ *
+ * \return TRUE, when the value is correctly retrieved as unsigned char type
+ *         FALSE, otherwise
+ */
+OS_API u_bool
+u_cfAttributeOctetValue(
+    const u_cfAttribute attr,
+    os_uchar *uc);
 
 /**
  * \brief Retrieves the specified attribute value as unsigned long with as input
@@ -131,10 +156,10 @@ u_cfAttributeULongValue(
  * \return TRUE, when the value is correctly retrieved as unsigned long type
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfAttributeSizeValue(
-    u_cfAttribute attr,
-    c_size *size);
+    const u_cfAttribute attr,
+    u_size *size);
 
 /**
  * \brief Retrieves the attribute value as a floating point type.
@@ -148,10 +173,10 @@ u_cfAttributeSizeValue(
  * \return TRUE, when the value is correctly retrieved as floating point type
  *         FALSE, otherwise
  */
-OS_API c_bool
+OS_API u_bool
 u_cfAttributeFloatValue(
-    u_cfAttribute attr,
-    c_float *f);
+    const u_cfAttribute attr,
+    os_float *f);
 
 #undef OS_API
 

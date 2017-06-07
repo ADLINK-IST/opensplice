@@ -1,0 +1,5 @@
+This is the version of lzf that we build into networking.
+Differences to the official 3.6 distribution are:
+- configure will add -fPIC to the Makefile for x86_64
+- portability fixes for Solaris
+- add export functions for Windows to use lzf as shared library

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include <assert.h>
@@ -35,7 +43,7 @@ idl_depNew (
     void)
 {
     /* QAC EXPECT 5007; will not use wrapper */
-    idl_dep dep = os_malloc ((size_t)C_SIZEOF(idl_dep));
+    idl_dep dep = os_malloc (C_SIZEOF(idl_dep));
 
     dep->deps = c_iterNew (0);
 
@@ -53,7 +61,7 @@ idl_depFree (
     basename = c_iterTakeFirst (dep->deps);
     while (basename != NULL) {
         /* QAC EXPECT 5007; will not use wrapper */
-	os_free (basename);
+        os_free (basename);
         basename = c_iterTakeFirst (dep->deps);
     }
     /* QAC EXPECT 5007; will not use wrapper */
@@ -101,7 +109,7 @@ idl_depCompare (
 
     /* QAC EXPECT 5007, 3416; will not use wrapper, No side effects in this case, expected behaviour */
     if (strcmp (listBasename, basename) == 0) {
-	result = C_EQ;
+        result = C_EQ;
     }
 
     return result;
@@ -118,7 +126,7 @@ idl_depAdd (
     /* Find the file in the specified dependency list */
     b = c_iterResolve (dep->deps, idl_depCompare, (c_iterResolveCompareArg)basename);
     if (b == NULL) {
-	/* If not found, the add it */
+        /* If not found, the add it */
         dep->deps = c_iterAppend (dep->deps, os_strdup(basename));
     }
 }
@@ -130,13 +138,10 @@ c_char *
 idl_depGet (
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
     const idl_dep dep,
-    c_long index)
+    c_ulong index)
 {
     c_char *basename;
 
-    /* QAC EXPECT 3416; No side effects in this case, expected behaviour */
-    assert (index >= 0);
-    /* QAC EXPECT 3416; No side effects in this case, expected behaviour */
     assert (index < c_iterLength(dep->deps));
 
     basename = c_iterObject (dep->deps, index);
@@ -145,7 +150,7 @@ idl_depGet (
 }
 
 /* return the length of the provided dependency list */
-c_long
+c_ulong
 idl_depLength (
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
     const idl_dep dep)

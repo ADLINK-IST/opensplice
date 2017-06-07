@@ -1,19 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v__index.h"
 #include "os_heap.h"
 #include "v__topic.h"
 #include "v_state.h"
-#include "v_time.h"
 #include "v_event.h"
 #include "v__dataReader.h"
 #include "v_dataReaderEntry.h"
@@ -30,10 +37,9 @@
 #include "v__dataReaderSample.h"
 #include "v_public.h"
 #include "v_instance.h"
-#include "v__statisticsInterface.h"
 
 #include "os_report.h"
-#include "os.h"
+#include "vortex_os.h"
 
 static c_type
 sampleTypeNew(
@@ -43,7 +49,8 @@ sampleTypeNew(
     c_type msgType,sampleType,foundType;
     c_base base;
     c_char *name;
-    c_long length,sres;
+    os_size_t length;
+    int sres;
 
     assert(C_TYPECHECK(topic,v_topic));
     assert(topic);
@@ -53,7 +60,7 @@ sampleTypeNew(
 
     if (v_topicName(topic) == NULL) {
         OS_REPORT(OS_ERROR,
-                  "v_index::sampleTypeNew failed",0,
+                  "v_index::sampleTypeNew failed",V_RESULT_ILL_PARAM,
                   "failed to retreive topic name");
         return NULL;
     }
@@ -62,7 +69,7 @@ sampleTypeNew(
 
     if (base == NULL) {
         OS_REPORT(OS_ERROR,
-                  "v_index::sampleTypeNew failed",0,
+                  "v_index::sampleTypeNew failed",V_RESULT_ILL_PARAM,
                   "failed to retreive base");
         return NULL;
     }
@@ -71,7 +78,7 @@ sampleTypeNew(
 
     if (msgType == NULL) {
         OS_REPORT(OS_ERROR,
-                  "v_index::sampleTypeNew failed",0,
+                  "v_index::sampleTypeNew failed",V_RESULT_ILL_PARAM,
                   "failed to retreive topic message type");
         return NULL;
     }
@@ -91,7 +98,8 @@ sampleTypeNew(
             length = sizeof(SAMPLE_NAME) + strlen(v_topicName(topic));
             name = os_malloc(length);
             sres = snprintf(name,length,SAMPLE_FORMAT,v_topicName(topic));
-            assert(sres == (length-1));
+            assert(sres >= 0 && (os_size_t) sres == (length-1));
+            OS_UNUSED_ARG(sres);
 #undef SAMPLE_FORMAT
 #undef SAMPLE_NAME
 
@@ -105,7 +113,7 @@ sampleTypeNew(
         c_free(sampleType);
     } else {
         OS_REPORT(OS_ERROR,
-                  "v_index::sampleTypeNew failed",0,
+                  "v_index::sampleTypeNew failed",V_RESULT_ILL_PARAM,
                   "failed to retreive topic sample type");
     }
     os_free(name);
@@ -125,7 +133,8 @@ createInstanceType (
     c_type sampleType, keyType, keyInstanceType;
     c_base base;
     c_char *name;
-    c_long length,sres;
+    os_size_t length;
+    int sres;
 
     assert(C_TYPECHECK(topic,v_topic));
 
@@ -161,12 +170,18 @@ createInstanceType (
             length = sizeof(INSTANCE_NAME) + strlen(v_topicName(topic));
             name = os_alloca(length);
             sres = snprintf(name,length,INSTANCE_FORMAT,v_topicName(topic));
-            assert(sres == (length-1));
+            assert(sres >= 0 && (os_size_t) sres == (length-1));
+            OS_UNUSED_ARG(sres);
 #undef INSTANCE_NAME
 #undef INSTANCE_FORMAT
             foundType = c_type(c_metaBind(c_metaObject(base),
                                           name,
                                           c_metaObject(instanceType)));
+            if (foundType == NULL) {
+                OS_REPORT(OS_ERROR,
+                        "v_index::createInstanceType",V_RESULT_INTERNAL_ERROR,
+                        "Could not create instance type");
+            }
 
             os_freea(name);
 
@@ -191,13 +206,19 @@ createInstanceType (
                                     INSTANCE_FORMAT,
                                     v_topicName(topic),
                                     keyExpr);
-                    assert(sres == (length-1));
+                    assert(sres >= 0 && (os_size_t) sres == (length-1));
+                    OS_UNUSED_ARG(sres);
 #undef INSTANCE_NAME
 #undef INSTANCE_FORMAT
                     c_free(foundType); /* Will be overwritten, so free */
                     foundType = c_type(c_metaBind(c_metaObject(base),
                                                   name,
                                                   c_metaObject(keyInstanceType)));
+                    if (foundType == NULL) {
+                        OS_REPORT(OS_ERROR,
+                                  "v_index::createInstanceType",V_RESULT_INTERNAL_ERROR,
+                                  "Could not create key instance type");
+                    }
                     os_freea(name);
                     c_free(keyInstanceType);
                 }
@@ -231,33 +252,36 @@ indexCompare(
 
 #define PREFIX "sample.message"
 static c_array
-createKeyList(c_type instanceType, c_array keyList){
-    int size, i;
+createKeyList(
+    c_type instanceType,
+    c_array keyList)
+{
+    c_ulong size, i;
     c_array newKeyList = NULL;
 
     assert(instanceType);
 
-    if(keyList){
+    if (keyList) {
         size = c_arraySize(keyList);
 
         newKeyList = c_arrayNew(c_field_t(c_getBase(instanceType)), size);
 
-        if(newKeyList){
+        if (newKeyList) {
             for(i = 0; i<size; i++){
                 c_field f = c_fieldNew(instanceType, PREFIX);
                 assert(f);
-                if(f){
+                if (f) {
                     newKeyList[i] = c_fieldConcat(f, keyList[i]);
                     c_free(f);
                 } else {
-                    OS_REPORT(OS_ERROR,
-                                "createKeyList", 0,
+                    OS_REPORT(OS_CRITICAL,
+                                "createKeyList", V_RESULT_INTERNAL_ERROR,
                                 "Could not create c_field");
                 }
             }
         } else {
-            OS_REPORT(OS_ERROR,
-                        "createKeyList", 0,
+            OS_REPORT(OS_FATAL,
+                        "createKeyList", V_RESULT_INTERNAL_ERROR,
                         "Could not create array");
         }
     }
@@ -276,7 +300,7 @@ v_indexInit(
     c_structure keyStructure;
     c_char fieldName[16];
     c_char *keyExpr;
-    c_long i,nrOfKeys,totalSize;
+    c_size i,nrOfKeys,totalSize;
 
     assert(index != NULL);
     assert(C_TYPECHECK(index,v_index));
@@ -347,7 +371,7 @@ v__indexNew(
     c_iter list;
     c_char *keyExpr;
     c_array keyList;
-    c_long nrOfTopics;
+    c_ulong nrOfTopics;
 
     assert(C_TYPECHECK(reader,v_dataReader));
     kernel = v_objectKernel(reader);
@@ -356,16 +380,16 @@ v__indexNew(
         list = v_resolveTopics(kernel,q_getId(_from));
         nrOfTopics = c_iterLength(list);
         if (nrOfTopics == 0) {
-            OS_REPORT_1(OS_ERROR,
-                        "v__indexNew", 0,
+            OS_REPORT(OS_ERROR,
+                        "v__indexNew", V_RESULT_ILL_PARAM,
                         "Unknown topic %s",
                         q_getId(_from));
             c_iterFree(list);
             return NULL;
         }
         if (nrOfTopics > 1) {
-            OS_REPORT_1(OS_ERROR,
-                        "v__indexNew", 0,
+            OS_REPORT(OS_ERROR,
+                        "v__indexNew", V_RESULT_ILL_PARAM,
                         "Multiple topic definitions of: %s",
                         q_getId(_from));
             topic = v_topic(c_iterTakeFirst(list));
@@ -385,25 +409,29 @@ v__indexNew(
              * Otherwise when no user key is specified the default Topic key
              * type will be used.
              */
-            if (v_reader(reader)->qos->userKey.enable) {
-                keyExpr = v_reader(reader)->qos->userKey.expression;
+            if (v_reader(reader)->qos->userKey.v.enable) {
+                keyExpr = v_reader(reader)->qos->userKey.v.expression;
             } else {
                 keyExpr = NULL;
             }
             instanceType = createInstanceType(topic,keyExpr,&keyList);
-            index = v_index(v_objectNew(kernel,K_INDEX));
-            v_indexInit(index, instanceType, keyList, v_reader(reader));
+            if (instanceType) {
+                index = v_index(v_objectNew(kernel,K_INDEX));
+                v_indexInit(index, instanceType, keyList, v_reader(reader));
+            }
             c_free(keyList);
             c_free(instanceType);
 
-            if (action != NULL) {
-                action(index, topic, arg);
+            if (index != NULL) {
+                if (action != NULL) {
+                    action(index, topic, arg);
+                }
+                (void)c_iterAppend(indexList, index);
             }
-            (void)c_iterAppend(indexList, index);
         }
     } else {
         OS_REPORT(OS_ERROR,
-                  "v_indexNew failed",0,
+                  "v_indexNew failed",V_RESULT_ILL_PARAM,
                   "illegal from clause specified");
         assert(FALSE);
         index = NULL;
@@ -448,7 +476,7 @@ v_indexWalk(
     assert(C_TYPECHECK(_this,v_index));
 
     reader = v_reader(_this->reader);
-    if (reader->qos->userKey.enable) {
+    if (reader->qos->userKey.v.enable) {
         result = c_tableWalk(_this->notEmptyList, action, arg);
     } else {
         result = c_tableWalk(_this->objects, action, arg);

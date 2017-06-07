@@ -1,0 +1,28 @@
+parseconditions:
+    desc: Listener LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+
+        - name: ls_userid
+          type: line
+          inst: 1
+          required: yes
+          line: "userID  : 1"
+
+        - name: ls_msg_first
+          type: line
+          inst: 1
+          required: yes
+          line: "Message : *Hello World*"
+
+        - name: ls_sub_rec
+          type: line
+          inst: 1
+          required: yes
+          line: " *message received*"

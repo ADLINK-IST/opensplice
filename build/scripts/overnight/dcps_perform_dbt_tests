@@ -33,7 +33,7 @@ ArchiveLogs
 
 BUILD_TYPE=`echo $SETUP_TYPE | awk -F'-' '{ print$NF }'`
 
-sh $OSPL_OUTER_HOME/bin/management_dbt_run run collect $BUILD_TYPE
+bash $OSPL_OUTER_HOME/bin/management_dbt_run run collect $BUILD_TYPE full
 
 (
     cd $OSPL_OUTER_HOME/Results
@@ -48,8 +48,8 @@ sh $OSPL_OUTER_HOME/bin/management_dbt_run run collect $BUILD_TYPE
 )
 
 cp -rp $OSPL_OUTER_HOME/Results $LOGDIR/DBT-Results ||
-{ 
-    echo "ERROR: could not cpoy to DBT Results - dcps_build_rbt_tests"; 
-    exit 2; 
+{
+    echo "ERROR: could not copy to DBT Results - dcps_perform_dbt_tests";
+    exit 2;
 }
 exit 0

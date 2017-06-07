@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <assert.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -29,10 +48,10 @@ struct gcreq_queue {
   struct thread_state1 *ts;
 };
 
-static void threads_vtime_gather_for_wait (int *nivs, struct idx_vtime *ivs)
+static void threads_vtime_gather_for_wait (unsigned *nivs, struct idx_vtime *ivs)
 {
   /* copy vtimes of threads, skipping those that are sleeping */
-  int i, j;
+  unsigned i, j;
   for (i = j = 0; i < thread_states.nthreads; i++)
   {
     vtime_t vtime = thread_states.ts[i].vtime;
@@ -46,14 +65,14 @@ static void threads_vtime_gather_for_wait (int *nivs, struct idx_vtime *ivs)
   *nivs = j;
 }
 
-static int threads_vtime_check (int *nivs, struct idx_vtime *ivs)
+static int threads_vtime_check (unsigned *nivs, struct idx_vtime *ivs)
 {
   /* check all threads in ts have made progress those that have are
      removed from the set */
-  int i = 0;
+  unsigned i = 0;
   while (i < *nivs)
   {
-    int thridx = ivs[i].idx;
+    unsigned thridx = ivs[i].idx;
     vtime_t vtime = thread_states.ts[thridx].vtime;
     assert (vtime_awake_p (ivs[i].vtime));
     if (!vtime_gt (vtime, ivs[i].vtime))
@@ -71,9 +90,8 @@ static int threads_vtime_check (int *nivs, struct idx_vtime *ivs)
 static void *gcreq_queue_thread (struct gcreq_queue *q)
 {
   struct thread_state1 *self = lookup_thread_state ();
-  struct os_time to = { 0, 100 * T_MILLISECOND };
-  struct os_time shortsleep = { 0, 1 * T_MILLISECOND };
   struct gcreq *gcreq = NULL;
+  int trace_shortsleep = 1;
   os_mutexLock (&q->lock);
   while (!(q->terminate && q->count == 0))
   {
@@ -84,7 +102,7 @@ static void *gcreq_queue_thread (struct gcreq_queue *q)
     if (gcreq == NULL)
     {
       if (q->first == NULL)
-        os_condTimedWait (&q->cond, &q->lock, &to);
+        os_condTimedWait (&q->cond, &q->lock, 100*OS_DURATION_MILLISECOND);
       if (q->first)
       {
         gcreq = q->first;
@@ -101,7 +119,7 @@ static void *gcreq_queue_thread (struct gcreq_queue *q)
        burden on the system than having a separate thread or adding it
        to the workload of the data handling threads. */
     thread_state_awake (self);
-    check_and_handle_lease_expiration (self, now ());
+    check_and_handle_lease_expiration (self, now_et ());
     thread_state_asleep (self);
 
     if (gcreq)
@@ -113,8 +131,12 @@ static void *gcreq_queue_thread (struct gcreq_queue *q)
            terminate while this gcreq is waiting and that there is no
            condition on which to wait, so a plain sleep is quite
            reasonable. */
-        TRACE (("gc %p: not yet, shortsleep\n", gcreq));
-        os_nanoSleep (shortsleep);
+        if (trace_shortsleep)
+        {
+          TRACE (("gc %p: not yet, shortsleep\n", (void*)gcreq));
+          trace_shortsleep = 0;
+        }
+        os_sleep(1*OS_DURATION_MILLISECOND);
       }
       else
       {
@@ -122,11 +144,12 @@ static void *gcreq_queue_thread (struct gcreq_queue *q)
            it; the callback is responsible for requeueing (if complex
            multi-phase delete) or freeing the delete request.  Reset
            the current gcreq as this one obviously is no more.  */
-        TRACE (("gc %p: deleting\n", gcreq));
+        TRACE (("gc %p: deleting\n", (void*)gcreq));
         thread_state_awake (self);
         gcreq->cb (gcreq);
         thread_state_asleep (self);
         gcreq = NULL;
+        trace_shortsleep = 1;
       }
     }
 
@@ -138,28 +161,16 @@ static void *gcreq_queue_thread (struct gcreq_queue *q)
 
 struct gcreq_queue *gcreq_queue_new (void)
 {
-  struct gcreq_queue *q;
-  if ((q = os_malloc (sizeof (*q))) == NULL)
-    goto fail_q;
+  struct gcreq_queue *q = os_malloc (sizeof (*q));
+
   q->first = q->last = NULL;
   q->terminate = 0;
   q->count = 0;
-  if (os_mutexInit (&q->lock, &gv.mattr) != os_resultSuccess)
-    goto fail_lock;
-  if (os_condInit (&q->cond, &q->lock, &gv.cattr) != os_resultSuccess)
-    goto fail_cond;
+  os_mutexInit (&q->lock, NULL);
+  os_condInit (&q->cond, &q->lock, NULL);
   q->ts = create_thread ("gc", (void * (*) (void *)) gcreq_queue_thread, q);
-  if (q->ts == NULL)
-    goto fail_thread;
+  assert (q->ts);
   return q;
- fail_thread:
-  os_condDestroy (&q->cond);
- fail_cond:
-  os_mutexDestroy (&q->lock);
- fail_lock:
-  os_free (q);
- fail_q:
-  return NULL;
 }
 
 void gcreq_queue_free (struct gcreq_queue *q)
@@ -194,14 +205,7 @@ void gcreq_queue_free (struct gcreq_queue *q)
 struct gcreq *gcreq_new (struct gcreq_queue *q, gcreq_cb_t cb)
 {
   struct gcreq *gcreq;
-  if ((gcreq = os_malloc (offsetof (struct gcreq, vtimes) + thread_states.nthreads * sizeof (*gcreq->vtimes))) == NULL)
-  {
-    /* Now what!? Might be an option to pre-allocate a few gcreqs for
-       use when out of memory, and block gcreq_new requests until one
-       becomes available. Whether that actually solves the problem or
-       simply moves it, I'm not entirely certain. */
-    abort ();
-  }
+  gcreq = os_malloc (offsetof (struct gcreq, vtimes) + thread_states.nthreads * sizeof (*gcreq->vtimes));
   gcreq->cb = cb;
   gcreq->queue = q;
   threads_vtime_gather_for_wait (&gcreq->nvtimes, gcreq->vtimes);

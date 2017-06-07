@@ -1,8 +1,30 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <string.h>
 #include <assert.h>
 
+#include "c_typebase.h"
+
 #include "q_time.h"
 #include "q_xqos.h"
+#include "q_misc.h"
 #include "q_qosmatch.h"
 
 int is_wildcard_partition (const char *str)
@@ -20,51 +42,12 @@ static int partition_patmatch_p (const char *pat, const char *name)
     /* (we know: wildcard in pat) => wildcard in name => no match */
     return 0;
   else
-  {
-    /* quick hack: pattern matcher blatantly stolen from the kernel */
-    const char *nameRef = NULL;
-    const char *ptnRef = NULL;
-    while (*name != 0 && *pat != 0)
-    {
-      if (*pat == '*')
-      {
-        pat++;
-        while (*name != 0 && *name != *pat)
-          name++;
-        if (*name != 0)
-        {
-          nameRef = name+1;
-          ptnRef = pat-1;
-        }
-      }
-      else if (*pat == '?')
-      {
-        pat++;
-        name++;
-      }
-      else if (*pat++ != *name++)
-      {
-        if (nameRef == NULL)
-          return 0;
-        name = nameRef;
-        pat = ptnRef;
-        nameRef = NULL;
-      }
-    }
-    if (*name != 0)
-      return 0;
-    else
-    {
-      while (*pat == '*')
-        pat++;
-      return (*pat == 0);
-    }
-  }
+    return ddsi2_patmatch (pat, name);
 }
 
 static int partitions_match_default (const nn_xqos_t *x)
 {
-  int i;
+  unsigned i;
   if (!(x->present & QP_PARTITION) || x->partition.n == 0)
     return 1;
   for (i = 0; i < x->partition.n; i++)
@@ -81,7 +64,7 @@ int partitions_match_p (const nn_xqos_t *a, const nn_xqos_t *b)
     return partitions_match_default (a);
   else
   {
-    int i, j;
+    unsigned i, j;
     for (i = 0; i < a->partition.n; i++)
       for (j = 0; j < b->partition.n; j++)
       {
@@ -104,7 +87,7 @@ int partition_match_based_on_wildcard_in_left_operand (const nn_xqos_t *a, const
   {
     /* Either A explicitly includes the default partition, or it is a
        wildcard that matches it */
-    int i;
+    unsigned i;
     for (i = 0; i < a->partition.n; i++)
       if (strcmp (a->partition.strs[i], "") == 0)
         return 0;
@@ -113,7 +96,8 @@ int partition_match_based_on_wildcard_in_left_operand (const nn_xqos_t *a, const
   }
   else
   {
-    int i, j, maybe_yes = 0;
+    unsigned i, j;
+    int maybe_yes = 0;
     for (i = 0; i < a->partition.n; i++)
       for (j = 0; j < b->partition.n; j++)
       {
@@ -145,7 +129,33 @@ static int ddsi_duration_is_lt (nn_duration_t a0, nn_duration_t b0)
     return a < b;
 }
 
-int qos_match_p (const nn_xqos_t *rd, const nn_xqos_t *wr)
+/* Duplicates of DDS policy ids to avoid inclusion of actual definitions */
+
+#define Q_INVALID_QOS_POLICY_ID 0
+#define Q_USERDATA_QOS_POLICY_ID 1
+#define Q_DURABILITY_QOS_POLICY_ID 2
+#define Q_PRESENTATION_QOS_POLICY_ID 3
+#define Q_DEADLINE_QOS_POLICY_ID 4
+#define Q_LATENCYBUDGET_QOS_POLICY_ID 5
+#define Q_OWNERSHIP_QOS_POLICY_ID 6
+#define Q_OWNERSHIPSTRENGTH_QOS_POLICY_ID 7
+#define Q_LIVELINESS_QOS_POLICY_ID 8
+#define Q_TIMEBASEDFILTER_QOS_POLICY_ID 9
+#define Q_PARTITION_QOS_POLICY_ID 10
+#define Q_RELIABILITY_QOS_POLICY_ID 11
+#define Q_DESTINATIONORDER_QOS_POLICY_ID 12
+#define Q_HISTORY_QOS_POLICY_ID 13
+#define Q_RESOURCELIMITS_QOS_POLICY_ID 14
+#define Q_ENTITYFACTORY_QOS_POLICY_ID 15
+#define Q_WRITERDATALIFECYCLE_QOS_POLICY_ID 16
+#define Q_READERDATALIFECYCLE_QOS_POLICY_ID 17
+#define Q_TOPICDATA_QOS_POLICY_ID 18
+#define Q_GROUPDATA_QOS_POLICY_ID 19
+#define Q_TRANSPORTPRIORITY_QOS_POLICY_ID 20
+#define Q_LIFESPAN_QOS_POLICY_ID 21
+#define Q_DURABILITYSERVICE_QOS_POLICY_ID 22
+
+os_int32 qos_match_p (const nn_xqos_t *rd, const nn_xqos_t *wr)
 {
 #ifndef NDEBUG
   unsigned musthave = (QP_RXO_MASK | QP_PARTITION | QP_TOPIC_NAME | QP_TYPE_NAME);
@@ -155,40 +165,70 @@ int qos_match_p (const nn_xqos_t *rd, const nn_xqos_t *wr)
   if (rd->relaxed_qos_matching.value || wr->relaxed_qos_matching.value)
   {
     if (rd->reliability.kind != wr->reliability.kind)
-      return 0;
+    {
+      return Q_RELIABILITY_QOS_POLICY_ID;
+    }
   }
   else
   {
     if (rd->reliability.kind > wr->reliability.kind)
-      return 0;
+    {
+      return Q_RELIABILITY_QOS_POLICY_ID;
+    }
     if (rd->durability.kind > wr->durability.kind)
-      return 0;
+    {
+      return Q_DURABILITY_QOS_POLICY_ID;
+    }
     if (rd->presentation.access_scope > wr->presentation.access_scope)
-      return 0;
+    {
+      return Q_PRESENTATION_QOS_POLICY_ID;
+    }
     if (rd->presentation.coherent_access > wr->presentation.coherent_access)
-      return 0;
+    {
+      return Q_PRESENTATION_QOS_POLICY_ID;
+    }
     if (rd->presentation.ordered_access > wr->presentation.ordered_access)
-      return 0;
+    {
+      return Q_PRESENTATION_QOS_POLICY_ID;
+    }
     if (ddsi_duration_is_lt (rd->deadline.deadline, wr->deadline.deadline))
-      return 0;
+    {
+      return Q_DEADLINE_QOS_POLICY_ID;
+    }
     if (ddsi_duration_is_lt (rd->latency_budget.duration, wr->latency_budget.duration))
-      return 0;
+    {
+      return Q_LATENCYBUDGET_QOS_POLICY_ID;
+    }
     if (rd->ownership.kind != wr->ownership.kind)
-      return 0;
+    {
+      return Q_OWNERSHIP_QOS_POLICY_ID;
+    }
     if (rd->liveliness.kind > wr->liveliness.kind)
-      return 0;
+    {
+      return Q_LIVELINESS_QOS_POLICY_ID;
+    }
     if (ddsi_duration_is_lt (rd->liveliness.lease_duration, wr->liveliness.lease_duration))
-      return 0;
+    {
+      return Q_LIVELINESS_QOS_POLICY_ID;
+    }
     if (rd->destination_order.kind > wr->destination_order.kind)
-      return 0;
+    {
+      return Q_DESTINATIONORDER_QOS_POLICY_ID;
+    }
   }
   if (strcmp (rd->topic_name, wr->topic_name) != 0)
-    return 0;
+  {
+    return Q_INVALID_QOS_POLICY_ID;
+  }
   if (strcmp (rd->type_name, wr->type_name) != 0)
-    return 0;
+  {
+    return Q_INVALID_QOS_POLICY_ID;
+  }
   if (!partitions_match_p (rd, wr))
-    return 0;
-  return 1;
+  {
+    return Q_PARTITION_QOS_POLICY_ID;
+  }
+  return -1;
 }
 
 /* SHA1 not available (unoffical build.) */

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -47,8 +55,11 @@
 #define v_groupInstanceOwner(_this) \
         v_group(v_groupInstance(_this)->group)
 
-#define v_groupInstanceMessageCount(_this) \
-        (v_groupInstance(_this)->messageCount)
+#define v_groupInstanceHistorySampleCount(_this) \
+        (v_groupInstance(_this)->historySampleCount)
+
+#define v_groupInstanceResourceSampleCount(_this) \
+        (v_groupInstance(_this)->resourceSampleCount)
 
 #define v_groupInstanceStateTest(_this,_mask) \
         v_stateTest(v_groupInstance(_this)->state,_mask)
@@ -93,24 +104,21 @@ v_groupInstanceFree(
 v_writeResult
 v_groupInstanceRegister (
     v_groupInstance _this,
-    v_message message,
-    v_message *regMsg);
-
-v_writeResult
-v_groupInstanceRemoveRegistration(
-    v_groupInstance instance,
-    v_registration registration,
-    c_time timestamp);
+    v_message message);
 
 v_writeResult
 v_groupInstanceUnregister (
     v_groupInstance _this,
-    v_message message);
+    v_message message,
+    v_transaction transaction);
 
 v_writeResult
 v_groupInstanceInsert (
     v_groupInstance _this,
-    v_message message);
+    v_message message,
+    c_bool isTransactionFlush,
+    v_transaction transaction,
+    c_bool stream);
 
 void
 v_groupInstanceRemove (
@@ -118,7 +126,8 @@ v_groupInstanceRemove (
 void
 v_groupInstancePurge(
     v_groupInstance _this);
-c_time
+
+os_timeW
 v_groupInstanceDisposeTime (
     v_groupInstance _this);
 
@@ -159,7 +168,7 @@ v_groupInstanceAcceptMessage(
 void
 v_groupInstancePurgeTimed(
     v_groupInstance _this,
-    c_time purgeTime);
+    os_timeE purgeTime);
 
 void
 v_groupInstanceDisconnect(
@@ -168,13 +177,22 @@ v_groupInstanceDisconnect(
 v_writeResult
 v_groupInstanceDispose (
     v_groupInstance instance,
-    c_time timestamp);
+    os_timeW timestamp);
 
 void
 v_groupInstancecleanup(
     v_groupInstance _this,
     v_registration registration,
-    c_time timestamp,
+    os_timeW timestamp,
     c_bool isImplicit);
+
+c_bool
+v_groupInstanceClaimResource(
+    v_groupInstance instance,
+    v_message message);
+
+void
+v_groupInstanceReleaseResource(
+    v_groupInstance _this);
 
 #endif

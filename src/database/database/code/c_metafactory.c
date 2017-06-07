@@ -1,16 +1,24 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
-#include "os.h"
+#include "vortex_os.h"
 #include "c__base.h"
 #include "c_misc.h"
 #include "c_metafactory.h"
@@ -49,9 +57,8 @@ c_metaArray(
     c_iter iter,
     c_metaKind kind)
 {
-    c_long i;
+    c_ulong i;
     struct copyToArrayArg arg;
-    c_type type;
 
     if (kind) {
         /* suppress warnings */
@@ -60,12 +67,10 @@ c_metaArray(
     if (i == 0) {
         arg.a = NULL;
     } else {
-        type = c_object_t(c__getBase(scope));
-        arg.a = c_arrayNew(type,i);
+        arg.a = c_arrayNew(c_object_t(c__getBase(scope)),i);
         arg.index = 0;
         c_iterWalk(iter,copyToArray,&arg);
         c_iterFree(iter);
-        c_free(type);
     }
     return arg.a;
 }
@@ -84,11 +89,13 @@ c_declaratorType(
         l = c_iterTakeFirst(declaration->sizes);
         while (l != NULL) {
             o = (c_collectionType)c_metaDefine(scope,M_COLLECTION);
-            o->kind = C_ARRAY;
+            o->kind = OSPL_C_ARRAY;
             if (l->value.kind == V_LONGLONG) {
-                o->maxSize = (c_long)(l->value.is.LongLong);
+                assert (l->value.is.LongLong >= 0);
+                o->maxSize = (c_ulong) l->value.is.LongLong;
             } else {
-                o->maxSize = l->value.is.Long;
+                assert (l->value.is.Long >= 0);
+                o->maxSize = (c_ulong) l->value.is.Long;
             }
             o->subType = type;
             c_metaFinalize(c_metaObject(o));
@@ -213,7 +220,7 @@ c_unionCaseNew (
     c_iter labels)
 {
     c_unionCase o;
-    c_long nrOfLabels;
+    c_ulong nrOfLabels;
     c_type subType;
 
     nrOfLabels = c_iterLength(labels);

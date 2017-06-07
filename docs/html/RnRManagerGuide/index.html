@@ -1,0 +1,285 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The Vortex Record and Replay Manager User Guide &mdash; RnR Manager User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RnR Manager User Guide" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">RnR Manager Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-vortex-record-and-replay-manager-user-guide">
+<h1>The Vortex Record and Replay Manager User Guide<a class="headerlink" href="#the-vortex-record-and-replay-manager-user-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-rnr-manager-user-guide">1.1. About The RnR Manager User Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#intended-audience">1.2. Intended Audience</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#organisation">1.3. Organisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#conventions">1.4. Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">2. Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#overview">2.1. Overview</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#vortex-opensplice-record-and-replay-service">2.1.1. Vortex OpenSplice Record and Replay Service</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="introduction.html#vortex-opensplice-rnr-service-features">2.1.1.1. Vortex OpenSplice RnR Service Features</a></li>
+<li class="toctree-l4"><a class="reference internal" href="introduction.html#non-intrusiveness-of-vortex-opensplice-rnr">2.1.1.2. Non-Intrusiveness of Vortex OpenSplice RnR</a></li>
+<li class="toctree-l4"><a class="reference internal" href="introduction.html#vortex-opensplice-deployment-documentation">2.1.1.3. Vortex OpenSplice Deployment Documentation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="introduction.html#vortex-opensplice-rnr-service-configuration-example-ospl-xml">2.1.1.4. Vortex OpenSplice RnR Service Configuration Example - ospl.xml</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#rnr-manager-product-overview">2.1.2. RnR Manager Product Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="introduction.html#rnr-manager-features">2.1.2.1. RnR Manager Features</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#key-concepts">2.2. Key Concepts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#services">2.2.1. Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#scenarios">2.2.2. Scenarios</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="introduction.html#scenario-commands">2.2.2.1. Scenario Commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="introduction.html#different-versions-of-the-scenario-topic">2.2.2.2. Different versions of the scenario topic</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#storages">2.2.3. Storages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#samples">2.2.4. Samples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#time-ranges">2.2.5. Time Ranges</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">3. Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#pre-requisites">3.1. Pre-requisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#supported-platforms">3.2. Supported Platforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#general-installation-instructions">3.3. General Installation Instructions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#installation-on-unix-and-linux">3.3.1. Installation on Unix and Linux</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#installation-on-windows">3.3.2. Installation on Windows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#installing-the-license-file">3.3.3. Installing the license file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="using01.html">4. Using the Record and Replay Manager</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#rnr-manager-overview">4.1. RnR Manager Overview</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#starting-rnr-manager">4.1.1. Starting RnR Manager</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#views">4.1.2. Views</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#preferences">4.1.3. Preferences</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#opensplice">4.1.3.1. OpenSplice</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#partition-topic-filters">4.1.3.2. Partition/Topic Filters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#partition-topic-strings">4.1.3.3. Partition/Topic Strings</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#help">4.1.4. Help</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#domain-browser">4.2. Domain Browser</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#defining-a-domain">4.2.1. Defining a domain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#domain-connect">4.2.2. Domain Connect</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#domain-disconnect-and-delete">4.2.3. Domain Disconnect and Delete</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#service-status">4.3. Service Status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#storage-status">4.4. Storage Status</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#creating-a-new-storage">4.4.1. Creating a new storage</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#storage-attributes">4.4.1.1. Storage Attributes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#scenario-status">4.5. Scenario Status</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#open-scenario-editor">4.5.1. Open Scenario Editor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#starting-scenario-s">4.5.2. Starting Scenario(s)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#stopping-scenario-s">4.5.3. Stopping Scenario(s)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#scenario-menu">4.5.4. Scenario Menu</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#topics-one-click-record">4.6. Topics – One Click Record</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#to-record-a-topic">4.6.1. To Record a Topic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#the-record-topic-s-dialog">4.6.2. The Record Topic(s) Dialog</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#scenario-editors">4.7. Scenario Editors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#overview-of-the-scenario-editor">4.7.1. Overview of the Scenario Editor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#overview-of-the-scenario-file-editor">4.7.2. Overview of the Scenario File Editor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#re-sizing-the-editors">4.7.3. Re-sizing the Editors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#scenario-editor-features">4.7.4. Scenario Editor Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#running-vs-stopped-scenarios">4.7.4.1. Running <em>vs.</em> Stopped Scenarios</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#for-running-scenarios">4.7.4.1.1. For <tt class="docutils literal"><span class="pre">RUNNING</span></tt> scenarios:</a></li>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#for-stopped-scenarios">4.7.4.1.2. For <tt class="docutils literal"><span class="pre">STOPPED</span></tt> scenarios:</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#adding-new-commands">4.7.4.2. Adding new commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#existing-commands">4.7.4.3. Existing commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#removing-commands">4.7.4.4. Removing commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#ordering-commands">4.7.4.5. Ordering commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#duplicating-commands">4.7.4.6. Duplicating commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#validation">4.7.4.7. Validation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#save-as">4.7.4.8. <em>Save As...</em></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#scenario-file-editor-features">4.7.5. Scenario File Editor Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#creating-new-files">4.7.5.1. Creating New Files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#editing-commands">4.7.5.2. Editing Commands</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#load-scenario">4.7.5.3. Load Scenario</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#id9">4.7.5.4. Validation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#command-parameters">4.7.6. Command Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#add-record">4.7.6.1. Add Record</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#add-replay">4.7.6.2. Add Replay</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#remove-record">4.7.6.3. Remove Record</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#remove-replay">4.7.6.4. Remove Replay</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#set-replay-speed">4.7.6.5. Set Replay Speed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#truncate">4.7.6.6. Truncate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#start">4.7.6.7. Start</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#stop">4.7.6.8. Stop</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#suspend">4.7.6.9. Suspend</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#config">4.7.6.10. CONFIG</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#builtinscenario">4.7.7. BuiltinScenario</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#opensplice-builtinscenario">4.7.7.1. OpenSplice BuiltInScenario</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#builtinscenario-in-rnr-manager">4.7.7.2. BuiltinScenario in RnR Manager</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#storage-data">4.8. Storage Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#workspace-imported-storages">4.8.1. Workspace - Imported Storages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#database-file-management">4.8.2. Database File Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#import-storage">4.8.3. Import Storage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#export">4.8.4. Export</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#storage-parameters">4.8.4.1. Storage Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#sample-set-parameters">4.8.4.2. Sample Set Parameters</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#storage-editor">4.9. Storage Editor</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#query-parameters">4.9.1. Query Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#field-selection">4.9.1.1. Field Selection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#where-clause">4.9.1.2. Where Clause</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#time-range-message-writetime">4.9.1.3. Time Range (message.writeTime)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#load">4.9.1.4. Load</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#order-by">4.9.1.5. Order By</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#data">4.9.1.6. Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#selected-row-s-menu">4.9.1.7. Selected Row(s) Menu</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#next-and-previous">4.9.1.8. Next and Previous</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#undo-save-and-save-as">4.9.1.9. Undo, Save and Save As...</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">5. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">5.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">5.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The Vortex Record and Replay Manager User Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">RnR Manager Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

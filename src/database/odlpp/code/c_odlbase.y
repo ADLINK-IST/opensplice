@@ -9,6 +9,8 @@
 
 #ifdef _WIN32
 #define YY_NO_UNISTD_H
+#define YYMALLOC malloc
+#define YYFREE free
 #endif
 
 #define yyin                 c_odlbase_yyin
@@ -98,20 +100,24 @@ extern FILE *yyin;
     CharacterLiteral
 
 %token
-    SEMI LPAR RPAR MODULE DOUBLE_COLON COLON PERSISTENT TRANSIENT
-    INTERFACE LRPAR RRPAR KEY KEYS COMMA _CONST EQUAL VERT HAT
-    AMPER DOUBLE_RIGHT DOUBLE_LEFT PLUS MINUS TIMES SLASH PERCENT TILDE
-    TOK_TRUE TOK_FALSE TYPEDEF FLOAT DOUBLE LONG SHORT UNSIGNED CHAR BOOLEAN ANY
-    OCTET STRUCT UNION SWITCH CASE DEFAULT ENUM ARRAY SEQUENCE LEFT RIGHT
-    ODL_STRING LEPAR REPAR READONLY ATTRIBUTE SET LIST BAG INVERSE IMPORT
-    RELATIONSHIP ORDER_BY EXCEPTION ONEWAY ODL_VOID IN OUT INOUT RAISES
-    CONTEXT CLASS DATE TIME EXTENDS INTERVAL TIMESTAMP DICTIONARY
+    ODL_SEMI ODL_LPAR ODL_RPAR ODL_MODULE ODL_DOUBLE_COLON ODL_COLON
+    ODL_PERSISTENT ODL_TRANSIENT ODL_INTERFACE ODL_LRPAR ODL_RRPAR ODL_KEY
+    ODL_KEYS ODL_COMMA ODL_CONST ODL_EQUAL ODL_VERT ODL_HAT ODL_AMPER
+    ODL_DOUBLE_RIGHT ODL_DOUBLE_LEFT ODL_PLUS ODL_MINUS ODL_TIMES ODL_SLASH
+    ODL_PERCENT ODL_TILDE ODL_TRUE ODL_FALSE ODL_TYPEDEF ODL_FLOAT ODL_DOUBLE
+    ODL_LONG ODL_SHORT ODL_UNSIGNED ODL_CHAR ODL_BOOLEAN ODL_ANY ODL_OCTET
+    ODL_STRUCT ODL_UNION ODL_SWITCH ODL_CASE ODL_DEFAULT ODL_ENUM ODL_ARRAY
+    ODL_SEQUENCE ODL_LEFT ODL_RIGHT ODL_STRING ODL_LEPAR ODL_REPAR ODL_READONLY
+    ODL_ATTRIBUTE ODL_SET ODL_LIST ODL_BAG ODL_INVERSE ODL_IMPORT
+    ODL_RELATIONSHIP ODL_ORDER_BY ODL_EXCEPTION ODL_ONEWAY ODL_VOID ODL_IN
+    ODL_OUT ODL_INOUT ODL_RAISES ODL_CONTEXT ODL_CLASS ODL_DATE ODL_TIME
+    ODL_EXTENDS ODL_INTERVAL ODL_TIMESTAMP ODL_DICTIONARY ODL_ATOMIC ODL_WEAK
 
 %type <Value>
     FixedArraySize PositiveIntConst
 
 %type <Object>
-    PropertyName AttributeName
+    PropertyName
     ConstType TypeSpec SimpleTypeSpec BaseTypeSpec
     TemplateTypeSpec CollType ConstrTypeSpec
     IntegerType SignedInt SignedLongLongInt SignedLongInt
@@ -128,7 +134,7 @@ extern FILE *yyin;
 
 %type <List>
     OptKeySpec KeySpec Key KeyList
-    PropertyList AttributeNameList InheritanceSpec
+    PropertyList InheritanceSpec
     Declarators Member MemberList SwitchBody CaseLabelList EnumeratorList
     ArraySizeList ParamDclList ScopedNameList
     OptMemberList TypePropertyList
@@ -150,13 +156,13 @@ Specification:
     ;
 
 Definition:
-      TypeDcl SEMI
-    | ConstDcl SEMI
-    | ExceptDcl SEMI
-    | Interface SEMI
-    | Module SEMI
-    | Class SEMI
-    | IMPORT Identifier COLON Identifier SEMI
+      TypeDcl ODL_SEMI
+    | ConstDcl ODL_SEMI
+    | ExceptDcl ODL_SEMI
+    | Interface ODL_SEMI
+    | Module ODL_SEMI
+    | Class ODL_SEMI
+    | ODL_IMPORT Identifier ODL_COLON Identifier ODL_SEMI
     ;
 
 Class :
@@ -165,33 +171,33 @@ Class :
     ;
 
 ClassForward :
-      CLASS Identifier
+      ODL_CLASS Identifier
         { c_metaDeclare(scope,$2,M_CLASS); }
     ;
 
 ClassDcl:
-      ClassHeader LPAR InterfaceBody RPAR
+      ClassHeader ODL_LPAR InterfaceBody ODL_RPAR
         { c_metaFinalize(c_object(scope));
           scope = scope->definedIn; }
     ;
 
 ClassHeader:
-      CLASS Identifier OptTypePropertyList
+      ODL_CLASS Identifier OptTypePropertyList
         { scope = c_metaObject(c_metaDeclare(scope,$2,M_CLASS));
           c_class(scope)->extends = NULL;
           c_class(scope)->keys = c_metaArray(scope,$3,M_UNDEFINED);
         }
-    | CLASS Identifier EXTENDS ScopedName OptTypePropertyList
+    | ODL_CLASS Identifier ODL_EXTENDS ScopedName OptTypePropertyList
         { scope = c_metaObject(c_metaDeclare(scope,$2,M_CLASS));
           c_class(scope)->extends = c_class($4);
           c_class(scope)->keys = c_metaArray(scope,$5,M_UNDEFINED);
         }
-    | CLASS Identifier COLON InheritanceSpec OptTypePropertyList
+    | ODL_CLASS Identifier ODL_COLON InheritanceSpec OptTypePropertyList
         { scope = c_metaObject(c_metaDeclare(scope,$2,M_CLASS));
           c_class(scope)->extends = NULL;
           c_class(scope)->keys = c_metaArray(scope,$5,M_UNDEFINED);
         }
-    | CLASS Identifier EXTENDS ScopedName COLON InheritanceSpec OptTypePropertyList
+    | ODL_CLASS Identifier ODL_EXTENDS ScopedName ODL_COLON InheritanceSpec OptTypePropertyList
         { scope = c_metaObject(c_metaDeclare(scope,$2,M_CLASS));
           c_class(scope)->extends = (c_class)c_metaResolve(scope,$4);
           c_class(scope)->keys = c_metaArray(scope,$7,M_UNDEFINED);
@@ -199,12 +205,12 @@ ClassHeader:
     ;
 
 Module:
-      ModuleHeader Specification RPAR
+      ModuleHeader Specification ODL_RPAR
         { scope = scope->definedIn; }
     ;
 
 ModuleHeader:
-      MODULE Identifier LPAR
+      ODL_MODULE Identifier ODL_LPAR
         { scope = c_metaObject(c_metaDeclare(scope,$2,M_MODULE)); }
     ;
 
@@ -214,20 +220,20 @@ Interface:
     ;
 
 InterfaceDcl:
-      InterfaceHeader LPAR OptInterfaceBody RPAR
+      InterfaceHeader ODL_LPAR OptInterfaceBody ODL_RPAR
         { scope = scope->definedIn; }
     ;
 
 InterfaceHeader:
-      INTERFACE Identifier
+      ODL_INTERFACE Identifier
         { scope = c_metaObject(c_metaDeclare(scope,$2,M_INTERFACE)); }
-    | INTERFACE Identifier COLON InheritanceSpec
+    | ODL_INTERFACE Identifier ODL_COLON InheritanceSpec
         { scope = c_metaObject(c_metaDeclare(scope,$2,M_INTERFACE)); }
 
     ;
 
 ForwardDcl:
-      INTERFACE Identifier
+      ODL_INTERFACE Identifier
         { c_metaDeclare(scope,$2,M_INTERFACE); }
     ;
 
@@ -242,7 +248,7 @@ OptTypePropertyList:
     ;
 
 TypePropertyList:
-      LRPAR OptKeySpec RRPAR
+      ODL_LRPAR OptKeySpec ODL_RRPAR
         { $$ = $2; }
     ;
 
@@ -254,30 +260,30 @@ OptKeySpec:
     ;
 
 KeySpec:
-      KEY KeyList
+      ODL_KEY KeyList
         { $$ = $2; }
-    | KEYS KeyList
+    | ODL_KEYS KeyList
         { $$ = $2; }
     ;
 
 KeyList:
        Key
         { $$ = $1; }
-     | Key COMMA KeyList
+     | Key ODL_COMMA KeyList
        { $$ = c_iterConcat($1,$3); }
      ;
 
 Key:
        PropertyName
         { $$ = c_iterNew($1); }
-     | LRPAR PropertyList RRPAR
+     | ODL_LRPAR PropertyList ODL_RRPAR
         { $$ = $2; }
      ;
 
 PropertyList:
        PropertyName
         { $$ = c_iterNew($1); }
-     | PropertyName COMMA PropertyList
+     | PropertyName ODL_COMMA PropertyList
         { $$ = c_iterInsert($3,$1); }
      ;
 
@@ -286,36 +292,24 @@ PropertyName:
         { $$ = c_stringNew(c_getBase(scope),$1); }
      ;
 
-AttributeNameList:
-       AttributeName
-        { $$ = c_iterNew($1); }
-     | AttributeName COMMA AttributeNameList
-        { $$ = c_iterInsert($3,$1); }
-     ;
-
-AttributeName:
-       Identifier
-        { $$ = (void *)c_metaResolve(scope,$1); }
-     ;
-
 InterfaceBody:
       Export
     | Export InterfaceBody
     ;
 
 Export:
-      TypeDcl SEMI
-    | ConstDcl SEMI
-    | ExceptDcl SEMI
-    | AttrDcl SEMI
-    | RelDcl SEMI
-    | OpDcl SEMI
+      TypeDcl ODL_SEMI
+    | ConstDcl ODL_SEMI
+    | ExceptDcl ODL_SEMI
+    | AttrDcl ODL_SEMI
+    | RelDcl ODL_SEMI
+    | OpDcl ODL_SEMI
     ;
 
 InheritanceSpec:
       ScopedName
         { $$ = c_iterNew($1); }
-    | ScopedName COMMA InheritanceSpec
+    | ScopedName ODL_COMMA InheritanceSpec
         { $$ = c_iterInsert($3,$1); }
     ;
 
@@ -327,14 +321,14 @@ ScopedName:
               YYABORT;
           }
         }
-    | DOUBLE_COLON Identifier
+    | ODL_DOUBLE_COLON Identifier
         { $$ = (void *)c_metaResolve(topLevel,$2);
           if ($$ == NULL) {
               yyerror("Undefined identifier");
               YYABORT;
           }
         }
-    | ScopedName DOUBLE_COLON Identifier
+    | ScopedName ODL_DOUBLE_COLON Identifier
         { $$ = (void *)c_metaResolve($1,$3);
           if ($$ == NULL) {
               yyerror("Undefined identifier");
@@ -344,7 +338,7 @@ ScopedName:
     ;
 
 ConstDcl:
-      _CONST ConstType Identifier EQUAL ConstExp
+      ODL_CONST ConstType Identifier ODL_EQUAL ConstExp
         { object = c_metaDeclare(scope,$3,M_CONSTANT);
           c_constant(object)->type = $2;
           c_constant(object)->operand = $5;
@@ -368,7 +362,7 @@ ConstExp:
 
 OrExpr:
       XOrExpr
-    | OrExpr VERT XOrExpr
+    | OrExpr ODL_VERT XOrExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_OR;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -379,7 +373,7 @@ OrExpr:
 
 XOrExpr:
       AndExpr
-    | XOrExpr HAT AndExpr
+    | XOrExpr ODL_HAT AndExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_XOR;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -390,7 +384,7 @@ XOrExpr:
 
 AndExpr:
       ShiftExpr
-    | AndExpr AMPER ShiftExpr
+    | AndExpr ODL_AMPER ShiftExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_AND;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -401,14 +395,14 @@ AndExpr:
 
 ShiftExpr:
       AddExpr
-    | ShiftExpr DOUBLE_RIGHT AddExpr
+    | ShiftExpr ODL_DOUBLE_RIGHT AddExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_SHIFTRIGHT;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
           c_expression($$)->operands[0] = $1;
           c_expression($$)->operands[1] = $3;
         }
-    | ShiftExpr DOUBLE_LEFT AddExpr
+    | ShiftExpr ODL_DOUBLE_LEFT AddExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_SHIFTLEFT;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -419,14 +413,14 @@ ShiftExpr:
 
 AddExpr:
       MultExpr
-    | AddExpr PLUS MultExpr
+    | AddExpr ODL_PLUS MultExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_PLUS;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
           c_expression($$)->operands[0] = $1;
           c_expression($$)->operands[1] = $3;
         }
-    | AddExpr MINUS MultExpr
+    | AddExpr ODL_MINUS MultExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_MINUS;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -437,21 +431,21 @@ AddExpr:
 
 MultExpr:
       UnaryExpr
-    | MultExpr TIMES UnaryExpr
+    | MultExpr ODL_TIMES UnaryExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_MUL;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
           c_expression($$)->operands[0] = $1;
           c_expression($$)->operands[1] = $3;
         }
-    | MultExpr SLASH UnaryExpr
+    | MultExpr ODL_SLASH UnaryExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_DIV;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
           c_expression($$)->operands[0] = $1;
           c_expression($$)->operands[1] = $3;
         }
-    | MultExpr PERCENT UnaryExpr
+    | MultExpr ODL_PERCENT UnaryExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_MOD;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -461,19 +455,19 @@ MultExpr:
     ;
 
 UnaryExpr:
-      MINUS PrimaryExpr
+      ODL_MINUS PrimaryExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_MINUS;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,1);
           c_expression($$)->operands[0] = $2;
         }
-    | PLUS PrimaryExpr
+    | ODL_PLUS PrimaryExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_PLUS;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,1);
           c_expression($$)->operands[0] = $2;
         }
-    | TILDE PrimaryExpr
+    | ODL_TILDE PrimaryExpr
         { $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_NOT;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,1);
@@ -485,7 +479,7 @@ UnaryExpr:
 PrimaryExpr:
       ScopedName
     | Literal
-    | LRPAR ConstExp RRPAR
+    | ODL_LRPAR ConstExp ODL_RRPAR
         { $$ = $2; }
     ;
 
@@ -506,10 +500,10 @@ Literal:
     | FloatingPtLiteral
         { $$ = c_metaDefine(scope,M_LITERAL);
           c_literal($$)->value = c_doubleValue($1); }
-    | TOK_TRUE
+    | ODL_TRUE
         { $$ = c_metaDefine(scope,M_LITERAL);
           c_literal($$)->value = c_boolValue(TRUE); }
-    | TOK_FALSE
+    | ODL_FALSE
         { $$ = c_metaDefine(scope,M_LITERAL);
           c_literal($$)->value = c_boolValue(FALSE); }
     ;
@@ -520,7 +514,7 @@ PositiveIntConst:
     ;
 
 TypeDcl:
-      TYPEDEF TypeSpec Declarators
+      ODL_TYPEDEF TypeSpec Declarators
         { c_iter typeDefs;
           typeDefs = c_bindTypes(scope,$3,$2);
           c_metaDeclareTypeDefs(scope, typeDefs);
@@ -549,13 +543,13 @@ BaseTypeSpec:
     | BooleanType
     | OctetType
     | AnyType
-    | DATE
+    | ODL_DATE
         { support_warning("date type"); $$ = NULL; }
-    | TIME
+    | ODL_TIME
         { support_warning("time type"); $$ = NULL; }
-    | INTERVAL
+    | ODL_INTERVAL
         { support_warning("interval type"); $$ = NULL;}
-    | TIMESTAMP
+    | ODL_TIMESTAMP
         { support_warning("timestamp"); $$ = NULL; }
     ;
 
@@ -567,33 +561,33 @@ TemplateTypeSpec:
     ;
 
 CollType:
-      SET LEFT SimpleTypeSpec RIGHT
+      ODL_SET ODL_LEFT SimpleTypeSpec ODL_RIGHT
         { $$ = c_metaDefine(getCollectionScope(scope,$3),M_COLLECTION);
-          c_collectionType($$)->kind = C_SET;
+          c_collectionType($$)->kind = OSPL_C_SET;
           c_collectionType($$)->subType = $3;
           c_collectionType($$)->maxSize = 0;
           c_metaFinalize($$);
           $$ = c_metaDeclareCollection(scope, c_collectionType($$));
         }
-    | LIST LEFT SimpleTypeSpec RIGHT
+    | ODL_LIST ODL_LEFT SimpleTypeSpec ODL_RIGHT
         { $$ = c_metaDefine(getCollectionScope(scope,$3),M_COLLECTION);
-          c_collectionType($$)->kind = C_LIST;
+          c_collectionType($$)->kind = OSPL_C_LIST;
           c_collectionType($$)->subType = $3;
           c_collectionType($$)->maxSize = 0;
           c_metaFinalize($$);
           $$ = c_metaDeclareCollection(scope, c_collectionType($$));
         }
-    | BAG LEFT SimpleTypeSpec RIGHT
+    | ODL_BAG ODL_LEFT SimpleTypeSpec ODL_RIGHT
         { $$ = c_metaDefine(getCollectionScope(scope,$3),M_COLLECTION);
-          c_collectionType($$)->kind = C_BAG;
+          c_collectionType($$)->kind = OSPL_C_BAG;
           c_collectionType($$)->subType = $3;
           c_collectionType($$)->maxSize = 0;
           c_metaFinalize($$);
           $$ = c_metaDeclareCollection(scope, c_collectionType($$));
         }
-    | DICTIONARY LEFT SimpleTypeSpec COMMA SimpleTypeSpec RIGHT
+    | ODL_DICTIONARY ODL_LEFT SimpleTypeSpec ODL_COMMA SimpleTypeSpec ODL_RIGHT
         { $$ = c_metaDefine(getCollectionScope(scope,$3),M_COLLECTION);
-          c_collectionType($$)->kind = C_DICTIONARY;
+          c_collectionType($$)->kind = OSPL_C_DICTIONARY;
           c_collectionType($$)->subType = $3;
           c_collectionType($$)->maxSize = 0;
           c_metaFinalize($$);
@@ -613,7 +607,7 @@ ConstrTypeSpec:
 Declarators:
       Declarator
         { $$ = c_iterNew($1); }
-    | Declarator COMMA Declarators
+    | Declarator ODL_COMMA Declarators
         { $$ = c_iterInsert($3,$1); }
     ;
 
@@ -636,9 +630,9 @@ ComplexDeclarator:
     ;
 
 FloatingPtType:
-      FLOAT
+      ODL_FLOAT
         { $$ = c_metaResolve(scope, "c_float"); }
-    | DOUBLE
+    | ODL_DOUBLE
         { $$ = c_metaResolve(scope, "c_double"); }
     ;
 
@@ -654,17 +648,17 @@ SignedInt:
     ;
 
 SignedShortInt:
-      SHORT
+      ODL_SHORT
 { $$ = c_metaResolve(scope, "c_short"); }
     ;
 
 SignedLongInt:
-      LONG
+      ODL_LONG
         { $$ = c_metaResolve(scope, "c_long"); }
     ;
 
 SignedLongLongInt:
-      LONG LONG
+      ODL_LONG ODL_LONG
         { $$ = c_metaResolve(scope, "c_longlong"); }
     ;
 
@@ -675,42 +669,42 @@ UnsignedInt:
     ;
 
 UnsignedShortInt:
-      UNSIGNED SHORT
+      ODL_UNSIGNED ODL_SHORT
         { $$ = c_metaResolve(scope, "c_ushort"); }
     ;
 
 UnsignedLongInt:
-      UNSIGNED LONG
+      ODL_UNSIGNED ODL_LONG
         { $$ = c_metaResolve(scope, "c_ulong"); }
     ;
 
 UnsignedLongLongInt:
-      UNSIGNED LONG LONG
+      ODL_UNSIGNED ODL_LONG ODL_LONG
         { $$ = c_metaResolve(scope, "c_ulonglong"); }
     ;
 
 CharType:
-      CHAR
+      ODL_CHAR
         { $$ = c_metaResolve(scope, "c_char"); }
     ;
 
 BooleanType:
-      BOOLEAN
+      ODL_BOOLEAN
         { $$ = c_metaResolve(scope, "c_bool"); }
     ;
 
 OctetType:
-      OCTET
+      ODL_OCTET
         { $$ = c_metaResolve(scope, "c_octet"); }
     ;
 
 AnyType:
-      ANY
+      ODL_ANY
         { $$ = c_metaResolve(scope, "c_any"); }
     ;
 
 StructType:
-      StructHeader LPAR MemberList RPAR
+      StructHeader ODL_LPAR MemberList ODL_RPAR
         { c_structure(scope)->members = c_metaArray(scope,$3,M_MEMBER);
           c_metaFinalize(scope);
           $$ = scope;
@@ -719,7 +713,7 @@ StructType:
     ;
 
 StructHeader:
-    STRUCT Identifier
+    ODL_STRUCT Identifier
         { scope = c_metaDeclare(scope,$2,M_STRUCTURE); }
     ;
 
@@ -730,14 +724,14 @@ MemberList:
     ;
 
 Member:
-      TypeSpec Declarators SEMI
+      TypeSpec Declarators ODL_SEMI
         { $$ = c_bindMembers(scope,$2,$1);
           c_metaDeclareMembers(scope, $$);
         }
     ;
 
 UnionType:
-       UnionHeader SWITCH LRPAR SwitchTypeSpec RRPAR LPAR SwitchBody RPAR
+       UnionHeader ODL_SWITCH ODL_LRPAR SwitchTypeSpec ODL_RRPAR ODL_LPAR SwitchBody ODL_RPAR
         { c_union(scope)->switchType = $4;
           c_union(scope)->cases = c_metaArray(scope,$7,M_UNIONCASE);
           c_metaFinalize(scope);
@@ -747,7 +741,7 @@ UnionType:
     ;
 
 UnionHeader:
-    UNION Identifier
+    ODL_UNION Identifier
         { scope = c_metaDeclare(scope,$2,M_UNION); }
     ;
 
@@ -775,14 +769,14 @@ SwitchBody:
  */
 /*
 Case:
-      CaseLabelList ElementSpec SEMI
+      CaseLabelList ElementSpec ODL_SEMI
         { $$ = $2;
           c_unionCase($$)->labels = c_metaArray(scope,$1,M_LITERAL);
         }
     ;
 */
 Case:
-      CaseLabelList TypeSpec Declarator SEMI
+      CaseLabelList TypeSpec Declarator ODL_SEMI
         { $$ = c_unionCaseNew(scope, c_declaratorName($3), c_declaratorType($3,$2), $1);
           c_metaDeclareType(scope, $2);
         }
@@ -796,9 +790,9 @@ CaseLabelList:
     ;
 
 CaseLabel:
-      CASE ConstExp COLON
+      ODL_CASE ConstExp ODL_COLON
         { $$ = c_operandValue($2); }
-    | DEFAULT COLON
+    | ODL_DEFAULT ODL_COLON
         { $$ = NULL; }
     ;
 /*
@@ -811,7 +805,7 @@ ElementSpec:
 */
 
 EnumType:
-      ENUM Identifier LPAR EnumeratorList RPAR
+      ODL_ENUM Identifier ODL_LPAR EnumeratorList ODL_RPAR
         { $$ = c_metaDeclare(scope,$2,M_ENUMERATION);
           c_enumeration($$)->elements = c_metaArray(scope,$4,M_CONSTANT);
           c_metaFinalize($$);
@@ -821,27 +815,32 @@ EnumType:
 EnumeratorList:
       Enumerator
         { $$ = c_iterNew($1); }
-    | Enumerator COMMA EnumeratorList
+    | Enumerator ODL_COMMA EnumeratorList
         { $$ = c_iterInsert($3,$1); }
     ;
 
 Enumerator:
       Identifier
         { $$ = (void *)c_metaDeclare(scope,$1,M_CONSTANT); }
+    | Identifier ODL_EQUAL ConstExp
+        { $$ = (void *)c_metaDeclare(scope,$1,M_CONSTANT);
+          c_constant($$)->operand = $3;
+        }
     ;
 
 ArrayType:
-      ARRAY LEFT SimpleTypeSpec COMMA PositiveIntConst RIGHT
+      ODL_ARRAY ODL_LEFT SimpleTypeSpec ODL_COMMA PositiveIntConst ODL_RIGHT
         { $$ = c_metaDefine(getCollectionScope(scope,$3),M_COLLECTION);
-          c_collectionType($$)->kind = C_ARRAY;
-          c_collectionType($$)->maxSize = $5->value.is.LongLong;
+          c_collectionType($$)->kind = OSPL_C_ARRAY;
+          assert($5->value.is.LongLong <= C_MAX_LONG);
+          c_collectionType($$)->maxSize = (c_ulong)$5->value.is.LongLong;
           c_collectionType($$)->subType = $3;
           c_metaFinalize($$);
           $$ = c_metaDeclareCollection(scope, c_collectionType($$));
         }
-    | ARRAY LEFT SimpleTypeSpec RIGHT
+    | ODL_ARRAY ODL_LEFT SimpleTypeSpec ODL_RIGHT
         { $$ = c_metaDefine(getCollectionScope(scope,$3),M_COLLECTION);
-          c_collectionType($$)->kind = C_ARRAY;
+          c_collectionType($$)->kind = OSPL_C_ARRAY;
           c_collectionType($$)->maxSize = 0;
           c_collectionType($$)->subType = $3;
           c_metaFinalize($$);
@@ -850,17 +849,18 @@ ArrayType:
     ;
 
 SequenceType:
-      SEQUENCE LEFT SimpleTypeSpec COMMA PositiveIntConst RIGHT
+      ODL_SEQUENCE ODL_LEFT SimpleTypeSpec ODL_COMMA PositiveIntConst ODL_RIGHT
         { $$ = c_metaDefine(getCollectionScope(scope,$3),M_COLLECTION);
-          c_collectionType($$)->kind = C_SEQUENCE;
-          c_collectionType($$)->maxSize = $5->value.is.LongLong;
+          c_collectionType($$)->kind = OSPL_C_SEQUENCE;
+          assert($5->value.is.LongLong <= C_MAX_LONG);
+          c_collectionType($$)->maxSize = (c_ulong)$5->value.is.LongLong;
           c_collectionType($$)->subType = $3;
           c_metaFinalize($$);
           $$ = c_metaDeclareCollection(scope, c_collectionType($$));
         }
-    | SEQUENCE LEFT SimpleTypeSpec RIGHT
+    | ODL_SEQUENCE ODL_LEFT SimpleTypeSpec ODL_RIGHT
         { $$ = c_metaDefine(getCollectionScope(scope,$3),M_COLLECTION);
-          c_collectionType($$)->kind = C_SEQUENCE;
+          c_collectionType($$)->kind = OSPL_C_SEQUENCE;
           c_collectionType($$)->maxSize = 0;
           c_collectionType($$)->subType = $3;
           c_metaFinalize($$);
@@ -869,10 +869,11 @@ SequenceType:
     ;
 
 StringType:
-      ODL_STRING LEFT PositiveIntConst RIGHT
+      ODL_STRING ODL_LEFT PositiveIntConst ODL_RIGHT
         { $$ = c_metaDefine(scope,M_COLLECTION);
-          c_collectionType($$)->kind = C_STRING;
-          c_collectionType($$)->maxSize = $3->value.is.LongLong;
+          c_collectionType($$)->kind = OSPL_C_STRING;
+          assert($3->value.is.LongLong <= C_MAX_LONG);
+          c_collectionType($$)->maxSize = (c_ulong)$3->value.is.LongLong;
           c_collectionType($$)->subType = (c_type)c_metaResolve(scope,"c_char");
           c_metaFinalize($$);
           $$ = c_metaDeclareCollection(scope, c_collectionType($$));
@@ -894,7 +895,7 @@ ArraySizeList:
     ;
 
 FixedArraySize:
-      LEPAR PositiveIntConst REPAR
+      ODL_LEPAR PositiveIntConst ODL_REPAR
         { $$ = $2; }
     ;
 
@@ -903,13 +904,13 @@ IDL-conformant correction to ODMG 2.0: ATTRIBUTE Type Name1, Name2, ...
 *************************************************************************/
 
 AttrDcl:
-      READONLY ATTRIBUTE DomainType Declarators
+      ODL_READONLY ODL_ATTRIBUTE DomainType Declarators
         { c_iter attributes;
           attributes = c_bindAttributes(scope,$4,$3,TRUE);
           c_metaDeclareAttributes(scope, attributes);
           c_iterFree(attributes);
         }
-    | ATTRIBUTE DomainType Declarators
+    | ODL_ATTRIBUTE DomainType Declarators
         { c_iter attributes;
           attributes = c_bindAttributes(scope,$3,$2,FALSE);
           c_metaDeclareAttributes(scope, attributes);
@@ -924,18 +925,18 @@ DomainType:
     ;
 
 RelDcl:
-      RELATIONSHIP RelCollectionType LEFT Identifier RIGHT Identifier INVERSE Identifier DOUBLE_COLON Identifier
-    | RELATIONSHIP Identifier Identifier INVERSE Identifier DOUBLE_COLON Identifier
+      ODL_RELATIONSHIP RelCollectionType ODL_LEFT Identifier ODL_RIGHT Identifier ODL_INVERSE Identifier ODL_DOUBLE_COLON Identifier
+    | ODL_RELATIONSHIP Identifier Identifier ODL_INVERSE Identifier ODL_DOUBLE_COLON Identifier
     ;
 
 RelCollectionType:
-      SET
-    | LIST
-    | BAG
+      ODL_SET
+    | ODL_LIST
+    | ODL_BAG
     ;
 
 ExceptDcl:
-      EXCEPTION Identifier LPAR OptMemberList RPAR
+      ODL_EXCEPTION Identifier ODL_LPAR OptMemberList ODL_RPAR
         { object = c_metaDeclare(scope,$2,M_EXCEPTION);
           c_structure(object)->members = c_metaArray(scope,$4,M_MEMBER);
           c_metaFinalize(object);
@@ -962,7 +963,7 @@ OpDcl:
     ;
 
 OpAttribute:
-    | ONEWAY
+    | ODL_ONEWAY
     ;
 
 OpTypeSpec:
@@ -973,16 +974,16 @@ OpTypeSpec:
     ;
 
 ParameterDcls:
-      LRPAR ParamDclList RRPAR
+      ODL_LRPAR ParamDclList ODL_RRPAR
         { $$ = $2; }
-    | LRPAR RRPAR
+    | ODL_LRPAR ODL_RRPAR
         { $$ = NULL; }
     ;
 
 ParamDclList:
       ParamDcl
         { $$ = c_iterNew($1); }
-    | ParamDcl COMMA ParamDclList
+    | ParamDcl ODL_COMMA ParamDclList
         { $$ = c_iterInsert($3,$1); }
     ;
 
@@ -997,27 +998,27 @@ ParamDcl:
     ;
 
 ParamAttribute:
-      IN
+      ODL_IN
         { $$ = D_IN; }
-    | OUT
+    | ODL_OUT
         { $$ = D_OUT; }
-    | INOUT
+    | ODL_INOUT
         { $$ = D_INOUT; }
     ;
 
 RaisesExpr:
-    | RAISES LRPAR ScopedNameList RRPAR
+    | ODL_RAISES ODL_LRPAR ScopedNameList ODL_RRPAR
     ;
 
 ScopedNameList:
       ScopedName
         { $$ = c_iterNew($1); }
-    | ScopedName COMMA ScopedNameList
+    | ScopedName ODL_COMMA ScopedNameList
         { $$ = c_iterInsert($3,$1); }
     ;
 
 ContextExpr:
-    | CONTEXT LRPAR StringLiteralList RRPAR
+    | ODL_CONTEXT ODL_LRPAR StringLiteralList ODL_RRPAR
     ;
 
 SL:
@@ -1028,7 +1029,7 @@ SL:
 StringLiteralList:
       SL
         { $$ = c_iterNew($1); }
-    | SL COMMA StringLiteralList
+    | SL ODL_COMMA StringLiteralList
         { $$ = c_iterInsert($3,$1); }
     ;
 
@@ -1068,9 +1069,6 @@ void
 c_odlparse (
     const char *fname)
 {
-    long l;
-    char *msg;
-
     parser_line = 1;
     parser_column = 0;
     parser_state = 0;
@@ -1078,10 +1076,7 @@ c_odlparse (
     yyin = fopen(fname, "r");
 
     if (yyin == NULL) {
-        l = strlen(fname) + strlen("ODL parser error: opening file ") +1;
-        msg = (char *)malloc(l);
-        sprintf(msg, "ODL parser error: opening file %s", fname);
-        free(msg);
+        fprintf(stderr, "ODL parser error: opening file '%s'\n", fname);
         return;
     }
 
@@ -1097,11 +1092,11 @@ getCollectionScope(
     c_metaObject current,
     c_metaObject subType)
 {
-    c_metaObject scope;
-
     OS_UNUSED_ARG(subType);
     return current;
 /*
+    c_metaObject scope;
+
     if (current == NULL) return NULL;
     scope = current;
     while ((c_baseObject(scope)->kind != M_MODULE) &&
@@ -1138,11 +1133,9 @@ c_metaDeclareIfArray(
     c_metaObject scope,
     c_type type)
 {
-    c_type found;
-
     if (c_baseObject(type)->kind == M_COLLECTION) {
         c_metaDeclareIfArray(scope, c_collectionType(type)->subType);
-        found = c_type(c_metaDeclareCollection(scope, c_collectionType(type)));
+        c_metaDeclareCollection(scope, c_collectionType(type));
     }
 }
 

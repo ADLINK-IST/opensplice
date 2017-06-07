@@ -81,7 +81,7 @@
                                 <loop from="0" to="len(hostList) - 1" var="i">
                                     <sequence>
                                         <call-with-map function="'RequestHost'">
-                                            <call-map-arg name="'target'">'.*linux2\.6.*'</call-map-arg>
+                                            <call-map-arg name="'target'">'.*linux.*'</call-map-arg>
                                         </call-with-map>
                                         <script>hostList[i] = STAXResult</script>
                                     </sequence>

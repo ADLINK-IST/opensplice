@@ -1,0 +1,1033 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. API Reference &mdash; Streams API Reference Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Streams API Reference Guide" href="index.html" />
+    <link rel="next" title="4. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="2. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="4. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Streams API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="api-reference">
+<span id="id1"></span><h1>3. API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="introduction">
+<h2>3.1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p><em>As described in :ref:`Getting Started &lt;Getting Started&gt;`, the OpenSplice
+IDL preprocessor generates typed Streams API classes for each type that
+is annotated with a streams pragma.</em></p>
+<p>As in the OpenSplice DDS <em>C++ Reference Guide</em>, the fictional type <tt class="docutils literal"><span class="pre">Foo</span></tt>,
+defined in module Space, is used as an example. When the <tt class="docutils literal"><span class="pre">Foo</span></tt> type is
+annotated with a pragma streams, <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt> and
+<tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt> classes will be generated.</p>
+<p>This section describes the usage of all operations on these classes.</p>
+</div>
+<div class="section" id="qos-policies">
+<h2>3.2. QoS Policies<a class="headerlink" href="#qos-policies" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="47%" />
+<col width="53%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">StreamDataWriterQos</th>
+<th class="head">StreamDataReaderQos</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">StreamFlushQosPolicy</span></tt></td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="32%" />
+<col width="29%" />
+<col width="39%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">StreamFlushQosPolicy</th>
+<th class="head">Type</th>
+<th class="head">Default value</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">max_delay</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">DDS::Duration_t</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">DDS::DURATION_INFINITE</span></tt></td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">max_samples</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">long</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">0</span></tt></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="streamdatawriterqos">
+<h3>3.2.1. StreamDataWriterQos<a class="headerlink" href="#streamdatawriterqos" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="streamflushqospolicy">
+<h4>3.2.1.1. StreamFlushQosPolicy<a class="headerlink" href="#streamflushqospolicy" title="Permalink to this headline">¶</a></h4>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">DDS::Streams</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;streams_ccpp.h&gt;
+
+struct StreamFlushQosPolicy {
+   Duration_t  max_delay;
+   long max_samples;
+};
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>The <tt class="docutils literal"><span class="pre">StreamFlushQosPolicy</span></tt> can be used to set limits on the stream(s) of
+the <tt class="docutils literal"><span class="pre">StreamDataWriter</span></tt> it is applied to.</div></blockquote>
+<p><strong>Attributes</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">Duration_t</span> <span class="pre">max_delay</span></tt></dt>
+<dd>Time-based limit.
+The StreamDataWriter will automatically flush all of its
+streams each <tt class="docutils literal"><span class="pre">max_delay</span></tt> period.</dd>
+</dl>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> <em>Note</em>: <tt class="docutils literal"><span class="pre">max_delay</span></tt> is not yet implemented.
+It is scheduled for a future release.</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">long</span> <span class="pre">max_samples</span></tt></dt>
+<dd>Samples-per-stream based limit.
+The StreamDataWriter will automatically flush a stream when,
+after appending a sample, the number of samples in that stream
+equals <tt class="docutils literal"><span class="pre">max_samples</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div><p>By setting the <tt class="docutils literal"><span class="pre">StreamFlushQosPolicy</span></tt>, the <tt class="docutils literal"><span class="pre">StreamDataWriter</span></tt> will
+automatically flush its stream(s) based on a particular limit. The
+attributes can be combined, for example a <tt class="docutils literal"><span class="pre">max_delay</span></tt> of <em>1</em> second and a
+<tt class="docutils literal"><span class="pre">max_samples</span></tt> of <em>100</em> will result in a flush at least each second or sooner
+if 100 samples are appended to a stream.</p>
+<p>The <tt class="docutils literal"><span class="pre">max_delay</span></tt> limit applies to all streams in case a <tt class="docutils literal"><span class="pre">StreamDataWriter</span></tt>
+manages more than one stream. It is initialized when the first stream is
+created, and applied to all streams created after that.</p>
+<p>In case of a manual flush (when the application calls the <a class="reference internal" href="#flush">flush</a>
+operation), the <tt class="docutils literal"><span class="pre">max_samples</span></tt> limit is reinitialized.</p>
+</div></blockquote>
+</div>
+<div class="section" id="streamdatareaderqos">
+<h4>3.2.1.2. StreamDataReaderQos<a class="headerlink" href="#streamdatareaderqos" title="Permalink to this headline">¶</a></h4>
+<p>Currently no QoS properties for a <tt class="docutils literal"><span class="pre">StreamDataReader</span></tt> have been identified,
+but the <tt class="docutils literal"><span class="pre">StreamDataReaderQos</span></tt> is defined in the API to maintain
+consistency with the <tt class="docutils literal"><span class="pre">StreamDataWriter</span></tt>; it is reserved for future use.</p>
+</div>
+</div>
+</div>
+<div class="section" id="streamdatawriter-class">
+<h2>3.3. StreamDataWriter Class<a class="headerlink" href="#streamdatawriter-class" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="constructors">
+<h3>3.3.1. Constructors<a class="headerlink" href="#constructors" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataWriter</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+ooStreamDataWriter(
+   DDS::Publisher_ptr publisher,
+   DDS::Streams::StreamDataWriterQos &amp;sqos,
+   const char* streamName);
+
+FooStreamDataWriter(
+   DDS::DomainId_t domainId,
+      DDS::Streams::StreamDataWriterQos &amp;sqos,
+      const char* streamName);
+
+FooStreamDataWriter(
+   DDS::Streams::StreamDataWriterQos &amp;sqos,
+      const char* streamName);
+
+FooStreamDataWriter(
+   DDS::Publisher_ptr publisher,
+      const char* streamName);
+
+FooStreamDataWriter(
+      DDS::DomainId_t domainId,
+      const char* streamName);
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>Multiple constructors are available to create a <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt>.
+Depending on which parameters are supplied by the application, one of
+the overloaded constructors will be selected to create a new instance of
+the <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt> class.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">DDS::Publisher_ptr</span> <span class="pre">publisher</span></tt></dt>
+<dd>A pointer to a pre-created DDS Publisher.
+This parameter is optional; if a publisher is not supplied
+the <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt> will create an internal publisher.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">DDS::DomainId_t</span> <span class="pre">domainId</span></tt></dt>
+<dd>The id of the DDS domain to attach to.
+The <tt class="docutils literal"><span class="pre">DDS::DOMAIN_ID_DEFAULT</span></tt> macro can be used to connect to the
+default domain, which is also used if the parameter is omitted.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">DDS::Streams::StreamDataWriterQos</span> <span class="pre">&amp;sqos</span></tt></dt>
+<dd>The QoS settings that are applied to the <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">const</span> <span class="pre">char*</span> <span class="pre">streamName</span></tt></dt>
+<dd>The system-wide unique name of the stream that is used to create
+a DDS (container-)topic for the stream(s) that are handled by
+the <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Exceptions</strong></p>
+<blockquote>
+<div><p>Constructors cannot return a value, therefore they throw exceptions when
+the object cannot be constructed. Besides exceptions, the regular
+OpenSplice error logging framework is used to report additional
+information when a constructor fails.</p>
+<p>The constructors throw a <tt class="docutils literal"><span class="pre">StreamsException</span></tt> if an error occurs. The
+application may catch these exceptions to detect when creation of a
+StreamDataWriter doesn’t succeed.</p>
+<div class="highlight-python"><div class="highlight"><pre>DDS::Streams::StreamsException {
+   out const char *message;
+   out DDS::ReturnCode_t id
+}
+</pre></div>
+</div>
+<p>The message contains a description of the error. The <tt class="docutils literal"><span class="pre">id</span></tt> field
+contains a DDS error code that represents the error condition.</p>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div><p>When a pre-created publisher is not supplied, the <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt>
+will create an internal DDS participant and DDS publisher. This will
+naturally consume some resources, so when a lot of streams need to be
+created it is recommended to supply a publisher that can be re-used for
+each <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt> instance.</p>
+<p>The <tt class="docutils literal"><span class="pre">streamName</span></tt> is a required parameter. The <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt>
+will create a DDS topic of the correct type and name it after the supplied
+<tt class="docutils literal"><span class="pre">streamName</span></tt>.</p>
+</div></blockquote>
+</div>
+<div class="section" id="append">
+<h3>3.3.2. append<a class="headerlink" href="#append" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataWriter</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+DDS::ReturnCode_t
+append(
+   StreamId id,
+   const Foo &amp;data)
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>Write a sample to the stream with the supplied <tt class="docutils literal"><span class="pre">id</span></tt>.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">StreamId</span> <span class="pre">id</span></tt></dt>
+<dd>The stream id.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">Foo</span> <span class="pre">&amp;data</span></tt></dt>
+<dd>The data to write to the stream.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Return Value</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ReturnCode_t</span></tt></dt>
+<dd>Possible return codes of the operation are:
+<tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt>, <tt class="docutils literal"><span class="pre">DDS::RETCODE_PRECONDITION_NOT_MET</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div><p>Using the <tt class="docutils literal"><span class="pre">append</span></tt> operation, the application can write data to a stream.
+Note that for each stream of a certain type, multiple <em>instances</em> of
+this stream-type can be created by assigning unique ids to each of
+streams. Each id then represents an <em>instance</em> of the stream of the
+associated type. So the actual stream instance is selected based on the
+supplied <tt class="docutils literal"><span class="pre">StreamId</span></tt>.</p>
+<p>When the stream doesn’t exist it is automatically created based on the
+current QoS settings.</p>
+</div></blockquote>
+<p><strong>Return Code</strong></p>
+<blockquote>
+<div><p>When the operation returns:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">RETCODE_OK</span></tt></dt>
+<dd>The data was successfully appended to the stream.</dd>
+<dt><tt class="docutils literal"><span class="pre">RETCODE_PRECONDITION_NOT_MET</span></tt></dt>
+<dd>A precondition failed, data was not appended.</dd>
+</dl>
+<p>If the <tt class="docutils literal"><span class="pre">StreamDataWriter</span></tt> QoS specifies an auto-flush maximum samples
+limit, an <tt class="docutils literal"><span class="pre">append</span></tt> may trigger a <a class="reference internal" href="#flush">flush</a>. In that case the <tt class="docutils literal"><span class="pre">append</span></tt>
+call forwards the return code of the flush to the application, so any return
+code that is specified in the next section may also be returned by
+<tt class="docutils literal"><span class="pre">append</span></tt>.</p>
+</div></blockquote>
+</div>
+<div class="section" id="flush">
+<h3>3.3.3. flush<a class="headerlink" href="#flush" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataWriter</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+DDS::ReturnCode_t
+flush(
+   DDS::Streams::StreamId id)
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>Write all data in a stream to the DDS subsystem.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">StreamId</span> <span class="pre">id</span></tt></dt>
+<dd>The id of the stream.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Return Value</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ReturnCode_t</span></tt></dt>
+<dd>Possible return codes of the operation are:
+<tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt>, <tt class="docutils literal"><span class="pre">DDS::RETCODE_PRECONDITION_NOT_MET</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div><p>When a stream is flushed, all data in the stream is delivered to DDS and
+the stream is emptied. The memory allocated will be reused the next time
+data is appended to the stream.</p>
+<p>The <tt class="docutils literal"><span class="pre">flush</span></tt> operation results in a write call on the underlying DDS
+subsystem. Depending on the result of the write, this result is returned
+back to the application.</p>
+</div></blockquote>
+<p><strong>Return Code</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">RETCODE_OK</span></tt></dt>
+<dd>The stream was successfully flushed.</dd>
+<dt><tt class="docutils literal"><span class="pre">RETCODE_PRECONDITION_NOT_MET</span></tt></dt>
+<dd>A precondition failed; most likely the stream doesn’t exist.</dd>
+</dl>
+<p>See the OpenSplice DDS <em>C++ Reference Guide</em> for
+possible result codes returned by a DDS <tt class="docutils literal"><span class="pre">write</span></tt> operation.</p>
+</div></blockquote>
+</div>
+<div class="section" id="get-qos">
+<h3>3.3.4. get_qos<a class="headerlink" href="#get-qos" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataWriter</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+DDS::ReturnCode_t
+get_qos(
+   DDS::Streams::StreamDataWriterQos &amp;qos)
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>This operation allows access to the existing set of QoS policies for a
+<tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt>.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">inout</span> <span class="pre">StreamDataWriterQos</span> <span class="pre">&amp;qos</span></tt></dt>
+<dd>A pointer to a <tt class="docutils literal"><span class="pre">StreamDatatWriterQos</span></tt> object to which the current
+QoS settings will be copied.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Return Value</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ReturnCode_t</span></tt></dt>
+<dd>Possible return code of the operation is:
+<tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div>The existing list of QoS settings of the <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt> is copied
+to the object pointed to by <tt class="docutils literal"><span class="pre">qos</span></tt>. The application can then inspect and,
+if necessary, modify the settings and apply the settings using the
+<tt class="docutils literal"><span class="pre">set_qos</span></tt> operation.</div></blockquote>
+<p><strong>Return Code</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">RETCODE_OK</span></tt></dt>
+<dd>The QoS settings were successfully copied to the supplied <tt class="docutils literal"><span class="pre">qos</span></tt> object.</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="set-qos">
+<h3>3.3.5. set_qos<a class="headerlink" href="#set-qos" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataWriter</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+DDS::ReturnCode_t
+set_qos(
+   DDS::Streams::StreamDataWriterQos &amp;qos)
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>This operation allows replacing the existing set of QoS policies for a
+<tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt>.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">StreamDataWriterQos</span> <span class="pre">&amp;qos</span></tt></dt>
+<dd>A pointer to a <tt class="docutils literal"><span class="pre">qos</span></tt> object with the new policies.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Return Value</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ReturnCode_t</span></tt></dt>
+<dd>Possible return codes of the operation are:
+<tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt>, <tt class="docutils literal"><span class="pre">DDS::RETCODE_UNSUPPORTED</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div><p>This operation allows replacing the set of QoS policies of a
+<tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt>.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> <em>Note</em>: A new <tt class="docutils literal"><span class="pre">StreamFlushQosPolicy</span></tt> may decrease the
+value of <tt class="docutils literal"><span class="pre">max_samples</span></tt>, but existing streams are not allowed to
+violate this limit. Any streams that contain data that exceeds the
+new <tt class="docutils literal"><span class="pre">max_samples</span></tt> value are automatically flushed before the new
+policy is applied.</p>
+</div></blockquote>
+<p><strong>Return Code</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">RETCODE_OK</span></tt></dt>
+<dd>The QoS settings were successfully applied to the
+<tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">RETCODE_UNSUPPORTED</span></tt></dt>
+<dd>The application attempted to set QoS policies or values that are
+not (yet) supported.</dd>
+</dl>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="streamdatareader-class">
+<h2>3.4. StreamDataReader Class<a class="headerlink" href="#streamdatareader-class" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id2">
+<h3>3.4.1. Constructors<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataReader</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+FooStreamDataReader(
+   DDS::Subscriber_ptr subscriber,
+   DDS::Streams::StreamDataReaderQos &amp;sqos,
+   const char* streamName);
+
+FooStreamDataReader(
+   DDS::DomainId_t domainId,
+      DDS::Streams::StreamDataReaderQos &amp;sqos,
+      const char* streamName);
+
+FooStreamDataReader(
+   DDS::Streams::StreamDataReaderQos &amp;sqos,
+      const char* streamName);
+
+FooStreamDataReader(
+   DDS::Subscriber_ptr subscriber,
+      const char* streamName);
+
+FooStreamDataReader(
+      DDS::DomainId_t domainId,
+      const char* streamName);
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>Multiple constructors are available to create a <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt>.
+Depending on which parameters are supplied by the application, one of
+the overloaded constructors will be selected to create a new instance of
+a <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt> class.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">DDS::Subscriber_ptr</span> <span class="pre">subscriber</span></tt></dt>
+<dd>A pointer to a pre-created DDS Subscriber.
+This parameter is optional; if a subscriber is not supplied the
+<tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt> will create an internal subscriber.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">DDS::DomainId_t</span> <span class="pre">domainId</span></tt></dt>
+<dd>The id of the DDS domain to attach to. The <tt class="docutils literal"><span class="pre">DDS::DOMAIN_ID_DEFAULT</span></tt>
+macro can be used to connect to the default domain, which is also
+used if the parameter is omitted.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">DDS::Streams::StreamDataReaderQos</span> <span class="pre">&amp;sqos</span></tt></dt>
+<dd>The QoS settings that are applied to the <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">const</span> <span class="pre">char*</span> <span class="pre">streamName</span></tt></dt>
+<dd>The system-wide unique name of the stream which is also used to create
+a DDS (container-)topic for the stream(s) that are handled by
+the <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Exceptions</strong></p>
+<blockquote>
+<div><p>Constructors cannot return a value, therefore they throw exceptions when
+the object cannot be constructed. Besides exceptions, the regular
+OpenSplice error logging framework is used to report additional
+information when a constructor fails.</p>
+<p>The constructors throw a <tt class="docutils literal"><span class="pre">StreamsException</span></tt> if an error occurs. The
+application may catch these exceptions to detect when creation of a
+<tt class="docutils literal"><span class="pre">StreamDataReader</span></tt> doesn’t succeed.</p>
+<div class="highlight-python"><div class="highlight"><pre>DDS::Streams::StreamsException {
+   out const char *message;
+   out DDS::ReturnCode_t id
+}
+</pre></div>
+</div>
+<p>The message contains a description of the error. The <tt class="docutils literal"><span class="pre">id</span></tt> field
+contains a DDS error code that represents the error condition.</p>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div><p>When a pre-created subscriber is not supplied, the <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt>
+will create an internal DDS participant and DDS subscriber. This will
+naturally consume some resources, so when a lot of instances need to be
+created it is recommended to supply a subscriber that can be re-used for
+each <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt> instance.</p>
+<p>The <tt class="docutils literal"><span class="pre">streamName</span></tt> is a required parameter. The <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt>
+will create a DDS topic of the correct type and name it after the supplied
+<tt class="docutils literal"><span class="pre">streamName</span></tt>.</p>
+</div></blockquote>
+</div>
+<div class="section" id="get">
+<h3>3.4.2. get<a class="headerlink" href="#get" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataReader</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+DDS::ReturnCode_t
+get(
+   DDS::Streams::StreamId id,
+   Space::FooStreamBuf data_values,
+   long max_samples,
+   DDS::Duration_t timeout);
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>Check if any data is available in a stream and retrieve it, emptying the
+stream.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">StreamId</span> <span class="pre">id</span></tt></dt>
+<dd>The <tt class="docutils literal"><span class="pre">id</span></tt> of the stream instance from which to retrieve
+the data.</dd>
+<dt><tt class="docutils literal"><span class="pre">inout</span> <span class="pre">FooStreamBuf</span> <span class="pre">data_values</span></tt></dt>
+<dd>The buffer in which the data is stored.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">long</span> <span class="pre">max_samples</span></tt></dt>
+<dd>The maximum amount of data samples retrieved.
+Default is <tt class="docutils literal"><span class="pre">DDS::LENGTH_UNLIMITED</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">Duration_t</span> <span class="pre">timeout</span></tt></dt>
+<dd>Blocking time, in case no data is immediately available.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Return Value</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ReturnCode_t</span></tt></dt>
+<dd>Possible return codes of the operation are:
+<tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt>, <tt class="docutils literal"><span class="pre">DDS::RETCODE_PRECONDITION_NOT_MET</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div><p>Using the <tt class="docutils literal"><span class="pre">get</span></tt> operation, the application can retrieve data from a
+stream. The stream is selected based on the supplied <tt class="docutils literal"><span class="pre">StreamId</span></tt>.</p>
+<p>If no data is available initially, the <tt class="docutils literal"><span class="pre">get</span></tt> operation blocks for a
+maximum period specified in the <tt class="docutils literal"><span class="pre">timeout</span></tt> parameter. If data becomes
+available during the <tt class="docutils literal"><span class="pre">timeout</span></tt> period the <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt>
+proceeds to retrieve the data and return it to the application.
+To return immediately, the application can use the special value
+<tt class="docutils literal"><span class="pre">DDS::DURATION_ZERO</span></tt> as a <tt class="docutils literal"><span class="pre">timeout</span></tt> parameter. To block indefinitely
+until data is available, the value <tt class="docutils literal"><span class="pre">DDS::DURATION_INFINITE</span></tt> should
+be passed.</p>
+<p>The data is returned in a buffer that is to be supplied by the
+application. The application is responsible for allocating a buffer that
+is large enough to contain the available data. If more data is available
+than will fit in the buffer, the excess data will be stored by the
+StreamDataReader and returned to the application during the next call to
+<a class="reference internal" href="#get">get</a> (or <a class="reference internal" href="#get-w-filter">get_w_filter</a>). In this state, the <tt class="docutils literal"><span class="pre">StreamDataReader</span></tt>
+will only attempt to retrieve new data after all data that was stored
+internally is returned to the application.</p>
+<p>Since allocating memory for the buffer is an expensive operation, it is
+recommended to re-use the same buffer for each subsequent call to <a class="reference internal" href="#get">get</a>
+or <a class="reference internal" href="#get-w-filter">get_w_filter</a>. The <tt class="docutils literal"><span class="pre">max_samples</span></tt> parameter can be used to limit
+the amount of data that is returned with each <a class="reference internal" href="#get">get</a> or <a class="reference internal" href="#get-w-filter">get_w_filter</a>
+call.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> <em>Note</em>: Internal pre-allocation of buffers, using a loans
+registry similar to the DCPS API, will be implemented in a future version.</p>
+</div></blockquote>
+<p><strong>Return Code</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt></dt>
+<dd>Data is returned in the <tt class="docutils literal"><span class="pre">data_values</span></tt> buffer.</dd>
+<dt><tt class="docutils literal"><span class="pre">DDS::RETCODE_NO_DATA</span></tt></dt>
+<dd>There is currently no data available.</dd>
+<dt><tt class="docutils literal"><span class="pre">DDS::RETCODE_PRECONDITION_NOT_MET</span></tt></dt>
+<dd>The operation could not be performed because a precondition is not
+met; most likely the <tt class="docutils literal"><span class="pre">data_values</span></tt> buffer is not preallocated.</dd>
+</dl>
+<p>The list of possible return codes includes all possible return codes of
+<tt class="docutils literal"><span class="pre">waitset.wait()</span></tt> and <tt class="docutils literal"><span class="pre">take_instance()</span></tt> calls. These DCPS calls are
+used internally by the Streams API. There is one exception: if the
+<tt class="docutils literal"><span class="pre">waitset.wait()</span></tt> returns a <tt class="docutils literal"><span class="pre">DDS::RETCODE_TIMEOUT</span></tt>, this return
+code is translated to a <tt class="docutils literal"><span class="pre">DDS::RETCODE_NO_DATA</span></tt> return code.</p>
+<p>See the OpenSplice DDS <em>C++ Reference Guide</em> for possible result
+codes returned by a DDS <tt class="docutils literal"><span class="pre">take_instance</span></tt> operation and
+for <tt class="docutils literal"><span class="pre">waitset.wait()</span></tt>.</p>
+</div></blockquote>
+</div>
+<div class="section" id="get-w-filter">
+<h3>3.4.3. get_w_filter<a class="headerlink" href="#get-w-filter" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataReader</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+DDS::ReturnCode_t
+get_w_filter(
+   DDS::Streams::StreamId id,
+   Space::FooStreamBuf data_values,
+   long max_samples,
+   DDS::Duration_t timeout
+   Space::FooStreamFilterCallback a_filter);
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>Check if any data is available in a stream and retrieve it if it matches
+the filter, discard otherwise.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">StreamId</span> <span class="pre">id</span></tt></dt>
+<dd>The <tt class="docutils literal"><span class="pre">id</span></tt> of the stream instance of which to retrieve the data.</dd>
+<dt><tt class="docutils literal"><span class="pre">inout</span> <span class="pre">FooStreamBuf</span> <span class="pre">data_values</span></tt></dt>
+<dd>The buffer in which the data is stored.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">long</span> <span class="pre">max_samples</span></tt></dt>
+<dd>The maximum amount of data samples retrieved.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">Duration_t</span> <span class="pre">timeout</span></tt></dt>
+<dd>Blocking time, in case no data is immediately available.</dd>
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">FooStreamFilterCallback</span> <span class="pre">a_filter</span></tt></dt>
+<dd>Pointer to a function that implements a filter for the data.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Return Value</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ReturnCode_t</span></tt></dt>
+<dd>Possible return codes of the operation are:
+<tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt>, <tt class="docutils literal"><span class="pre">DDS::RETCODE_PRECONDITION_NOT_MET</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div><p>The <tt class="docutils literal"><span class="pre">get_w_filter</span></tt> operation is equivalent to the <a class="reference internal" href="#get">get</a> operation,
+the description of <a class="reference internal" href="#get">get</a> also applies to <tt class="docutils literal"><span class="pre">get_w_filter</span></tt>.</p>
+<p>The difference is that <tt class="docutils literal"><span class="pre">get_w_filter</span></tt> allows the application to
+supply a <tt class="docutils literal"><span class="pre">FooStreamFilterCallback</span></tt> instance that implements the
+<tt class="docutils literal"><span class="pre">match_data()</span></tt> operation. Each data sample is matched against the
+filter and only data for which the filter returns <tt class="docutils literal"><span class="pre">true</span></tt> is returned
+to the application.</p>
+<p>Samples that do not match the filter are not considered in relation to
+<tt class="docutils literal"><span class="pre">max_samples</span></tt> and the <tt class="docutils literal"><span class="pre">data_values</span></tt> buffer length; the buffer does
+<em>not</em> need to be capable of holding <em>all</em> available samples, just the
+samples that pass the filter.</p>
+<p>Samples are only evaluated once and are discarded if not matched.</p>
+</div></blockquote>
+<p><strong>Return Code</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt></dt>
+<dd>Data is returned in the <tt class="docutils literal"><span class="pre">data_values</span></tt> buffer.</dd>
+<dt><tt class="docutils literal"><span class="pre">DDS::RETCODE_NO_DATA</span></tt></dt>
+<dd>There is no data available during the period specified by <tt class="docutils literal"><span class="pre">timeout</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">DDS::RETCODE_PRECONDITION_NOT_MET</span></tt></dt>
+<dd>The operation could not be performed because a precondition is not
+met; most likely the <tt class="docutils literal"><span class="pre">data_values</span></tt> buffer is not preallocated.</dd>
+</dl>
+<p>The list of possible return codes includes all possible return codes of
+<tt class="docutils literal"><span class="pre">waitset.wait()</span></tt> and <tt class="docutils literal"><span class="pre">take_instance()</span></tt> calls. These DCPS calls are
+used internally by the Streams API. There&#8217;s one exception: If the
+<tt class="docutils literal"><span class="pre">waitset.wait()</span></tt> returns a <tt class="docutils literal"><span class="pre">DDS::RETCODE_TIMEOUT</span></tt>, this return code
+is translated to a <tt class="docutils literal"><span class="pre">DDS::RETCODE_NO_DATA</span></tt> return code.</p>
+<p>See the OpenSplice DDS <em>C++ Reference Guide</em> for possible result codes
+returned by a DDS <tt class="docutils literal"><span class="pre">take_instance</span></tt> operation and <tt class="docutils literal"><span class="pre">waitset.wait()</span></tt>.</p>
+</div></blockquote>
+</div>
+<div class="section" id="return-loan">
+<h3>3.4.4. return_loan<a class="headerlink" href="#return-loan" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataReader</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+DDS::ReturnCode_t
+return_loan(
+   Space::FooStreamBuf data_values)
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>The application should use this operation to indicate that it has
+finished accessing the sequence of <tt class="docutils literal"><span class="pre">data_values</span></tt>.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">inout</span> <span class="pre">FooStreamBuf</span> <span class="pre">data_values</span></tt></dt>
+<dd>The data sequence which was loaned from the <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Return Value</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ReturnCode_t</span></tt></dt>
+<dd>Possible return codes of the operation are:
+<tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt>, <tt class="docutils literal"><span class="pre">DDS::RETCODE_PRECONDITION_NOT_MET</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div><p>When the application does not pre-allocate a buffer to hold the data,
+the <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt> will do so itself when a <a class="reference internal" href="#get">get</a> operation is
+invoked. The application calls <tt class="docutils literal"><span class="pre">return_loan</span></tt> to indicate that it has
+finished accessing this buffer so the <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt> can reclaim
+the resources allocated for the buffer.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> <em>Note</em>: Internal pre-allocation will be implemented in a
+future release. This operation has no effect on buffers allocated by
+the application.</p>
+</div></blockquote>
+</div>
+<div class="section" id="id3">
+<h3>3.4.5. get_qos<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataReader</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+DDS::ReturnCode_t
+get_qos(
+   DDS::Streams::StreamDataReaderQos &amp;qos)
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>This operation allows access to the existing set of QoS policies for a
+<tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt>.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">inout</span> <span class="pre">StreamDataReaderQos</span> <span class="pre">&amp;qos</span></tt></dt>
+<dd>A pointer to a <tt class="docutils literal"><span class="pre">StreamDataReaderQos</span></tt> object to which the current
+QoS settings will be copied.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Return Value</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ReturnCode_t</span></tt></dt>
+<dd>Possible return code of the operation is:
+<tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div>The existing list of QoS settings of the <tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt> is copied
+to the object pointed to by <tt class="docutils literal"><span class="pre">qos</span></tt>. The application can then inspect and,
+if necessary, modify the settings and apply the settings using the
+<tt class="docutils literal"><span class="pre">set_qos</span></tt> operation.</div></blockquote>
+<p><strong>Return Code</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">RETCODE_OK</span></tt></dt>
+<dd>The QoS settings were successfully copied to the supplied <tt class="docutils literal"><span class="pre">qos</span></tt> object.</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="id4">
+<h3>3.4.6. set_qos<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataReader</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+DDS::ReturnCode_t
+set_qos(
+   DDS::Streams::StreamDataReaderQos &amp;qos)
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>This operation allows replacing the existing set of QoS policies for a
+<tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt>.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">StreamDataReaderQos</span> <span class="pre">&amp;qos</span></tt></dt>
+<dd>A pointer to a <tt class="docutils literal"><span class="pre">qos</span></tt> object with the new policies.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Return Value</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ReturnCode_t</span></tt></dt>
+<dd>Possible return codes of the operation are:
+<tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt>, <tt class="docutils literal"><span class="pre">DDS::RETCODE_UNSUPPORTED</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div>This operation allows replacing the set of QoS policies of a
+<tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt>.</div></blockquote>
+<p><strong>Return Code</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">RETCODE_OK</span></tt></dt>
+<dd>The QoS settings were successfully applied to the <tt class="docutils literal"><span class="pre">FooStreamDataWriter</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">RETCODE_UNSUPPORTED</span></tt></dt>
+<dd>The application attempted to set QoS policies or values that are not
+(yet) supported.</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="interrupt">
+<h3>3.4.7. interrupt<a class="headerlink" href="#interrupt" title="Permalink to this headline">¶</a></h3>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataReader</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+DDS::ReturnCode_t
+interrupt();
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>Interrupt a blocking <a class="reference internal" href="#get">get</a> operation from a different thread.</div></blockquote>
+<p><strong>Return Value</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ReturnCode_t</span></tt></dt>
+<dd>Possible return codes of the operation are:
+<tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt>, <tt class="docutils literal"><span class="pre">DDS::RETCODE_ERROR</span></tt>.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div><p>The <a class="reference internal" href="#get">get</a> operation accepts a <tt class="docutils literal"><span class="pre">timeout</span></tt> parameter which causes the
+<tt class="docutils literal"><span class="pre">FooStreamDataReader</span></tt> to block until data becomes available. It can block
+indefinitely when an infinite timeout is supplied and data never becomes
+available because there are simply no compatible writers.</p>
+<p>In such cases it can be desirable to interrupt the <a class="reference internal" href="#get">get</a> operation from the
+application, i.e. for termination or reclaiming of resources.</p>
+<p>The <tt class="docutils literal"><span class="pre">interrupt</span></tt> call triggers an internal <tt class="docutils literal"><span class="pre">GuardCondition</span></tt> by calling
+<tt class="docutils literal"><span class="pre">DDS::GuardCondition::set_trigger_value(true)</span></tt>. This causes the <a class="reference internal" href="#get">get</a>
+operation to return with a <tt class="docutils literal"><span class="pre">DDS::RETCODE_NO_DATA</span></tt> result.</p>
+</div></blockquote>
+<p><strong>Return Code</strong></p>
+<blockquote>
+<div><p>The return code of this operation is determined by the result of <tt class="docutils literal"><span class="pre">DDS::GuardCondition::set_trigger_value()</span></tt></p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">DDS::RETCODE_OK</span></tt></dt>
+<dd>The <tt class="docutils literal"><span class="pre">GuardCondition</span></tt> was triggered successfully</dd>
+<dt><tt class="docutils literal"><span class="pre">DDS::RETCODE_ERROR</span></tt></dt>
+<dd>An internal error occurred</dd>
+</dl>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="foostreamfiltercallback-interface">
+<h2>3.5. FooStreamFilterCallback Interface<a class="headerlink" href="#foostreamfiltercallback-interface" title="Permalink to this headline">¶</a></h2>
+<p><strong>Scope</strong></p>
+<p><tt class="docutils literal"><span class="pre">Space::FooStreamDataReader</span></tt></p>
+<p><strong>Synopsis</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>#include &lt;SpaceStreamsApi.h&gt;
+
+boolean
+a_filter(
+   const Space::Foo &amp;data)
+</pre></div>
+</div>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>Function interface for filters that are passed to the <a class="reference internal" href="#get-w-filter">get_w_filter</a>
+and/or <tt class="docutils literal"><span class="pre">peek_w_filter</span></tt> operations.</div></blockquote>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">in</span> <span class="pre">const</span> <span class="pre">Foo</span> <span class="pre">&amp;data</span></tt></dt>
+<dd>A data sample.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Return Value</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">boolean</span></tt></dt>
+<dd>Return <tt class="docutils literal"><span class="pre">true</span></tt> if the supplied data matches, <tt class="docutils literal"><span class="pre">false</span></tt> if it
+doesn’t match.</dd>
+</dl>
+</div></blockquote>
+<p><strong>Detailed Description</strong></p>
+<blockquote>
+<div>The application can supply any function that adheres to the
+<tt class="docutils literal"><span class="pre">FooStreamFilterCallback</span></tt> interface, to filter data that is retrieved by
+the <a class="reference internal" href="#get-w-filter">get_w_filter</a> operation. If the data matches the filter, the function
+returns <tt class="docutils literal"><span class="pre">true</span></tt> and the data is added to the <tt class="docutils literal"><span class="pre">data_values</span></tt> buffer that is
+returned by the <a class="reference internal" href="#get-w-filter">get_w_filter</a> operation. Data that doesn’t match the
+filter is discarded.</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. API Reference</a><ul>
+<li><a class="reference internal" href="#introduction">3.1. Introduction</a></li>
+<li><a class="reference internal" href="#qos-policies">3.2. QoS Policies</a><ul>
+<li><a class="reference internal" href="#streamdatawriterqos">3.2.1. StreamDataWriterQos</a><ul>
+<li><a class="reference internal" href="#streamflushqospolicy">3.2.1.1. StreamFlushQosPolicy</a></li>
+<li><a class="reference internal" href="#streamdatareaderqos">3.2.1.2. StreamDataReaderQos</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#streamdatawriter-class">3.3. StreamDataWriter Class</a><ul>
+<li><a class="reference internal" href="#constructors">3.3.1. Constructors</a></li>
+<li><a class="reference internal" href="#append">3.3.2. append</a></li>
+<li><a class="reference internal" href="#flush">3.3.3. flush</a></li>
+<li><a class="reference internal" href="#get-qos">3.3.4. get_qos</a></li>
+<li><a class="reference internal" href="#set-qos">3.3.5. set_qos</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#streamdatareader-class">3.4. StreamDataReader Class</a><ul>
+<li><a class="reference internal" href="#id2">3.4.1. Constructors</a></li>
+<li><a class="reference internal" href="#get">3.4.2. get</a></li>
+<li><a class="reference internal" href="#get-w-filter">3.4.3. get_w_filter</a></li>
+<li><a class="reference internal" href="#return-loan">3.4.4. return_loan</a></li>
+<li><a class="reference internal" href="#id3">3.4.5. get_qos</a></li>
+<li><a class="reference internal" href="#id4">3.4.6. set_qos</a></li>
+<li><a class="reference internal" href="#interrupt">3.4.7. interrupt</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#foostreamfiltercallback-interface">3.5. FooStreamFilterCallback Interface</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">2. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">4. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/API-ref.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="4. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">Streams API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

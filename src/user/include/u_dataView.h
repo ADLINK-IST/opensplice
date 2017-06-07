@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef U_DATAVIEW_H
@@ -15,7 +23,6 @@
 #include "u_types.h"
 #include "u_reader.h"
 #include "u_dataReader.h"
-#include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -29,68 +36,80 @@ extern "C" {
 #endif
 
 #define u_dataView(o) \
-        ((u_dataView)u_entityCheckType(u_entity(o),U_DATAVIEW))
-
-/* DataReaderView creation/deletion */
+        ((u_dataView)u_objectCheckType(u_object(o),U_DATAVIEW))
 
 OS_API u_dataView 
 u_dataViewNew(
-    u_dataReader r,
-    const c_char *name,
-    v_dataViewQos qos);
+    const u_dataReader r,
+    const os_char *name,
+    const u_dataViewQos qos);
 
-OS_API u_result    
-u_dataViewFree(
-    u_dataView _this);
+OS_API u_result
+u_dataViewGetQos (
+    const u_dataView _this,
+    u_dataViewQos *qos);
+
+OS_API u_result
+u_dataViewSetQos (
+    const u_dataView _this,
+    const u_dataViewQos qos);
 
 OS_API u_result    
 u_dataViewRead(
-    u_dataView _this,
+    const u_dataView _this,
+    u_sampleMask mask,
     u_readerAction action,
-    c_voidp actionArg);
+    void *actionArg,
+    const os_duration timeout);
                 
 OS_API u_result    
 u_dataViewTake(
-    u_dataView _this,
+    const u_dataView _this,
+    u_sampleMask mask,
     u_readerAction action,
-    c_voidp actionArg);
+    void *actionArg,
+    const os_duration timeout);
 
 OS_API u_result    
 u_dataViewReadInstance(
-    u_dataView _this,
+    const u_dataView _this,
     u_instanceHandle h,
+    u_sampleMask mask,
     u_readerAction action,
-    c_voidp actionArg);
+    void *actionArg,
+    const os_duration timeout);
                 
 OS_API u_result    
 u_dataViewTakeInstance(
-    u_dataView _this,
+    const u_dataView _this,
     u_instanceHandle h,
+    u_sampleMask mask,
     u_readerAction action,
-    c_voidp actionArg);
+    void *actionArg,
+    const os_duration timeout);
                 
 OS_API u_result    
 u_dataViewReadNextInstance(
-    u_dataView _this,
+    const u_dataView _this,
     u_instanceHandle h,
+    u_sampleMask mask,
     u_readerAction action,
-    c_voidp actionArg);
+    void *actionArg,
+    const os_duration timeout);
                 
 OS_API u_result    
 u_dataViewTakeNextInstance(
-    u_dataView _this,
+    const u_dataView _this,
     u_instanceHandle h,
+    u_sampleMask mask,
     u_readerAction action,
-    c_voidp actionArg);
+    void *actionArg,
+    const os_duration timeout);
 
-OS_API u_dataReader    
-u_dataViewSource(
-    u_dataView _this);
-    
 OS_API u_result
 u_dataViewLookupInstance(
-    u_dataView _this,
-    c_voidp keyTemplate,
+    const u_dataView _this,
+    void *keyTemplate,
     u_copyIn copyIn,
     u_instanceHandle *handle);
     

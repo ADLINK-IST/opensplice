@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.config.swing;
@@ -60,6 +68,7 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
         }
     }
     
+    @Override
     public void nodeAdded(DataElement parent, DataNode nodeAdded) {
         DataNode parentParent;
         
@@ -74,13 +83,9 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
                 this.initElement();
             }
         }
-        
-        /*else if(this.containsNodeAsParent(parent)){
-            this.clear();
-            this.initElement();
-        }*/
     }
 
+    @Override
     public void nodeRemoved(DataElement parent, DataNode nodeRemoved) {
        if(nodeRemoved.equals(this.element)){
             this.setElement(null);
@@ -102,6 +107,7 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
         return false;
     }
 
+    @Override
     public void valueChanged(DataValue data, Object oldValue, Object newValue) {
         final int index = this.nodes.indexOf(data); 
         final Object v = newValue;
@@ -110,6 +116,7 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
             /*System.out.println("Value changed: data: " + data + ", oldValue: " + oldValue + " newValue: " + newValue + "(row=" + index +", col=1)");*/
             
             SwingUtilities.invokeLater(new Runnable(){
+                @Override
                 public void run() {
                     setValueAt(v, index, 1);
                 }
@@ -128,6 +135,7 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
         return result;
     }
     
+    @Override
     public boolean isCellEditable(int row, int column) {
         boolean result;
                 

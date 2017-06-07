@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Vortex OpenSplice - documentation index</title>
+    <style type="text/css" media="all">
+      @import url("../css/maven-base.css");
+      @import url("../css/maven-theme.css");
+      @import url("../css/site.css");
+    </style>
+    <link rel="stylesheet" href="./docs/css/print.css" type="text/css" media="print" />
+    <meta name="Date-Revision-yyyymmdd" content="20141002" />
+    <meta http-equiv="Content-Language" content="en" />
+        
+ </head>
+ <body class="composite">
+    <div id="banner">
+       <a href="http://www.prismtech.com" id="bannerLeft">
+          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       </a>
+       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       </a>
+       <div class="clear">
+          <hr/>
+       </div>
+    </div>
+    <div id="breadcrumbs">
+       <div class="xright">
+          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
+          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+       </div>
+       <div class="clear">
+         <hr/>
+       </div>
+    </div>
+    <div id="leftColumn">
+      <div id="navcolumn">
+         <h5>Vortex OpenSplice</h5>
+         <ul>
+         <ul>
+            <li class="none">
+            <a href="../../index.html" title = "Intro">Introduction</a>
+            </li>
+            <li class="none">
+              <a href="guides.html" title="APIs">User Guides</a>
+            </li>
+            <li class="none">
+              <a href="changedV6.html" title="Changes">Changes</a><br>
+            </li>
+            <li class="none">
+              <a href="platforms.html" title="Supported Platforms">Supported Platforms</a><br>
+            </li>
+            <li class="none">
+              <a href="known_issues.html" title="Changes">Known Issues</a><br>
+            </li>
+            <li class="none">
+              <a href="ddsi2_release_notes.html" title="Changes">DDSI Release Notes</a><br>
+            </li>
+            <li class="none">
+               <a href="rebuilding_APIs.html" title = "User Guide">Rebuilding the APIs</a><br>
+            </li>
+            <li class="none">
+               <a href="upgrading.html" title = "Upgrading"><strong>Upgrading OpenSplice</strong></a><br>
+            </li>
+            <li class="none">
+               <a href="../../examples/dcps/README.html" title = "Examples">Examples</a><br>
+            </li>
+            <li class="none">
+               <a href="third_party_licenses.html" title = "Third Party Licenses">Third party licenses</a><br>
+            </li>
+            <li class="none">
+              <a href="./../../LICENSE" title="License">License</a>
+            </li>
+          </ul>
+      </a>
+      </div>
+    </div>
+    <div id="bodyColumn">
+      <div id="contentBox">
+
+    <h2><a name="versionswitch">Switching to the next OpenSplice DDS version</a></h2>
+      <p>
+        OpenSplice DDS uses a versioning policy, which reflects the severity i.e.
+        impact of the changes applied. Impact of any change can be on portability
+        as well as on interoperability. Portability aspects are typically driven by
+        changes in (existing) APIs whereas interoperability aspects are typically
+        driven by changes in DDS (wire-)protocols. With the related OMG specifications
+        (DDS rev 1.2, DDSI rev2.1) becoming more mature as well as the adoption of
+        extensible wire-protocols, interoperability can be increasingly guaranteed
+        as explained below.
+        <p>
+        <p>
+        The OpenSplice DDS version consists of 3 digits: major, minor and maintenance
+        (in that order). Additionally, there may be patch releases made available
+        for customers with appropriate support contracts. The impact of major/minor/
+        maintenance release updates on installation, coding and coding/generation
+        is as follows:
+        <ul>
+           <li>
+            <b>Major:</b> A Major release typically indicates some major functional
+            additions to the product and/or high-impact changes to existing functionality.
+            These changes could be syntactic and/or behavioral changes on existing
+            DDS APIs. A Major release is always accompanied by a migration guide
+            detailing the DDS API changes and in case of behavioral changes, it
+            contains recommendations (if possible) on how to either mimic the
+            old behavior or migrate towards the new behavior. <br><br>
+            Whereas wire-protocol interoperability is now guaranteed within a
+            major release (i.e. for all minor releases), interoperability between
+            major versions is a design-goal rather than a guarantee as there can
+            be evolutions in the wire-protocol specification(s) and/or its
+            implementation that would demand upgrading to the same major release.
+            The Release-notes of each major release will clearly indicate when a
+            new major release is NOT backwards-compatible with the previous one.<br><br>
+            The actions to take upon changing to a new major release are:
+            <ul>
+              <li>
+                Installing/Interoperability: In case of indicated non-compatibility
+                with the previous major release, the new major release must be
+                installed on all computing nodes of the distributed system and
+                old persistent-stores (that relate to data of the old major
+                release) must potentially be deleted (if release notes of the new
+                major release so indicate)
+              </li>
+              <li>
+                Coding: Application code has to be adapted if and only if an
+                application uses APIs that have either been changed syntactically
+                or changed behaviorally.Please check the migration guide to see
+                if this applies to your application
+              </li>
+              <li>
+                Compiling: Applications that are to be ran on the new major release
+                shall be re-generated using the related OpenSplice DDS IDL preprocessor
+                followed by compilation
+                of the generated code with a compile-suite (-version) suitable for
+                the new major release of OpenSplice (as indicated in the release-notes)
+              </li>
+            </ul>
+          </li>
+          <li>
+           <b>Minor:</b> A minor release typically introduces new functionality APIs
+           and/or provides bug-fixes (that might include code-generation). Changing
+           to a new minor release therefore implies the following for existing nodes
+           and applications:
+            <ul>
+              <li>
+                Installing/Interoperability: existing nodes (with existing applications)
+                don't require to be upgraded to the latest minor release as
+                interoperability between minor-releases (of the same major-release)
+                is guaranteed
+              </li>
+              <li>
+                 Compiling: Applications that are to be ran on the new major release
+                 shall be re-generated using the related OpenSplice DDS IDL preprocessor
+                 followed by compilation of the generated code
+              </li>
+            </ul>
+          </li>
+          <li>
+            <b>Maintenance:</b> A maintenance release contains execution-level bugfixes
+            only and is made available on standard platforms. It is compatible with any
+            previous version of OpenSplice DDS with the same major and minor version
+            number. Portability (of existing applications) and interoperability (with
+            existing nodes) is guaranteed implying that no recompilation is required and
+            that the new maintenance release can be freely installed on any node in the
+            distributed system. <b>WARNING: re-compilation may be required for
+            maintenance version upgrades for applications built on
+            top of the ISOC++ (v2) API's.</b> <i>This is due to the nature of the
+            language in combination with how the API standard works. The
+            OMG-delivered header files that must  be used in order to be
+            compliant, contain many so-called templates. These templates have to
+            be implemented in header files due to the nature of the C++ language.
+            The down-side of the 'template approach' is that any change in the
+            template code of our product, leads to a requirement for
+            re-compilation of any applications built on top of them. This means
+            if a change was made in one or more of the templates in the API,
+            your applications will have to be recompiled.</i>
+          </li>
+          <li>
+            <b>Patch:</b> A patch release contains specific bugfixes for specific platforms
+            only and is compatible and interoperable with any previous version of OpenSplice
+            DDS with the same major, minor and maintenance version number. A patch release
+            is identified by a "pxx" version where xx is an incremental patch number after
+            the maintenance release digit. Portability (of existing applications) and
+            interoperability (with existing nodes) is guaranteed implying that no recompilation
+            is required and that the new maintenance release can be selectively installed on
+            relevant nodes (that require the patch) in the system.
+            <b>WARNING: re-compilation may be required for
+            patch version upgrades  for applications built on top of the ISOC++
+            (v2) API's.</b> <i>This is due to the nature of the
+            language in combination with how the API standard works. The
+            OMG-delivered header files that must  be used in order to be
+            compliant, contain many so-called templates. These templates have to
+            be implemented in header files due to the nature of the C++ language.
+            The down-side of the 'template approach' is that any change in the
+            template code of our product, leads to a requirement for
+            re-compilation of any applications built on top of them. This means
+            if a change was made in one or more of the templates in the API,
+            your applications will have to be recompiled.</i>
+          </li>
+        </ul>
+    </p>
+    <div class="clear">
+    <hr/>
+    </div>
+    <div id="footer">
+      <div class="xright">
+       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.      
+      </div>
+     <div class="clear">
+     <hr/>
+     </div>
+    </div>
+  </body>
+</html>

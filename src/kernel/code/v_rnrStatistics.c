@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2012 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -27,7 +35,7 @@ v_rnrStatisticsNew(
     assert(k != NULL);
     assert(C_TYPECHECK(k, v_kernel));
 
-    type = c_resolve(c_getBase(k), "kernelModule::v_rnrStatistics");
+    type = c_resolve(c_getBase(k), "kernelModuleI::v_rnrStatistics");
     _this = v_rnrStatistics(v_new(k, type));
 
     serviceName = c_stringNew(c_getBase(c_object(k)), name);
@@ -49,7 +57,7 @@ v_rnrStatisticsInit(
 
     v_statisticsInit(v_statistics(_this));
 
-    type = c_resolve(c_getBase(k), "kernelModule::v_rnrStorageStatistics");
+    type = c_resolve(c_getBase(k), "kernelModuleI::v_rnrStorageStatistics");
     _this->storages = c_tableNew(type, "name");
     _this->name = name;
 }
@@ -118,33 +126,3 @@ v_rnrStatisticsStorageStatistics(
     return helper.stats;
 }
 
-c_bool
-v_rnrStatisticsReset(
-    v_rnrStatistics _this,
-    const c_char* fieldName)
-{
-    OS_UNUSED_ARG(_this);
-    OS_UNUSED_ARG(fieldName);
-    return TRUE;
-#if 0
-    c_bool result;
-
-    assert(_this != NULL);
-    assert(C_TYPECHECK(_this, v_rnrStatistics));
-
-    result = FALSE;
-    if (fieldName != NULL) {
-        result = v_statisticsResetField(v_statistics(_this), fieldName);
-    } else {
-        /*
-        v_maxValueReset(&(_this->maxConnectedClients));
-        v_maxValueReset(&(_this->maxClientThreads));
-        _this->requestsHandled = 0;
-        _this->connectedClients = 0;
-        _this->clientThreads = 0;
-        */
-        result = TRUE;
-    }
-    return result;
-#endif
-}

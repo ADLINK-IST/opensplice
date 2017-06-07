@@ -31,7 +31,12 @@ namespace test.sacs
                 result.Result = "Builtin subscriber could not be resolved.";
                 return result;
             }
+
+            /************************************************
+             * DCPSTopic
+             ************************************************/
             topicName = "DCPSTopic";
+            System.Console.WriteLine("-- Builtin Topic: " + topicName);
             reader = subscriber.LookupDataReader(topicName);
             if (reader == null)
             {
@@ -93,7 +98,12 @@ namespace test.sacs
                 result.Result = "Builtin topics of " + topicName + " do not match.";
                 return result;
             }
+
+            /************************************************
+             * DCPSParticipant
+             ************************************************/
             topicName = "DCPSParticipant";
+            System.Console.WriteLine("-- Builtin Topic: " + topicName);
             reader = subscriber.LookupDataReader(topicName);
             if (reader == null)
             {
@@ -103,64 +113,8 @@ namespace test.sacs
             }
             else
             {
-                DDS.IParticipantBuiltinTopicDataDataReader dcpsPubReader = reader as DDS.IParticipantBuiltinTopicDataDataReader;
+                DDS.IParticipantBuiltinTopicDataDataReader dcpsDPReader = reader as DDS.IParticipantBuiltinTopicDataDataReader;
                 DDS.ParticipantBuiltinTopicData[] dataSeq = null;
-                DDS.SampleInfo[] infoSeq = null;
-                DDS.ReturnCode retcode = dcpsPubReader.Read(
-                        ref dataSeq, 
-                        ref infoSeq, 
-                        DDS.Length.Unlimited, 
-                        DDS.SampleStateKind.NotRead, 
-                        DDS.ViewStateKind.Any, 
-                        DDS.InstanceStateKind.Any);
-                if (retcode == DDS.ReturnCode.Ok)
-                {
-                    for (int i = 0; i < dataSeq.Length; i++)
-                    {
-                        System.Console.WriteLine("Found: Participant for node " + dataSeq[i].Key[0]); 
-                    }
-                    retcode = dcpsPubReader.ReturnLoan(ref dataSeq, ref infoSeq);
-                    if (retcode != DDS.ReturnCode.Ok)
-                    {
-                       result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
-                       return result;
-                    }
-                }
-                else
-                {
-                    result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
-                    return result;
-                }
-            }
-            topic = reader.GetTopicDescription();
-            if (topic == null)
-            {
-                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
-                return result;
-            }
-            topic2 = participant.LookupTopicDescription(topicName);
-            if (topic2 == null)
-            {
-                result.Result = "Builtin topic " + topicName + " could not be resolved.";
-                return result;
-            }
-            if (topic != topic2)
-            {
-                result.Result = "Builtin topics of " + topicName + " do not match.";
-                return result;
-            }
-            topicName = "DCPSPublication";
-            reader = subscriber.LookupDataReader(topicName);
-            if (reader == null)
-            {
-                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
-                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
-                return result;
-            }
-            else
-            {
-                DDS.IPublicationBuiltinTopicDataDataReader dcpsDPReader = reader as DDS.IPublicationBuiltinTopicDataDataReader;
-                DDS.PublicationBuiltinTopicData[] dataSeq = null;
                 DDS.SampleInfo[] infoSeq = null;
                 DDS.ReturnCode retcode = dcpsDPReader.Read(
                         ref dataSeq, 
@@ -173,7 +127,7 @@ namespace test.sacs
                 {
                     for (int i = 0; i < dataSeq.Length; i++)
                     {
-                        System.Console.WriteLine("Found: Writer for topic " + dataSeq[i].TopicName);
+                        System.Console.WriteLine("Found: Participant for node " + dataSeq[i].Key[0]); 
                     }
                     retcode = dcpsDPReader.ReturnLoan(ref dataSeq, ref infoSeq);
                     if (retcode != DDS.ReturnCode.Ok)
@@ -205,7 +159,73 @@ namespace test.sacs
                 result.Result = "Builtin topics of " + topicName + " do not match.";
                 return result;
             }
+
+            /************************************************
+             * DCPSPublication
+             ************************************************/
+            topicName = "DCPSPublication";
+            System.Console.WriteLine("-- Builtin Topic: " + topicName);
+            reader = subscriber.LookupDataReader(topicName);
+            if (reader == null)
+            {
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
+                return result;
+            }
+            else
+            {
+                DDS.IPublicationBuiltinTopicDataDataReader dcpsPubReader = reader as DDS.IPublicationBuiltinTopicDataDataReader;
+                DDS.PublicationBuiltinTopicData[] dataSeq = null;
+                DDS.SampleInfo[] infoSeq = null;
+                DDS.ReturnCode retcode = dcpsPubReader.Read(
+                        ref dataSeq, 
+                        ref infoSeq, 
+                        DDS.Length.Unlimited, 
+                        DDS.SampleStateKind.NotRead, 
+                        DDS.ViewStateKind.Any, 
+                        DDS.InstanceStateKind.Any);
+                if (retcode == DDS.ReturnCode.Ok)
+                {
+                    for (int i = 0; i < dataSeq.Length; i++)
+                    {
+                        System.Console.WriteLine("Found: Writer for topic " + dataSeq[i].TopicName);
+                    }
+                    retcode = dcpsPubReader.ReturnLoan(ref dataSeq, ref infoSeq);
+                    if (retcode != DDS.ReturnCode.Ok)
+                    {
+                       result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
+                       return result;
+                    }
+                }
+                else
+                {
+                    result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
+                    return result;
+                }
+            }
+            topic = reader.GetTopicDescription();
+            if (topic == null)
+            {
+                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
+                return result;
+            }
+            topic2 = participant.LookupTopicDescription(topicName);
+            if (topic2 == null)
+            {
+                result.Result = "Builtin topic " + topicName + " could not be resolved.";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Builtin topics of " + topicName + " do not match.";
+                return result;
+            }
+
+            /************************************************
+             * DCPSSubscription
+             ************************************************/
             topicName = "DCPSSubscription";
+            System.Console.WriteLine("-- Builtin Topic: " + topicName);
             reader = subscriber.LookupDataReader(topicName);
             if (reader == null)
             {
@@ -261,6 +281,358 @@ namespace test.sacs
                 result.Result = "Builtin topics of " + topicName + " do not match.";
                 return result;
             }
+
+            /************************************************
+             * CMParticipant
+             ************************************************/
+            topicName = "CMParticipant";
+            System.Console.WriteLine("-- Builtin Topic: " + topicName);
+            reader = subscriber.LookupDataReader(topicName);
+            if (reader == null)
+            {
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
+                return result;
+            }
+            else
+            {
+                DDS.ICMParticipantBuiltinTopicDataDataReader dcpsCmpReader = reader as DDS.ICMParticipantBuiltinTopicDataDataReader;
+                DDS.CMParticipantBuiltinTopicData[] dataSeq = null;
+                DDS.SampleInfo[] infoSeq = null;
+                DDS.ReturnCode retcode = dcpsCmpReader.Read(
+                        ref dataSeq,
+                        ref infoSeq,
+                        DDS.Length.Unlimited,
+                        DDS.SampleStateKind.NotRead,
+                        DDS.ViewStateKind.Any,
+                        DDS.InstanceStateKind.Any);
+                if (retcode == DDS.ReturnCode.Ok)
+                {
+                    System.Console.WriteLine("TODO: Print info ["+ dataSeq.Length +"]");
+                    retcode = dcpsCmpReader.ReturnLoan(ref dataSeq, ref infoSeq);
+                    if (retcode != DDS.ReturnCode.Ok)
+                    {
+                       result.Result = "ReturnLoan Returncode not Ok, instead ReturnCode = " + retcode;
+                       return result;
+                    }
+                }
+                else
+                {
+                    result.Result = "Read Returncode not Ok, instead ReturnCode = " + retcode;
+                    return result;
+                }
+            }
+            topic = reader.GetTopicDescription();
+            if (topic == null)
+            {
+                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
+                return result;
+            }
+            topic2 = participant.LookupTopicDescription(topicName);
+            if (topic2 == null)
+            {
+                result.Result = "Builtin topic " + topicName + " could not be resolved.";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Builtin topics of " + topicName + " do not match.";
+                return result;
+            }
+
+            /************************************************
+             * CMPublisher
+             ************************************************/
+            topicName = "CMPublisher";
+            System.Console.WriteLine("-- Builtin Topic: " + topicName);
+            reader = subscriber.LookupDataReader(topicName);
+            if (reader == null)
+            {
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
+                return result;
+            }
+            else
+            {
+                DDS.ICMPublisherBuiltinTopicDataDataReader dcpsCmpReader = reader as DDS.ICMPublisherBuiltinTopicDataDataReader;
+                DDS.CMPublisherBuiltinTopicData[] dataSeq = null;
+                DDS.SampleInfo[] infoSeq = null;
+                DDS.ReturnCode retcode = dcpsCmpReader.Read(
+                        ref dataSeq,
+                        ref infoSeq,
+                        DDS.Length.Unlimited,
+                        DDS.SampleStateKind.NotRead,
+                        DDS.ViewStateKind.Any,
+                        DDS.InstanceStateKind.Any);
+                if (retcode == DDS.ReturnCode.Ok)
+                {
+                    System.Console.WriteLine("TODO: Print info ["+ dataSeq.Length +"]");
+                    retcode = dcpsCmpReader.ReturnLoan(ref dataSeq, ref infoSeq);
+                    if (retcode != DDS.ReturnCode.Ok)
+                    {
+                       result.Result = "ReturnLoan Returncode not Ok, instead ReturnCode = " + retcode;
+                       return result;
+                    }
+                }
+                else
+                {
+                    result.Result = "Read Returncode not Ok, instead ReturnCode = " + retcode;
+                    return result;
+                }
+            }
+            topic = reader.GetTopicDescription();
+            if (topic == null)
+            {
+                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
+                return result;
+            }
+            topic2 = participant.LookupTopicDescription(topicName);
+            if (topic2 == null)
+            {
+                result.Result = "Builtin topic " + topicName + " could not be resolved.";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Builtin topics of " + topicName + " do not match.";
+                return result;
+            }
+
+            /************************************************
+             * CMSubscriber
+             ************************************************/
+            topicName = "CMSubscriber";
+            System.Console.WriteLine("-- Builtin Topic: " + topicName);
+            reader = subscriber.LookupDataReader(topicName);
+            if (reader == null)
+            {
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
+                return result;
+            }
+            else
+            {
+                DDS.ICMSubscriberBuiltinTopicDataDataReader dcpsCmsReader = reader as DDS.ICMSubscriberBuiltinTopicDataDataReader;
+                DDS.CMSubscriberBuiltinTopicData[] dataSeq = null;
+                DDS.SampleInfo[] infoSeq = null;
+                DDS.ReturnCode retcode = dcpsCmsReader.Read(
+                        ref dataSeq,
+                        ref infoSeq,
+                        DDS.Length.Unlimited,
+                        DDS.SampleStateKind.NotRead,
+                        DDS.ViewStateKind.Any,
+                        DDS.InstanceStateKind.Any);
+                if (retcode == DDS.ReturnCode.Ok)
+                {
+                    System.Console.WriteLine("TODO: Print info ["+ dataSeq.Length +"]");
+                    retcode = dcpsCmsReader.ReturnLoan(ref dataSeq, ref infoSeq);
+                    if (retcode != DDS.ReturnCode.Ok)
+                    {
+                       result.Result = "ReturnLoan Returncode not Ok, instead ReturnCode = " + retcode;
+                       return result;
+                    }
+                }
+                else
+                {
+                    result.Result = "Read Returncode not Ok, instead ReturnCode = " + retcode;
+                    return result;
+                }
+            }
+            topic = reader.GetTopicDescription();
+            if (topic == null)
+            {
+                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
+                return result;
+            }
+            topic2 = participant.LookupTopicDescription(topicName);
+            if (topic2 == null)
+            {
+                result.Result = "Builtin topic " + topicName + " could not be resolved.";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Builtin topics of " + topicName + " do not match.";
+                return result;
+            }
+
+            /************************************************
+             * CMDataWriter
+             ************************************************/
+            topicName = "CMDataWriter";
+            System.Console.WriteLine("-- Builtin Topic: " + topicName);
+            reader = subscriber.LookupDataReader(topicName);
+            if (reader == null)
+            {
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
+                return result;
+            }
+            else
+            {
+                DDS.ICMDataWriterBuiltinTopicDataDataReader dcpsCmwReader = reader as DDS.ICMDataWriterBuiltinTopicDataDataReader;
+                DDS.CMDataWriterBuiltinTopicData[] dataSeq = null;
+                DDS.SampleInfo[] infoSeq = null;
+                DDS.ReturnCode retcode = dcpsCmwReader.Read(
+                        ref dataSeq,
+                        ref infoSeq,
+                        DDS.Length.Unlimited,
+                        DDS.SampleStateKind.NotRead,
+                        DDS.ViewStateKind.Any,
+                        DDS.InstanceStateKind.Any);
+                if (retcode == DDS.ReturnCode.Ok)
+                {
+                    System.Console.WriteLine("TODO: Print info ["+ dataSeq.Length +"]");
+                    retcode = dcpsCmwReader.ReturnLoan(ref dataSeq, ref infoSeq);
+                    if (retcode != DDS.ReturnCode.Ok)
+                    {
+                       result.Result = "ReturnLoan Returncode not Ok, instead ReturnCode = " + retcode;
+                       return result;
+                    }
+                }
+                else
+                {
+                    result.Result = "Read Returncode not Ok, instead ReturnCode = " + retcode;
+                    return result;
+                }
+            }
+            topic = reader.GetTopicDescription();
+            if (topic == null)
+            {
+                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
+                return result;
+            }
+            topic2 = participant.LookupTopicDescription(topicName);
+            if (topic2 == null)
+            {
+                result.Result = "Builtin topic " + topicName + " could not be resolved.";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Builtin topics of " + topicName + " do not match.";
+                return result;
+            }
+
+            /************************************************
+             * CMDataReader
+             ************************************************/
+            topicName = "CMDataReader";
+            System.Console.WriteLine("-- Builtin Topic: " + topicName);
+            reader = subscriber.LookupDataReader(topicName);
+            if (reader == null)
+            {
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
+                return result;
+            }
+            else
+            {
+                DDS.ICMDataReaderBuiltinTopicDataDataReader dcpsCmrReader = reader as DDS.ICMDataReaderBuiltinTopicDataDataReader;
+                DDS.CMDataReaderBuiltinTopicData[] dataSeq = null;
+                DDS.SampleInfo[] infoSeq = null;
+                DDS.ReturnCode retcode = dcpsCmrReader.Read(
+                        ref dataSeq,
+                        ref infoSeq,
+                        DDS.Length.Unlimited,
+                        DDS.SampleStateKind.NotRead,
+                        DDS.ViewStateKind.Any,
+                        DDS.InstanceStateKind.Any);
+                if (retcode == DDS.ReturnCode.Ok)
+                {
+                    System.Console.WriteLine("TODO: Print info ["+ dataSeq.Length +"]");
+                    retcode = dcpsCmrReader.ReturnLoan(ref dataSeq, ref infoSeq);
+                    if (retcode != DDS.ReturnCode.Ok)
+                    {
+                       result.Result = "ReturnLoan Returncode not Ok, instead ReturnCode = " + retcode;
+                       return result;
+                    }
+                }
+                else
+                {
+                    result.Result = "Read Returncode not Ok, instead ReturnCode = " + retcode;
+                    return result;
+                }
+            }
+            topic = reader.GetTopicDescription();
+            if (topic == null)
+            {
+                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
+                return result;
+            }
+            topic2 = participant.LookupTopicDescription(topicName);
+            if (topic2 == null)
+            {
+                result.Result = "Builtin topic " + topicName + " could not be resolved.";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Builtin topics of " + topicName + " do not match.";
+                return result;
+            }
+
+            /************************************************
+             * DCPSType
+             ************************************************/
+            topicName = "DCPSType";
+            System.Console.WriteLine("-- Builtin Topic: " + topicName);
+            reader = subscriber.LookupDataReader(topicName);
+            if (reader == null)
+            {
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
+                return result;
+            }
+            else
+            {
+                DDS.ITypeBuiltinTopicDataDataReader dcpsTypeReader = reader as DDS.ITypeBuiltinTopicDataDataReader;
+                DDS.TypeBuiltinTopicData[] dataSeq = null;
+                DDS.SampleInfo[] infoSeq = null;
+                DDS.ReturnCode retcode = dcpsTypeReader.Read(
+                        ref dataSeq,
+                        ref infoSeq,
+                        DDS.Length.Unlimited,
+                        DDS.SampleStateKind.NotRead,
+                        DDS.ViewStateKind.Any,
+                        DDS.InstanceStateKind.Any);
+                if (retcode == DDS.ReturnCode.Ok)
+                {
+                    System.Console.WriteLine("TODO: Print info ["+ dataSeq.Length +"]");
+                    retcode = dcpsTypeReader.ReturnLoan(ref dataSeq, ref infoSeq);
+                    if (retcode != DDS.ReturnCode.Ok)
+                    {
+                       result.Result = "ReturnLoan Returncode not Ok, instead ReturnCode = " + retcode;
+                       return result;
+                    }
+                }
+                else if (retcode == DDS.ReturnCode.NoData) {
+                    System.Console.WriteLine("TODO: Write data");
+                }
+                else
+                {
+                    result.Result = "Read Returncode not Ok, instead ReturnCode = " + retcode;
+                    return result;
+                }
+            }
+            topic = reader.GetTopicDescription();
+            if (topic == null)
+            {
+                result.Result = "Builtin topic for datareader of " + topicName + " could not be resolved.";
+                return result;
+            }
+            topic2 = participant.LookupTopicDescription(topicName);
+            if (topic2 == null)
+            {
+                result.Result = "Builtin topic " + topicName + " could not be resolved.";
+                return result;
+            }
+            if (topic != topic2)
+            {
+                result.Result = "Builtin topics of " + topicName + " do not match.";
+                return result;
+            }
+
             result.Result = expResult;
             result.Verdict = Test.Framework.TestVerdict.Pass;
             return result;

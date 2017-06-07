@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /****************************************************************
@@ -26,10 +34,6 @@ extern "C" {
 #endif
 
 #include "os_defs.h"
-
-/* include OS specific header file				*/
-#include "include/os_rwlock.h"
-#include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -84,7 +88,7 @@ os_rwlockInit(
  * - returns os_resultFail if
  *     rwlock is not destroyed
  */
-OS_API os_result
+OS_API void
 os_rwlockDestroy(
     os_rwlock *rwlock);
 
@@ -104,7 +108,7 @@ os_rwlockDestroy(
  * - returns os_resultFail if
  *      rwlock is not acquired because of a failure
  */
-OS_API os_result
+OS_API void
 os_rwlockRead(
     os_rwlock *rwlock);
 
@@ -120,7 +124,7 @@ os_rwlockRead(
  * - returns os_resultFail if
  *      rwlock is not acquired because of a failure
  */
-OS_API os_result
+OS_API void
 os_rwlockWrite(
     os_rwlock *rwlock);
 
@@ -186,22 +190,20 @@ os_rwlockTryWrite(
  * - returns os_resultFail if
  *     rwlock is not released because of a failure
  */
-OS_API os_result
+OS_API void
 os_rwlockUnlock(
     os_rwlock *rwlock);
 
 /** \brief Set the default rwlock attributes
  *
  * Postcondition:
- * - rwlock scope attribute is OS_SCOPE_SHARED
- *
- * Possible Results:
- * - assertion failure: rwlockAttr = NULL
- * - returns os_resultSuccess
+ * - rwlock scope attribute is OS_SCOPE_PRIVATE
  */
-OS_API os_result
+_Post_satisfies_(rwlockAttr->scopeAttr == OS_SCOPE_PRIVATE)
+OS_API void
 os_rwlockAttrInit(
-    os_rwlockAttr *rwlockAttr);
+        _Out_ os_rwlockAttr *rwlockAttr)
+    __nonnull_all__;
 
 #undef OS_API
 

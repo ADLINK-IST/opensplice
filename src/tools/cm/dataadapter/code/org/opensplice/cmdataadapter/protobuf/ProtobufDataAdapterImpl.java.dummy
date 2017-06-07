@@ -1,0 +1,58 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
+
+package org.opensplice.cmdataadapter.protobuf;
+
+import org.opensplice.cm.data.UserData;
+import org.opensplice.cm.meta.MetaType;
+import org.opensplice.cmdataadapter.CmDataException;
+import org.opensplice.cmdataadapter.TypeInfo.TypeEvolution;
+
+
+public class ProtobufDataAdapterImpl implements ProtobufDataAdapter {
+
+    public UserData buildProtobufUserData (UserData userData, TypeEvolution typeEvolution, boolean validData) throws CmDataException {
+        throw new CmDataException (CmDataException.PROTOBUF_NOT_INCLUDED);
+    }
+
+    public UserData convertUserData (UserData userData, TypeEvolution typeEvolution, boolean validData) throws CmDataException {
+        throw new CmDataException (CmDataException.PROTOBUF_NOT_INCLUDED);
+    }
+
+    public String[] getKeys (TypeEvolution typeEvolution) throws CmDataException {
+        throw new CmDataException (CmDataException.PROTOBUF_NOT_INCLUDED);
+    }
+
+    public MetaType constructMetaType (TypeEvolution typeEvolution) throws CmDataException {
+        throw new CmDataException (CmDataException.PROTOBUF_NOT_INCLUDED);
+    }
+
+    public String getDescriptorProto (TypeEvolution typeEvolution) throws CmDataException {
+        throw new CmDataException (CmDataException.PROTOBUF_NOT_INCLUDED);
+    }
+
+    public ProtobufFieldProperties getFieldProperties (String fullFieldName, TypeEvolution typeEvolution) throws CmDataException {
+        throw new CmDataException (CmDataException.PROTOBUF_NOT_INCLUDED);
+    }
+
+    public boolean isEnabled () {
+        return false;
+    }
+}

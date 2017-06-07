@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+                                Vortex Cafe
+
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+
+-->
+<!-- Configuration of Logback (backend for logging)                                 -->
+<!-- See configuration manual here: http://logback.qos.ch/manual/configuration.html -->
+<configuration>
+
+  <!-- Appender redirecting logs to console on standard output -->
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- enable ANSI color codes on Windows hosts -->
+    <withJansi>true</withJansi>
+    <encoder>
+      <!-- Pattern for output are explain here: http://logback.qos.ch/manual/layouts.html -->
+      <!--   %higlight    : color the message depending it's level  -->
+      <!--   %d{ }        : time with format                        -->
+      <!--   %.-1level    : level (first character only)            -->
+      <!--   %18.18thread : thread name (always 18 characters)      -->
+      <!--   %20.20logger : logger name (always 20 characters)      -->
+      <!--   %msg         : log message                             -->
+      <!--   %n           : line separator (platform dependent)     -->
+      <pattern>%highlight(%d{HH:mm:ss.SSS} %.-1level [%-18.18thread] %-20.20logger : %msg%n)</pattern>
+    </encoder>
+  </appender>
+
+  <!-- By default activate INFO level and redirect logs to console              -->
+  <!-- Log level can be changed in command line using the "log.level" property. -->
+  <!-- (e.g.: java -Dlog.level=DEBUG ...)                                       -->
+  <root level="${log.level:-INFO}">
+    <appender-ref ref="STDOUT" />
+  </root>
+
+  <!-- You can also configure each logger independently (overriding the root configuration) -->
+<!--
+  <logger name="cafe.ddsi.disc"     level="${log.level:-TRACE}"/>
+  <logger name="cafe.ddsi"          level="${log.level:-DEBUG}"/>
+  <logger name="cafe.ddsi.config"   level="${log.level:-TRACE}"/>
+  <logger name="cafe.ddsi.net"      level="${log.level:-DEBUG}"/>
+  <logger name="cafe.ddsi.disc"     level="${log.level:-DEBUG}"/>
+  <logger name="cafe.ddsi.entities" level="${log.level:-TRACE}"/>
+-->
+
+</configuration>
+

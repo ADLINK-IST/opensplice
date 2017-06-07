@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -30,15 +38,16 @@
 #include "idl_dependencies.h"
 #include "idl_genLanguageHelper.h"
 #include "idl_dll.h"
+#include "idl_keyDef.h"
 
-#include "os.h"
+#include "vortex_os.h"
 #include <ctype.h>
 #include "c_typebase.h"
 
-	/** indentation level */
+/** indentation level */
 static c_long indent_level = 0;
 	/** enumeration element index */
-static c_long enum_element = 0;
+static c_ulong enum_element = 0;
 static char *enum_def = NULL;
 
 static void idl_arrayDimensions(idl_typeArray typeArray);
@@ -57,26 +66,15 @@ idl_macroFromBasename(
     const char *append)
 {
     static c_char macro[200];
-    c_long i;
+    size_t i;
 
-    for (i = 0; i < (c_long)strlen(basename); i++) {
-        macro[i] = toupper(basename[i]);
+    for (i = 0; i < strlen(basename); i++) {
+        macro[i] = (c_char) toupper(basename[i]);
         macro[i+1] = '\0';
     }
-    os_strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
+    os_strncat(macro, append, sizeof(macro)-strlen(append));
 
     return macro;
-}
-
-static os_equality
-defName(
-    void *iterElem,
-    void *arg)
-{
-    if (strcmp((char *)iterElem, (char *)arg) == 0) {
-        return OS_EQ;
-    }
-    return OS_NE;
 }
 
 /* @brief callback function called on opening the IDL input file.
@@ -95,14 +93,16 @@ idl_fileOpen(
     const char *name,
     void *userData)
 {
-    c_long i;
+    c_ulong i;
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
 
     /* Generate multiple inclusion prevention code */
     idl_fileOutPrintf(idl_fileCur(), "#ifndef %s\n", idl_macroFromBasename(name, "DCPS_H"));
     idl_fileOutPrintf(idl_fileCur(), "#define %s\n", idl_macroFromBasename(name, "DCPS_H"));
     idl_fileOutPrintf(idl_fileCur(), "\n");
     /* Generate inclusion of standard OpenSpliceDDS type definition files */
-    idl_fileOutPrintf(idl_fileCur(), "#include <dds_dcps.h>\n");
+    idl_fileOutPrintf(idl_fileCur(), "#include <dds_primitive_types.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
     /* Generate code for inclusion of application specific include files */
     for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
@@ -126,6 +126,7 @@ static void
 idl_fileClose (
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     /* Generate closure of multiple inclusion prevention code */
     idl_fileOutPrintf(idl_fileCur(), "#endif\n");
 }
@@ -156,6 +157,9 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
     /* return idl_explore to indicate that the rest of the module needs to be processed */
     return idl_explore;
 }
@@ -182,35 +186,42 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
-    if (idl_definitionExists("definition", idl_scopeStack(scope, "_", name))) {
+    c_char *scopedName = idl_scopeStack(scope, "_", name);
+
+    OS_UNUSED_ARG(structSpec);
+    OS_UNUSED_ARG(userData);
+
+    if (idl_definitionExists("definition", scopedName)) {
         return idl_abort;
     }
-    idl_definitionAdd("definition", idl_scopeStack(scope, "_", name));
+
+    idl_definitionAdd("definition", scopedName);
     idl_fileOutPrintf(idl_fileCur(), "#ifndef _%s_defined\n",
-	idl_scopeStack(scope, "_", name));
+	scopedName);
     idl_fileOutPrintf(idl_fileCur(), "#define _%s_defined\n",
-	idl_scopeStack(scope, "_", name));
+	scopedName);
     idl_fileOutPrintf(idl_fileCur(), "#ifdef __cplusplus\n");
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "struct %s;\n", idl_scopeStack(scope, "_", name));
+    idl_fileOutPrintf(idl_fileCur(), "struct %s;\n", scopedName);
     idl_fileOutPrintf(idl_fileCur(), "#else /* __cplusplus */\n");
     idl_printIndent(indent_level);
     idl_fileOutPrintf(
         idl_fileCur(),
         "typedef struct %s %s;\n",
-        idl_scopeStack(scope, "_", name),
-        idl_scopeStack (scope, "_", name));
+        scopedName,
+        scopedName);
     idl_fileOutPrintf(idl_fileCur(), "#endif /* __cplusplus */\n");
-    idl_fileOutPrintf(idl_fileCur(), "#endif /* _%s_defined */\n",idl_scopeStack(scope, "_", name));
+    idl_fileOutPrintf(idl_fileCur(), "#endif /* _%s_defined */\n",scopedName);
     /* define the prototype of the function allocate the structure */
     idl_fileOutPrintf(
         idl_fileCur(),
         "%s %s *%s__alloc (void);\n\n",
         idl_dllGetMacro(),
-        idl_scopeStack(scope, "_", name),
-        idl_scopeStack(scope, "_", name));
+        scopedName,
+        scopedName);
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "struct %s {\n",idl_scopeStack(scope, "_", name));
+    idl_fileOutPrintf(idl_fileCur(), "struct %s {\n",scopedName);
+    os_free(scopedName);
     indent_level++;
 
     /* return idl_explore to indicate that the rest of the structure needs to be processed */
@@ -240,6 +251,9 @@ idl_structureClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     indent_level--;
     idl_printIndent(indent_level); idl_fileOutPrintf (idl_fileCur(), "};\n\n");
 }
@@ -266,6 +280,9 @@ idl_structureMemberOpenClose (
     idl_typeSpec typeSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
+
     if (idl_typeSpecType(typeSpec) == idl_tbasic ||
         idl_typeSpecType(typeSpec) == idl_ttypedef ||
         idl_typeSpecType(typeSpec) == idl_tenum ||
@@ -341,47 +358,52 @@ idl_unionOpen(
     idl_typeUnion unionSpec,
     void *userData)
 {
-    if (idl_definitionExists("definition", idl_scopeStack (scope, "_", name))) {
+    c_char *scopedName = idl_scopeStack(scope, "_", name);
+
+    OS_UNUSED_ARG(userData);
+
+    if (idl_definitionExists("definition", scopedName)) {
         return idl_abort;
     }
-    idl_definitionAdd("definition", idl_scopeStack (scope, "_", name));
+    idl_definitionAdd("definition", scopedName);
     idl_fileOutPrintf(
         idl_fileCur(),
         "#ifndef _%s_defined\n",
-        idl_scopeStack (scope, "_", name));
+        scopedName);
     idl_fileOutPrintf(
         idl_fileCur(),
         "#define _%s_defined\n",
-        idl_scopeStack(scope, "_", name));
+        scopedName);
     idl_fileOutPrintf(idl_fileCur(), "#ifdef __cplusplus\n");
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(),
         "struct %s;\n",
-        idl_scopeStack(scope, "_", name));
+        scopedName);
     idl_fileOutPrintf(idl_fileCur(), "#else /* __cplusplus */\n");
     idl_printIndent(indent_level);
     idl_fileOutPrintf(
         idl_fileCur(),
         "typedef struct %s %s;\n",
-        idl_scopeStack(scope, "_", name),
-        idl_scopeStack (scope, "_", name));
+        scopedName,
+        scopedName);
     idl_fileOutPrintf(idl_fileCur(), "#endif /* __cplusplus */\n");
     idl_fileOutPrintf(
         idl_fileCur(),
         "#endif /* _%s_defined */\n",
-        idl_scopeStack(scope, "_", name));
+        scopedName);
     /* define the prototype of the function allocate the union */
     idl_fileOutPrintf(
         idl_fileCur(),
         "%s *%s__alloc (void);\n",
-        idl_scopeStack(scope, "_", name),
-        idl_scopeStack (scope, "_", name));
+        scopedName,
+        scopedName);
     /* open the struct */
     idl_printIndent(indent_level);
     idl_fileOutPrintf(
         idl_fileCur(),
         "struct %s {\n",
-        idl_scopeStack(scope, "_", name));
+        scopedName);
+    os_free(scopedName);
     indent_level++;
     /* generate code for the switch */
     if (idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) == idl_tbasic) {
@@ -449,6 +471,9 @@ idl_unionClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     indent_level--;
     idl_printIndent(indent_level); idl_fileOutPrintf(idl_fileCur(), "} _u;\n");
     indent_level--;
@@ -482,6 +507,9 @@ idl_unionCaseOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
+
     if (idl_typeSpecType(typeSpec) == idl_tbasic ||
         idl_typeSpecType(typeSpec) == idl_ttypedef ||
         idl_typeSpecType(typeSpec) == idl_tenum ||
@@ -548,18 +576,23 @@ idl_enumerationOpen(
     idl_typeEnum enumSpec,
     void *userData)
 {
-    if (idl_definitionExists("definition", idl_scopeStack(scope, "_", name))) {
+    c_char *scopedName = idl_scopeStack(scope, "_", name);
+
+    OS_UNUSED_ARG(userData);
+
+    if (idl_definitionExists("definition", scopedName)) {
         return idl_abort;
     }
-    idl_definitionAdd("definition", idl_scopeStack(scope, "_", name));
+    idl_definitionAdd("definition", scopedName);
     if (enum_def == NULL) {
         enum_def = os_malloc(512);
     }
     snprintf(enum_def, 512,	"typedef enum %s_e %s;",
-	   idl_scopeStack (scope, "_", name), idl_scopeStack (scope, "_", name));
+	   scopedName, scopedName);
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "enum %s_e {\n", idl_scopeStack (scope, "_", name));
+    idl_fileOutPrintf(idl_fileCur(), "enum %s_e {\n", scopedName);
     enum_element = idl_typeEnumNoElements(enumSpec);
+    os_free(scopedName);
     indent_level++;
 
     /* return idl_explore to indicate that the rest of the enumeration needs to be processed */
@@ -584,6 +617,9 @@ idl_enumerationClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     indent_level--;
     idl_printIndent(indent_level); idl_fileOutPrintf(idl_fileCur(), "};\n");
     idl_printIndent(indent_level);
@@ -619,6 +655,8 @@ idl_enumerationElementOpenClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     enum_element--;
     if (enum_element == 0) {
         idl_printIndent(indent_level); idl_fileOutPrintf(idl_fileCur(), "%s\n",
@@ -682,12 +720,14 @@ idl_typedefOpenClose(
     idl_typeDef defSpec,
     void *userData)
 {
+    c_char *scopedName = idl_scopeStack(scope, "_", name);
+
     if (idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tbasic) {
         /* generate code for a standard mapping or a basic type mapping */
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(), "typedef %s %s;\n",
             idl_scopedSacTypeIdent(idl_typeSpec(idl_typeDefRefered(defSpec))),
-	    idl_scopeStack(scope, "_", name));
+            scopedName);
         /* define the prototype of the function allocate the typedefed type */
         if (idl_typeBasicType(idl_typeBasic(idl_typeDefRefered(defSpec))) == idl_string) {
             /* if it is a string, then accept a length */
@@ -695,15 +735,15 @@ idl_typedefOpenClose(
                 idl_fileCur(),
                 "%s %s *%s__alloc (DDS_unsigned_long len);\n\n",
                 idl_dllGetMacro(),
-                idl_scopeStack(scope, "_", name),
-                idl_scopeStack(scope, "_", name));
+                scopedName,
+                scopedName);
         } else {
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "%s %s *%s__alloc (void);\n\n",
                 idl_dllGetMacro(),
-                idl_scopeStack(scope, "_", name),
-                idl_scopeStack(scope, "_", name));
+                scopedName,
+                scopedName);
         }
     } else if (idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_ttypedef) {
         idl_typedefOpenClose(scope, name, idl_typeDef(idl_typeDefRefered (defSpec)), userData);
@@ -717,12 +757,10 @@ idl_typedefOpenClose(
                 idl_fileCur(),
                 "typedef %s %s;\n",
                 idl_scopedSacTypeIdent(idl_typeSpec(idl_typeDefRefered(defSpec))),
-                idl_scopeStack(scope, "_", name));
+                scopedName);
             /* define the prototype of the function allocate the typedefed type */
             /* if it is a string, then accept a length */
-            idl_fileOutPrintf(idl_fileCur(), "%s *%s__alloc (void);\n\n",
-            idl_scopeStack(scope, "_", name),
-            idl_scopeStack(scope, "_", name));
+            idl_fileOutPrintf(idl_fileCur(), "%s *%s__alloc (void);\n\n", scopedName, scopedName);
         } else if (idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tarray) {
             /* generate code for an array mapping */
             idl_printIndent(indent_level);
@@ -730,7 +768,7 @@ idl_typedefOpenClose(
                 idl_fileCur(),
                 "typedef %s %s",
                 idl_scopedSacTypeIdent(idl_typeArrayActual (idl_typeArray(idl_typeDefRefered(defSpec)))),
-                idl_scopeStack (scope, "_", name));
+                scopedName);
             idl_arrayDimensions(idl_typeArray(idl_typeDefRefered(defSpec)));
             idl_fileOutPrintf(idl_fileCur(), ";\n");
             /* define the prototype of the function allocate the typedefed type */
@@ -740,28 +778,28 @@ idl_typedefOpenClose(
                     idl_fileCur(),
                     "typedef %s %s_slice",
                     idl_scopedSacTypeIdent(idl_typeArrayActual (idl_typeArray(idl_typeDefRefered(defSpec)))),
-                    idl_scopeStack(scope, "_", name));
+                    scopedName);
                 idl_arraySliceDimensions(idl_typeArray(idl_typeDefRefered(defSpec)));
                 idl_fileOutPrintf(idl_fileCur(), ";\n");
                 idl_fileOutPrintf(
                     idl_fileCur(),
                     "%s %s_slice *%s__alloc (void);\n\n",
                     idl_dllGetMacro(),
-                    idl_scopeStack(scope, "_", name),
-                    idl_scopeStack(scope, "_", name));
+                    scopedName,
+                    scopedName);
             } else {
                 /* This is a one dimensional array, nevertheless define a slice */
                 idl_fileOutPrintf(
                     idl_fileCur(),
                     "typedef %s %s_slice;\n",
                     idl_scopedSacTypeIdent(idl_typeArrayActual (idl_typeArray(idl_typeDefRefered(defSpec)))),
-                    idl_scopeStack(scope, "_", name));
-                    idl_fileOutPrintf(
-                        idl_fileCur(),
-                        "%s %s_slice *%s__alloc (void);\n\n",
-                        idl_dllGetMacro(),
-                        idl_scopeStack(scope, "_", name),
-                        idl_scopeStack(scope, "_", name));
+                    scopedName);
+                idl_fileOutPrintf(
+                    idl_fileCur(),
+                    "%s %s_slice *%s__alloc (void);\n\n",
+                    idl_dllGetMacro(),
+                    scopedName,
+                    scopedName);
             }
         } else if (idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tseq) {
             /* generate code for a sequence mapping */
@@ -770,26 +808,27 @@ idl_typedefOpenClose(
                 idl_fileCur(),
                 "typedef %s %s;\n",
                 idl_sequenceIdent(idl_typeSeq(idl_typeDefRefered(defSpec))),
-                idl_scopeStack (scope, "_", name));
+                scopedName);
             /* define the prototype of the function allocate the typedefed type */
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "%s %s *%s__alloc (void);\n",
                 idl_dllGetMacro(),
-                idl_scopeStack(scope, "_", name),
-                idl_scopeStack(scope, "_", name));
+                scopedName,
+                scopedName);
             /* define the prototype of the function allocate the sequence buffer */
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "%s %s *%s_allocbuf (DDS_unsigned_long len);\n\n",
                 idl_dllGetMacro(),
                 idl_sequenceElementIdent(idl_typeSeqType(idl_typeSeq(idl_typeDefRefered(defSpec)))),
-                idl_scopeStack(scope, "_", name));
+                scopedName);
         } else {
             printf ("idl_typedefOpenClose: Unsupported typedef type (typename = %s, type = %s)\n",
                 name, idl_scopedTypeName(idl_typeSpec(defSpec)));
         }
     }
+    os_free(scopedName);
 }
 
 static void
@@ -798,99 +837,150 @@ idl_sequenceOpenClose(
     idl_typeSeq typeSeq,
     void *userData)
 {
+    c_bool genPrototypesOnly = FALSE;
     char *sequenceElementName;
     char *sequenceName;
+
+    OS_UNUSED_ARG(userData);
 
     sequenceElementName = idl_sequenceElementIdent(idl_typeSeqType(typeSeq));
     sequenceName = idl_sequenceIdent(typeSeq);
 
     if (idl_definitionExists("definition", sequenceName)) {
+        os_free(sequenceElementName);
+        os_free(sequenceName);
         return;
     }
     idl_definitionAdd("definition", sequenceName);
 
-    /* Already defined as part of the core implementation */
-    if (strcmp(sequenceName, "DDS_sequence_octet") != 0 &&
-        strcmp(sequenceName, "DDS_sequence_string") != 0)
-    {
-       idl_fileOutPrintf(
-          idl_fileCur(),
-          "/* Definition for sequence of %s */\n",
-          idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-       idl_fileOutPrintf(
-          idl_fileCur(),
-          "#ifndef _%s_defined\n",
-          sequenceName);
-       idl_fileOutPrintf(
-          idl_fileCur(),
-          "#define _%s_defined\n",
-          sequenceName);
-       if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tstruct) {
-        /* In case struct is refered, it can be a sequence definition within	*/
-        /* within the structure with a reference to the struct itself. In that	*/
-        /* case the struct or union is not defined yet, and a forward 		*/
-        /* definition is required.						*/
-          idl_fileOutPrintf(
-             idl_fileCur(),
-             "#ifndef _%s_defined\n",
-             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-          idl_fileOutPrintf(
-             idl_fileCur(),
-             "#define _%s_defined\n",
-             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-          idl_printIndent(indent_level);
-          idl_fileOutPrintf(
-             idl_fileCur(),
-             "typedef struct %s %s;\n",
-             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)),
-             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-          idl_fileOutPrintf(
-             idl_fileCur(),
-             "#endif /* _%s_defined */\n",
-             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-       } else if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tunion) {
-        /* In case struct is refered, it can be a sequence definition within	*/
-        /* within the structure with a reference to the struct itself. In that	*/
-        /* case the struct or union is not defined yet, and a forward 		*/
-        /* definition is required.						*/
-          idl_fileOutPrintf(
-             idl_fileCur(),
-             "#ifndef _%s_defined\n",
-             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-          idl_fileOutPrintf(
-             idl_fileCur(),
-             "#define _%s_defined\n",
-             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-          idl_printIndent(indent_level);
-          idl_fileOutPrintf(
-             idl_fileCur(),
-             "typedef struct %s %s;\n",
-             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)),
-             idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-          idl_fileOutPrintf(idl_fileCur(),
-                            "#endif /* _%s_defined */\n",
-                            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-       }
-       idl_fileOutPrintf(idl_fileCur(), "typedef struct {\n");
-       idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long _maximum;\n");
-       idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long _length;\n");
-       idl_fileOutPrintf(idl_fileCur(), "    %s *_buffer;\n",
-                         sequenceElementName);
-       idl_fileOutPrintf(idl_fileCur(), "    DDS_boolean _release;\n");
-       idl_fileOutPrintf(idl_fileCur(), "} %s;\n",
-                         sequenceName);
-       idl_fileOutPrintf(idl_fileCur(), "%s %s *%s__alloc (void);\n",
-                         idl_dllGetMacro(),
-                         sequenceName,
-                         sequenceName);
-       idl_fileOutPrintf(idl_fileCur(), "%s %s *%s_allocbuf (DDS_unsigned_long len);\n",
-                         idl_dllGetMacro(),
-                         sequenceElementName,
-                         sequenceName);
-       idl_fileOutPrintf(idl_fileCur(), "#endif /* _%s_defined */\n",
-                         sequenceName);
-       idl_fileOutPrintf(idl_fileCur(), "\n");
+    if (idl_scopeStackSize(scope) > 0) {
+        if ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tbasic) &&
+             ((idl_typeBasicType(idl_typeBasic(idl_typeSeqType(typeSeq))) == idl_octet) ||
+              (idl_typeBasicType(idl_typeBasic(idl_typeSeqType(typeSeq))) == idl_string))) {
+            genPrototypesOnly = TRUE;
+        } else
+            /* If the element type of the sequence has a related key, which means that readers and
+             * writers have been created, and which also means that type sequence support functions
+             * have already been created. In that case the prototypes for these functions should be
+             * generated. Otherwise add the scope name of the module where the sequence is defined
+             * in to the name of these functions.
+             */
+            if (idl_keyDefIncludesType(idl_keyDefDefGet(), sequenceElementName)) {
+                genPrototypesOnly = TRUE;
+            } else {
+                genPrototypesOnly = idl_sequenceSupportFunctionsExist(scope, typeSeq, sequenceElementName);
+            }
+    } else {
+        genPrototypesOnly = TRUE;
     }
+
+    idl_fileOutPrintf(
+        idl_fileCur(),
+        "/* Definition for sequence of %s */\n",
+        idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+    idl_fileOutPrintf(
+        idl_fileCur(),
+        "#ifndef _%s_defined\n",
+        sequenceName);
+    idl_fileOutPrintf(
+        idl_fileCur(),
+        "#define _%s_defined\n",
+        sequenceName);
+    if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tstruct) {
+        /* In case struct is refered, it can be a sequence definition within	*/
+        /* within the structure with a reference to the struct itself. In that	*/
+        /* case the struct or union is not defined yet, and a forward 		*/
+        /* definition is required.						*/
+        idl_fileOutPrintf(
+            idl_fileCur(),
+            "#ifndef _%s_defined\n",
+            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+        idl_fileOutPrintf(
+            idl_fileCur(),
+            "#define _%s_defined\n",
+            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(
+            idl_fileCur(),
+            "typedef struct %s %s;\n",
+            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)),
+            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+        idl_fileOutPrintf(
+            idl_fileCur(),
+            "#endif /* _%s_defined */\n",
+            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+    } else if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tunion) {
+        /* In case struct is refered, it can be a sequence definition within	*/
+        /* within the structure with a reference to the struct itself. In that	*/
+        /* case the struct or union is not defined yet, and a forward 		*/
+        /* definition is required.						*/
+        idl_fileOutPrintf(
+            idl_fileCur(),
+            "#ifndef _%s_defined\n",
+            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+        idl_fileOutPrintf(
+            idl_fileCur(),
+            "#define _%s_defined\n",
+            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+        idl_printIndent(indent_level);
+        idl_fileOutPrintf(
+            idl_fileCur(),
+            "typedef struct %s %s;\n",
+            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)),
+            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+        idl_fileOutPrintf(idl_fileCur(),
+            "#endif /* _%s_defined */\n",
+            idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
+    }
+    idl_fileOutPrintf(idl_fileCur(), "typedef struct {\n");
+    idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long _maximum;\n");
+    idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long _length;\n");
+    idl_fileOutPrintf(idl_fileCur(), "    %s *_buffer;\n", sequenceElementName);
+    idl_fileOutPrintf(idl_fileCur(), "    DDS_boolean _release;\n");
+    idl_fileOutPrintf(idl_fileCur(), "} %s;\n", sequenceName);
+
+    if (genPrototypesOnly) {
+        idl_fileOutPrintf(idl_fileCur(),
+                "%s %s *%s__alloc (void);\n",
+                idl_dllGetMacro(),
+                sequenceName,
+                sequenceName);
+        idl_fileOutPrintf(idl_fileCur(),
+                "%s %s *%s_allocbuf (DDS_unsigned_long len);\n",
+                idl_dllGetMacro(),
+                sequenceElementName,
+                sequenceName);
+    } else {
+        char * sequenceScopedName = idl_sequenceIdentScoped(scope, typeSeq);
+
+        idl_fileOutPrintf(idl_fileCur(),
+                "%s %s *%s__alloc (void);\n",
+                idl_dllGetMacro(),
+                sequenceName,
+                sequenceScopedName);
+        idl_fileOutPrintf(idl_fileCur(),
+                "%s %s *%s_allocbuf (DDS_unsigned_long len);\n",
+                idl_dllGetMacro(),
+                sequenceElementName,
+                sequenceScopedName);
+
+        idl_fileOutPrintf(idl_fileCur(),
+                "#define %s__alloc %s__alloc\n",
+                sequenceName,
+                sequenceScopedName);
+        idl_fileOutPrintf(idl_fileCur(),
+                "#define %s_allocbuf %s_allocbuf\n",
+                sequenceName,
+                sequenceScopedName);
+
+        os_free(sequenceScopedName);
+    }
+
+    idl_fileOutPrintf(idl_fileCur(), "#endif /* _%s_defined */\n", sequenceName);
+    idl_fileOutPrintf(idl_fileCur(), "\n");
+
+    os_free(sequenceElementName);
+    os_free(sequenceName);
 }
 
 static void
@@ -899,6 +989,8 @@ idl_constantOpenClose (
     idl_constSpec constantSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     idl_fileOutPrintf(idl_fileCur(), "#define %-30s %s\n\n",
 	idl_scopeStack(scope, "_", idl_constSpecName(constantSpec)),
 	idl_constSpecImage(constantSpec));
@@ -919,6 +1011,7 @@ static idl_programControl *
 idl_getControl(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     return &idl_genSacLoadControl;
 }
 

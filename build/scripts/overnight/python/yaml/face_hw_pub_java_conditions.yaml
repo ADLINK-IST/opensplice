@@ -1,0 +1,17 @@
+parseconditions:
+    desc: HelloWorld LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: hw_pub_write
+          type: line
+          inst: 5
+          required: yes
+          line: "Publish message : * Hello World"
+
+

@@ -64,10 +64,20 @@ if %ERRORLEVEL% EQU 0 (
 if EXIST "%OSPL_HOME%examples\%EXAMPLE%\ospl-info.log" (
    findstr /c:"WARNING" "%OSPL_HOME%examples\%EXAMPLE%\ospl-info.log"
 )
-if %ERRORLEVEL% EQU 0 (
-   SET FAIL=1
-   SET MESSAGE=" - Warnings found in ospl-info.log"
+if %ERRORLEVEL% EQU 1 (
+   goto NoWarning
 )
+REM Ignore all warnings when encountering "incomplete delivery of writer ... sample ..."
+REM DDSI Warning, as long as OSPL-3217 hasn't been fixed.
+if EXIST "%OSPL_HOME%examples\%EXAMPLE%\ospl-info.log" (
+   findstr /c:"incomplete delivery of writer" "%OSPL_HOME%examples\%EXAMPLE%\ospl-info.log"
+)
+if %ERRORLEVEL% EQU 1 (
+    SET FAIL=1
+    SET MESSAGE=" - Warnings found in ospl-info.log"
+)
+
+:NoWarning
 findstr /i /c:"NoCLassDefFound" %LOGFILE%
 if %ERRORLEVEL% EQU 0 (
    SET FAIL=1

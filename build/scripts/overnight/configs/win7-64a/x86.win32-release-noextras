@@ -1,0 +1,30 @@
+SETUP_TYPE=x86.win32-release-noextras
+BUILD_DIST=yes
+BUILD_EXAMPLES=no
+KEEP_DIST=yes
+BUILD_DBT=yes
+BUILD_RBT=yes
+RUN_DBT=no
+RUN_RBT_SP=no
+RUN_RBT_SHM=no
+RUN_EXAMPLES_SHM=no
+RUN_EXAMPLES_SP=no
+
+. configs/`hostname`/common_32bit
+
+export OVERRIDE_STRICT_CHECKS=no
+
+#Just to allow a very simple build test
+#using the min of setup needed
+unset TAO_ROOT
+unset OPENSSL_HOST_HOME
+unset OPENSSL_TARGET_HOME
+unset ZLIB_HOME
+unset MICO_ROOT
+unset MICO_LIBS
+unset RLM_HOME
+unset RLM_TARGET
+unset RLM_VERSION
+unset JACORB_HOME
+unset OSPL_BUILDER
+unset M2_HOME

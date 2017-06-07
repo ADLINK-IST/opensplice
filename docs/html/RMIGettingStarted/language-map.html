@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Language mapping for Vortex OpenSplice RMI &mdash; RMI User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RMI User Guide" href="index.html" />
+    <link rel="next" title="6. RMI Interface to DDS topics mapping rules" href="topics-maps.html" />
+    <link rel="prev" title="4. Building an RMI Application" href="build-rmi-apps.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="topics-maps.html" title="6. RMI Interface to DDS topics mapping rules"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="build-rmi-apps.html" title="4. Building an RMI Application"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="language-mapping-for-product-name-rmi">
+<span id="id1"></span><h1>5. Language mapping for Vortex OpenSplice RMI<a class="headerlink" href="#language-mapping-for-product-name-rmi" title="Permalink to this headline">¶</a></h1>
+<p>Rmipp compilation follows a set of mapping rules to generate language-specific
+source code. Most of these rules come from the standard OMG IDL-to-C++ and
+IDL-to-Java mapping specifications but with some specific differences.
+This chapter focuses on specific parts of this mapping. For more information,
+please refer to the relevant OMG specifications.</p>
+<p>The following figure shows the language mapping of the <tt class="docutils literal"><span class="pre">HelloService</span></tt>
+IDL interface previously defined.</p>
+<div class="figure" id="idl-interface-mapping">
+<a class="reference internal image-reference" href="_images/RMI-diag-05.png"><img alt="IDL Interface Mapping" src="_images/RMI-diag-05.png" style="height: 100mm;" /></a>
+</div>
+<p><strong>IDL Interface Mapping</strong></p>
+<div class="section" id="mapping-for-interfaces">
+<h2>5.1. Mapping for interfaces<a class="headerlink" href="#mapping-for-interfaces" title="Permalink to this headline">¶</a></h2>
+<p>An interface is mapped to two C++ (or Java) classes that contain public
+definitions of the operations defined in the interface.</p>
+<p>The <tt class="docutils literal"><span class="pre">HelloServiceInterface</span></tt> abstract class is the base class of the
+<tt class="docutils literal"><span class="pre">HelloService</span></tt> implementation class. The <tt class="docutils literal"><span class="pre">HelloServiceInterfaceProxy</span></tt>
+class is the proxy object that represents locally the remote service.
+The client application should get a reference to this class to be able
+to invoke the remote service.</p>
+</div>
+<div class="section" id="mapping-for-operations">
+<h2>5.2. Mapping for operations<a class="headerlink" href="#mapping-for-operations" title="Permalink to this headline">¶</a></h2>
+<p>Each IDL operation, if not oneway, is mapped to two C++ functions
+(Java methods). The first one, having the same name as the IDL operation,
+is used for synchronous invocations. The second one, having <tt class="docutils literal"><span class="pre">async_</span></tt>
+concatenated to the IDL operation, is used for asynchronous invocations.
+A oneway operation maps only to the synchronous form of the operations.</p>
+<p>The operations parameters and return types obey the same parameter
+passing rules as for the standard OMG IDL-to-C++ and IDL-to-Java mapping.
+The asynchronous functions (methods) will return void and take only the
+in/inout parameters of the IDL operation, as well as a callback object
+used as a reply handler. This handler class is also generated for each
+non-void operation as an inner abstract class of the proxy class as
+depicted in the diagram with the <tt class="docutils literal"><span class="pre">greet_Reply_Handler</span></tt> class. This
+latter should be implemented by the user to handle the asynchronous
+invocation reply. Hence, the <tt class="docutils literal"><span class="pre">greet_Reply</span></tt> function (method) provides
+all the inout/out/return parameters of the corresponding IDL operation.</p>
+</div>
+<div class="section" id="mapping-for-basic-types">
+<h2>5.3. Mapping for basic types<a class="headerlink" href="#mapping-for-basic-types" title="Permalink to this headline">¶</a></h2>
+<p>The table below shows the &#8216;C++ and Java&#8217; mapping of the IDL types that
+can be declared in the RMI services description file.</p>
+<p>IDL sequences are mapped as specified by the DDS standard.</p>
+<p><strong>Mapping for basic types</strong></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="48%" />
+<col width="35%" />
+<col width="18%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">IDL type</th>
+<th class="head">C++</th>
+<th class="head">Java</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>boolean</td>
+<td>DDS::Boolean</td>
+<td>boolean</td>
+</tr>
+<tr class="row-odd"><td>char</td>
+<td>DDS::Char</td>
+<td>char</td>
+</tr>
+<tr class="row-even"><td>octet</td>
+<td>DDS::Octet</td>
+<td>byte</td>
+</tr>
+<tr class="row-odd"><td>short</td>
+<td>DDS::Short</td>
+<td>short</td>
+</tr>
+<tr class="row-even"><td>unsigned short</td>
+<td>DDS::UShort</td>
+<td>short</td>
+</tr>
+<tr class="row-odd"><td>long</td>
+<td>DDS::Long</td>
+<td>int</td>
+</tr>
+<tr class="row-even"><td>unsigned long</td>
+<td>DDS::ULong</td>
+<td>int</td>
+</tr>
+<tr class="row-odd"><td>long long</td>
+<td>DDS::LongLong</td>
+<td>long</td>
+</tr>
+<tr class="row-even"><td>unsigned long long</td>
+<td>DDS::ULongLong</td>
+<td>long</td>
+</tr>
+<tr class="row-odd"><td>float</td>
+<td>DDS::Float</td>
+<td>float</td>
+</tr>
+<tr class="row-even"><td>double</td>
+<td>DDS::Double</td>
+<td>double</td>
+</tr>
+<tr class="row-odd"><td>string</td>
+<td>DDS::String</td>
+<td>String</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Language mapping for Vortex OpenSplice RMI</a><ul>
+<li><a class="reference internal" href="#mapping-for-interfaces">5.1. Mapping for interfaces</a></li>
+<li><a class="reference internal" href="#mapping-for-operations">5.2. Mapping for operations</a></li>
+<li><a class="reference internal" href="#mapping-for-basic-types">5.3. Mapping for basic types</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="build-rmi-apps.html"
+                        title="previous chapter">4. Building an RMI Application</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="topics-maps.html"
+                        title="next chapter">6. RMI Interface to DDS topics mapping rules</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/language-map.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="topics-maps.html" title="6. RMI Interface to DDS topics mapping rules"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="build-rmi-apps.html" title="4. Building an RMI Application"
+             >previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

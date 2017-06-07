@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -37,7 +45,8 @@ extern "C" {
  */
 #define v_node(n)      (C_CAST(n,v_node))
 
-#define v_nodeState(n) (v_node(n)->nodeState)
+/* n is deliberately cast to v_node without checking to support heap structures. */
+#define v_nodeState(n) (((v_node)n)->nodeState)
 
 #define L_WRITE            (0x0001U << 0) /* 1 */
 #define L_NEW              (0x0001U << 1) /* 2 */
@@ -46,20 +55,25 @@ extern "C" {
 #define L_INCOMPLETE       (0x0001U << 4) /* 16 */
 #define L_READ             (0x0001U << 5) /* 32 */
 #define L_EMPTY            (0x0001U << 6) /* 64 */
-#define L_LAZYREAD         (0x0001U << 7)  /* 128 this sample state value is used for lazy read state */
+#define L_LAZYREAD         (0x0001U << 7) /* 128 this sample state value is used for lazy read state */
 #define L_REGISTER         (0x0001U << 8) /* 256 */
 #define L_UNREGISTER       (0x0001U << 9) /* 512 */
 #define L_RESEND           (0x0001U << 10) /* 1024 */
 #define L_IMPLICIT         (0x0001U << 11) /* 2048 */
-#define L_SUSPENDED        (0x0001U << 12) /* 4096 */
+#define L_TRIGGER          (0x0001U << 12) /* 4096 */
 #define L_STATECHANGED     (0x0001U << 13) /* 8192 */
 #define L_VALIDDATA        (0x0001U << 14) /* 16384 */
 #define L_SYNCHRONOUS      (0x0001U << 15) /* 32768 */
 #define L_TRANSACTION      (0x0001U << 16) /* 65536 */
-#define L_TRIGGER          (0x0001U << 17) /* 131072 */
+#define L_ENDOFTRANSACTION (0x0001U << 17) /* 131072 used for End of Transaction (EOT) marker */
 #define L_REMOVED          (0x0001U << 18) /* 262144 */
 #define L_REPLACED         (0x0001U << 19) /* 524288 used for the REPLACE merge policy */
+#define L_MARK             (0x0001U << 20) /* 1048576 used as generic marker when applying merge policies */
+#define L_LAZYNEW          (0x0001U << 21) /* 2097152 keep instance marked as new while in access block */
+#define L_AUTO             (0x0001U << 22) /* 4194304 */
+#define L_INMINSEPTIME     (0x0001U << 23) /* 8388608 for samples that are within the minimum seperation window */
 
+#define L_TIME_Y2038 L_MARK /* wire message flag to specify extended time format, reuse internal only L_MARK flag. */
 /*
  * Sets all bits in state that are set in mask.
  *

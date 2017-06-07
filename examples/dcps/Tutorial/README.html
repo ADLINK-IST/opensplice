@@ -4,7 +4,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<title>OpenSplice DDS examples - Tutorial</title>
+<title>OpenSplice examples - Tutorial</title>
 <link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
 </head>
 
@@ -20,7 +20,6 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
   <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
   <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
-  <li><a href ="../Durability/README.html">Durability </a></li>
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
@@ -28,7 +27,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../Throughput/README.html">Throughput</a></li>
 </ul>
 <h2>Tutorial </h2>
-
+<span class="ex-lifecycle" data-timeout="10" style="display:none"></span>
 <ul>
   <li><a href ="#STANDALONE">Running of examples in Standalone Mode</a></li>
   <li><a href ="#CORBA">Running of examples in CORBA Cohabitation Mode</a></li>
@@ -39,24 +38,25 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <h3>2) Design</h3>
 <p>The 3 executables are:</p>
- <ul><li> Chatter : sends messages to the chat box</li>
-     <li> MessageBoard : displays all available chat messages</li>
-     <li> UserLoad : keeps track of when users join and leave the chat box</li></ul>
+ <ul><li class="ex-unit"> <span class="ex-unit-key" data-langcs="sacs_tutorial_chatter" data-langjava="chatroom.Chatter" data-langjava5="chatroom.Chatter">Chatter</span> : <span class="ex-unit-desc">sends messages to the chat box</span></li>
+     <li class="ex-unit"> <span class="ex-unit-key" data-langcs="sacs_tutorial_message_board" data-langjava="chatroom.MessageBoard" data-langjava5="chatroom.MessageBoard">MessageBoard</span> : <span class="ex-unit-desc">displays all available chat messages</span></li>
+     <li class="ex-unit"> <span class="ex-unit-key" data-langcs="sacs_tutorial_user_load" data-langjava="chatroom.UserLoad" data-langjava5="chatroom.UserLoad">UserLoad</span> : <span class="ex-unit-desc">keeps track of when users join and leave the chat box</span></li></ul>
 
 <h3>3) Scenario</h3>
 
  <p>The Chatter and MessageBoard executables support optional command-line parameters. When these
 parameters are not specified, default values are used instead. The optional parameters and their meaning are:</p>
 
-   <ul><li>Chatter [userid] [username]</li>
-       <ul><li>userid:   an integer number that uniquely identifies the sender of a message.
-             (Transmit a message with userid = -1 to terminate the MessageBoard.)</li>
-          <li>  username: the user-name other chatters will see when they receive one of your
-            chat messages.</li></ul>
+   <ul><li><span class="ex-unit-detail" data-unitkey="Chatter">Chatter [<span class="ex-unit-param">userid</span>] [<span class="ex-unit-param">username</span>]</span></li>
+       <ul><li class="ex-param"><span class="ex-param-name" data-ptype="Integer" data-pcategory="Chatter">userid</span>:   <span class="ex-param-desc">an integer number that uniquely identifies the sender of a message.
+             (Transmit a message with userid = -1 to terminate the MessageBoard.)</span></li>
+          <li class="ex-param"><span class="ex-param-name" data-ptype="String" data-pcategory="Chatter">username</span>:   <span class="ex-param-desc">the user-name other chatters will see when they receive one of your
+            chat messages.</span></li>
+       </ul>
 
-       <li>MessageBoard [userid]</li>
-       <ul><li>userid:   block messages from a user identified by this id. You can use this
-            to prevent seeing your own messages appear on your own MessageBoard.</li></ul>
+       <li><span class="ex-unit-detail" data-unitkey="MessageBoard">MessageBoard [<span class="ex-unit-param">userid</span>]</span></li>
+       <ul><li class="ex-param"><span class="ex-param-name" data-ptype="Integer" data-pcategory="MessageBoard">userid</span>:    <span class="ex-param-desc">block messages from a user identified by this id. You can use this
+            to prevent seeing your own messages appear on your own MessageBoard.</span></li></ul>
        </ul>
 
 <h2><balise id="STANDALONE">Running of examples in Standalone Mode</balise></h2>
@@ -69,17 +69,17 @@ parameters are not specified, default values are used instead. The optional para
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
-<p>The OpenSpliceDDS environment variables must be set in order for the examples to build/run correctly.
+<p>The OpenSplice environment variables must be set in order for the examples to build/run correctly.
 To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.com</i>" script supplied with the distribution.</p>
 
 <ul>
-  <li><a href ="#C_C++">C/C++ Examples </a></li>
+  <li><a href ="#C_C++">C/C++/ISO C++ 2 Examples </a></li>
   <li><a href ="#Java">Java examples</a></li>
 </ul>
 
-<h4><balise id="C_C++">C and C++ Executables</balise></h4>
+<h4><balise id="C_C++">C/C++ and ISO C++ Executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
-<p>Three executables and a library are generated in the <b>standalone</b> directory when the example is built:</p>
+<p>Three executables and a library are generated in the <b>standalone</b> or three executables and two libraries in the <b>isocpp2</b> directory when the example is built:</p>
 <p>For C++</p>
                 <ul><li>Chatter</li>
                         <li>MessageBoard</li>
@@ -94,31 +94,47 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
             <li>libsac_tutorial_types.so</li>
                 </ul>
 
+<p>For ISO C++ 2</p>
+                <ul><li>Chatter</li>
+                        <li>MessageBoard</li>
+            <li>UserLoad</li>
+            <li>libISO_Cxx_V2_Tutorial_Impl.so</li>
+            <li>libISO_Cxx_V2_Tutorial_Types.so</li>
+                </ul>
+
 <h4><balise id = "Java">Java executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a>
-<p>Two jars are generated in the <b>standalone</b> directory when the example is built:</p>
+<p>Four jars are generated in the <b>java/standalone</b> or <b>java5</b> directory when the example is built:</p>
+<p>For Java</p>
+                <ul><li>saj_tutorial_chatter.jar </li>
+                        <li>saj_tutorial_messageboard.jar </li>
+                        <li>saj_tutorial_userload.jar </li>
+                        <li>saj_tutorial_types.jar </li>
+                </ul>
 
-                <ul><li>saj_tutorial_app.jar </li>
-                        <li>saj_tutorial.jar </li>
+<p>For Java5</p>
+                <ul><li>saj5_tutorial_chatter.jar </li>
+                        <li>saj5_tutorial_messageboard.jar </li>
+                        <li>saj5_tutorial_userload.jar </li>
+                        <li>saj5_tutorial_types.jar </li>
                 </ul>
 
 <h4>Running the example</h4>
- <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new terminal used.  If running the C or C++ examples ensure that
-    . is added to the LD_LIBRARY_PATH.</p>
+ <p>Ensure that the environment for OpenSplice is set up correctly as described above for each new terminal used.</p>
  <p>It is recommended that you run the subscriber and publisher in separate terminals to avoid mixing the output</p>
 
-   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSplice middleware</b></p>
    <ul>
-     <li>OpenSpliceDDS is deployed in this mode by default.</li>
-     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
-     <li>Open 3 terminals. Set up the environment and go to directory <b>standalone</b> as described above</li>
+     <li>OpenSplice is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSplice middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 3 terminals. Set up the environment and go to the example directory as described above</li>
    </ul>
 
    <p><b>Running in multiple process shared memory configuration</b></p>
-   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>
+   <p>To enable deployment in this mode, an OpenSplice configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>
     <ul>
           <li>Open 3 terminals.  In each terminal:</li>
-          <li>Setup the environment and go to directory <b>standalone</b> as described above</li>
+          <li>Setup the environment and go to the example directory as described above</li>
           <li>Set the required configuraton file e.g. <i>OSPL_URI=file://$OSPL_HOME/etc/config/ospl_shmem_ddsi.xml</i></li>
           <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
     </ul>
@@ -128,8 +144,9 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
    <ul>
      <li> In the first terminal start MessageBoard by running either
         <ul>
-          <li><b><i>MessageBoard [userid] &</i></b> for C/C++  </li>
-          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes chatroom.MessageBoard [userid] &</i></b> for Java </li>
+          <li><b><i>MessageBoard [userid] &</i></b> for C/C++/ISO C++ 2  </li>
+          <li><b><i>java -jar saj_tutorial_messageboard.jar [userid] &</i></b> for Java </li>
+          <li><b><i>java -jar saj5_tutorial_messageboard.jar [userid] &</i></b> for Java5 </li>
         </ul>
      </li>
     </ul>
@@ -141,16 +158,18 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
    <ul>
      <li> In the second terminal start UserLoad by running either
        <ul>
-          <li><b><i>UserLoad &</i></b> for C/C++  </li>
-          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes chatroom.UserLoad &</i></b> for Java </li></ul>
+          <li><b><i>UserLoad &</i></b> for C/C++/ISO C++ 2 </li>
+          <li><b><i>java -jar saj_tutorial_userload.jar &</i></b> for Java </li>
+          <li><b><i>java -jar saj5_tutorial_userload.jar &</i></b> for Java5 </li>
            </ul>
     </ul>
 
    <ul>
      <li> In the third terminal start Chatter by running either
        <ul>
-          <li><b><i>Chatter [userid] [username]</i></b> for C/C++  </li>
-          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes chatroom.Chatter [userid] [username]</i></b> for Java </li></ul>
+          <li><b><i>Chatter [userid] [username]</i></b> for C/C++/ISO C++ 2 </li>
+          <li><b><i>java -jar saj_tutorial_chatter.jar [userid] [username]</i></b> for Java </li>
+          <li><b><i>java -jar saj5_tutorial_chatter.jar [userid] [username]</i></b> for Java5 </li>
            </ul>
     </ul>
     <pre>
@@ -160,58 +179,76 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
    <ul>
      <li>To terminate the MessageBoard run the Chatter again with the <b>-1</b> as the input parameter
        <ul>
-          <li><b><i>Chatter -1</i></b> for C/C++  </li>
-          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes chatroom.Chatter -1</i></b> for Java </li></ul>
+          <li><b><i>Chatter -1</i></b> for C/C++/ISO C++ 2 </li>
+          <li><b><i>java -jar saj_tutorial_chatter.jar -1</i></b> for Java </li>
+          <li><b><i>java -jar saj5_tutorial_chatter.jar -1</i></b> for Java5 </li>
            </ul>
     </ul>
 
-<h3><balise id="VS">Running C/C++/C#/Java examples on Windows</balise></h3>
+<h3><balise id="VS">Running C/C++/C#/ISO C++ 2/Java examples on Windows</balise></h3>
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
-<p>The OpenSpliceDDS environment variables must be set in order for the examples to run correctly.
-To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the environment variables for OpenSpliceDDS automatically.  The <i>OpenSpliceDDS Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
+<p>The OpenSplice environment variables must be set in order for the examples to run correctly.
+To do this open an <i>OpenSplice Command Prompt</i> which will set up the environment variables for OpenSplice automatically.  The <i>OpenSplice Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
 
 <ul>
-  <li><a href ="#C_C++_CS_Win">C/C++/C# Examples </a></li>
+  <li><a href ="#C_C++_CS_Win">C/C++/C#/ISO C++ 2 Examples </a></li>
   <li><a href ="#Java_Win">Java examples</a></li>
 </ul>
 
-<h4><balise id="C_C++_CS_Win">C/C++/C# Executables</balise></h4>
+<h4><balise id="C_C++_CS_Win">C/C++/C#/ISO C++ 2 Executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
-<p>Two executables are generated in the <b>standalone</b> directory when the example is built:
-<p>For C, C++ and C#</p>
+<p>Executables and a libraries are generated in the <b>standalone</b> or <b>isocpp2</b> directory when the example is built:
+<p>For C/C++/ISO C++ 2 </p>
                 <ul><li>Chatter</li>
-                        <li>MessageBoard</li>
-            <li>UserLoad</li>
+                    <li>MessageBoard</li>
+                    <li>UserLoad</li>
+                    <li>sac_tutorial_types.lib - For C</li>
+                    <li>sacpp_tutorial_types.lib - For C++</li>
+                    <li>ISO_Cxx_V2_Tutorial_Impl - For ISO C++ 2</li>
+                    <li>ISO_Cxx_V2_Tutorial_Types - For ISO C++ 2</li>
                 </ul>
+
+<p>For C# </p>
+                <ul><li>sacs_tutorial_chatter</li>
+                    <li>sacs_tutorial_messageboard</li>
+                    <li>sacs_tutorial_userload</li>
 
 <h4><balise id="Java_Win">Java Executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
-<p>The Chatroom, MessageBoard and UserLoad classes are generated in the <b>standalone</b> directory when the example is built:</p>
+<p>Four jars are generated in the <b>java\standalone</b> or <b>java5</b> directory when the example is built:</p>
+<p>For Java</p>
+                <ul><li>saj_tutorial_chatter.jar </li>
+                        <li>saj_tutorial_messageboard.jar </li>
+                        <li>saj_tutorial_userload.jar </li>
+                        <li>saj_tutorial_types.jar </li>
+                </ul>
 
-                <ul><li>chatroom\Chatter.class</li>
-                        <li>chatroom\MessageBoard.class </li>
-            <li>chatroom\UserLoad.class</li>
+<p>For Java5</p>
+                <ul><li>saj5_tutorial_chatter.jar </li>
+                        <li>saj5_tutorial_messageboard.jar </li>
+                        <li>saj5_tutorial_userload.jar </li>
+                        <li>saj5_tutorial_types.jar </li>
                 </ul>
 
 <h4><balise id="C_C++_CS_Java_Win">Running the C/C++/C#/Java Examples</balise></h4>
-   <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new command prompt used.</p>
+   <p>Ensure that the environment for OpenSplice is set up correctly as described above for each new command prompt used.</p>
    <p>The following steps describe how to run the examples:</p>
 
-   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSplice middleware</b></p>
    <ul>
-     <li>OpenSpliceDDS is deployed in this mode by default.</li>
-     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
-     <li>Open 3 OpenSpliceDDS Command Prompts and go to directory <b>standalone</b> as described above</li>
+     <li>OpenSplice is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSplice middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 3 OpenSplice Command Prompts and go to the example directory as described above</li>
    </ul>
 
    <p><b>Running in multiple process shared memory configuration</b></p>
-   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>
+   <p>To enable deployment in this mode, an OpenSplice configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>
     <ul>
-          <li>Open 3 OpenSpliceDDS Command Prompts.  In each window:</li>
-          <li>Go to directory <b>standalone</b> as described above</li>
-          <li>Set the required configuraton file e.g. <i>set OSPL_URI="file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml"</i></li>
+          <li>Open 3 OpenSplice Command Prompts.  In each window:</li>
+          <li>Go to the example directory as described above</li>
+          <li>Set the required configuraton file e.g. <i>set OSPL_URI=file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml</i></li>
           <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
     </ul>
 
@@ -220,8 +257,10 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
    <ul>
      <li> In the first terminal start MessageBoard by running either
         <ul>
-          <li><b><i>MessageBoard [userid]$</i></b> for C/C++  </li>
-          <li><b><i>java -classpath "%OSPL_HOME%/jar/dcpssaj.jar";classes chatroom.MessageBoard [userid] &</i></b> for Java </li>
+          <li><b><i>MessageBoard [userid]$</i></b> for C/C++/ISO C++ 2 </li>
+          <li><b><i>sacs_tutorial_messageboard [userid]$</i></b> for C# </li>
+          <li><b><i>java -jar saj_tutorial_messageboard.jar [userid] &</i></b> for Java </li>
+          <li><b><i>java -jar saj5_tutorial_messageboard.jar [userid] &</i></b> for Java5 </li>
         </ul>
      </li>
     </ul>
@@ -233,16 +272,20 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
    <ul>
      <li> In the second terminal start UserLoad by running either
        <ul>
-          <li><b><i>UserLoad &</i></b> for C/C++  </li>
-          <li><b><i>java -classpath "%OSPL_HOME%/jar/dcpssaj.jar";classes chatroom.UserLoad &</i></b> for Java </li></ul>
+          <li><b><i>UserLoad &</i></b> for C/C++/ISO C++ 2 </li>
+          <li><b><i>sacs_tutorial_userload &</i></b> for C# </li>
+          <li><b><i>java -jar saj_tutorial_userload.jar &</i></b> for Java </li>
+          <li><b><i>java -jar saj5_tutorial_userload.jar &</i></b> for Java5 </li>
            </ul>
     </ul>
 
    <ul>
      <li> In the third terminal start Chatter by running either
        <ul>
-          <li><b><i>Chatter [userid] [username]</i></b> for C/C++  </li>
-          <li><b><i>java -classpath "%OSPL_HOME%/jar/dcpssaj.jar";classes chatroom.Chatter [userid] [username]</i></b> for Java </li></ul>
+          <li><b><i>Chatter [userid] [username]</i></b> for C/C++/ISO C++ 2  </li>
+          <li><b><i>sacs_tutorial_chatter [userid] [username]</i></b> for C#  </li>
+          <li><b><i>java -jar saj_tutorial_chatter.jar -1</i></b> for Java </li>
+          <li><b><i>java -jar saj5_tutorial_chatter.jar -1</i></b> for Java5 </li>
            </ul>
     </ul>
     <pre>
@@ -252,8 +295,10 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
    <ul>
      <li> To terminate the MessageBoard run the Chatter again with <b>-1</b> as the input parameter
        <ul>
-          <li><b><i>Chatter -1</i></b> for C/C++  </li>
-          <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes chatroom.Chatter -1</i></b> for Java </li></ul>
+          <li><b><i>Chatter -1</i></b> for C/C++/ISO C++ 2  </li>
+          <li><b><i>sacs_tutorial_chatter -1</i></b> for C# </li>
+          <li><b><i>java -jar saj_tutorial_chatter.jar -1</i></b> for Java </li>
+          <li><b><i>java -jar saj5_tutorial_chatter.jar -1</i></b> for Java5 </li>
            </ul>
     </ul>
 

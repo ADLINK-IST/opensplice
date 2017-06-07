@@ -43,30 +43,74 @@ namespace test.sacs
                 return result;
             }
             conditionHolder = new DDS.ICondition[0];
-            rc = waitset.Wait(ref conditionHolder, new DDS.Duration(3, 0));
-            if (rc != DDS.ReturnCode.Ok)
+
+            /* The LivelinessChanged and SubscriptionMatched are not necessarily synced.
+             * So, it can happen that one triggers the waitset while the other hasn't been
+             * updated yet. */
+            DDS.StatusKind statuses = 0;
+            do {
+                bool livelinessChanged = false;
+                bool subscriptionMatched = false;
+                rc = waitset.Wait(ref conditionHolder, new DDS.Duration(10, 0));
+                if (rc != DDS.ReturnCode.Ok)
+                {
+                    result.Result = "WaitSet.Wait failed. (1): "+rc;
+                    return result;
+                }
+                if (conditionHolder.Length != 1)
+                {
+                    result.Result = "WaitSet.Wait returned no or multiple conditions where it should return one.";
+                    return result;
+                }
+                if (conditionHolder[0] != condition)
+                {
+                    result.Result = "WaitSet.Wait returned wrong condition.";
+                    return result;
+                }
+
+                livelinessChanged   = ((reader.StatusChanges & DDS.StatusKind.LivelinessChanged  ) == DDS.StatusKind.LivelinessChanged);
+                subscriptionMatched = ((reader.StatusChanges & DDS.StatusKind.SubscriptionMatched) == DDS.StatusKind.SubscriptionMatched);
+                statuses |= reader.StatusChanges;
+
+                if (livelinessChanged) {
+                    if (!test.sacs.StatusValidator.LivelinessChangedValid(reader, 1, 1, 0, 0))
+                    {
+                        result.Result = "liveliness_changed not valid.";
+                        return result;
+                    }
+                    if (!test.sacs.StatusValidator.LivelinessChangedValid(reader, 1, 0, 0, 0))
+                    {
+                        result.Result = "liveliness_changed not valid (2).";
+                        return result;
+                    }
+                }
+
+                /* This is only a useful test when both events were triggered at the same time,
+                 * because then getting liveliness status might have reset the subscription matched. */
+                if ((livelinessChanged && subscriptionMatched) &&
+                    (reader.StatusChanges != DDS.StatusKind.SubscriptionMatched))
+                {
+                    result.Result = "Expected status change (SubscriptionMatched) should not have de-activated yet.";
+                    return result;
+                }
+
+                if (subscriptionMatched) {
+                    if (!test.sacs.StatusValidator.SubscriptionMatchValid(reader, 1, 1, 1, 1))
+                    {
+                        result.Result = "subscription_matched not valid.";
+                        return result;
+                    }
+                    if (!test.sacs.StatusValidator.SubscriptionMatchValid(reader, 1, 0, 1, 0))
+                    {
+                        result.Result = "subscription_matched not valid (2).";
+                        return result;
+                    }
+                }
+            } while (statuses != (DDS.StatusKind.LivelinessChanged | DDS.StatusKind.SubscriptionMatched));
+
+            if (reader.StatusChanges != 0)
             {
-                result.Result = "WaitSet.Wait failed. (1)";
-                return result;
-            }
-            if (conditionHolder.Length != 1)
-            {
-                result.Result = "WaitSet.Wait returned no or multiple conditions where it should return one.";
-                return result;
-            }
-            if (conditionHolder[0] != condition)
-            {
-                result.Result = "WaitSet.Wait returned wrong condition.";
-                return result;
-            }
-            if (!test.sacs.StatusValidator.LivelinessChangedValid(reader, 1, 1, 0, 0))
-            {
-                result.Result = "liveliness_changed not valid.";
-                return result;
-            }
-            if (!test.sacs.StatusValidator.LivelinessChangedValid(reader, 1, 0, 0, 0))
-            {
-                result.Result = "liveliness_changed not valid (2).";
+                result.Result = "Expected all statuses are reset: this does not seem to be the case.";
                 return result;
             }
             rc = waitset.Wait(ref conditionHolder, new DDS.Duration(3, 0));
@@ -77,7 +121,7 @@ namespace test.sacs
             }
             if (conditionHolder.Length != 0)
             {
-                result.Result = "WaitSet.Wait returned conditions where it shouldn't (2).";
+                result.Result = "WaitSet.Wait returned conditions where it shouldn't.";
                 return result;
             }
             mod.tst data = new mod.tst();
@@ -99,12 +143,17 @@ namespace test.sacs
             }
             if (conditionHolder.Length != 1)
             {
-                result.Result = "WaitSet.Wait returned no conditions where it should (1).";
+                result.Result = "WaitSet.Wait returned no or multiple conditions where it should return one (2).";
                 return result;
             }
             if (conditionHolder[0] != condition)
             {
-                result.Result = "WaitSet.Wait returned wrong condition (1).";
+                result.Result = "WaitSet.Wait returned wrong condition (2).";
+                return result;
+            }
+            if (reader.StatusChanges != DDS.StatusKind.DataAvailable)
+            {
+                result.Result = "Expected status change DataAvailable, which is not currently set.";
                 return result;
             }
             tstHolder = new mod.tst[0];
@@ -115,6 +164,11 @@ namespace test.sacs
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "tstDataReader.take failed.";
+                return result;
+            }
+            if (reader.StatusChanges != 0)
+            {
+                result.Result = "Expected all statuses are reset: this does not seem to be the case (2).";
                 return result;
             }
 
@@ -152,12 +206,18 @@ namespace test.sacs
             }
             if (conditionHolder.Length != 1)
             {
-                result.Result = "WaitSet.Wait returned no or multiple conditions where it should return one.";
+                result.Result = "WaitSet.Wait returned no or multiple conditions where it should return one (3).";
                 return result;
             }
             if (conditionHolder[0] != condition)
             {
-                result.Result = "WaitSet.Wait returned wrong condition.";
+                result.Result = "WaitSet.Wait returned wrong condition (3).";
+                return result;
+            }
+            if (reader.StatusChanges != (DDS.StatusKind.LivelinessChanged | 
+                                            DDS.StatusKind.SubscriptionMatched | DDS.StatusKind.DataAvailable))
+            {
+                result.Result = "Expected status changes (LivelinessChanged AND SubscriptionMatched AND DataAvailable) did not occur.";
                 return result;
             }
             if (!test.sacs.StatusValidator.LivelinessChangedValid(reader, 0, 1, 0, 0))
@@ -170,12 +230,37 @@ namespace test.sacs
                 result.Result = "liveliness_changed not valid (4).";
                 return result;
             }
+            if (reader.StatusChanges != (DDS.StatusKind.SubscriptionMatched | DDS.StatusKind.DataAvailable))
+            {
+                result.Result = "Expected status changes (SubscriptionMatched | DataAvailable) should not have de-activated yet.";
+                return result;
+            }
+            if (!test.sacs.StatusValidator.SubscriptionMatchValid(reader, 1, 0, 0, 1))
+            {
+                result.Result = "subscription_matched not valid (3).";
+                return result;
+            }
+            if (!test.sacs.StatusValidator.SubscriptionMatchValid(reader, 1, 0, 0, 0))
+            {
+                result.Result = "subscription_matched not valid (4).";
+                return result;
+            }
+            if (reader.StatusChanges != DDS.StatusKind.DataAvailable)
+            {
+                result.Result = "Expected status change (DataAvailable) should not have de-activated yet.";
+                return result;
+            }
             rc = reader.Take(ref tstHolder, ref sampleInfoHolder, 1, DDS.SampleStateKind.Any, DDS.ViewStateKind.Any,
                 DDS.InstanceStateKind.Any);
             reader.ReturnLoan(ref tstHolder, ref sampleInfoHolder);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "tstDataReader.take failed.";
+                return result;
+            }
+            if (reader.StatusChanges != 0)
+            {
+                result.Result = "Expected all statuses are reset: this does not seem to be the case (3).";
                 return result;
             }
 

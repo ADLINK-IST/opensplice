@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -31,35 +39,35 @@
 #include "idl_dependencies.h"
 #include "idl_genLanguageHelper.h"
 #include "idl_keyDef.h"
+#include "idl_genSacObjectControl.h"
 
 #include "os_heap.h"
 #include "os_stdlib.h"
+#include "os_abstract.h"
 
 #include <ctype.h>
 #include "c_typebase.h"
 
-	/** indentation level */
-static c_long indent_level = 0;
-	/** enumeration element index */
-static c_long enum_element = 0;
 static c_bool struct_hasRef = FALSE;
 static c_bool union_hasRef = FALSE;
 
 static c_long loopIndent;
 static c_long varIndex;
 
-static void idl_arrayDimensions (idl_typeArray typeArray);
-static void idl_arrayElements (idl_typeArray typeArray, const char *identifier, c_long indent);
+static void idl_arrayElements (idl_typeArray typeArray, const char *identifier, c_long indent, c_bool inlineBoundedStrings);
 static void
 idl_arrayLoopRemoveBody(
     idl_typeArray typeArray,
     const char *identifier,
-    c_long indent);
+    c_long indent,
+    c_bool inlineBoundedStrings);
+
 static void
 idl_arrayLoopRemove(
     idl_typeArray typeArray,
     const char *identifier,
-    c_long indent);
+    c_long indent,
+    c_bool inlineBoundedStrings);
 
 static c_char *
 idl_valueFromLabelVal(
@@ -69,36 +77,36 @@ idl_valueFromLabelVal(
 
     /* QAC EXPECT 3416; No side effect here */
     if (idl_labelValType(idl_labelVal(labelVal)) == idl_lenum) {
-        snprintf (labelName, (size_t)sizeof(labelName), "_%s", idl_labelEnumVal(idl_labelEnum(labelVal)));
+        snprintf (labelName, sizeof(labelName), "_%s", idl_labelEnumVal(idl_labelEnum(labelVal)));
     } else {
         switch (idl_labelValueVal(idl_labelValue(labelVal)).kind) {
 	    case V_CHAR:
-            snprintf(labelName, (size_t)sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal)).is.Char);
+            snprintf(labelName, sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal)).is.Char);
 		break;
 	    case V_SHORT:
-            snprintf(labelName, (size_t)sizeof(labelName), "%d", idl_labelValueVal(idl_labelValue(labelVal)).is.Short);
+            snprintf(labelName, sizeof(labelName), "%d", idl_labelValueVal(idl_labelValue(labelVal)).is.Short);
 		break;
 	    case V_USHORT:
-            snprintf(labelName, (size_t)sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal)).is.UShort);
+            snprintf(labelName, sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal)).is.UShort);
 		break;
 	    case V_LONG:
-            snprintf(labelName, (size_t)sizeof(labelName), "%d", idl_labelValueVal(idl_labelValue(labelVal)).is.Long);
+            snprintf(labelName, sizeof(labelName), "%d", idl_labelValueVal(idl_labelValue(labelVal)).is.Long);
 		break;
 	    case V_ULONG:
-            snprintf(labelName, (size_t)sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal)).is.ULong);
+            snprintf(labelName, sizeof(labelName), "%u", idl_labelValueVal(idl_labelValue(labelVal)).is.ULong);
 		break;
 	    case V_LONGLONG:
-            snprintf(labelName, (size_t)sizeof(labelName), "%lld", idl_labelValueVal(idl_labelValue(labelVal)).is.LongLong);
+            snprintf(labelName, sizeof(labelName), "%"PA_PRId64, idl_labelValueVal(idl_labelValue(labelVal)).is.LongLong);
 		break;
 	    case V_ULONGLONG:
-            snprintf(labelName, (size_t)sizeof(labelName), "%llu", idl_labelValueVal(idl_labelValue(labelVal)).is.ULongLong);
+            snprintf(labelName, sizeof(labelName), "%"PA_PRIu64, idl_labelValueVal(idl_labelValue(labelVal)).is.ULongLong);
 		break;
 	    case V_BOOLEAN:
             /* QAC EXPECT 3416; No side effect here */
             if ((int)idl_labelValueVal(idl_labelValue(labelVal)).is.Boolean == TRUE) {
-                snprintf(labelName, (size_t)sizeof(labelName), "TRUE");
+                snprintf(labelName, sizeof(labelName), "TRUE");
             } else {
-                snprintf(labelName, (size_t)sizeof(labelName), "FALSE");
+                snprintf(labelName, sizeof(labelName), "FALSE");
             }
 		break;
 	    default:
@@ -108,6 +116,23 @@ idl_valueFromLabelVal(
     }
     return labelName;
     /* QAC EXPECT 5101; Because of the switch statement the real complexity is rather low, no need to change */
+}
+
+static c_bool
+idl_inlineBoundedString(
+     idl_typeSpec typeSpec,
+     c_bool inlineBoundedString)
+{
+    c_ulong maxlen = 0;
+
+    if (inlineBoundedString) {
+        if (idl_typeSpecType(typeSpec) == idl_tbasic) {
+            if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
+                maxlen = idl_typeBasicMaxlen(idl_typeBasic(typeSpec));
+            }
+        }
+    }
+    return maxlen > 0;
 }
 
 /* @brief callback function called on opening the IDL input file.
@@ -121,7 +146,9 @@ idl_fileOpen(
     const char *name,
     void *userData)
 {
-    idl_fileOutPrintf(idl_fileCur(), "#include <dds_dcps_private.h>\n\n");
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
 
     return idl_explore;
 }
@@ -144,6 +171,10 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     /* return idl_explore to indicate that the rest of the module needs to be processed */
     return idl_explore;
 }
@@ -175,52 +206,51 @@ idl_structureOpen(
     void *userData)
 {
     idl_action action;
+    c_char *scopedName;
 
-    if (idl_definitionExists ("objManagImpl", idl_scopeStack (scope, "_", name))) {
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(userData);
+
+    scopedName = idl_scopeStack(scope, "_", name);
+
+    if (idl_definitionExists ("objManagImpl", scopedName)) {
+        os_free(scopedName);
         return idl_abort;
     }
-    idl_definitionAdd("objManagImpl", idl_scopeStack (scope, "_", name));
+
+    idl_definitionAdd("objManagImpl", scopedName);
     idl_fileOutPrintf(idl_fileCur(), "%s *%s__alloc (void)\n",
-	idl_scopeStack(scope, "_", name),
-	idl_scopeStack(scope, "_", name));
+            scopedName, scopedName);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     if (idl_typeSpecHasRef(idl_typeSpec(structSpec))) {
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    DDS_boolean %s__free (void *object);\n\n",
-            idl_scopeStack(scope, "_", name));
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    return (%s *)DDS__malloc (%s__free, 0, sizeof(%s));\n",
-            idl_scopeStack(scope, "_", name),
-            idl_scopeStack(scope, "_", name),
-            idl_scopeStack(scope, "_", name));
+        idl_fileOutPrintf(idl_fileCur(), "    DDS_ReturnCode_t %s__free (void *object);\n\n",
+                scopedName);
+        idl_fileOutPrintf(idl_fileCur(), "    return (%s *)DDS_alloc(sizeof(%s), %s__free);\n",
+                scopedName, scopedName, scopedName);
         struct_hasRef = TRUE;
         action = idl_explore;
     } else {
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    return (%s *)DDS__malloc (NULL, 0, sizeof(%s));\n",
-            idl_scopeStack(scope, "_", name),
-            idl_scopeStack(scope, "_", name));
+        idl_fileOutPrintf(idl_fileCur(), "    return (%s *)DDS_alloc(sizeof(%s), NULL);\n",
+                scopedName, scopedName);
         struct_hasRef = FALSE;
         action = idl_abort;
     }
     idl_fileOutPrintf(idl_fileCur(), "}\n\n");
     if (idl_typeSpecHasRef(idl_typeSpec(structSpec))) {
+        idl_fileOutPrintf(idl_fileCur(), "DDS_ReturnCode_t %s__free (void *object);\n",
+                scopedName);
         /* Deallocation routine are required */
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "DDS_boolean %s__free (void *object)\n",
-            idl_scopeStack(scope, "_", name));
+        idl_fileOutPrintf(idl_fileCur(), "DDS_ReturnCode_t %s__free (void *object)\n",
+                scopedName);
         idl_fileOutPrintf(idl_fileCur(), "{\n");
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    %s *o = (%s *)object;\n\n",
-    	    idl_scopeStack(scope, "_", name),
-            idl_scopeStack(scope, "_", name));
+        idl_fileOutPrintf(idl_fileCur(), "    %s *o = (%s *)object;\n\n",
+                scopedName, scopedName);
+        idl_fileOutPrintf(idl_fileCur(), "    (void) o;\n\n");
     }
     /* return action to indicate that the rest of the structure needs to be processed or not */
+    os_free(scopedName);
+
     return action;
 }
 
@@ -247,8 +277,11 @@ idl_structureClose(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     if (struct_hasRef) {
-        idl_fileOutPrintf(idl_fileCur(), "    return TRUE;\n");
+        idl_fileOutPrintf(idl_fileCur(), "    return DDS_RETCODE_OK;\n");
         idl_fileOutPrintf(idl_fileCur(), "}\n\n");
     }
 }
@@ -275,38 +308,41 @@ idl_structureMemberOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
+    c_bool inlineBoundedStrings = ((SACObjectControlUserData *)userData)->inlineBoundedStrings;
+    c_char *scopedName;
+
     if (idl_typeSpecHasRef(typeSpec)) {
         if ((idl_typeSpecType(typeSpec) == idl_tstruct) ||
             (idl_typeSpecType(typeSpec) == idl_tunion)) {
 
-	    /* case 6148 */
+            /* case 6148 */
+            scopedName = idl_scopedTypeName(typeSpec);
             idl_fileOutPrintf(idl_fileCur(), "    {\n");
-            idl_fileOutPrintf(idl_fileCur(), "    extern DDS_boolean %s__free(void *object);\n",
-                idl_scopedTypeName(typeSpec));
+            idl_fileOutPrintf(idl_fileCur(), "        extern DDS_ReturnCode_t %s__free(void *object);\n",
+                    scopedName);
+            os_free(scopedName);
 
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "    %s__free (&o->%s);\n",
-    	        idl_scopedSacTypeIdent((typeSpec)),
-                name);
+            scopedName = idl_scopedSacTypeIdent((typeSpec));
+            idl_fileOutPrintf(idl_fileCur(), "        %s__free (&o->%s);\n",
+                    scopedName, name);
             idl_fileOutPrintf(idl_fileCur(), "    }\n");
-            } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
-                idl_structureMemberOpenClose(scope, name, idl_typeDefRefered(idl_typeDef(typeSpec)), userData);
-            } else if (idl_typeSpecType(typeSpec) == idl_tbasic &&
-                idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
-                idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "    DDS_string_clean (&o->%s);\n",
-                    name);
-            } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
-                char identifier[256];
+            os_free(scopedName);
 
-                snprintf(identifier, sizeof(identifier), "o->%s", name);
-                idl_arrayElements(idl_typeArray(typeSpec), identifier, 0);
-            } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-                idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "    DDS_sequence_clean (&o->%s);\n",
+        } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
+            idl_structureMemberOpenClose(scope, name, idl_typeDefRefered(idl_typeDef(typeSpec)), userData);
+        } else if (idl_typeSpecType(typeSpec) == idl_tbasic &&
+                   idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
+            if (!idl_inlineBoundedString(typeSpec, inlineBoundedStrings)) {
+                idl_fileOutPrintf(idl_fileCur(), "    DDS_string_clean (&o->%s);\n",
+                        name);
+            }
+        } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
+            char identifier[256];
+
+            snprintf(identifier, sizeof(identifier), "o->%s", name);
+            idl_arrayElements(idl_typeArray(typeSpec), identifier, 0, inlineBoundedStrings);
+        } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
+            idl_fileOutPrintf(idl_fileCur(), "    DDS_sequence_clean ((_DDS_sequence)&o->%s);\n",
                     name);
         }
     }
@@ -344,52 +380,48 @@ idl_unionOpen(
     void *userData)
 {
     idl_action action;
+    c_char *scopedName;
 
-    if (idl_definitionExists("objManagImpl", idl_scopeStack (scope, "_", name))) {
+    OS_UNUSED_ARG(userData);
+
+    OS_UNUSED_ARG(userData);
+
+    scopedName = idl_scopeStack (scope, "_", name);
+
+    if (idl_definitionExists("objManagImpl", scopedName)) {
+        os_free(scopedName);
         return idl_abort;
     }
-    idl_definitionAdd("objManagImpl", idl_scopeStack (scope, "_", name));
+    idl_definitionAdd("objManagImpl", scopedName);
     idl_fileOutPrintf(idl_fileCur(), "%s *%s__alloc (void)\n",
-	idl_scopeStack(scope, "_", name),
-	idl_scopeStack(scope, "_", name));
+            scopedName, scopedName);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     if (idl_typeSpecHasRef(idl_typeSpec(unionSpec))) {
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    DDS_boolean %s__free (void *object);\n\n",
-            idl_scopeStack(scope, "_", name));
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    return (%s *)DDS__malloc (%s__free, 0, sizeof(%s));\n",
-            idl_scopeStack(scope, "_", name),
-            idl_scopeStack(scope, "_", name),
-            idl_scopeStack(scope, "_", name));
+        idl_fileOutPrintf(idl_fileCur(), "    DDS_ReturnCode_t %s__free (void *object);\n\n",
+                scopedName);
+        idl_fileOutPrintf(idl_fileCur(), "    return (%s *)DDS_alloc(sizeof(%s), %s__free);\n",
+                scopedName, scopedName, scopedName);
         union_hasRef = TRUE;
         action = idl_explore;
     } else {
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    return (%s *)DDS__malloc (NULL, 0, sizeof(%s));\n",
-            idl_scopeStack(scope, "_", name),
-            idl_scopeStack(scope, "_", name));
+        idl_fileOutPrintf(idl_fileCur(), "    return (%s *)DDS_alloc(sizeof(%s), NULL);\n",
+                scopedName, scopedName);
         union_hasRef = FALSE;
         action = idl_abort;
     }
     idl_fileOutPrintf(idl_fileCur(), "}\n\n");
     if (idl_typeSpecHasRef(idl_typeSpec(unionSpec))) {
-	/* Deallocation routine are required */
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "DDS_boolean %s__free (void *object)\n",
-            idl_scopeStack (scope, "_", name));
+        /* Deallocation routine are required */
+        idl_fileOutPrintf(idl_fileCur(), "DDS_ReturnCode_t %s__free (void *object);\n",
+                scopedName);
+        idl_fileOutPrintf(idl_fileCur(), "DDS_ReturnCode_t %s__free (void *object)\n",
+                scopedName);
         idl_fileOutPrintf(idl_fileCur(), "{\n");
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    %s *o = (%s *)object;\n\n",
-            idl_scopeStack (scope, "_", name),
-            idl_scopeStack (scope, "_", name));
+        idl_fileOutPrintf(idl_fileCur(), "    %s *o = (%s *)object;\n\n",
+                scopedName, scopedName);
         idl_fileOutPrintf(idl_fileCur(), "    switch (o->_d) {\n");
     }
+    os_free(scopedName);
     /* return action to indicate that the rest of the union needs to be processed or not */
     return action;
 }
@@ -417,9 +449,12 @@ idl_unionClose(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     if (union_hasRef) {
         idl_fileOutPrintf(idl_fileCur(), "    }\n");
-        idl_fileOutPrintf(idl_fileCur(), "    return TRUE;\n");
+        idl_fileOutPrintf(idl_fileCur(), "    return DDS_RETCODE_OK;\n");
         idl_fileOutPrintf(idl_fileCur(), "}\n\n");
     }
 }
@@ -451,43 +486,42 @@ idl_unionCaseOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
+    c_bool inlineBoundedStrings = ((SACObjectControlUserData *)userData)->inlineBoundedStrings;
+
     if (idl_typeSpecHasRef(typeSpec)) {
         if ((idl_typeSpecType(typeSpec) == idl_tstruct) ||
             (idl_typeSpecType(typeSpec) == idl_tunion)) {
+            c_char *scopedTypeIdent = idl_scopedSacTypeIdent((typeSpec));
 
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "        %s__free (&o->_u.%s);\n",
-                idl_scopedSacTypeIdent((typeSpec)),
-                name);
+            idl_fileOutPrintf(idl_fileCur(), "        %s__free (&o->_u.%s);\n",
+                    scopedTypeIdent, name);
             idl_fileOutPrintf(idl_fileCur(), "        break;\n");
+            os_free(scopedTypeIdent);
         } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
             idl_unionCaseOpenClose(scope, name, idl_typeDefRefered(idl_typeDef(typeSpec)), userData);
         } else if (idl_typeSpecType(typeSpec) == idl_tbasic) {
             if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
-                idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "        DDS_string_clean (&o->_u.%s);\n",
-                    name);
+                if (!idl_inlineBoundedString(typeSpec, inlineBoundedStrings)) {
+                    idl_fileOutPrintf(idl_fileCur(), "        DDS_string_clean (&o->_u.%s);\n",
+                            name);
+                }
             }
             idl_fileOutPrintf(idl_fileCur(), "        break;\n");
         } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
             char identifier[256];
 
             snprintf(identifier, sizeof(identifier), "o->_u.%s",name);
-            idl_arrayElements(idl_typeArray(typeSpec), identifier, 1);
+            idl_arrayElements(idl_typeArray(typeSpec), identifier, 1, inlineBoundedStrings);
             idl_fileOutPrintf(idl_fileCur(), "        break;\n");
         } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "        DDS_sequence_clean (&o->_u.%s);\n",
-                name);
+            idl_fileOutPrintf(idl_fileCur(), "        DDS_sequence_clean ((_DDS_sequence)&o->_u.%s);\n",
+                    name);
             idl_fileOutPrintf(idl_fileCur(), "        break;\n");
         } else {
-            idl_fileOutPrintf (idl_fileCur(), "        break;\n");
+            idl_fileOutPrintf(idl_fileCur(), "        break;\n");
         }
     } else {
-        idl_fileOutPrintf (idl_fileCur(), "        break;\n");
+        idl_fileOutPrintf(idl_fileCur(), "        break;\n");
     }
 }
 
@@ -525,32 +559,15 @@ idl_unionLabelOpenClose (
     idl_labelVal labelVal,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
+
     /* QAC EXPECT 3416; No side effect here */
     if (idl_labelValType(labelVal) == idl_ldefault) {
         idl_fileOutPrintf(idl_fileCur(), "    default:\n");
     } else {
         idl_fileOutPrintf(idl_fileCur(), "    case %s:\n", idl_valueFromLabelVal(labelVal));
     }
-}
-
-/* @brief generate dimension of an array
- *
- * arrayDimensions is a local support function to generate
- * the array dimensions of an array
- *
- * @param typeArray Specifies the type of the array
- */
-static void
-idl_arrayDimensions (
-    idl_typeArray typeArray)
-{
-    idl_typeSpec idlSubtype;
-
-    idlSubtype = idl_typeDefResolveFully(idl_typeArrayType(typeArray));
-    if (idl_typeSpecType(idlSubtype) == idl_tarray) {
-        idl_arrayDimensions(idl_typeArray(idlSubtype));
-    }
-    idl_fileOutPrintf(idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
 }
 
 static void
@@ -586,10 +603,7 @@ idl_arrayLoopRemoveOpen(
     idlSubtype = idl_typeDefResolveFully(idl_typeArrayType(typeArray));
     idl_printIndent(loopIndent + indent);
     idl_fileOutPrintf(idl_fileCur(), "for (i%d = 0; i%d < %d; i%d++) {\n",
-        loopIndent,
-        loopIndent,
-        idl_typeArraySize(typeArray),
-        loopIndent);
+            loopIndent, loopIndent, idl_typeArraySize(typeArray), loopIndent);
     /* QAC EXPECT 3416; No side effect here */
     if (idl_typeSpecType(idlSubtype) == idl_tarray) {
         /* QAC EXPECT 3670; Recursive calls is a good practice, the recursion depth is limited here */
@@ -619,60 +633,59 @@ idl_typedefRemove(
     idl_typeArray typeArray,
     idl_typeDef typeDef,
     const char *identifier,
-    c_long indent)
+    c_long indent,
+    c_bool inlineBoundedStrings)
 {
     idl_typeSpec typeSpec = idl_typeDefRefered(typeDef);
+    c_char *scopedTypeIdent;
 
     switch (idl_typeSpecType(typeSpec)) {
     case idl_ttypedef:
-        idl_typedefRemove(typeArray, idl_typeDef(typeSpec), identifier, indent);
-	break;
+        idl_typedefRemove(typeArray, idl_typeDef(typeSpec), identifier, indent, inlineBoundedStrings);
+        break;
     case idl_tstruct:
     case idl_tunion:
 
-	/* case 6148 */
+        /* case 6148 */
+        scopedTypeIdent = idl_scopedSacTypeIdent(typeSpec);
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    {\n");
         idl_printIndent(indent);
-        idl_fileOutPrintf(idl_fileCur(), "    extern DDS_boolean %s__free(void *object);\n",
-            idl_scopedSacTypeIdent(typeSpec));
+        idl_fileOutPrintf(idl_fileCur(), "    extern DDS_ReturnCode_t %s__free(void *object);\n",
+                scopedTypeIdent);
 
         idl_printIndent(indent);
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    %s__free (&%s",
-            idl_scopedSacTypeIdent((typeSpec)),
-            identifier);
+        idl_fileOutPrintf(idl_fileCur(), "    %s__free (&%s",
+                scopedTypeIdent, identifier);
         idl_arrayLoopRemoveIndex(typeArray);
         idl_fileOutPrintf(idl_fileCur(), ");\n");
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    }\n");
-	break;
+        os_free(scopedTypeIdent);
+        break;
     case idl_tbasic:
-        idl_printIndent(indent);
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    DDS_string_clean (&%s",
-            identifier);
-        idl_arrayLoopRemoveIndex(typeArray);
-        idl_fileOutPrintf(idl_fileCur(), ");\n");
-	break;
+        if (!idl_inlineBoundedString(typeSpec, inlineBoundedStrings)) {
+            idl_printIndent(indent);
+            idl_fileOutPrintf(idl_fileCur(), "    DDS_string_clean (&%s",
+                    identifier);
+            idl_arrayLoopRemoveIndex(typeArray);
+            idl_fileOutPrintf(idl_fileCur(), ");\n");
+        }
+        break;
     case idl_tseq:
         idl_printIndent(indent);
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    DDS_sequence_clean (&%s",
-            identifier);
+        idl_fileOutPrintf(idl_fileCur(), "    DDS_sequence_clean ((_DDS_sequence)&%s",
+                identifier);
         idl_arrayLoopRemoveIndex(typeArray);
         idl_fileOutPrintf (idl_fileCur(), ");\n");
-	break;
+        break;
     case idl_tarray:
-        idl_arrayLoopRemoveBody(idl_typeArray(typeSpec), identifier, indent);
+        idl_arrayLoopRemoveBody(idl_typeArray(typeSpec), identifier, indent, inlineBoundedStrings);
         break;
     default:
         /* QAC EXPECT 3416; No side effect here */
         assert (0);
-	break;
+        break;
     }
 }
 
@@ -680,9 +693,11 @@ void
 idl_arrayLoopRemoveBody(
     idl_typeArray typeArray,
     const char *identifier,
-    c_long indent)
+    c_long indent,
+    c_bool inlineBoundedStrings)
 {
     idl_typeSpec typeSpec = idl_typeArrayActual(typeArray);
+    c_char *scopedTypeIdent;
 
     loopIndent++;
     varIndex = 0;
@@ -690,49 +705,46 @@ idl_arrayLoopRemoveBody(
     case idl_tstruct:
     case idl_tunion:
 
-	/* case 6148 */
+        /* case 6148 */
+        scopedTypeIdent = idl_scopedSacTypeIdent(typeSpec);
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    {\n");
         idl_printIndent(indent);
-        idl_fileOutPrintf(idl_fileCur(), "    extern DDS_boolean %s__free(void *object);\n",
-            idl_scopedSacTypeIdent(typeSpec));
+        idl_fileOutPrintf(idl_fileCur(), "    extern DDS_ReturnCode_t %s__free(void *object);\n",
+                scopedTypeIdent);
 
         idl_printIndent(indent);
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    %s__free (&%s",
-            idl_scopedSacTypeIdent((typeSpec)),
-            identifier);
+        idl_fileOutPrintf(idl_fileCur(), "    %s__free (&%s",
+                scopedTypeIdent, identifier);
         idl_arrayLoopRemoveIndex(typeArray);
         idl_fileOutPrintf(idl_fileCur(), ");\n");
         idl_printIndent(indent);
         idl_fileOutPrintf(idl_fileCur(), "    }\n");
-	break;
+        os_free(scopedTypeIdent);
+        break;
     case idl_ttypedef:
-        idl_typedefRemove(typeArray, idl_typeDef(typeSpec), identifier, indent);
-	break;
+        idl_typedefRemove(typeArray, idl_typeDef(typeSpec), identifier, indent, inlineBoundedStrings);
+        break;
     case idl_tbasic:
-        idl_printIndent(indent);
-        idl_fileOutPrintf
-            (idl_fileCur(),
-            "    DDS_string_clean (&%s",
-            identifier);
-        idl_arrayLoopRemoveIndex(typeArray);
-        idl_fileOutPrintf(idl_fileCur(), ");\n");
-	break;
+        if (!idl_inlineBoundedString(typeSpec, inlineBoundedStrings)) {
+            idl_printIndent(indent);
+            idl_fileOutPrintf(idl_fileCur(), "    DDS_string_clean (&%s",
+                    identifier);
+            idl_arrayLoopRemoveIndex(typeArray);
+            idl_fileOutPrintf(idl_fileCur(), ");\n");
+        }
+        break;
     case idl_tseq:
         idl_printIndent(indent);
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    DDS_sequence_clean (&%s",
-            identifier);
+        idl_fileOutPrintf(idl_fileCur(), "    DDS_sequence_clean ((_DDS_sequence)&%s",
+                identifier);
         idl_arrayLoopRemoveIndex(typeArray);
-        idl_fileOutPrintf (idl_fileCur(), ");\n");
-	break;
+        idl_fileOutPrintf(idl_fileCur(), ");\n");
+        break;
     default:
         /* QAC EXPECT 3416; No side effect here */
         assert (0);
-	break;
+        break;
     }
     loopIndent--;
     /* QAC EXPECT 5101, 5103: Complexity is limited, by independent cases, per case the number of lines is lower  */
@@ -774,12 +786,13 @@ void
 idl_arrayLoopRemove(
     idl_typeArray typeArray,
     const char *identifier,
-    c_long indent)
+    c_long indent,
+    c_bool inlineBoundedStrings)
 {
     loopIndent = 0;
     idl_arrayLoopVariables(typeArray, indent);
     idl_arrayLoopRemoveOpen(typeArray, indent);
-    idl_arrayLoopRemoveBody(typeArray, identifier, indent + idl_indexSize(typeArray));
+    idl_arrayLoopRemoveBody(typeArray, identifier, indent + idl_indexSize(typeArray), inlineBoundedStrings);
     idl_arrayLoopRemoveClose(typeArray, indent);
 }
 
@@ -787,7 +800,8 @@ static void
 idl_arrayElements (
     idl_typeArray typeArray,
     const char *identifier,
-    c_long indent)
+    c_long indent,
+    c_bool inlineBoundedStrings)
 {
     idl_printIndent(indent);
     idl_fileOutPrintf(idl_fileCur(), "    {\n");
@@ -795,14 +809,16 @@ idl_arrayElements (
     case idl_tbasic:
         /* This is only called for string type */
         if (idl_typeBasicType(idl_typeBasic(idl_typeArrayActual(typeArray))) == idl_string) {
-            idl_arrayLoopRemove (typeArray, identifier, indent+1);
+            if (!idl_inlineBoundedString(idl_typeArrayActual(typeArray), inlineBoundedStrings)) {
+                idl_arrayLoopRemove (typeArray, identifier, indent+1, inlineBoundedStrings);
+            }
         }
 	break;
     case idl_tstruct:
     case idl_tunion:
     case idl_ttypedef:
     case idl_tseq:
-        idl_arrayLoopRemove(typeArray, identifier, indent+1);
+        idl_arrayLoopRemove(typeArray, identifier, indent+1, inlineBoundedStrings);
     break;
     default:
         printf ("idl_arrayElements: Unexpected type %d\n",
@@ -811,24 +827,6 @@ idl_arrayElements (
     }
     idl_printIndent(indent);
     idl_fileOutPrintf(idl_fileCur(), "    }\n");
-}
-
-/* @brief generate dimension of an array slice
- *
- * arraySliceDimensions is a local support function to generate
- * the array dimensions of an array slice
- *
- * @param typeArray Specifies the type of the array
- */
-static void
-idl_arraySliceDimensions(
-    idl_typeArray typeArray)
-{
-    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray &&
-        idl_typeSpecType(idl_typeArrayType(idl_typeArray(idl_typeArrayType(typeArray)))) == idl_tarray) {
-        idl_arraySliceDimensions(idl_typeArray(idl_typeArrayType(typeArray)));
-    }
-    idl_fileOutPrintf(idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
 }
 
 /** @brief callback function called on definition of a named type in the IDL input file.
@@ -849,126 +847,149 @@ idl_typedefOpenClose(
     idl_typeDef defSpec,
     void *userData)
 {
+    c_bool inlineBoundedStrings = ((SACObjectControlUserData *)userData)->inlineBoundedStrings;
+    c_char *scopedName = idl_scopeStack(scope, "_", name);
+    c_char *scopedTypeIdent;
+
     if ((idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tstruct) ||
         (idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tunion)) {
         /* Generate allocation routine for the struct or union */
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "%s *%s__alloc (void)\n",
-            idl_scopeStack(scope, "_", name),
-            idl_scopeStack(scope, "_", name));
+        scopedTypeIdent = idl_scopedSacTypeIdent(idl_typeSpec(idl_typeDefRefered(defSpec)));
+        idl_fileOutPrintf(idl_fileCur(), "%s *%s__alloc (void)\n",
+                scopedName, scopedName);
         idl_fileOutPrintf(idl_fileCur(), "{\n");
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    return (%s *)%s__alloc ();\n",
-            idl_scopeStack(scope, "_", name),
-            idl_scopedSacTypeIdent(idl_typeSpec(idl_typeDefRefered(defSpec))));
+        idl_fileOutPrintf(idl_fileCur(), "    return (%s *)%s__alloc ();\n",
+                scopedName, scopedTypeIdent);
         idl_fileOutPrintf(idl_fileCur(), "}\n\n");
         /* Generate deallocation routine for the struct or union */
         if (idl_typeSpecHasRef(idl_typeDefRefered(defSpec))) {
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "DDS_boolean %s__free (void *object)\n",
-                idl_scopeStack(scope, "_", name));
+            idl_fileOutPrintf(idl_fileCur(), "DDS_ReturnCode_t %s__free (void *object);\n",
+                    scopedName);
+            idl_fileOutPrintf(idl_fileCur(), "DDS_ReturnCode_t %s__free (void *object)\n",
+                    scopedName);
             idl_fileOutPrintf(idl_fileCur(), "{\n");
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "    %s__free (object);\n",
-                idl_scopedSacTypeIdent(idl_typeSpec(idl_typeDefRefered(defSpec))));
-            idl_fileOutPrintf(idl_fileCur(), "    return TRUE;\n");
+            idl_fileOutPrintf(idl_fileCur(), "    %s__free (object);\n",
+                    scopedTypeIdent);
+            idl_fileOutPrintf(idl_fileCur(), "    return DDS_RETCODE_OK;\n");
             idl_fileOutPrintf(idl_fileCur(), "}\n\n");
         }
+        os_free(scopedTypeIdent);
     } else if (idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_ttypedef) {
         idl_typedefOpenClose(scope, name, idl_typeDef(idl_typeDefRefered(defSpec)), userData);
     } else {
         if (idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tbasic &&
             idl_typeBasicType(idl_typeBasic(idl_typeDefRefered(defSpec))) == idl_string) {
             /* Generate allocation routine for the string */
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "%s *%s__alloc (DDS_unsigned_long len)\n",
-                idl_scopeStack(scope, "_", name),
-                idl_scopeStack(scope, "_", name));
-            idl_fileOutPrintf(idl_fileCur(), "{\n");
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "    return (%s *)DDS_string_alloc (len);\n",
-                idl_scopeStack(scope, "_", name),
-                idl_scopedSacTypeIdent(idl_typeSpec(idl_typeDefRefered(defSpec))));
-            idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+            if (idl_inlineBoundedString(idl_typeDefRefered(defSpec), inlineBoundedStrings)) {
+                idl_fileOutPrintf(idl_fileCur(), "%s *%s__alloc ()\n",
+                        scopedName, scopedName);
+                idl_fileOutPrintf(idl_fileCur(), "{\n");
+                idl_fileOutPrintf(idl_fileCur(), "    return (%s *) DDS_alloc(sizeof(%s), NULL);\n",
+                        scopedName, scopedName);
+                idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+            } else {
+                idl_fileOutPrintf(idl_fileCur(), "%s *%s__alloc (DDS_unsigned_long len)\n",
+                        scopedName, scopedName);
+                idl_fileOutPrintf(idl_fileCur(), "{\n");
+                idl_fileOutPrintf(idl_fileCur(), "    return (%s *)DDS_string_alloc (len);\n",
+                        scopedName);
+                idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+            }
         } else if (idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tarray) {
             /* Generate allocation routine for the array */
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "%s_slice *%s__alloc (void)\n",
-                idl_scopeStack(scope, "_", name),
-                idl_scopeStack(scope, "_", name));
-                idl_fileOutPrintf(idl_fileCur(), "{\n");
+            idl_fileOutPrintf(idl_fileCur(), "%s_slice *%s__alloc (void)\n",
+                    scopedName, scopedName);
+            idl_fileOutPrintf(idl_fileCur(), "{\n");
             if (idl_typeSpecHasRef(idl_typeDefRefered(defSpec))) {
-                idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "    DDS_boolean %s__free (void *array);\n",
-                    idl_scopeStack (scope, "_", name));
-                idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "    return (%s_slice *)DDS__malloc (%s__free, 0, sizeof(%s));\n",
-                    idl_scopeStack(scope, "_", name),
-                    idl_scopeStack(scope, "_", name),
-                    idl_scopeStack(scope, "_", name));
+                idl_fileOutPrintf(idl_fileCur(), "    DDS_ReturnCode_t %s__free (void *array);\n",
+                        scopedName);
+                idl_fileOutPrintf(idl_fileCur(), "    return (%s_slice *)DDS_alloc(sizeof(%s), %s__free);\n",
+                        scopedName, scopedName, scopedName);
             } else {
-                idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "    return (%s_slice *)DDS__malloc (NULL, 0, sizeof(%s));\n",
-                    idl_scopeStack(scope, "_", name),
-                    idl_scopeStack(scope, "_", name));
+                idl_fileOutPrintf(idl_fileCur(), "    return (%s_slice *)DDS_alloc(sizeof(%s), NULL);\n",
+                        scopedName, scopedName);
             }
             idl_fileOutPrintf(idl_fileCur(), "}\n");
             if (idl_typeSpecHasRef(idl_typeDefRefered(defSpec))) {
                 /* Deallocation routine for the array elements is required */
-                idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "\nDDS_boolean %s__free (void *array)\n",
-                    idl_scopeStack(scope, "_", name));
+                idl_fileOutPrintf(idl_fileCur(), "\nDDS_ReturnCode_t %s__free (void *array);\n",
+                        scopedName);
+                idl_fileOutPrintf(idl_fileCur(), "DDS_ReturnCode_t %s__free (void *array)\n",
+                        scopedName);
                 idl_fileOutPrintf(idl_fileCur(), "{\n");
-                idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "    %s *a = (%s *)array;\n",
-                    idl_scopeStack(scope, "_", name),
-                    idl_scopeStack (scope, "_", name));
-                    idl_arrayElements(idl_typeArray(idl_typeDefRefered(defSpec)), "(*a)", 0);
-                    idl_fileOutPrintf(idl_fileCur(), "    return TRUE;\n");
-                    idl_fileOutPrintf(idl_fileCur(), "}\n");
+                idl_fileOutPrintf(idl_fileCur(), "    %s *a = (%s *)array;\n",
+                        scopedName, scopedName);
+                idl_arrayElements(idl_typeArray(idl_typeDefRefered(defSpec)), "(*a)", 0, inlineBoundedStrings);
+                idl_fileOutPrintf(idl_fileCur(), "    return DDS_RETCODE_OK;\n");
+                idl_fileOutPrintf(idl_fileCur(), "}\n");
             }
             idl_fileOutPrintf (idl_fileCur(), "\n");
         } else if (idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tseq) {
+            char *sequenceElementName = idl_sequenceElementIdent(idl_typeDefRefered(defSpec));
+            char *sequenceName;
+            idl_typeSeq seqType = idl_typeSeq(idl_typeDefRefered(defSpec));
+            idl_typeSpec subType = idl_typeSeqType(seqType);
+
+            if (idl_typeSpecType(subType) == idl_ttypedef) {
+                subType = idl_typeDefResolveFully(subType);
+            }
+
+            /* If the element type of the sequence has a related key, which means that readers and
+             * writers have been created, and which also means that type sequence support functions
+             * have already been created in the other context.
+             */
+
+            if (idl_sequenceSupportFunctionsExist(scope, idl_typeSeq(idl_typeDefRefered(defSpec)), sequenceElementName)) {
+                if (idl_keyDefIncludesType(idl_keyDefDefGet(), sequenceElementName)) {
+                    sequenceName = idl_sequenceIdent (idl_typeSeq(idl_typeDefRefered(defSpec)));
+                } else {
+                    sequenceName = idl_sequenceIdentScoped (scope, idl_typeSeq(idl_typeDefRefered(defSpec)));
+                }
+            } else {
+                sequenceName = idl_sequenceIdent (idl_typeSeq(idl_typeDefRefered(defSpec)));
+            }
+
             /* Generate allocation routine for the sequence */
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "%s *%s__alloc (void)\n",
-                idl_scopeStack(scope, "_", name),
-                idl_scopeStack(scope, "_", name));
-            idl_fileOutPrintf(idl_fileCur(), "{\n");
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "    return (%s *)%s__alloc ();\n",
-                idl_scopeStack(scope, "_", name),
-                idl_sequenceIdent(idl_typeSeq(idl_typeDefRefered(defSpec))));
-                idl_fileOutPrintf(idl_fileCur(), "}\n\n");
-            /* Generate allocation routine for the sequence buffer */
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "%s *%s_allocbuf (DDS_unsigned_long len)\n",
-                idl_scopedSacTypeIdent(idl_typeSeqType(idl_typeSeq(idl_typeDefRefered(defSpec)))),
-                idl_scopeStack(scope, "_", name));
+
+            if (idl_inlineBoundedString(subType, inlineBoundedStrings)) {
+                scopedTypeIdent = idl_scopedSacTypeIdent(idl_typeSeqType(idl_typeSeq(idl_typeDefRefered(defSpec))));
+                idl_fileOutPrintf(idl_fileCur(), "%s *%s__alloc (void)\n",
+                        scopedName, scopedName);
                 idl_fileOutPrintf(idl_fileCur(), "{\n");
-                idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "    return (%s *)%s_allocbuf(len);\n",
-                    idl_scopedSacTypeIdent(idl_typeSeqType(idl_typeSeq(idl_typeDefRefered(defSpec)))),
-                    idl_sequenceIdent (idl_typeSeq(idl_typeDefRefered(defSpec))));
+                idl_fileOutPrintf(idl_fileCur(), "    return (%s *)DDS_sequence_malloc ();\n",
+                        scopedName);
                 idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+                /* Generate allocation routine for the sequence buffer */
+                idl_fileOutPrintf(idl_fileCur(), "%s *%s_allocbuf (DDS_unsigned_long len)\n",
+                        scopedTypeIdent, scopedName);
+                idl_fileOutPrintf(idl_fileCur(), "{\n");
+                idl_fileOutPrintf(idl_fileCur(), "    return (%s *)DDS_sequence_allocbuf(NULL, sizeof(%s), len);\n",
+                        scopedTypeIdent, scopedTypeIdent);
+                idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+                os_free(scopedTypeIdent);
+            } else {
+                scopedTypeIdent = idl_scopedSacTypeIdent(idl_typeSeqType(idl_typeSeq(idl_typeDefRefered(defSpec))));
+
+                idl_fileOutPrintf(idl_fileCur(), "%s *%s__alloc (void)\n",
+                        scopedName, scopedName);
+                idl_fileOutPrintf(idl_fileCur(), "{\n");
+                idl_fileOutPrintf(idl_fileCur(), "    return (%s *)%s__alloc ();\n",
+                        scopedName, sequenceName);
+                idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+                /* Generate allocation routine for the sequence buffer */
+                idl_fileOutPrintf(idl_fileCur(), "%s *%s_allocbuf (DDS_unsigned_long len)\n",
+                        scopedTypeIdent, scopedName);
+                idl_fileOutPrintf(idl_fileCur(), "{\n");
+                idl_fileOutPrintf(idl_fileCur(), "    return (%s *)%s_allocbuf(len);\n",
+                        scopedTypeIdent, sequenceName);
+                idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+                os_free(scopedTypeIdent);
+            }
+            os_free(sequenceElementName);
+            os_free(sequenceName);
         }
     }
+    os_free(scopedName);
 }
 
 
@@ -978,210 +999,139 @@ idl_sequenceOpenClose(
     idl_typeSeq typeSeq,
     void *userData)
 {
-    int   createFunctions;
+    c_bool createFunctions = TRUE;
     char *sequenceElementName;
     char *sequenceName;
-    idl_scope typeScope;
-
-    createFunctions = TRUE;
+    c_bool inlineBoundedStrings = ((SACObjectControlUserData *)userData)->inlineBoundedStrings;
 
     sequenceElementName = idl_sequenceElementIdent(idl_typeSeqType(typeSeq));
     sequenceName = idl_sequenceIdent(typeSeq);
 
+    /*
+     * The purpose of this function is to create type sequence support functions.
+     *
+     * The type, however, can be in a different file than this sequence. Let's
+     * call that context. The context can be checked by getting the base of a
+     * scope. By comparing the base of the working scope and the type scope, you
+     * can determine if the context is the same or not.
+     *
+     * If the contexts are the same, then there's no worries and the type sequence
+     * support functions should be created.
+     *
+     * If the contexts are different, then problems can occur because
+     * 'idl_definitionExists()' only checks the current context for possible type
+     * sequence support functions. When we would create new support function while
+     * another context already has them, then the generated code will not be able
+     * to compile due to 'multiple definitions'.
+     *
+     * So, we have to figure out if the current type is defined within the current
+     * working context by checking the bases. If not, then figure out if the other
+     * context already has defined the type sequence support functions.
+     *
+     * N.B. The working context is always the lowest in the current hierarchy.
+     */
+
     /* Check if current sequence support functions are already defined within
      * the current working context. */
-    if (idl_definitionExists("objManagImpl", sequenceName))
-    {
+    if (idl_definitionExists("objManagImpl", sequenceName)) {
         createFunctions = FALSE;
     } else {
         idl_definitionAdd("objManagImpl", sequenceName);
-    }
-
-    if (createFunctions) {
-        /* Already defined as part of the core implementation */
-        if ((strcmp(sequenceName, "DDS_sequence_octet")  == 0) ||
-            (strcmp(sequenceName, "DDS_sequence_string") == 0) )
-        {
+        if ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tbasic) &&
+            ((idl_typeBasicType(idl_typeBasic(idl_typeSeqType(typeSeq))) == idl_octet) ||
+            (idl_typeBasicType(idl_typeBasic(idl_typeSeqType(typeSeq))) == idl_string))) {
             createFunctions = FALSE;
-        }
-    }
-
-    if (createFunctions) {
-        /*
-         * The purpose of this function is to create type sequence support functions.
-         *
-         * The type, however, can be in a different file than this sequence. Let's
-         * call that context. The context can be checked by getting the base of a
-         * scope. By comparing the base of the working scope and the type scope, you
-         * can determine if the context is the same or not.
-         *
-         * If the contexts are the same, then there's no worries and the type sequence
-         * support functions should be created.
-         *
-         * If the contexts are different, then proplems can occur because
-         * 'idl_definitionExists()' only checks the current context for possible type
-         * sequence support functions. When we would create new support function while
-         * another context already has them, then the generated code will not be able
-         * to compile due to 'multiple definitions'.
-         *
-         * So, we have to figure out if the current type is defined within the current
-         * working context by checking the bases. If not, then figure out if the other
-         * context already has defined the type sequence support functions.
-         *
-         * N.B. The working context is always the lowest in the current hierarchy.
-         */
-        typeScope = idl_typeUserScope(idl_typeUser(idl_typeSeqType(typeSeq)));
-        if (typeScope != NULL) {
-
-            char *typeBase = idl_scopeBasename(typeScope);
-            char *workBase = idl_scopeBasename(scope);
-            if (strcmp(typeBase, workBase) != 0) {
-
-                /* If a type has a related key, that means that readers and
-                 * writers have been created, which also means that type
-                 * sequence support functions have already been created in
-                 * the other context. */
-                if (idl_keyDefIncludesType(idl_keyDefDefGet(), sequenceElementName)) {
-                    createFunctions = FALSE;
-                }
-
-                /*
-                 * We should search all scopes of all contexts to be sure that
-                 * no sequence support functions for this type are defined
-                 * anywhere within the hierarchy by means of an actual
-                 * 'sequence<Type>' definition in an idl file.
-                 * We shoudn't only search the context of the type itself for
-                 * sequences of this type because there could be a file include
-                 * between the current working context and the type definition
-                 * context, in which a sequence can be defined.
-                 *
-                 * We don't have access to all contexts at this point.
-                 * Also, only the scope information isn't enough to detect
-                 * sequences. So, basically, we don't have enough information
-                 * here to do a proper search.
-                 *
-                 * This multiple sequences problem, however, can be solved by
-                 * adding a sequence typedef in the idl hierarchy and use that
-                 * typedef everywhere else.
-                 */
+        } else if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_ttypedef) {
+            if (idl_inlineBoundedString(idl_typeSeqType(typeSeq), inlineBoundedStrings)) {
+                createFunctions = FALSE;
             }
-            os_free(typeBase);
-            os_free(workBase);
+        } else {
+            if (idl_sequenceSupportFunctionsExist(scope, typeSeq, sequenceElementName)) {
+                createFunctions = FALSE;
+            }
         }
     }
 
     if (createFunctions) {
-       /* Generate allocation routine for the sequence */
-       idl_fileOutPrintf(
-          idl_fileCur(),
-          "%s *%s__alloc (void)\n",
-          sequenceName,
-          sequenceName);
-       idl_fileOutPrintf(idl_fileCur(), "{\n");
-       idl_fileOutPrintf(
-          idl_fileCur(),
-          "    return (%s *)DDS_sequence_malloc();\n",
-          sequenceName);
-       idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+        char *sequenceScopedName;
 
-       /* Only needed if the sac dcps API does not have it already... */
-       if ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tbasic) &&
-           ((idl_typeBasicType(idl_typeBasic(idl_typeSeqType(typeSeq))) == idl_octet) ||
-            (idl_typeBasicType(idl_typeBasic(idl_typeSeqType(typeSeq))) == idl_string)))
-       {
-          idl_fileOutPrintf(
-             idl_fileCur(),
-             "/* Ignoring code generation for %s *%s_allocbuf (void)*/\n",
-             sequenceName,
-             sequenceName);
-       }
-       else
-       {
-          /* Generate allocation routine for the sequence buffer */
-          idl_fileOutPrintf(
-             idl_fileCur(),
-             "%s *%s_allocbuf (DDS_unsigned_long len)\n",
-             sequenceElementName,
-             sequenceName);
-          idl_fileOutPrintf(idl_fileCur(), "{\n");
-          if (idl_typeSpecHasRef(idl_typeSeqType(typeSeq)))
-          {
-             idl_fileOutPrintf(
-                idl_fileCur(),
-                "    DDS_boolean %s_freebuf (void *buffer);\n\n",
+        if (idl_scopeStackSize(scope) > 0) {
+            if (idl_keyDefIncludesType(idl_keyDefDefGet(), sequenceElementName)) {
+                sequenceScopedName = os_strdup(sequenceName);
+            } else {
+                sequenceScopedName = idl_sequenceIdentScoped(scope, typeSeq);
+            }
+        } else {
+            sequenceScopedName = os_strdup(sequenceName);
+        }
+
+        /* Generate allocation routine for the sequence */
+        idl_fileOutPrintf(idl_fileCur(), "%s *%s__alloc (void)\n",
+                sequenceName, sequenceScopedName);
+        idl_fileOutPrintf(idl_fileCur(), "{\n");
+        idl_fileOutPrintf(idl_fileCur(), "    return (%s *)DDS_sequence_malloc();\n",
                 sequenceName);
-             idl_fileOutPrintf(
-                idl_fileCur(),
-                "    return (%s *)DDS_sequence_allocbuf (%s_freebuf, sizeof (%s), len);\n",
-                sequenceElementName,
-                sequenceName,
-                sequenceElementName);
+        idl_fileOutPrintf(idl_fileCur(), "}\n\n");
 
-          }
-          else
-          {
-             idl_fileOutPrintf(
-                idl_fileCur(),
-                "    return (%s *)DDS_sequence_allocbuf (NULL, sizeof (%s), len);\n",
-                sequenceElementName,
-                sequenceElementName);
-          }
-          idl_fileOutPrintf(idl_fileCur(), "}\n");
-       }
-       if (idl_typeSpecHasRef(idl_typeSeqType(typeSeq)))
-       {
-          /* Deallocation routine for the buffer is required */
-          idl_fileOutPrintf(
-             idl_fileCur(),
-             "\nDDS_boolean %s_freebuf (void *buffer)\n",
-             sequenceName);
-          idl_fileOutPrintf(idl_fileCur(), "{\n");
-          idl_fileOutPrintf(idl_fileCur(),
-                            "    DDS_unsigned_long *count = (DDS_unsigned_long *)DDS__header (buffer);\n");
-          idl_fileOutPrintf(idl_fileCur(),
-                            "    %s *b = (%s *)buffer;\n",
-                            sequenceElementName,
+        /* Generate allocation routine for the sequence buffer */
+        idl_fileOutPrintf(idl_fileCur(), "%s *%s_allocbuf (DDS_unsigned_long len)\n",
+                sequenceElementName, sequenceScopedName);
+        idl_fileOutPrintf(idl_fileCur(), "{\n");
+        if (idl_typeSpecHasRef(idl_typeSeqType(typeSeq))) {
+            idl_fileOutPrintf(idl_fileCur(), "    DDS_ReturnCode_t %s_freebuf (void *buffer);\n\n",
+                    sequenceScopedName);
+            idl_fileOutPrintf(idl_fileCur(), "    return (%s *)DDS_sequence_allocbuf (%s_freebuf, sizeof (%s), len);\n",
+                    sequenceElementName, sequenceScopedName, sequenceElementName);
+        } else {
+            idl_fileOutPrintf(idl_fileCur(), "    return (%s *)DDS_sequence_allocbuf (NULL, sizeof (%s), len);\n",
+                    sequenceElementName, sequenceElementName);
+        }
+        idl_fileOutPrintf(idl_fileCur(), "}\n");
+
+        if (idl_typeSpecHasRef(idl_typeSeqType(typeSeq))) {
+            /* Deallocation routine for the buffer is required */
+            idl_fileOutPrintf(idl_fileCur(), "\nDDS_ReturnCode_t %s_freebuf (void *buffer);\n",
+                    sequenceScopedName);
+            idl_fileOutPrintf(idl_fileCur(), "DDS_ReturnCode_t %s_freebuf (void *buffer)\n",
+                    sequenceScopedName);
+            idl_fileOutPrintf(idl_fileCur(), "{\n");
+            idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long *count = (DDS_unsigned_long *)DDS__header (buffer);\n");
+            idl_fileOutPrintf(idl_fileCur(), "    %s *b = (%s *)buffer;\n",
+                    sequenceElementName, sequenceElementName);
+            idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long i;\n");
+            if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tseq) {
+                idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
+                idl_fileOutPrintf(idl_fileCur(), "        DDS_sequence_free ((_DDS_sequence)&b[i]);\n");
+                idl_fileOutPrintf(idl_fileCur(), "    }\n");
+            } else {
+                if ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tbasic) ||
+                    ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_ttypedef) &&
+                    (idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeSeqType(typeSeq)))) == idl_tbasic))) {
+                    /* Only string has reference */
+                    if (!idl_inlineBoundedString(idl_typeSeqType(typeSeq), inlineBoundedStrings)) {
+                        idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
+                        idl_fileOutPrintf(idl_fileCur(), "        DDS_string_clean (&b[i]);\n");
+                        idl_fileOutPrintf(idl_fileCur(), "    }\n");
+                    }
+                } else {
+                    idl_fileOutPrintf(idl_fileCur(), "    DDS_ReturnCode_t %s__free (void *object);\n\n",
                             sequenceElementName);
-          idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long i;\n");
-          if (idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tseq)
-          {
-             idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
-             idl_fileOutPrintf(
-                idl_fileCur(),
-                "        DDS_sequence_free (&b[i]);\n",
-                sequenceElementName);
-             idl_fileOutPrintf(idl_fileCur(), "    }\n");
-          }
-          else
-          {
-             if ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_tbasic) ||
-                 ((idl_typeSpecType(idl_typeSeqType(typeSeq)) == idl_ttypedef) &&
-                  (idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeSeqType(typeSeq)))) == idl_tbasic)))
-             {
-                /* Only string has reference */
-                idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
-                idl_fileOutPrintf(idl_fileCur(), "        DDS_string_clean (&b[i]);\n");
-                idl_fileOutPrintf(idl_fileCur(), "    }\n");
-             }
-             else
-             {
-                idl_fileOutPrintf(
-                   idl_fileCur(),
-                   "    DDS_boolean %s__free (void *object);\n\n",
-                   sequenceElementName);
-                idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
-                idl_fileOutPrintf(
-                   idl_fileCur(),
-                   "        %s__free (&b[i]);\n",
-                   sequenceElementName);
-                idl_fileOutPrintf(idl_fileCur(), "    }\n");
-             }
-          }
-          idl_fileOutPrintf (idl_fileCur(), "    return TRUE;\n");
-          idl_fileOutPrintf (idl_fileCur(), "}\n");
-       }
-       idl_fileOutPrintf (idl_fileCur(), "\n");
+                    idl_fileOutPrintf(idl_fileCur(), "    for (i = 0; i < *count; i++) {\n");
+                    idl_fileOutPrintf(idl_fileCur(), "        %s__free (&b[i]);\n",
+                            sequenceElementName);
+                    idl_fileOutPrintf(idl_fileCur(), "    }\n");
+                }
+            }
+            idl_fileOutPrintf (idl_fileCur(), "    return DDS_RETCODE_OK;\n");
+            idl_fileOutPrintf (idl_fileCur(), "}\n");
+        }
+        idl_fileOutPrintf (idl_fileCur(), "\n");
+
+        os_free(sequenceScopedName);
     }
+
+    os_free(sequenceName);
+    os_free(sequenceElementName);
 }
 
 /**
@@ -1199,6 +1149,7 @@ static idl_programControl *
 idl_getControl(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     return &idl_genSacLoadControl;
 }
 
@@ -1235,7 +1186,9 @@ idl_genSacObjectControl = {
  */
 idl_program
 idl_genSacObjectControlProgram(
-    void)
+        SACObjectControlUserData *userData)
 {
+    idl_genSacObjectControl.userData = userData;
+
     return &idl_genSacObjectControl;
 }

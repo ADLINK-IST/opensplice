@@ -75,7 +75,7 @@ AST_Generator *BE_init();
 void BE_usage();
 void BE_produce();
 void BE_abort();
-void BE_prep_arg(char *, idl_bool);
+void BE_prep_arg(char *, bool);
 
 void BE_version();
 

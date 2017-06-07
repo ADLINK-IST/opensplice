@@ -1,0 +1,191 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Installation &mdash; RnR Manager User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RnR Manager User Guide" href="index.html" />
+    <link rel="next" title="4. Using the Record and Replay Manager" href="using01.html" />
+    <link rel="prev" title="2. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="using01.html" title="4. Using the Record and Replay Manager"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RnR Manager Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation">
+<span id="id1"></span><h1>3. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="pre-requisites">
+<h2>3.1. Pre-requisites<a class="headerlink" href="#pre-requisites" title="Permalink to this headline">¶</a></h2>
+<p>Vortex OpenSplice RnR Manager requires Oracle Java of at least version 1.6.
+OpenJDK Java is not supported.</p>
+<p>RnR Manager does not need Vortex OpenSplice to be installed on the same
+system in order to control the RnR service. However, certain features of RnR
+Manager require a local installation of Vortex OpenSplice in order to operate.
+This includes connecting to a locally running Vortex OpenSplice domain using
+Domain URI, or Domain ID, and the storage Import/Export functions.</p>
+<p>(Please refer to the Vortex OpenSplice <em>Getting Started Guide</em> for full
+details of how to install Vortex OpenSplice.)</p>
+<p>Other information regarding recent changes to RnR Manager, or known issues
+are given in the <em>Release Notes</em> included with the distribution.</p>
+</div>
+<div class="section" id="supported-platforms">
+<h2>3.2. Supported Platforms<a class="headerlink" href="#supported-platforms" title="Permalink to this headline">¶</a></h2>
+<p>The RnR Manager will run on the Windows and Linux operating systems.</p>
+</div>
+<div class="section" id="general-installation-instructions">
+<h2>3.3. General Installation Instructions<a class="headerlink" href="#general-installation-instructions" title="Permalink to this headline">¶</a></h2>
+<p>To install the Vortex OpenSplice RnR Manager, start the installer and follow
+the on-screen instructions.</p>
+<div class="section" id="installation-on-unix-and-linux">
+<h3>3.3.1. Installation on Unix and Linux<a class="headerlink" href="#installation-on-unix-and-linux" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<p>On Unix-based platforms (including Linux), first ensure that execute
+permission is enabled, then run the installer from the command line:</p>
+<div class="highlight-python"><div class="highlight"><pre>%  VortexOpenSpliceRNRManager-&lt;version&gt;-&lt;platform&gt;-installer.bin
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">&lt;version&gt;</span></tt> is the release version number and <tt class="docutils literal"><span class="pre">&lt;platform&gt;</span></tt>
+is the build for your platform.</p>
+</div>
+<div class="section" id="installation-on-windows">
+<h3>3.3.2. Installation on Windows<a class="headerlink" href="#installation-on-windows" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<p>On Windows-based platforms, start the installer by double-clicking on
+its filename in <em>Windows Explorer</em>:</p>
+<div class="highlight-python"><div class="highlight"><pre>VortexOpenSpliceRNRManager-&lt;version&gt;-windows-installer.exe
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">&lt;version&gt;</span></tt> is the release version number.</p>
+</div>
+<div class="section" id="installing-the-license-file">
+<h3>3.3.3. Installing the license file<a class="headerlink" href="#installing-the-license-file" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>Please refer to the Vortex OpenSplice <em>Getting Started Guide</em>
+for full details of how Vortex OpenSplice is licensed.</dd>
+</dl>
+<p>PrismTech supplies a license file for the RnR Manager product. This file
+is <em>not</em> included in the software distribution.</p>
+<p>During the installation, you have the option of specifying the license
+file.</p>
+<p class="centered" id="installing-a-license-file">
+<strong><strong>Installing a License file</strong></strong></p><a class="reference internal image-reference" href="_images/002_Licensing_01.png"><img alt="Installing a License file" class="align-center" src="_images/002_Licensing_01.png" style="width: 90mm;" /></a>
+<p>If you did not specify a license file during the installation, you will
+see a licensing error on startup.</p>
+<p class="centered" id="license-file-error">
+<strong><strong>License file error</strong></strong></p><a class="reference internal image-reference" href="_images/003_Licensing_02.png"><img alt="License file error" class="align-center" src="_images/003_Licensing_02.png" style="width: 90mm;" /></a>
+<p>Click the <em>Manage Licenses</em> button and then <em>Import License File</em>.
+Click the button <em>Restart Workbench</em> after importing the license file.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Installation</a><ul>
+<li><a class="reference internal" href="#pre-requisites">3.1. Pre-requisites</a></li>
+<li><a class="reference internal" href="#supported-platforms">3.2. Supported Platforms</a></li>
+<li><a class="reference internal" href="#general-installation-instructions">3.3. General Installation Instructions</a><ul>
+<li><a class="reference internal" href="#installation-on-unix-and-linux">3.3.1. Installation on Unix and Linux</a></li>
+<li><a class="reference internal" href="#installation-on-windows">3.3.2. Installation on Windows</a></li>
+<li><a class="reference internal" href="#installing-the-license-file">3.3.3. Installing the license file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">2. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="using01.html"
+                        title="next chapter">4. Using the Record and Replay Manager</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/installation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="using01.html" title="4. Using the Record and Replay Manager"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">RnR Manager Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

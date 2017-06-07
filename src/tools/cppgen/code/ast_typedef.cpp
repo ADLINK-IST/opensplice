@@ -1,4 +1,3 @@
-
 /*
  
 COPYRIGHT
@@ -76,38 +75,29 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 #include "idl.h"
 #include "idl_extern.h"
 
-/*
- * Constructor(s) and destructor
- */
-AST_Typedef::AST_Typedef()
-      : pd_base_type(NULL)
+AST_Typedef::AST_Typedef ()
+   : pd_base_type (0)
 {}
 
-AST_Typedef::AST_Typedef(AST_Type *bt, UTL_ScopedName *n, const UTL_Pragmas &p)
-      : AST_Decl(AST_Decl::NT_typedef, n, p),
-      pd_base_type(bt)
+AST_Typedef::AST_Typedef
+(
+   AST_Type *bt,
+   UTL_ScopedName *n,
+   const UTL_Pragmas &p
+)
+: 
+   AST_Decl (AST_Decl::NT_typedef, n, p),
+   pd_base_type (bt)
 {
-   set_local(bt->local());
+   set_local (bt->local());
 }
 
-/*
- * Private operations
- */
+void AST_Typedef::virt_set_gen_any (void)
+{
+   pd_base_type->set_gen_any ();
+}
 
-/*
- * Public operations
- */
-
-
-/*
- * Redefinition of inherited virtual operations
- */
-
-/*
- * Dump this AST_Typedef node to the ostream o
- */
-void
-AST_Typedef::dump(ostream &o)
+void AST_Typedef::dump (ostream &o)
 {
    o << "typedef ";
    pd_base_type->dump(o);
@@ -115,16 +105,10 @@ AST_Typedef::dump(ostream &o)
    local_name()->dump(o);
 }
 
-/*
- * Data accessors
- */
-
-AST_Type *
-AST_Typedef::base_type()
+AST_Type * AST_Typedef::base_type ()
 {
    return pd_base_type;
 }
 
-// Narrowing
-IMPL_NARROW_METHODS1(AST_Typedef, AST_Type)
-IMPL_NARROW_FROM_DECL(AST_Typedef)
+IMPL_NARROW_METHODS1 (AST_Typedef, AST_Type)
+IMPL_NARROW_FROM_DECL (AST_Typedef)

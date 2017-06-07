@@ -1,0 +1,9 @@
+#ifndef VORTEX_FACE_ISOCPP2_$(basename_upper)_HPP_
+#define VORTEX_FACE_ISOCPP2_$(basename_upper)_HPP_
+
+#include "$(basename).h"
+#include "$(basename)_DCPS.hpp"
+
+#include "Vortex_FACE.hpp"
+#include "Vortex/FACE/Macros.hpp"
+$(DLL_IMPORTEXPORT_INCLUDE)

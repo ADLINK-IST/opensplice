@@ -1,0 +1,789 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Command Reference &mdash; Test Tool User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Test Tool User Guide" href="index.html" />
+    <link rel="next" title="6. Scripting" href="scripting.html" />
+    <link rel="prev" title="4. Familiarization Exercises" href="familiarization.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="scripting.html" title="6. Scripting"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="familiarization.html" title="4. Familiarization Exercises"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <span class="target" id="command-reference"></span><div class="section" id="id1">
+<h1>5. Command Reference<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p><em>This section lists all of the Tester’s commands and describes their operation.</em></p>
+<div class="section" id="introduction">
+<h2>5.1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The commands are described below in the order in which they appear in the menus
+(starting at the top left).</p>
+<p>Where a menu option also has a keyboard shortcut, it is shown in
+<em>[italics in square brackets]</em> (for example, <em>[Ctrl+C]</em>).</p>
+<p>Some menu options can also be invoked by clicking on buttons in appropriate
+tabs or windows.</p>
+</div>
+<div class="section" id="menus">
+<h2>5.2. Menus<a class="headerlink" href="#menus" title="Permalink to this headline">¶</a></h2>
+<p class="centered" id="tester-main-menu">
+<strong><strong>Tester main menu</strong></strong></p><a class="reference internal image-reference" href="_images/002_commandmenu.png"><img alt="Tester main menu" class="align-center" src="_images/002_commandmenu.png" style="width: 145mm;" /></a>
+<div class="section" id="file">
+<h3>5.2.1. File<a class="headerlink" href="#file" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong>File &gt; Connect</strong>, <em>[Ctrl+Shift+C]</em></dt>
+<dd>Open a connection to a Domain.</dd>
+<dt><strong>File &gt; Disconnect</strong>, <em>[Ctrl+Shift+D]</em></dt>
+<dd>Disconnect from a Domain.</dd>
+<dt><strong>File &gt; Remove All Readers</strong></dt>
+<dd>Remove all previously-added Readers.</dd>
+<dt><strong>File &gt; Add Reader</strong></dt>
+<dd>Add a single topic Reader.</dd>
+</dl>
+<p class="centered" id="add-reader-dialog">
+<strong><strong>Add Reader dialog</strong></strong></p><a class="reference internal image-reference" href="_images/063_addreader.png"><img alt="Add Reader dialog" class="align-center" src="_images/063_addreader.png" style="width: 50mm;" /></a>
+<dl class="docutils">
+<dt><strong>File &gt; Add Readers</strong></dt>
+<dd>Add multiple Readers by selecting from the Topic List.</dd>
+</dl>
+<p class="centered" id="add-readers-from-topic-list">
+<strong><strong>Add Readers from Topic list</strong></strong></p><a class="reference internal image-reference" href="_images/064_addfromlist.png"><img alt="Add Readers from Topic list" class="align-center" src="_images/064_addfromlist.png" style="width: 60mm;" /></a>
+<dl class="docutils">
+<dt><strong>File &gt; Save Readers List</strong></dt>
+<dd><blockquote class="first">
+<div>Save the current list of topics to a file. The keys, QoS, wait
+for historical info will be preserved.</div></blockquote>
+<p>The format of the readers list file (and the add reader specification) is:</p>
+<p class="last"><tt class="docutils literal"><span class="pre">&lt;!&gt;[#QOS#]topic_name[|readername][\[partitionname\]]</span></tt>
+<tt class="docutils literal"><span class="pre">&lt;optional_key&gt;</span> <span class="pre">&lt;optional_foreign_key1&gt;</span> <span class="pre">&lt;optional_foreign_key2&gt;</span></tt>
+<tt class="docutils literal"><span class="pre">&lt;optional_foreign_key3&gt;</span></tt></p>
+</dd>
+<dt><strong>File &gt; Load Readers List</strong></dt>
+<dd>Load a topics file. Topics already in the list will not be recreated.</dd>
+<dt><strong>File &gt; Add Fields</strong></dt>
+<dd>Load new fields. Example <tt class="docutils literal"><span class="pre">field.txt</span></tt> is located in the <tt class="docutils literal"><span class="pre">example</span></tt> directory.</dd>
+</dl>
+<p class="centered" id="load-extra-fields-dialog">
+<strong><strong>Load Extra Fields dialog</strong></strong></p><a class="reference internal image-reference" href="_images/065_loadfieldsdialog.png"><img alt="Load Extra Fields dialog" class="align-center" src="_images/065_loadfieldsdialog.png" style="width: 70mm;" /></a>
+<dl class="docutils">
+<dt><strong>File &gt; Plugins</strong></dt>
+<dd>Install/Uninstall Plugins. The example <tt class="docutils literal"><span class="pre">SimplePlugin</span></tt> plugin is located
+in the <tt class="docutils literal"><span class="pre">example</span></tt> directory. It must be compiled and put in to the
+<tt class="docutils literal"><span class="pre">plugins</span></tt> directory specified in <em>Preference</em> page.</dd>
+</dl>
+<p class="centered" id="plugins-dialog">
+<strong><strong>Plugins dialog</strong></strong></p><a class="reference internal image-reference" href="_images/066_pluginsdialog.png"><img alt="Plugins dialog" class="align-center" src="_images/066_pluginsdialog.png" style="width: 70mm;" /></a>
+<dl class="docutils">
+<dt><strong>File &gt; Save Layout</strong></dt>
+<dd>Save the current layout of the windows in a file; this can later
+be used to organize the windows in the same way. <em>Save Layout</em> is only
+applicable to non-IDE mode.</dd>
+<dt><strong>File &gt; Load Layout</strong></dt>
+<dd>Load a specific layout of the windows as previously saved (select by
+file on the disk) with <em>Save Layout</em>. <em>Load Layout</em> is only applicable
+to non-IDE mode.</dd>
+</dl>
+<dl class="docutils" id="file-preferences">
+<dt><strong>File &gt; Preferences</strong></dt>
+<dd>Can be used to change the locations of the macros and scripts
+directories. (See also the instructions for
+<a class="reference internal" href="getstarted.html#starting-and-stopping-tester"><em>starting and stopping Tester</em></a>).</dd>
+<dt><strong>File &gt; Exit</strong></dt>
+<dd>Quit the application.</dd>
+</dl>
+</div>
+<div class="section" id="script">
+<h3>5.2.2. Script<a class="headerlink" href="#script" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong>Script &gt; Script Editor</strong>, <em>[Alt+Shift+S]</em></dt>
+<dd>Open the script <em>Edit</em> window.</dd>
+<dt><strong>Script &gt; Debug Window</strong></dt>
+<dd>Open the script <em>Debug</em> window.</dd>
+<dt><strong>Script &gt; Scripts</strong></dt>
+<dd>Open the scripts window which allows for quick access to scripts
+found on the script path (as defined in the ospltest.properties).
+(See also <a class="reference internal" href="#file-preferences">File &gt; Preferences</a> and
+<a class="reference internal" href="getstarted.html#starting-and-stopping-tester"><em>Starting and Stopping Tester</em></a>.)</dd>
+<dt><strong>Script &gt; Macros</strong></dt>
+<dd>Open the macros window which allows for quick access to the macros
+found in the macro path (as defined in the <tt class="docutils literal"><span class="pre">ospltest.properties</span></tt>).
+(See also <a class="reference internal" href="#file-preferences">File &gt; Preferences</a> and
+<a class="reference internal" href="getstarted.html#starting-and-stopping-tester"><em>Starting and Stopping Tester</em></a>.)</dd>
+<dt><strong>Script &gt; Batch</strong>, <em>[Alt+Shift+B]</em></dt>
+<dd>Open the <em>Batch Execute</em> window for the batch execution of several scripts.</dd>
+<dt><strong>Script &gt; Batch Results</strong></dt>
+<dd>Display the results of the batch run.</dd>
+</dl>
+</div>
+<div class="section" id="view">
+<h3>5.2.3. View<a class="headerlink" href="#view" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong>View &gt; Samples</strong>, <em>[Alt+1]</em></dt>
+<dd>Open the <em>Sample List</em> window.</dd>
+<dt><strong>View &gt; Statistics</strong>, <em>[Alt+2]</em></dt>
+<dd>Open the <em>Statistics</em> window.</dd>
+<dt><strong>View &gt; Browser</strong>, <em>[Alt+3]</em></dt>
+<dd>Open the <em>Browser</em> window.</dd>
+</dl>
+</div>
+<div class="section" id="samplelist">
+<h3>5.2.4. SampleList<a class="headerlink" href="#samplelist" title="Permalink to this headline">¶</a></h3>
+<p>The <em>Sample List</em> displays the current list of read samples. The list
+is sorted on source time (timestamp) of the topic samples. Topics Samples
+are only displayed when the <em>Show</em> checkbox in the Reader list is checked
+(note that un-checking <em>Show</em> does not delete the topics Samples).
+A double-click in the list results in the topic being displayed in the
+<em>Sample</em> window.</p>
+<p>The state displayed with the topic is the Sample state of the sample.
+When the state of the topic is <tt class="docutils literal"><span class="pre">alive</span></tt> then if this is the last Sample
+with that key it is displayed as <tt class="docutils literal"><span class="pre">ALIVE_AND_KICKING</span></tt> for received samples
+and <tt class="docutils literal"><span class="pre">ALIVE_AND_SEND</span></tt> for samples sent by Tester. This makes it very easy
+to spot topics which are not disposed.</p>
+<p>When exactly <em>two</em> topics are selected, the difference between the source
+timestamps is displayed.</p>
+<p>The following menus are only active when the <em>Sample List</em> tab is selected
+showing samples. (If you are in the <em>Browser</em> tab, for example, then the
+menus will not be active (they will be ‘greyed out’)).</p>
+<dl class="docutils">
+<dt><strong>SampleList &gt; Clear</strong>, <em>Clear</em> button</dt>
+<dd>Clear the Sample List.</dd>
+<dt><strong>SampleList &gt; Dump</strong></dt>
+<dd>Dump the contents of the current (filtered) Sample List to a file.</dd>
+<dt><strong>SampleList &gt; Dump Selection</strong>, <em>[P]</em>  (also <em>[Ctrl+P]</em> and <em>[Alt+P]</em>)</dt>
+<dd>Write the current selection content to a file.</dd>
+<dt><strong>SampleList &gt; Dump to CSV</strong></dt>
+<dd>Write the contents in CSV format.</dd>
+<dt><strong>SampleList &gt; Dispose Alive</strong></dt>
+<dd>Dispose all topics in the Sample list with a state <tt class="docutils literal"><span class="pre">alive</span> <span class="pre">and</span> <span class="pre">kicking</span></tt>
+(<em>i.e.</em> all last Samples of a topic with a given key which are still alive),
+this function can be used to clean up (dispose left alive samples) a list
+after a test.</dd>
+<dt><strong>SampleList &gt; Diff Script</strong></dt>
+<dd>Create a list of instructions in the current scenario which reproduces
+the list of samples in the Sample list. The <em>diff</em> means that only fields
+which do not have the default value or are a key/switch field are used
+in the script.</dd>
+<dt><strong>SampleList &gt; Diff Script Selection</strong></dt>
+<dd>Create a diff script for the current selection of samples.</dd>
+<dt><strong>SampleList &gt; Show Chart</strong>, <em>[Alt+Shift+C]</em></dt>
+<dd>Display the chart window. To fill the chart with data select a column with
+numeric values and press <em>[Y]</em>. This will add a trace with the values of the
+column, using the time received on the X axis. Multiple traces can be added.
+Select a filter to limit to the appropriate values. To display a scatter
+plot, clear the traces and select the column to use on the x-axis, then
+press <em>[X]</em>. After this select the column with values for the Y axis and
+press <em>[Y]</em>. It is also possible to automatically create multiple traces
+based on a key value. First select the column to be used as key and press
+<em>[K]</em> before the Y column is selected.</dd>
+<dt><em>[F2]</em></dt>
+<dd>Compare two topic Samples. Select the first topic Sample in the <em>Sample</em>
+window (by double-clicking), then select the second topic Sample and
+press <em>[F2]</em>. The samples will be displayed side by side with the
+differences marked in the window of the second topic (normally the left
+window). A field marked in red is different, a field marked in orange
+was not found in the first topic Sample. If not different then (foreign)
+key fields will be marked in green and yellow. (See also
+<a class="reference internal" href="getstarted.html#topic-instance-window"><em>Topic Instance Window</em></a>.)</dd>
+<dt><em>[F3]</em></dt>
+<dd>Display a topic Sample in a separate <em>Sample</em> window.</dd>
+<dt><em>[F4]</em></dt>
+<dd>Open the topic edit window with the values of the selected topic.</dd>
+<dt><em>[F9]</em></dt>
+<dd>Fields of the current selected topic sample can be added for display
+in the Sample list. Fields are displayed based on name. Any topic Sample
+with a field of that name will provide the value of the field. A field
+column can be deleted by selecting a cell in the column and then
+pressing <em>[Delete]</em>.</dd>
+</dl>
+</div>
+<div class="section" id="display">
+<h3>5.2.5. Display<a class="headerlink" href="#display" title="Permalink to this headline">¶</a></h3>
+<p>When the Sample List is open these commands allow the user to adjust the
+window display attributes to their needs.</p>
+<dl class="docutils">
+<dt><strong>Display &gt; Font Smaller</strong>, <em>[Ctrl+minus]</em></dt>
+<dd>Decreases the font size of the <em>Sample List</em> window.</dd>
+<dt><strong>Display &gt; Font Larger</strong>, <em>[Ctrl+plus]</em></dt>
+<dd>Increases the font size of the <em>Sample List</em> window.</dd>
+<dt><strong>Display &gt; Day Time</strong></dt>
+<dd>Toggles the Dtime column format between number of milliseconds (ms)
+and time-of-day (hh:mm:ss.ms).</dd>
+<dt><strong>Display &gt; Colors</strong></dt>
+<dd>Toggles the display of colors (on or off).</dd>
+<dt><strong>Display &gt; Refresh</strong></dt>
+<dd>Refreshes the <em>Sample List</em> window.</dd>
+<dt><strong>Display &gt; Only Show Alive</strong></dt>
+<dd>Filters the samples to display samples in the ‘alive’ state.</dd>
+</dl>
+</div>
+<div class="section" id="filter">
+<h3>5.2.6. Filter<a class="headerlink" href="#filter" title="Permalink to this headline">¶</a></h3>
+<p>When the <em>Sample List</em> is open these commands enable you to filter
+the displayed samples based on the Topic and Key attributes of the
+current sample.</p>
+<p>The filter can also be applied by typing the key directly in the
+filter window. Add a <strong>+</strong> (plus) sign in front of the key value to
+filter including foreign key relations (it is not possible to filter
+on key and topic name when entering the key manually). The filter
+can also be reset by clicking the <em>Reset</em> button.</p>
+<dl class="docutils">
+<dt><strong>Filter &gt; Topic</strong>, <em>[Ctrl+F5]</em></dt>
+<dd>Filter on topic name.</dd>
+<dt><strong>Filter &gt; Topic and Key</strong>, <em>[F5]</em></dt>
+<dd>Filter on key and topic name.</dd>
+<dt><strong>Filter &gt; Key</strong>, <em>[F6]</em></dt>
+<dd>Filter on key only (so all topics with the same value for key
+are displayed).</dd>
+<dt><strong>Filter &gt; Resets</strong>, <em>[F7]</em></dt>
+<dd>Clears the filter.</dd>
+<dt><em>[F8]</em></dt>
+<dd>Filter on the key value and also allow forward foreign key relations
+(<em>i.e.</em> find topics which have a key which matches a foreign key of
+an already-displayed topic.</dd>
+<dt><em>[F12]</em></dt>
+<dd>Filter all messages with the same sample state.</dd>
+<dt><em>[F]</em></dt>
+<dd>Filter based on text in a column, the column is listed in the filter
+box (<em>i.e.</em> <tt class="docutils literal"><span class="pre">[&lt;column&gt;]</span></tt>) add the text on which to filter and then
+press <em>[Enter]</em>.</dd>
+</dl>
+</div>
+<div class="section" id="editor">
+<h3>5.2.7. Editor<a class="headerlink" href="#editor" title="Permalink to this headline">¶</a></h3>
+<p>When the <em>Edit</em> window is open these commands allow the user to create
+and manage Scenarios and Macros.</p>
+<dl class="docutils">
+<dt><strong>Editor &gt; New Scenario</strong>, <em>[Ctrl+N]</em></dt>
+<dd>Create a new scenario. A <em>File Save</em> dialog will be displayed to provide
+the filename of the scenario. The initial scenario will be created using
+the template <tt class="docutils literal"><span class="pre">scenario_template.txt</span></tt> which is found in the installation
+directory.</dd>
+<dt><strong>Editor &gt; New Macro</strong>, <em>[Ctrl+M]</em></dt>
+<dd>Create a new macro. A <em>File Save</em> dialog will be displayed to provide the
+filename of the macro. The initial macro will be created using the template
+<tt class="docutils literal"><span class="pre">macro_template.txt</span></tt> which is found in the installation directory.</dd>
+<dt><strong>Editor &gt; Open</strong>, <em>[Ctrl+O]</em></dt>
+<dd>Opens the <em>File Open</em> dialog, the selected Script or Macro file will be
+loaded in the editor.</dd>
+<dt><strong>Editor &gt; Save</strong>, <em>[Ctrl+S]</em></dt>
+<dd>Save the current script to disk (to the same file as it was loaded/created).</dd>
+<dt><strong>Editor &gt; Save As</strong>, <em>[Ctrl+Shift+S]</em></dt>
+<dd>Opens the <em>Save</em> dialog for entering a filename to which the current script
+will be saved.</dd>
+<dt><strong>Editor &gt; Complete</strong>, <em>[Ctrl+Shift+C]</em>, <em>[Ctrl+T]</em></dt>
+<dd>Completes the Scenario by inserting <tt class="docutils literal"><span class="pre">&quot;start</span> <span class="pre">scenario&quot;</span></tt> and <tt class="docutils literal"><span class="pre">&quot;end</span> <span class="pre">scenario&quot;</span></tt>
+text at the beginning and end of the current file.</dd>
+</dl>
+</div>
+<div class="section" id="edit">
+<h3>5.2.8. Edit<a class="headerlink" href="#edit" title="Permalink to this headline">¶</a></h3>
+<p>When the <em>Edit</em> window is open these commands provide basic text editing
+capabilities.</p>
+<dl class="docutils">
+<dt><strong>Edit &gt; Cut</strong>, <strong>Edit &gt; Copy</strong>, <strong>Edit &gt; Paste</strong>, <strong>Edit &gt; Find/Replace</strong></dt>
+<dd>Traditional text editing commands. The standard key combinations
+(such as <em>[Ctrl+X]</em> and <em>[Ctrl+C]</em>) are also recognized.</dd>
+<dt><strong>Edit &gt; Format</strong>, <em>[Ctrl+Shift+F]</em>, <em>[Ctrl+I]</em></dt>
+<dd>Automatically formats the text in the current edit window. Formatting
+removes extra blank lines and normalizes the indentation.</dd>
+</dl>
+<div class="section" id="keyboard-only-commands">
+<h4>5.2.8.1. Keyboard-only commands<a class="headerlink" href="#keyboard-only-commands" title="Permalink to this headline">¶</a></h4>
+<p>Some functions are not accessible from the menu bar; these are mostly common
+editing commands that are invoked with standard (‘traditional’) key combinations
+(‘shortcuts’).</p>
+<dl class="docutils">
+<dt><em>[Crl+A]</em></dt>
+<dd>Select all text in the current field or editor window.</dd>
+<dt><em>[Ctrl+E]</em></dt>
+<dd>Execute the current scenario.</dd>
+<dt><em>[Ctrl+Space]</em></dt>
+<dd>Complete the scenario at the current location. If the cursor is on an
+empty line, the list of possible commands is shown; on a complete command,
+the appropriate editor for that command is opened (if available).</dd>
+<dt><em>[Ctrl+Z]</em></dt>
+<dd>Undo the last command.</dd>
+</dl>
+</div>
+<div class="section" id="macro-recorder">
+<h4>5.2.8.2. Macro Recorder<a class="headerlink" href="#macro-recorder" title="Permalink to this headline">¶</a></h4>
+<p>The Tester has a simple macro recorder, intended for ad hoc use, controlled by
+keyboard commands only. It can record and store a single un-named macro which
+is only retained for the current session (until the Tester is closed).</p>
+<dl class="docutils">
+<dt><em>[Ctrl+Shift+R]</em></dt>
+<dd>Start recording a new macro. Any previously-recorded macro is deleted.</dd>
+<dt><em>[Ctrl+Shift+S]</em></dt>
+<dd>Stop recording.</dd>
+<dt><em>[Ctrl+Shift+M]</em></dt>
+<dd>Play the recorded macro.</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="section" id="lists">
+<h2>5.3. Lists<a class="headerlink" href="#lists" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="services">
+<h3>5.3.1. Services<a class="headerlink" href="#services" title="Permalink to this headline">¶</a></h3>
+<p>Displays a list of the Services running on this node. A display-only window.</p>
+</div>
+<div class="section" id="scripts">
+<h3>5.3.2. Scripts<a class="headerlink" href="#scripts" title="Permalink to this headline">¶</a></h3>
+<p>Displays a list of the installed Scripts (<tt class="docutils literal"><span class="pre">.sd</span></tt> files) and Batch Scripts
+(<tt class="docutils literal"><span class="pre">.bd</span></tt> files).</p>
+<dl class="docutils">
+<dt><strong>Refresh</strong></dt>
+<dd>Refreshes the list.</dd>
+<dt><strong>&lt;select&gt; a Script</strong></dt>
+<dd>Displays the Script in the <em>Edit</em> window</dd>
+</dl>
+</div>
+<div class="section" id="macros">
+<h3>5.3.3. Macros<a class="headerlink" href="#macros" title="Permalink to this headline">¶</a></h3>
+<p>Displays a list of the installed Macros (<tt class="docutils literal"><span class="pre">.md</span></tt> files).</p>
+<dl class="docutils">
+<dt><strong>Refresh</strong></dt>
+<dd>Refreshes the list.</dd>
+<dt><strong>Scen</strong></dt>
+<dd>Checking this option displays Scripts as well as Macros.</dd>
+<dt><strong>&lt;select&gt; a Macro</strong></dt>
+<dd>Displays the Macro in the <em>Edit</em> window</dd>
+</dl>
+</div>
+<div class="section" id="readers">
+<h3>5.3.4. Readers<a class="headerlink" href="#readers" title="Permalink to this headline">¶</a></h3>
+<p>For each reader the count of received samples is displayed as well as the
+QoS and partition. A check box is provided for changing the <em>read</em> state
+or the <em>show</em> state. When <em>Read</em> is unchecked the reader stops reading
+samples. When <em>Show</em> is unchecked the topic samples of that topic will
+not be displayed in the sample list.</p>
+<dl class="docutils">
+<dt><strong>Select all</strong></dt>
+<dd>Checks the <em>show</em> state for all topic samples.</dd>
+<dt><strong>Deselect all</strong></dt>
+<dd>Unchecks the <em>show</em> state for all topic samples.</dd>
+<dt><strong>&lt;select&gt; a Topic Instance</strong></dt>
+<dd>Enables you to check/uncheck the <em>Read</em> and <em>Show</em> state.</dd>
+<dt><strong>&lt;right-click&gt; Delete Reader</strong>, <em>[Delete]</em></dt>
+<dd>Deletes the selected reader.</dd>
+<dt><strong>&lt;right-click&gt; Recreate Reader</strong>, <em>[Ctrl+R]</em></dt>
+<dd>Recreates the selected reader and as such re-reads any persistent/transient
+data available.</dd>
+<dt><strong>&lt;right-click&gt; Show First Sample</strong>, <em>[F3]</em>, or double-click on the reader</dt>
+<dd>Shows the first sample for the selected reader.</dd>
+<dt><strong>&lt;right-click&gt; Edit Sample</strong>, <em>[F4]</em></dt>
+<dd>Opens an <em>Edit Sample</em> window for the selected topic.</dd>
+<dt><em>[F9]</em></dt>
+<dd>Opens the field selection window for the display of fields of the
+selected topic.</dd>
+</dl>
+<div class="section" id="edit-sample-window">
+<h4>5.3.4.1. Edit Sample Window<a class="headerlink" href="#edit-sample-window" title="Permalink to this headline">¶</a></h4>
+<p>The <em>Edit Sample</em> window is used for editing field values of a topic and
+then writing the sample or dispose the instance. It is also used to insert
+the topic values as a ‘send’ or ‘check’ entry in the current script (at
+the cursor position in the script window).</p>
+<p>The <em>Edit Sample</em> window can be filled with a topic from both the <em>Topics</em>
+window and the <em>Sample List</em> window with the <em>[F4]</em> key. If the topic write
+window is filled with a topic from the topics list window then the values
+are all empty (except for union discriminators, which get a default value).
+If the window is filled from the sample list window then the fields get the
+values of the selected topic sample in the sample list. The key fields are
+marked in green and the foreign keys are marked in yellow.</p>
+<p>Fields can be edited by selecting the edit field (right-most column).
+If the field is of an enumerated type then a combo box is displayed which
+provides all possible values. The topmost value is empty for reset to the
+default value (not set).</p>
+<p>The keyboard can be used to navigate the edit fields. The cursor <em>[Up]</em> and
+<em>[Down]</em> (arrow) keys move between fields; any other key starts editing
+the value in the current field.</p>
+<p class="centered" id="id2">
+<strong><strong>Edit sample window</strong></strong></p><a class="reference internal image-reference" href="_images/067_editsample.png"><img alt="Edit sample window" class="align-center" src="_images/067_editsample.png" style="width: 80mm;" /></a>
+<p>(There is a second form of this window, used when opened from the script with
+<em>[Ctrl+Space]</em>, <em>[Ctrl+Left-click]</em>, or as part of completion. It only has
+two buttons: <em>OK</em> and <em>Cancel</em>. Pressing <em>[Ctrl+Enter]</em> or <em>[Ctrl+Return]</em>
+is the same as clicking <em>OK</em>.)</p>
+<dl class="docutils">
+<dt><strong>write</strong></dt>
+<dd>Write the sample.</dd>
+<dt><strong>writeDispose</strong></dt>
+<dd>Write the sample and Dispose the instance.</dd>
+<dt><strong>dispose</strong></dt>
+<dd>Dispose the instance.</dd>
+<dt><strong>script</strong></dt>
+<dd>Instead of writing the sample this creates the script commands to write the
+sample. These commands are inserted into the scenario currently being edited
+and the user will be taken to this text.</dd>
+<dt><strong>check</strong></dt>
+<dd>Similar to <em>script</em> but creates the script command to check the sample values.</dd>
+<dt><em>[F4]</em></dt>
+<dd>Copy the current selected field from the topic in the instance window.</dd>
+<dt><em>[F5]</em></dt>
+<dd>Copy all fields based on an equal name from the topic in the instance window.</dd>
+<dt><em>[F6]</em></dt>
+<dd>Fill all fields with <tt class="docutils literal"><span class="pre">.sec</span></tt> in the name with the current time seconds and
+fields with <tt class="docutils literal"><span class="pre">.nanosec</span></tt> in the name with the current time in nanoseconds.</dd>
+<dt><em>[Ctrl+T]</em></dt>
+<dd>Fills a field of type <tt class="docutils literal"><span class="pre">int</span></tt> with the seconds part of the current time.</dd>
+<dt><em>[Ctrl+U]</em></dt>
+<dd>Fills a field of type <tt class="docutils literal"><span class="pre">long</span></tt> with a unique key.</dd>
+<dt><em>[Ctrl+V]</em></dt>
+<dd>Paste a value.</dd>
+<dt><em>[Alt+Down]</em></dt>
+<dd>Opens the <em>enum</em> editor.</dd>
+<dt><em>[Enter]</em>, <em>[Return]</em></dt>
+<dd>Commits the current edited value.</dd>
+<dt><em>[Esc]</em></dt>
+<dd>Discards the current edited value.</dd>
+</dl>
+<p>Once the desired values have been entered the topic can be written by clicking
+the <em>Write</em> button, disposed by clicking the <em>Dispose</em> button, or write disposed
+by clicking the <em>WriteDispose</em> button.</p>
+</div>
+</div>
+<div class="section" id="topics">
+<h3>5.3.5. Topics<a class="headerlink" href="#topics" title="Permalink to this headline">¶</a></h3>
+<p>The topics list displays the list of topics as known in the system.</p>
+<dl class="docutils">
+<dt><strong>&lt;select&gt; a Topic</strong></dt>
+<dd>Selects a Topic.</dd>
+<dt><strong>&lt;right-click&gt; Create Reader</strong></dt>
+<dd>Create a Reader for the selected Topic.</dd>
+<dt><strong>&lt;right-click&gt; Create Default Reader</strong></dt>
+<dd>Makes the selected Reader the default reader to be displayed in the
+<em>Samples List</em>.</dd>
+<dt><em>[F2]</em></dt>
+<dd>The key list definition window will open which allows to change the
+(foreign) keys. The syntax is the same as in the add topic window or
+topic file. To support the selection of the keys the primary fields
+of the topic are displayed and will be inserted at the cursor position
+in the edit field when clicked.</dd>
+</dl>
+</div>
+<div class="section" id="groups">
+<h3>5.3.6. Groups<a class="headerlink" href="#groups" title="Permalink to this headline">¶</a></h3>
+<p>The Groups list displays the list of groups created Tester and currently active.
+The Groups tab is only visible in the main window when at least one Group has been
+created in the current Tester session.</p>
+<dl class="docutils">
+<dt><strong>&lt;select&gt; a Group</strong></dt>
+<dd>Selects a Group.</dd>
+<dt><strong>&lt;right-click&gt; Delete Group</strong>, <em>[Delete]</em></dt>
+<dd>Delete the selected Group.</dd>
+<dt><strong>&lt;right-click&gt; Publish Coherent Sets</strong>, <em>[F4]</em></dt>
+<dd>Create a Coherent publisher window from which coherent sets of data can be
+created and written.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="windows">
+<h2>5.4. Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="sample-list-window">
+<h3>5.4.1. Sample List Window<a class="headerlink" href="#sample-list-window" title="Permalink to this headline">¶</a></h3>
+<p>The <em>Sample List</em> window is used to display samples. By default the delta time,
+topic name, state, key, and source are displayed. Additional columns can be
+added and filters defined.</p>
+<p class="centered" id="id3">
+<strong><strong>Sample List window</strong></strong></p><a class="reference internal image-reference" href="_images/068_samplelist.png"><img alt="Sample List window" class="align-center" src="_images/068_samplelist.png" style="width: 145mm;" /></a>
+<dl class="docutils">
+<dt><strong>Clear</strong></dt>
+<dd>Clears the list.</dd>
+<dt><strong>Filter &lt;value&gt;</strong></dt>
+<dd>The current filter value.</dd>
+<dt><strong>Reset</strong></dt>
+<dd>Resets the filter value.</dd>
+<dt><strong>Pack</strong></dt>
+<dd>Adjusts the displayed column widths.</dd>
+<dt><strong>&lt;select&gt; a Sample</strong></dt>
+<dd>Selects a sample to use with <em>&lt;right-click&gt;</em> commands. <em>[Ctrl+Left-click]</em>
+selects another sample. If exactly <em>two</em> samples are selected, the difference
+in source time will be displayed in the top bar of the <em>Sample List</em> window.</dd>
+<dt><strong>&lt;right-click&gt;Select Extra Fields</strong>, <em>[F9]</em></dt>
+<dd>Opens a dialog box allowing selection of extra fields to display.</dd>
+<dt><strong>&lt;right-click&gt; Display Sample</strong>, <strong>&lt;double-click&gt;</strong></dt>
+<dd>Displays sample details.</dd>
+<dt><strong>&lt;right-click&gt; Display Sample New Window</strong>, <em>[F3]</em></dt>
+<dd>Displays sample details in new window.</dd>
+<dt><strong>&lt;right-click&gt; Compare Sample</strong>, <em>[F2]</em></dt>
+<dd>Compares two samples with each other and shows differences in red color.</dd>
+<dt><strong>&lt;right-click&gt; Edit Sample</strong>, <em>[F4]</em></dt>
+<dd>Allows Tester to edit the selected sample values.</dd>
+<dt><strong>&lt;right-click&gt; Filter on topic</strong>, <em>[Ctrl+F5]</em></dt>
+<dd>Filters on the selected topic value.</dd>
+<dt><strong>&lt;right-click&gt; Filter on topic and key</strong>, <em>[F5]</em></dt>
+<dd>Filters on both the selected topic and key values.</dd>
+<dt><strong>&lt;right-click&gt; Filter on State</strong>, <em>[F12]</em></dt>
+<dd>Filters on the State of the selected sample.</dd>
+<dt><strong>&lt;right-click&gt; Filter of Key</strong>, <em>[F6]</em></dt>
+<dd>Filters on the Key value of the selected sample.</dd>
+<dt><strong>&lt;right-click&gt; Filter on Column Text</strong>, <em>[F]</em></dt>
+<dd>Sets the filter to be the value of the current column.</dd>
+<dt><strong>&lt;right-click&gt; Filter Reset</strong>, <em>[F7]</em></dt>
+<dd>Resets the filter value.</dd>
+<dt><strong>&lt;right-click&gt; Delete extra column</strong>, <em>[Del]</em></dt>
+<dd>Removes the selected extra column from the list.</dd>
+<dt><strong>&lt;right-click&gt; Add Column as Key to Chart</strong>, <em>[K]</em></dt>
+<dd>Assigns the selected column as the key field for the chart.</dd>
+<dt><strong>&lt;right-click&gt; Add Column as X to Chart</strong>, <em>[X]</em></dt>
+<dd>Assigns the selected column as the x-axis for the chart.</dd>
+<dt><strong>&lt;right-click&gt; Add Column as Y to Chart</strong>, <em>[Y]</em></dt>
+<dd>Assigns the selected column as the y-axis for the chart.</dd>
+<dt><em>[Ctrl+F]</em></dt>
+<dd>Finds the next sample containing the search text in any column.</dd>
+</dl>
+</div>
+<div class="section" id="statistics-window">
+<h3>5.4.2. Statistics Window<a class="headerlink" href="#statistics-window" title="Permalink to this headline">¶</a></h3>
+<p>The <em>Statistics</em> window provides statistics for the topics in use,
+such as write count, number of alive topics, <em>etc.</em>. The following
+values are displayed for each topic:</p>
+<dl class="docutils">
+<dt><strong>Count</strong></dt>
+<dd>The number of samples currently in the OpenSplice database</dd>
+<dt><strong>Arrived</strong></dt>
+<dd>The number of arrived samples</dd>
+<dt><strong>Takes</strong></dt>
+<dd>The number of takes by the reader</dd>
+<dt><strong>Reads</strong></dt>
+<dd>The number of reads by the reader</dd>
+<dt><strong>Alive</strong></dt>
+<dd>The number of alive topics (instances not disposed)</dd>
+<dt><strong>Writes</strong></dt>
+<dd>The number of written samples</dd>
+</dl>
+<p>The left table shows either the participants, the topics, or the statistics
+of the currently-selected reader/writer as indicated by the selected tab.</p>
+<p>When the list of participants is shown, a participant can be selected. The second
+table shows the list of readers with their statistics, the third table show the
+list of writers with their statistics.</p>
+<p>When the list of topics is shown, a topic can be selected. The second table shows
+the list of participants reading the topics with their statistics, the third
+table shows the list of participants writing the topic with their statistics.</p>
+<p>If a value of <tt class="docutils literal"><span class="pre">-1</span></tt> or <tt class="docutils literal"><span class="pre">-2</span></tt> is shown then an error occurred during the
+retrieval of the statistics for the reader/writer.</p>
+<p>By selecting a row in the reader or writer list all statistics for that reader
+or writer will be shown in <em>Stats</em> tab of the left window.</p>
+<dl class="docutils">
+<dt><strong>Refresh</strong></dt>
+<dd>Will refresh the content.</dd>
+<dt><strong>Add readers</strong></dt>
+<dd>Will add the topics in the reader list to the list of monitored topics.</dd>
+<dt><strong>Add writers</strong></dt>
+<dd>Will add the topics in the writer list to the list of monitored topics.</dd>
+<dt><em>[CTRL+F]</em></dt>
+<dd>Finds the next reader/writer containing the search text in any column.</dd>
+</dl>
+</div>
+<div class="section" id="browser-window">
+<h3>5.4.3. Browser Window<a class="headerlink" href="#browser-window" title="Permalink to this headline">¶</a></h3>
+<p>The <em>Browser</em> window enables you to view the Readers and Writers in the system.
+You may browse by Node, Participant, or Topic.</p>
+<p class="centered" id="id4">
+<strong><strong>Browser window</strong></strong></p><a class="reference internal image-reference" href="_images/069_browser.png"><img alt="Browser window" class="align-center" src="_images/069_browser.png" style="width: 145mm;" /></a>
+<dl class="docutils">
+<dt><strong>Refresh</strong></dt>
+<dd>Will refresh the browser content.</dd>
+<dt><strong>Add readers</strong></dt>
+<dd>Will create a Tester reader from the list of readers for the selected
+read-topic.  The QoS of the discovered reader will be used to ensure that
+data read by that reader will be captured in the timeline.</dd>
+<dt><strong>Add writers</strong></dt>
+<dd>Will create a Tester reader from the list of writers for the selected
+written-topic. The QoS of the discovered writer will be used to ensure
+that data written by that writer will be captured in the timeline.</dd>
+<dt><strong>Show disposed participants</strong></dt>
+<dd>Used to toggle the display of disposed participants.</dd>
+<dt><em>[CTRL+F]</em></dt>
+<dd>Finds the next reader/writer containing the search text in any column.</dd>
+</dl>
+</div>
+<div class="section" id="edit-window">
+<h3>5.4.4. Edit Window<a class="headerlink" href="#edit-window" title="Permalink to this headline">¶</a></h3>
+<p>The <em>Edit</em> window is used to create and modify Scripts and Macros.
+Please refer to Chapter 5, Scripting, on page 73, for more details.</p>
+<p class="centered" id="id5">
+<strong><strong>Edit window</strong></strong></p><a class="reference internal image-reference" href="_images/070_edit.png"><img alt="Edit window" class="align-center" src="_images/070_edit.png" style="width: 145mm;" /></a>
+<p>Traditional text editing commands and standard key combinations (such as
+<em>[Ctrl+X]</em> and <em>[Ctrl+C]</em>) are recognized. Menu commands and keyboard
+shortcuts for editing scripts and macros are described in
+sections 4.2.7, Editor, 4.2.8, Edit, 4.3.2, Scripts, and 4.3.3, Macros.</p>
+<p>When editing macros, instruction-specific editing dialogs may open; for example,
+the <tt class="docutils literal"><span class="pre">send</span></tt>, <tt class="docutils literal"><span class="pre">check</span></tt> and <tt class="docutils literal"><span class="pre">execute</span></tt> macro instructions have their own
+editing dialogs which help to make your entries conform to their syntax.</p>
+<p class="centered" id="editor-for-execute-instruction">
+<strong><strong>Editor for execute instruction</strong></strong></p><a class="reference internal image-reference" href="_images/071_ExecEditor.png"><img alt="Editor for execute instruction" class="align-center" src="_images/071_ExecEditor.png" style="width: 70mm;" /></a>
+<dl class="docutils">
+<dt><strong>Compile</strong></dt>
+<dd>Compile the current content.</dd>
+<dt><strong>Execute</strong></dt>
+<dd>Run the current script or macro without clearing the sample list.</dd>
+<dt><strong>Clear and Execute</strong></dt>
+<dd>Clears the sample list and then runs the current script/macro and
+returns the user to the <em>Sample List</em> window.</dd>
+<dt><strong>&lt;drop down&gt;</strong></dt>
+<dd>Allows for quick selection of recently-edited scripts/macros.</dd>
+</dl>
+</div>
+<div class="section" id="debug-window">
+<h3>5.4.5. Debug Window<a class="headerlink" href="#debug-window" title="Permalink to this headline">¶</a></h3>
+<p>The <em>Debug</em> window is used for tracing/debugging Script compilation and execution.
+For each step, the day/time, type of message, and message text is displayed along
+with the location (line number) in the scenario.</p>
+<p class="centered" id="id6">
+<strong><strong>Debug window</strong></strong></p><a class="reference internal image-reference" href="_images/072_DebugWindow.png"><img alt="Debug window" class="align-center" src="_images/072_DebugWindow.png" style="width: 145mm;" /></a>
+<p>Control execution of the scenario with the buttons at the top left of the window:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><a class="reference internal" href="_images/Tester_icon_play.png"><img alt="play4" src="_images/Tester_icon_play.png" style="height: 4mm;" /></a>  <strong>Start</strong> (Play)</dt>
+<dd>Start or resume execution</dd>
+<dt><a class="reference internal" href="_images/Tester_icon_pause.png"><img alt="pause4" src="_images/Tester_icon_pause.png" style="height: 4mm;" /></a>  <strong>Pause</strong></dt>
+<dd>Pause execution</dd>
+<dt><a class="reference internal" href="_images/Tester_icon_stop.png"><img alt="stop4" src="_images/Tester_icon_stop.png" style="height: 4mm;" /></a>  <strong>Stop</strong></dt>
+<dd>Stop (halt) execution</dd>
+</dl>
+</div></blockquote>
+<dl class="docutils">
+<dt><em>[CTRL+F]</em></dt>
+<dd>Finds the next message containing the search text in any column.</dd>
+</dl>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Command Reference</a><ul>
+<li><a class="reference internal" href="#introduction">5.1. Introduction</a></li>
+<li><a class="reference internal" href="#menus">5.2. Menus</a><ul>
+<li><a class="reference internal" href="#file">5.2.1. File</a></li>
+<li><a class="reference internal" href="#script">5.2.2. Script</a></li>
+<li><a class="reference internal" href="#view">5.2.3. View</a></li>
+<li><a class="reference internal" href="#samplelist">5.2.4. SampleList</a></li>
+<li><a class="reference internal" href="#display">5.2.5. Display</a></li>
+<li><a class="reference internal" href="#filter">5.2.6. Filter</a></li>
+<li><a class="reference internal" href="#editor">5.2.7. Editor</a></li>
+<li><a class="reference internal" href="#edit">5.2.8. Edit</a><ul>
+<li><a class="reference internal" href="#keyboard-only-commands">5.2.8.1. Keyboard-only commands</a></li>
+<li><a class="reference internal" href="#macro-recorder">5.2.8.2. Macro Recorder</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#lists">5.3. Lists</a><ul>
+<li><a class="reference internal" href="#services">5.3.1. Services</a></li>
+<li><a class="reference internal" href="#scripts">5.3.2. Scripts</a></li>
+<li><a class="reference internal" href="#macros">5.3.3. Macros</a></li>
+<li><a class="reference internal" href="#readers">5.3.4. Readers</a><ul>
+<li><a class="reference internal" href="#edit-sample-window">5.3.4.1. Edit Sample Window</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#topics">5.3.5. Topics</a></li>
+<li><a class="reference internal" href="#groups">5.3.6. Groups</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#windows">5.4. Windows</a><ul>
+<li><a class="reference internal" href="#sample-list-window">5.4.1. Sample List Window</a></li>
+<li><a class="reference internal" href="#statistics-window">5.4.2. Statistics Window</a></li>
+<li><a class="reference internal" href="#browser-window">5.4.3. Browser Window</a></li>
+<li><a class="reference internal" href="#edit-window">5.4.4. Edit Window</a></li>
+<li><a class="reference internal" href="#debug-window">5.4.5. Debug Window</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="familiarization.html"
+                        title="previous chapter">4. Familiarization Exercises</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="scripting.html"
+                        title="next chapter">6. Scripting</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/commandref.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="scripting.html" title="6. Scripting"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="familiarization.html" title="4. Familiarization Exercises"
+             >previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

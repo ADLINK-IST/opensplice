@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <assert.h>
 
 #include "os_heap.h"
@@ -12,6 +31,9 @@
 #include "q_globals.h"
 #include "sysdeps.h"
 
+#include "u_service.h"
+
+
 static char main_thread_name[] = "main";
 
 struct thread_states thread_states;
@@ -19,7 +41,7 @@ struct thread_states thread_states;
 __thread struct thread_state1 *tsd_thread_state;
 #endif
 
-static void *os_malloc_aligned_cacheline (os_size_t size)
+static void * os_malloc_aligned_cacheline (os_size_t size)
 {
   /* This wastes some space, but we use it only once and it isn't a
      huge amount of memory, just a little over a cache line.
@@ -30,8 +52,7 @@ static void *os_malloc_aligned_cacheline (os_size_t size)
   os_address ptrA;
   void **pptr;
   void *ptr;
-  if ((ptr = os_malloc (size + CACHE_LINE_SIZE + sizeof (void *))) == NULL)
-    return NULL;
+  ptr = os_malloc (size + CACHE_LINE_SIZE + sizeof (void *));
   ptrA = ((os_address) ptr + sizeof (void *) + clm1) & ~clm1;
   pptr = (void **) ptrA;
   pptr[-1] = ptr;
@@ -44,16 +65,14 @@ static void os_free_aligned (void *ptr)
   os_free (pptr[-1]);
 }
 
-int thread_states_init (int maxthreads)
+void thread_states_init (unsigned maxthreads)
 {
-  int i;
+  unsigned i;
 
-  if (os_mutexInit (&thread_states.lock, &gv.mattr) != os_resultSuccess)
-    goto err_lock;
+  os_mutexInit (&thread_states.lock, NULL);
   thread_states.nthreads = maxthreads;
-  if ((thread_states.ts =
-       os_malloc_aligned_cacheline (maxthreads * sizeof (*thread_states.ts))) == NULL)
-    goto err_tstates;
+  thread_states.ts =
+    os_malloc_aligned_cacheline (maxthreads * sizeof (*thread_states.ts));
   memset (thread_states.ts, 0, maxthreads * sizeof (*thread_states.ts));
   for (i = 0; i < thread_states.nthreads; i++)
   {
@@ -63,17 +82,11 @@ int thread_states_init (int maxthreads)
     thread_states.ts[i].lb = NULL;
     thread_states.ts[i].name = NULL;
   }
-  return 0;
- err_tstates:
-  os_mutexDestroy (&thread_states.lock);
- err_lock:
-  NN_FATAL0 ("thread_states_init: failed to initialize thread state table\n");
-  return ERR_UNSPECIFIED;
 }
 
 void thread_states_fini (void)
 {
-  int i;
+  unsigned i;
   for (i = 0; i < thread_states.nthreads; i++)
     assert (thread_states.ts[i].state != THREAD_STATE_ALIVE);
   os_mutexDestroy (&thread_states.lock);
@@ -92,7 +105,7 @@ struct thread_state1 *lookup_thread_state_real (void)
   if (thread_states.ts)
   {
     os_threadId self = os_threadIdSelf ();
-    int i;
+    unsigned i;
     for (i = 0; i < thread_states.nthreads; i++)
       if (os_threadEqual (thread_states.ts[i].tid, self))
         return &thread_states.ts[i];
@@ -118,17 +131,38 @@ static void *create_thread_wrapper (struct thread_context *ctxt)
 
 static int find_free_slot (const char *name)
 {
-  int i, cand;
+  unsigned i;
+  int cand;
   for (i = 0, cand = -1; i < thread_states.nthreads; i++)
   {
     if (thread_states.ts[i].state != THREAD_STATE_ALIVE)
-      cand = i;
+      cand = (int) i;
     if (thread_states.ts[i].state == THREAD_STATE_ZERO)
       break;
   }
   if (cand == -1)
     NN_FATAL1 ("create_thread: %s: no free slot\n", name ? name : "(anon)");
   return cand;
+}
+
+int thread_exists (const char *name)
+{
+  unsigned i;
+  int present = 0;
+  
+  for (i = 0; i < thread_states.nthreads; i++)
+  {
+    if (thread_states.ts[i].name != NULL)
+    {
+      if (strcmp (thread_states.ts[i].name, name) == 0)
+      {
+        present = 1;
+        break;
+      }
+    }
+  }
+  
+  return present;  
 }
 
 void upgrade_main_thread (void)
@@ -157,29 +191,39 @@ const struct config_thread_properties_listelem *lookup_thread_properties (const 
   return e;
 }
 
+struct thread_state1 * init_thread_state (const char *tname)
+{
+  int cand;
+  struct thread_state1 *ts;
+  
+  if ((cand = find_free_slot (tname)) < 0)
+    return NULL;
+  
+  ts = &thread_states.ts[cand];
+  if (ts->state == THREAD_STATE_ZERO)
+    assert (vtime_asleep_p (ts->vtime));
+  ts->name = os_strdup (tname);
+  ts->state = THREAD_STATE_ALIVE;
+  
+  return ts;
+}
+
 struct thread_state1 *create_thread (const char *name, void * (*f) (void *arg), void *arg)
 {
   struct config_thread_properties_listelem const * const tprops = lookup_thread_properties (name);
-  int cand;
   os_threadAttr tattr;
   struct thread_state1 *ts1;
   os_threadId tid;
   struct thread_context *ctxt;
-  if ((ctxt = os_malloc (sizeof (*ctxt))) == NULL)
-    return NULL;
+  ctxt = os_malloc (sizeof (*ctxt));
   os_mutexLock (&thread_states.lock);
-  if ((cand = find_free_slot (name)) < 0)
+  
+  ts1 = init_thread_state (name);
+
+  if (ts1 == NULL)
     goto fatal;
-  ts1 = &thread_states.ts[cand];
-  if (ts1->state == THREAD_STATE_ZERO)
-    assert (vtime_asleep_p (ts1->vtime));
-  if ((ts1->name = os_strdup (name)) == NULL)
-  {
-    NN_FATAL1 ("create_thread: %s: out of memory\n", name);
-    goto fatal;
-  }
+
   ts1->lb = logbuf_new ();
-  ts1->state = THREAD_STATE_ALIVE;
   ctxt->self = ts1;
   ctxt->f = f;
   ctxt->arg = arg;
@@ -190,11 +234,10 @@ struct thread_state1 *create_thread (const char *name, void * (*f) (void *arg), 
       tattr.schedPriority = tprops->sched_priority.value;
     tattr.schedClass = tprops->sched_class; /* explicit default value in the enum */
     if (!tprops->stack_size.isdefault)
-      tattr.stackSize = (os_uint32) tprops->stack_size.value;
+      tattr.stackSize = tprops->stack_size.value;
   }
   TRACE (("create_thread: %s: class %d priority %d stack %u\n", name, (int) tattr.schedClass, tattr.schedPriority, tattr.stackSize));
-
-  if (os_threadCreate (&tid, name, &tattr, (void * (*) (void *)) create_thread_wrapper, ctxt) != os_resultSuccess)
+  if (u_serviceThreadCreate (&tid, name, &tattr, (void * (*) (void *)) create_thread_wrapper, ctxt) != os_resultSuccess)
   {
     ts1->state = THREAD_STATE_ZERO;
     NN_FATAL1 ("create_thread: %s: os_threadCreate failed\n", name);
@@ -235,6 +278,15 @@ int join_thread (struct thread_state1 *ts1, void **retval)
   return ret;
 }
 
+void reset_thread_state (struct thread_state1 *ts1)
+{
+  if (ts1)
+  {
+    reap_thread_state (ts1, 1);
+    ts1->name = NULL;
+  }
+}
+
 void downgrade_main_thread (void)
 {
   struct thread_state1 *ts1 = lookup_thread_state ();
@@ -242,6 +294,39 @@ void downgrade_main_thread (void)
   logbuf_free (ts1->lb);
   /* no need to sync with service lease: already stopped */
   reap_thread_state (ts1, 0);
+#if OS_HAS_TSD_USING_THREAD_KEYWORD
+  tsd_thread_state = NULL;
+#endif
 }
+
+
+struct thread_state1 *get_thread_state (os_threadId id)
+{
+  unsigned i;
+  struct thread_state1 *ts = NULL;
+  
+  for (i = 0; i < thread_states.nthreads; i++)
+  {
+    if (os_threadEqual (thread_states.ts[i].extTid, id))
+    {
+      ts = &thread_states.ts[i];
+      break;
+    }
+  }
+  return ts;
+}
+
+void log_stack_traces (void)
+{
+  unsigned i;
+  for (i = 0; i < thread_states.nthreads; i++)
+  {
+    if (thread_states.ts[i].state == THREAD_STATE_ALIVE)
+    {
+      log_stacktrace (thread_states.ts[i].name, thread_states.ts[i].tid);
+    }
+  }
+}
+
 
 /* SHA1 not available (unoffical build.) */

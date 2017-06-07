@@ -1,73 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package DDS;
 
-import org.opensplice.dds.dcps.WaitSetBase;
+import org.opensplice.dds.dcps.WaitSetImpl;
 
-public class WaitSet extends WaitSetBase implements DDS.WaitSetInterface
+public class WaitSet extends WaitSetImpl
 {
-    public WaitSet(){
-        boolean success = false;
-
-        try{
-            success = jniWaitSetAlloc();
-        } catch(UnsatisfiedLinkError ule){
-            /*
-             * JNI library is not loaded if no instance of the
-             * DomainParticipantFactory exists.
-             */
-            DomainParticipantFactory f = DomainParticipantFactory.get_instance();
-
-            if(f != null){
-                success = jniWaitSetAlloc();
-            }
-        }
-        if(!success){
-            throw new OutOfMemoryError("Could not allocate DDS.WaitSet.");
-        }
-    }
-
-    /* see DDS.WaitSetOperations for javadoc */
-    public int _wait (DDS.ConditionSeqHolder active_conditions, DDS.Duration_t timeout) {
-        return jniWait(active_conditions, timeout);
-    }
-
-    /* see DDS.WaitSetOperations for javadoc */
-    @Override
-    public int attach_condition (DDS.Condition cond) {
-        return jniAttachCondition(cond);
-    }
-
-    /* see DDS.WaitSetOperations for javadoc */
-    @Override
-    public int detach_condition (DDS.Condition cond) {
-        return jniDetachCondition(cond);
-    }
-
-    /* see DDS.WaitSetOperations for javadoc */
-    @Override
-    public int get_conditions (DDS.ConditionSeqHolder attached_conditions) {
-        return jniGetConditions(attached_conditions);
-    }
-
-    @Override
-    protected void finalize(){
-        jniWaitSetFree();
-    }
-
-    private native boolean jniWaitSetAlloc();
-    private native void jniWaitSetFree();
-    private native int jniWait(DDS.ConditionSeqHolder active_conditions, DDS.Duration_t timeout);
-    private native int jniAttachCondition(DDS.Condition cond);
-    private native int jniDetachCondition(DDS.Condition cond);
-    private native int jniGetConditions(DDS.ConditionSeqHolder attached_conditions);
+    private static final long serialVersionUID = -6220627190732353804L;
 }

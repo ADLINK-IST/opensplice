@@ -1,0 +1,48 @@
+parseconditions:
+    desc: Ping LogParser Conditions
+
+    file: ping.log
+    parsecontents: yes
+    type: local
+    normalisejavalog: no
+    normaliseisocpplog: no
+
+    product: OpenSpliceDDS
+
+    conditions: 
+        - name: excess_message
+          type: line
+          inst: 0
+          required: no
+          line: "PING: Ignore excess messages :"
+
+        - name: no_data_message
+          type: line
+          inst: 0
+          required: no
+          line: "PONG: PING_min triggered, but no data available"
+
+        - name: usage_message
+          type: line
+          inst: 0
+          required: no
+          line: "Usage * blocks blocksize topic_id WRITE_PARTITION READ_PARTITION"
+
+        - name: Active Ping Table
+          type: line
+          inst: 5
+          required: yes
+          line: starting PING
+
+        - name: timeout
+          type: line
+          inst: 5
+          required: no
+          line: "PING: TIMEOUT - message lost"
+
+        - name: timeout_2
+          type: line
+          inst: 5
+          required: no
+          line: "PING: TIMEOUT 2 - message lost"
+

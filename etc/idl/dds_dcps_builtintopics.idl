@@ -12,57 +12,13 @@
 module DDS {
 
     struct Time_t {
+#ifdef OSPL_DDS_Y2038_READY
+        long long sec;
+#else
         long sec;
+#endif
         unsigned long nanosec;
     };
-
-    struct EntityFactoryQosPolicy {
-        boolean autoenable_created_entities;
-    };
-
-    struct WriterDataLifecycleQosPolicy {
-        boolean autodispose_unregistered_instances;
-        Duration_t autopurge_suspended_samples_delay;
-        Duration_t autounregister_instance_delay;
-    };
-    
-    enum InvalidSampleVisibilityQosPolicyKind {
-        NO_INVALID_SAMPLES,
-        MINIMUM_INVALID_SAMPLES,
-        ALL_INVALID_SAMPLES
-    };
-    
-    struct InvalidSampleVisibilityQosPolicy {
-        InvalidSampleVisibilityQosPolicyKind kind;
-    };
-
-    struct ReaderDataLifecycleQosPolicy {
-        Duration_t autopurge_nowriter_samples_delay;
-        Duration_t autopurge_disposed_samples_delay;
-        // @discrepancy The below member existed in this file but did not
-        // in ./etc/idlpp/dds_dcps.idl. Retain ?
-        boolean enable_invalid_samples; // @deprecated Will be replaced by invalid_sample_visibility in due time
-        InvalidSampleVisibilityQosPolicy invalid_sample_visibility;
-    };
-
-// @discrepancy The below 3 QoS did not exist in ./etc/idlpp/dds_dcps.idl Retain ?
-
-    struct SubscriptionKeyQosPolicy {
-        boolean use_key_list;
-        StringSeq key_list;
-    };
-
-    struct ReaderLifespanQosPolicy {
-        boolean use_lifespan;
-        Duration_t duration;
-    };
-
-    struct ShareQosPolicy {
-        string name;
-        boolean enable;
-    };
-
-// @discrepancy End of above discrepancy
 
     enum SchedulingClassQosPolicyKind {
         SCHEDULE_DEFAULT,
@@ -137,7 +93,6 @@ module DDS {
         TransportPriorityQosPolicy transport_priority;
         LifespanQosPolicy lifespan;
         UserDataQosPolicy user_data;
-        // @discrepancy The below 'ownership' member was not present in ./etc/idlpp/dds_dcps.idl
         OwnershipQosPolicy ownership;
         OwnershipStrengthQosPolicy ownership_strength;
         WriterDataLifecycleQosPolicy writer_data_lifecycle;
@@ -160,15 +115,11 @@ module DDS {
         HistoryQosPolicy history;
         ResourceLimitsQosPolicy resource_limits;
         UserDataQosPolicy user_data;
-        // @discrepancy The below 'ownership' member was not present in ./etc/idlpp/dds_dcps.idl
         OwnershipQosPolicy ownership;
         TimeBasedFilterQosPolicy time_based_filter;
         ReaderDataLifecycleQosPolicy reader_data_lifecycle;
-        // @discrepancy The below 'subscription_keys' member was not present in ./etc/idlpp/dds_dcps.idl
         SubscriptionKeyQosPolicy subscription_keys;
-        // @discrepancy The below 'reader_lifespan' member was not present in ./etc/idlpp/dds_dcps.idl
         ReaderLifespanQosPolicy reader_lifespan;
-        // @discrepancy The below 'share' member was not present in ./etc/idlpp/dds_dcps.idl
         ShareQosPolicy share;
     };
 

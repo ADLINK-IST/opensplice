@@ -5,9 +5,6 @@ CC                = gcc
 CXX               = g++
 CSC               = gmcs
 
-# Binary used for filtering
-FILTER           = filter_gcc
-
 # Binary used for linking
 LD_SO            = $(CC)
 # Binary used for linking executables
@@ -28,7 +25,7 @@ AR               = ar
 AR_CMDS          = rv
 # preprocessor
 MAKEDEPFLAGS     = -M
-CPP              = cpp
+CPP              = gcc
 GCPP             = g++ -E
 # gcov
 GCOV             = gcov
@@ -70,17 +67,17 @@ CFLAGS_OPT       = -O0 -DNDEBUG -DNO_STRERROR_R
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
 CFLAGS_STRICT    = -Wall -W -pedantic
 
-# Set compiler options for single threaded process
-CFLAGS           = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS         = $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+# Set compiler options
+CFLAGS           = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(MTCFLAGS)
+CXXFLAGS         = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(MTCFLAGS)
 CSFLAGS          = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # Set CPP flags
-CPPFLAGS         = -mcpu=v9 -pipe -DOSPL_ENV_$(SPECIAL) -D__EXTENSIONS__
+CPPFLAGS         = -mcpu=v9 -pipe -DOSPL_ENV_$(SPECIAL) -D__EXTENSIONS__ -DOSPL_NO_SOLARIS_ATOMICS
 
 # Set compiler options for multi threaded process
 # notify usage of posix threads
-MTCFLAGS         += -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
+MTCFLAGS         = -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
 LDFLAGS          = -static-libgcc -L$(SPLICE_LIBRARY_PATH)
@@ -97,13 +94,10 @@ SHLDLIBS         =
 # Set component specific libraries that are platform dependent
 LDLIBS_CXX       = -lstdc++
 LDLIBS_NW        =
-LDLIBS_OS        = -lrt -lpthread -ldl
+LDLIBS_OS        = -lm -lrt -lpthread -ldl
 LDLIBS_CMS       =
 LDLIBS_JAVA      = -ljvm -ljava -lverify -lhpi
 LDLIBS_ODBC      = -lodbc
-LDLIBS_ZLIB      = -lz
-LDFLAGS_ZLIB     =
-CINCS_ZLIB       =
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX         = .o

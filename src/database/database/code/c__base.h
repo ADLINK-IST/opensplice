@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** @file c__base.h
@@ -39,10 +47,7 @@ extern "C" {
         c_type \
         _type##_t (c_base _this) \
         { \
-            if (!_this->baseCache.typeCache._type##_t) { \
-               _this->baseCache.typeCache._type##_t = c_resolve(_this,#_type); \
-            } \
-            return c_keep(_this->baseCache.typeCache._type##_t); \
+            return _this->baseCache.typeCache._type##_t; \
         }
 
 C_STRUCT(c_queryCache) {
@@ -55,12 +60,14 @@ C_STRUCT(c_queryCache) {
     c_type c_qKey_t;
     c_type c_qRange_t;
     c_type c_qExpr_t;
+    c_type c_qKind_t;
+    c_type c_qBoundKind_t;
 };
 
 C_STRUCT(c_fieldCache) {
     c_type c_field_t;
-    c_collectionType c_fieldPath_t;
-    c_collectionType c_fieldRefs_t;
+    c_type c_fieldPath_t;
+    c_type c_fieldRefs_t;
 };
 
 C_STRUCT(c_typeCache) {
@@ -82,7 +89,6 @@ C_STRUCT(c_typeCache) {
     c_type c_string_t;
     c_type c_wchar_t;
     c_type c_wstring_t;
-    c_type c_array_t;
     c_type c_type_t;
     c_type c_valueKind_t;
     c_type c_member_t;
@@ -90,6 +96,12 @@ C_STRUCT(c_typeCache) {
     c_type c_constant_t;
     c_type c_unionCase_t;
     c_type c_property_t;
+    c_type c_mutex_t;
+    c_type c_lock_t;
+    c_type c_cond_t;
+    c_type pa_uint32_t_t;
+    c_type pa_uintptr_t_t;
+    c_type pa_voidp_t_t;
 };
 
 C_STRUCT(c_baseCache) {
@@ -102,6 +114,7 @@ C_STRUCT(c_base) {
     C_EXTENDS(c_module);
     c_mm      mm;
     c_bool    maintainObjectCount;
+    c_bool    y2038Ready;
     c_long    confidence;
     ut_avlTree_t bindings;
     c_mutex   bindLock;
@@ -120,6 +133,12 @@ C_STRUCT(c_base) {
 #endif
 };
 
+C_STRUCT(c_baseBinding) {
+    ut_avlNode_t avlnode;
+    c_object object;
+    c_char  *name;
+};
+
 /** @fn c_getMetaType (c_base base, c_metaKind kind)
     @brief Lookup the database meta data description of the specified meta type kind.
 */
@@ -129,7 +148,9 @@ OS_API c_type   c_getMetaType (c_base base, c_metaKind kind);
 */
 OS_API void     c__free(c_object object);
 
-OS_API c_long   c_memsize(c_type type);
+#if 0
+OS_API os_size_t c_memsize(c_type type);
+#endif
 OS_API c_object c_mem2object(c_voidp mem, c_type type);
 OS_API c_voidp  c_object2mem(c_object o);
 #ifndef NDEBUG
@@ -139,7 +160,7 @@ OS_API void     c__assertValidDatabaseObject(c_voidp o);
 #define c_assertValidDatabaseObject(o)
 #endif
 
-OS_API c_mutexAttr c_baseGetMutexAttr(c_base base);
+OS_API os_scopeAttr c_baseGetScopeAttr(c_base base);
 
 #undef OS_API
 

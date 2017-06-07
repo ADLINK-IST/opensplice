@@ -1,27 +1,33 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #ifndef U_DOMAIN_H
 #define U_DOMAIN_H
 
+#include "u_types.h"
+#include "u_participant.h"
+
 #if defined (__cplusplus)
 extern "C" {
 #endif
-
-#include "u_types.h"
-#include "u_participant.h"
-#include "os_if.h"
-#include "os.h"
-#include "cf_node.h"
+#include "vortex_os.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -33,8 +39,10 @@ extern "C" {
 #define u_domain(p) ((u_domain)(p))
 
 #define DOMAIN_NAME "The default Domain"
-#define DEF_DOMAIN_ID 0
-#define MAX_DOMAIN_ID 0x7fffffff
+#define U_DOMAIN_ID_DEFAULT 0
+#define U_DOMAIN_ID_ANY 0x7fffffff
+#define U_DOMAIN_ID_INVALID -1
+#define U_DOMAIN_DEFAULT_TIMEOUT 1
 
 #define U_DOMAIN_FEDERATIONSPECIFICPARTITIONNAME_MINBUFSIZE 36
 
@@ -53,8 +61,8 @@ extern "C" {
  */
 OS_API u_result
 u_domainNew (
-    u_domain *domain,
-    const c_char *uri);
+          u_domain *domain,
+    const os_char  *uri);
 
 /** \brief The class constructor (2).
  *
@@ -76,25 +84,10 @@ u_domainNew (
  */
 OS_API u_result
 u_domainOpen (
-    u_domain *domain,
-    const c_char *uri,
-    c_long timeout); /* timeout in seconds */
-
-
-/** \brief get uri from domain id.
- *
- * This method retrieves the uri that belongs to a given domain id.
- *
- * \param id      the domain id
- * \param timeout  the duration this operation will
- *                 wait for the availability of the kernel.
- *
- * \return the uri that belongs to the given id.
- */
-OS_API const c_char *
-u_domainOpenWithId (
-    const os_int32 uri,
-    c_long timeout); /* timeout in seconds */
+          u_domain *domain,
+    const os_char *uri,
+    const u_domainId_t id,
+          os_int32 timeout); /* timeout in seconds */
 
 /** \brief The class destructor.
  *
@@ -110,7 +103,7 @@ u_domainOpenWithId (
  */
 OS_API u_result
 u_domainClose (
-    u_domain _this);
+    _Inout_ u_domain _this);
 
 /** \brief The class destructor.
  *
@@ -119,10 +112,13 @@ u_domainClose (
  * deletes the kernel and itself.
  * This operation is typically used by the splice daemon.
  *
- * \param _this The Domain to operate on.
+ * \param _this   The Domain to operate on.
  *
- * \return U_RESULT_OK on a succesful operation or<br>
+ * \return U_RESULT_OK on a successful operation
  *         U_RESULT_ILL_PARAM if the specified participant is incorrect.
+ *         U_RESULT_TIMEOUT when not all threads detached within timeout period.
+ *              Operation will continue freeing domain after timeout. Other
+ *              failure return codes can overwrite this one.
  */
 OS_API u_result
 u_domainFree (
@@ -140,10 +136,10 @@ u_domainFree (
  *
  * \return               TRUE if the Participant is associated to the Domain.
  */
-OS_API c_bool
+OS_API u_bool
 u_domainContainsParticipant(
-    u_domain _this,
-    u_participant participant);
+    const u_domain _this,
+    const u_participant participant);
 
 /**
  * \brief Returns the number of contained Participants.
@@ -154,9 +150,9 @@ u_domainContainsParticipant(
  *
  * \return               The number of Participants.
  */
-OS_API c_long
+OS_API c_ulong
 u_domainParticipantCount(
-    u_domain _this);
+    const u_domain _this);
 
 /**
  * \brief Returns a list of all associated Participants.
@@ -173,8 +169,8 @@ u_domainParticipantCount(
  */
 OS_API c_iter
 u_domainLookupParticipants(
-    u_domain _this,
-    const c_char *name);
+    const u_domain _this,
+    const os_char *name);
 
 /**
  * \brief Execute an action operation on all contained Participants.
@@ -188,7 +184,7 @@ u_domainLookupParticipants(
  * The signature of the action operation is defined in u_participant.h by the
  * following definition:
  *
- * c_bool u_participantAction(u_participant participant, c_voidp arg);
+ * u_bool u_participantAction(u_participant participant, void *arg);
  *
  * Note that this method will abort the walk when all participants are visited or
  * when the action operation returns FALSE.
@@ -201,72 +197,75 @@ u_domainLookupParticipants(
  * \return               U_RESULT_OK on a succesfull walk.
  *                       U_RESULT_ALREADY_DELETED if the specified participant is deleted.
  */
+
+typedef u_bool (*u_participantAction)(u_participant p, void *arg);
+
 OS_API u_result
 u_domainWalkParticipants(
-    u_domain _this,
-    u_participantAction action,
-    c_voidp actionArg);
+    const u_domain _this,
+    const u_participantAction action,
+          void *actionArg);
 
 OS_API u_participant
 u_domainCreateParticipant (
-    u_domain _this,
+    const u_domain _this,
     const c_char *name,
     v_qos qos,
     c_bool enable);
 
 OS_API u_result
 u_domainCreatePersistentSnapshot(
-    u_domain _this,
-    const c_char *partition_expression,
-    const c_char *topic_expression,
-    const c_char *uri);
+    const u_domain _this,
+    const os_char *partition_expression,
+    const os_char *topic_expression,
+    const os_char *uri);
+
+OS_API u_result
+u_domain_load_xml_descriptor (
+    const u_domain _this,
+    const os_char *xml_descriptor);
+
+OS_API os_char *
+u_domain_get_xml_descriptor (
+    const u_domain _this,
+    const os_char *type_name);
+
+OS_API u_domainId_t
+u_domainId(
+    _In_ const u_domain _this) __nonnull_all__;
+
+OS_API const char *
+u_domainName(
+    _In_ const u_domain _this) __nonnull_all__;
+
+OS_API c_type
+u_domain_lookup_type(
+    const u_domain _this,
+    const os_char *type_name);
 
 /** \brief Compare domainId with the domain domainURI and domainName.
  */
-OS_API c_bool
-u_domainCompareDomainId(
-    u_domain _this,
-    const c_char * arg);
-
-OS_API v_kernel
-u_domainSource (
-    u_domain _this);
+OS_API u_bool
+u_domainCompareId(
+    const u_domain _this,
+    const u_domainId_t id);
 
 OS_API os_sharedHandle
 u_domainSharedMemoryHandle (
-    u_domain domain);
+    const u_domain domain);
 
-OS_API c_voidp
+OS_API void *
 u_domainMemoryAddress(
-   u_domain _this);
+    const u_domain _this);
 
-OS_API c_size
+OS_API u_size
 u_domainMemorySize(
-   u_domain _this);
+    const u_domain _this);
 
-/** \brief Fills buf with the domain-specific built-in partition name.
-    Bufsize must be no greater than the number of bytes available in
-    buf and must be at least
-    U_DOMAIN_FEDERATIONSPECIFICPARTITIONNAME_MINBUFSIZE, or ILL_PARAM
-    will be returned. */
 OS_API u_result
-u_domainFederationSpecificPartitionName (
-    u_domain _this,
-    c_char *buf,
-    os_size_t bufsize);
-
-/* Note: This function is part of a temporary workaround used by R&R.
- * The function copies heap-configuration (cf_node from parser) to shm-configuration (v_cfNode).
- * This is needed so R&R can use a single operation to process configuration nodes, either from the config file (URI)
- * or a string (R&R config command).
- * Ideally in the future this will be replaced by memory-agnostic XML processing (so that it doesn't make a difference
- * if the configuration is on heap or in shared memory)
- */
-OS_API u_result
-u_domainCopyConfiguration(
-    cf_node  cfgNode,
-    u_participant p,
-    u_cfElement *elem);
+u_domainEnableStatistics(
+    const u_domain _this,
+    const os_char *categoryName);
 
 #undef OS_API
 

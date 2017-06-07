@@ -62,18 +62,18 @@ else
     fi
 fi
 
-export_vars
 
-ENVFILE=envs-${SPLICE_TARGET}
+ENVFILE=envs-${SPLICE_TARGET_ENV}
 TARGET_DIR="$OSPL_HOME"
-if [ -f "$OSPL_OUTER_HOME/setup/environment/${SPLICE_TARGET}" ]
+if [ -f "$OSPL_OUTER_HOME/setup/environment/${SPLICE_TARGET_ENV}" ]
 then
     TARGET_DIR="$OSPL_OUTER_HOME"
 fi
 set_var TARGET_DIR "$TARGET_DIR"
 . setup/configuration/setup_components $OSPL_HOME
 
-. setup/environment/${SPLICE_TARGET}
+. setup/environment/${SPLICE_TARGET_ENV}
+export_vars
 if [ "$CONFIGURATION" != "OK" ]
 then
     cleanup

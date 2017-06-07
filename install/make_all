@@ -15,3 +15,8 @@ if [ "${OSPL_QT_IS_ON}" == "yes" ]
 then
     make_demos_mirror_and_builder
 fi
+
+if [ "${INCLUDE_STE}" == "yes" ]
+then
+    make_ste_mirror_and_builder
+fi

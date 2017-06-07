@@ -1,30 +1,30 @@
-// The OpenSplice DDS Community Edition project.
-//
-// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
-// Copyright (C) 2009  L-3 Communications / IS
-// 
-//  This library is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License Version 3 dated 29 June 2007, as published by the
-//  Free Software Foundation.
-// 
-//  This library is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-// 
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
 
 using System;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.Threading;
+using DDS.OpenSplice.Kernel;
 
 namespace DDS.OpenSplice
 {
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void DeleteEntityActionDelegate(IntPtr objPtr, IntPtr arg);
-
     /**
      * This interface is implemented by all DDS defined classes and holds the 
      * adress of the equivalent <code>gapi</code> object. The adress is stored as 
@@ -34,16 +34,16 @@ namespace DDS.OpenSplice
     public class SacsSuperClass : IDisposable
     {
         private bool WeakRef;
-        private DeleteEntityActionDelegate deleteEntityAction;
+        private bool deinitialized = false;
 
         /**
          * The adress of the equivalent object in the <code>gapi</code> 
          */
-        private IntPtr gapiPeer = IntPtr.Zero;
-        public IntPtr GapiPeer { get { return gapiPeer; } }
+        private IntPtr userPeer = IntPtr.Zero;
+        internal IntPtr rlReq_UserPeer { get { return userPeer; } }
 
         private IntPtr handleSelf = IntPtr.Zero;
-        protected IntPtr HandleSelf { get { return handleSelf; } }
+        internal IntPtr rlReq_HandleSelf { get { return handleSelf; } }
 
 
         /* This constructor is only used by all DDS classes that have a 
@@ -56,30 +56,40 @@ namespace DDS.OpenSplice
          */
         internal SacsSuperClass()
         {
-            this.deleteEntityAction = null;
         }
 
-        /* This is the default constructor that is to be used by all DDS 
-         * classes that have a corresponding Gapi.Create<Entity> operation.
-         * The constuctor of these classes should only be invoked AFTER the
-         * gapi has created the corresponding gapi handles. 
+        /* 
+         * Use C# destructor syntax for finalization code.
+         * Note that this finalizer is only invoked when not yet suppressed by
+         * an invocation of GC.SuppressFinalize().
          */
-        protected SacsSuperClass(IntPtr gapiPtr)
+        ~SacsSuperClass()
         {
-            this.deleteEntityAction = DeleteEntityAction;
-            this.SetPeer(gapiPtr, false);
+            if (userPeer != IntPtr.Zero)
+            {
+                ReportStack.Start();
+
+                ReturnCode result = uResultToReturnCode(
+                        DDS.OpenSplice.User.Object.Free(userPeer));
+                Debug.Assert(result == DDS.ReturnCode.Ok);
+
+                ReportStack.Flush(this, result != ReturnCode.Ok);
+            }
         }
 
-
-
-        /* Only to be invoked when the default (empty) constructor has been used.
-         * Use this operation to register a gapi handle that has not yet 
-         * passed to the constructor before. The GCHandle created this way
-         * will be a weak handle, since the lifecycle of the C# object will
-         * need to be fully determined by the application: the gapi may not
-         * keep unreferenced C# objects alive. 
+        /* This operation assumes it is invoked by the init() operations
+         * of each of its children. Since an object is not yet accessable 
+         * before finalization of its init(), no lock is required to set
+         * the address of the UserLayer object which it represents.
+         * Weak Objects are objects that do not leave a pinned backref to 
+         * their C# wrappers in the UserLayer administration, since that
+         * would prevent an object from becoming garbage collected when
+         * there is no explicit API call to do so. Examples of objects
+         * that need a weakRef are the WaitSet and the GuardCondition,
+         * since the only way to get rid of those is to drop all references
+         * to them and wait until the Garbage Collector comes to clean it up.
          */
-        internal void SetPeer(IntPtr gapiPtr, bool isWeak)
+        internal virtual ReturnCode init(IntPtr userPtr, bool isWeak)
         {
             GCHandleType backRefType;
             this.WeakRef = isWeak;
@@ -98,56 +108,96 @@ namespace DDS.OpenSplice
             // in the UserData field of its gapi pointer.
             GCHandle tmpGCHandle = GCHandle.Alloc(this, backRefType);
             handleSelf = GCHandle.ToIntPtr(tmpGCHandle);
-            Gapi.Entity.set_user_data(gapiPtr, handleSelf, deleteEntityAction, IntPtr.Zero);
 
-            // Store the gapi handle in the object itself.
-            gapiPeer = gapiPtr;
+            // Store the handle in the object itself.
+            userPeer = userPtr;
+            
+            return DDS.ReturnCode.Ok;
+        }
+        
+        /**
+         * deinit() takes care of all deinitilization by invoking a virtual wlReq_deinit() call
+         * that will be overridden by each child and that will be recursively traversed upward.
+         */
+        internal ReturnCode deinit()
+        {
+            ReturnCode result = DDS.ReturnCode.AlreadyDeleted;
+            
+            lock(this) 
+            {
+                if (this.rlReq_isAlive) {
+                    result = wlReq_deinit();
+                }
+            }
+            
+            return result;
         }
 
-        // Using the Dispose/Finalize pattern from: 
-        //   http://msdn.microsoft.com/en-us/library/b1yfkh5e(vs.71).aspx
-
-        //Implement IDisposable.
-        public void Dispose()
+        internal virtual ReturnCode wlReq_deinit()
         {
+            ReturnCode result = DDS.ReturnCode.Ok;
+            
             // Weak references are slaved to their wrappers lifecycle. 
             // So if the wrapper is disposed, so should the corresponding
-            // gapi handle.
-            if (WeakRef)
+            // UserLayer handle.
+            deinitialized = true;
+            if (userPeer != IntPtr.Zero)
             {
-                Gapi.GenericAllocRelease.Free(gapiPeer);
+                result = uResultToReturnCode(
+                        DDS.OpenSplice.User.Object.Close(userPeer));
+
+                GCHandle tmpGCHandle = GCHandle.FromIntPtr(handleSelf);
+                tmpGCHandle.Free();
+                handleSelf = IntPtr.Zero;
             }
 
-            GCHandle tmpGCHandle = GCHandle.FromIntPtr(handleSelf);
-            tmpGCHandle.Free();
-            handleSelf = IntPtr.Zero;
-
-            // Reset the gapi handles stored in this object.
-            gapiPeer = IntPtr.Zero;
-
+            // Make sure that Dispose() is not invoked a 2nd time by the destructor/finalizer.
             GC.SuppressFinalize(this);
+                
+            return result;
         }
-
-        // Use C# destructor syntax for finalization code.
-        ~SacsSuperClass()
+        
+        /* Using the Dispose/Finalize pattern from: 
+         * http://msdn.microsoft.com/en-us/library/b1yfkh5e(vs.71).aspx
+         */
+        public void Dispose()
         {
-            // Check if the wrapper already disposed its gapi entity before.
-            if (handleSelf != IntPtr.Zero)
+            deinit();
+        }
+        
+        private int _MyDomainId = -1;
+	public int MyDomainId
+        {
+            get { return _MyDomainId; }
+            internal set { _MyDomainId = value; }
+	}
+
+
+        internal bool rlReq_isAlive
+        {
+            get
             {
-                // If not, simply call Dispose.
-                Dispose();
+                bool result = true;
+                
+                if (deinitialized) {
+                    result = false;
+                    ReportStack.Report(
+                            DDS.ReturnCode.AlreadyDeleted, 
+                            "Trying to invoke an operation on an already deleted OpenSplice object.");
+                }
+                return result;
             }
         }
-
-        internal static SacsSuperClass fromUserData(IntPtr gapiPtr)
+        
+        internal static SacsSuperClass fromUserData(IntPtr userPtr)
         {
             SacsSuperClass entity = null;
 
-            // Check whether the gapiPtr contains a valid pointer.
-            if (gapiPtr != IntPtr.Zero)
+            // Check whether the userPtr contains a valid pointer.
+            if (userPtr != IntPtr.Zero)
             {
-                // get the user data out of the gapi object
-                IntPtr managedIntPtr = Gapi.Entity.get_user_data(gapiPtr);
+                // get the user data out of the user object
+                IntPtr managedIntPtr = User.Observable.GetUserData(userPtr);
 
                 // Check whether the userData contains a valid pointer.
                 if (managedIntPtr != IntPtr.Zero)
@@ -160,11 +210,65 @@ namespace DDS.OpenSplice
 
             return entity;
         }
-
-        internal void DeleteEntityAction(IntPtr entityData, IntPtr arg)
+        
+        internal static DDS.ReturnCode uResultToReturnCode(V_RESULT uResult)
         {
-            Dispose();
-        }
+            DDS.ReturnCode result;
 
+            switch (uResult) {
+                case V_RESULT.OK:
+                    result = DDS.ReturnCode.Ok;
+                    break;
+                case V_RESULT.OUT_OF_MEMORY:
+                    result = DDS.ReturnCode.OutOfResources;
+                    break;
+                case V_RESULT.ILL_PARAM:
+                    result = DDS.ReturnCode.BadParameter;
+                    break;
+                case V_RESULT.CLASS_MISMATCH:
+                    result = DDS.ReturnCode.PreconditionNotMet;
+                    break;
+                case V_RESULT.DETACHING:
+                    result = DDS.ReturnCode.AlreadyDeleted;
+                    break;
+                case V_RESULT.TIMEOUT:
+                    result = DDS.ReturnCode.Timeout;
+                    break;
+                case V_RESULT.OUT_OF_RESOURCES:
+                    result = DDS.ReturnCode.OutOfResources;
+                    break;
+                case V_RESULT.INCONSISTENT_QOS:
+                    result = DDS.ReturnCode.InconsistentPolicy;
+                    break;
+                case V_RESULT.IMMUTABLE_POLICY:
+                    result = DDS.ReturnCode.ImmutablePolicy;
+                    break;
+                case V_RESULT.PRECONDITION_NOT_MET:
+                    result = DDS.ReturnCode.PreconditionNotMet;
+                    break;
+                case V_RESULT.ALREADY_DELETED:
+                    result = DDS.ReturnCode.AlreadyDeleted;
+                    break;
+                case V_RESULT.HANDLE_EXPIRED:
+                    result = DDS.ReturnCode.BadParameter;
+                    break;
+                case V_RESULT.UNSUPPORTED:
+                    result = DDS.ReturnCode.Unsupported;
+                    break;
+                case V_RESULT.NO_DATA:
+                    result = DDS.ReturnCode.NoData;
+                    break;
+                case V_RESULT.NOT_ENABLED:
+                    result = DDS.ReturnCode.NotEnabled;
+                    break;
+                case V_RESULT.UNDEFINED:
+                case V_RESULT.INTERRUPTED:
+                case V_RESULT.INTERNAL_ERROR:
+                default:
+                    result = DDS.ReturnCode.Error;
+                    break;
+                }
+            return result;
+        }
     }
 }

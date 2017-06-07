@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef U_NETWORKREADER_H
@@ -14,8 +22,6 @@
 
 #include "u_types.h"
 #include "u_reader.h"
-#include "v_readerQos.h"
-#include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -29,52 +35,39 @@ extern "C" {
 #endif
 
 #define u_networkReader(o) \
-        ((u_networkReader)u_entityCheckType(u_entity(o), U_NETWORKREADER))
+        ((u_networkReader)u_objectCheckType(u_object(o), U_NETWORKREADER))
 
 OS_API u_networkReader
 u_networkReaderNew(
-    u_subscriber s,
-    const c_char *name,
-    v_readerQos qos,
-    c_bool ignoreReliabilityQoS);
-    
-OS_API u_result        
-u_networkReaderInit(
-    u_networkReader _this,
-    u_subscriber s);
+    const u_subscriber s,
+    const os_char *name,
+    const u_readerQos qos,
+    u_bool ignoreReliabilityQoS);
     
 OS_API u_result        
 u_networkReaderCreateQueue(
-    u_networkReader _this,
-    c_ulong queueSize,
-    c_ulong priority,
-    c_bool reliable,
-    c_bool P2P,
-    c_time resolution,
-    c_bool useAsDefault,
-    c_ulong *queueId, /* out */
-    const c_char *name);
+    const u_networkReader _this,
+    os_uint32 queueSize,
+    os_uint32 priority,
+    u_bool reliable,
+    u_bool P2P,
+    os_duration resolution,
+    u_bool useAsDefault,
+    os_uint32 *queueId, /* out */
+    const os_char *name);
     
 OS_API u_result        
 u_networkReaderTrigger(
-    u_networkReader _this,
-    c_ulong queueId);
+    const u_networkReader _this,
+    os_uint32 queueId);
     
-OS_API u_result       
-u_networkReaderFree(
-    u_networkReader _this);
-    
-OS_API u_result        
-u_networkReaderDeinit(
-    u_networkReader _this);
-
 OS_API u_result        
 u_networkReaderRemoteActivityDetected(
-    u_networkReader _this);
+    const u_networkReader _this);
     
 OS_API u_result        
 u_networkReaderRemoteActivityLost(
-    u_networkReader _this);
+    const u_networkReader _this);
 
 #undef OS_API
 

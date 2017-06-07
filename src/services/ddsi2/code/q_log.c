@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include <stdio.h>
@@ -36,15 +44,16 @@ static void logbuf_flush_real (struct thread_state1 *self, logbuf_t lb)
   {
     const char *tname = self ? self->name : "(anon)";
     char hdr[MAX_HDR_LENGTH + 1];
-    int n, tsec, tusec;
-    if (lb->tstamp < 0)
+    int n, tusec;
+    os_int64 tsec;
+    if (lb->tstamp.v < 0)
       lb->tstamp = now ();
-    time_to_sec_usec (&tsec, &tusec, lb->tstamp);
-    lb->tstamp = -1;
-    n = snprintf (hdr, sizeof (hdr), "%d.%06d/%*.*s: ", tsec, tusec, MAX_TID_LENGTH, MAX_TID_LENGTH, tname);
+    wctime_to_sec_usec (&tsec, &tusec, lb->tstamp);
+    lb->tstamp.v = -1;
+    n = snprintf (hdr, sizeof (hdr), "%"PA_PRId64".%06d/%*.*s: ", tsec, tusec, MAX_TID_LENGTH, MAX_TID_LENGTH, tname);
     assert (0 < n && n <= BUF_OFFSET);
-    memcpy (lb->buf + BUF_OFFSET - n, hdr, n);
-    fwrite (lb->buf + BUF_OFFSET - n, 1, lb->pos - BUF_OFFSET + n, config.tracingOutputFile);
+    memcpy (lb->buf + BUF_OFFSET - n, hdr, (size_t) n);
+    fwrite (lb->buf + BUF_OFFSET - n, 1, lb->pos - BUF_OFFSET + (size_t) n, config.tracingOutputFile);
     fflush (config.tracingOutputFile);
   }
   lb->pos = BUF_OFFSET;
@@ -67,7 +76,7 @@ void logbuf_init (logbuf_t lb)
 {
   lb->bufsz = sizeof (lb->buf);
   lb->pos = BUF_OFFSET;
-  lb->tstamp = -1;
+  lb->tstamp.v = -1;
   lb->buf[lb->pos] = 0;
 }
 
@@ -88,7 +97,8 @@ void logbuf_free (logbuf_t lb)
 
 static void nn_vlogb (struct thread_state1 *self, const char *fmt, va_list ap)
 {
-  int n, trunc = 0, nrem;
+  int n, trunc = 0;
+  size_t nrem;
   logbuf_t lb;
   if (*fmt == 0)
     return;
@@ -109,8 +119,8 @@ static void nn_vlogb (struct thread_state1 *self, const char *fmt, va_list ap)
   if (nrem > 0)
   {
     n = os_vsnprintf (lb->buf + lb->pos, nrem, fmt, ap);
-    if (n < nrem)
-      lb->pos += n;
+    if (n >= 0 && (size_t) n < nrem)
+      lb->pos += (size_t) n;
     else
     {
       lb->pos += nrem;
@@ -119,7 +129,7 @@ static void nn_vlogb (struct thread_state1 *self, const char *fmt, va_list ap)
     if (trunc)
     {
       static const char msg[] = "(trunc)\n";
-      const int msglen = (int) sizeof (msg) - 1;
+      const size_t msglen = sizeof (msg) - 1;
       assert (lb->pos <= lb->bufsz);
       assert (lb->pos >= msglen);
       memcpy (lb->buf + lb->pos - msglen, msg, msglen);
@@ -172,7 +182,7 @@ int nn_trace (const char *fmt, ...)
   return 0;
 }
 
-void nn_log_set_tstamp (os_int64 tnow)
+void nn_log_set_tstamp (nn_wctime_t tnow)
 {
   struct thread_state1 *self = lookup_thread_state ();
   if (self && self->lb)

@@ -1,0 +1,1794 @@
+{
+   "dcps":
+   {
+      "PingPong":
+      {
+         "langs": ["c", "cpp", "java", "java5", "cs"],
+         "corba_langs": ["cpp", "java", "java5"],
+         "corba_executables":
+         {
+             "cpp":
+             {
+                 "pubName": "pong",
+                 "subName": "ping"
+             },
+
+             "java":
+             {
+                 "pubName": "pong",
+                 "subName": "ping"
+             },
+
+             "java5":
+             {
+                 "pubName": "pong",
+                 "subName": "ping"
+             }
+         },
+
+         "extra": ["standalone", "corba"],
+
+         "params":
+         {
+            "ping": ["m", "q", "s", "f"],
+            "ping-quit": ["1", "10", "t"],
+            "BLOCKSIZE": "100",
+            "BLOCKCOUNT": "100",
+            "partitions": ["PongRead", "PongWrite"]
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "pubName": "pong",
+                 "subName": "ping"
+             },
+
+             "cpp":
+             {
+                 "pubName": "pong",
+                 "subName": "ping"
+             },
+
+             "cs":
+             {
+                 "pubName": "sacs_pingpong_pong",
+                 "subName": "sacs_pingpong_ping"
+             },
+
+             "java":
+             {
+                 "pubName": "saj_pingpong_pong.jar",
+                 "subName": "saj_pingpong_ping.jar"
+             },
+
+             "java5":
+             {
+                 "pubName": "saj5_pingpong_pong.jar",
+                 "subName": "saj5_pingpong_ping.jar"
+             }
+         },
+
+         "timeout": "30",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      },
+
+      "BuiltInTopics":
+      {
+         "langs": ["c", "cpp", "cs", "isocpp","isocpp2", "java", "java5"],
+         "corba_langs": "",
+         "extra": ["standalone"],
+
+         "params":
+         {
+             "sub_params": "",
+             "pub_params": ""
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "pubName": "",
+                 "subName": "sac_builtintopics_sub"
+             },
+
+             "cpp":
+             {
+                 "pubName": "",
+                 "subName": "sacpp_builtintopics_sub"
+             },
+
+             "cs":
+             {
+                 "pubName": "",
+                 "subName": "sacs_builtintopics_sub"
+             },
+
+             "isocpp":
+             {
+                 "pubName": "",
+                 "subName": "subscriber"
+             },
+
+             "isocpp2":
+             {
+                 "pubName": "",
+                 "subName": "subscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "",
+                 "subName": "saj_builtintopics_sub.jar"
+             },
+
+             "java5":
+             {
+                 "pubName": "",
+                 "subName": "saj5_builtintopics_sub.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "c":              
+             {
+                 "sub_conds": "builtintopics_conditions.yaml",
+                 "pub_conds": ""
+             },
+
+             "cpp": 
+              {
+                  "sub_conds": "builtintopics_conditions.yaml",
+                  "pub_conds": ""
+              },
+
+             "cs": 
+             {
+                  "sub_conds": "builtintopics_conditions.yaml",
+                  "pub_conds": ""
+             },
+
+             "isocpp": 
+             {
+                  "sub_conds": "builtintopics_conditions.yaml",
+                  "pub_conds": ""
+             },
+
+             "isocpp2": 
+             {
+                  "sub_conds": "builtintopics_conditions.yaml",
+                  "pub_conds": ""
+             },
+          
+             "java": 
+             {
+                  "sub_conds": "builtintopics_java_conditions.yaml",
+                  "pub_conds": ""
+             },
+
+             "java5": 
+             {
+                  "sub_conds": "builtintopics_java_conditions.yaml",
+                  "pub_conds": ""
+             }
+         },
+
+         "timeout": "10",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      },
+
+      "ContentFilteredTopic":
+      {
+         "langs": ["c", "cpp", "cs", "isocpp", "isocpp2", "java", "java5"],
+         "corba_langs": "",
+         "extra": ["standalone"],
+
+         "params":
+         {
+             "sub_params": ["GE"],
+             "pub_params": ""
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "pubName": "sac_contentfilteredtopic_pub",
+                 "subName": "sac_contentfilteredtopic_sub"
+             },
+
+             "cpp":
+             {
+                 "pubName": "sacpp_contentfilteredtopic_pub",
+                 "subName": "sacpp_contentfilteredtopic_sub"
+             },
+
+             "cs":
+             {
+                 "pubName": "sacs_contentfilteredtopic_pub",
+                 "subName": "sacs_contentfilteredtopic_sub"
+             },
+
+             "isocpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "isocpp2":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "saj_contentfilteredtopic_pub.jar",
+                 "subName": "saj_contentfilteredtopic_sub.jar"
+             },
+
+             "java5":
+             {
+                 "pubName": "saj5_contentfilteredtopic_pub.jar",
+                 "subName": "saj5_contentfilteredtopic_sub.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "c": 
+             {
+                 "sub_conds": "contentfilteredtopic_sub_conditions.yaml",
+                 "pub_conds": "contentfilteredtopic_pub_conditions.yaml"
+             },
+
+             "cpp": 
+             {
+                 "sub_conds": "contentfilteredtopic_sub_conditions.yaml",
+                 "pub_conds": "contentfilteredtopic_pub_conditions.yaml"
+             },
+
+             "cs": 
+             {
+                 "sub_conds": "contentfilteredtopic_sub_conditions.yaml",
+                 "pub_conds": "contentfilteredtopic_pub_conditions.yaml"
+             },
+ 
+             "isocpp": 
+             {
+                 "sub_conds": "contentfilteredtopic_sub_conditions.yaml",
+                 "pub_conds": "contentfilteredtopic_pub_conditions.yaml"
+             },
+
+             "isocpp2": 
+             {
+                 "sub_conds": "contentfilteredtopic_sub_conditions.yaml",
+                 "pub_conds": "contentfilteredtopic_pub_conditions.yaml"
+             },
+
+             "java": 
+             {
+                 "sub_conds": "contentfilteredtopic_java_conditions.yaml",
+                 "pub_conds": "contentfilteredtopic_java_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "sub_conds": "contentfilteredtopic_java_conditions.yaml",
+                 "pub_conds": "contentfilteredtopic_java_conditions.yaml"
+             }
+         },
+
+         "timeout": "30",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      },
+
+      "Durability":
+      {
+         "langs": ["c", "cpp", "isocpp2", "isocpp", "java", "java5"],
+         "corba_langs": "",
+         "extra": ["standalone"],
+
+         "params":
+         {
+             "trans_sub": ["transient"],
+             "pers_sub": ["persistent"],
+             "pub_1": ["transient", "true", "true"],
+             "pub_2": ["transient", "false", "true"],
+             "pub_3": ["persistent", "false", "true"]
+
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "pubName": "sac_durability_pub",
+                 "subName": "sac_durability_sub"
+             },
+
+             "cpp":
+             {
+                 "pubName": "sacpp_durability_pub",
+                 "subName": "sacpp_durability_sub"
+             },
+
+             "cs":
+             {
+                 "pubName": "sacs_durability_pub",
+                 "subName": "sacs_durability_sub"
+             },
+
+             "isocpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "isocpp2":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "saj_durability_pub.jar",
+                 "subName": "saj_durability_sub.jar"
+             },
+
+             "java5":
+             {
+                 "pubName": "saj5_durability_pub.jar",
+                 "subName": "saj5_durability_sub.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "c": 
+             {
+                 "sub_conds": "durability_sub_conditions.yaml",
+                 "pub_conds": "durability_pub_conditions.yaml"
+             },
+
+             "cpp": 
+             {
+                 "sub_conds": "durability_sub_conditions.yaml",
+                 "pub_conds": "durability_pub_conditions.yaml"
+             },
+
+             "cs": 
+             {
+                 "sub_conds": "durability_sub_conditions.yaml",
+                 "pub_conds": "durability_pub_conditions.yaml"
+             },
+
+             "isocpp": 
+             {
+                 "sub_conds": "durability_sub_conditions.yaml",
+                 "pub_conds": "durability_pub_conditions.yaml"
+             },
+
+             "isocpp2":
+             {
+                 "sub_conds": "durability_sub_conditions.yaml",
+                 "pub_conds": "durability_pub_conditions.yaml"
+             },
+
+             "java":
+             {
+                 "sub_conds": "durability_sub_conditions.yaml",
+                 "pub_conds": "durability_pub_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "sub_conds": "durability_sub_conditions.yaml",
+                 "pub_conds": "durability_pub_conditions.yaml"
+             }
+         },
+
+         "timeout": "50",
+
+         "sp-uri": "ospl_sp.xml",
+
+         "shm-uri": "ospl_shm.xml",
+
+         "pub-first": "False"
+      },
+
+      "HelloWorld":
+      {
+         "langs": ["c", "cpp", "cs", "isocpp", "isocpp2", "java", "java5"],
+         "corba_langs": ["cpp", "java"],
+
+         "corba_executables":
+         {
+             "cpp":
+             {
+                 "pubName": "HelloWorldDataPublisher",
+                 "subName": "HelloWorldDataSubscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "HelloWorldDataPublisher",
+                 "subName": "HelloWorldDataSubscriber"
+             }
+         },
+
+         "extra": ["standalone", "corba"],
+
+         "params":
+         {
+             "sub_params": "",
+             "pub_params": ""
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "pubName": "sac_helloworld_pub",
+                 "subName": "sac_helloworld_sub"
+             },
+
+             "cpp":
+             {
+                 "pubName": "sacpp_helloworld_pub",
+                 "subName": "sacpp_helloworld_sub"
+             },
+
+             "cs":
+             {
+                 "pubName": "sacs_helloworld_pub",
+                 "subName": "sacs_helloworld_sub"
+             },
+
+             "isocpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "isocpp2":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "saj_helloworld_pub.jar",
+                 "subName": "saj_helloworld_sub.jar"
+             },
+
+             "java5":
+             {
+                 "pubName": "saj5_helloworld_pub.jar",
+                 "subName": "saj5_helloworld_sub.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "c": 
+             {
+                 "sub_conds": "helloworld_sub_conditions.yaml",
+                 "pub_conds": "helloworld_pub_conditions.yaml"
+             },
+
+             "cpp": 
+             {
+                 "sub_conds": "helloworld_sub_conditions.yaml",
+                 "pub_conds": "helloworld_pub_conditions.yaml"
+             },
+
+             "cs": 
+             {
+                 "sub_conds": "helloworld_sub_conditions.yaml",
+                 "pub_conds": "helloworld_pub_conditions.yaml"
+             },
+
+             "isocpp": 
+             {
+                 "sub_conds": "helloworld_sub_conditions.yaml",
+                 "pub_conds": "helloworld_pub_conditions.yaml"
+             },
+
+             "isocpp2":
+             {
+                 "sub_conds": "helloworld_sub_conditions.yaml",
+                 "pub_conds": "helloworld_pub_conditions.yaml"
+             },
+
+             "java":
+             {
+                 "sub_conds": "helloworld_sub_conditions.yaml",
+                 "pub_conds": "helloworld_pub_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "sub_conds": "helloworld_java5_sub_conditions.yaml",
+                 "pub_conds": "helloworld_java5_pub_conditions.yaml"
+             }
+         },
+
+         "timeout": "15",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      },
+
+      "Lifecycle":
+      {
+         "langs": ["c", "cpp", "cs", "isocpp2", "isocpp", "java", "java5"],
+         "corba_langs": "",
+         "extra": ["standalone"],
+
+         "params":
+         {
+             "sub_params": "",
+             "pub1_params": ["false", "dispose"],
+             "pub2_params": ["false", "unregister"],
+             "pub3_params": ["false", "stoppub"]
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "pubName": "sac_lifecycle_pub",
+                 "subName": "sac_lifecycle_sub"
+             },
+
+             "cpp":
+             {
+                 "pubName": "sacpp_lifecycle_pub",
+                 "subName": "sacpp_lifecycle_sub"
+             },
+
+             "cs":
+             {
+                 "pubName": "sacs_lifecycle_pub",
+                 "subName": "sacs_lifecycle_sub"
+             },
+
+             "isocpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "isocpp2":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "saj_lifecycle_pub.jar",
+                 "subName": "saj_lifecycle_sub.jar"
+             },
+
+             "java5":
+             {
+                 "pubName": "saj5_lifecycle_pub.jar",
+                 "subName": "saj5_lifecycle_sub.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "c": 
+             {
+                 "sub_conds": "lifecycle_sub_conditions.yaml",
+                 "pub_conds": "lifecycle_pub_conditions.yaml"
+             },
+
+             "cpp": 
+             {
+                 "sub_conds": "lifecycle_sub_conditions.yaml",
+                 "pub_conds": "lifecycle_pub_conditions.yaml"
+             },
+
+             "cs": 
+             {
+                 "sub_conds": "lifecycle_sub_conditions.yaml",
+                 "pub_conds": "lifecycle_pub_conditions.yaml"
+             },
+
+             "isocpp": 
+             {
+                 "sub_conds": "lifecycle_sub_conditions.yaml",
+                 "pub_conds": "lifecycle_pub_conditions.yaml"
+             },
+
+             "isocpp2":
+             {
+                 "sub_conds": "lifecycle_sub_conditions.yaml",
+                 "pub_conds": "lifecycle_pub_conditions.yaml"
+             },
+
+             "java":
+             {
+                 "sub_conds": "lifecycle_sub_conditions.yaml",
+                 "pub_conds": "lifecycle_pub_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "sub_conds": "lifecycle_sub_conditions.yaml",
+                 "pub_conds": "lifecycle_pub_conditions.yaml"
+             }
+         },
+
+         "timeout": "40",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      },
+
+      "Listener":
+      {
+         "langs": ["c", "cpp", "cs", "isocpp2", "isocpp", "java", "java5"],
+         "corba_langs": "",
+         "extra": ["standalone"],
+
+         "params":
+         {
+             "sub_params": "",
+             "pub_params": ""
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "pubName": "sac_listener_pub",
+                 "subName": "sac_listener_sub"
+             },
+
+             "cpp":
+             {
+                 "pubName": "sacpp_listener_pub",
+                 "subName": "sacpp_listener_sub"
+             },
+
+             "cs":
+             {
+                 "pubName": "sacs_listener_pub",
+                 "subName": "sacs_listener_sub"
+             },
+
+             "isocpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "isocpp2":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "saj_listener_pub.jar",
+                 "subName": "saj_listener_sub.jar"
+             },
+
+             "java5":
+             {
+                 "pubName": "saj5_listener_pub.jar",
+                 "subName": "saj5_listener_sub.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "c": 
+             {
+                 "sub_conds": "listener_sub_conditions.yaml",
+                 "pub_conds": "listener_pub_conditions.yaml"
+             },
+
+             "cpp": 
+             {
+                 "sub_conds": "listener_sub_conditions.yaml",
+                 "pub_conds": "listener_pub_conditions.yaml"
+             },
+
+             "cs": 
+             {
+                 "sub_conds": "listener_sub_conditions.yaml",
+                 "pub_conds": "listener_pub_conditions.yaml"
+             },
+
+             "isocpp": 
+             {
+                 "sub_conds": "listener_sub_conditions.yaml",
+                 "pub_conds": "listener_pub_conditions.yaml"
+             },
+
+             "isocpp2": 
+             {
+                 "sub_conds": "listener_sub_conditions.yaml",
+                 "pub_conds": "listener_pub_conditions.yaml"
+             },
+
+             "java": 
+             {
+                 "sub_conds": "listener_sub_java_conditions.yaml",
+                 "pub_conds": "listener_pub_java_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "sub_conds": "listener_sub_java_conditions.yaml",
+                 "pub_conds": "listener_pub_java_conditions.yaml"
+             }
+         },
+
+         "timeout": "30",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      },
+
+      "Ownership":
+      {
+         "langs": ["c", "cpp", "cs", "isocpp", "isocpp2", "java", "java5"],
+         "corba_langs": "",
+         "extra": ["standalone"],
+
+         "params":
+         {
+            "pub1": ["pub1", "5", "40", "1"],
+            "pub2": ["pub2", "10", "5", "0"]
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "pubName": "sac_ownership_pub",
+                 "subName": "sac_ownership_sub"
+             },
+
+             "cpp":
+             {
+                 "pubName": "sacpp_ownership_pub",
+                 "subName": "sacpp_ownership_sub"
+             },
+
+             "cs":
+             {
+                 "pubName": "sacs_ownership_pub",
+                 "subName": "sacs_ownership_sub"
+             },
+
+             "isocpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "isocpp2":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "saj_ownership_pub.jar",
+                 "subName": "saj_ownership_sub.jar"
+             },
+
+             "java5":
+             {
+                 "pubName": "saj5_ownership_pub.jar",
+                 "subName": "saj5_ownership_sub.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "c": 
+             {
+                 "sub_conds": "ownership_sub_conditions.yaml",
+                 "pub_conds": "ownership_pub_conditions.yaml"
+             },
+
+             "cpp": 
+             {
+                 "sub_conds": "ownership_sub_conditions.yaml",
+                 "pub_conds": "ownership_pub_conditions.yaml"
+             },
+
+             "cs": 
+             {
+                 "sub_conds": "ownership_sub_conditions.yaml",
+                 "pub_conds": "ownership_pub_conditions.yaml"
+             },
+
+             "isocpp": 
+             {
+                 "sub_conds": "ownership_sub_conditions.yaml",
+                 "pub_conds": "ownership_pub_conditions.yaml"
+             },
+
+             "isocpp2":
+             {
+                 "sub_conds": "ownership_sub_conditions.yaml",
+                 "pub_conds": "ownership_pub_conditions.yaml"
+             },
+
+             "java":
+             {
+                 "sub_conds": "ownership_sub_conditions.yaml",
+                 "pub_conds": "ownership_pub_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "sub_conds": "ownership_sub_conditions.yaml",
+                 "pub_conds": "ownership_pub_conditions.yaml"
+             }
+         },
+
+         "timeout": "20",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      },
+
+      "QueryCondition":
+      {
+         "langs": ["c", "cpp", "cs", "isocpp", "isocpp2", "java", "java5"],
+         "corba_langs": "",
+         "extra": ["standalone"],
+
+         "params":
+         {
+             "sub_params": ["MSFT"],
+             "pub_params": ""
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "pubName": "sac_querycondition_pub",
+                 "subName": "sac_querycondition_sub"
+             },
+
+             "cpp":
+             {
+                 "pubName": "sacpp_querycondition_pub",
+                 "subName": "sacpp_querycondition_sub"
+             },
+
+             "cs":
+             {
+                 "pubName": "sacs_querycondition_pub",
+                 "subName": "sacs_querycondition_sub"
+             },
+
+             "isocpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "isocpp2":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "saj_querycondition_pub.jar",
+                 "subName": "saj_querycondition_sub.jar"
+             },
+
+             "java5":
+             {
+                 "pubName": "saj5_querycondition_pub.jar",
+                 "subName": "saj5_querycondition_sub.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "c": 
+             {
+                 "sub_conds": "querycondition_sub_conditions.yaml",
+                 "pub_conds": "querycondition_pub_conditions.yaml"
+             },
+
+             "cpp": 
+             {
+                 "sub_conds": "querycondition_sub_conditions.yaml",
+                 "pub_conds": "querycondition_pub_conditions.yaml"
+             },
+
+             "cs": 
+             {
+                 "sub_conds": "querycondition_sub_conditions.yaml",
+                 "pub_conds": "querycondition_pub_conditions.yaml"
+             },
+
+             "isocpp": 
+             {
+                 "sub_conds": "querycondition_sub_conditions.yaml",
+                 "pub_conds": "querycondition_pub_conditions.yaml"
+             },
+
+             "isocpp2":
+             {
+                 "sub_conds": "querycondition_sub_conditions.yaml",
+                 "pub_conds": "querycondition_pub_conditions.yaml"
+             },
+
+             "java":
+             {
+                 "sub_conds": "querycondition_sub_conditions.yaml",
+                 "pub_conds": "querycondition_pub_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "sub_conds": "querycondition_sub_conditions.yaml",
+                 "pub_conds": "querycondition_pub_conditions.yaml"
+             }
+         },
+
+         "timeout": "10",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      },
+
+      "RoundTrip":
+      {
+         "langs": ["c", "cpp", "isocpp", "isocpp2", "java", "java5"],
+         "corba_langs": "",
+         "extra": [""],
+
+         "params":
+         {
+             "ping": ["100", "0", "10"], 
+             "ping_quit": ["quit"]
+         },
+
+         "log_conditions_file":
+         {
+             "c": 
+             {
+                 "pub_conds": "roundtrip_pub_conditions.yaml",
+                 "sub_conds": "roundtrip_sub_conditions.yaml"
+             },
+
+             "cpp": 
+             {
+                 "pub_conds": "roundtrip_pub_conditions.yaml",
+                 "sub_conds": "roundtrip_sub_conditions.yaml"
+             },
+
+             "cs": 
+             {
+                 "pub_conds": "roundtrip_pub_conditions.yaml",
+                 "sub_conds": "roundtrip_sub_conditions.yaml"
+             },
+
+             "isocpp": 
+             {
+                 "pub_conds": "roundtrip_pub_conditions.yaml",
+                 "sub_conds": "roundtrip_sub_conditions.yaml"
+             },
+
+             "isocpp2":
+             {
+                 "pub_conds": "roundtrip_pub_conditions.yaml",
+                 "sub_conds": "roundtrip_sub_conditions.yaml"
+             },
+
+             "java":
+             {
+                 "pub_conds": "roundtrip_pub_conditions.yaml",
+                 "sub_conds": "roundtrip_sub_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "pub_conds": "roundtrip_pub_conditions.yaml",
+                 "sub_conds": "roundtrip_sub_conditions.yaml"
+             }
+         },
+
+         "timeout": "30",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      },
+
+      "Throughput":
+      {
+         "langs": ["c", "cpp", "isocpp", "isocpp2", "java", "java5"],
+         "corba_langs": "",
+         "extra": [""],
+
+         "params":
+         {
+             "pub_params": ["1", "0", "1", "15"],
+             "sub_params": ["10"]
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "cpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "isocpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "isocpp2":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "Saj_Throughput_Publisher.jar",
+                 "subName": "Saj_Throughput_Subscriber.jar"
+             },
+
+             "java5":
+             {
+                 "pubName": "Saj5_Throughput_Publisher.jar",
+                 "subName": "Saj5_Throughput_Subscriber.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "c": 
+             {
+                 "pub_conds": "throughput_pub_conditions.yaml",
+                 "sub_conds": "throughput_sub_conditions.yaml"
+             },
+
+             "cpp": 
+             {
+                 "pub_conds": "throughput_pub_conditions.yaml",
+                 "sub_conds": "throughput_sub_conditions.yaml"
+             },
+
+             "isocpp": 
+             {
+                 "pub_conds": "throughput_pub_conditions.yaml",
+                 "sub_conds": "throughput_sub_conditions.yaml"
+             },
+
+             "isocpp2":
+             {
+                 "pub_conds": "throughput_pub_conditions.yaml",
+                 "sub_conds": "throughput_sub_conditions.yaml"
+             },
+
+             "java":
+             {
+                 "pub_conds": "throughput_pub_conditions.yaml",
+                 "sub_conds": "throughput_sub_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "pub_conds": "throughput_pub_conditions.yaml",
+                 "sub_conds": "throughput_sub_conditions.yaml"
+             }
+         },
+
+         "timeout": "30",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "True"
+      },
+
+      "Tutorial":
+      {
+         "langs": ["c", "cpp", "cs", "isocpp", "isocpp2", "java", "java5"],
+         "corba_langs": ["cpp", "java"],
+
+         "corba_executables":
+         {
+             "cpp":
+             {
+                 "msgBoardName": "MessageBoard",
+                 "userLoadName": "UserLoad",
+                 "chatterName": "Chatter"
+             },
+
+             "java":
+             {
+                 "msgBoardName": "chatroom.MessageBoard",
+                 "userLoadName": "chatroom.UserLoad",
+                 "chatterName": "chatroom.Chatter"
+             }
+         },
+
+         "extra": ["standalone", "corba"],
+
+         "params":
+         {
+             "messageboard": "",
+             "chatter": "",
+             "quit": ["-1"]
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "msgBoardName": "MessageBoard",
+                 "userLoadName": "UserLoad",
+                 "chatterName": "Chatter"
+             },
+
+             "cpp":
+             {
+                 "msgBoardName": "MessageBoard",
+                 "userLoadName": "UserLoad",
+                 "chatterName": "Chatter"
+             },
+
+             "cs":
+             {
+                 "msgBoardName": "sacs_tutorial_message_board",
+                 "userLoadName": "sacs_tutorial_user_load",
+                 "chatterName": "sacs_tutorial_chatter"
+             },
+
+
+             "isocpp":
+             {
+                 "msgBoardName": "MessageBoard",
+                 "userLoadName": "UserLoad",
+                 "chatterName": "Chatter"
+             },
+
+             "isocpp2":
+             {
+                 "msgBoardName": "MessageBoard",
+                 "userLoadName": "UserLoad",
+                 "chatterName": "Chatter"
+             },
+
+             "java":
+             {
+                 "msgBoardName": "saj_tutorial_messageboard.jar",
+                 "userLoadName": "saj_tutorial_userload.jar",
+                 "chatterName": "saj_tutorial_chatter.jar"
+             },
+
+             "java5":
+             {
+                 "msgBoardName": "saj5_tutorial_messageboard.jar",
+                 "userLoadName": "saj5_tutorial_userload.jar",
+                 "chatterName": "saj5_tutorial_chatter.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "c": 
+             {
+                 "msgboard_conds": "tutorial_msgboard_conditions.yaml",
+                 "chatter_conds": "tutorial_chatter_conditions.yaml"
+             },
+
+             "cpp": 
+             {
+                 "msgboard_conds": "tutorial_msgboard_conditions.yaml",
+                 "chatter_conds": "tutorial_chatter_conditions.yaml"
+             },
+
+             "cs": 
+             {
+                 "msgboard_conds": "tutorial_msgboard_conditions.yaml",
+                 "chatter_conds": "tutorial_chatter_conditions.yaml"
+             },
+
+             "isocpp": 
+             {
+                 "msgboard_conds": "tutorial_msgboard_conditions.yaml",
+                 "chatter_conds": "tutorial_chatter_conditions.yaml"
+             },
+
+             "isocpp2":
+             {
+                 "msgboard_conds": "tutorial_msgboard_conditions.yaml",
+                 "chatter_conds": "tutorial_chatter_conditions.yaml"
+             },
+
+             "java":
+             {
+                 "msgboard_conds": "tutorial_msgboard_conditions.yaml",
+                 "chatter_conds": "tutorial_chatter_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "msgboard_conds": "tutorial_msgboard_conditions.yaml",
+                 "chatter_conds": "tutorial_chatter_conditions.yaml"
+             }
+         },
+
+         "timeout": "30",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "True"
+      },
+
+      "WaitSet":
+      {
+         "langs": ["c", "cpp", "cs", "isocpp2", "isocpp", "java", "java5"],
+         "corba_langs": "",
+         "extra": ["standalone"],
+
+         "params":
+         {
+             "sub_params": "",
+             "pub_params": ""
+         },
+
+         "executables":
+         {
+             "c":
+             {
+                 "pubName": "sac_waitset_pub",
+                 "subName": "sac_waitset_sub"
+             },
+
+             "cpp":
+             {
+                 "pubName": "sacpp_waitset_pub",
+                 "subName": "sacpp_waitset_sub"
+             },
+
+             "cs":
+             {
+                 "pubName": "sacs_waitset_pub",
+                 "subName": "sacs_waitset_sub"
+             },
+
+             "isocpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "isocpp2":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "saj_waitset_pub.jar",
+                 "subName": "saj_waitset_sub.jar"
+             },
+
+             "java5":
+             {
+                 "pubName": "saj5_waitset_pub.jar",
+                 "subName": "saj5_waitset_sub.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "c": 
+             {
+                 "pub_conds": "waitset_pub_conditions.yaml",
+                 "sub_conds": "waitset_sub_conditions.yaml"
+             },
+
+             "cpp": 
+             {
+                 "pub_conds": "waitset_pub_conditions.yaml",
+                 "sub_conds": "waitset_sub_conditions.yaml"
+             },
+
+             "isocpp": 
+             {
+                 "pub_conds": "waitset_pub_conditions.yaml",
+                 "sub_conds": "waitset_sub_conditions.yaml"
+             },
+
+             "isocpp2":
+             {
+                 "pub_conds": "waitset_pub_conditions.yaml",
+                 "sub_conds": "waitset_sub_conditions.yaml"
+             },
+
+             "java":
+             {
+                 "pub_conds": "waitset_pub_conditions.yaml",
+                 "sub_conds": "waitset_sub_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "pub_conds": "waitset_pub_conditions.yaml",
+                 "sub_conds": "waitset_sub_conditions.yaml"
+             }
+         },
+
+         "timeout": "10",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      }
+   },
+
+   "rmi":
+   {
+      "ClientServer":
+      {
+         "langs": ["cpp", "java"],
+         "corba_langs": "",
+
+         "extra": [""],
+
+         "params":
+         {
+             "pub_params": ["MyServer", "1"],
+             "sub_params": ["MyServer", "1"]
+         },
+
+         "executables":
+         {
+             "cpp":
+             {
+                 "pubName": "server",
+                 "subName": "client"
+             },
+
+             "java":
+             {
+                 "pubName": "rmi_saj_clientserver_server.jar",
+                 "subName": "rmi_saj_clientserver_client.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "cpp": 
+             {
+                 "sub_conds": "rmiclientserver_sub_cpp_conditions.yaml",
+                 "pub_conds": "rmiclientserver_pub_cpp_conditions.yaml"
+             },
+             
+             "java": 
+             {
+                 "sub_conds": "rmiclientserver_sub_java_conditions.yaml",
+                 "pub_conds": "rmiclientserver_pub_java_conditions.yaml"
+             }
+         },
+
+         "timeout": "30",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "True"
+      },
+
+      "HelloWorld":
+      {
+         "langs": ["cpp", "java"],
+         "corba_langs": "",
+         "extra": [""],
+
+         "params":
+         {
+             "sub_params": "",
+             "sub2_params": "",
+             "pub_params": ""
+         },
+
+         "executables":
+         {
+             "cpp":
+             {
+                 "pubName": "server",
+                 "subName": "client",
+                 "sub2Name": "async_client"
+             },
+
+             "java":
+             {
+                 "pubName": "rmi_saj_helloworld_server.jar",
+                 "subName": "rmi_saj_helloworld_client.jar",
+                 "sub2Name": "rmi_saj_helloworld_async_client.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "cpp": 
+             {
+                 "sub_conds": "rmihelloworld_cpp_conditions.yaml",
+                 "pub_conds": "rmihelloworld_cpp_conditions.yaml"
+             },
+
+             "java": 
+             {
+                 "sub_conds": "rmihelloworld_java_conditions.yaml",
+                 "pub_conds": "rmihelloworld_java_conditions.yaml"
+             }
+         },
+
+
+         "timeout": "30",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      },
+
+      "Printer":
+      {
+         "langs": ["cpp", "java"],
+         "corba_langs": "",
+         "extra": [""],
+
+         "params":
+         {
+             "sub_params": "",
+             "pub_params": ""
+         },
+
+         "executables":
+         {
+             "cpp":
+             {
+                 "subName": "server",
+                 "pubName": "client"
+             },
+
+             "java":
+             {
+                 "subName": "rmi_saj_printer_server.jar",
+                 "pubName": "rmi_saj_printer_client.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "cpp": 
+             {
+                 "sub_conds": "rmiprinter_sub_cpp_conditions.yaml",
+                 "pub_conds": "rmiprinter_pub_cpp_conditions.yaml"
+             },
+
+             "java": 
+             {
+                 "sub_conds": "rmiprinter_java_sub_conditions.yaml",
+                 "pub_conds": "rmiprinter_java_pub_conditions.yaml"
+             }
+         },
+
+         "timeout": "30",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      }
+   },
+
+   "streams":
+   {
+      "Throughput":
+      {
+         "langs": ["cpp"],
+         "corba_langs": "",
+         "extra": [""],
+
+         "params":
+         {
+             "sub_params": ["10", "10"],
+             "pub_params": ["1", "10", "0", "15"]
+         },
+
+         "executables":
+         {
+             "cpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "cpp": 
+             {
+                 "sub_conds": "streams_throughput_sub_conditions.yaml",
+                 "pub_conds": "streams_throughput_conditions.yaml"
+             }
+         },
+
+         "timeout": "25",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      }
+   },
+
+   "face":
+   {
+      "HelloWorld":
+      {
+         "langs": ["cpp", "java"],
+         "corba_langs": "",
+         "extra": [""],
+
+         "params":
+         {
+             "sub_params": "",
+             "pub_params": ""
+         },
+
+         "executables":
+         {
+             "cpp":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "java":
+             {
+                 "pubName": "face_helloworld_pub.jar",
+                 "subName": "face_helloworld_sub.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "cpp": 
+             {
+                 "sub_conds": "face_hw_sub_conditions.yaml",
+                 "pub_conds": "face_hw_pub_conditions.yaml"
+             },
+
+             "java": 
+             {
+                 "sub_conds": "face_hw_sub_java_conditions.yaml",
+                 "pub_conds": "face_hw_pub_java_conditions.yaml"
+             }
+         },
+
+         "timeout": "30",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      }
+   },
+
+   "protobuf":
+   {
+      "protobuf":
+      {
+         "langs": ["isocpp2", "java5"],
+         "corba_langs": "",
+         "extra": ["standalone"],
+
+         "params":
+         {
+             "sub_params": "",
+             "pub_params": ""
+         },
+
+         "executables":
+         {
+             "isocpp2":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
+             },
+
+             "java5":
+             {
+                 "pubName": "saj5-protobuf-publisher.jar",
+                 "subName": "saj5-protobuf-subscriber.jar"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "isocpp2": 
+             { 
+                 "sub_conds": "protobuf_sub_conditions.yaml",
+                 "pub_conds": "protobuf_pub_conditions.yaml"
+             },
+
+             "java5": 
+             {
+                 "sub_conds": "protobuf_sub_java_conditions.yaml",
+                 "pub_conds": "protobuf_pub_java_conditions.yaml"
+             }
+         },
+
+         "timeout": "30",
+
+         "sp-uri": "",
+
+         "shm-uri": "",
+
+         "pub-first": "False"
+      }
+   },
+
+   "services":
+   {
+      "dbmsconnect":
+      {
+         "langs": "",
+         "corba_langs": "",
+         "extra": "",
+
+         "params":
+         {
+             "odbcMsgBoard_params": ["my_dsn", "SYSTEM", "SYSTEM"],
+             "odbcChatter1_params": ["my_dsn", "SYSTEM", "SYSTEM", "1", "SqlToDdsOnly"],
+             "odbcChatter2_params": ["my_dsn", "SYSTEM", "SYSTEM", "2", "SqlToDdsAndDbms"],
+             "cppChatter1_params": ["1", "DdsToDdsOnly"],
+             "cppChatter2_params": ["1", "DdsToDdsAndDbms"],
+             "odbcChatterQuit_params": ["my_dsn", "SYSTEM", "SYSTEM", "-1", "terminate"],
+             "cppChatterQuit_params": ["-1"]       
+         },
+
+         "executables":
+         {
+             "odbc":
+             {
+                 "msgBoardName": "MessageBoard",
+                 "chatterName": "Chatter"
+             },
+
+             "cpp":
+             {
+                 "msgBoardName": "MessageBoard",
+                 "chatterName": "Chatter"
+             }
+         },
+
+         "log_conditions_file":
+         {
+             "odbcmsgboard_conds": "odbcmsgboard_conditions.yaml",
+             "odbcchatter_conds": "odbcchatter_conditions.yaml",
+             "msgboard_conds": "cpp_msgboard_conditions.yaml",
+             "chatter_conds": "tutorial_chatter_conditions.yaml"
+         },
+
+         "timeout": "40",
+
+         "sp-uri": "sp_dbmsconnect.xml",
+
+         "shm-uri": "dbmsconnect.xml",
+
+         "pub-first": "False"
+      }
+   },
+
+   "languages":
+   {
+      "c":
+      {
+          "prefix": "sac"
+      },
+
+      "cpp":
+      {
+          "prefix": "sacpp",
+          "corba_prefix": "ccpp"
+      },
+
+      "cs":
+      {
+          "prefix": "sacs"
+      },
+
+      "java":
+      {
+          "prefix": "saj",
+          "corba_prefix": "cj"
+      },
+   
+      "java5":
+      {
+          "prefix": "saj5",
+          "corba_prefix": "cj5"
+      }
+   }
+}

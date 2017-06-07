@@ -1,12 +1,7 @@
 ifneq (,$(or $(findstring win32,$(SPLICE_HOST)),$(findstring win64,$(SPLICE_HOST))))
-compile:
-	(cd wincmd; make)
-	(cd winln; make)
-
-clean:
-	(cd wincmd; make clean)
-	(cd winln; make clean)
+all link clean:
+	@$(MAKE) -C wincmd $@
+	@$(MAKE) -C winln $@
 else
-compile:
-clean:
+all link clean:
 endif

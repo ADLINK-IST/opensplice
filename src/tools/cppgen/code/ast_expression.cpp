@@ -90,6 +90,11 @@ void AST_Expression::fill_definition_details ()
    pd_file_name = idl_global->filename ();
 }
 
+AST_Expression::~AST_Expression ()
+{
+   delete pd_ev;
+}
+
 /*
  * An AST_Expression denoting a symbolic name
  */
@@ -458,7 +463,7 @@ static AST_Expression::AST_ExprValue * coerce_value
 
                case AST_Expression::EV_long:
                //if (ev->u.lval > (long) (SHRT_MAX) || ev->u.lval < 0)
-                  if ((ev->u.lval > (USHRT_MAX)) || (ev->u.lval < 0U))
+               if ((ev->u.lval > (USHRT_MAX)) || (ev->u.lval < 0))
                   return NULL;
 
                ev->u.usval = (unsigned short) ev->u.lval;
@@ -894,22 +899,22 @@ static AST_Expression::AST_ExprValue * coerce_value
          switch (ev->et)
          {
                case AST_Expression::EV_short:
-               ev->u.bval = (ev->u.sval == 0) ? I_FALSE : I_TRUE;
+               ev->u.bval = (ev->u.sval == 0) ? false : true;
                ev->et = AST_Expression::EV_bool;
                return ev;
 
                case AST_Expression::EV_ushort:
-               ev->u.bval = (ev->u.usval == 0) ? I_FALSE : I_TRUE;
+               ev->u.bval = (ev->u.usval == 0) ? false : true;
                ev->et = AST_Expression::EV_bool;
                return ev;
 
                case AST_Expression::EV_long:
-               ev->u.bval = (ev->u.lval == 0) ? I_FALSE : I_TRUE;
+               ev->u.bval = (ev->u.lval == 0) ? false : true;
                ev->et = AST_Expression::EV_bool;
                return ev;
 
                case AST_Expression::EV_ulong:
-               ev->u.bval = (ev->u.ulval == 0) ? I_FALSE : I_TRUE;
+               ev->u.bval = (ev->u.ulval == 0) ? false : true;
                ev->et = AST_Expression::EV_bool;
                return ev;
 
@@ -917,27 +922,27 @@ static AST_Expression::AST_ExprValue * coerce_value
                return ev;
 
                case AST_Expression::EV_float:
-               ev->u.bval = (ev->u.fval == 0.0) ? I_FALSE : I_TRUE;
+               ev->u.bval = (ev->u.fval == 0.0) ? false : true;
                ev->et = AST_Expression::EV_bool;
                return ev;
 
                case AST_Expression::EV_double:
-               ev->u.bval = (ev->u.dval == 0.0) ? I_FALSE : I_TRUE;
+               ev->u.bval = (ev->u.dval == 0.0) ? false : true;
                ev->et = AST_Expression::EV_bool;
                return ev;
 
                case AST_Expression::EV_char:
-               ev->u.bval = (ev->u.cval == 0) ? I_FALSE : I_TRUE;
+               ev->u.bval = (ev->u.cval == 0) ? false : true;
                ev->et = AST_Expression::EV_bool;
                return ev;
 
                case AST_Expression::EV_wchar:
-               ev->u.bval = (ev->u.cwval == 0) ? I_FALSE : I_TRUE;
+               ev->u.bval = (ev->u.cwval == 0) ? false : true;
                ev->et = AST_Expression::EV_bool;
                return ev;
 
                case AST_Expression::EV_octet:
-               ev->u.bval = (ev->u.oval == 0) ? I_FALSE : I_TRUE;
+               ev->u.bval = (ev->u.oval == 0) ? false : true;
                ev->et = AST_Expression::EV_bool;
                return ev;
 
@@ -970,7 +975,7 @@ static AST_Expression::AST_ExprValue * coerce_value
                return ev;
 
                case AST_Expression::EV_bool:
-               ev->u.fval = (ev->u.bval == I_TRUE) ? (float) 1.0 : (float) 0.0;
+               ev->u.fval = (ev->u.bval) ? (float) 1.0 : (float) 0.0;
                ev->et = AST_Expression::EV_float;
                return ev;
 
@@ -1039,7 +1044,7 @@ static AST_Expression::AST_ExprValue * coerce_value
                return ev;
 
                case AST_Expression::EV_bool:
-               ev->u.dval = (ev->u.bval == I_TRUE) ? 1.0 : 0.0;
+               ev->u.dval = (ev->u.bval) ? 1.0 : 0.0;
                ev->et = AST_Expression::EV_double;
                return ev;
 
@@ -1314,7 +1319,7 @@ static AST_Expression::AST_ExprValue * coerce_value
                return ev;
 
                case AST_Expression::EV_bool:
-               ev->u.oval = (ev->u.bval == I_FALSE) ? 1 : 0;
+               ev->u.oval = (ev->u.bval == false) ? 1 : 0;
 
                ev->et = AST_Expression::EV_octet;
 
@@ -1854,7 +1859,7 @@ AST_Expression::eval_symbol(AST_Expression::EvalKind ek)
    /*
     * Do lookup
     */
-   d = s->lookup_by_name(pd_n, I_TRUE);
+   d = s->lookup_by_name(pd_n, true);
 
    if (d == NULL)
    {
@@ -2068,77 +2073,77 @@ long
 AST_Expression::operator==(AST_Expression *vc)
 {
    if (pd_ec != vc->ec())
-      return I_FALSE;
+      return false;
 
    evaluate(EK_const);
 
    vc->evaluate(EK_const);
 
    if (pd_ev == NULL || vc->ev() == NULL)
-      return I_FALSE;
+      return false;
 
    if (pd_ev->et != vc->ev()->et)
-      return I_FALSE;
+      return false;
 
    switch (pd_ev->et)
    {
 
          case EV_short:
-         return (pd_ev->u.sval == vc->ev()->u.sval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.sval == vc->ev()->u.sval) ? true : false;
 
          case EV_ushort:
-         return (pd_ev->u.usval == vc->ev()->u.usval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.usval == vc->ev()->u.usval) ? true : false;
 
          case EV_long:
-         return (pd_ev->u.lval == vc->ev()->u.lval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.lval == vc->ev()->u.lval) ? true : false;
 
          case EV_ulong:
-         return (pd_ev->u.ulval == vc->ev()->u.ulval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.ulval == vc->ev()->u.ulval) ? true : false;
 
          case EV_float:
-         return (pd_ev->u.fval == vc->ev()->u.fval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.fval == vc->ev()->u.fval) ? true : false;
 
          case EV_double:
-         return (pd_ev->u.dval == vc->ev()->u.dval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.dval == vc->ev()->u.dval) ? true : false;
 
          case EV_char:
-         return (pd_ev->u.cval == vc->ev()->u.cval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.cval == vc->ev()->u.cval) ? true : false;
 
          case EV_wchar:
-         return (pd_ev->u.cwval == vc->ev()->u.cwval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.cwval == vc->ev()->u.cwval) ? true : false;
 
          case EV_octet:
-         return (pd_ev->u.oval == vc->ev()->u.oval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.oval == vc->ev()->u.oval) ? true : false;
 
          case EV_bool:
-         return (pd_ev->u.lval == vc->ev()->u.lval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.lval == vc->ev()->u.lval) ? true : false;
 
          case EV_string:
 
          if (pd_ev->u.strval == NULL)
          {
             if (vc->ev()->u.strval == NULL)
-               return I_TRUE;
+               return true;
             else
-               return I_FALSE;
+               return false;
          }
          else if (vc->ev()->u.strval == NULL)
-            return I_FALSE;
+            return false;
          else
-            return (pd_ev->u.strval == vc->ev()->u.strval) ? I_TRUE : I_FALSE;
+            return (pd_ev->u.strval == vc->ev()->u.strval) ? true : false;
 
          case EV_wstring:
          if (pd_ev->u.wstrval == NULL)
          {
             if (vc->ev()->u.wstrval == NULL)
-               return I_TRUE;
+               return true;
             else
-               return I_FALSE;
+               return false;
          }
          else if (vc->ev()->u.wstrval == NULL)
-            return I_FALSE;
+            return false;
          else
-            return (pd_ev->u.wstrval == vc->ev()->u.wstrval) ? I_TRUE : I_FALSE;
+            return (pd_ev->u.wstrval == vc->ev()->u.wstrval) ? true : false;
 
          case EV_any:
 
@@ -2147,7 +2152,7 @@ AST_Expression::operator==(AST_Expression *vc)
          case EV_none:
 
          default:
-         return I_FALSE;
+         return false;
    }
 }
 
@@ -2155,77 +2160,77 @@ long
 AST_Expression::compare(AST_Expression *vc)
 {
    if (pd_ec != vc->ec())
-      return I_FALSE;
+      return false;
 
    evaluate(EK_const);
 
    vc->evaluate(EK_const);
 
    if (pd_ev == NULL || vc->ev() == NULL)
-      return I_FALSE;
+      return false;
 
    if (pd_ev->et != vc->ev()->et)
-      return I_FALSE;
+      return false;
 
    switch (pd_ev->et)
    {
 
          case EV_short:
-         return (pd_ev->u.sval == vc->ev()->u.sval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.sval == vc->ev()->u.sval) ? true : false;
 
          case EV_ushort:
-         return (pd_ev->u.usval == vc->ev()->u.usval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.usval == vc->ev()->u.usval) ? true : false;
 
          case EV_long:
-         return (pd_ev->u.lval == vc->ev()->u.lval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.lval == vc->ev()->u.lval) ? true : false;
 
          case EV_ulong:
-         return (pd_ev->u.ulval == vc->ev()->u.ulval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.ulval == vc->ev()->u.ulval) ? true : false;
 
          case EV_float:
-         return (pd_ev->u.fval == vc->ev()->u.fval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.fval == vc->ev()->u.fval) ? true : false;
 
          case EV_double:
-         return (pd_ev->u.dval == vc->ev()->u.dval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.dval == vc->ev()->u.dval) ? true : false;
 
          case EV_char:
-         return (pd_ev->u.cval == vc->ev()->u.cval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.cval == vc->ev()->u.cval) ? true : false;
 
          case EV_wchar:
-         return (pd_ev->u.cwval == vc->ev()->u.cwval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.cwval == vc->ev()->u.cwval) ? true : false;
 
          case EV_octet:
-         return (pd_ev->u.oval == vc->ev()->u.oval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.oval == vc->ev()->u.oval) ? true : false;
 
          case EV_bool:
-         return (pd_ev->u.lval == vc->ev()->u.lval) ? I_TRUE : I_FALSE;
+         return (pd_ev->u.lval == vc->ev()->u.lval) ? true : false;
 
          case EV_string:
 
          if (pd_ev->u.strval == NULL)
          {
             if (vc->ev()->u.strval == NULL)
-               return I_TRUE;
+               return true;
             else
-               return I_FALSE;
+               return false;
          }
          else if (vc->ev()->u.strval == NULL)
-            return I_FALSE;
+            return false;
          else
-            return (pd_ev->u.strval == vc->ev()->u.strval) ? I_TRUE : I_FALSE;
+            return (pd_ev->u.strval == vc->ev()->u.strval) ? true : false;
 
          case EV_wstring:
          if (pd_ev->u.wstrval == NULL)
          {
             if (vc->ev()->u.wstrval == NULL)
-               return I_TRUE;
+               return true;
             else
-               return I_FALSE;
+               return false;
          }
          else if (vc->ev()->u.wstrval == NULL)
-            return I_FALSE;
+            return false;
          else
-            return (pd_ev->u.wstrval == vc->ev()->u.wstrval) ? I_TRUE : I_FALSE;
+            return (pd_ev->u.wstrval == vc->ev()->u.wstrval) ? true : false;
 
          case EV_any:
 
@@ -2234,7 +2239,7 @@ AST_Expression::compare(AST_Expression *vc)
          case EV_none:
 
          default:
-         return I_FALSE;
+         return false;
    }
 }
 
@@ -2322,7 +2327,7 @@ dump_expr_val(ostream &o, AST_Expression::AST_ExprValue *ev)
          break;
 
       case AST_Expression::EV_bool:
-         o << ((ev->u.bval == I_TRUE) ? "TRUE" : "FALSE");
+         o << ((ev->u.bval) ? "true" : "false");
          break;
 
       case AST_Expression::EV_string:

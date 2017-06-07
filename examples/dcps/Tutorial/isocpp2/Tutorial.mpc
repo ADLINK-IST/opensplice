@@ -1,0 +1,59 @@
+
+project (ISO_Cxx_v2*Types) : _repetitive_isocpp2_example_types {
+}
+
+project (ISO_Cxx_v2*Impl) : ospl_dcpsisocpp2, _example_dcps_impl_lib, c_or_cplusplus_example {
+    after += ISO_Cxx_v2*Types
+    libs += ISO_Cxx_v2*Types
+    libpaths += .
+    requires += dcps_isocpp_example
+    Source_Files {
+        Entities.cpp
+        Chatter_impl.cpp
+        MessageBoard_impl.cpp
+        UserLoad_impl.cpp
+    }
+
+    Documentation_Files {
+        ../../.
+    }
+}
+
+project (ISO_Cxx_v2*Chatter) : ospl_dcpsisocpp2, c_or_cplusplus_example {
+    libpaths += .
+    requires += dcps_isocpp_example
+    after += ISO_Cxx_v2*Impl
+    libs += ISO_Cxx_v2*Impl ISO_Cxx_v2*Types
+    Header_Files {
+    }
+
+    Source_Files {
+        Chatter.cpp
+    }
+}
+
+project (ISO_Cxx_v2*MessageBoard) : ospl_dcpsisocpp2, c_or_cplusplus_example {
+    libpaths += .
+    requires += dcps_isocpp_example
+    after += ISO_Cxx_v2*Impl
+    libs += ISO_Cxx_v2*Impl ISO_Cxx_v2*Types
+    Header_Files {
+    }
+
+    Source_Files {
+        MessageBoard.cpp
+    }
+}
+
+project (ISO_Cxx_v2*UserLoad) : ospl_dcpsisocpp2, c_or_cplusplus_example {
+    libpaths += .
+    requires += dcps_isocpp_example
+    after += ISO_Cxx_v2*Impl
+    libs += ISO_Cxx_v2*Impl ISO_Cxx_v2*Types
+    Header_Files {
+    }
+
+    Source_Files {
+        UserLoad.cpp
+    }
+}

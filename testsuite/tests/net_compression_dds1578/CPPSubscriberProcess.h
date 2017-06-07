@@ -20,7 +20,7 @@ char *getNetworkEntity()
    char *next;
 
    participants = cmx_participantAllParticipants
-      (cmx_participantNew (os_getenv ("OSPL_URI"), 0, "testParticipant", NULL));
+      (cmx_participantNew (NULL, "", 0, "testParticipant", NULL));
    netname = strstr (participants, "<name>networking</name>");
    if (netname == NULL)
    {

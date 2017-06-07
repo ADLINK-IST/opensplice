@@ -1,0 +1,16 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+get_libjsig
+
+startOSPL
+
+export LD_PRELOAD=$OSPL_JSIG
+
+java -jar saj5-protobuf-subscriber.jar &
+java -jar saj5-protobuf-publisher.jar
+
+sleep 4
+
+stopOSPL

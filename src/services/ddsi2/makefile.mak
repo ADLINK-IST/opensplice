@@ -6,12 +6,17 @@ include	$(OSPL_HOME)/setup/makefiles/target.mak
 
 ##
 ## FIXME introduce LDLIBS_IN variable
-LDLIBS += -l$(DDS_CORE)
+LDLIBS += -l$(DDS_CORE) 
 LDLIBS += $(LDLIBS_NW)
 
 CPPFLAGS += -DOSPL_BUILD_DDSI2 -DMODEL_q_osplserModule_IMPLEMENTATION $(OSPL_OS_CPPFLAGS)
 
-CFLAGS  += $(SHCFLAGS) $(MTCFLAGS)
+CFLAGS  += $(SHCFLAGS)
+
+CFLAGS += $(CFLAGS_XSTRICT)
+#CFLAGS += $(CFLAGS_W_ERROR)
+#ddsi_ssl$(OBJ_POSTFIX) ddsi_tcp$(OBJ_POSTFIX) q_sockwaitset$(OBJ_POSTFIX): CFLAGS += $(CFLAGS_W_NOERROR)
+
 LDFLAGS += $(SHLDFLAGS)
 LDLIBS  += $(SHLDLIBS)
 
@@ -26,6 +31,8 @@ CINCS += -I$(OSPL_HOME)/src/utilities/include
 ## workaround until v__networkQueue.h has moved from code/ to include/
 CINCS += -I$(OSPL_HOME)/src/kernel/code
 CINCS += -I$(OSPL_HOME)/src/user/code
+CINCS += -I$(OSPL_HOME)/src/configuration/config/include
+
 
 #CINCS += -I"$(OPENSSL_HOME)/include"
 ifneq "$(WCECOMPAT)" ""

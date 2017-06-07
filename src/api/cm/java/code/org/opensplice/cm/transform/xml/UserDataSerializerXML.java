@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.transform.xml;
@@ -113,9 +121,10 @@ public class UserDataSerializerXML implements UserDataSerializer {
         String typeName = field.getTypeName();
 
         if ((typeName.equals("c_string")) ||
-                (typeName.equals("c_wstring")) ||
-                (typeName.startsWith("C_STRING<")) ||
-                (typeName.startsWith("C_WSTRING<"))) {
+            (typeName.equals("c_wstring")) ||
+            (typeName.startsWith("C_STRING<")) ||
+            (typeName.startsWith("C_WSTRING<")))
+        {
             this.serializeString(writer, nestedFieldName, data);
         } else { // Not a String collection.
             maxSize = field.getMaxSize();
@@ -140,11 +149,52 @@ public class UserDataSerializerXML implements UserDataSerializer {
                     writer.write("<size>" + size + "</size>");
                 }
                 /* Now, fill up the elements. */
+                MetaField subType = field.getSubType();
+                if (size > 0) {
+                    if (subType instanceof MetaPrimitive) {
+                        String values = data.getFieldValue(nestedFieldName);
+                        if (values != null) { // collection is in the alternate
+                                              // "[val1, val2,.., valn]" form
+                                              // with n <=> size
+                            StringTokenizer tokenizer = new StringTokenizer(
+                                    values.substring(1, values.length() - 1),
+                                    ",");
+                            int i;
+                            for (i = 0; i < size && tokenizer.hasMoreTokens(); i++) {
+                                String token = tokenizer.nextToken();
+                                writer.write("<element>" + token + "</element>");
+                            }
+                            if (i < size) { // number of tokens found in less
+                                            // than the given size
+                                String subTypeName = subType.getTypeName();
+                                String defaultValue;
+                                if ("c_bool".equals(subTypeName)) {
+                                    defaultValue = "TRUE";
+                                } else if ("c_char".equals(subTypeName)) {
+                                    defaultValue = "a";
+                                } else if ("c_voidp".equals(subTypeName)) {
+                                    defaultValue = "NULL";
+                                } else {
+                                    defaultValue = "0";
+                                }
+
+                                // fill in default values for missing elements
+                                for (int j = i; j < size; j++) {
+                                    writer.write("<element>" + defaultValue
+                                            + "</element>");
+                                }
+                            }
+                            return;
+                        }
+                    }
+                }
+
                 for (int i = 0; i < size; i++) {
                     writer.write("<element>");
                     this.serializeType(writer,
                             getCollectionFieldName(nestedFieldName, i),
-                            field.getSubType(), data, false);
+                            subType, data, false);
+
                     writer.write("</element>");
                 }
             }
@@ -212,11 +262,11 @@ public class UserDataSerializerXML implements UserDataSerializer {
             String typeName = ((MetaPrimitive) mf).getTypeName();
 
             if ("c_bool".equals(typeName)) {
-                    value = "TRUE";
+                value = "TRUE";
             } else if ("c_char".equals(typeName)) {
-                    value = "a";
+                value = "a";
             } else if ("c_voidp".equals(typeName)) {
-                    value = "NULL";
+                value = "NULL";
             } else {
                 value = "0";
             }
@@ -354,9 +404,10 @@ public class UserDataSerializerXML implements UserDataSerializer {
                 String typeName = typeField.getTypeName();
 
                 if ((typeName.equals("c_string")) ||
-                        (typeName.equals("c_wstring")) ||
-                        (typeName.startsWith("C_STRING<")) ||
-                        (typeName.startsWith("C_WSTRING<"))) {
+                    (typeName.equals("c_wstring")) ||
+                    (typeName.startsWith("C_STRING<")) ||
+                    (typeName.startsWith("C_WSTRING<")))
+                {
                     value = this.getSerializedStringCollection(nestedFieldName,
                             colType, data);
                     isString = true;
@@ -422,9 +473,10 @@ public class UserDataSerializerXML implements UserDataSerializer {
         String temp = null;
 
         if ((typeName.equals("c_string")) ||
-                (typeName.equals("c_wstring")) ||
-                (typeName.startsWith("C_STRING<")) ||
-                (typeName.startsWith("C_WSTRING<"))) {
+            (typeName.equals("c_wstring")) ||
+            (typeName.startsWith("C_STRING<")) ||
+            (typeName.startsWith("C_WSTRING<")))
+        {
             String strData = data.getFieldValue(nestedFieldName);
             result = strData.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
         } else if (colType.getSubType() instanceof MetaCollection) {
@@ -517,7 +569,6 @@ public class UserDataSerializerXML implements UserDataSerializer {
         StringTokenizer tokenizer;
         String typeName;
         String value;
-        String token;
         MetaField subType = seqType.getSubType();
 
         if (subType instanceof MetaPrimitive) {
@@ -560,6 +611,8 @@ public class UserDataSerializerXML implements UserDataSerializer {
                         size = tokenizer.countTokens();
                     }
                 }
+            } else {
+                size = data.getCollectionRealSize(nestedFieldName);
             }
         } else if ((subType instanceof MetaStruct) ||
                    (subType instanceof MetaUnion ) ) {
@@ -568,7 +621,7 @@ public class UserDataSerializerXML implements UserDataSerializer {
             LinkedHashSet<String> fields = data.getFieldNames();
             boolean found = true;
             while (found) {
-                String entryFieldName = nestedFieldName + "[" + size + "]";
+                String entryFieldName = getCollectionFieldName(nestedFieldName, size);
                 boolean fieldExists = false;
                 Iterator<String> it = fields.iterator();
                 while (!fieldExists && it.hasNext()) {
@@ -629,14 +682,13 @@ public class UserDataSerializerXML implements UserDataSerializer {
                 }
             } else {
                 // also check for the alternative notation
-                value = data.getFieldValue(nestedFieldName + "[0]");
+                value = data.getFieldValue(getCollectionFieldName(nestedFieldName, 0));
                 if (value != null) {
                     List<String> values = new ArrayList<String>();
                     int index = 1;
                     while (value != null) {
                         values.add(value);
-                        value = data.getFieldValue(nestedFieldName + "["
-                                + index + "]");
+                        value = data.getFieldValue(getCollectionFieldName(nestedFieldName, index));
                         index++;
                     }
                     writer.write("<size>" + values.size() + "</size>");
@@ -680,6 +732,22 @@ public class UserDataSerializerXML implements UserDataSerializer {
                 } else {
                     writer.write("&lt;NULL&gt;");
                 }
+            } else {
+                /*
+                 * If subtype collection is not a string, then it must be either another sequence or array.
+                 * In that case, ascertain the size of the parent (this) collection and write out element tags,
+                 * and pass the nested field name plus an index to walkType.
+                 */
+                int size = data.getCollectionRealSize(nestedFieldName);
+                writer.write("<size>" + size + "</size>");
+                if (size != 0) {
+                    for (int i = 0; i < size; i++) {
+                        writer.write("<element>");
+                        serializeType(writer, getCollectionFieldName(nestedFieldName, i)
+                                ,subType, data, false);
+                        writer.write("</element>");
+                    }
+                }
             }
         } else if (subType instanceof MetaStruct) {
             int size = 0;
@@ -689,7 +757,7 @@ public class UserDataSerializerXML implements UserDataSerializer {
             LinkedHashSet<String> fields = data.getFieldNames();
             boolean found = true;
             while (found) {
-                String entryFieldName = nestedFieldName + "[" + size + "]";
+                String entryFieldName = getCollectionFieldName(nestedFieldName, size);
                 boolean fieldExists = false;
                 Iterator<String> it = fields.iterator();
                 while (!fieldExists && it.hasNext()) {
@@ -707,11 +775,7 @@ public class UserDataSerializerXML implements UserDataSerializer {
                     found = false;
                 }
             }
-            if (size == 0) {
-                writer.write("&lt;NULL&gt;");
-            } else {
-                writer.write("<size>" + size + "</size>");
-            }
+            writer.write("<size>" + size + "</size>");
             writer.write(localWriter.toString());
         } else if (subType instanceof MetaUnion) {
             int size = 0;
@@ -721,7 +785,7 @@ public class UserDataSerializerXML implements UserDataSerializer {
             LinkedHashSet<String> fields = data.getFieldNames();
             boolean found = true;
             while (found) {
-                String entryFieldName = nestedFieldName + "[" + size + "]";
+                String entryFieldName = getCollectionFieldName(nestedFieldName, size);
                 boolean fieldExists = false;
                 Iterator<String> it = fields.iterator();
                 while (!fieldExists && it.hasNext()) {

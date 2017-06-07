@@ -29,7 +29,7 @@ namespace dds
 namespace domain
 {
 
-class DomainParticipantListener :
+class OMG_DDS_API DomainParticipantListener :
     public virtual dds::pub::PublisherListener,
     public virtual dds::sub::SubscriberListener,
     public virtual dds::topic::AnyTopicListener
@@ -39,7 +39,7 @@ public:
 };
 
 
-class NoOpDomainParticipantListener :
+class OMG_DDS_API NoOpDomainParticipantListener :
     public virtual DomainParticipantListener,
     public virtual dds::pub::NoOpPublisherListener,
     public virtual dds::sub::NoOpSubscriberListener,

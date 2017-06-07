@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. OpenSplice Networking Options &mdash; OpenSplice Evaluation and Benchmarking Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Evaluation and Benchmarking Guide" href="index.html" />
+    <link rel="next" title="6. Benchmarking OpenSplice: Decision Trees" href="decisions.html" />
+    <link rel="prev" title="4. OpenSplice Architectural Modes" href="architectural.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="decisions.html" title="6. Benchmarking OpenSplice: Decision Trees"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="architectural.html" title="4. OpenSplice Architectural Modes"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="opensplice-networking-options">
+<span id="id1"></span><h1>5. OpenSplice Networking Options<a class="headerlink" href="#opensplice-networking-options" title="Permalink to this headline">¶</a></h1>
+<p>OpenSplice Enterprise provides several networking options for the
+delivery of DDS data between nodes. The networking service selection
+is largely transparent to the user; the difference is observed
+in the CPU consumption, networking load, and ultimately how fast and
+efficiently the data is delivered between nodes. The most applicable
+service is dependent on the requirements of the use case.</p>
+<p><strong>OpenSplice DDSI</strong> is the industry standard protocol providing vendor
+interoperability that operates using a typed &#8216;pull&#8217; style model.</p>
+<p><strong>OpenSplice RTNetworking</strong> is an alternative to the DDSI wire protocol.
+RTNetworking uses a type-less &#8216;push&#8217; style model in
+contrast to DDSI and is often the more performant, scalable option.
+RTNetworking also offers prioritization of network traffic via
+&amp;lsquo;channels&amp;rsquo;, partitioning to separate data flows and
+optional compression for low-bandwidth environments.
+<strong>OpenSplice SecureRTNetworking</strong> provides these features together
+with encryption and access control.</p>
+<p><strong>OpenSplice DDSI2E</strong> is the &#8216;enhanced&#8217; version of the
+interoperable service. DDSI2E offers the benefits of the DDSI
+protocol (such as its automatic unicast delivery in the case of there
+being a single subscribing endpoint), together with some of the
+performance features of the RTNetworking service such as channels,
+partitioning and encryption.</p>
+<div class="section" id="how-to-select-the-networking-protocol">
+<h2>5.1. How to select the Networking Protocol<a class="headerlink" href="#how-to-select-the-networking-protocol" title="Permalink to this headline">¶</a></h2>
+<p>As with the architectural deployment choice, the selection of the
+networking service is described by the XML configuration file. Note
+that this choice is independent of and orthogonal to the
+architectural deployment: you can have single process or shared
+memory with any of the networking service protocols.</p>
+<ul class="simple">
+<li>To run with a <strong>DDSI</strong> service, set the <tt class="docutils literal"><span class="pre">OSPL_URIvariable</span></tt> to refer
+to a DDSI xml file such as <tt class="docutils literal"><span class="pre">ospl_sp_ddsi.xml</span></tt> or <tt class="docutils literal"><span class="pre">ospl_shmem_ddsi.xml</span></tt>.</li>
+<li>To run with an <strong>RTNetworking</strong> service, set the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable to
+refer to an RTNetworking xml file such as <tt class="docutils literal"><span class="pre">ospl_sp_nativeRT.xml</span></tt> or
+<tt class="docutils literal"><span class="pre">ospl_shmem_nativeRT.xml</span></tt>.</li>
+<li>To run with a <strong>SecureRTNetworking</strong> service, set the <tt class="docutils literal"><span class="pre">OSPL_URIvariable</span></tt> to
+refer to the <tt class="docutils literal"><span class="pre">ospl_shem_secure_nativeRT.xml</span></tt> SecureRTNetworking xml
+file.</li>
+<li>To run with a  <strong>DDSI2E</strong> deployment, set the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable to refer
+to a DDSI2E xml file such as <tt class="docutils literal"><span class="pre">ospl_sp_ddsi2e.xml</span></tt> or
+<tt class="docutils literal"><span class="pre">ospl_shmem_ddsi2e.xml</span></tt>.</li>
+</ul>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that by default, the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> environment variable refers to a
+<em>DDSI</em> configuration, so to see the extra performance and scalability
+benefits of OpenSplice DDS&#8217;s RTNetworking or DDSI2E it is
+necessary to switch from the default.</dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. OpenSplice Networking Options</a><ul>
+<li><a class="reference internal" href="#how-to-select-the-networking-protocol">5.1. How to select the Networking Protocol</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="architectural.html"
+                        title="previous chapter">4. OpenSplice Architectural Modes</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="decisions.html"
+                        title="next chapter">6. Benchmarking OpenSplice: Decision Trees</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/networking.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="decisions.html" title="6. Benchmarking OpenSplice: Decision Trees"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="architectural.html" title="4. OpenSplice Architectural Modes"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

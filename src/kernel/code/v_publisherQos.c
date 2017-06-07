@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -26,18 +34,22 @@ static c_bool
 v_publisherQosValidValues(
     v_publisherQos qos)
 {
-    int valuesOk;
+    c_ulong valuesNok;
 
     /* no typechecking, since qos might be allocated on heap! */
-    valuesOk = 1;
+    valuesNok = 0;
     if (qos != NULL) {
         /* value checking */
-        valuesOk &= v_presentationPolicyValid(qos->presentation);
-        valuesOk &= v_entityFactoryPolicyValid(qos->entityFactory);
-        valuesOk &= v_groupDataPolicyValid(qos->groupData);
+        valuesNok |= (c_ulong) (!v_presentationPolicyIValid(qos->presentation)) << V_PRESENTATIONPOLICY_ID;
+        valuesNok |= (c_ulong)(!v_entityFactoryPolicyIValid(qos->entityFactory)) << V_ENTITYFACTORYPOLICY_ID;
+        valuesNok |= (c_ulong)(!v_groupDataPolicyIValid(qos->groupData)) << V_GROUPDATAPOLICY_ID;
     }
 
-    return (valuesOk?TRUE:FALSE);
+    if (valuesNok) {
+        v_policyReportInvalid(valuesNok);
+    }
+
+    return (valuesNok) ? FALSE : TRUE;
 }
 
 /**************************************************************
@@ -49,44 +61,41 @@ v_publisherQosNew(
     v_publisherQos template)
 {
     v_publisherQos q;
-    c_type type;
     c_base base;
 
     assert(kernel != NULL);
     assert(C_TYPECHECK(kernel,v_kernel));
 
-    if (v_publisherQosValidValues(template)) {
-        base = c_getBase(c_object(kernel));
-        q = v_publisherQos(v_qosCreate(kernel,V_PUBLISHER_QOS));
-        if (q != NULL) {
-            if (template != NULL) {
-
-                q->groupData.size = template->groupData.size;
-                if (template->groupData.size > 0) {
-                    type = c_octet_t(base);
-                    q->groupData.value = c_arrayNew(type,template->groupData.size);
-                    c_free(type);
-                    memcpy(q->groupData.value,template->groupData.value,template->groupData.size);
+    base = c_getBase(c_object(kernel));
+        q = v_publisherQos(v_qosCreate(base,V_PUBLISHER_QOS));
+    if (q != NULL) {
+        if (template != NULL) {
+            q->groupData.v.size = template->groupData.v.size;
+            if (template->groupData.v.size > 0) {
+                q->groupData.v.value = c_arrayNew_s(c_octet_t(base),(c_ulong)template->groupData.v.size);
+                if (q->groupData.v.value) {
+                    memcpy(q->groupData.v.value,template->groupData.v.value,(c_ulong)template->groupData.v.size);
                 } else {
-                    q->groupData.value = NULL;
+                    OS_REPORT(OS_ERROR, "v_publisherQosNew", V_RESULT_OUT_OF_MEMORY,
+                              "Failed to allocate group_data policy of publisher QoS.");
+                    c_free(q);
+                    return NULL;
                 }
-                q->partition     = c_stringNew(base,template->partition);
-                q->presentation  = template->presentation;
-                q->entityFactory = template->entityFactory;
             } else {
-                q->groupData.value                           = NULL;
-                q->groupData.size                            = 0;
-                q->presentation.access_scope                 = V_PRESENTATION_INSTANCE;
-                q->presentation.coherent_access              = FALSE;
-                q->presentation.ordered_access               = FALSE;
-                q->partition                                 = c_stringNew(base, "");
-                q->entityFactory.autoenable_created_entities = TRUE;
+                q->groupData.v.value = NULL;
             }
+            q->partition.v   = c_stringNew(base,template->partition.v);
+            q->presentation  = template->presentation;
+            q->entityFactory = template->entityFactory;
+        } else {
+            q->groupData.v.value                           = NULL;
+            q->groupData.v.size                            = 0;
+            q->presentation.v.access_scope                 = V_PRESENTATION_INSTANCE;
+            q->presentation.v.coherent_access              = FALSE;
+            q->presentation.v.ordered_access               = FALSE;
+            q->partition.v                                 = c_stringNew(base, "");
+            q->entityFactory.v.autoenable_created_entities = TRUE;
         }
-    } else {
-        OS_REPORT(OS_ERROR, "v_publisherQosNew", 0,
-            "PublisherQos not created: inconsistent qos");
-        q = NULL;
     }
 
     return q;
@@ -103,72 +112,63 @@ v_publisherQosFree(
  * Protected functions
  **************************************************************/
 v_result
-v_publisherQosSet(
-    v_publisherQos q,
+v_publisherQosCompare (
+    v_publisherQos _this,
     v_publisherQos tmpl,
     c_bool enable,
     v_qosChangeMask *changeMask)
 {
     v_qosChangeMask cm;
     v_result result;
-    c_type type;
-    c_base base;
 
-    base = c_getBase(c_object(q));
     cm = 0;
-    if ((q != NULL) && (tmpl != NULL)) {
+    if ((_this != NULL) && (tmpl != NULL) && (changeMask != NULL)) {
         if (v_publisherQosValidValues(tmpl)) {
-            /* no consistency check needed */
-            /* built change mask */
-            if (!v_presentationPolicyEqual(q->presentation, tmpl->presentation)) {
+            if (!v_presentationPolicyIEqual(_this->presentation, tmpl->presentation)) {
                 cm |= V_POLICY_BIT_PRESENTATION;
             }
-            if (!v_partitionPolicyEqual(q->partition, tmpl->partition)) {
+            if (!v_partitionPolicyIEqual(_this->partition, tmpl->partition)) {
                 cm |= V_POLICY_BIT_PARTITION;
             }
-            if (!v_groupDataPolicyEqual(q->groupData, tmpl->groupData)) {
+            if (!v_groupDataPolicyIEqual(_this->groupData, tmpl->groupData)) {
                 cm |= V_POLICY_BIT_GROUPDATA;
             }
-            if (!v_entityFactoryPolicyEqual(q->entityFactory, tmpl->entityFactory)) {
+            if (!v_entityFactoryPolicyIEqual(_this->entityFactory, tmpl->entityFactory)) {
                 cm |= V_POLICY_BIT_ENTITYFACTORY;
             }
             /* check whether immutable policies are changed */
             if (((cm & immutableMask) != 0) && enable) {
+                v_policyReportImmutable(cm, immutableMask);
                 result = V_RESULT_IMMUTABLE_POLICY;
             } else {
-                /* set new policies */
-                q->presentation = tmpl->presentation;
-                q->entityFactory = tmpl->entityFactory;
-                q->partition = c_stringNew(base, tmpl->partition);
-                if (cm & V_POLICY_BIT_GROUPDATA) {
-                    c_free(q->groupData.value);
-                    q->groupData.size = tmpl->groupData.size;
-                    if (tmpl->groupData.size > 0) {
-                        type = c_octet_t(base);
-                        q->groupData.value = c_arrayNew(type,tmpl->groupData.size);
-                        c_free(type);
-                        memcpy(q->groupData.value,tmpl->groupData.value,tmpl->groupData.size);
-                    } else {
-                        q->groupData.value = NULL;
-                    }
-                }
+                *changeMask = cm;
                 result = V_RESULT_OK;
             }
-
         } else {
             result = V_RESULT_ILL_PARAM;
         }
     } else {
         result = V_RESULT_ILL_PARAM;
     }
-
-    if (changeMask != NULL) {
-        *changeMask = cm;
-    }
-
     return result;
 }
 
 /**************************************************************
  * Public functions
  **************************************************************/
+v_result
+v_publisherQosCheck(
+    v_publisherQos _this)
+{
+    v_result result = V_RESULT_OK;
+
+    if (_this) {
+        if (!v_publisherQosValidValues(_this)) {
+            result = V_RESULT_ILL_PARAM;
+            OS_REPORT(OS_ERROR, "v_publisherQosCheck", result,
+                "PublisherQoS is invalid.");
+        }
+    }
+
+    return result;
+}

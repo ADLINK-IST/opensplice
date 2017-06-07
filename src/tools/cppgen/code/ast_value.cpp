@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -18,18 +26,18 @@
  */
 AST_Value::AST_Value ()
 : 
-   pd_abstract (I_FALSE),
+   pd_abstract (false),
    pd_value_inherits (NULL),
    pd_n_value_inherits (0),
-   pd_truncatable (I_FALSE),
-   pd_custom (I_FALSE)
+   pd_truncatable (false),
+   pd_custom (false)
 {}
 
 AST_Value::AST_Value
 (
-   idl_bool abstract,
-   idl_bool custom,
-   idl_bool truncatable,
+   bool abstract,
+   bool custom,
+   bool truncatable,
    UTL_ScopedName *n,
    AST_Value **ih,
    long nih,
@@ -40,7 +48,7 @@ AST_Value::AST_Value
    : AST_Decl (AST_Decl::NT_value, n, p),
      AST_Type (AST_Decl::NT_value, n, p),
      UTL_Scope (AST_Decl::NT_value, n, p),
-     AST_Interface (I_TRUE, n, supports, nsupports, p),
+     AST_Interface (true, false, n, supports, nsupports, p),
      pd_abstract (abstract),
      pd_value_inherits (ih),
      pd_n_value_inherits (nih),
@@ -108,7 +116,7 @@ AST_StateMember *AST_Value::fe_add_state_member(AST_StateMember *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -153,7 +161,7 @@ AST_Initializer *AST_Value::fe_add_initializer(AST_Initializer *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -166,7 +174,7 @@ AST_Value::dump(ostream &o)
 {
    long i;
 
-   o << (local() == I_TRUE ? "local" : "") << " valuetype ";
+   o << (local() == true ? "local" : "") << " valuetype ";
    local_name()->dump(o);
    o << " ";
 
@@ -195,27 +203,27 @@ AST_Value::dump(ostream &o)
  * Data accessors
  */
 
-idl_bool AST_Value::is_abstract ()
+bool AST_Value::is_abstract ()
 {
    return pd_abstract;
 }
 
-idl_bool AST_Value::is_custom ()
+bool AST_Value::is_custom ()
 {
    return pd_custom;
 }
 
-idl_bool AST_Value::is_truncatable ()
+bool AST_Value::is_truncatable ()
 {
    return pd_truncatable;
 }
 
-void AST_Value::set_custom (idl_bool v)
+void AST_Value::set_custom (bool v)
 {
    pd_custom = v;
 }
 
-void AST_Value::set_truncatable (idl_bool v)
+void AST_Value::set_truncatable (bool v)
 {
    pd_truncatable = v;
 }

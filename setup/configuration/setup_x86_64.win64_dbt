@@ -1,0 +1,2 @@
+# "Tests we don't build for this platform.
+unset_var INCLUDE_DBT_TOOLS_SHMDUMP #see OSPL-3073

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "os_heap.h"
@@ -167,7 +175,7 @@ idl_isStacDefFor(
 {
     idl_stacDef stacDef = idl_stacDefDefGet();
     idl_stacMap stacMap;
-    c_long stacMapIdx;
+    c_ulong stacMapIdx;
     c_iter stacList;
     os_uint32 stacListSize;
     os_uint32 stacIdx;
@@ -248,7 +256,7 @@ idl_stacDef_isStacDefined(
     idl_scope tmpScope;
     os_char* containingElement;
     idl_basicType basic;
-    c_long maxlen;
+    c_ulong maxlen;
 
     /* resolve any type defs */
     typeDereffered = idl_typeDefResolveFully(typeSpec);
@@ -295,7 +303,7 @@ idl_stacListItemIsDefined (
     const char *typeName,
     const char* itemName)
 {
-    c_long li;
+    c_ulong li;
     c_long si;
     idl_stacMap stacMap;
     c_metaObject typeScope;
@@ -568,7 +576,7 @@ idl_stacDefConvertAll(
                 structure->members[memberIndex] = newMember;
                 c_iterInsert(replaceData->replacedMembers, member);
                 replacedIndex = os_malloc(sizeof(os_uint32));
-                *replacedIndex = memberIndex;
+                *replacedIndex = (os_uint32)memberIndex;
                 c_iterInsert(replaceData->replacedIndexes, replacedIndex);
             }
             c_iterInsert(replaceInfo, replaceData);
@@ -659,7 +667,7 @@ idl_stacDefCanStacBeAppliedToMember(
     if(c_baseObject(dereffedType)->kind == M_COLLECTION)
     {
         /* Can be a string or an array or a sequence */
-        if((c_collectionType(dereffedType)->kind == C_STRING))
+        if(c_collectionType(dereffedType)->kind == OSPL_C_STRING)
         {
             if((c_collectionType(dereffedType)->maxSize != 0))
             {
@@ -667,14 +675,9 @@ idl_stacDefCanStacBeAppliedToMember(
                 stacCanBeApplied = OS_TRUE;
             }
         }
-        else if((c_collectionType(dereffedType)->kind == C_ARRAY))
+        else if(c_collectionType(dereffedType)->kind == OSPL_C_ARRAY)
         {
             /* bounded string embedded within arrays are allowed, recurse deeper */
-            stacCanBeApplied = idl_stacDefCanStacBeAppliedToMember(c_collectionType(dereffedType)->subType);
-        }
-        else if((c_collectionType(dereffedType)->kind == C_SEQUENCE))
-        {
-            /* bounded string embedded within sequences are allowed, recurse deeper */
             stacCanBeApplied = idl_stacDefCanStacBeAppliedToMember(c_collectionType(dereffedType)->subType);
         } /* else let memberIsStacOk remain false */
     }
@@ -698,11 +701,11 @@ idl_stacDefConvertStacApprovedMember(
     {
         o = c_metaObject(c_metaDefine(c_metaObject(structure), M_COLLECTION));
         /* Can be a string or an array or a sequence */
-        if((c_collectionType(dereffedOrgType)->kind == C_STRING))
+        if(c_collectionType(dereffedOrgType)->kind == OSPL_C_STRING)
         {
             if((c_collectionType(dereffedOrgType)->maxSize != 0))
             {
-                c_collectionType(o)->kind = C_ARRAY;
+                c_collectionType(o)->kind = OSPL_C_ARRAY;
                 c_collectionType(o)->subType = c_type(c_metaResolve(c_metaObject(structure), "c_char"));
                 /* increase maxSize with 1 to accomodate the '\0' char found in strings */
                 c_collectionType(o)->maxSize = c_collectionType(dereffedOrgType)->maxSize + 1;
@@ -722,9 +725,9 @@ idl_stacDefConvertStacApprovedMember(
                 exit(-2);
             }
         }
-        else if((c_collectionType(dereffedOrgType)->kind == C_ARRAY))
+        else if(c_collectionType(dereffedOrgType)->kind == OSPL_C_ARRAY)
         {
-            c_collectionType(o)->kind = C_ARRAY;
+            c_collectionType(o)->kind = OSPL_C_ARRAY;
             /* increase maxSize with 1 to accomodate the '\0' char found in strings */
             c_collectionType(o)->maxSize = c_collectionType(dereffedOrgType)->maxSize;
             c_collectionType(o)->subType = idl_stacDefConvertStacApprovedMember(structure, c_collectionType(dereffedOrgType)->subType);
@@ -734,9 +737,9 @@ idl_stacDefConvertStacApprovedMember(
                 c_metaObject(c_collectionType(o)->subType)->name,
                 c_collectionType(o)->maxSize/*use maxSize of new c_type, must be the same*/);
         }
-        else if((c_collectionType(dereffedOrgType)->kind == C_SEQUENCE))
+        else if(c_collectionType(dereffedOrgType)->kind == OSPL_C_SEQUENCE)
         {
-            c_collectionType(o)->kind = C_SEQUENCE;
+            c_collectionType(o)->kind = OSPL_C_SEQUENCE;
             /* increase maxSize with 1 to accomodate the '\0' char found in strings */
             c_collectionType(o)->maxSize = c_collectionType(dereffedOrgType)->maxSize;
             c_collectionType(o)->subType = idl_stacDefConvertStacApprovedMember(structure, c_collectionType(dereffedOrgType)->subType);
@@ -888,7 +891,7 @@ idl_stacDefFindMemberIndexByName(
         member = c_member(members[i]);
         if(0 == strcmp(c_specifier(member)->name, name))
         {
-            memberIndex = i;
+            memberIndex = (os_int32) i;
         }
     }
     return memberIndex;

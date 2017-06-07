@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
+#ifdef _WIN32
+	#include <Windows.h>
+#endif
 #ifdef TESTBUILD
     #include <QtTest/QtTest>
 #endif
@@ -74,6 +77,9 @@ int main(int argc, char *argv[])
             //Start publishing a circle with default QoS
             QTest::qExec(&shapes, argc, argv);
         #else
+				#ifdef _WIN32
+				FreeConsole();
+				#endif
                 shapes.show();
         #endif
         retval = app.exec();

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -15,6 +23,7 @@
 
 #include "u__user.h"
 #include "u_types.h"
+#include "u__usrReportPlugin.h"
 
 #define U_CONF_REPORTPLUGIN             "ReportPlugin"
 #define U_CONF_REPORTPLUGIN_LIBRARY     "Library"
@@ -26,95 +35,52 @@
 #define U_CONF_SERVICES_ONLY    "ServicesOnly"
 #define U_REPORTPLUGINS_MAX     (10)
 
-typedef struct u_reportPluginAdmin_s {
-    unsigned int size;
-    unsigned int length;
-    os_reportPlugin * reportArray;
-} *u_reportPluginAdmin;
-
-static u_reportPluginAdmin reportPluginAdmin = NULL;
-
-u_reportPluginAdmin
-u_reportPluginAdminNew(
-    unsigned int size)
-{
-    u_reportPluginAdmin admin = NULL;
-    unsigned int i;
-
-    admin = os_malloc(sizeof(struct u_reportPluginAdmin_s));
-    admin->reportArray = os_malloc(sizeof(os_reportPlugin) * size);
-
-    for (i = 0; i < size; i++) {
-      admin->reportArray[i] = NULL;
-    }
-
-    admin->size = size;
-    admin->length =0;
-
-    return admin;
-}
-
-u_result
-u_reportPluginAdminRegister (
-    u_reportPluginAdmin rPluginAdmin,
-    os_reportPlugin plugin)
-{
-    if (rPluginAdmin){
-        if (rPluginAdmin->length < rPluginAdmin->size){
-            rPluginAdmin->reportArray[rPluginAdmin->length++] = plugin;
-            return U_RESULT_OK;
-        }
-    }
-
-    return -1;
-}
 
 void
 u_reportPluginGetSuppressDefaultLogs (
-    cf_element reportPluginElement,
-    const c_char *attributeName,
-    c_bool *b)
+    const cf_element reportPluginElement,
+    const os_char *attributeName,
+    u_bool *b)
 {
     cf_data elementData;
     c_value value;
 
+    assert(reportPluginElement != NULL);
+
     elementData = cf_data(cf_elementChild(reportPluginElement, attributeName));
 
-    if (elementData != NULL)
-    {
+    if (elementData != NULL) {
         value = cf_dataValue(elementData);
 
-        if (os_strncasecmp(value.is.String, "TRUE", 4) == 0)
-        {
-	    *b = TRUE;
+        if (os_strncasecmp(value.is.String, "TRUE", 4) == 0) {
+            *b = TRUE;
         }
     }
 }
 
 
-c_bool
+u_bool
 u_usrReportPluginConfigElementAttributeString (
-    cf_element element,
+    const cf_element element,
     const char *attribName,
-    c_char **data)
+    os_char **data)
 {
     cf_attribute attrib;
     c_value attribValue;
-    c_bool result = FALSE;
+    u_bool result = FALSE;
+
+    assert(element != NULL);
 
     attrib = cf_elementAttribute (element, attribName);
 
-    if (attrib)
-    {
+    if (attrib) {
         attribValue = cf_attributeValue (attrib);
 
-        if (attribValue.kind == V_STRING)
-        {
+        if (attribValue.kind == V_STRING) {
             *data = attribValue.is.String;
             result = TRUE;
         }
     }
-
     return result;
  }
 
@@ -123,7 +89,9 @@ u_usrReportPluginConfigElementAttributeString (
 
 u_result
 u_usrReportPluginReadAndRegister (
-    cf_element config)
+    const cf_element config,
+    os_int32 domainId,
+	c_iter* reportPlugins)
 {
     cf_node child = NULL;
     cf_element cfgUsrReportPluginLibrary = NULL;
@@ -161,6 +129,7 @@ u_usrReportPluginReadAndRegister (
 
             while (child != NULL)
             {
+                result = FALSE;
                 if ((strcmp(cf_nodeGetName(child), U_CONF_REPORTPLUGIN)) == 0) {
                     cfgUsrReportPluginLibrary = cf_element(cf_elementChild(cf_element(child), U_CONF_REPORTPLUGIN_LIBRARY));
                     cfgUsrReportPluginInitialize = cf_element(cf_elementChild(cf_element(child), U_CONF_REPORTPLUGIN_INITIALIZE));
@@ -176,7 +145,7 @@ u_usrReportPluginReadAndRegister (
 
                         if (!result)
                         {
-                            OS_REPORT_1 (OS_ERROR, "u_usrReportPluginReadAndRegister", 0,
+                            OS_REPORT (OS_ERROR, "u_usrReportPluginReadAndRegister", U_RESULT_ILL_PARAM,
                                 "ReportPlugin library name invalid: %s", library);
                         }
                         else
@@ -200,7 +169,7 @@ u_usrReportPluginReadAndRegister (
 
                         if (!result)
                         {
-                            OS_REPORT_1 (OS_ERROR, "u_usrReportPluginReadAndRegister", 0,
+                            OS_REPORT (OS_ERROR, "u_usrReportPluginReadAndRegister", U_RESULT_INTERNAL_ERROR,
                             "ReportPlugin initialize method invalid: %s", reportInitialize);
                         }
                         else
@@ -242,46 +211,42 @@ u_usrReportPluginReadAndRegister (
                         /* but only if process is a service when plug-in is 'services only' */
                         if (pluginIsForservicesOnly && ! os_procIsOpenSpliceService())
                         {
-                            // OK - plug-in was service only; this is not a service: drop through
+                            /* OK - plug-in was service only; this is not a service: drop through */
                         }
                         else
                         {
-                            uResult = os_reportRegisterPlugin (libraryName,
+                            os_int32 iResult;
+                            iResult = os_reportRegisterPlugin (libraryName,
                                                             reportInitialize,
                                                             initializeArgument,
                                                             reportReport,
                                                             reportTypedReport,
                                                             reportFinalize,
                                                             suppressDefaultLogs,
+                                                            domainId,
                                                             &reportPlugin);
 
-                            if (uResult == 0)
+                            if (iResult == 0)
                             {
-                                if (reportPluginAdmin == NULL)
-                                {
-                                    reportPluginAdmin = u_reportPluginAdminNew (U_REPORTPLUGINS_MAX);
-                                }
-
-                                uResult = u_reportPluginAdminRegister (
-                                    reportPluginAdmin,
-                                    reportPlugin
-                                    );
+                            	*reportPlugins = c_iterInsert(*reportPlugins, reportPlugin);
                             }
                             else
                             {
-                                OS_REPORT(OS_ERROR, "u_usrReportPluginReadAndRegister", 0,
+                                uResult = U_RESULT_PRECONDITION_NOT_MET;
+                                OS_REPORT(OS_ERROR, "u_usrReportPluginReadAndRegister", result,
                                           "ReportPlugin registration failed");
 
-                                return U_RESULT_PRECONDITION_NOT_MET;
+                                return uResult;
                             }
                         }
                     }
                     else
                     {
-                        OS_REPORT(OS_ERROR, "u_usrReportPluginReadAndRegister", 0,
+                        uResult = U_RESULT_PRECONDITION_NOT_MET;
+                        OS_REPORT(OS_ERROR, "u_usrReportPluginReadAndRegister", result,
                                   "Load ReportPlugin failed");
 
-                        return U_RESULT_PRECONDITION_NOT_MET;
+                        return uResult;
                     }
                 }
 
@@ -296,15 +261,13 @@ u_usrReportPluginReadAndRegister (
 }
 
 void
-u_usrReportPluginUnregister ()
+u_usrReportPluginUnregister (c_iter reportPlugins)
 {
-    unsigned int i;
 
-    if (reportPluginAdmin != NULL){
-        for (i = 0; i < reportPluginAdmin->size; i++){
-            if (reportPluginAdmin->reportArray[i] != NULL) {
-                os_reportUnregisterPlugin (reportPluginAdmin->reportArray[i]);
-            }
-        }
+	os_reportPlugin plugin = c_iterTakeFirst(reportPlugins);
+
+    while (plugin != NULL){
+    	os_reportUnregisterPlugin (plugin);
+    	plugin = c_iterTakeFirst(reportPlugins);
     }
 }

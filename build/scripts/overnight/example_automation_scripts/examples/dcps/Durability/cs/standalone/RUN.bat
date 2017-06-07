@@ -1,5 +1,6 @@
 @echo OFF
-rmdir /S /Q C:\tmp\pstore
+IF EXIST C:\tmp\pstore rmdir /S /Q C:\tmp\pstore
+IF EXIST .\tmp\pstore rmdir /S /Q .\tmp\pstore
 
 set EXAMPLE_LANG=sacs
 

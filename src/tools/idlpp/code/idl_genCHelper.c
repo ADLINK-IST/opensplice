@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_genCHelper.h"
@@ -45,8 +53,8 @@ idl_cId (
 	if (strcmp(c_keywords[i], identifier) == 0) {
 	    /* If a keyword matches the specified identifier, prepend _c_ */
 	    /* QAC EXPECT 5007; will not use wrapper */
-	    cId = os_malloc((size_t)((int)strlen(identifier)+1+3));
-	    snprintf(cId, (size_t)((int)strlen(identifier)+1+3), "_c_%s", identifier);
+	    cId = os_malloc(strlen(identifier)+1+3);
+	    snprintf(cId, strlen(identifier)+1+3, "_c_%s", identifier);
 	    return cId;
 	}
     }
@@ -85,10 +93,7 @@ idl_scopeStackC(
                and the next scope name
              */
             /* QAC EXPECT 5007; will not use wrapper */
-            scopeStack = os_realloc(scopeStack, (size_t)(
-                             (int)strlen(scopeStack)+
-                             (int)strlen(scopeSepp)+
-                             (int)strlen(Id)+1));
+            scopeStack = os_realloc(scopeStack, strlen(scopeStack)+strlen(scopeSepp)+strlen(Id)+1);
             /* Concatenate the separator */
             /* QAC EXPECT 5007; will not use wrapper */
             os_strcat(scopeStack, scopeSepp);
@@ -105,10 +110,7 @@ idl_scopeStackC(
                and the user identifier
              */
             /* QAC EXPECT 5007; will not use wrapper */
-            scopeStack = os_realloc(scopeStack, (size_t)(
-                             (int)strlen(scopeStack)+
-                             (int)strlen(scopeSepp)+
-                             (int)strlen(Id)+1));
+            scopeStack = os_realloc(scopeStack, strlen(scopeStack)+strlen(scopeSepp)+strlen(Id)+1);
             /* Concatenate the separator */
             /* QAC EXPECT 5007; will not use wrapper */
             os_strcat(scopeStack, scopeSepp);
@@ -142,108 +144,108 @@ idl_corbaCTypeFromTypeSpec(
     /* QAC EXPECT 3416; No side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
         /* if the specified type is a basic type */
-	if (idl_getCorbaMode() == IDL_MODE_ORB_BOUND) {
-	    switch (idl_typeBasicType(idl_typeBasic(typeSpec))) {
-	    case idl_short:
-	        typeName = os_strdup("CORBA_Short");
-	        break;
-	    case idl_ushort:
-	        typeName = os_strdup("CORBA_UShort");
-	        break;
-	    case idl_long:
-	        typeName = os_strdup("CORBA_Long");
-	        break;
-	    case idl_ulong:
-	        typeName = os_strdup("CORBA_ULong");
-	        break;
-	    case idl_longlong:
-	        typeName = os_strdup("CORBA_LongLong");
-	        break;
-	    case idl_ulonglong:
-	        typeName = os_strdup("CORBA_ULongLong");
-	        break;
-	    case idl_float:
-	        typeName = os_strdup("CORBA_Float");
-	        break;
-	    case idl_double:
-	        typeName = os_strdup("CORBA_Double");
-	        break;
-	    case idl_char:
-	        typeName = os_strdup("CORBA_Char");
-	        break;
-	    case idl_string:
-	        typeName = os_strdup("char *");
-	        break;
-	    case idl_boolean:
-	        typeName = os_strdup("CORBA_Boolean");
-	        break;
-	    case idl_octet:
-	        typeName = os_strdup("CORBA_Octet");
-	        break;
-	    default:
-	        /* No processing required, empty statement to satisfy QAC */
-	        break;
-	    /* QAC EXPECT 2016; Default case must be empty here */
-	    }
-	} else {
-	    switch (idl_typeBasicType(idl_typeBasic(typeSpec))) {
-	    case idl_short:
-	        typeName = os_strdup("DDS_short");
-	        break;
-	    case idl_ushort:
-	        typeName = os_strdup("DDS_unsigned_short");
-	        break;
-	    case idl_long:
-	        typeName = os_strdup("DDS_long");
-	        break;
-	    case idl_ulong:
-	        typeName = os_strdup("DDS_unsigned_long");
-	        break;
-	    case idl_longlong:
-	        typeName = os_strdup("DDS_long_long");
-	        break;
-	    case idl_ulonglong:
-	        typeName = os_strdup("DDS_unsigned_long_long");
-	        break;
-	    case idl_float:
-	        typeName = os_strdup("DDS_float");
-	        break;
-	    case idl_double:
-	        typeName = os_strdup("DDS_double");
-	        break;
-	    case idl_char:
-	        typeName = os_strdup("DDS_char");
-	        break;
-	    case idl_string:
-	        typeName = os_strdup("char *");
-	        break;
-	    case idl_boolean:
-	        typeName = os_strdup("DDS_boolean");
-	        break;
-	    case idl_octet:
-	        typeName = os_strdup("DDS_octet");
-	        break;
-	    default:
-	        /* No processing required, empty statement to satisfy QAC */
-	        break;
-	    /* QAC EXPECT 2016; Default case must be empty here */
-	    }
-	}
+        if (idl_getCorbaMode() == IDL_MODE_ORB_BOUND) {
+            switch (idl_typeBasicType(idl_typeBasic(typeSpec))) {
+                case idl_short:
+                    typeName = os_strdup("CORBA_Short");
+                    break;
+                case idl_ushort:
+                    typeName = os_strdup("CORBA_UShort");
+                    break;
+                case idl_long:
+                    typeName = os_strdup("CORBA_Long");
+                    break;
+                case idl_ulong:
+                    typeName = os_strdup("CORBA_ULong");
+                    break;
+                case idl_longlong:
+                    typeName = os_strdup("CORBA_LongLong");
+                    break;
+                case idl_ulonglong:
+                    typeName = os_strdup("CORBA_ULongLong");
+                    break;
+                case idl_float:
+                    typeName = os_strdup("CORBA_Float");
+                    break;
+                case idl_double:
+                    typeName = os_strdup("CORBA_Double");
+                    break;
+                case idl_char:
+                    typeName = os_strdup("CORBA_Char");
+                    break;
+                case idl_string:
+                    typeName = os_strdup("char *");
+                    break;
+                case idl_boolean:
+                    typeName = os_strdup("CORBA_Boolean");
+                    break;
+                case idl_octet:
+                    typeName = os_strdup("CORBA_Octet");
+                    break;
+                default:
+                    /* No processing required, empty statement to satisfy QAC */
+                    break;
+                    /* QAC EXPECT 2016; Default case must be empty here */
+            }
+        } else {
+            switch (idl_typeBasicType(idl_typeBasic(typeSpec))) {
+                case idl_short:
+                    typeName = os_strdup("DDS_short");
+                    break;
+                case idl_ushort:
+                    typeName = os_strdup("DDS_unsigned_short");
+                    break;
+                case idl_long:
+                    typeName = os_strdup("DDS_long");
+                    break;
+                case idl_ulong:
+                    typeName = os_strdup("DDS_unsigned_long");
+                    break;
+                case idl_longlong:
+                    typeName = os_strdup("DDS_long_long");
+                    break;
+                case idl_ulonglong:
+                    typeName = os_strdup("DDS_unsigned_long_long");
+                    break;
+                case idl_float:
+                    typeName = os_strdup("DDS_float");
+                    break;
+                case idl_double:
+                    typeName = os_strdup("DDS_double");
+                    break;
+                case idl_char:
+                    typeName = os_strdup("DDS_char");
+                    break;
+                case idl_string:
+                    typeName = os_strdup("char *");
+                    break;
+                case idl_boolean:
+                    typeName = os_strdup("DDS_boolean");
+                    break;
+                case idl_octet:
+                    typeName = os_strdup("DDS_octet");
+                    break;
+                default:
+                    /* No processing required, empty statement to satisfy QAC */
+                    break;
+                    /* QAC EXPECT 2016; Default case must be empty here */
+            }
+        }
         /* QAC EXPECT 3416; No side effects here */
     } else if ((idl_typeSpecType(typeSpec) == idl_tseq) ||
-               (idl_typeSpecType(typeSpec) == idl_tarray)) {
-	/* sequence does not have an identification */
-	typeName = os_strdup("");
-	printf("idl_corbaTypeFromTypeSpec: Unexpected type handled\n");
+            (idl_typeSpecType(typeSpec) == idl_tarray)) {
+        /* sequence does not have an identification */
+        typeName = os_strdup("");
+        printf("idl_corbaTypeFromTypeSpec: Unexpected type handled\n");
     } else {
         /* if a user type is specified build it from its scope and its name.
 	   The type should be one of idl_ttypedef, idl_tenum, idl_tstruct,
            idl_tunion.
-	*/
+         */
         typeName = idl_scopeStackC(
-            idl_typeUserScope(idl_typeUser(typeSpec)),
-            "_",
-            idl_typeSpecName(typeSpec));
+                idl_typeUserScope(idl_typeUser(typeSpec)),
+                "_",
+                idl_typeSpecName(typeSpec));
     }
     return typeName;
     /* QAC EXPECT 5101; The switch statement is simple, therefor the total complexity is low */
@@ -284,10 +286,10 @@ idl_definitionAdd (
 
 static os_equality
 defName(
-    void *iterElem,
-    void *arg)
+    const void *iterElem,
+    const void *arg)
 {
-    if (strcmp((char *)iterElem, (char *)arg) == 0) {
+    if (strcmp((const char *)iterElem, (const char *)arg) == 0) {
 	return OS_EQ;
     }
     return OS_NE;

@@ -4,6 +4,9 @@
 SUBSYSTEMS	:=
 
 ifeq ($(INCLUDE_JAVA),yes)
+ifeq ($(INCLUDE_TOOLS_PROTOBUF),yes)
+SUBSYSTEMS  += protobuf
+endif
 ifeq ($(INCLUDE_TOOLS_TUNER),yes)
 SUBSYSTEMS	+= cm
 endif

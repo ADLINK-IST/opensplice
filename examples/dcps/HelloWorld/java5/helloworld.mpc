@@ -1,0 +1,30 @@
+
+project (saj5*types) : saj_typesupport, java_only, java_example, java_ospl_dcpssaj5 {
+    TypeSupport_Files {
+        ../idl/HelloWorldData.idl >> HelloWorldData/*.java
+    }
+}
+
+project (saj5*sub) : java_only, java_example, java_ospl_dcpssaj5 {
+    after += saj5*types
+    libs += saj5*types.jar
+
+    specific {
+        obj_dir_flat = 1
+    }
+    Source_Files {
+       HelloWorldDataSubscriber.java
+    }
+}
+
+project (saj5*pub) : java_only, java_example, java_ospl_dcpssaj5 {
+    after += saj5*types
+    libs += saj5*types.jar
+
+    specific {
+        obj_dir_flat = 1
+    }
+    Source_Files {
+        HelloWorldDataPublisher.java
+    }
+}

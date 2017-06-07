@@ -90,7 +90,7 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 /*
  * FE_illegal_recursive_type() - Implement the algorithm described above
  */
-idl_bool
+bool
 AST_illegal_recursive_type(AST_Decl *t)
 {
    UTL_ScopeStackActiveIterator *i;
@@ -99,37 +99,37 @@ AST_illegal_recursive_type(AST_Decl *t)
    AST_Structure *st2 = NULL;
    AST_Union *un1 = NULL;
    AST_Union *un2 = NULL;
-   idl_bool check_for_struct = I_FALSE;
-   idl_bool check_for_union = I_FALSE;
+   bool check_for_struct = false;
+   bool check_for_union = false;
 
    if (t == NULL)
-      return I_FALSE;
+      return false;
 
    /*
     * We only care about structs and unions
     */
    if (t->node_type() != AST_Decl::NT_struct &&
          t->node_type() != AST_Decl::NT_union)
-      return I_FALSE; // NOT ILLEGAL
+      return false; // NOT ILLEGAL
 
    /*
     * Narrow the type appropriately so comparison will work
     */
    if (t->node_type() == AST_Decl::NT_struct)
    {
-      check_for_struct = I_TRUE;
+      check_for_struct = true;
       st1 = AST_Structure::narrow_from_decl(t);
 
       if (st1 == NULL)
-         return I_FALSE; // NOT ILLEGAL
+         return false; // NOT ILLEGAL
    }
    else if (t->node_type() == AST_Decl::NT_union)
    {
-      check_for_union = I_TRUE;
+      check_for_union = true;
       un1 = AST_Union::narrow_from_decl(t);
 
       if (un1 == NULL)
-         return I_FALSE; // NOT ILLEGAL
+         return false; // NOT ILLEGAL
    }
 
    /*
@@ -148,7 +148,7 @@ AST_illegal_recursive_type(AST_Decl *t)
       if (s == NULL)
       {
          delete i;
-         return I_FALSE; // NOT ILLEGAL
+         return false; // NOT ILLEGAL
       }
 
       /*
@@ -161,7 +161,7 @@ AST_illegal_recursive_type(AST_Decl *t)
          if (st2 != NULL && st2 == st1)
          {
             delete i;
-            return I_TRUE; // ILLEGAL RECURSIVE TYPE USE
+            return true; // ILLEGAL RECURSIVE TYPE USE
          }
       }
       else if (s->scope_node_type() == AST_Decl::NT_union &&
@@ -172,7 +172,7 @@ AST_illegal_recursive_type(AST_Decl *t)
          if (un2 != NULL && un2 == un1)
          {
             delete i;
-            return I_TRUE; // ILLEGAL RECURSIVE TYPE USE
+            return true; // ILLEGAL RECURSIVE TYPE USE
          }
       }
 
@@ -187,6 +187,6 @@ AST_illegal_recursive_type(AST_Decl *t)
     */
    delete i;
 
-   return I_FALSE;  // NOT ILLEGAL
+   return false;  // NOT ILLEGAL
 }
 

@@ -1,0 +1,17 @@
+parseconditions:
+    desc: Pong LogParser Conditions
+
+    file: roundtrip_pong.log
+    parsecontents: yes
+    type: remote
+    normalisejavalog: no
+    normaliseisocpplog: no
+
+    product: OpenSpliceDDS
+
+    conditions:
+        - name: No data available
+          type: line
+          inst: 0
+          required: no
+          line: "PONG: PING_* triggered, but no data available"

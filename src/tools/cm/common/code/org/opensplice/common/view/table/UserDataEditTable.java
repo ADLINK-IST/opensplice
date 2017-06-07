@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**
@@ -34,21 +42,18 @@ public class UserDataEditTable extends UserDataSingleTable {
      * of fields in the data held by the model.
      *
      * @param model The model that must be displayed in the table.
-     * @param keyList The keys in the data of the model. The background of 
-     *                these fields will be colored as defined by the 
-     *                UserDataSingleTableCellRenderer.
      * @param editOutputWindow The statusbar, where information about editing
      *                         and validation will be sent to.
      */
-    public UserDataEditTable(UserDataEditTableModel model, String keyList, StatusPanel editOutputWindow){
-        this(model, keyList);
+    public UserDataEditTable(UserDataEditTableModel model, StatusPanel editOutputWindow){
+        this(model);
         
         ((UserDataEditTableEditor)
                 (this.getColumnModel().getColumn(2).getCellEditor())).setStatusListener(editOutputWindow);
     }
     
-    public UserDataEditTable(UserDataEditTableModel model, String keyList, StatusPanel editOutputWindow, String struct){
-        this(model, keyList, struct);
+    public UserDataEditTable(UserDataEditTableModel model, StatusPanel editOutputWindow, String struct){
+        this(model, struct);
 
         ((UserDataEditTableEditor)
                 (this.getColumnModel().getColumn(2).getCellEditor())).setStatusListener(editOutputWindow);
@@ -62,12 +67,9 @@ public class UserDataEditTable extends UserDataSingleTable {
      *  
      *
      * @param model The model that must be displayed in the table.
-     * @param keyList The keys in the data of the model. The background of 
-     *                these fields will be colored as defined by the 
-     *                UserDataSingleTableCellRenderer.
      */
-    public UserDataEditTable(UserDataEditTableModel model, String keyList){
-        super(model, keyList);
+    public UserDataEditTable(UserDataEditTableModel model){
+        super(model);
         this.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         this.setCellSelectionEnabled(false);
        
@@ -77,8 +79,8 @@ public class UserDataEditTable extends UserDataSingleTable {
         model.setEditor(editor);
     }
     
-    public UserDataEditTable(UserDataEditTableModel model, String keyList, String struct){
-        super(model, keyList, struct);
+    public UserDataEditTable(UserDataEditTableModel model, String struct){
+        super(model, struct);
         this.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         this.setCellSelectionEnabled(false);
        

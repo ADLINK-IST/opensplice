@@ -19,6 +19,15 @@ project (saj*sub) : java_only, java_example, java_ospl_dcpssaj {
        ../src/ListenerDataSubscriber.java
        ../src/DDSEntityManager.java
        ../src/ErrorHandler.java
+       ../src/ListenerDataListener.java
+    }
+    verbatim (ospljavamake, macros) {
+        CLASSES       += classes/ListenerDataListener.class
+        JARCLASSES    += ListenerDataListener.class
+    }
+    specific (javabat) {
+        extra_jar_classes = ListenerDataListener.class
+        postclean = <%rm%> classes<%slash%>ListenerDataListener.class
     }
 }
 
@@ -34,5 +43,14 @@ project (saj*pub) : java_only, java_example, java_ospl_dcpssaj {
         ../src/ListenerDataPublisher.java
         ../src/DDSEntityManager.java
         ../src/ErrorHandler.java
+        ../src/ListenerDataListener.java
+    }
+    verbatim (ospljavamake, macros) {
+        CLASSES       += classes/ListenerDataListener.class
+        JARCLASSES    += ListenerDataListener.class
+    }
+    specific (javabat) {
+        extra_jar_classes = ListenerDataListener.class
+        postclean = <%rm%> classes<%slash%>ListenerDataListener.class
     }
 }

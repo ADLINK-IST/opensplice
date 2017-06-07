@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "mm_metakindNames.h"
@@ -14,13 +22,15 @@
 #include "c_base.h"
 #include "c__base.h"
 #include "ut_collection.h"
+#include "os_errno.h"
 #include "os_stdlib.h"
 #include "c_module.h"
 
 #include "mm_orc.h"
 
 #include <sys/types.h>
-#include <errno.h>
+
+#include <Windows.h>
 
 #define MM_HEADER_SIZE  16  /* Assumed header size */
 
@@ -60,7 +70,7 @@ C_STRUCT(c_header) {
 C_STRUCT(monitor_orc) {
    c_ulong extendCountLimit;
    char *filterExpression;
-   ut_collection refTree;
+   ut_table refTree;
    int totalObjectCount;
    os_address totalSizeCount;
    c_bool delta;
@@ -121,7 +131,7 @@ monitor_orcNew (
       {
          o->filterExpression = NULL;
       }
-      o->refTree = ut_tableNew (compareLeafs, NULL);
+      o->refTree = ut_tableNew ((const ut_compareElementsFunc)compareLeafs, NULL, NULL, NULL, freeNode, NULL);
       o->totalSizeCount = 0;
       o->totalObjectCount = 0;
       o->delta = delta;
@@ -142,7 +152,7 @@ monitor_object (
    if (tr == NULL) {
       tr = nullType;
    }
-   ord = (refLeaf)ut_get (trace->refTree, tr);
+   ord = (refLeaf)ut_get (ut_collection(trace->refTree), tr);
    if (ord) {
       ord->rc++;
    } else {
@@ -150,7 +160,7 @@ monitor_object (
       ord->tr = tr;
       ord->rc = 1;
       ord->prc = 0;
-      ut_tableInsert(ut_table(trace->refTree), tr, ord);
+      (void) ut_tableInsert(trace->refTree, tr, ord);
    }
 }
 
@@ -160,9 +170,10 @@ monitor_orcFree (
                  )
 {
    if (o->filterExpression) {
-      free (o->filterExpression);
+      os_free (o->filterExpression);
    }
-   ut_collectionFree (o->refTree, freeNode, NULL);
+   ut_tableFree(o->refTree);
+   o->refTree = NULL;
 
    free (o);
 }
@@ -196,7 +207,7 @@ display_orc (
 
    if (ord->tr == nullType) {
       if (trace->delta) {
-         if (abs(ord->rc - ord->prc) >= trace->extendCountLimit) {
+         if ((c_ulong)abs(ord->rc - ord->prc) >= trace->extendCountLimit) {
             printf ("%6d                            <undefined>\r\n", (ord->rc - ord->prc));
          }
       } else {
@@ -208,21 +219,21 @@ display_orc (
       switch (c_baseObject(ord->tr)->kind) {
       case M_COLLECTION:
          switch (c_collectionType(ord->tr)->kind) {
-         case C_UNDEFINED:
-         case C_LIST:
-         case C_ARRAY:
-         case C_BAG:
-         case C_SET:
-         case C_MAP:
-         case C_DICTIONARY:
-         case C_SEQUENCE:
-         case C_STRING:
-         case C_WSTRING:
-         case C_QUERY:
-         case C_SCOPE:
-         case C_COUNT:
+         case OSPL_C_UNDEFINED:
+         case OSPL_C_LIST:
+         case OSPL_C_ARRAY:
+         case OSPL_C_BAG:
+         case OSPL_C_SET:
+         case OSPL_C_MAP:
+         case OSPL_C_DICTIONARY:
+         case OSPL_C_SEQUENCE:
+         case OSPL_C_STRING:
+         case OSPL_C_WSTRING:
+         case OSPL_C_QUERY:
+         case OSPL_C_SCOPE:
+         case OSPL_C_COUNT:
             if (trace->delta) {
-               if (abs(ord->rc - ord->prc) >= trace->extendCountLimit) {
+               if ((c_ulong)abs(ord->rc - ord->prc) >= trace->extendCountLimit) {
                   if (trace->filterExpression) {
                      if (strstr (c_metaObject(ord->tr)->name, trace->filterExpression) == NULL) {
                         break;
@@ -271,7 +282,7 @@ display_orc (
       case M_CLASS:
       case M_EXCEPTION:
          if (trace->delta) {
-            if (abs(ord->rc - ord->prc) >= trace->extendCountLimit) {
+            if ((c_ulong)abs(ord->rc - ord->prc) >= trace->extendCountLimit) {
                if (trace->filterExpression) {
                   if (strstr (c_metaObject(ord->tr)->name, trace->filterExpression) == NULL) {
                      break;
@@ -333,7 +344,7 @@ display_orc (
 
 void
 monitor_orcAction (
-                   v_entity entity,
+                   v_public entity,
                    c_voidp args
                    )
 {
@@ -359,7 +370,7 @@ monitor_orcAction (
       monitor_object (or, trace);
       count++;
    };
-   ut_walk (trace->refTree, display_orc, trace);
+   ut_walk (ut_collection(trace->refTree), display_orc, trace);
    printf ("\r\n");
    printf ("        %d  for %d object headers (%d) and MM headers (%d)\r\n",
            trace->totalObjectCount * (C_SIZEOF(c_header)  + MM_HEADER_SIZE),

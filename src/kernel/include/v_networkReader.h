@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef V_NETWORKREADER_H
@@ -38,7 +46,7 @@ v_networkReaderNew(
     const c_char *name,
     v_readerQos qos,
     c_bool ignoreReliabilityQoS);
-    
+
 OS_API void
 v_networkReaderFree(
     v_networkReader reader);
@@ -48,7 +56,7 @@ v_networkReaderSubscribe(
     v_networkReader reader,
     v_partition partition);
 
-OS_API c_bool          
+OS_API c_bool
 v_networkReaderUnSubscribe(
     v_networkReader reader,
     v_partition partition);
@@ -71,7 +79,7 @@ v_networkReaderWait(
     v_networkReader reader,
     c_ulong queueId,
     v_networkQueue *queue);
-                                        
+
 OS_API v_networkReaderWaitResult
 v_networkReaderWaitForTimeout(
     v_networkReader reader,
@@ -83,7 +91,7 @@ v_networkReaderWaitDelayed(
     v_networkReader reader,
     c_ulong queueId,
     v_networkQueue *queue);
-                                        
+
 OS_API void
 v_networkReaderTrigger(
     v_networkReader reader,
@@ -104,10 +112,10 @@ v_networkReaderCreateQueue(
     c_ulong priority,
     c_bool reliable,
     c_bool P2P,
-    c_time resolution,
+    os_duration resolution,
     c_bool useAsDefault,
     const c_char *name);
-    
+
 OS_API v_networkReaderEntry
 v_networkReaderLookupEntry(
     v_networkReader reader,
@@ -117,11 +125,11 @@ OS_API void
 v_networkReaderProbe(
     v_networkReader reader);
 
-OS_API void            
+OS_API void
 v_networkReaderRemoteActivityDetected(
     v_networkReader reader);
 
-OS_API void            
+OS_API void
 v_networkReaderRemoteActivityLost(
     v_networkReader reader);
 

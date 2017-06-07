@@ -1,0 +1,16 @@
+SETUP_TYPE=x86_64.win64-release
+BUILD_DIST=yes
+BUILD_EXAMPLES=no
+KEEP_DIST=yes
+BUILD_DBT=yes
+BUILD_RBT=yes
+RUN_DBT=yes
+RUN_RBT_SP=yes
+RUN_RBT_SHM=yes
+RUN_EXAMPLES_SHM=no
+RUN_EXAMPLES_SP=no
+
+. configs/`hostname`/common_64bit
+
+unset TAO_ROOT
+export OVERRIDE_STRICT_CHECKS=no

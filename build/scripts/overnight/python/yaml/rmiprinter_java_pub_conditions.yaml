@@ -1,0 +1,14 @@
+parseconditions:
+    desc: RMI Printer LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    conditions: 
+
+        - name: print_succeed
+          type: line
+          inst: 6
+          required: yes
+          line: "message : Succeeded in printing the document !"

@@ -8,6 +8,9 @@ project(*) : vc_warnings, c_or_cplusplus {
   recurse=1
   macros += HAVE_CONFIG_H
   macros += YY_NO_INPUT
+  specific (make) {
+    macros += _BSD_SOURCE
+  }
   libout = ./lib
   requires += ospl_dcpssaccp
   avoids += ospl_os_wince

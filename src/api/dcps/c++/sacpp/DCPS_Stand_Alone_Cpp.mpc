@@ -1,0 +1,42 @@
+// -*- MPC -*-
+// $Id:$
+
+project (Build*Lib) : ospl_build_lib, dcps_typesupport_base, ospl_base, ospl_ddsuser, ospl_dcps_cpp_app_base_libs {
+
+    includes += sacpp/generated
+    includes += $(OSPL_HOME)/include/dcps/C++/SACPP
+
+    splice_ts_flags += -S -l cpp -d sacpp/generated $(OSPL_Y2038_READY_FLAG)
+
+    // Generated library name.
+    sharedname = dcpssacpp
+
+    specific (make) {
+        obj_dir = ./obj/sacpp/
+    }
+
+    specific(prop:windows) {
+        splice_ts_flags += -P OS_API,cpp_dcps_if.h
+    }
+
+    dynamicflags += OSPL_BUILD_DCPSCPP
+
+    // idlpp code generation
+    TypeSupport_Files {
+        $(OSPL_HOME)/etc/idl/dds_builtinTopics.idl
+        $(OSPL_HOME)/etc/idl/dds_dcps_builtintopics.idl
+        $(OSPL_HOME)/etc/idl/dds_namedQosTypes.idl
+    }
+
+    // Put the headers and inline code into the include dir
+    postbuild = <%cp%>  .<%slash%>sacpp<%slash%>generated<%slash%>*.h <%quote%>$(OSPL_HOME)<%slash%>include<%slash%>dcps<%slash%>C++<%slash%>SACPP<%quote%>
+
+    Documentation_Files {
+        recurse = 1
+        sacpp
+    }
+
+    Source_Files {
+        sacpp/*.cpp
+    }
+}

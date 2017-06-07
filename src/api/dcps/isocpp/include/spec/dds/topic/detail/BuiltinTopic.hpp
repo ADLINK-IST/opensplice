@@ -32,7 +32,6 @@ namespace detail
 typedef dds::topic::TParticipantBuiltinTopicData<foo::bar::topic::ParticipantBuiltinTopicDataImpl>
 ParticipantBuiltinTopicData;
 
-
 typedef dds::topic::TTopicBuiltinTopicData<foo::bar::topic::TopicBuiltinTopicDataImpl>
 TopicBuiltinTopicData;
 
@@ -41,6 +40,21 @@ PublicationBuiltinTopicData;
 
 typedef dds::topic::TSubscriptionBuiltinTopicData<foo::bar::topic::SubscriptionBuiltinTopicDataImpl>
 SubscriptionBuiltinTopicData;
+
+typedef dds::topic::TCMParticipantBuiltinTopicData<foo::bar::topic::CMParticipantBuiltinTopicDataImpl>
+CMParticipantBuiltinTopicData;
+
+typedef dds::topic::TCMPublisherBuiltinTopicData<foo::bar::topic::CMPublisherBuiltinTopicDataImpl>
+CMPublisherBuiltinTopicData;
+
+typedef dds::topic::TCMSubscriberBuiltinTopicData<foo::bar::topic::CMSubscriberBuiltinTopicDataImpl>
+CMSubscriberBuiltinTopicData;
+
+typedef dds::topic::TCMDataWriterBuiltinTopicData<foo::bar::topic::CMDataWriterBuiltinTopicDataImpl>
+CMDataWriterBuiltinTopicData;
+
+typedef dds::topic::TCMDataReaderBuiltinTopicData<foo::bar::topic::CMDataReaderBuiltinTopicDataImpl>
+CMDataReaderBuiltinTopicData;
 
 }
 }

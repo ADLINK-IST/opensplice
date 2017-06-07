@@ -1,21 +1,21 @@
-// The OpenSplice DDS Community Edition project.
-//
-// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
-// Copyright (C) 2009  L-3 Communications / IS
-// 
-//  This library is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License Version 3 dated 29 June 2007, as published by the
-//  Free Software Foundation.
-// 
-//  This library is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-// 
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
 
 using System;
 using System.Runtime.InteropServices;
@@ -23,47 +23,28 @@ using DDS;
 
 namespace DDS.OpenSplice
 {
-    internal class TopicDescription : SacsSuperClass, ITopicDescription
+    internal interface ITopicDescriptionImpl : ITopicDescription
     {
-        internal TopicDescription(IntPtr gapiPtr)
-            : base(gapiPtr)
+        string rlReq_TopicExpression
         {
-            // Base class handles everything.
+            get;
         }
         
-        public string TypeName
+        string[] rlReq_TopicExpressionParameters
         {
-            get
-            {
-                IntPtr ptr = Gapi.TopicDescription.get_type_name(GapiPeer);
-                string result = Marshal.PtrToStringAnsi(ptr);
-                Gapi.GenericAllocRelease.Free(ptr);
+            get;
+        }
+        
+        // Mostly invoked when lock is already ackquired.
+        void wlReq_IncrNrUsers();
 
-                return result;
-            }
-        }
-        
-        public string Name
-        {
-            get
-            {
-                IntPtr ptr = Gapi.TopicDescription.get_name(GapiPeer);
-                string result = Marshal.PtrToStringAnsi(ptr);
-                Gapi.GenericAllocRelease.Free(ptr);
+        // Mostly invoked when lock is not yet ackquired. 
+        ReturnCode DecrNrUsers();
 
-                return result;
-            }
-        }
-        
-        public IDomainParticipant Participant
+        TypeSupport rlReq_TypeSupport
         {
-            get
-            {
-                IntPtr gapiPtr = Gapi.TopicDescription.get_participant(GapiPeer);
-                IDomainParticipant domainParticipant = 
-                        SacsSuperClass.fromUserData(gapiPtr) as IDomainParticipant;
-                return domainParticipant;
-            }
+            get;
+            set;
         }
     }
 }

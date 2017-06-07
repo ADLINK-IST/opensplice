@@ -1,12 +1,20 @@
 /*
 *                         OpenSplice DDS
 *
-*   This software and documentation are Copyright 2006 to 2012 PrismTech
-*   Limited and its licensees. All rights reserved. See file:
-*
-*                     $OSPL_HOME/LICENSE
-*
-*   for full copyright notice and license terms.
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
 *
 */
 
@@ -215,7 +223,7 @@ private:
  * newly created object will be enabled by default.
  * A setting of FALSE indicates that the Entity will not be automatically
  * enabled. The application will need to enable it explicitly by means of the
- * enable operation (see Section 7.1.2.1.1.7, “enable”). The default setting
+ * enable operation (see Section 7.1.2.1.1.7, <D2>enable<D3>). The default setting
  * of autoenable_created_entities = TRUE means that, by default, it is not
  * necessary to explicitly call enable on newly created entities.
  */
@@ -295,14 +303,14 @@ private:
 //==============================================================================
 
 /**
- *  @internal The purpose of this QoS is to avoid delivering “stale” data to the
+ *  @internal The purpose of this QoS is to avoid delivering <D2>stale<D3> data to the
  * application. Each data sample written by the DataWriter has an associated
  * expiration time beyond which the data should not be delivered to any
  * application. Once the sample expires, the data will be removed from the
  * DataReader caches as well as from the transient and persistent
  * information caches. The expiration time of each sample is computed by
  * adding the duration specified by the LIFESPAN QoS to the source timestamp.
- * As described in Section 7.1.2.4.2.11, “write and Section 7.1.2.4.2.12,
+ * As described in Section 7.1.2.4.2.11, <D2>write and Section 7.1.2.4.2.12,
  * write_w_timestamp the source timestamp is either automatically computed by
  * the Service each time the DataWriter write operation is called, or else
  * supplied by the application by means of the write_w_timestamp operation.
@@ -347,7 +355,7 @@ private:
  * instance updated periodically. On the publishing side this setting
  * establishes a contract that the application must meet. On the subscribing
  * side the setting establishes a minimum requirement for the remote publishers
- * that are expected to supply the data values. When the Service ‘matches’ a
+ * that are expected to supply the data values. When the Service <D4>matches<D5> a
  * DataWriter and a DataReader it checks whether the settings are compatible
  * (i.e., offered deadline period<= requested deadline period) if they are not,
  * the two entities are informed (via the listener or condition mechanism)
@@ -356,11 +364,11 @@ private:
  * fulfillment of this contract is monitored by the Service and the application
  * is informed of any violations by means of the proper listener or condition.
  * The value offered is considered compatible with the value requested if and
- * only if the inequality “offered deadline period <= requested deadline period”
- * evaluates to ‘TRUE.’ The setting of the DEADLINE policy must be set
+ * only if the inequality <D2>offered deadline period <= requested deadline period<D3>
+ * evaluates to <D4>TRUE.<D5> The setting of the DEADLINE policy must be set
  * consistently with that of the TIME_BASED_FILTER.
  * For these two policies to be consistent the settings must be such that
- * “deadline period>= minimum_separation.”
+ * <D2>deadline period>= minimum_separation.<D3>
  */
 class Deadline
 {
@@ -593,7 +601,8 @@ public:
     ReaderDataLifecycle() {}
     ReaderDataLifecycle(const dds::core::Duration& nowriter_delay,
                         const dds::core::Duration& disposed_samples_delay)
-        : autopurge_nowriter_samples_delay_(nowriter_delay),
+        : no_invalid_samples(false),
+          autopurge_nowriter_samples_delay_(nowriter_delay),
           autopurge_disposed_samples_delay_(disposed_samples_delay) { }
 
 public:
@@ -623,6 +632,8 @@ public:
         return other.autopurge_nowriter_samples_delay() == autopurge_nowriter_samples_delay_ &&
                other.autopurge_disposed_samples_delay() == autopurge_disposed_samples_delay();
     }
+
+    bool no_invalid_samples;
 
 private:
     dds::core::Duration autopurge_nowriter_samples_delay_;
@@ -1064,6 +1075,129 @@ private:
 };
 
 #endif  // OMG_DDS_PERSISTENCE_SUPPORT
+
+
+//==============================================================================
+
+class Share
+{
+public:
+public:
+    Share() {}
+    Share(const std::string& name, bool enable) : name_(name), enable_(enable) { }
+
+    void name(const std::string& name)
+    {
+        name_ = name;
+    }
+    std::string name() const
+    {
+        return name_;
+    }
+
+    void enable(bool enable)
+    {
+        enable_ = enable;
+    }
+    bool enable() const
+    {
+        return enable_;
+    }
+
+    bool operator ==(const Share& other) const
+    {
+        return other.name() == name_ &&
+               other.enable() == enable_;
+    }
+
+private:
+    std::string name_;
+    bool        enable_;
+};
+
+
+//==============================================================================
+
+class ProductData
+{
+public:
+public:
+    ProductData() {}
+    ProductData(const std::string& name) :  name_(name) { }
+
+    void name(const std::string& name)
+    {
+        name_ = name;
+    }
+    std::string name() const
+    {
+        return name_;
+    }
+
+    bool operator ==(const ProductData& other) const
+    {
+        return other.name() == name_;
+    }
+
+private:
+    std::string name_;
+};
+
+
+//==============================================================================
+
+class SubscriptionKey
+{
+public:
+    explicit SubscriptionKey(bool use_key_list, const std::string& key) :
+                 use_key_list_(use_key_list), keys_()
+    {
+        keys_.push_back(key);
+    }
+
+    explicit SubscriptionKey(bool use_key_list, const dds::core::StringSeq& keys) :
+                 use_key_list_(use_key_list), keys_(keys) { }
+
+public:
+    void key(const std::string& key)
+    {
+        keys_.clear();
+        keys_.push_back(key);
+    }
+    void key(const dds::core::StringSeq& keys)
+    {
+        keys_ = keys;
+    }
+
+    const dds::core::StringSeq& key() const
+    {
+        return keys_;
+    }
+    dds::core::StringSeq& key()
+    {
+        return keys_;
+    }
+
+    void use_key_list(bool use_key_list)
+    {
+        use_key_list_ = use_key_list;
+    }
+    bool use_key_list() const
+    {
+        return use_key_list_;
+    }
+
+    bool operator ==(const SubscriptionKey& other) const
+    {
+        return other.key() == keys_ &&
+               other.use_key_list() == use_key_list_;
+    }
+
+private:
+    bool use_key_list_;
+    dds::core::StringSeq keys_;
+};
+
 
 
 #ifdef  OMG_DDS_EXTENSIBLE_AND_DYNAMIC_TOPIC_TYPE_SUPPORT

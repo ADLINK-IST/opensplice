@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /* format:
@@ -47,7 +55,7 @@
  * hidden to the outside
  */
 struct a_keyContext_s {
-	a_treTree tree;
+    a_treTree tree;
 };
 
 
@@ -57,12 +65,12 @@ struct a_keyContext_s {
 /* Data Structure for holding the information of one key file
  */
 typedef struct a_keyKeyFile {
-	char      *fname;       // full file name of key file (typically /tmp/spddskey_...)
-	char      *shm_name;    // key file's line# 1: Shared Memory Name (or Domain Name)
-	c_address  address;     //            line# 2: Shm Start Address
-	c_long     size;        //            line# 3: Shm Size
-	char      *version;     //            line# 4: Version (something)
-	int        pid;         //            line# 5: Creator PID
+    char      *fname;       // full file name of key file (typically /tmp/spddskey_...)
+    char      *shm_name;    // key file's line# 1: Shared Memory Name (or Domain Name)
+    c_address  address;     //            line# 2: Shm Start Address
+    c_long     size;        //            line# 3: Shm Size
+    char      *version;     //            line# 4: Version (something)
+    int        pid;         //            line# 5: Creator PID
 } *a_keyKeyFile;
 
 
@@ -81,19 +89,19 @@ typedef struct a_keyKeyFile {
  */
 static int
 a_keyCompareEntries(
-	void *entry1Ptr,
-	void *entry2Ptr)
+    void *entry1Ptr,
+    void *entry2Ptr)
 {
-	int result;
-	a_keyKeyFile key1 = (a_keyKeyFile)entry1Ptr;
-	a_keyKeyFile key2 = (a_keyKeyFile)entry2Ptr;
-	if (key1 && key2) {
-		result = strcmp(key2->shm_name, key1->shm_name);
-		result = (result < 0) ? -1 : (0 < result) ? 1 : 0;    // force -1, 0 or 1
-	} else {
-		result = -99;
-	}
-	return result;
+    int result;
+    a_keyKeyFile key1 = (a_keyKeyFile)entry1Ptr;
+    a_keyKeyFile key2 = (a_keyKeyFile)entry2Ptr;
+    if (key1 && key2) {
+        result = strcmp(key2->shm_name, key1->shm_name);
+        result = (result < 0) ? -1 : (0 < result) ? 1 : 0;    // force -1, 0 or 1
+    } else {
+        result = -99;
+    }
+    return result;
 }
 
 
@@ -103,21 +111,21 @@ a_keyCompareEntries(
  */
 static a_keyKeyFile
 a_keyNewKeyFile(
-	char      *fname,
-	char      *shm_name,
-	c_address  address,
-	c_long     size,
-	char      *version,
-	int        pid)
+    char      *fname,
+    char      *shm_name,
+    c_address  address,
+    c_long     size,
+    char      *version,
+    int        pid)
 {
-	a_keyKeyFile newKeyFile = a_memAlloc(sizeof(struct a_keyKeyFile));
-	newKeyFile->fname    = a_memStrdup(fname);
-	newKeyFile->shm_name = a_memStrdup(shm_name);
-	newKeyFile->address  = address;
-	newKeyFile->size     = size;
-	newKeyFile->version  = a_memStrdup(version);
-	newKeyFile->pid      = pid;
-	return newKeyFile;
+    a_keyKeyFile newKeyFile = a_memAlloc(sizeof(struct a_keyKeyFile));
+    newKeyFile->fname    = a_memStrdup(fname);
+    newKeyFile->shm_name = a_memStrdup(shm_name);
+    newKeyFile->address  = address;
+    newKeyFile->size     = size;
+    newKeyFile->version  = a_memStrdup(version);
+    newKeyFile->pid      = pid;
+    return newKeyFile;
 }
 
 
@@ -127,20 +135,20 @@ a_keyNewKeyFile(
  */
 static void
 a_keyDestroyKeyFilesCallback(
-	a_keyKeyFile *keyFile)
+    a_keyKeyFile *keyFile)
 {
-	if (*keyFile) {
-		if ((*keyFile)->fname) {
-			a_memFree((*keyFile)->fname);
-		}
-		if ((*keyFile)->shm_name) {
-			a_memFree((*keyFile)->shm_name);
-		}
-		if ((*keyFile)->version) {
-			a_memFree((*keyFile)->version);
-		}
-		a_memFree(*keyFile);
-	}
+    if (*keyFile) {
+        if ((*keyFile)->fname) {
+            a_memFree((*keyFile)->fname);
+        }
+        if ((*keyFile)->shm_name) {
+            a_memFree((*keyFile)->shm_name);
+        }
+        if ((*keyFile)->version) {
+            a_memFree((*keyFile)->version);
+        }
+        a_memFree(*keyFile);
+    }
 }
 
 
@@ -150,16 +158,16 @@ a_keyDestroyKeyFilesCallback(
  */
 static int
 a_keyDestroyKeyFiles(
-	a_keyContext context)
+    a_keyContext context)
 {
-	int result;
-	if (context) {
-		result = a_treDestroyTree(context->tree, (a_treFreeAction)a_keyDestroyKeyFilesCallback);
-		context->tree = NULL;
-	} else {
-		result = 0;
-	}
-	return result;
+    int result;
+    if (context) {
+        result = a_treDestroyTree(context->tree, (a_treFreeAction)a_keyDestroyKeyFilesCallback);
+        context->tree = NULL;
+    } else {
+        result = 0;
+    }
+    return result;
 }
 
 
@@ -169,10 +177,10 @@ a_keyDestroyKeyFiles(
  */
 static int
 a_keyInsertKeyFile(
-	a_keyContext context,
-	a_keyKeyFile keyFile)
+    a_keyContext context,
+    a_keyKeyFile keyFile)
 {
-	return a_treInsertNode(context->tree, (void *)keyFile, (a_treSortAction)a_keyCompareEntries, A_KEY_DUPESALLOWED);
+    return a_treInsertNode(context->tree, (void *)keyFile, (a_treSortAction)a_keyCompareEntries, A_KEY_DUPESALLOWED);
 }
 
 
@@ -182,15 +190,15 @@ a_keyInsertKeyFile(
  */
 static a_keyKeyFile
 a_keyFindKeyFile(
-	a_keyContext context,
-	char *shm_name)
+    a_keyContext context,
+    char *shm_name)
 {
-	a_keyKeyFile result;
-	a_treSortAction compareAction = a_keyCompareEntries;
-	a_keyKeyFile tmpKeyFile = a_keyNewKeyFile("search entry", shm_name, 0, 0, "", 0);
-	result = (a_keyKeyFile)a_treFindValue(context->tree, tmpKeyFile, compareAction);
-	a_keyDestroyKeyFilesCallback(&tmpKeyFile);
-	return result;
+    a_keyKeyFile result;
+    a_treSortAction compareAction = a_keyCompareEntries;
+    a_keyKeyFile tmpKeyFile = a_keyNewKeyFile("search entry", shm_name, 0, 0, "", 0);
+    result = (a_keyKeyFile)a_treFindValue(context->tree, tmpKeyFile, compareAction);
+    a_keyDestroyKeyFilesCallback(&tmpKeyFile);
+    return result;
 }
 
 
@@ -208,49 +216,57 @@ a_keyFindKeyFile(
  */
 static int
 a_keyReadKeyFile(
-	a_keyContext context,
-	char *fname)
+    a_keyContext context,
+    char *fname)
 {
-	int result = 0;
-	const int max_line_length = A_KEY_MAX_FILE_LINE_LENGTH;
-	char line[max_line_length + 1];
-	FILE *fp;
+    int result = 0;
+    const int max_line_length = A_KEY_MAX_FILE_LINE_LENGTH;
+    char line[max_line_length + 1];
+    FILE *fp;
 
-	char        *shm_name;
-	unsigned int hexAddress;
-	c_address    address;
-	unsigned int hexSize;
-	c_long       size;
-	char        *version;
-	int          pid;
+    char        *shm_name;
+    unsigned int hexAddress;
+    c_address    address;
+    unsigned int hexSize;
+    c_long       size;
+    char        *version;
+    int          pid;
+    char        *res;
 
-	fp = fopen(fname, "r");
+    fp = fopen(fname, "r");
+    if (fp) {
+        if ((res = fgets(line, max_line_length, fp))) {
+            shm_name = a_memStrdup(line);
+        }
 
-	fgets(line, max_line_length, fp);
-	shm_name = a_memStrdup(line);
+        if (res && (res = fgets(line, max_line_length, fp))) {
+            sscanf(line, "%x", &hexAddress);
+            address = (c_address)hexAddress;
+        }
 
-	fgets(line, max_line_length, fp);
-	sscanf(line, "%x", &hexAddress);
-	address = (c_address)hexAddress;
+        if (res && (res = fgets(line, max_line_length, fp))) {
+            sscanf(line, "%x", &hexSize);
+            size = (c_long)hexSize;
+        }
 
-	fgets(line, max_line_length, fp);
-	sscanf(line, "%x", &hexSize);
-	size = (c_long)hexSize;
+        if (res && (res = fgets(line, max_line_length, fp))) {
+            version = a_memStrdup(line);
+        }
 
-	fgets(line, max_line_length, fp);
-	version = a_memStrdup(line);
+        if (res && (res = fgets(line, max_line_length, fp))) {
+            sscanf(line, "%d", &pid);
+        }
 
-	fgets(line, max_line_length, fp);
-	sscanf(line, "%d", &pid);
+        fclose(fp);
 
-	fclose(fp);
+        if (res) {
+            result = a_keyInsertKeyFile(context, a_keyNewKeyFile(fname, shm_name, address, size, version, pid));
+        }
 
-	result = a_keyInsertKeyFile(context, a_keyNewKeyFile(fname, shm_name, address, size, version, pid));
-	
-	a_memFree(shm_name);
-	a_memFree(version);
-	
-	return result;
+        a_memFree(shm_name);
+        a_memFree(version);
+    }
+    return result;
 }
 
 
@@ -269,32 +285,32 @@ a_keyReadKeyFile(
  */
 static int
 a_keyScanFiles(
-	a_keyContext context,
-	const char *dir,
-	const char *mask)
+    a_keyContext context,
+    const char *dir,
+    const char *mask)
 {
-	int result = 1;
-	DIR *dirp = opendir(dir);
-	struct dirent *dirEntry;
-	while (dirp && result) {
-		dirEntry = readdir(dirp);
-		if (dirEntry) {
-			if (strncmp(dirEntry->d_name, mask, strlen(mask)) == 0) {
-				char *fullFname = a_memAlloc(strlen(dir) + 1 + strlen(dirEntry->d_name) + 1);
-				strcpy(fullFname, dir);
-				strcat(fullFname, "/");
-				strcat(fullFname, dirEntry->d_name);
-				if (access(fullFname, R_OK) == 0) {
-					result = a_keyReadKeyFile(context, fullFname);
-				}
-				a_memFree(fullFname);
-			}
-		} else {
-			closedir(dirp);
-			dirp = NULL;
-		}
-	}
-	return result;
+    int result = 1;
+    DIR *dirp = opendir(dir);
+    struct dirent *dirEntry;
+    while (dirp && result) {
+        dirEntry = readdir(dirp);
+        if (dirEntry) {
+            if (strncmp(dirEntry->d_name, mask, strlen(mask)) == 0) {
+                char *fullFname = a_memAlloc(strlen(dir) + 1 + strlen(dirEntry->d_name) + 1);
+                strcpy(fullFname, dir);
+                strcat(fullFname, "/");
+                strcat(fullFname, dirEntry->d_name);
+                if (access(fullFname, R_OK) == 0) {
+                    result = a_keyReadKeyFile(context, fullFname);
+                }
+                a_memFree(fullFname);
+            }
+        } else {
+            closedir(dirp);
+            dirp = NULL;
+        }
+    }
+    return result;
 }
 
 
@@ -306,13 +322,13 @@ a_keyScanFiles(
  */
 a_keyContext
 a_keyInit(
-	const char *dir,
-	const char *mask)
+    const char *dir,
+    const char *mask)
 {
-	a_keyContext context = a_memAlloc(sizeof(struct a_keyContext_s));
-	context->tree = a_treCreateTree();
-	a_keyScanFiles(context, dir, mask);
-	return context;
+    a_keyContext context = a_memAlloc(sizeof(struct a_keyContext_s));
+    context->tree = a_treCreateTree();
+    a_keyScanFiles(context, dir, mask);
+    return context;
 }
 
 
@@ -323,10 +339,10 @@ a_keyInit(
  */
 void
 a_keyDeInit(
-	a_keyContext context)
+    a_keyContext context)
 {
-	a_keyDestroyKeyFiles(context);
-	a_memFree(context);
+    a_keyDestroyKeyFiles(context);
+    a_memFree(context);
 }
 
 
@@ -336,11 +352,11 @@ a_keyDeInit(
  */
 c_address
 a_keyGetStartAddress(
-	a_keyContext context,
-	char *shm_name)
+    a_keyContext context,
+    char *shm_name)
 {
-	a_keyKeyFile keyFile = a_keyFindKeyFile(context, shm_name);
-	return keyFile ? keyFile->address : 0;
+    a_keyKeyFile keyFile = a_keyFindKeyFile(context, shm_name);
+    return keyFile ? keyFile->address : 0;
 }
 
 
@@ -350,11 +366,11 @@ a_keyGetStartAddress(
  */
 c_long
 a_keyGetSize(
-	a_keyContext context,
-	char *shm_name)
+    a_keyContext context,
+    char *shm_name)
 {
-	a_keyKeyFile keyFile = a_keyFindKeyFile(context, shm_name);
-	return keyFile ? keyFile->size : 0;
+    a_keyKeyFile keyFile = a_keyFindKeyFile(context, shm_name);
+    return keyFile ? keyFile->size : 0;
 }
 
 
@@ -365,11 +381,11 @@ a_keyGetSize(
  */
 char *
 a_keyGetVersion(
-	a_keyContext context,
-	char *shm_name)
+    a_keyContext context,
+    char *shm_name)
 {
-	a_keyKeyFile keyFile = a_keyFindKeyFile(context, shm_name);
-	return keyFile ? keyFile->version : NULL;
+    a_keyKeyFile keyFile = a_keyFindKeyFile(context, shm_name);
+    return keyFile ? keyFile->version : NULL;
 }
 
 
@@ -380,11 +396,11 @@ a_keyGetVersion(
  */
 int
 a_keyGetPid(
-	a_keyContext context,
-	char *shm_name)
+    a_keyContext context,
+    char *shm_name)
 {
-	a_keyKeyFile keyFile = a_keyFindKeyFile(context, shm_name);
-	return keyFile ? keyFile->pid : 0;
+    a_keyKeyFile keyFile = a_keyFindKeyFile(context, shm_name);
+    return keyFile ? keyFile->pid : 0;
 }
 
 

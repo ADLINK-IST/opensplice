@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-Description: Vortex OpenSplice Java Corba DCPS API packages
+Bundle-Vendor: PrismTech
+Bundle-ManifestVersion: 2
+Bundle-Name: dcpscj-osgi-bundle
+Bundle-SymbolicName: org.opensplice.dcpscj.osgi
+Bundle-Version: <ospl-version>
+DynamicImport-Package: *
+Export-Package: DDS;uses:="org.omg.CORBA.portable,org.omg.CORBA,org.opensplice.dds.dcps";version="<ospl-version>",
+ org.opensplice.dds.dcps;uses:="DDS,org.omg.CORBA,org.omg.CORBA.portable";version="<ospl-version>"
+Import-Package: org.omg.CORBA;resolution:=optional,
+ org.omg.CORBA.portable;resolution:=optional

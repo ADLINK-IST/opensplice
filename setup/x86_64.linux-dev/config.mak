@@ -16,3 +16,11 @@ CFLAGS_OPT       = -O0
 CFLAGS_DEBUG     = -g -D_TYPECHECK_ -DE_DEBUG
 CFLAGS_STRICT_UNINITIALIZED =
 JCFLAGS          = -g
+
+ifeq "$(USE_ADDRESS_SANITIZER)" "yes"
+CFLAGS_DEBUG    += -fsanitize=address
+LDFLAGS         += -fsanitize=address
+endif
+
+#Csc compiler flags
+CSFLAGS_DEBUG = -define:DEBUG\;TRACE -debug+ -debug:full

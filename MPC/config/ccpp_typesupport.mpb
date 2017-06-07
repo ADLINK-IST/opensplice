@@ -12,13 +12,13 @@ feature(no_tao) {
 feature(ospl_dcpsccpp, !no_tao) : taoidldefaults, taolib, dcps_typesupport_base, ospl_dcpsccpp {
 
   splice_ts_flags += \
-    -C -l cpp -b CCPP<%slash%>$(SPLICE_ORB)
+    -C -l cpp -b CCPP<%slash%>$(SPLICE_ORB) $(OSPL_Y2038_READY_FLAG)
 }
 
 feature(!src_co, !no_tao) {
-  idlflags += -I <%quote%>$(OSPL_HOME)<%slash%>etc<%slash%>idl<%quote%>
+  idlflags += $(OSPL_Y2038_READY_FLAG) -I <%quote%>$(OSPL_HOME)<%slash%>etc<%slash%>idl<%quote%>
 }
 
 feature(src_co, !no_tao) {
-  idlflags += -I <%quote%>$(OSPL_HOME_NORMALIZED)<%slash%>etc<%slash%>idl<%quote%>
+  idlflags += $(OSPL_Y2038_READY_FLAG) -I <%quote%>$(OSPL_HOME_NORMALIZED)<%slash%>etc<%slash%>idl<%quote%>
 }

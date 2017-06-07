@@ -1,333 +1,454 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "u__topic.h"
 #include "u__types.h"
+#include "u__object.h"
+#include "u__observable.h"
 #include "u__entity.h"
-#include "u__dispatcher.h"
 #include "u__domain.h"
 #include "u__participant.h"
 #include "u__user.h"
 
 #include "v_kernel.h"
 #include "v_topic.h"
+#include "v_topicAdapter.h"
+#include "v_topicQos.h"
 #include "v_entity.h"
 #include "v_filter.h"
+#include "v_observable.h"
+#include "v_observer.h"
 #include "os_report.h"
 
-u_topic
-u_topicNew(
-    u_participant p,
-    const c_char *name,
-    const c_char *typeName,
-    const c_char *keyList,
-    v_topicQos qos)
+#define u_topicReadClaim(_this, topic, claim) \
+        u_observableReadClaim(u_observable(_this), (v_public *)(topic), claim)
+
+#define u_topicWriteClaim(_this, topic, claim) \
+        u_observableWriteClaim(u_observable(_this), (v_public *)(topic), claim)
+
+#define u_topicRelease(_this, claim) \
+        u_observableRelease(u_observable(_this), claim)
+
+u_result
+u__topicDeinitW(
+    void *_this)
 {
-    u_topic _this = NULL;
-    v_topic kt;
-    v_kernel kk;
     u_result result;
+    u_topic topic;
+    u_participant p;
+    v_participant kp;
+    v_topic kt;
 
-    if (name != NULL) {
-        if (p != NULL) {
-            result = u_entityWriteClaim(u_entity(p->domain),(v_entity*)(&kk));
-            if (result == U_RESULT_OK) {
-                assert(kk);
-                kt = v_topicNew(kk,name,typeName,keyList,qos);
-                if (kt != NULL) {
-                    _this = u_entityAlloc(p,u_topic,kt,FALSE);
-                    if (_this != NULL) {
-                      /* This call is moved to u_entityNew to support
-                       * proxy Topics. This move does not comply with
-                       * the constructor pattern used by all other
-                       * Entities, so this need to be fixed.
-                       *
-                    result = u_topicInit(_this,name,p);
-                       */
+    assert(_this != NULL);
 
-                        if (result == U_RESULT_OK) {
-                            v_entitySetUserData(v_entity(kt), _this);
-                        } else {
-                            OS_REPORT_1(OS_ERROR, "u_topicNew", 0,
-                                        "Initialisation failed. "
-                                        "For Topic: <%s>", name);
-                            u_topicFree(_this);
-                        }
-                    } else {
-                        OS_REPORT_1(OS_ERROR, "u_topicNew", 0,
-                                    "Create user proxy failed. "
-                                    "For Topic: <%s>", name);
-                    }
-                    c_free(kt);
-                } else {
-                    OS_REPORT_1(OS_WARNING, "u_topicNew", 0,
-                                "Create kernel entity failed. "
-                                "For Topic: <%s>", name);
-                }
-                result = u_entityRelease(u_entity(p->domain));
-            } else {
-                OS_REPORT_1(OS_WARNING, "u_topicNew", 0,
-                            "Claim Kernel failed. "
-                            "For Topic: <%s>", name);
+    topic = u_topic(_this);
+    p = topic->participant;
+    result = u_observableWriteClaim(u_observable(p), (v_public *)(&kp), C_MM_RESERVATION_NO_CHECK);
+    if (result == U_RESULT_OK) {
+        assert(kp);
+        result = u_observableWriteClaim(u_observable(_this), (v_public *)(&kt), C_MM_RESERVATION_NO_CHECK);
+        if (result == U_RESULT_OK) {
+            assert(kt);
+            (void)v_observableRemoveObserver(v_observable(kt), v_observer(kp), NULL);
+            u_observableRelease(u_observable(_this), C_MM_RESERVATION_NO_CHECK);
+        } else {
+            OS_REPORT(OS_WARNING, "u__topicDeinitW", result,
+                        "Claim topic failed. "
+                        "Topic = 0x%"PA_PRIxADDR"", (os_address)_this);
+        }
+        u_observableRelease(u_observable(p), C_MM_RESERVATION_NO_CHECK);
+    } else {
+        OS_REPORT(OS_WARNING, "u__topicDeinitW", result,
+                    "Claim participant failed. "
+                    "Topic = 0x%"PA_PRIxADDR"", (os_address)_this);
+    }
+
+    if ((result == U_RESULT_OK) ||
+        (result == U_RESULT_ALREADY_DELETED) ||
+        (result == U_RESULT_OUT_OF_MEMORY)) {
+        result = u__entityDeinitW(_this);
+        if (result == U_RESULT_OK) {
+            if (topic->name) {
+                os_free(topic->name);
+                topic->name = NULL;
             }
         } else {
-            OS_REPORT_1(OS_ERROR,"u_topicNew",0,
-                        "No Participant specified. "
-                        "For Topic: <%s>", name);
+            OS_REPORT(OS_WARNING,
+                        "u__topicDeinitW", result,
+                        "Operation u__topicDeinitW failed. "
+                        "Topic = 0x%"PA_PRIxADDR"",
+                        (os_address)_this);
         }
+    }
+
+    return result;
+}
+
+void
+u__topicFreeW(
+    void *_vthis)
+{
+    u__entityFreeW(_vthis);
+}
+
+u_topic
+u_topicNewFromTopicInfo(
+    u_participant p,
+    const struct v_topicInfo *info,
+    c_bool announce)
+{
+    u_topic _this = NULL;
+    v_topicAdapter kt;
+    v_participant kp;
+    u_result result;
+
+    assert (p);
+    assert (info);
+
+    result = u_observableWriteClaim(u_observable(p),(v_public*)(&kp), C_MM_RESERVATION_LOW);
+    if (result == U_RESULT_OK) {
+        assert(kp);
+        kt = v_topicAdapterNewFromTopicInfo(kp,info,announce);
+        if (kt != NULL) {
+            _this = u_objectAlloc(sizeof(*_this), U_TOPIC, u__topicDeinitW, u__topicFreeW);
+            if (_this != NULL) {
+                result = u_topicInit(_this,info->name,kt,p);
+                if (result == U_RESULT_OK) {
+                    result = u_observableWriteClaim(u_observable(p), (v_public *)(&kp), C_MM_RESERVATION_ZERO);
+                    if (result == U_RESULT_OK) {
+                        assert(kp);
+                        v_observableAddObserver(v_observable(kt), v_observer(kp), NULL);
+                        u_observableRelease(u_observable(p), C_MM_RESERVATION_ZERO);
+                    }
+                } else {
+                    OS_REPORT(OS_ERROR, "u_topicNew", result,
+                                "Initialisation failed. "
+                                "For Topic: <%s>", info->name);
+                    u_objectFree (u_object (_this));
+                    _this = NULL;
+                }
+            } else {
+                OS_REPORT(OS_ERROR, "u_topicNew", U_RESULT_OUT_OF_MEMORY,
+                            "Create user proxy failed. "
+                            "For Topic: <%s>", info->name);
+            }
+            c_free(kt);
+        } else {
+            OS_REPORT(OS_WARNING, "u_topicNewFromTopicInfo", U_RESULT_OUT_OF_MEMORY,
+                      "Create kernel entity failed. "
+                      "For Topic: <%s>", info->name);
+        }
+        u_observableRelease(u_observable(p),C_MM_RESERVATION_LOW);
     } else {
-        OS_REPORT(OS_ERROR,"u_topicNew",0,
-                  "No name specified.");
+        OS_REPORT(OS_WARNING, "u_topicNewFromTopicInfo", U_RESULT_INTERNAL_ERROR,
+                  "Claim Kernel failed. "
+                  "For Topic: <%s>", info->name);
     }
     return _this;
 }
 
 u_result
 u_topicInit(
-    u_topic _this,
-    const c_char *name,
-    u_participant p)
+    const u_topic _this,
+    const os_char *name,
+    const v_topicAdapter kt,
+    const u_participant p)
 {
     u_result result;
 
-    if (_this != NULL) {
-        result = u_dispatcherInit(u_dispatcher(_this));
-        if (result == U_RESULT_OK) {
-            _this->name = os_strdup(name);
-            _this->participant = p;
-            u_entity(_this)->flags |= U_ECREATE_INITIALISED;
-/* Note: redefinitions of the a topic are added to the list. */
-            result = u_participantAddTopic(p,_this);
-        }
-    } else {
-        OS_REPORT(OS_ERROR,"u_topicInit",0, "Illegal parameter.");
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
+    assert(_this != NULL);
+    assert(name != NULL);
 
-u_result
-u_topicFree(
-    u_topic _this)
-{
-    u_result result;
-    c_bool destroy;
-
-    result = u_entityLock(u_entity(_this));
+    result = u_entityInit(u_entity(_this),v_entity(kt), u_observableDomain(u_observable(p)));
     if (result == U_RESULT_OK) {
-        destroy = u_entityDereference(u_entity(_this));
-        /* if refCount becomes zero then this call
-         * returns true and destruction can take place
-         */
-        if (destroy) {
-            result = u_topicDeinit(_this);
-            if (result == U_RESULT_OK) {
-                u_entityDealloc(u_entity(_this));
-            } else {
-                OS_REPORT_2(OS_WARNING,
-                            "u_topicFree",0,
-                            "Operation u_topicDeinit failed: "
-                            "Topic = 0x%x, result = %s.",
-                            _this, u_resultImage(result));
-                u_entityUnlock(u_entity(_this));
-            }
-        } else {
-            u_entityUnlock(u_entity(_this));
-        }
-    } else {
-        OS_REPORT_2(OS_WARNING,
-                    "u_topicFree",0,
-                    "Operation u_entityLock failed: "
-                    "Topic = 0x%x, result = %s.",
-                    _this, u_resultImage(result));
+        _this->name = os_strdup(name);
+        _this->participant = p;
     }
     return result;
 }
 
-u_result
-u_topicDeinit(
-    u_topic _this)
+u_topic
+u_topicNew(
+    const u_participant p,
+    const os_char *name,
+    const os_char *typeName,
+    const os_char *keyList,
+    u_topicQos qos)
 {
+    u_topic _this = NULL;
+    v_topicAdapter kt;
+    v_participant kp;
     u_result result;
 
-    if (_this != NULL) {
-        result = u_participantRemoveTopic(_this->participant, _this);
-        if (result == U_RESULT_OK) {
-            result = u_dispatcherDeinit(u_dispatcher(_this));
-            if (result == U_RESULT_OK) {
-                if (_this->name) {
-                    os_free(_this->name);
-                    _this->name = NULL;
+    assert(name != NULL);
+    assert(typeName != NULL);
+    assert(p != NULL);
+
+    result = u_observableWriteClaim(u_observable(p),(v_public *)(&kp), C_MM_RESERVATION_HIGH);
+    if (result == U_RESULT_OK) {
+        assert(kp);
+        kt = v_topicAdapterNew(kp,name,typeName,keyList,qos);
+        if (kt != NULL) {
+            _this = u_objectAlloc(sizeof(*_this), U_TOPIC, u__topicDeinitW, u__topicFreeW);
+            if (_this != NULL) {
+                result = u_topicInit(_this,name,kt,p);
+                if (result == U_RESULT_OK) {
+                    result = u_observableWriteClaim(u_observable(p), (v_public *)(&kp), C_MM_RESERVATION_LOW);
+                    if (result == U_RESULT_OK) {
+                        assert(kp);
+                        v_observableAddObserver(v_observable(kt), v_observer(kp), NULL);
+                        u_observableRelease(u_observable(p), C_MM_RESERVATION_LOW);
+                    }
+                } else {
+                    OS_REPORT(OS_ERROR, "u_topicNew", result,
+                                "Initialisation failed. "
+                                "For Topic: <%s>", name);
+                    u_objectFree (u_object (_this));
+                    _this = NULL;
                 }
             } else {
-                OS_REPORT_1(OS_WARNING,
-                            "u_topicDeinit", 0,
-                            "Operation u_dispatcherDeinit failed. "
-                            "Topic = 0x%x",
-                            _this);
+                OS_REPORT(OS_ERROR, "u_topicNew", U_RESULT_OUT_OF_MEMORY,
+                            "Create user proxy failed. "
+                            "For Topic: <%s>", name);
             }
+            c_free(kt);
         } else {
-            OS_REPORT_2(OS_WARNING,
-                        "u_topicDeinit", 0,
-                        "The Topic (0x%x) could not be removed "
-                        "from the Participant (0x%x).",
-                        _this, _this->participant);
+            OS_REPORT(OS_WARNING, "u_topicNew", U_RESULT_OUT_OF_MEMORY,
+                        "Create kernel entity failed. "
+                        "For Topic: <%s>", name);
         }
+        u_observableRelease(u_observable(p), C_MM_RESERVATION_HIGH);
     } else {
-        OS_REPORT(OS_ERROR,
-                  "u_topicDeinit", 0,
-                  "Illegal parameter: Topic == NULL.");
-        result = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_WARNING, "u_topicNew", U_RESULT_INTERNAL_ERROR,
+                    "Claim Kernel failed. "
+                    "For Topic: <%s>", name);
+    }
+    return _this;
+}
+
+u_result
+u_topicGetQos (
+    const u_topic _this,
+    u_topicQos *qos)
+{
+    u_result result;
+    v_topic vTopic;
+    v_topicQos vQos;
+
+    assert(_this);
+    assert(qos);
+
+    result = u_topicReadClaim(_this, &vTopic, C_MM_RESERVATION_ZERO);
+    if (result == U_RESULT_OK) {
+        vQos = v_topicGetQos(vTopic);
+        *qos = u_topicQosNew(vQos);
+        c_free(vQos);
+        u_topicRelease(_this, C_MM_RESERVATION_ZERO);
     }
     return result;
 }
 
-c_char *
-u_topicName(
-    u_topic t)
+u_result
+u_topicSetQos (
+    const u_topic _this,
+    const u_topicQos qos)
 {
-    c_char *name;
+    u_result result;
+    v_topic vTopic;
 
-    if (t) {
-        name = os_strdup(t->name);
-    } else {
-        OS_REPORT(OS_WARNING, "u_topicName", 0,
-                  "topic == NULL.");
-        name = NULL;
+    assert(_this);
+    assert(qos);
+
+    result = u_topicReadClaim(_this, &vTopic, C_MM_RESERVATION_HIGH);
+    if (result == U_RESULT_OK) {
+        result = u_resultFromKernel(v_topicSetQos(vTopic, qos));
+        u_topicRelease(_this, C_MM_RESERVATION_HIGH);
     }
-    return name;
+    return result;
 }
 
-c_char *
+os_char *
+u_topicName(
+    const u_topic _this)
+{
+    assert(_this);
+
+    return os_strdup(_this->name);
+}
+
+os_char *
 u_topicTypeName(
-    u_topic t)
+    const u_topic _this)
 {
     v_topic kt;
     u_result r;
-    c_char *name;
+    os_char *name;
 
+    assert(_this);
 
-    r = u_entityReadClaim(u_entity(t),(v_entity*)(&kt));
+    r = u_topicReadClaim(_this, &kt, C_MM_RESERVATION_ZERO);
     if (r == U_RESULT_OK) {
         assert(kt);
         name = (c_char *)c_metaScopedName(c_metaObject(v_topicDataType(kt)));
-        u_entityRelease(u_entity(t));
+        u_topicRelease(_this, C_MM_RESERVATION_ZERO);
     } else {
-        OS_REPORT(OS_WARNING, "u_topicTypeName", 0,
+        OS_REPORT(OS_WARNING, "u_topicTypeName", r,
                   "Could not claim topic.");
         name = NULL;
     }
     return name;
 }
 
+os_uint32
+u_topicTypeSize(
+    const u_topic _this)
+{
+    v_topic kt;
+    u_result r;
+    os_uint32 size = 0;
+
+    assert(_this);
+
+    r = u_topicReadClaim(_this, &kt, C_MM_RESERVATION_ZERO);
+    if (r == U_RESULT_OK) {
+        assert(kt);
+        size = (os_uint32)c_typeSize(v_topicDataType(kt));
+        u_topicRelease(_this, C_MM_RESERVATION_ZERO);
+    } else {
+        OS_REPORT(OS_WARNING, "u_topicTypeSize", r, "Could not claim topic.");
+    }
+    return size;
+}
+
+os_char *
+u_topicKeyExpr(
+    const u_topic _this)
+{
+    v_topic kt;
+    u_result r;
+    os_char *keyExpr;
+
+    assert(_this);
+
+    r = u_topicReadClaim(_this, &kt, C_MM_RESERVATION_ZERO);
+    if (r == U_RESULT_OK) {
+        assert(kt);
+        keyExpr = os_strdup(v_topicKeyExpr(kt));
+        u_topicRelease(_this, C_MM_RESERVATION_ZERO);
+    } else {
+        OS_REPORT(OS_WARNING, "u_topicKeyExpr", r,
+                  "Could not claim topic.");
+        keyExpr = NULL;
+    }
+    return keyExpr;
+}
+
 u_result
 u_topicGetInconsistentTopicStatus (
-    u_topic _this,
-    c_bool reset,
-    v_statusAction action,
-    c_voidp arg)
+    const u_topic _this,
+    u_bool reset,
+    u_statusAction action,
+    void *arg)
 {
     v_topic topic;
     u_result result;
     v_result r;
 
-    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&topic));
+    assert(_this);
+    assert(action);
+
+    result = u_topicReadClaim(_this, &topic,C_MM_RESERVATION_ZERO);
     if (result == U_RESULT_OK) {
         assert(topic);
         r = v_topicGetInconsistentTopicStatus(topic,reset,action,arg);
-        u_entityRelease(u_entity(_this));
+        u_topicRelease(_this, C_MM_RESERVATION_ZERO);
         result = u_resultFromKernel(r);
     }
     return result;
 }
-
 
 u_result
 u_topicGetAllDataDisposedStatus (
-    u_topic _this,
-    c_bool reset,
-    v_statusAction action,
-    c_voidp arg)
+    const u_topic _this,
+    u_bool reset,
+    u_statusAction action,
+    void *arg)
 {
     v_topic topic;
     u_result result;
     v_result r;
 
-    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&topic));
+    assert(_this);
+    assert(action);
+
+    result = u_topicReadClaim(_this, &topic,C_MM_RESERVATION_ZERO);
     if (result == U_RESULT_OK) {
         assert(topic);
         r = v_topicGetAllDataDisposedStatus(topic,reset,action,arg);
-        u_entityRelease(u_entity(_this));
+        u_topicRelease(_this, C_MM_RESERVATION_ZERO);
         result = u_resultFromKernel(r);
     }
     return result;
 }
 
 u_result
-u_topicDisposeAllData (u_topic _this)
+u_topicDisposeAllData (
+    const u_topic _this)
 {
     v_topic topic;
     u_result result;
     v_result r;
 
-    result = u_entityWriteClaim(u_entity(_this), (v_entity*)(&topic));
+    assert(_this);
+
+    result = u_topicReadClaim(_this, &topic, C_MM_RESERVATION_LOW);
     if (result == U_RESULT_OK) {
         assert(topic);
         r = v_topicDisposeAllData(topic);
-        u_entityRelease(u_entity(_this));
+        u_topicRelease(_this, C_MM_RESERVATION_LOW);
         result = u_resultFromKernel(r);
     }
     return result;
 }
 
-c_bool
-u_topicIsBuiltin (
-    u_topic _this)
-{
-    c_bool result = FALSE;
-
-    if (_this) {
-        result = (strncmp(_this->name, "DCPS", 4) == 0);
-    }
-    return result;
-}
-
-u_participant
-u_topicParticipant (
-    u_topic _this)
-{
-    return _this->participant;
-}
-
-c_bool
+u_bool
 u_topicContentFilterValidate (
-    u_topic _this,
-    q_expr expr,
-    c_value params[])
+    const u_topic _this,
+    const q_expr expr,
+    const c_value params[])
 {
     v_topic topic;
-    c_type type;
-    c_bool result;
+    u_bool result;
     q_expr subexpr, term;
     int i;
     v_filter filter;
     u_result uResult;
 
+    assert(_this);
+    assert(expr);
+
     result = FALSE;
     filter = NULL;
-    uResult = u_entityReadClaim(u_entity(_this), (v_entity*)(&topic));
+    uResult = u_topicReadClaim(_this, &topic, C_MM_RESERVATION_LOW);
     if (uResult == U_RESULT_OK) {
         assert(topic);
-        type = v_topicMessageType(topic);
         i = 0;
         subexpr = q_getPar(expr, i); /* get rid of Q_EXPR_PROGRAM */
         while ((term = q_getPar(subexpr, i++)) != NULL) {
@@ -335,7 +456,7 @@ u_topicContentFilterValidate (
                 filter = v_filterNew(topic, term, params);
             }
         }
-        u_entityRelease(u_entity(_this));
+        u_topicRelease(_this, C_MM_RESERVATION_LOW);
     }
     if (filter != NULL) {
         result = TRUE;
@@ -344,34 +465,55 @@ u_topicContentFilterValidate (
     return result;
 }
 
-c_type
-u_topicGetUserType (
-    u_topic _this)
+u_bool
+u_topicContentFilterValidate2 (
+    const u_topic _this,
+    const q_expr expr,
+    const c_value params[])
 {
     v_topic topic;
-    c_type type = NULL;
-    u_result uResult = u_entityReadClaim(u_entity(_this), (v_entity*)(&topic));
+    u_bool result;
+    v_filter filter;
+    u_result uResult;
+
+    assert(_this);
+    assert(expr);
+
+    result = FALSE;
+    filter = NULL;
+    uResult = u_topicReadClaim(_this, &topic, C_MM_RESERVATION_LOW);
     if (uResult == U_RESULT_OK) {
         assert(topic);
-        type = v_topicGetUserType(topic);
-        c_keep(type);
-        u_entityRelease(u_entity(_this));
+        filter = v_filterNew(topic, expr, params);
+        u_topicRelease(_this, C_MM_RESERVATION_LOW);
     }
-    return type;
+    if (filter != NULL) {
+        result = TRUE;
+        c_free(filter);
+    }
+    return result;
 }
 
-c_string
-u_topicGetTopicKeys (
-    u_topic _this)
+os_char *
+u_topicMetaDescriptor(
+    const u_topic _this)
 {
-    v_topic topic;
-    c_string keys = NULL;
-    u_result uResult = u_entityReadClaim(u_entity(_this), (v_entity*)(&topic));
-    if (uResult == U_RESULT_OK) {
-        assert(topic);
-        keys = v_topicKeyExpr(topic);
-        c_keep(keys);
-        u_entityRelease(u_entity(_this));
+    v_topic kt;
+    u_result r;
+    os_char *descriptor;
+
+    assert(_this);
+
+    r = u_topicReadClaim(_this, &kt, C_MM_RESERVATION_ZERO);
+    if (r == U_RESULT_OK) {
+        assert(kt);
+        descriptor = v_topicMetaDescriptor(kt);
+        u_topicRelease(_this, C_MM_RESERVATION_ZERO);
+    } else {
+        OS_REPORT(OS_WARNING, "u_topicMetaDescriptor", r,
+                  "Could not claim topic.");
+        descriptor = NULL;
     }
-    return keys;
+    return descriptor;
 }
+

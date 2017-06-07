@@ -1,0 +1,12 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+startOSPL
+
+./subscriber &
+./publisher
+
+sleep 4
+
+stopOSPL

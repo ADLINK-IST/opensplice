@@ -1,8 +1,10 @@
+.NOTPARALLEL:
+
 JAR_MODULE	 = tooling_common.jar
 JAR_LOCATION = $(OSPL_HOME)
 JAR_INC_DIR	 = $(OSPL_HOME)/jar/$(SPLICE_TARGET)
 
-JAVA_INC	= $(JAR_INC_DIR)/cmapi.jar
+JAVA_INC	= $(JAR_INC_DIR)/cmapi.jar:$(JAR_INC_DIR)/cmdataadapter.jar
 
 TMP_CODE_DIR    = bld/$(SPLICE_TARGET)
 JTIMESTAMP      = $(TMP_CODE_DIR)/.java_common.timestamp
@@ -30,8 +32,6 @@ all link: $(JTIMESTAMP) jar
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
 
-analyse:
-	@$(ANALYSE) bld/$(SPLICE_TARGET) code
 
 clean:
 	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) manifest/$(SPLICE_TARGET)

@@ -31,14 +31,14 @@ class NoOpPublisherListener;
 }
 }
 
-class dds::pub::PublisherListener : public virtual dds::pub::AnyDataWriterListener
+class OMG_DDS_API dds::pub::PublisherListener : public virtual dds::pub::AnyDataWriterListener
 {
 public:
     virtual ~PublisherListener();
 };
 
 
-class dds::pub::NoOpPublisherListener :
+class OMG_DDS_API dds::pub::NoOpPublisherListener :
     public virtual dds::pub::PublisherListener,
     public virtual dds::pub::NoOpAnyDataWriterListener
 {

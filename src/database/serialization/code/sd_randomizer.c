@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file services/serialization/code/sd_randomizer.c
@@ -93,7 +101,7 @@ sd_randomizerNextCharValue(
     c_ulong result;
 
     /* Letters and digits only */
-    result = (sd_randomizerNextValue(randomizer) % 
+    result = (sd_randomizerNextValue(randomizer) %
                (SD_NUM_DIGIT + SD_NUM_UPPERCASE + SD_NUM_LOWERCASE));
     if (result < SD_NUM_DIGIT) {
         /* Digit */
@@ -167,13 +175,15 @@ sd_randomizerNextBooleanValue(
  *  In case of a variable length array, a new c_array with this length and the
  *  proper subtype is created. Deepwalk will automatically walk over the
  *  array elements.
- * 
+ *
  *  In case of a set, a new c_set with this length is created and filled with
  *  non-initialized objects. Deepwalk will automatically walk over the set
  *  elements.
  */
 
-static void
+static c_bool sd_randCollection(c_collectionType collectionType, c_object *objectPtr, sd_randomizer randomizer) __nonnull_all__ __attribute_warn_unused_result__;
+
+static c_bool
 sd_randCollection(
     c_collectionType collectionType,
     c_object *objectPtr,
@@ -187,68 +197,80 @@ sd_randCollection(
     c_octet randVal;
 
     /* Different behaviour for reftypes and non-reftypes */
-    if (((collectionType->kind == C_ARRAY) ||
-         (collectionType->kind == C_SEQUENCE)) &&
-         !(int)c_typeIsRef(c_type(collectionType))) {
-           
-        ; /* Do nothing */
-        
+    if (((collectionType->kind == OSPL_C_ARRAY) ||
+         (collectionType->kind == OSPL_C_SEQUENCE)) &&
+        !c_typeIsRef(c_type(collectionType))) {
+
+        return TRUE; /* Do nothing */
+
     } else {
-       
         SD_RAND_OCTET(randomizer, &randVal);
-        
+
         /* Chance of having a valid reference is 240 out of 256 */
         if ((int)randVal > 15) {
-          
+
             /* Only serialize the collection size in case of list/set/bag/etc */
             switch (collectionType->kind) {
-            case C_STRING:
-                colSize =  ((c_ulong)sd_randomizerNextValue(randomizer) % (SD_COLLECTION_SIZE_MAX-1U)) + 1U;
-                str = (c_char *)os_malloc(colSize + 1U);
-                for (i=0; i<colSize; i++) {
-                    SD_RAND_CHAR(randomizer,&(str[i]));
-                }
-                str[colSize] = '\0';
-                *((c_string *)(*objectPtr)) = c_stringNew(c_getBase(collectionType), str);
-                os_free(str);
-            break;
-            case C_ARRAY:
-            case C_SEQUENCE:
-                /* Deserialize into new array if necessary */
-                /* Only variable length arrays need to be created. */
-                SD_CONFIDENCE(c_typeIsRef(c_type(collectionType)));
-                colSize = (sd_randomizerNextValue(randomizer) % (SD_COLLECTION_SIZE_MAX-1U)) + 1U;
-                *((c_array *)(*objectPtr)) = c_arrayNew(collectionType->subType, (c_long)colSize);
-            break;
-            case C_SET:
-                /* Deserialize into a set */
-                colSize = (sd_randomizerNextValue(randomizer) % (SD_COLLECTION_SIZE_MAX-1U)) + 1U;
-                /* Create the set */
-                set = c_setNew(collectionType->subType);
-                *((c_set *)(*objectPtr)) = set;
-                /* And initialize it with objects */
-                for (i=0; i<colSize; i++) {
-                    object = c_new(collectionType->subType);
-                    SD_CONFIDENCE(object);
-                    inserted = c_insert(set, object);
-                    SD_CONFIDENCE(inserted == object);
-                    /* Local reference is released */
-                    c_free(object);
-                }
-            break;
-            case C_LIST:
-            case C_BAG:
-            case C_DICTIONARY:
-            case C_QUERY:
-                SD_CONFIDENCE(FALSE);
-            break;
-            default:
-                SD_CONFIDENCE(FALSE); /* No other collection types supported */
-            break;
+                case OSPL_C_STRING:
+                    colSize =  ((c_ulong)sd_randomizerNextValue(randomizer) % (SD_COLLECTION_SIZE_MAX-1U)) + 1U;
+                    str = os_malloc(colSize + 1U);
+                    for (i=0; i<colSize; i++) {
+                        SD_RAND_CHAR(randomizer,&(str[i]));
+                    }
+                    str[colSize] = '\0';
+                    if ((*((c_string *)(*objectPtr)) = c_stringNew_s (c_getBase(collectionType), str)) == NULL) {
+                        os_free(str);
+                        return FALSE;
+                    }
+                    os_free(str);
+                    break;
+                case OSPL_C_ARRAY:
+                case OSPL_C_SEQUENCE:
+                    /* Deserialize into new array if necessary */
+                    /* Only variable length arrays need to be created. */
+                    SD_CONFIDENCE(c_typeIsRef(c_type(collectionType)));
+                    colSize = (sd_randomizerNextValue(randomizer) % (SD_COLLECTION_SIZE_MAX-1U)) + 1U;
+                    if ((*((c_array *)(*objectPtr)) = c_arrayNew_s(collectionType->subType, colSize)) == NULL && colSize) {
+                        return FALSE;
+                    }
+                    break;
+                case OSPL_C_SET:
+                    /* Deserialize into a set */
+                    colSize = (sd_randomizerNextValue(randomizer) % (SD_COLLECTION_SIZE_MAX-1U)) + 1U;
+                    /* Create the set */
+                    set = c_setNew(collectionType->subType);
+                    if (set == NULL) {
+                        return FALSE;
+                    }
+                    /* And initialize it with objects */
+                    for (i=0; i<colSize; i++) {
+                        if ((object = c_new_s(collectionType->subType)) == NULL) {
+                            c_free(set);
+                            return FALSE;
+                        }
+                        SD_CONFIDENCE(object);
+                        inserted = ospl_c_insert(set, object);
+                        SD_CONFIDENCE(inserted == object);
+                        OS_UNUSED_ARG(inserted);
+                        /* Local reference is released */
+                        c_free(object);
+                    }
+                    *((c_set *)(*objectPtr)) = set;
+                    break;
+                case OSPL_C_LIST:
+                case OSPL_C_BAG:
+                case OSPL_C_DICTIONARY:
+                case OSPL_C_QUERY:
+                    SD_CONFIDENCE(FALSE);
+                    return FALSE;
+                default:
+                    SD_CONFIDENCE(FALSE); /* No other collection types supported */
+                    return FALSE;
             }
         } else { /* not a valid reference */
-           *((c_object *)(*objectPtr)) = NULL;
+            *((c_object *)(*objectPtr)) = NULL;
         }
+        return TRUE;
     }
 }
 
@@ -259,34 +281,33 @@ sd_randCollection(
  *         primitive type requested.
  */
 
-static void
+static c_bool sd_randPrimitive(c_primitive primitive, c_object *objectPtr, sd_randomizer randomizer) __nonnull_all__;
+
+static c_bool
 sd_randPrimitive(
     c_primitive primitive,
     c_object *objectPtr,
     sd_randomizer randomizer)
 {
-#define __CASE__(kind)                       \
-    case P_##kind:                           \
-        SD_RAND(kind,randomizer,*objectPtr); \
-    break;
-
     switch (primitive->kind) {
-    __CASE__(CHAR)
-    __CASE__(OCTET)
-    __CASE__(BOOLEAN)
-    __CASE__(USHORT)
-    __CASE__(SHORT)
-    __CASE__(ULONG)
-    __CASE__(LONG)
-    __CASE__(ULONGLONG)
-    __CASE__(LONGLONG)
-    __CASE__(FLOAT)
-    __CASE__(DOUBLE)
-    default:
-        SD_CONFIDENCE(FALSE);
-    break;
+#define __CASE__(kind) case P_##kind: SD_RAND(kind,randomizer,*objectPtr); return TRUE;
+            __CASE__(CHAR)
+            __CASE__(OCTET)
+            __CASE__(BOOLEAN)
+            __CASE__(USHORT)
+            __CASE__(SHORT)
+            __CASE__(ULONG)
+            __CASE__(LONG)
+            __CASE__(ULONGLONG)
+            __CASE__(LONGLONG)
+            __CASE__(FLOAT)
+            __CASE__(DOUBLE)
+#undef __CASE__
+        default:
+            SD_CONFIDENCE(FALSE);
+            return FALSE;
     }
-/* QAC EXPECT 5101; cyclomatic complexity is no problem here */    
+    return FALSE;
 }
 
 /** \brief Fill the data pointed to with a random enumeration value.
@@ -294,7 +315,9 @@ sd_randPrimitive(
  *  First, the number of elements in this enumeration is determined. Then
  *  a random value within this range is determined.
  */
-static void
+static c_bool sd_randEnumeration(c_enumeration enumeration, c_object *objectPtr, sd_randomizer randomizer) __nonnull_all__;
+
+static c_bool
 sd_randEnumeration(
     c_enumeration enumeration,
     c_object *objectPtr,
@@ -306,17 +329,20 @@ sd_randEnumeration(
     c_value selectedValue;
     c_literal operandValue;
 
-    range = (c_ulong)c_arraySize(enumeration->elements);
+    range = c_arraySize(enumeration->elements);
     selectedEnum = enumeration->elements[sd_randomizerNextValue(randomizer) % range];
     operandValue = c_operandValue(selectedEnum->operand);
     selectedValue = operandValue->value;
     c_free(operandValue);
     SD_CONFIDENCE(selectedValue.kind == V_LONG);
     *((c_long *)(*objectPtr)) = selectedValue.is.Long;
+    return TRUE;
 }
 
 /** \brief Main dispatcher for filling any data type with random values.*/
-static void
+static c_bool sd_randType(c_type type, c_object *objectPtr, sd_randomizer randomizer) __nonnull_all__ __attribute_warn_unused_result__;
+
+static c_bool
 sd_randType(
     c_type type,
     c_object *objectPtr,
@@ -326,31 +352,29 @@ sd_randType(
 
     actualType = c_typeActualType(type);
     switch (c_baseObject(actualType)->kind) {
-    case M_COLLECTION:
-        sd_randCollection(c_collectionType(actualType), objectPtr, randomizer);
-    break;
-    case M_PRIMITIVE:
-        sd_randPrimitive(c_primitive(actualType), objectPtr, randomizer);
-    break;
-    case M_ENUMERATION:
-        sd_randEnumeration(c_enumeration(actualType), objectPtr, randomizer);
-    break;
-    default:
-        SD_CONFIDENCE(FALSE); /* No other expected than these */
-    break;
+        case M_COLLECTION:
+            return sd_randCollection(c_collectionType(actualType), objectPtr, randomizer);
+        case M_PRIMITIVE:
+            return sd_randPrimitive(c_primitive(actualType), objectPtr, randomizer);
+        case M_ENUMERATION:
+            return sd_randEnumeration(c_enumeration(actualType), objectPtr, randomizer);
+        default:
+            SD_CONFIDENCE(FALSE); /* No other expected than these */
+            return FALSE;
     }
 }
 
 /** \brief Callback function for deepwalk.*/
-static void
+static c_bool sd_randCallback(c_type type, c_object *objectPtr, void *arg) __nonnull_all__ __attribute_warn_unused_result__;
+
+static c_bool
 sd_randCallback(
     c_type type,
     c_object *objectPtr,
     void *arg)
 {
-    sd_randomizer randomizer = (sd_randomizer)arg;
-    
-    sd_randType(type, objectPtr, randomizer);
+    sd_randomizer randomizer = arg;
+    return sd_randType(type, objectPtr, randomizer);
 }
 
 
@@ -366,15 +390,9 @@ sd_randomizer
 sd_randomizerNew(
     c_base base)
 {
-    sd_randomizer result;
-
-    result = (sd_randomizer)os_malloc((os_uint32)sizeof(*result));
-
-    if (result) {
-        sd_randomizerInit(result, 0);
-        result->base = base;
-    }
-
+    sd_randomizer result = os_malloc(sizeof(*result));
+    sd_randomizerInit(result, 0);
+    result->base = base;
     return result;
 }
 
@@ -420,20 +438,24 @@ sd_randomizerRandomInstance(
     sd_randomizer randomizer,
     const c_char *typeName)
 {
-    c_object result=NULL;
+    c_object result = NULL;
     c_type resultType;
 
-    resultType = c_resolve(randomizer->base, typeName);
-    if (resultType) {
-        result = c_new(resultType);
-        if (result) { 
-            sd_deepwalk(resultType, &result, 
-                        sd_randCallback, randomizer);
-        }
+    if ((resultType = c_resolve(randomizer->base, typeName)) == NULL) {
+        return NULL;
+    } else if ((result = c_new_s(resultType)) == NULL) {
         c_free(resultType);
+        return NULL;
+    } else {
+        if (!sd_deepwalk(resultType, &result, sd_randCallback, randomizer)) {
+            c_free(resultType);
+            c_free(result);
+            return NULL;
+        } else {
+            c_free(resultType);
+            return result;
+        }
     }
-
-    return result;
 }
 
 

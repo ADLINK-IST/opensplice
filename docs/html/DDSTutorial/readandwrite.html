@@ -1,0 +1,768 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Reading and Writing Data &mdash; The Data Distribution Service Tutorial</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Data Distribution Service Tutorial" href="index.html" />
+    <link rel="next" title="4. Quality of Service" href="qos.html" />
+    <link rel="prev" title="2. Topics, Domains and Partitions" href="topics-etc.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="qos.html" title="4. Quality of Service"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="topics-etc.html" title="2. Topics, Domains and Partitions"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">DDS Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="reading-and-writing-data">
+<span id="id1"></span><h1>3. Reading and Writing Data<a class="headerlink" href="#reading-and-writing-data" title="Permalink to this headline">¶</a></h1>
+<p>The previous chapter covered the definition and semantics of DDS
+topics, topic-instances and samples. It also described domains and
+partitions and the roles they play in organizing application data flows.
+This chapter examines the mechanisms provided by DDS for reading
+and writing data.</p>
+<div class="section" id="writing-data">
+<h2>3.1. Writing Data<a class="headerlink" href="#writing-data" title="Permalink to this headline">¶</a></h2>
+<p>As already illustrated, writing data with DDS is as simple
+as calling the <tt class="docutils literal"><span class="pre">write</span></tt> method on the <tt class="docutils literal"><span class="pre">DataWriter</span></tt>. Yet to
+be able to take full advantage of DDS it is necessary to understand
+the relationship between writers and topic-instances life-cycles.</p>
+<p>To explain the difference between topics and the instances of a topic&#8217;s
+datatype, this Tutorial made the analogy between topics/topic datatypes and
+classes/objects in an Object-Oriented Programming language, such
+as Java or C++. Like objects, the instances of the topic&#8217;s datatype have:</p>
+<blockquote>
+<div><ul class="simple">
+<li>an identity provided by their unique key value, and</li>
+<li>a life-cycle.</li>
+</ul>
+</div></blockquote>
+<p>The instance life-cycle of a topic&#8217;s datatype can be <em>implicitly</em> managed through
+the semantics implied by the <tt class="docutils literal"><span class="pre">DataWriter</span></tt>, or it can
+be <em>explicitly</em> controlled <em>via</em> the <tt class="docutils literal"><span class="pre">DataWriter</span></tt> API. The
+instance life-cycle transition can have implications for
+local and remote resource usage, thus it is important to
+understand this aspect.</p>
+<div class="section" id="topic-instances-life-cycle">
+<h3>3.1.1. Topic-Instances Life-cycle<a class="headerlink" href="#topic-instances-life-cycle" title="Permalink to this headline">¶</a></h3>
+<p>Before getting into the details of how the life-cycle is managed, let&#8217;s
+see which are the possible states.</p>
+<ul class="simple">
+<li>An instance of a topic&#8217;s datatype is <tt class="docutils literal"><span class="pre">ALIVE</span></tt> if there is at least one
+<tt class="docutils literal"><span class="pre">DataWriter</span></tt> that has explicitly or implicitly (through a write)
+registered it. A <tt class="docutils literal"><span class="pre">DataWriter</span></tt> that has registered an instance declares
+that it is committed to publishing potential updates for that instance
+as soon as they occur. For that reason, the <tt class="docutils literal"><span class="pre">DataWriter</span></tt> has reserved
+resources to hold the administration for the instances and at least one
+of its samples. <tt class="docutils literal"><span class="pre">DataReaders</span></tt> for this topic will also maintain a similar
+resource reservation for each registered instance. As long as an instance
+is registered by at least one <tt class="docutils literal"><span class="pre">DataWriter</span></tt>, it will be considered <tt class="docutils literal"><span class="pre">ALIVE</span></tt>.</li>
+<li>An instance is in the <tt class="docutils literal"><span class="pre">NOT_ALIVE_NO_WRITERS</span></tt> state when there are no
+more <tt class="docutils literal"><span class="pre">DataWriters</span></tt> that have registered the instance. That means no more
+<tt class="docutils literal"><span class="pre">DataWriters</span></tt> have an intent to update the instance state and all of them
+released the resources they had previously claimed for it. In this state
+<tt class="docutils literal"><span class="pre">DataReaders</span></tt> no longer expect any incoming updates and so they may release
+their resources for the instance as well. Be aware that when a Writer forgets
+to unregister an instance it no longer intends to update, it does not only
+leak away the resources it had locally reserved for it, but it also leaks
+away the resources that all subscribing <tt class="docutils literal"><span class="pre">DataReaders</span></tt> still have reserved
+for it in the expectation of future updates.</li>
+<li>Finally, the instance is <tt class="docutils literal"><span class="pre">NOT_ALIVE_DISPOSED</span></tt> if it was disposed either
+implicitly, due to some default QoS settings, or explicitly by means of a
+specific <tt class="docutils literal"><span class="pre">DataWriter</span></tt> API call. The <tt class="docutils literal"><span class="pre">NOT_ALIVE_DISPOSED</span></tt> state indicates
+that the instance is no more relevant for the system and should basically be
+wiped from all storage. The big difference with the <tt class="docutils literal"><span class="pre">NOT_ALIVE_NO_WRITERS</span></tt>
+state is that the latter only indicates that nobody intends to update the
+instance and does not say anything about the validity of the last known state.</li>
+</ul>
+<p>As an example, when a publishing application crashes it might want to restart
+on another node and obtain its last known state from the domain in which it
+resides. In the mean time it has no intention to invalidate the last known
+state for each of its instances or to wipe them from all storage in its domain.
+Quite the opposite, it wants the last known state to remain available for
+late-joiners, so that it can pick back up where it left off as soon as it is
+restarted. So in this case the Writer needs to make sure its instances go from
+<tt class="docutils literal"><span class="pre">ALIVE</span></tt> to <tt class="docutils literal"><span class="pre">NOT_ALIVE_NO_WRITERS</span></tt> after the crash, which may then go back
+to <tt class="docutils literal"><span class="pre">ALIVE</span></tt> after the publishing application has been restarted.</p>
+<p>On the other hand, if the application gracefully terminates and wants to indicate
+that its instances are no longer a concern to the DDS global data space, it may
+want the state of its instances to go to <tt class="docutils literal"><span class="pre">NOT_ALIVE_DISPOSED</span></tt> so that the rest of
+the domain knows it can safely wipe away all of its samples in all of its storages.</p>
+</div>
+<div class="section" id="automatic-life-cycle-management">
+<h3>3.1.2. Automatic Life-cycle Management<a class="headerlink" href="#automatic-life-cycle-management" title="Permalink to this headline">¶</a></h3>
+<p>We will illustrate the instances life-cycle management with an
+example.</p>
+<p>If we look at the code in <a class="reference internal" href="#automatic-management-of-instance-life-cycle">Automatic management of Instance life-cycle</a>
+and assume this is the only application writing data, the result of the
+three <tt class="docutils literal"><span class="pre">write</span></tt> operations is to create three new topic instances in the
+system for the key values associated with the <tt class="docutils literal"><span class="pre">id</span> <span class="pre">=</span> <span class="pre">1</span></tt>, <tt class="docutils literal"><span class="pre">2</span></tt>, <tt class="docutils literal"><span class="pre">3</span></tt>
+(the <tt class="docutils literal"><span class="pre">TempSensorType</span></tt> was defined in the
+<a class="reference internal" href="foundations_2.html#idl-definition-of-a-temperature-sensor"><em>first chapter</em></a>
+as having a single attribute key named <tt class="docutils literal"><span class="pre">id</span></tt>). These instances will be
+in the <tt class="docutils literal"><span class="pre">ALIVE</span></tt> state as long as this application is running, and will be
+automatically registered (we could say ‘associated’) with the writer.
+The default behavior for DDS is to then dispose the topic instances once
+the <tt class="docutils literal"><span class="pre">DataWriter</span></tt> object is destroyed, thus leading those instances to the
+<tt class="docutils literal"><span class="pre">NOT_ALIVE_DISPOSED</span></tt> state. The default settings can be overridden to
+simply induce instances’ unregistration, causing in this case a transition from
+<tt class="docutils literal"><span class="pre">ALIVE</span></tt> to <tt class="docutils literal"><span class="pre">NOT_ALIVE_NO_WRITERS</span></tt>.</p>
+<div class="line-block" id="automatic-management-of-instance-life-cycle">
+<div class="line"><strong>Automatic management of Instance life-cycle</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="cp">#include &lt;thread&gt;</span>
+<span class="cp">#include &lt;chrono&gt;</span>
+<span class="cp">#include &lt;TempControl_DCPS.hpp&gt;</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">DomainParticipant</span> <span class="n">dp</span><span class="p">(</span><span class="n">org</span><span class="o">::</span><span class="n">opensplice</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">default_id</span><span class="p">());</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">topic</span><span class="o">::</span><span class="n">Topic</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&quot;TempSensorTopic&quot;</span><span class="p">);</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">Publisher</span> <span class="n">pub</span><span class="p">(</span><span class="n">dp</span><span class="p">);</span>
+
+  <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">DataWriter</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">dw</span><span class="p">(</span><span class="n">pub</span><span class="p">,</span> <span class="n">topic</span><span class="p">);</span>
+
+  <span class="c1">//[NOTE #1]: Instances implicitly registered as part</span>
+  <span class="c1">// of the write.</span>
+  <span class="c1">// {id, temp hum scale}</span>
+  <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">25.0F</span><span class="p">,</span> <span class="mf">65.0F</span><span class="p">,</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">CELSIUS</span><span class="p">);</span>
+  <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">26.0F</span><span class="p">,</span> <span class="mf">70.0F</span><span class="p">,</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">CELSIUS</span><span class="p">);</span>
+  <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mf">27.0F</span><span class="p">,</span> <span class="mf">75.0F</span><span class="p">,</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">CELSIUS</span><span class="p">);</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">sleep_for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">seconds</span><span class="p">(</span><span class="mi">10</span><span class="p">));</span>
+
+  <span class="c1">//[NOTE #2]: Instances automatically unregistered and</span>
+  <span class="c1">// disposed as result of the destruction of the dw object</span>
+
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="explicit-life-cycle-management">
+<h3>3.1.3. Explicit Life-cycle Management<a class="headerlink" href="#explicit-life-cycle-management" title="Permalink to this headline">¶</a></h3>
+<p>Topic-instances life-cycle can also be managed explicitly <em>via</em> the API
+defined on the <tt class="docutils literal"><span class="pre">DataWriter</span></tt>.</p>
+<p>In this case the application programmer has full control of when instances
+are registered, unregistered and disposed.</p>
+<p>Topic-instance registration is a good practice to follow when
+an application writes an instance very often and requires the
+lowest-latency write. In essence the act of explicitly registering an
+instance allows the middleware to reserve resources as well as optimize
+the instance lookup. Topic-instance unregistration provides a means for
+telling DDS that an application is done with writing a specific
+topic-instance, thus all the resources locally associated with can be
+safely released. Finally, disposing topic-instances gives a way of
+communicating to DDS that the instance is no longer relevant for the
+distributed system, thus whenever possible resources allocated with the
+specific instances should be released both locally and remotely.
+<a class="reference internal" href="#explicit-management-of-topic-instances-life-cycle">Explicit management of topic-instances life-cycle</a> shows an example of
+how the DataWriter API can be used to register,
+unregister and dispose topic-instances.</p>
+<p>In order to show the full life-cycle management, the default DataWriter
+behavior has been changed so that instances are <em>not</em> automatically
+disposed when unregistered. In addition, to keep the code compact it
+takes advantage of the new C++11 <tt class="docutils literal"><span class="pre">auto</span></tt> feature which leaves it to
+the the compiler to infer the left-hand-side types from the right-hand-side
+return-type.</p>
+<p><a class="reference internal" href="#explicit-management-of-topic-instances-life-cycle">Explicit management of topic-instances life-cycle</a> shows an
+application that writes four samples belonging to four different
+topic-instances, respectively those with <tt class="docutils literal"><span class="pre">id</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3</span></tt>. The
+instances with <tt class="docutils literal"><span class="pre">id</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3</span></tt> are explicitly registered by calling the
+<tt class="docutils literal"><span class="pre">DataWriter::register_instance</span></tt> method, while the instance with
+<tt class="docutils literal"><span class="pre">id=0</span></tt> is automatically registered as result of the write on the
+<tt class="docutils literal"><span class="pre">DataWriter</span></tt>.</p>
+<p>To show the different possible state transitions, the
+topic-instance with <tt class="docutils literal"><span class="pre">id=1</span></tt> is explicitly unregistered, thus causing
+it to transition to the <tt class="docutils literal"><span class="pre">NOT_ALIVE_NO_WRITER</span></tt> state; the
+topic-instance with <tt class="docutils literal"><span class="pre">id=2</span></tt> is explicitly disposed, thus causing it
+to transition to the <tt class="docutils literal"><span class="pre">NOT_ALIVE_DISPOSED</span></tt> state. Finally, the
+topic-instance with <tt class="docutils literal"><span class="pre">id=0,3</span></tt> will be automatically unregistered,
+as a result of the destruction of the objects <tt class="docutils literal"><span class="pre">dw</span></tt> and
+<tt class="docutils literal"><span class="pre">dwi3</span></tt> respectively, thus transitioning to the state
+<tt class="docutils literal"><span class="pre">NOT_ALIVE_NO_WRITER</span></tt>.</p>
+<p>Once again, as mentioned above, in this example
+the writer has been configured to ensure that topic-instances are not
+automatically disposed upon unregistration.</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="cp">#include &lt;iostream&gt;</span>
+<span class="cp">#include &lt;TempControl_DCPS.hpp&gt;</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">DomainParticipant</span> <span class="n">dp</span><span class="p">(</span><span class="n">org</span><span class="o">::</span><span class="n">opensplice</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">default_id</span><span class="p">());</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">topic</span><span class="o">::</span><span class="n">Topic</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&quot;TempSensorTopic&quot;</span><span class="p">);</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">Publisher</span> <span class="n">pub</span><span class="p">(</span><span class="n">dp</span><span class="p">);</span>
+
+  <span class="c1">//[NOTE #1]: Avoid topic-instance dispose on unregister</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">qos</span><span class="o">::</span><span class="n">DataWriterQos</span> <span class="n">dwqos</span> <span class="o">=</span> <span class="n">pub</span><span class="p">.</span><span class="n">default_datawriter_qos</span><span class="p">()</span>
+  <span class="o">&lt;&lt;</span> <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">WriterDataLifecycle</span><span class="o">::</span><span class="n">ManuallyDisposeUnregisteredInstances</span><span class="p">();</span>
+
+  <span class="c1">//[NOTE #2]: Creating DataWriter with custom QoS.</span>
+  <span class="c1">// QoS will be covered in detail in article #4.</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">DataWriter</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">dw</span><span class="p">(</span><span class="n">pub</span><span class="p">,</span> <span class="n">topic</span><span class="p">,</span> <span class="n">dwqos</span><span class="p">);</span>
+
+  <span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span> <span class="n">data</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">24.3F</span><span class="p">,</span> <span class="mf">0.5F</span><span class="p">,</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">CELSIUS</span><span class="p">);</span>
+  <span class="n">dw</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">);</span>
+
+  <span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span> <span class="n">key</span><span class="p">;</span>
+  <span class="kt">short</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">key</span><span class="p">.</span><span class="n">id</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+
+  <span class="c1">//[NOTE #3] Registering topic-instance explicitly</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">InstanceHandle</span> <span class="n">h1</span> <span class="o">=</span> <span class="n">dw</span><span class="p">.</span><span class="n">register_instance</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+  <span class="n">id</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+  <span class="n">key</span><span class="p">.</span><span class="n">id</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">InstanceHandle</span> <span class="n">h2</span> <span class="o">=</span> <span class="n">dw</span><span class="p">.</span><span class="n">register_instance</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+  <span class="n">id</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+  <span class="n">key</span><span class="p">.</span><span class="n">id</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">InstanceHandle</span> <span class="n">h3</span> <span class="o">=</span> <span class="n">dw</span><span class="p">.</span><span class="n">register_instance</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+
+  <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">24.3F</span><span class="p">,</span> <span class="mf">0.5F</span><span class="p">,</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">CELSIUS</span><span class="p">);</span>
+  <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">23.5F</span><span class="p">,</span> <span class="mf">0.6F</span><span class="p">,</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">CELSIUS</span><span class="p">);</span>
+  <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mf">21.7F</span><span class="p">,</span> <span class="mf">0.5F</span><span class="p">,</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">CELSIUS</span><span class="p">);</span>
+
+  <span class="c1">// [NOTE #4]: unregister topic-instance with id=1</span>
+  <span class="n">dw</span><span class="p">.</span><span class="n">unregister_instance</span><span class="p">(</span><span class="n">h1</span><span class="p">);</span>
+  <span class="c1">// [NOTE #5]: dispose topic-instance with id=2</span>
+  <span class="n">dw</span><span class="p">.</span><span class="n">dispose_instance</span><span class="p">(</span><span class="n">h2</span><span class="p">);</span>
+  <span class="c1">//[NOTE #6]:topic-instance with id=3 will be unregistered as</span>
+  <span class="c1">// result of the dw object destruction</span>
+
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="keyless-topics">
+<h3>3.1.4. Keyless Topics<a class="headerlink" href="#keyless-topics" title="Permalink to this headline">¶</a></h3>
+<p>Most of the discussion above has focused on keyed topics, but what about
+keyless topics? As explained in
+<a class="reference internal" href="topics-etc.html#distinguish-keyless-from-keyed-topics"><em>Topics, Domains and Partitions</em></a>
+keyless topics are like singletons, in the sense that there is only one
+instance. As a result for keyless topics the state transitions are
+tied to the lifecycle of the data-writer.</p>
+<div class="line-block" id="explicit-management-of-topic-instances-life-cycle">
+<div class="line"><strong>Explicit management of topic-instances life-cycle</strong></div>
+</div>
+</div>
+<div class="section" id="blocking-or-non-blocking-write">
+<h3>3.1.5. Blocking or Non-Blocking Write?<a class="headerlink" href="#blocking-or-non-blocking-write" title="Permalink to this headline">¶</a></h3>
+<p>One question that might arise at this point is whether the write is
+blocking or not. The short answer is that the write is non-blocking;
+however, as will be seen later on, there are cases in which, depending on
+settings, the write <em>might</em> block. In these cases, the blocking behaviour
+is necessary to avoid data-loss.</p>
+</div>
+</div>
+<div class="section" id="accessing-data">
+<h2>3.2. Accessing Data<a class="headerlink" href="#accessing-data" title="Permalink to this headline">¶</a></h2>
+<p>DDS provides a mechanism to select the samples based on their <em>content</em> and
+<em>state</em>, and another to control whether samples have to be <em>read</em> or <em>taken</em>
+(removed from the cache).</p>
+<div class="section" id="read-vs-take">
+<h3>3.2.1. Read <em>vs.</em> Take<a class="headerlink" href="#read-vs-take" title="Permalink to this headline">¶</a></h3>
+<p>The DDS provides data access through the <tt class="docutils literal"><span class="pre">DataReader</span></tt> class which exposes
+two semantics for data access: <em>read</em> and <em>take</em>.</p>
+<p>The <em>read</em> semantics, implemented by the <tt class="docutils literal"><span class="pre">DataReader::read</span></tt> method, gives
+access to the data received by the <tt class="docutils literal"><span class="pre">DataReader</span></tt> without removing it from
+its cache. This means that the data will remain readable <em>via</em> an appropriate
+read call.</p>
+<p>The <em>take</em> semantics, implemented by the <tt class="docutils literal"><span class="pre">DataReader::take</span></tt> method,
+allows DDS to access the data received by the <tt class="docutils literal"><span class="pre">DataReader</span></tt> by removing it
+from its local cache. This means that once the data is taken, it is no longer
+available for subsequent read or take operations.</p>
+<p>The semantics provided by the <tt class="docutils literal"><span class="pre">read</span></tt> and <tt class="docutils literal"><span class="pre">take</span></tt> operations enable
+you to use DDS as either a distributed cache or like a queuing system, or
+both. This is a powerful combination that is rarely found in the same
+middleware platform. This is one of the reasons why DDS is used in a variety
+of systems sometimes as a high-performance distributed cache, or like
+a high-performance messaging technology, and at yet other times as a
+combination of the two. In addition, the <em>read</em> semantics is useful when
+using topics to model distributed <em>states</em>, and the <em>take</em> semantics when
+modeling distributed <em>events</em>.</p>
+</div>
+<div class="section" id="data-and-meta-data">
+<h3>3.2.2. Data and Meta-Data<a class="headerlink" href="#data-and-meta-data" title="Permalink to this headline">¶</a></h3>
+<p>The first part of this chapter showed how the <tt class="docutils literal"><span class="pre">DataWriter</span></tt> can be
+used to control the life-cycle of topic-instances. The topic-instance
+life-cycle along with other information describing properties of
+received data samples are made available to <tt class="docutils literal"><span class="pre">DataReader</span></tt> and can be
+used to select the data access <em>via</em> either a <tt class="docutils literal"><span class="pre">read</span></tt> or <tt class="docutils literal"><span class="pre">take</span></tt>.
+Specifically, each data sample received by a <tt class="docutils literal"><span class="pre">DataWriter</span></tt> has an associated
+<tt class="docutils literal"><span class="pre">SampleInfo</span></tt> describing the property of that sample. These properties
+includes information on:</p>
+<ul class="simple">
+<li><strong>Sample State</strong>. The sample state can be <tt class="docutils literal"><span class="pre">READ</span></tt> or <tt class="docutils literal"><span class="pre">NOT_READ</span></tt>
+depending on whether the sample has already been read or not.</li>
+<li><strong>Instance State.</strong> As explained above, this indicates the status of
+the instance as being either <tt class="docutils literal"><span class="pre">ALIVE</span></tt>, <tt class="docutils literal"><span class="pre">NOT_ALIVE_NO_WRITERS</span></tt>, or
+<tt class="docutils literal"><span class="pre">NOT_ALIVE_DISPOSED</span></tt>.</li>
+<li><strong>View State.</strong> The view state can be <tt class="docutils literal"><span class="pre">NEW</span></tt> or <tt class="docutils literal"><span class="pre">NOT_NEW</span></tt>
+depending on whether this is the first sample ever received for the
+given topic-instance or not.</li>
+</ul>
+<p>The <tt class="docutils literal"><span class="pre">SampleInfo</span></tt> also contains a set of counters that allow you to
+determine the number of times that a topic-instance has performed
+certain status transitions, such as becoming alive after being disposed.</p>
+<p>Finally, the <tt class="docutils literal"><span class="pre">SampleInfo</span></tt> contains a <tt class="docutils literal"><span class="pre">timestamp</span></tt> for the data and a
+flag that tells wether the associated data sample is valid or not. This
+latter flag is important since DDS might generate valid samples info
+with invalid data to inform about state transitions such as an instance
+being disposed.</p>
+</div>
+<div class="section" id="selecting-samples">
+<h3>3.2.3. Selecting Samples<a class="headerlink" href="#selecting-samples" title="Permalink to this headline">¶</a></h3>
+<p>Regardless of whether data are read or taken from DDS, the same mechanism
+is used to express the sample selection. Thus, for brevity, the following
+examples use the <tt class="docutils literal"><span class="pre">read</span></tt> operation; to use the <tt class="docutils literal"><span class="pre">take</span></tt> operation,
+simply replace each occurrence of a <tt class="docutils literal"><span class="pre">read</span></tt> with a <tt class="docutils literal"><span class="pre">take</span></tt>.</p>
+<p>DDS allows the selection of data based on <em>state</em> and <em>content</em>.</p>
+<ul class="simple">
+<li>State-based selection is based on the values of the <em>view</em> state,
+<em>instance</em> state and <em>sample</em> state.</li>
+<li>Content-based selection is based on the content of the sample.</li>
+</ul>
+<div class="section" id="state-based-selection">
+<h4>3.2.3.1. State-based Selection<a class="headerlink" href="#state-based-selection" title="Permalink to this headline">¶</a></h4>
+<p>For instance, to get <em>all</em> of the data received, no
+matter what the view, instance and sample state, issue a <tt class="docutils literal"><span class="pre">read</span></tt>
+(or a <tt class="docutils literal"><span class="pre">take</span></tt>) as follows:</p>
+<div class="highlight-cpp"><div class="highlight"><pre>   <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">LoanedSamples</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">samples</span><span class="p">;</span>
+   <span class="n">samples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">select</span><span class="p">().</span><span class="n">state</span><span class="p">(</span><span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">DataState</span><span class="o">::</span><span class="n">any</span><span class="p">()).</span><span class="n">read</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>On the other hand, to read (or take) only samples that have not been
+read yet, issue a <tt class="docutils literal"><span class="pre">read</span></tt> (or a <tt class="docutils literal"><span class="pre">take</span></tt>) as follows:</p>
+<div class="highlight-cpp"><div class="highlight"><pre>   <span class="n">samples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">select</span><span class="p">().</span><span class="n">state</span><span class="p">(</span><span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">SampleState</span><span class="o">::</span><span class="n">not_read</span><span class="p">()).</span><span class="n">read</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>To read new valid data, meaning no samples with only a valid
+<tt class="docutils literal"><span class="pre">SampleInfo</span></tt>, issue a <tt class="docutils literal"><span class="pre">read</span></tt> (or a <tt class="docutils literal"><span class="pre">take</span></tt>) as follows:</p>
+<div class="highlight-cpp"><div class="highlight"><pre>   <span class="n">samples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">select</span><span class="p">().</span><span class="n">state</span><span class="p">(</span><span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">DataState</span><span class="o">::</span><span class="n">new_data</span><span class="p">()).</span><span class="n">read</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>Finally, to only read data associated to instances that are
+making their appearance in the system for the first time, issue
+a <tt class="docutils literal"><span class="pre">read</span></tt> (or a <tt class="docutils literal"><span class="pre">take</span></tt>) as follows:</p>
+<div class="highlight-cpp"><div class="highlight"><pre>   <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">DataState</span> <span class="n">ds</span><span class="p">;</span>
+   <span class="n">ds</span> <span class="o">&lt;&lt;</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">SampleState</span><span class="o">::</span><span class="n">not_read</span><span class="p">()</span>
+      <span class="o">&lt;&lt;</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">ViewState</span><span class="o">::</span><span class="n">new_view</span><span class="p">()</span>
+      <span class="o">&lt;&lt;</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">InstanceState</span><span class="o">::</span><span class="n">alive</span><span class="p">();</span>
+
+   <span class="n">samples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">select</span><span class="p">().</span><span class="n">state</span><span class="p">(</span><span class="n">ds</span><span class="p">).</span><span class="n">read</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>Notice that this kind of read <em>only</em> and <em>always</em> gets
+<em>the first sample written for each instance</em>.</p>
+<p>Although it might seem a strange use case, this is quite useful for all those
+applications that need to do something special whenever a new instance makes
+its first appearance in the system. An example could be a new
+airplane entering a new region of control; in this case the system
+would have to do quite a few things that are unique to this specific state
+transition.</p>
+<p>It is also worth mentioning that if the status is omitted,
+a <tt class="docutils literal"><span class="pre">read</span></tt> (or a <tt class="docutils literal"><span class="pre">take</span></tt>) can be used like this:</p>
+<div class="highlight-cpp"><div class="highlight"><pre>   <span class="k">auto</span> <span class="n">samples2</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">read</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>This is equivalent to selecting samples with the
+<tt class="docutils literal"><span class="pre">NOT_READ_SAMPLE_STATE</span></tt>, <tt class="docutils literal"><span class="pre">ALIVE_INSTANCE_STATE</span></tt> and
+<tt class="docutils literal"><span class="pre">ANY_VIEW_STATE</span></tt>.</p>
+<p>finally, it should be noted that statuses enable
+data to be selected based on its meta-information.</p>
+</div>
+<div class="section" id="content-based-selection">
+<h4>3.2.3.2. Content-based Selection<a class="headerlink" href="#content-based-selection" title="Permalink to this headline">¶</a></h4>
+<p>Content-based selection is supported through <em>queries</em>. Although the
+concept of a query might seem to overlap with that of
+<a class="reference internal" href="topics-etc.html#content-filtering"><em>content filtering</em></a>,
+the underlying idea is different.</p>
+<p><em>Filtering</em> is about controlling the data received by the data
+reader: the data that does not match the filter is not inserted into
+the data reader cache. On the other hand, <em>queries</em> are about selecting
+the data that is (already) in the data reader cache.</p>
+<div class="line-block" id="content-query">
+<div class="line"><strong>Content Query</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>   <span class="c1">// Define the query expression</span>
+   <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">expression</span> <span class="o">=</span>
+      <span class="s">&quot;(temp NOT BETWEEN (%0 AND %1)) \</span>
+<span class="s">        OR \</span>
+<span class="s">       (hum NOT BETWEEN (%2 and %3))&quot;</span><span class="p">;</span>
+
+   <span class="c1">// Define the query parameters</span>
+   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;20.5&quot;</span><span class="p">,</span> <span class="s">&quot;21.5&quot;</span><span class="p">,</span> <span class="s">&quot;30&quot;</span><span class="p">,</span> <span class="s">&quot;50&quot;</span><span class="p">};</span>
+
+   <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">Query</span> <span class="n">query</span><span class="p">(</span><span class="n">dr</span><span class="p">,</span> <span class="n">expression</span><span class="p">,</span> <span class="n">params</span><span class="p">);</span>
+
+   <span class="k">auto</span> <span class="n">samples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">select</span><span class="p">().</span><span class="n">content</span><span class="p">(</span><span class="n">query</span><span class="p">).</span><span class="n">read</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>The syntax supported by query expressions is identical to that used to
+define filter expressions; for convenience this is summarized in
+the table.</p>
+<div class="line-block" id="legal-operators-for-content-query">
+<div class="line"><strong>Legal operators for content query</strong></div>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="44%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><strong>Constructed Type</strong></th>
+<th class="head"><strong>Example</strong></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>=</td>
+<td>equal</td>
+</tr>
+<tr class="row-odd"><td>&lt;&gt;</td>
+<td>not equal</td>
+</tr>
+<tr class="row-even"><td>&gt;</td>
+<td>greater than</td>
+</tr>
+<tr class="row-odd"><td>&lt;</td>
+<td>less than</td>
+</tr>
+<tr class="row-even"><td>&gt;=</td>
+<td>greater than or equal</td>
+</tr>
+<tr class="row-odd"><td>&lt;=</td>
+<td>less than or equal</td>
+</tr>
+<tr class="row-even"><td>BETWEEN</td>
+<td>between and inclusive range</td>
+</tr>
+<tr class="row-odd"><td>LIKE</td>
+<td>matches a string pattern</td>
+</tr>
+</tbody>
+</table>
+<p>The execution of the query is completely under user control and is
+performed in the context of a <tt class="docutils literal"><span class="pre">read</span></tt> or <tt class="docutils literal"><span class="pre">take</span></tt> operation as shown in
+ListingB [Listing:DDS:Query].</p>
+</div>
+<div class="section" id="instance-based-selection">
+<h4>3.2.3.3. Instance-based Selection<a class="headerlink" href="#instance-based-selection" title="Permalink to this headline">¶</a></h4>
+<p>In some instances you may want to only look at the data coming from a
+specific topic instance. As instances are identified by the values of their
+key attributes you may be tempted to use content filtering to discriminate
+between them. Although this would work perfectly well, it is not the most
+efficient way of selecting an instance. DDS provides another mechanism that
+allows you to pinpoint the instance you are interested in more
+efficiently than content filtering. In essence, each instance has
+an associated <em>instance handle</em>; this can be used to access the data from
+a given instance in a very efficient manner.</p>
+<p>The listing <a class="reference internal" href="#id2">Instance-based selection</a> shows how this can be done.</p>
+<div class="line-block" id="id2">
+<div class="line"><strong>Instance-based selection</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>   <span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span> <span class="n">key</span><span class="p">;</span>
+   <span class="n">key</span><span class="p">.</span><span class="n">id</span><span class="p">()</span> <span class="o">=</span> <span class="mi">123</span><span class="p">;</span>
+   <span class="k">auto</span> <span class="n">handle</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">lookup_instance</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+
+   <span class="k">auto</span> <span class="n">samples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">select</span><span class="p">().</span><span class="n">instance</span><span class="p">(</span><span class="n">handle</span><span class="p">).</span><span class="n">read</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="iterators-or-containers">
+<h3>3.2.4. Iterators or Containers?<a class="headerlink" href="#iterators-or-containers" title="Permalink to this headline">¶</a></h3>
+<p>The examples shown so far were ‘loaning’ the data from DDS: in
+other words, you did not have to provide the storage for the samples. The
+advantage of this style of read is that it allows ‘zero copy’ reads.
+However, if you want to store the data in a container of your choice
+you can use iterator-based read and take operations.</p>
+<p>The iterator-based read/take API supports both forward iterators as well
+as back-inserting iterators. The API allows you to read (or take) data
+into whatever structure you&#8217;d like, so long as you can get a forward or a
+back-inserting iterator for it. Here we will focus on the forward-iterator-based
+API; back-inserting is pretty similar. you should be able
+to read data as follows:</p>
+<div class="highlight-cpp"><div class="highlight"><pre>   <span class="c1">// Forward iterator using array.</span>
+   <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">Sample</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">samples</span><span class="p">[</span><span class="n">MAXSAMPLES</span><span class="p">];</span>
+   <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">readSamples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="o">&amp;</span><span class="n">samples</span><span class="p">,</span> <span class="n">MAXSAMPLES</span><span class="p">);</span>
+
+   <span class="c1">// Forward iterator using vector.</span>
+   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">Sample</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">fSamples</span><span class="p">(</span><span class="n">MAXSAMPLES</span><span class="p">);</span>
+   <span class="n">readSamples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="n">fSamples</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">MAXSAMPLES</span><span class="p">);</span>
+
+   <span class="c1">// Back-inserting iterator using vector.</span>
+   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">Sample</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">biSamples</span><span class="p">;</span>
+   <span class="kt">uint32_t</span> <span class="n">readBiSamples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">back_inserter</span><span class="p">(</span><span class="n">biSamples</span><span class="p">));</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="blocking-or-non-blocking-read-take">
+<h3>3.2.5. Blocking or Non-Blocking Read/Take?<a class="headerlink" href="#blocking-or-non-blocking-read-take" title="Permalink to this headline">¶</a></h3>
+<p>The DDS read and take are always non-blocking. If no data is available
+to read then the call will return immediately. Likewise if there is less
+data than requested the call will gather what <em>is</em> available and return right
+away. The non-blocking nature of read/take operations ensures that these
+can be safely used by applications that poll for data.</p>
+</div>
+</div>
+<div class="section" id="waiting-and-being-notified">
+<h2>3.3. Waiting and being Notified<a class="headerlink" href="#waiting-and-being-notified" title="Permalink to this headline">¶</a></h2>
+<p>One way of coordinating with DDS is to have the application poll for
+data by performing either a read or a take every so often. Polling might
+be the best approach for some classes of applications, the most common
+example being control applications that execute a control loop or a
+cyclic executive. In general, however, applications might want to be
+notified of the availability of data or perhaps be able to wait for its
+availability, as opposed to polling for it. DDS supports both synchronous and
+asynchronous coordination by means of wait-sets and listeners.</p>
+<div class="section" id="waitsets">
+<h3>3.3.1. Waitsets<a class="headerlink" href="#waitsets" title="Permalink to this headline">¶</a></h3>
+<p>DDS provides a generic mechanism for waiting on conditions. One of the
+supported kind of conditions are <tt class="docutils literal"><span class="pre">ReadConditions</span></tt> which can be used to
+wait for the availability data on one or more <tt class="docutils literal"><span class="pre">DataReaders</span></tt>. This
+functionality is provided by the <tt class="docutils literal"><span class="pre">Waitset</span></tt> class, which can be
+regarded as an object-oriented version of the Unix <tt class="docutils literal"><span class="pre">select</span></tt>.</p>
+<div class="line-block" id="using-waitset-to-wait-for-data-availability">
+<div class="line"><strong>Using WaitSet to wait for data availability</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="c1">// Create the WaitSet</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">cond</span><span class="o">::</span><span class="n">WaitSet</span> <span class="n">ws</span><span class="p">;</span>
+  <span class="c1">// Create a ReadCondition for our DataReader and configure it for new data</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">cond</span><span class="o">::</span><span class="n">ReadCondition</span> <span class="n">rc</span><span class="p">(</span><span class="n">dr</span><span class="p">,</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">DataState</span><span class="o">::</span><span class="n">new_data</span><span class="p">());</span>
+  <span class="c1">// Attach the condition</span>
+  <span class="n">ws</span> <span class="o">+=</span> <span class="n">rc</span><span class="p">;</span>
+
+  <span class="c1">// Wait for new data to be available</span>
+  <span class="n">ws</span><span class="p">.</span><span class="n">wait</span><span class="p">();</span>
+  <span class="c1">// Read the data</span>
+  <span class="k">auto</span> <span class="n">samples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">read</span><span class="p">();</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">for_each</span><span class="p">(</span><span class="n">samples</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
+	  <span class="n">samples</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span>
+	  <span class="p">[](</span><span class="k">const</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">Sample</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;&amp;</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+	    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">s</span><span class="p">.</span><span class="n">data</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+	  <span class="p">});</span>
+</pre></div>
+</div>
+<p>If we wanted to wait for temperature samples to be available we could
+create a <tt class="docutils literal"><span class="pre">ReadCondition</span></tt> on our <tt class="docutils literal"><span class="pre">DataReader</span></tt> and make it wait for new
+data by creating a <tt class="docutils literal"><span class="pre">WaitSet</span></tt> and attaching the <tt class="docutils literal"><span class="pre">ReadCondition</span></tt> to it
+as shown in <a class="reference internal" href="#using-waitset-to-wait-for-data-availability">Using WaitSet to wait for data availability</a>.</p>
+<p>At this point, we can synchronize on the
+availability of data, and there are two ways of doing it. One approach
+is to invoke the <tt class="docutils literal"><span class="pre">Waitset::wait</span></tt> method, which returns the list of
+active conditions. These active conditions can then be iterated upon and
+their associated datareaders can be accessed. The other approach is to
+invoke the <tt class="docutils literal"><span class="pre">Waitset::dispatch</span></tt>, which is demonstrated in a separate example.</p>
+<p>As an alternative to iterating through the conditions yourself, DDS conditions
+can be associated with functor objects which are then used to execute
+application-specific logic when the condition is triggered. The DDS event-handling
+mechanism allows you to bind anything you want to an event, meaning that you
+could bind a function, a class method, or even a lambda-function as a functor
+to the condition. You then attach the condition to the waitset in the same way,
+but in this case you would invoke the <tt class="docutils literal"><span class="pre">Waitset::dispatch</span></tt> function, that causes
+the infrastructure to automatically invoke the functor associated with each triggered
+conditions before unblocking, as is shown in <a class="reference internal" href="#using-waitset-to-dispatch-to-incoming-data">Using WaitSet to dispatch to incoming data</a>.
+Notice that the execution of the functor happens in the context of the application
+thread, prior to returning from the <tt class="docutils literal"><span class="pre">Waitset::dispatch</span></tt> function.</p>
+<div class="line-block" id="using-waitset-to-dispatch-to-incoming-data">
+<div class="line"><strong>Using WaitSet to dispatch to incoming data</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="c1">// Create the WaitSet</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">cond</span><span class="o">::</span><span class="n">WaitSet</span> <span class="n">ws</span><span class="p">;</span>
+  <span class="c1">// Create a ReadCondition for our DataReader and configure it for new data</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">cond</span><span class="o">::</span><span class="n">ReadCondition</span> <span class="n">rc</span><span class="p">(</span><span class="n">dr</span><span class="p">,</span>
+          <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">DataState</span><span class="o">::</span><span class="n">new_data</span><span class="p">(),</span>
+          <span class="p">[](</span><span class="k">const</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">ReadCondition</span><span class="o">&amp;</span> <span class="n">srcCond</span><span class="p">)</span> <span class="p">{</span>
+              <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">DataReader</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">srcReader</span> <span class="o">=</span> <span class="n">srcCond</span><span class="p">.</span><span class="n">data_reader</span><span class="p">();</span>
+              <span class="c1">// Read the data</span>
+              <span class="k">auto</span> <span class="n">samples</span> <span class="o">=</span> <span class="n">srcReader</span><span class="p">.</span><span class="n">read</span><span class="p">();</span>
+              <span class="n">std</span><span class="o">::</span><span class="n">for_each</span><span class="p">(</span><span class="n">samples</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
+                  <span class="n">samples</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span>
+                  <span class="p">[](</span><span class="k">const</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">Sample</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;&amp;</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">s</span><span class="p">.</span><span class="n">data</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+                  <span class="p">});</span>
+          <span class="p">});</span>
+  <span class="c1">// Attach the condition</span>
+  <span class="n">ws</span> <span class="o">+=</span> <span class="n">rc</span><span class="p">;</span>
+
+  <span class="c1">// Wait for new data to be available</span>
+  <span class="n">ws</span><span class="p">.</span><span class="n">dispatch</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="listeners">
+<h3>3.3.2. Listeners<a class="headerlink" href="#listeners" title="Permalink to this headline">¶</a></h3>
+<p>Another way of finding out when there is data to be read is to take
+advantage of the events raised by DDS and notified asynchronously to
+registered handlers. Thus, if we wanted a handler to be notified of the
+availability of data, we would connect the appropriate handler with the
+<tt class="docutils literal"><span class="pre">on_data_available</span></tt> event raised by the <tt class="docutils literal"><span class="pre">DataReader</span></tt>.</p>
+<div class="line-block" id="using-a-listener-to-receive-notification-of-data-availability">
+<div class="line"><strong>Using a listener to receive notification of data availability</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="k">class</span> <span class="nc">TempSensorListener</span> <span class="o">:</span>
+  <span class="k">public</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">NoOpDataReaderListener</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+  <span class="k">virtual</span> <span class="kt">void</span> <span class="n">on_data_available</span><span class="p">(</span>
+      <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">DataReader</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;&amp;</span> <span class="n">dr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">samples</span> <span class="o">=</span>  <span class="n">dr</span><span class="p">.</span><span class="n">read</span><span class="p">();</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">for_each</span><span class="p">(</span><span class="n">samples</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">samples</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span>
+		  <span class="p">[](</span><span class="k">const</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">Sample</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;&amp;</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+		    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">s</span><span class="p">.</span><span class="n">data</span><span class="p">().</span><span class="n">id</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+		  <span class="p">});</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="n">TempSensorListener</span> <span class="n">listener</span><span class="p">;</span>
+  <span class="n">dr</span><span class="p">.</span><span class="n">listener</span><span class="p">(</span><span class="o">&amp;</span><span class="n">listener</span><span class="p">,</span> <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">status</span><span class="o">::</span><span class="n">StatusMask</span><span class="o">::</span><span class="n">data_available</span><span class="p">());</span>
+</pre></div>
+</div>
+<p>The listing <a class="reference internal" href="#using-a-listener-to-receive-notification-of-data-availability">Using a listener to receive notification of data availability</a>
+shows how this can be done. The <tt class="docutils literal"><span class="pre">NoOpDataReaderListener</span></tt> is a utility
+class provided by the API that provides a trivial implementation for all
+of the operations defined as part of the listener. This way, you can override
+only those that are relevant for your application.</p>
+<p>Something worth pointing out is that the handler code will execute in a
+middleware thread. As a result, when using listeners you should try to
+minimize the time spent in the listener itself.</p>
+</div>
+</div>
+<div class="section" id="summary">
+<h2>3.4. Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>This chapter has presented the various aspects involved in writing
+and reading data with DDS. It described the topic-instance life-cycle,
+explained how that can be managed <em>via</em> the <tt class="docutils literal"><span class="pre">DataWriter</span></tt> and showcased
+all the meta-information available to <tt class="docutils literal"><span class="pre">DataReader</span></tt>. It explained
+wait-sets and listeners and how these can be used to receive
+indication of when data is available.</p>
+<p>It is recommended again that the reader compiles and runs the examples
+and experiments with the programs developed so far.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Reading and Writing Data</a><ul>
+<li><a class="reference internal" href="#writing-data">3.1. Writing Data</a><ul>
+<li><a class="reference internal" href="#topic-instances-life-cycle">3.1.1. Topic-Instances Life-cycle</a></li>
+<li><a class="reference internal" href="#automatic-life-cycle-management">3.1.2. Automatic Life-cycle Management</a></li>
+<li><a class="reference internal" href="#explicit-life-cycle-management">3.1.3. Explicit Life-cycle Management</a></li>
+<li><a class="reference internal" href="#keyless-topics">3.1.4. Keyless Topics</a></li>
+<li><a class="reference internal" href="#blocking-or-non-blocking-write">3.1.5. Blocking or Non-Blocking Write?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#accessing-data">3.2. Accessing Data</a><ul>
+<li><a class="reference internal" href="#read-vs-take">3.2.1. Read <em>vs.</em> Take</a></li>
+<li><a class="reference internal" href="#data-and-meta-data">3.2.2. Data and Meta-Data</a></li>
+<li><a class="reference internal" href="#selecting-samples">3.2.3. Selecting Samples</a><ul>
+<li><a class="reference internal" href="#state-based-selection">3.2.3.1. State-based Selection</a></li>
+<li><a class="reference internal" href="#content-based-selection">3.2.3.2. Content-based Selection</a></li>
+<li><a class="reference internal" href="#instance-based-selection">3.2.3.3. Instance-based Selection</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#iterators-or-containers">3.2.4. Iterators or Containers?</a></li>
+<li><a class="reference internal" href="#blocking-or-non-blocking-read-take">3.2.5. Blocking or Non-Blocking Read/Take?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#waiting-and-being-notified">3.3. Waiting and being Notified</a><ul>
+<li><a class="reference internal" href="#waitsets">3.3.1. Waitsets</a></li>
+<li><a class="reference internal" href="#listeners">3.3.2. Listeners</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#summary">3.4. Summary</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="topics-etc.html"
+                        title="previous chapter">2. Topics, Domains and Partitions</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="qos.html"
+                        title="next chapter">4. Quality of Service</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/readandwrite.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="qos.html" title="4. Quality of Service"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="topics-etc.html" title="2. Topics, Domains and Partitions"
+             >previous</a> |</li>
+        <li><a href="index.html">DDS Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,460 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1. Foundations &mdash; The Data Distribution Service Tutorial</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Data Distribution Service Tutorial" href="index.html" />
+    <link rel="next" title="2. Topics, Domains and Partitions" href="topics-etc.html" />
+    <link rel="prev" title="The Data Distribution Service Tutorial" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="topics-etc.html" title="2. Topics, Domains and Partitions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="The Data Distribution Service Tutorial"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">DDS Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="foundations">
+<h1>1. Foundations<a class="headerlink" href="#foundations" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="the-data-distribution-service">
+<h2>1.1. The Data Distribution Service<a class="headerlink" href="#the-data-distribution-service" title="Permalink to this headline">¶</a></h2>
+<p>Whether you are an experienced programmer or a novice, it is
+highly likely that you have already experienced some form of
+<em>Pub/Sub</em> (Publish/Subscribe) &#8211; an abstraction for one-to-many
+communication that provides anonymous, decoupled, and
+asynchronous communication between a publisher and its
+subscribers. ‘Pub/Sub’ is the abstraction behind many of the
+technologies used today to build and integrate distributed
+applications, such as social applications, financial trading,
+<em>etc.</em>, whilst keeping their component parts loosely-coupled and
+independently evolvable.</p>
+<p>Various implementations of the Pub/Sub abstraction have emerged
+through time to address the needs of different application
+domains. <em>DDS</em> (Data Distribution Service) is an <em>OMG</em> (Object
+Management Group) standard for Pub/Sub introduced in 2004 to
+address the data-sharing needs of large scale mission- and
+business-critical applications. Today DDS is one of the hot
+technologies at the heart of some of the most interesting <em>IoT</em>
+(Internet of Things) and <em>I2</em> (Industrial Internet)
+applications.</p>
+<p>To the question ‘What is DDS?’
+one answer is</p>
+<blockquote>
+<div><em>it is a Pub/Sub technology for ubiquitous, polyglot,
+efficient and secure data sharing</em>.</div></blockquote>
+<p>Another way of answering this question is to say that</p>
+<blockquote>
+<div><em>DDS is Pub/Sub on steroids</em>.</div></blockquote>
+</div>
+<div class="section" id="the-omg-dds-standard">
+<h2>1.2. The OMG DDS Standard<a class="headerlink" href="#the-omg-dds-standard" title="Permalink to this headline">¶</a></h2>
+<p>The DDS standards family is comprised of
+the DDS v1.4 API (see <a class="reference internal" href="biblio.html#omg-dds-2015"><em>OMG DDS 2015</em></a>)
+and the DDSI v2.2 (see <a class="reference internal" href="biblio.html#omg-ddsi-2014"><em>OMG DDSI 2014</em></a>),
+the ISO/IEC C++ V1.0 API (see <em class="xref std std-ref">ISO/IEC C++ 2013</em>)
+and the Java5 V1.0 API (see <em class="xref std std-ref">Java5 2013</em>)
+as illustrated in <a class="reference internal" href="#the-dds-standard">The DDS Standard</a> below.</p>
+<p class="centered" id="the-dds-standard">
+<strong><strong>The DDS Standard</strong></strong></p><a class="reference internal image-reference" href="_images/DDS-standard-01.png"><img alt="The DDS Standard" class="align-center" src="_images/DDS-standard-01.png" style="width: 70mm;" /></a>
+<p>The <strong>DDS</strong> API standard guarantees source code portability
+across different vendor implementations, while the <strong>DDSI</strong>
+standard ensures on-the-wire interoperability between DDS
+implementations from different vendors.</p>
+<p>The DDS API standard defines several different profiles (see
+<a class="reference internal" href="#the-dds-standard">The DDS Standard</a>) that enhance real-time Pub/Sub with content
+filtering and queries, temporal decoupling and automatic
+fail-over. Additionally, APIs are available in C, C++, C#, Java,
+JavaScript, CoffeeScript, Scala and more, that can be mixed in
+deployment as appropriate to the user application.</p>
+<p>The DDS standard was formally adopted by the OMG in 2004 and
+today it has become the established Pub/Sub technology for
+distributing high volumes of data, dependably and with
+predictable low latency in applications such as Smart Grids,
+Smart Cities, Defense, SCADA, Financial Trading, Air Traffic
+Control and Management, High Performance Telemetry and  Large
+Scale Supervisory Systems. It is also one of the reference
+communication architectures as defined by the Industrial
+Internet Consortium for the Internet of Things (IoT).</p>
+</div>
+<div class="section" id="dds-in-a-nutshell">
+<h2>1.3. DDS in a Nutshell<a class="headerlink" href="#dds-in-a-nutshell" title="Permalink to this headline">¶</a></h2>
+<p>To explain DDS this Tutorial will develop a ‘real-world’ example
+that is straightforward enough that it can be understood easily
+yet complex enough that it will illustrate all of the major features
+of a DDS system.</p>
+<p>The example is a temperature monitoring and control system for
+a very large building.</p>
+<p>Each floor of the building has several rooms, each of which is
+equipped with a set of temperature and humidity sensors and one
+or more conditioners. The application is intended to perform
+<em>monitoring</em> for all the elements in the building as well as
+temperature and humidity <em>control</em> for each room.</p>
+<p>This application is a typical distributed monitoring and control
+application in which there is data telemetry from several
+<em>sensors</em> distributed throughout a space, and processing of
+the sensor data results in actions being applied to <em>actuators</em>
+(the conditioners).</p>
+<div class="section" id="global-data-space">
+<h3>1.3.1. Global Data Space<a class="headerlink" href="#global-data-space" title="Permalink to this headline">¶</a></h3>
+<p>The key abstraction at the foundation of ‘Global Data Space’ is
+a <em>fully-distributed</em> GDS. It is important to remark that the
+DDS specification <em>requires</em> the implementation of the Global Data
+Space to be fully distributed in order to avoid single points of failure
+and bottlenecks.</p>
+<p class="centered" id="the-global-data-space">
+<strong><strong>The Global Data Space</strong></strong></p><a class="reference internal image-reference" href="_images/GlobalDataSpace-01.png"><img alt="The Global Data Space" class="align-center" src="_images/GlobalDataSpace-01.png" style="width: 120mm;" /></a>
+<p><em>Publishers</em> and <em>Subscribers</em> can join or leave the GDS at any
+time, as they are dynamically discovered. The dynamic discovery
+of Publishers and Subscribers is performed by the GDS and does
+not rely on any kind of centralized registry like those found in
+other Pub/Sub technologies such as the Java Message Service
+(JMS).</p>
+<p>Finally, the GDS also discovers application-defined data types
+and it propagates them as part of the discovery process.</p>
+<p>The essential point here is that the presence of a GDS equipped
+with dynamic discovery means that when a system is deployed no
+configuration is needed. Everything is automatically discovered
+and data begins to flow.</p>
+<p>Moreover, since the GDS is fully distributed there is no need to
+fear that the crash of some server having an unpredictable impact
+on system availability. In DDS there is no single point of failure,
+so although applications can crash and re-start, or disconnect
+and re-connect, the system as a whole continues to run.</p>
+</div>
+<div class="section" id="domain-participant">
+<h3>1.3.2. Domain Participant<a class="headerlink" href="#domain-participant" title="Permalink to this headline">¶</a></h3>
+<p>To do anything useful a DDS application needs to create a
+<em>Domain Participant</em> (DP). The DP gives access to the GDS &#8211;
+called <tt class="docutils literal"><span class="pre">domain</span></tt> in DDS applications.</p>
+<p>Although there are several DDS API&#8217;s to choose from, this Tutorial is
+restricted to giving source code examples written in the ISO/IEC C++ API
+(see <em class="xref std std-ref">ISO/IEC C++ 2013</em>).</p>
+<p>The listing <a class="reference internal" href="#creating-a-domain-participant">Creating a Domain Participant</a> shows how a Domain
+Participant can be created; notice that domains are identified
+by integers.</p>
+<div class="line-block" id="creating-a-domain-participant">
+<div class="line"><strong>Creating a Domain Participant</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="c1">// create a Domain Participant, -1 defaults to value defined in configuration file</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">DomainParticipant</span> <span class="n">dp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="c1">// Creates a domain participant in the domain identified by</span>
+  <span class="c1">// the number 18</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">DomainParticipant</span> <span class="n">dp2</span><span class="p">(</span><span class="mi">18</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="topics">
+<h3>1.3.3. Topics<a class="headerlink" href="#topics" title="Permalink to this headline">¶</a></h3>
+<p>In DDS, the data flowing from Publishers to Subscribers
+belongs to a <em>Topic</em>, which represents the unit of information
+that can be produced or consumed.</p>
+<p>A Topic is defined as a triad composed of</p>
+<blockquote>
+<div><ul class="simple">
+<li>a <em>type</em>,</li>
+<li>a <em>unique name</em>,</li>
+<li>and a set of <em>Quality of Service (QoS) policies</em></li>
+</ul>
+</div></blockquote>
+<p>which, as will be explained in detail later in this Tutorial,
+are used to control the non-functional properties associated
+with the Topic.</p>
+<p>For the time being it is enough to say that if the QoSs are not
+explicitly set, then the DDS implementation will use some
+defaults prescribed by the standard.</p>
+<p><em>Topic Types</em> can be represented with the subset of the OMG
+Interface Definition Language (IDL) standard that defines
+<tt class="docutils literal"><span class="pre">struct</span></tt> types, with the limitations that <tt class="docutils literal"><span class="pre">Any</span></tt>-types are
+not supported.</p>
+<p>Those unfamiliar with the IDL standard can regard Topic Types
+as being defined with C-like structures whose attributes can be
+primitive types (such as <tt class="docutils literal"><span class="pre">short</span></tt>, <tt class="docutils literal"><span class="pre">long</span></tt>, <tt class="docutils literal"><span class="pre">float</span></tt>,
+<tt class="docutils literal"><span class="pre">string</span></tt>, <em>etc.</em>), arrays, sequences, unions and enumerations.
+Nesting of structures is also allowed.</p>
+<p>Those who <em>are</em> familiar with IDL may wonder how DDS relates to
+<a class="reference internal" href="acronyms.html#acro-corba"><em>CORBA</em></a>. The only thing that DDS has in common
+with CORBA is that it uses a subset of IDL; other than this, CORBA
+and DDS are two completely different standards and two completely
+different yet complementary technologies.</p>
+<p>Returning to the temperature control application, we are going to define
+topics representing the reading of temperature sensors, the conditioners
+and the rooms in which the temperature sensors and the conditioners are
+installed. The listing <a class="reference internal" href="#idl-definition-of-a-temperature-sensor">IDL definition of a Temperature Sensor</a>
+provides an example of how the topic type for the temperature sensor
+might be defined.</p>
+<div class="line-block" id="idl-definition-of-a-temperature-sensor">
+<div class="line"><strong>IDL definition of a Temperature Sensor</strong></div>
+</div>
+<div class="highlight-idl"><div class="highlight"><pre><span class="o">//</span> TempControl.idl  
+  enum TemperatureScale {
+    CELSIUS, 
+    FAHRENHEIT,
+    KELVIN
+  };
+    
+  struct TempSensorType {
+    short id;
+    <span class="nb">float</span> temp;
+    <span class="nb">float</span> hum;
+    TemperatureScale scale;
+  };
+<span class="o">#</span>pragma keylist TempSensorType id
+</pre></div>
+</div>
+<p>As the listing reveals, IDL structures really look like C/C++
+structures, so learning to write Topic Types is usually
+effortless for most programmers.</p>
+<p>Notice that the <a class="reference internal" href="#idl-definition-of-a-temperature-sensor">IDL definition of a Temperature Sensor</a> also
+includes a <tt class="docutils literal"><span class="pre">#pragma</span> <span class="pre">keylist</span></tt> directive. This directive is used
+to specify <em>keys</em>. The <tt class="docutils literal"><span class="pre">TempSensorType</span></tt> is specified to have a
+single key represented by the sensor identifier (<tt class="docutils literal"><span class="pre">id</span></tt>
+attribute). At runtime, each key value will identify a specific
+stream of data; more precisely, in DDS <em>each key-value identifies
+a Topic instance</em>. For each instance it is possible to observe the
+life-cycle and learn about interesting transitions such as when
+it first appeared in the system, or when it was disposed.</p>
+<p>Keys, along with identifying instances, are also used to capture
+data relationships as would be done in traditional entity
+relationship modeling.</p>
+<p>Keys can be made up of an arbitrary number of attributes, some
+of which could also be defined in nested structures.</p>
+<p>After the topic type has been defined and the IDL pre-processor
+nas been run to generate the language representation required
+for the topics, a DDS topic can be programmatically registered
+using the DDS API by simply instantiating a <tt class="docutils literal"><span class="pre">Topic</span></tt> class with
+the proper type and name.</p>
+<div class="line-block" id="topic-creation">
+<div class="line"><strong>Topic creation</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="c1">// Create the topic</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">topic</span><span class="o">::</span><span class="n">Topic</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&quot;TTempSensor&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="reading-and-writing-data">
+<h3>1.3.4. Reading and Writing Data<a class="headerlink" href="#reading-and-writing-data" title="Permalink to this headline">¶</a></h3>
+<p>Now that topics have been specified, this Tutorial will demonstrate
+how to make a Topic flow between Publishers and Subscribers.</p>
+<p>DDS uses the specification of user-defined Topic Types to generate
+efficient encoding and decoding routines as well as strongly-typed
+<em>DataReaders</em> and <em>DataWriters</em>.</p>
+<p>Creating a DataReader or a DataWriter is straightforward, as it
+simply requires the construction of an object by instantiating a
+template class with the Topic Type and the passing of the desired
+Topic object.</p>
+<p>After a DataReader has been created for a
+<tt class="docutils literal"><span class="pre">TempSensorType</span></tt> you are ready to read the data produced by
+temperature sensors distributed in your system.</p>
+<p>Likewise, after a DataWriter has been created for the
+<tt class="docutils literal"><span class="pre">TempSensorType</span></tt> you are ready to write (publish) data.</p>
+<p>The listings <a class="reference internal" href="#writing-data-in-dds">Writing data in DDS</a> and <a class="reference internal" href="#reading-data-in-dds">Reading data in DDS</a>
+show the steps required to write and read data.</p>
+<div class="line-block" id="writing-data-in-dds">
+<div class="line"><strong>Writing data in DDS</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="c1">// create a Domain Participant, -1 defaults to value defined in configuration file</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">DomainParticipant</span> <span class="n">dp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="c1">// Create the topic</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">topic</span><span class="o">::</span><span class="n">Topic</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&quot;TTempSensor&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="c1">// Create the Publisher and DataWriter</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">Publisher</span> <span class="n">pub</span><span class="p">(</span><span class="n">dp</span><span class="p">);</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">DataWriter</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">dw</span><span class="p">(</span><span class="n">pub</span><span class="p">,</span> <span class="n">topic</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="c1">// Write the data</span>
+  <span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span> <span class="n">sensor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">26.0F</span><span class="p">,</span> <span class="mf">70.0F</span><span class="p">,</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">CELSIUS</span><span class="p">);</span>
+  <span class="n">dw</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">sensor</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="c1">// Write data using streaming operators (same as calling dw.write(...))</span>
+  <span class="n">dw</span> <span class="o">&lt;&lt;</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">26.5F</span><span class="p">,</span> <span class="mf">74.0F</span><span class="p">,</span> <span class="n">tutorial</span><span class="o">::</span><span class="n">CELSIUS</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="line-block" id="reading-data-in-dds">
+<div class="line"><strong>Reading data in DDS</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>  <span class="c1">// create a Domain Participant, -1 defaults to value defined in configuration file</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">DomainParticipant</span> <span class="n">dp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+  <span class="c1">// create the Topic</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">topic</span><span class="o">::</span><span class="n">Topic</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&quot;TTempSensor&quot;</span><span class="p">);</span>
+  <span class="c1">// create a Subscriber</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">Subscriber</span> <span class="n">sub</span><span class="p">(</span><span class="n">dp</span><span class="p">);</span>
+  <span class="c1">// create a DataReader</span>
+  <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">DataReader</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">dr</span><span class="p">(</span><span class="n">sub</span><span class="p">,</span> <span class="n">topic</span><span class="p">);</span>
+
+  <span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">samples</span> <span class="o">=</span> <span class="n">dr</span><span class="p">.</span><span class="n">read</span><span class="p">();</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">for_each</span><span class="p">(</span><span class="n">samples</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
+		  <span class="n">samples</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span>
+		  <span class="p">[](</span><span class="k">const</span> <span class="n">dds</span><span class="o">::</span><span class="n">sub</span><span class="o">::</span><span class="n">Sample</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;&amp;</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+		    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">s</span><span class="p">.</span><span class="n">data</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+		  <span class="p">});</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">sleep_for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p>This first DDS application (<a class="reference internal" href="#reading-data-in-dds">Reading data in DDS</a>)uses polling
+to read data out of DDS every second. A <tt class="docutils literal"><span class="pre">sleep</span></tt> is used to avoid
+spinning in the loop too fast, since the DDS read is non-blocking
+and returns immediately if there is no data available.</p>
+<p>Although polling is a valid method to use, DDS supports two other
+ways for informing your application of data availability: <em>listeners</em>
+and <em>waitsets</em>.</p>
+<ul class="simple">
+<li><em>Listeners</em> can be registered with readers for receiving</li>
+</ul>
+<p>notification of data availability as well as several other
+interesting status changes such as violation in QoS.</p>
+<ul class="simple">
+<li><em>Waitsets</em>, modeled after the Unix-style <tt class="docutils literal"><span class="pre">select</span></tt> call, can</li>
+</ul>
+<p>be used to wait for the occurrence of interesting events, one of
+which could be the availability of data. I will detail these
+coordination mechanisms later on in this tutorial.</p>
+<p>The code may appear slightly puzzling at first glance, since the
+data reader and the data writer are completely decoupled. It is
+not clear where they are writing data to or reading it from, how
+they are finding out about each other, and so on. <em>This is the DDS
+magic!</em> As explained in the very beginning of this chapter,
+DDS is equipped with dynamic discovery of participants as well
+as user-defined data types. Thus it is DDS that discovers data
+producers and consumers and takes care of matching them.</p>
+<p>It is strongly recommended that you try to compile the code examples
+available online (see <a class="reference internal" href="appendix-A.html#appendix-a"><em>Appendix A</em></a>) and run them on your own
+machine or (even better) on a couple of machines.</p>
+<p>Try running one writer and several readers. Then try adding more
+writers and see what happens. Also experiment with arbitrarily-
+terminating readers and writers and re-starting them. This way
+you will see the dynamic discovery in action.</p>
+</div>
+</div>
+<div class="section" id="summary">
+<h2>1.4. Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>This first chapter has explained the abstraction behind DDS
+and introduced some of its core concepts. It has also shown
+how to write a first DDS application that distributes
+temperature sensors’ values over a distributed system.
+It needed fewer than 15 lines of code to get the application
+working, which shows the remarkable power of DDS.</p>
+<p>Upcoming chapters will introduce more advanced concepts, and by
+the end of this Tutorial all the DDS features will have been
+demonstrated whilst creating a sophisticated scalable, efficient
+and real-time Pub/Sub application.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1. Foundations</a><ul>
+<li><a class="reference internal" href="#the-data-distribution-service">1.1. The Data Distribution Service</a></li>
+<li><a class="reference internal" href="#the-omg-dds-standard">1.2. The OMG DDS Standard</a></li>
+<li><a class="reference internal" href="#dds-in-a-nutshell">1.3. DDS in a Nutshell</a><ul>
+<li><a class="reference internal" href="#global-data-space">1.3.1. Global Data Space</a></li>
+<li><a class="reference internal" href="#domain-participant">1.3.2. Domain Participant</a></li>
+<li><a class="reference internal" href="#topics">1.3.3. Topics</a></li>
+<li><a class="reference internal" href="#reading-and-writing-data">1.3.4. Reading and Writing Data</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#summary">1.4. Summary</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">The Data Distribution Service Tutorial</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="topics-etc.html"
+                        title="next chapter">2. Topics, Domains and Partitions</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/foundations.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="topics-etc.html" title="2. Topics, Domains and Partitions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="The Data Distribution Service Tutorial"
+             >previous</a> |</li>
+        <li><a href="index.html">DDS Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

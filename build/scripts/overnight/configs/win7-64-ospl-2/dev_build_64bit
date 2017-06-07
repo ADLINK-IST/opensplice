@@ -1,0 +1,3 @@
+export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-Windows-vc10-debug-64bit_110704
+export MICO_ROOT=/home/dds/INSTALLED\ FOR\ DDS/mico-v2.3.13-debug_64bit
+export MICO_LIBS="mico2313"

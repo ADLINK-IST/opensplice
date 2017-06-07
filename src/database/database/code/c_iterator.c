@@ -1,480 +1,294 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
-#include "os.h"
+#include "vortex_os.h"
 #include "c_iterator.h"
 #include "c_base.h"
 
+#include "c_list_tmpl.h"
+#define C__ITERIMPL_EQUALS(a,b) (a) == (b)
+C__LIST_DECLS_TMPL(static, c__iterImpl, void *, __attribute_unused__)
+C__LIST_CODE_TMPL(static, c__iterImpl, void *, NULL, C__ITERIMPL_EQUALS, os_malloc, os_free)
+
 C_STRUCT(c_iter) {
-    c_long length;
-    c_iterNode head;
-    c_iterNode tail;
+    struct c__iterImpl_s x;
 };
 
-C_STRUCT(c_iterNode) {
-    c_iterNode next;
-    void *object;
-};
-
-c_iter
-c_iterNew(
-    void *object)
+c_iter c_iterNew(void *object)
 {
-    c_iter l;
-
-    l = (c_iter)os_malloc(C_SIZEOF(c_iter));
-    if (object == NULL) {
-        l->length = 0;
-        l->head = NULL;
-        l->tail = NULL;
-    } else {
-        l->length = 1;
-        l->head = (c_iterNode)os_malloc(C_SIZEOF(c_iterNode));
-        l->head->next = NULL;
-        l->head->object = object;
-        l->tail = l->head;
+    c_iter iter = os_malloc(sizeof(*iter));
+    c__iterImplInit(&iter->x);
+    if (object != NULL) {
+        c__iterImplAppend(&iter->x, object);
     }
-    return l;
-}
-
-void
-c_iterFree(
-    c_iter iter)
-{
-    c_iterNode n,t;
-
-    if (iter == NULL) {
-        return;
-    }
-    n = iter->head;
-    while (n != NULL) {
-        t = n->next;
-        os_free(n);
-        n = t;
-    }
-    /* Do not free tail, because 'tail - 1' references tail already.*/
-    os_free(iter);
-}
-
-c_iter
-c_iterInsert(
-    c_iter iter,
-    void *object)
-{
-    c_iterNode n;
-
-    if (iter == NULL) return c_iterNew(object);
-    if (object == NULL) {
-        return iter;
-    }
-    n = (c_iterNode)os_malloc(C_SIZEOF(c_iterNode));
-    n->object = object;
-    n->next = iter->head;
-    iter->head = n;
-
-    if(iter->tail == NULL){
-        iter->tail = n;
-    }
-    iter->length++;
-
     return iter;
 }
 
-c_iter
-c_iterAppend(
-    c_iter iter,
-    void *object)
+void c_iterFree(c_iter iter)
 {
-    c_iterNode n;
-
-    if (iter == NULL) return c_iterNew(object);
-    if (object == NULL) {
-        return iter;
+    if (iter != NULL) {
+        c__iterImplFree(&iter->x);
+        os_free(iter);
     }
-    n = (c_iterNode)os_malloc(C_SIZEOF(c_iterNode));
-    n->object = object;
-    n->next = NULL;
+}
 
-    if(iter->tail){
-        iter->tail->next = n;
-        iter->tail = n;
+c_iter c_iterInsert(c_iter iter, void *object)
+{
+    if (iter == NULL) {
+        return c_iterNew(object);
     } else {
-        iter->head = n;
-        iter->tail = n;
+        c__iterImplInsert(&iter->x, object);
     }
-
-    iter->length++;
-
     return iter;
 }
 
-void *
-c_iterTakeFirst(
-    c_iter iter)
+c_iter c_iterAppend(c_iter iter, void *object)
 {
-    c_iterNode n;
-    void *o;
-
-    if (iter == NULL) return NULL;
-    if (iter->head == NULL) {
-        return NULL;
-    }
-    n = iter->head;
-    o = n->object;
-    iter->head = n->next;
-    iter->length--;
-
-    if(iter->length == 0){
-        assert(n->next == NULL);
-        iter->tail = NULL;
-    }
-    os_free(n);
-
-    return o;
-}
-
-void *
-c_iterTakeLast(
-    c_iter iter)
-{
-    c_iterNode n, prev;
-    void *o;
-
-    if (iter == NULL) return NULL;
-    if (iter->tail == NULL) {
-        return NULL;
-    }
-    n = iter->tail;
-    o = n->object;
-    if (iter->head == iter->tail) {
-        prev = NULL;
+    if (iter == NULL) {
+        return c_iterNew(object);
     } else {
-        prev = iter->head;
-        while (prev->next != iter->tail) prev = prev->next;
-    }
-    iter->tail = prev;
-    prev->next = NULL;
-    iter->length--;
-
-    if(iter->length == 0){
-        iter->head = NULL;
-    }
-    os_free(n);
-
-    return o;
-}
-
-void *
-c_iterTake(
-    c_iter iter,
-    void *object)
-{
-    c_iterNode current, previous;
-
-    if (iter == NULL) {
-        return NULL;
-    }
-    if (object == NULL) {
-        return NULL;
-    }
-    previous = NULL;
-    current  = iter->head;
-
-    while(current){
-        if(current->object == object){
-            if(previous){ /* current is not head */
-                if(current->next == NULL){ /* current is tail */
-                    iter->tail = previous;
-                }
-                previous->next = current->next;
-            } else if(current->next){ /*current is head and not tail*/
-                 iter->head = current->next;
-            } else { /*current is head and tail*/
-                iter->head = NULL;
-                iter->tail = NULL;
-                assert(iter->length == 1); /* will be 0 after this */
-            }
-            os_free(current);
-
-            assert(iter->length >= 1);
-            iter->length--;
-
-            return object;
-        } else {
-            previous = current;
-            current = current->next;
+        if (object != NULL) {
+            c__iterImplAppend(&iter->x, object);
         }
+        return iter;
     }
-    return NULL;
 }
 
-void *
-c_iterTakeAction (
-    c_iter iter,
-    c_iterAction condition,
-    c_iterActionArg arg)
+void *c_iterTakeFirst(c_iter iter)
 {
-    c_iterNode *p, p2;
-    c_object object;
-
     if (iter == NULL) {
         return NULL;
+    } else {
+        return c__iterImplTakeFirst(&iter->x);
     }
-    if (condition == NULL) {
+}
+
+void *c_iterTakeLast(c_iter iter)
+{
+    if (iter == NULL) {
+        return NULL;
+    } else {
+        return c__iterImplTakeLast(&iter->x);
+    }
+}
+
+void *c_iterTake(c_iter iter, void *object)
+{
+    if (iter == NULL || object == NULL) {
+        return NULL;
+    } else {
+        return c__iterImplRemove(&iter->x, object);
+    }
+}
+
+void *c_iterTakeAction(c_iter iter, c_iterAction condition, c_iterActionArg arg)
+{
+    if (iter == NULL) {
+        return NULL;
+    } else if (condition == NULL) {
         return c_iterTakeFirst(iter);
-    }
-    p = &iter->head;
-    while (*p != NULL) {
-        if (condition((*p)->object,arg)) {
-            if((*p)->next == NULL){
-                if(*p == iter->head){
-                    iter->tail = NULL;
-                } else {
-                    iter->tail = *p;
-                }
+    } else {
+        struct c__iterImplIterD_s it;
+        void *o;
+        for (o = c__iterImplIterDFirst(&iter->x, &it); o != NULL; o = c__iterImplIterDNext(&it)) {
+            if (condition(o, arg)) {
+                c__iterImplIterDRemove(&it);
+                return o;
             }
-            object = (*p)->object;
-            p2 = *p;
-            *p = (*p)->next;
-            os_free(p2);
-            iter->length--;
-            return object;
         }
-        p = &((*p)->next);
-    }
-    return NULL;
-}
-
-void *
-c_iterReadAction (
-    c_iter iter,
-    c_iterAction condition,
-    c_iterActionArg arg)
-{
-    c_iterNode *p;
-
-    if (iter == NULL) {
         return NULL;
     }
-    if (condition == NULL) {
-        return c_iterTakeFirst(iter);
-    }
-    p = &iter->head;
-    while (*p != NULL) {
-        if (condition((*p)->object,arg)) {
-            return (*p)->object;
-        }
-        p = &((*p)->next);
-    }
-    return NULL;
 }
 
-c_iter
-c_iterConcat(
-    c_iter head,
-    c_iter tail)
+void *c_iterReadAction (c_iter iter, c_iterAction condition, c_iterActionArg arg)
 {
-    c_iterNode *l;
+    if (iter == NULL) {
+        return NULL;
+    } else if (condition == NULL) {
+        struct c__iterImplIter_s it;
+        return c__iterImplIterFirst(&iter->x, &it);
+    } else {
+        struct c__iterImplIter_s it;
+        void *o;
+        for (o = c__iterImplIterFirst(&iter->x, &it); o != NULL; o = c__iterImplIterNext(&it)) {
+            if (condition(o, arg)) {
+                return o;
+            }
+        }
+        return NULL;
+    }
+}
 
+c_iter c_iterConcat(c_iter head, c_iter tail)
+{
     if (head == NULL) {
         return tail;
-    }
-    if (tail == NULL) {
+    } else if (tail == NULL) {
         return head;
-    }
-    if (head->head == NULL) {
-        os_free(head);
-        return tail;
-    }
-    if (tail->head == NULL) {
+    } else {
+        c__iterImplAppendList(&head->x, &tail->x);
         os_free(tail);
         return head;
     }
-    l = &head->head;
-    while ((*l)->next != NULL) l = &(*l)->next;
-    (*l)->next = tail->head;
-    head->length += tail->length;
-    head->tail = tail->tail;
-
-    os_free(tail);
-    return head;
 }
 
-c_iter
-c_iterCopy(
-    c_iter iter)
+c_iter c_iterCopy(c_iter iter)
 {
-    c_iterNode n;
-    c_iter l = NULL;
-
     if (iter == NULL) {
         return NULL;
+    } else {
+        struct c__iterImplIter_s it;
+        c_iter copy;
+        void *o;
+        copy = os_malloc(sizeof(*copy));
+        c__iterImplInit(&copy->x);
+        for (o = c__iterImplIterFirst(&iter->x, &it); o != NULL; o = c__iterImplIterNext(&it)) {
+            c__iterImplAppend(&copy->x, o);
+        }
+        return copy;
     }
-    n = iter->head;
-    while (n != NULL) {
-        l = c_iterAppend(l,n->object);
-        n = n->next;
-    }
-    if(l){
-        l->tail = iter->tail;
-    }
-    return l;
 }
-c_long
-c_iterLength(
-    c_iter iter)
+c_ulong c_iterLength(c_iter iter)
 {
     if (iter == NULL) {
         return 0;
+    } else {
+        return c__iterImplCount(&iter->x);
     }
-    return iter->length;
 }
 
-void *
-c_iterResolve(
-    c_iter iter,
-    c_iterResolveCompare compare,
-    c_iterResolveCompareArg compareArg)
+void *c_iterResolve(c_iter iter, c_iterResolveCompare compare, c_iterResolveCompareArg compareArg)
 {
-    c_iterNode l;
     if (iter == NULL) {
         return NULL;
-    }
-    l = iter->head;
-    while (l != NULL) {
-        if (compare(l->object,compareArg) == C_EQ) {
-            return l->object;
+    } else {
+        struct c__iterImplIter_s it;
+        void *o;
+        for (o = c__iterImplIterFirst(&iter->x, &it); o != NULL; o = c__iterImplIterNext(&it)) {
+            if (compare(o, compareArg) == C_EQ) {
+                return o;
+            }
         }
-        l = l->next;
-    }
-    return NULL;
-}
-
-void *
-c_iterObject(
-    c_iter iter,
-    c_long index)
-{
-    c_iterNode l;
-    c_long i;
-
-    if (iter == NULL) {
         return NULL;
     }
-    if ((index < 0) || (index >= iter->length)) {
+}
+
+void *c_iterObject(c_iter iter, c_ulong index)
+{
+    if (iter == NULL) {
         return NULL;
-    }
-    l = iter->head;
-    for (i=0;i<index;i++) l = l->next;
-    return l->object;
-}
-
-void
-c_iterWalk(
-    c_iter iter,
-    c_iterWalkAction action,
-    c_iterActionArg actionArg)
-{
-    c_iterNode l;
-    if (iter == NULL) {
-        return;
-    }
-    l = iter->head;
-    while (l != NULL) {
-        action(l->object,actionArg);
-        l = l->next;
+    } else {
+        return c__iterImplIndex(&iter->x, index);
     }
 }
 
-c_bool
-c_iterWalkUntil(
-    c_iter iter,
-    c_iterAction action,
-    c_iterActionArg actionArg)
+void c_iterWalk(c_iter iter, c_iterWalkAction action, c_iterActionArg actionArg)
 {
-    c_iterNode l;
-    c_bool proceed = TRUE;
-
-    if (iter == NULL) {
-        return 1;
-    }
-    l = iter->head;
-    while ((proceed) && (l != NULL)) {
-        proceed = action(l->object,actionArg);
-        l = l->next;
-    }
-    return proceed;
-}
-
-void
-c_iterArray(
-    c_iter iter,
-    void *ar[])
-{
-    c_iterNode l;
-    c_long i;
-
-    if (iter == NULL) return;
-    l = iter->head; i = 0;
-    while (l != NULL) {
-        ar[i++] = l->object;
-        l = l->next;
-    }
-}
-
-c_bool
-c_iterContains(
-    c_iter iter,
-     void *object)
-{
-    c_iterNode p;
-
-    if (iter == NULL) return 0;
-    if (object == NULL) return 0;
-
-    p = iter->head;
-
-    while (p != NULL) {
-        if (p->object == object) {
-            return 1;
+    if (iter != NULL) {
+        struct c__iterImplIter_s it;
+        void *o;
+        for (o = c__iterImplIterFirst(&iter->x, &it); o != NULL; o = c__iterImplIterNext(&it)) {
+            action(o, actionArg);
         }
-        p = p->next;
+    }
+}
+
+c_bool c_iterWalkUntil(c_iter iter, c_iterAction action, c_iterActionArg actionArg)
+{
+    if (iter != NULL) {
+        struct c__iterImplIter_s it;
+        void *o;
+        for (o = c__iterImplIterFirst(&iter->x, &it); o != NULL; o = c__iterImplIterNext(&it)) {
+            if (!action(o, actionArg)) {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+void c_iterArray(c_iter iter, void *ar[])
+{
+    if (iter != NULL) {
+        struct c__iterImplIter_s it;
+        void *o;
+        os_uint32 i = 0;
+        for (o = c__iterImplIterFirst(&iter->x, &it); o != NULL; o = c__iterImplIterNext(&it)) {
+            ar[i++] = o;
+        }
+    }
+}
+
+c_bool c_iterContains(c_iter iter, void *object)
+{
+    if (iter != NULL && object != NULL) {
+        struct c__iterImplIter_s it;
+        void *o;
+        for (o = c__iterImplIterFirst(&iter->x, &it); o != NULL; o = c__iterImplIterNext(&it)) {
+            if (o == object) {
+                return 1;
+            }
+        }
     }
     return 0;
 }
 
-c_iterIter
-c_iterIterGet(
-    c_iter i)
+c_iterIter c_iterIterGet(c_iter i)
 {
     c_iterIter result;
-
-    result.current = i->head;
-
+    result.current = c__iterImplIterFirst(&i->x, &result.it);
     return result;
 }
 
-void*
-c_iterNext(
-    c_iterIter* iterator)
+void *c_iterNext(c_iterIter* iterator)
 {
-    void* result;
-
-    result = 0;
-    if(iterator->current) {
-        result = iterator->current->object;
-        iterator->current = iterator->current->next;
+    void *result = 0;
+    if (iterator->current) {
+        result = iterator->current;
+        iterator->current = c__iterImplIterNext(&iterator->it);
     }
-
     return result;
 }
 
+
+c_iterIterD c_iterIterGetD(c_iter i)
+{
+    c_iterIterD result;
+    memset(&result, 0, sizeof(result));
+    result.initSource = i;
+    return result;
+}
+
+void *c_iterNextD(c_iterIterD* iterator)
+{
+    void *result;
+    if (iterator->initSource) {
+        result = c__iterImplIterDFirst(&iterator->initSource->x, &iterator->it);
+        iterator->initSource = NULL;
+    } else {
+        result = c__iterImplIterDNext(&iterator->it);
+    }
+    return result;
+}
+
+void c_iterRemoveD(c_iterIterD *iterator)
+{
+    c__iterImplIterDRemove(&iterator->it);
+}

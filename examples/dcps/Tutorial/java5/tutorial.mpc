@@ -1,0 +1,54 @@
+
+project (saj5*types) : saj_typesupport, java_only, java_example, java_ospl_dcpssaj5 {
+
+    TypeSupport_Files {
+        ../idl/Chat.idl >> Chat/*.java
+    }
+}
+
+project (saj5*chatter) : java_only, java_example, java_ospl_dcpssaj5 {
+    after += saj5*types
+    libs += saj5*types.jar
+    exename = chatroom.Chatter
+
+    specific {
+        compile_flags += -sourcepath ..<%slash%>src
+        obj_dir_flat = 1
+        obj_dir = chatroom<%slash%>
+    }
+    Source_Files {
+       src/chatroom/Chatter.java
+    }
+}
+
+project (saj5*messageboard) : java_only, java_example, java_ospl_dcpssaj5 {
+    after += saj5*types
+    libs += saj5*types.jar
+    exename = chatroom.MessageBoard
+
+    specific {
+        compile_flags += -sourcepath ..<%slash%>src
+        obj_dir_flat = 1
+        obj_dir = chatroom<%slash%>
+    }
+    Source_Files {
+        src/chatroom/DataReaderListenerClass.java
+        src/chatroom/MessageBoard.java
+
+    }
+}
+
+project (saj5*userload) : java_only, java_example, java_ospl_dcpssaj5 {
+    after += saj5*types
+    libs += saj5*types.jar
+    exename = chatroom.UserLoad
+
+    specific {
+        compile_flags += -sourcepath ..<%slash%>src
+        obj_dir_flat = 1
+        obj_dir = chatroom<%slash%>
+    }
+    Source_Files {
+        src/chatroom/UserLoad.java
+    }
+}

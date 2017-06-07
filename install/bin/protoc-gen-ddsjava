@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+if [ -z "$OSPL_HOME" ]
+then
+   echo "OSPL_HOME environment variable not defined"
+   exit
+fi
+
+DELIM=":"
+OS_TYPE=`uname`
+
+OSPLHOME=$OSPL_HOME
+
+case $OS_TYPE in
+    CYGWIN_NT*)
+        OSPLHOME=`cygpath -w $OSPL_HOME`
+        DELIM=";"
+        ;;
+    *) 
+esac
+
+CLASSPATH="$OSPLHOME/jar/dcpsprotobuf.jar"
+CLASSPATH="$OSPLHOME/jar/rlm.jar$DELIM$CLASSPATH"
+
+java -Dprismtech_LICENSE="$prismtech_LICENSE" -DOSPL_HOME="$OSPL_HOME" -classpath "$CLASSPATH" com.prismtech.dds.protobuf.CompilerPlugin java $*

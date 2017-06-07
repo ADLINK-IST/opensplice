@@ -1,17 +1,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cpp_malloc.h"
 #include "is.h"
-#include "io.h"
+#include "cpp_io.h"
 #include "symtbl.h"
 #include "expr.h"
 
@@ -29,24 +37,24 @@
 #define AND TWOCHAR('&','&')
 #define OR  TWOCHAR('|','|')
 
-#define ALLBINS         \
-        BIN('*',*)      \
-        BIN('/',/)      \
-        BIN('%',%)      \
-        BIN('+',+)      \
-        BIN(LSH,<<)     \
-        BIN(RSH,>>)     \
-        BIN('<',<)      \
-        BIN('>',>)      \
-        BIN(LEQ,<=)     \
-        BIN(GEQ,>=)     \
-        BIN(EQL,==)     \
-        BIN(NEQ,!=)     \
-        BIN('&',&)      \
-        BIN('^',^)      \
-        BIN('|',|)      \
-        BIN(AND,&&)     \
-        BIN(OR ,||)
+#define ALLBINS \
+   BIN('*',*) \
+   BIN('/',/) \
+   BIN('%',%) \
+   BIN('+',+) \
+   BIN(LSH,<<) \
+   BIN(RSH,>>) \
+   BIN('<',<) \
+   BIN('>',>) \
+   BIN(LEQ,<=) \
+   BIN(GEQ,>=) \
+   BIN(EQL,==) \
+   BIN(NEQ,!=) \
+   BIN('&',&) \
+   BIN('^',^) \
+   BIN('|',|) \
+   BIN(AND,&&) \
+   BIN(OR ,||)
 
 static EORB_CPP_node *expr;
 int expr_sharp;
@@ -57,34 +65,6 @@ static int complain;
 extern int debugging;
 static void dump_expr (EORB_CPP_node *);
 #endif
-
-static void free_expr (EORB_CPP_node * n)
-{
-   switch (n->op)
-   {
-      case 0:
-         break;
-      case '-':
-         if (n->left)
-         {
-            free_expr(n->left);
-         }
-         free_expr(n->right);
-         break;
-      case '!':
-      case '~':
-         free_expr(n->right);
-         break;
-      case 'd':
-         os_free(n->name);
-         break;
-      default:
-         free_expr(n->left);
-         free_expr(n->right);
-         break;
-   }
-   OLD(n);
-}
 
 static int exec_free (EORB_CPP_node * n)
 {
@@ -125,45 +105,6 @@ static int exec_free (EORB_CPP_node * n)
 
    }
    OLD(n);
-   return (rv);
-}
-
-static int exec_nofree (EORB_CPP_node * n)
-{
-   int rv;
-
-   switch (n->op)
-   {
-      case 0:
-         rv = n->leaf;
-         break;
-      case '-':
-         if (n->left)
-         {
-            rv = exec_nofree(n->left);
-         }
-         else
-         {
-            rv = 0;
-         }
-         rv -= exec_nofree(n->right);
-         break;
-      case '!':
-         rv = ! exec_nofree(n->right);
-         break;
-      case '~':
-         rv = ~ exec_nofree(n->right);
-         break;
-      case 'd':
-         rv = !! find_def(n->name);
-         os_free(n->name);
-         break;
-#define BIN(key,op) case key:rv=(exec_nofree(n->left)op exec_nofree(n->right));break;
-
-         ALLBINS
-#undef BIN
-
-   }
    return (rv);
 }
 
@@ -542,6 +483,7 @@ static EORB_CPP_node *read_expr_10 (void)
             break;
       }
    }
+   return NULL;
 }
 
 static EORB_CPP_node * read_expr_9 (void)
@@ -564,6 +506,7 @@ static EORB_CPP_node * read_expr_9 (void)
       switch (c)
       {
          case '*':
+         case '/':
          case '%':
 #ifdef DEBUG_EXPR
 
@@ -574,13 +517,6 @@ static EORB_CPP_node * read_expr_9 (void)
 #endif
             r = read_expr_10();
             l = newnode(l, c, r);
-            break;
-         case '/':
-            r = read_expr_10();
-            if (!r->op) {
-               Push(c);
-               return (l);
-            }
             break;
          default:
 #ifdef DEBUG_EXPR

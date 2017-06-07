@@ -1,0 +1,17 @@
+/**
+ * @addtogroup examplesdcpsThroughputisocpp
+ */
+/** @{*/
+/** @file */
+
+module ThroughputModule
+{
+    struct DataType
+    {
+        unsigned long long count;
+        sequence<octet> payload;
+    };
+    #pragma keylist DataType
+};
+
+/** @}*/

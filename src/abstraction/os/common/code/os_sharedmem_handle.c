@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -27,6 +35,7 @@ struct os_sharedHandle_s {
     void *mapped_address;
     char *name;
     os_int32 id;
+    char *keyfile;
 };
 
 /** \brief Create a handle for shared memory operations
@@ -48,22 +57,23 @@ os_sharedCreateHandle (
     assert(sharedAttr != NULL);
     sh = os_malloc (sizeof (struct os_sharedHandle_s));
     if (sh != NULL) {
-	sh->name = os_strdup (name);
-	if (sh->name != NULL) {
-	    sh->attr = *sharedAttr;
-	    sh->mapped_address = (void *)0;
-	    sh->id = id;
-	} else {
-	    os_free (sh);
-	    sh = NULL;
-	}
+        sh->name = os_strdup (name);
+        if (sh->name != NULL) {
+            sh->attr = *sharedAttr;
+            sh->mapped_address = (void *)0;
+            sh->id = id;
+            sh->keyfile = NULL;
+        } else {
+            os_free (sh);
+            sh = NULL;
+        }
     }
     return sh;
 }
 
 void
 os_sharedMemoryRegisterUserProcess(
-    os_char* domainName,
+    const os_char* domainName,
     os_procId pid)
 {
     OS_UNUSED_ARG(domainName);
@@ -82,6 +92,7 @@ os_sharedDestroyHandle (
     assert (sharedHandle->name != NULL);
     os_free (sharedHandle->name);
     sharedHandle->name = NULL;
+    os_free (sharedHandle->keyfile);
     os_free (sharedHandle);
     return;
 }

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef U_ENTITY_H
@@ -19,38 +27,30 @@
  * This class manages the access to kernel objects, i.e. it will protect
  * calling threads against process termination, inform the kernel to delay
  * any deletion of the kernel entity during access and inform callers if the
- * kernel entity is already deleted. 
+ * kernel entity is already deleted.
  * The User Layer Entity class also provides status information of it and
  * supports navigation over contained entities.
  *
  * The following methods are supported:
  *
- *    void          u_entityFree          (u_entity e);
- *    void          u_entityEnable        (u_entity e);
- *    c_voidp       u_entityGetUserData   (u_entity e);
- *    c_voidp       u_entitySetUserData   (u_entity e, c_voidp userData);
- *    u_participant u_entityParticipant   (u_entity e);
- *    c_bool        u_entityAction        (u_entity e,
- *                                         c_bool (*action)(v_entity e,
- *                                                          c_voidp arg),
- *                                         c_voidp arg);
- *    c_bool        u_entityWalkEntities  (u_entity e,
- *                                         c_bool (*action)(v_entity e,
- *                                                          c_voidp arg),
- *                                         c_voidp arg);
- *    v_qos         u_entityQoS           (u_entity entity);
- *    u_result      u_entitySetQoS        (u_entity entity, v_qos qos);
- *    c_type        u_entityResolveType   (u_entity e);
+ *    u_entityEnable
+ *    u_entityEnabled
+ *    u_entityGetInstanceHandle
+ *    u_entitySetListener
+ *    u_entityWalkEntities          [DEPRECATED]
+ *    u_entityWalkDependantEntities [DEPRECATED]
+ *    u_entityGetEventState
+ *    u_entitySetXMLQos
+ *    u_entityGetXMLQos
  */
+
+#include "u_types.h"
+#include "u_object.h"
+#include "u_instanceHandle.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
-
-#include "u_types.h"
-#include "u_handle.h"
-#include "u_instanceHandle.h"
-#include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -59,63 +59,7 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-typedef c_voidp (*u_entityCopy)(v_entity e, c_voidp copyArg);
-
-#ifdef NDEBUG
-#define u_entityCheckType(_this, kind) _this
-#else
-OS_API u_entity
-u_entityCheckType (
-    u_entity _this,
-    u_kind kind);
-#endif
-                                    
 #define u_entity(e) ((u_entity)(e))
-
-/**
- * \brief The User Layer Entity Abstract constructor.
- *
- * This method will allocate the resources required by the derived classes.
- * Memory is allocated, the Kernel Handle is set and the participant scope
- * wherein the entity is created is set.
- * The Kernel Handle is either newly created or copied depending on the
- * ownership.
- * If the created User Layer Entity is the owner proxy the owner parameter
- * must be set to TRUE indicating that the Kernel Entity must be destroyed
- * when the User Layer Entity is destroyed.
- * When the created User Layer Entity is not the owner proxy (e.g. if it is
- * created as result of a lookup action) the owner parameter must be set to
- * FALSE, destruction of the User Layer Entity will then not destroy the
- * Kernel Entity.
- */
-OS_API u_entity
-u_entityNew (
-    v_entity ke,
-    u_participant p,
-    c_bool owner);
-
-OS_API u_entity
-u_entityKeep (
-    u_entity _this);
-
-/**
- * \brief The Entity Destructor.
- *
- * The User Layer Entity destructor deletes the given u_entity object and
- * informs the kernel that the associated kernel entity can be deleted as
- * soon as it is no longer referenced.
- * Once the kernel is informed to delete the kernel entity the kernel will
- * prohibit any new attempt to access the entity.
- *
- * \param e The User layer Entity object where this method operates on.
- */
-OS_API u_result
-u_entityFree (
-    u_entity _this);
-
-OS_API c_bool
-u_entityDereference (
-    u_entity _this);
 
 /**
  * \brief The User Layer Entity enable method.
@@ -125,111 +69,28 @@ u_entityDereference (
  *
  * \param _this The User layer Entity object where this method operates on.
  */
-OS_API void
+OS_API u_result
 u_entityEnable (
-    u_entity _this);
+    const u_entity _this);
+
+OS_API u_bool
+u_entityEnabled (
+    const u_entity _this);
 
 /**
- * \brief The User Layer Entity get UserData method.
- *
- * This method returns the user data associated to the given entity.
- * User data is available to processes to store a pointer to process specific
- * data.
- *
- * \param _this The User layer Entity object where this method operates on.
- * \return the UserData associated to the specified entity.
+ * \brief Returns the corresponding builtin DataReader instance handle that holds
+ *        the data published for this entity.
  */
-OS_API c_voidp
-u_entityGetUserData (
-    u_entity _this);
+OS_API u_instanceHandle
+u_entityGetInstanceHandle(
+    const u_entity _this);
 
-/**
- * \brief  The User Layer Entity set UserData method.
- *
- * This method assigns user data to the given entity.
- * Processes can assign a pointer to process specific data to User Layer
- * entities e.g. API's will add pointers to API specific bindings of User
- * Layer entities to make it easy to find these API bindings if only the
- * User Layer entity is available.
- * This method is not MT-safe; in fact it is preferred to set the value of
- * user data only once.
- * NOTE: this method is deprecated and will be replaced by the enable method.
- *
- * \param _this The User layer Entity object where this method operates on.
- * \param userData The UserData that will be associated to the given entity
- *                 object.
- */
-OS_API c_voidp
-u_entitySetUserData (
-    u_entity _this,
-    c_voidp userData);
-
-/**
- * \brief The User Layer entity get participant method.
- *
- * This method returns the participant that defines the scope in which the
- * given entity is created.
- *
- * \param _this The User layer Entity object where this method operates on.
- * \return The User Layer Participant Entity object associated to the given
- *         entity.
- */
-OS_API u_participant
-u_entityParticipant (
-    u_entity _this);
-
-/**
- * \brief The User Layer Entity Action method.
- *
- * This method provides a generic access method to the associated Kernel
- * Entity object.
- * The given action method will be executed upon the associated Kernel
- * Entity object in a safe manner with respect to the liveliness of the
- * Kernel Entity object and calling process.
- *
- * The action is regarded as a 'read'-action within the scope of protecting
- * memory-resources. If the action allocates shared-memory, u_entityWriteAction
- * should be used instead.
- *
- * \param _this The User layer Entity object where this method operates on.
- * \param action The action method that will be executed upon the associated
- *               Kernel Entity object.
- * \param arg The argument that will be passed to the action method upon
- *            execution.
- * \return The execution result of the action method.
- */
 OS_API u_result
-u_entityAction (
-    u_entity _this,
-    void (*action)(v_entity e, c_voidp arg),
-    c_voidp arg);
-
-/**
- * \brief The User Layer Entity Action method for actions allocating SHM.
- *
- * This method provides a generic access method to the associated Kernel
- * Entity object.
- * The given action method will be executed upon the associated Kernel
- * Entity object in a safe manner with respect to the liveliness of the
- * Kernel Entity object and calling process.
- *
- * The action is regarded as a 'write'-action within the scope of protecting
- * memory-resources.
- *
- * \see u_entityAction
- *
- * \param _this The User layer Entity object where this method operates on.
- * \param action The action method that will be executed upon the associated
- *               Kernel Entity object.
- * \param arg The argument that will be passed to the action method upon
- *            execution.
- * \return The execution result of the action method.
- */
-OS_API u_result
-u_entityWriteAction (
-    u_entity _this,
-    void (*action)(v_entity e, c_voidp arg),
-    c_voidp arg);
+u_entitySetListener(
+    const u_entity _this,
+    u_listener listener,
+    void *listenerData,
+    u_eventMask interest);
 
 /**
  * \brief The User Layer Entity Walk all related Entities method.
@@ -256,88 +117,63 @@ u_entityWriteAction (
  *         U_RESULT_INTERRUPTED if the walk is terminated by the action
  *         method. The action method will terminate the walk when it returns
  *         FALSE.
+ *
+ * \note This function is DEPRECATED. It is currently still used by the C&M
+ *       API, but should be removed in the future.
  */
 OS_API u_result
 u_entityWalkEntities (
-    u_entity _this,
-    c_bool (*action)(v_entity e, c_voidp arg),
-    c_voidp arg);
+    const u_entity _this,
+    u_bool (*action)(v_entity e, void *arg),
+    void *arg);
 
+/*
+ * Like u_entityWalkEntities, this function is also DEPRECATED. It is
+ * currently still used by the C&M API, but should be removed in the future.
+ */
 OS_API u_result
 u_entityWalkDependantEntities (
-    u_entity _this,
-    c_bool (*action)(v_entity e, c_voidp arg),
-    c_voidp arg);
-
-/**
- * \brief Resolves the QoS policy of the supplied entity.
- * 
- * \param _this The entity to resolve the QoS policy from.
- * \result The QoS policy of the supplied entity.
- */
-OS_API u_result
-u_entityQoS(
-    u_entity _this,
-    v_qos* qos);
-
-/**
- * \brief Applies the supplied QoS policy to the supplied entity.
- *
- * \param _this The entity to apply the QoS policy to.
- * \result U_RESULT_OK if the QoS policy was successfully applied. If not
- * successfully applied, any other result can be expected depending on the
- * reason of the failure.
- */
-OS_API u_result
-u_entitySetQoS(
-    u_entity _this,
-    v_qos qos);
-
-/**
- * \brief The User Layer Entity resolve type method.
- *
- * This method is ambiguous and will be replaced by two other methods.
- */
-OS_API c_type
-u_entityResolveType (
-    u_entity _this);
-
-OS_API c_bool
-u_entityOwner (
-    u_entity _this);
-
-OS_API c_bool
-u_entityEnabled (
-    u_entity _this);
-
-OS_API u_instanceHandle
-u_entityGetInstanceHandle(
-    u_entity _this);
-
-OS_API u_kind
-u_entityKind(
-    u_entity _this);
-
-OS_API u_handle
-u_entityHandle (
-    u_entity _this);
-
-OS_API v_gid
-u_entityGid (
-    u_entity _this);
-
-OS_API c_long
-u_entitySystemId(
-    u_entity _this);
+    const u_entity _this,
+    u_bool (*action)(v_entity e, void *arg),
+    void *arg);
 
 /* This method returns a copy of the kernel entity name that must
  * be freed using os_free when no longer needed.
  * If the name is not defined then 'No Name' is returned.
  * If an invalid entity is passed 'Invalid Entity' is returned.
  */
-OS_API c_char *
+OS_API os_char *
 u_entityName(
-    u_entity _this);
+    const u_entity _this);
+
+/**
+ * \brief Returns a mask with the event status flags that are set since the last reset.
+ *
+ * This operation will not change the value of the flags.
+ */
+OS_API u_result
+u_entityGetEventState (
+    const u_entity _this,
+    u_eventMask *eventState);
+
+OS_API u_result
+u_entityGetXMLQos (
+    const u_entity _this,
+    os_char **xml);
+
+OS_API u_result
+u_entitySetXMLQos (
+    const u_entity _this,
+    const os_char *xml);
+
+OS_API u_result
+u_entityReleaseLoan(
+    u_entity _this,
+    v_objectLoan loan);
+
+OS_API u_bool
+u_entityDisableCallbacks (
+    const u_entity _this);
 
 #undef OS_API
 

@@ -1,0 +1,192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1. Preface &mdash; RMI User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RMI User Guide" href="index.html" />
+    <link rel="next" title="2. Introduction" href="introduction.html" />
+    <link rel="prev" title="Vortex OpenSplice RMI User Guide" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Vortex OpenSplice RMI User Guide"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="preface">
+<span id="id1"></span><h1>1. Preface<a class="headerlink" href="#preface" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="about-the-rmi-user-guide">
+<h2>1.1. About the RMI User Guide<a class="headerlink" href="#about-the-rmi-user-guide" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice <em>RMI User Guide</em> is intended to
+explain the steps required to take advantage of the client/server
+interaction paradigm provided by Vortex OpenSplice RMI layered over the
+publish/subscribe paradigm of Vortex OpenSplice.</p>
+<p><strong>Intended Audience</strong></p>
+<p>This Vortex OpenSplice <em>RMI User Guide</em> is for
+developers using remote invocations in DDS applications.</p>
+<p><strong>Organisation</strong></p>
+<p>The first two chapters give a general introduction to RMI over DDS.</p>
+<p><a class="reference internal" href="build-rmi-apps.html#building-an-rmi-application"><em>Building an RMI Application</em></a> describes the steps involved in
+building applications using RMI over DDS.</p>
+<p><a class="reference internal" href="language-map.html#language-mapping-for-product-name-rmi"><em>Language mapping for Vortex OpenSplice RMI</em></a> gives the &#8216;C++ and Java&#8217;
+mapping of the IDL types that can be declared in the RMI services
+description file.</p>
+<p><a class="reference internal" href="topics-maps.html#rmi-interface-to-dds-topics-mapping-rules"><em>RMI Interface to DDS topics mapping rules</em></a> shows how IDL
+declarations of RMI interfaces are mapped into IDL declarations of the
+implied DDS topics.</p>
+<p><a class="reference internal" href="runtime-config.html#rmi-runtime-configuration-options"><em>RMI Runtime Configuration Options</em></a> describes the command-line
+options available when starting the <em>RMI</em> runtime.</p>
+<p><a class="reference internal" href="qos-policies.html#qos-policies-xml-schema"><em>QoS policies XML schema</em></a> contains the XML schema for reference.</p>
+</div>
+<div class="section" id="conventions">
+<h2>1.2. Conventions<a class="headerlink" href="#conventions" title="Permalink to this headline">¶</a></h2>
+<p>The icons shown below are used to help readers
+to quickly identify information relevant to their
+specific use of Vortex.</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><em>Icon</em></th>
+<th class="head"><em>Meaning</em></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></td>
+<td>Item of special significance or where caution needs to be taken.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></td>
+<td>Item contains helpful hint or special information.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></td>
+<td>Information applies to Windows (<em>e.g.</em> XP, 2003, Windows 7) only.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a></td>
+<td>Information applies to Unix-based systems (<em>e.g.</em> Solaris) only.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></td>
+<td>Information applies to Linux-based systems (<em>e.g.</em> Ubuntu) only.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-c.png"><img alt="c" src="_images/icon-c.png" style="height: 6mm;" /></a></td>
+<td>C language specific.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></td>
+<td>C++ language specific.</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="_images/icon-csharp.png"><img alt="csharp" src="_images/icon-csharp.png" style="height: 6mm;" /></a></td>
+<td>C# language specific.</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></td>
+<td>Java language specific.</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1. Preface</a><ul>
+<li><a class="reference internal" href="#about-the-rmi-user-guide">1.1. About the RMI User Guide</a></li>
+<li><a class="reference internal" href="#conventions">1.2. Conventions</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Vortex OpenSplice RMI User Guide</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="next chapter">2. Introduction</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/preface.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Vortex OpenSplice RMI User Guide"
+             >previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

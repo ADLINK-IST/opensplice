@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #ifndef Q_GLOBALS_H
 #define Q_GLOBALS_H
 
@@ -8,19 +27,27 @@
 #include "os_rwlock.h"
 #include "os_cond.h"
 #include "os_socket.h"
+#include "os_time.h"
+
+#include "ut_fibheap.h"
 
 #include "c_base.h"
-#include "kernelModule.h"
+#include "kernelModuleI.h"
 
-#include "q_xqos.h"
+#include "q_plist.h"
 #include "q_protocol.h"
 #include "q_nwif.h"
 #include "q_sockwaitset.h"
-#include "q_fibheap.h"
 
 
 #if defined (__cplusplus)
 extern "C" {
+#endif
+
+#ifdef OSPL_BUILD_DDSI2
+#define OS_API OS_API_EXPORT
+#else
+#define OS_API OS_API_IMPORT
 #endif
 
 struct nn_xmsgpool;
@@ -56,17 +83,14 @@ enum recvips_mode {
 
 struct q_globals {
   volatile int terminate;
-
-  /* Process-scope mutex & cond. var. attributes, so we don't have to
-   initialise attributes all the time. */
-  os_mutexAttr mattr;
-  os_condAttr cattr;
-  os_rwlockAttr rwattr;
+  volatile int exception;
+  volatile int deaf_mute;
 
   /* OpenSplice base & kernel pointers, QoS type */
   c_base ospl_base;
   v_kernel ospl_kernel;
   c_collectionType ospl_qostype;
+  c_collectionType ospl_eotgroup_tidlist_type;
 
   /* Hash tables for participants, readers, writers, proxy
      participants, proxy readers and proxy writers by GUID
@@ -83,7 +107,7 @@ struct q_globals {
   /* Lease junk */
   os_mutex leaseheap_lock;
   os_mutex lease_locks[N_LEASE_LOCKS];
-  struct fibheap leaseheap;
+  ut_fibheap_t leaseheap;
 
   /* Transport factory */
 
@@ -118,7 +142,7 @@ struct q_globals {
   /* In many sockets mode, the receive threads maintain a local array
      with participant GUIDs and sockets, participant_set_generation is
      used to notify them. */
-  volatile os_uint32 participant_set_generation;
+  pa_uint32_t participant_set_generation;
 
   /* nparticipants is used primarily for limiting the number of active
      participants, but also during shutdown to determine when it is
@@ -162,16 +186,19 @@ struct q_globals {
 
   /* Locators */
 
+  nn_locator_t loc_spdp_mc;
   nn_locator_t loc_meta_mc;
   nn_locator_t loc_meta_uc;
   nn_locator_t loc_default_mc;
   nn_locator_t loc_default_uc;
 
-  /* Initial discovery address set, and the current discovery address
-     set. These are the addresses that SPDP pings get sent to. FIXME:
-     as_disc_init to be removed. */
-  struct addrset *as_disc_init;
+  /*
+    Initial discovery address set, and the current discovery address
+    set. These are the addresses that SPDP pings get sent to. The
+    as_disc_group is an FT group (only use first working).
+  */
   struct addrset *as_disc;
+  struct addrset *as_disc_group;
 
   /* qoslock serializes QoS changes, probably not strictly necessary,
      but a lot more straightforward that way */
@@ -179,13 +206,16 @@ struct q_globals {
 
   os_mutex lock;
 
-  
+
   /* Receive thread. (We can only has one for now, cos of the signal
      trigger socket.) Receive buffer pool is per receive thread,
      practical considerations led to it being a global variable
      TEMPORARILY. */
   struct thread_state1 *recv_ts;
   struct nn_rbufpool *rbufpool;
+
+  /* Listener thread for connection based transports */
+  struct thread_state1 *listen_ts;
 
   /* Flag cleared when stopping (receive threads). FIXME. */
   int rtps_keepgoing;
@@ -199,20 +229,24 @@ struct q_globals {
 
   /* Start time of the DDSI2 service, for logging relative time stamps,
      should I ever so desire. */
-  os_int64 tstart;
+  nn_wctime_t tstart;
 
-  /* Default QoSs for readers and writers (needed for eliminating
-     default values in outgoing discovery packets, and for supplying
-     values for missing QoS settings in incoming discovery packets);
-     plus the actual QoSs needed for the builtin endpoints. */
+  /* Default QoSs for participant, readers and writers (needed for
+     eliminating default values in outgoing discovery packets, and for
+     supplying values for missing QoS settings in incoming discovery
+     packets); plus the actual QoSs needed for the builtin
+     endpoints. */
+  nn_plist_t default_plist_pp;
   nn_xqos_t default_xqos_rd;
   nn_xqos_t default_xqos_wr;
+  nn_xqos_t default_xqos_wr_nad;
+  nn_xqos_t default_xqos_tp;
+  nn_xqos_t default_xqos_sub;
+  nn_xqos_t default_xqos_pub;
   nn_xqos_t spdp_endpoint_xqos;
   nn_xqos_t builtin_endpoint_xqos_rd;
   nn_xqos_t builtin_endpoint_xqos_wr;
 
-  /* Unique 64-bit ID generator for entities */
-  
   /* SPDP packets get very special treatment (they're the only packets
      we accept from writers we don't know) and have their very own
      do-nothing defragmentation and reordering thingummies, as well as a
@@ -245,10 +279,17 @@ struct q_globals {
      remove the need to include kernelModule.h) */
   os_uint32 myNetworkId;
 
+  /* Shared memory exhaustion warnings */
+  pa_uint32_t last_threshold_warning_sec;
+  pa_uint32_t memory_shortage_dropcount;
+
 
   /* File for dumping captured packets, NULL if disabled */
   FILE *pcap_fp;
   os_mutex pcap_lock;
+
+  /* Data structure to capture power events */
+  os_timePowerEvents powerEvents;
 
   /* Static log buffer, for those rare cases a thread calls nn_vlogb
      without having its own log buffer (happens during config file
@@ -258,8 +299,8 @@ struct q_globals {
   struct logbuf static_logbuf;
 };
 
-extern struct q_globals gv;
-
+extern struct q_globals OS_API gv;
+#undef OS_API
 #if defined (__cplusplus)
 }
 #endif

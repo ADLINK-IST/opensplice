@@ -1,17 +1,24 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "v_statistics.h"
-#include "v__statistics.h"
 #include "v_durabilityStatistics.h"
 #include "v_maxValue.h"
 
@@ -24,7 +31,7 @@ v_durabilityStatistics v_durabilityStatisticsNew(v_kernel k)
     assert(C_TYPECHECK(k, v_kernel));
 
     /* not necessary to cache this type since it is looked up only once per process */
-    durabilityStatisticsType = c_resolve(c_getBase(k), "kernelModule::v_durabilityStatistics");
+    durabilityStatisticsType = c_resolve(c_getBase(k), "kernelModuleI::v_durabilityStatistics");
 
     ds = v_durabilityStatistics(v_new(k, durabilityStatisticsType));
     v_durabilityStatisticsInit(ds);
@@ -116,99 +123,6 @@ void v_durabilityStatisticsDeinit(v_durabilityStatistics ds)
     OS_UNUSED_ARG(ds);
     assert(ds!=NULL);
     assert(C_TYPECHECK(ds, v_durabilityStatistics));
-}
-
-c_bool v_durabilityStatisticsReset(v_durabilityStatistics ds, const c_char* fieldName)
-{
-    c_bool result;
-
-    assert(ds != NULL);
-    assert(C_TYPECHECK(ds, v_durabilityStatistics));
-
-    result = FALSE;
-
-    if (fieldName != NULL) {
-        result  = v_statisticsResetField(v_statistics(ds), fieldName);
-    } else {
-        v_statisticsULongResetInternal(v_durability, persistentSamplesWritten, ds);
-        
-        v_maxValueReset(&ds->fellowsKnownMax);
-        v_statisticsULongResetInternal(v_durability, fellowsKnown, ds);
-        v_maxValueSetValue(&ds->fellowsKnownMax, ds->fellowsKnown);
-        v_statisticsULongResetInternal(v_durability, fellowsApproved, ds);
-        v_statisticsULongResetInternal(v_durability, fellowsIncompatibleState, ds);
-        v_statisticsULongResetInternal(v_durability, fellowsIncompatibleDataModel, ds);
-        
-        v_statisticsULongResetInternal(v_durability, nameSpacesKnown, ds);
-        v_statisticsULongResetInternal(v_durability, nameSpacesMaster, ds);
-        v_statisticsULongResetInternal(v_durability, nameSpacesSlave, ds);
-        
-        v_statisticsULongResetInternal(v_durability, groupsToCreateTotal, ds);
-        v_statisticsULongResetInternal(v_durability, groupsToCreateVolatile, ds);
-        v_statisticsULongResetInternal(v_durability, groupsToCreateTransient, ds);
-        v_statisticsULongResetInternal(v_durability, groupsToCreatePersistent, ds);
-        
-        v_statisticsULongResetInternal(v_durability, groupsKnownTotal, ds);
-        v_statisticsULongResetInternal(v_durability, groupsKnownVolatile, ds);
-        v_statisticsULongResetInternal(v_durability, groupsKnownTransient, ds);
-        v_statisticsULongResetInternal(v_durability, groupsKnownPersistent, ds);
-
-        v_statisticsULongResetInternal(v_durability, groupsCompleteTotal, ds);
-        v_statisticsULongResetInternal(v_durability, groupsCompleteVolatile, ds);
-        v_statisticsULongResetInternal(v_durability, groupsCompleteTransient, ds);
-        v_statisticsULongResetInternal(v_durability, groupsCompletePersistent, ds);
-
-        v_statisticsULongResetInternal(v_durability, groupsIncompleteTotal, ds);
-        v_statisticsULongResetInternal(v_durability, groupsIncompleteVolatile, ds);
-        v_statisticsULongResetInternal(v_durability, groupsIncompleteTransient, ds);
-        v_statisticsULongResetInternal(v_durability, groupsIncompletePersistent, ds);
-
-        v_statisticsULongResetInternal(v_durability, groupsIgnoredTotal, ds);
-        v_statisticsULongResetInternal(v_durability, groupsIgnoredVolatile, ds);
-        v_statisticsULongResetInternal(v_durability, groupsIgnoredTransient, ds);
-        v_statisticsULongResetInternal(v_durability, groupsIgnoredPersistent, ds);
-        
-        v_statisticsULongResetInternal(v_durability, alignerRequestsReceived, ds);
-        v_statisticsULongResetInternal(v_durability, alignerRequestsIgnored, ds);
-        v_statisticsULongResetInternal(v_durability, alignerRequestsAnswered, ds);
-        v_statisticsULongResetInternal(v_durability, alignerRequestsOpen, ds);
-        v_statisticsULongResetInternal(v_durability, alignerRequestsCombined, ds);
-        v_statisticsULongResetInternal(v_durability, alignerRequestsCombinedOpen, ds);
-        v_statisticsULongResetInternal(v_durability, alignerRequestsCombinedAnswered, ds);
-        v_maxValueReset(&ds->alignerRequestsOpenMax);
-        v_maxValueSetValue(&ds->alignerRequestsOpenMax, ds->alignerRequestsOpen);
-        
-        v_maxValueReset(&ds->alignerRequestsCombinedOpenMax);
-        v_maxValueSetValue(&ds->alignerRequestsCombinedOpenMax, ds->alignerRequestsCombinedOpen);
-        
-        v_statisticsULongResetInternal(v_durability, aligneeRequestsSent, ds);
-        v_statisticsULongResetInternal(v_durability, aligneeRequestsOpen, ds);
-        v_maxValueReset(&ds->aligneeRequestsOpenMax);
-        v_maxValueSetValue(&ds->aligneeRequestsOpenMax, ds->aligneeRequestsOpen);
-        v_statisticsULongResetInternal(v_durability, aligneeRequestsWaiting, ds);
-        v_maxValueReset(&ds->aligneeRequestsWaitingMax);
-        v_maxValueSetValue(&ds->aligneeRequestsWaitingMax, ds->aligneeRequestsWaiting);
-        
-        v_statisticsULongResetInternal(v_durability, aligneeSamplesTotal, ds);
-        v_statisticsULongResetInternal(v_durability, aligneeSamplesRegister, ds);
-        v_statisticsULongResetInternal(v_durability, aligneeSamplesWrite, ds);
-        v_statisticsULongResetInternal(v_durability, aligneeSamplesDispose, ds);
-        v_statisticsULongResetInternal(v_durability, aligneeSamplesWriteDispose, ds);
-        v_statisticsULongResetInternal(v_durability, aligneeSamplesUnregister, ds);
-        
-        v_statisticsULongResetInternal(v_durability, alignerSamplesTotal, ds);
-        v_statisticsULongResetInternal(v_durability, alignerSamplesRegister, ds);
-        v_statisticsULongResetInternal(v_durability, alignerSamplesWrite, ds);
-        v_statisticsULongResetInternal(v_durability, alignerSamplesDispose, ds);
-        v_statisticsULongResetInternal(v_durability, alignerSamplesWriteDispose, ds);
-        v_statisticsULongResetInternal(v_durability, alignerSamplesUnregister, ds);
-        
-        v_statisticsULongResetInternal(v_durability, aligneeTotalSize, ds);
-        v_statisticsULongResetInternal(v_durability, alignerTotalSize, ds);
-        
-        result = TRUE;
-    }
-    return result;
 }
 
 void v_durabilityStatisticsFree(v_durabilityStatistics ds)

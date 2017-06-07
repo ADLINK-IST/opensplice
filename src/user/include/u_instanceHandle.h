@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef U_INSTANCEHANDLE_H
@@ -18,8 +26,6 @@ extern "C" {
 #endif
 
 #include "v_public.h"
-#include "v_collection.h"
-#include "os_if.h"
 
 typedef c_longlong u_instanceHandle;
 
@@ -34,54 +40,27 @@ typedef c_longlong u_instanceHandle;
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-OS_API u_instanceHandle
-u_instanceHandleNew(
-    v_public object);
-
-OS_API u_result
-u_instanceHandleClaim (
-    u_instanceHandle _this,
-    c_voidp instance);
-
-OS_API u_result
-u_instanceHandleRelease (
-    u_instanceHandle _this);
-
-OS_API u_instanceHandle
-u_instanceHandleFromGID (
-    v_gid gid);
-
-OS_API v_gid
-u_instanceHandleToGID (
-    u_instanceHandle _this);
-
-OS_API c_bool
+OS_API u_bool
 u_instanceHandleIsNil (
     u_instanceHandle _this);
 
-OS_API c_bool
+OS_API u_bool
 u_instanceHandleIsEqual (
     u_instanceHandle h1,
     u_instanceHandle h2);
 
-/* Depricated : only for GID publication_handle legacy. */
+/**
+ * Following methods should preferably be made private.
+ * For now they should only be used in action routines that operate in kernel context.
+ */
+OS_API u_instanceHandle
+u_instanceHandleFromGID (
+    v_gid gid);
 
 OS_API u_instanceHandle
-u_instanceHandleFix(
-    u_instanceHandle _this,
-    v_collection reader);
+u_instanceHandleNew(
+    v_public object);
 
-OS_API c_long
-u_instanceHandleServerId(
-    u_instanceHandle _this);
-
-OS_API c_long
-u_instanceHandleIndex(
-    u_instanceHandle _this);
-
-OS_API c_long
-u_instanceHandleSerial(
-    u_instanceHandle _this);
 
 #undef OS_API
 

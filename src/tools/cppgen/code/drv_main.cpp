@@ -73,7 +73,7 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 ** 4. Otherwise, for the single file, invoke DRV_drive
 */
 
-#include "sacpp_DDS_DCPS.h"
+#include "sacpp_dds_basic_types.h"
 
 #if defined(_WIN32)
 #include <process.h>
@@ -84,6 +84,7 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 #include "idl_extern.h"
 #include "drv_private.h"
 #include "drv_link.h"
+#include "os_errno.h"
 
 
 extern void BE_unlinkAllFiles (); // end-around the abstract "driver", straight
@@ -254,7 +255,7 @@ int driver_main(int argc, char **argv)
 
                if (system (tmp_command))
                {
-                  cerr << "system() failed, errno: " << errno << endl;
+                  cerr << "system() failed, errno: " << os_getErrno () << endl;
                }
                delete [] tmp_command;
             }

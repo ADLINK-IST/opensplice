@@ -1,0 +1,356 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Access Control &mdash; Secure Networking Configuration Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Secure Networking Configuration Guide" href="index.html" />
+    <link rel="next" title="6. Access Control Configuration" href="accessctrlconfig.html" />
+    <link rel="prev" title="4. Secure Networking Tutorial" href="securenettutorial.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="accessctrlconfig.html" title="6. Access Control Configuration"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="securenettutorial.html" title="4. Secure Networking Tutorial"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Secure Networking Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="access-control">
+<span id="id1"></span><h1>5. Access Control<a class="headerlink" href="#access-control" title="Permalink to this headline">¶</a></h1>
+<p><em>The previous sections described how transport security is
+achieved with the OpenSplice Secure Networking Module. This
+section explains how access control is realized in OpenSplice
+and gives a short introduction to the underlying concepts.</em></p>
+<div class="section" id="overview">
+<h2>5.1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The OpenSplice Access Control Module is an optional, pluggable
+service to the OpenSplice Secure Networking Module. It
+complements the Secure Networking Module by offering different
+types of access control modules that may be flexibly plugged in
+(for example, mandatory access control, role-based access
+control, <em>etc.</em>).</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+OpenSplice currently supports Mandatory Access Control (MAC)
+based on the Bell-LaPadula/Biba model. Other
+Access Control Modules may be available in a future release.</p>
+<p>Access Control can be enabled in the OpenSplice secure
+networking configuration (see
+<a class="reference internal" href="securenetconfig.html#secure-networking-configuration"><em>Secure Networking Configuration</em></a>
+). An external file containing the policy rules in
+XML format can be referenced.</p>
+<p>The following section, Mandatory Access Control, introduces
+mandatory access control. <a class="reference internal" href="#mac-in-opensplice">MAC in OpenSplice</a>
+explains how Mandatory access control is realized in OpenSplice.</p>
+</div>
+<div class="section" id="mandatory-access-control">
+<h2>5.2. Mandatory Access Control<a class="headerlink" href="#mandatory-access-control" title="Permalink to this headline">¶</a></h2>
+<p>An access control policy defines whether a user (referred to as
+a <em>subject</em>) is allowed to access an object.</p>
+<p>The access control policy is centrally controlled when Mandatory
+Access Control is in force. Users (subjects) may not override
+the policy. For example when Mandatory Access Control is in
+force users may not grant access to objects that would otherwise
+be restricted.</p>
+<p>Mandatory Access Control in OpenSplice ensures data
+confidentiality as well as data integrity: data may only be
+created and accessed by authorized parties. The control of
+information flow is based on the Bell-LaPadula model. This
+ensures that the information received via the network can only
+be retrieved on nodes that:</p>
+<ul class="simple">
+<li>are accredited for the secrecy level of this information, and</li>
+<li>contain applications that have a need-to-know for the information.</li>
+</ul>
+<p>Additionally, care is taken to preserve data integrity (based on
+the Biba model) by:</p>
+<ul class="simple">
+<li>preventing data modification by unauthorized parties</li>
+<li>preventing unauthorized data modification by authorized parties</li>
+<li>maintaining internal and external consistency</li>
+</ul>
+<p>The following sections give a short introduction to the
+Bell-LaPadula and Biba models. <a class="reference internal" href="#mac-in-opensplice">MAC in OpenSplice</a>
+explains how mandatory access control is realized in
+OpenSplice.</p>
+<div class="section" id="bell-lapadula-confidentiality-model">
+<h3>5.2.1. Bell-LaPadula Confidentiality Model<a class="headerlink" href="#bell-lapadula-confidentiality-model" title="Permalink to this headline">¶</a></h3>
+<p>The Bell-LaPadula Confidentiality model describes a set of
+access control rules which use clearances for subjects (the
+users) and classifications on objects (resources). The clearance
+for a user and a classification of an object define a secrecy
+level and a set of compartments. Secrecy levels are hierarchical
+and range from the least sensitive, for example “Unclassified”
+or “Public”, to the most sensitive, for example “Top Secret”.</p>
+<p>Compartments are a non-hierarchical list of ID’s (strings)
+structuring information to enforce the ‘need-to-know’ principle.</p>
+<p>The clearance of the subject is compared to the classification
+of the object in order to determine if a subject is authorized
+to access a certain object. The Bell-LaPadula model defines two
+mandatory access control rules:</p>
+<ul class="simple">
+<li>a subject at a given secrecy level may not read an object at
+a higher secrecy level (no <em>read-up</em>).</li>
+<li>a subject at a given secrecy level must not write to any
+object at a lower secrecy level (no <em>write-down</em>).</li>
+</ul>
+<p>In the Bell-LaPadula model, users can create content only at or
+above their own secrecy level. For example, secret researchers
+can create “Secret” or “Top-Secret” files, but may not create
+“Public” files (no write-down). On the other hand, users can
+view content only at or below their own secrecy level. For
+example, secret researchers can view “Public” or “Secret” files,
+but may not view “Top-Secret” files (no read-up).</p>
+<p>Additionally, a subject must have a <em>‘need-to-know’</em> for the
+object it wants to access; in other words, the set of
+compartments contained in the user’s clearance must be a subset
+of the set of compartments contained in the object’s
+classification.</p>
+</div>
+<div class="section" id="biba-integrity-model">
+<h3>5.2.2. Biba Integrity Model<a class="headerlink" href="#biba-integrity-model" title="Permalink to this headline">¶</a></h3>
+<p>The Biba Integrity Model describes a set of access control rules
+designed to ensure data integrity. Resources (objects) and users
+(subjects) are grouped into ordered levels of integrity.</p>
+<p>The Biba model defines two mandatory access control rules:</p>
+<ul class="simple">
+<li>a subject at a given level of integrity may not read an
+object at a lower integrity level (no read down).</li>
+<li>a subject at a given level of integrity must not write to any
+object at a higher level of integrity (no write up).</li>
+</ul>
+<p>In the Biba model, users can only create content at or below
+their own integrity level (no write up). On the other hand,
+users can only view content at or above their own integrity
+level (no read down).</p>
+</div>
+</div>
+<div class="section" id="access-control-in-opensplice">
+<h2>5.3. Access Control in OpenSplice<a class="headerlink" href="#access-control-in-opensplice" title="Permalink to this headline">¶</a></h2>
+<p>In OpenSplice, access control is enforced on the network-level
+for inter-node communication, in other words, the communication
+between different nodes. One node (host) corresponds to one
+user. When running multiple DDS applications on one host these
+will all run under the same User ID.</p>
+<p>There are two access control enforcement points:</p>
+<ul class="simple">
+<li>for inbound traffic: when reading data from the network, the
+following checks are carried out:<ul>
+<li>is the reader allowed to receive the data,</li>
+<li>was the data published by a trusted node (in other words, was
+the sender allowed to send the data)</li>
+</ul>
+</li>
+<li>for outbound traffic: when writing data to the network, the
+following check is carried out:<ul>
+<li>is the user allowed to write data to the network</li>
+</ul>
+</li>
+</ul>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Note that access control is not enforced for intra-node
+communication, in other words communication between DDS
+applications running on the same node.</p>
+<div class="section" id="objects-to-be-protected">
+<h3>5.3.1. Objects to be Protected<a class="headerlink" href="#objects-to-be-protected" title="Permalink to this headline">¶</a></h3>
+<p>One access control policy applies to one DDS Domain. The objects
+to be protected by the access control policy in OpenSplice apply
+to DDS topics and DDS partitions.</p>
+<p>For example, a classification can be attached to a topic. This
+may result in restricting access in a way that only users with a
+matching clearance may use this topic for publication of data or
+for subscription to data of this topic, respectively. The same
+applies to partitions which are referenced by a resource element
+of the access control policy.</p>
+</div>
+<div class="section" id="secure-vs-insecure">
+<h3>5.3.2. Secure <em>vs.</em> Insecure<a class="headerlink" href="#secure-vs-insecure" title="Permalink to this headline">¶</a></h3>
+<p>The <em>‘secure’</em> world is strictly separated from the <em>‘insecure’</em>
+world in OpenSplice. If a resource does not have access control
+information (for example a classification), then no access
+control will be enforced for this resource. If a user has no
+access control information (for example a clearance) they may
+only access ‘insecure’ resources (resources that do not have
+access control information like a classification). If a user has
+access control information, then they may not access ‘insecure’
+resources that don’t have access control information.</p>
+</div>
+<div class="section" id="user-authentication">
+<h3>5.3.3. User Authentication<a class="headerlink" href="#user-authentication" title="Permalink to this headline">¶</a></h3>
+<p>The system authenticates the user’s identity.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+OpenSplice currently supports SSL X.509 Certificate
+Authentication. Other authentication mechanisms (such as user ID
+- password authentication) may be available in a future release.</p>
+<p>X.509 is a standard for digital certificates used by SSL.
+Certificates include, among other things, information about the
+identity of the certificate holder (in other words: the user).
+The user authenticates to the system presenting a certificate.
+The system accepts the user’s certificate if it was issued by a
+trusted authority. A list of trusted certificates can be defined
+in the secure networking configuration (see
+<a class="reference internal" href="securenetconfig.html#element-x509authentication"><em>Element X509Authentication</em></a> and
+<a class="reference internal" href="securenetconfig.html#element-trustedcertificates"><em>Element TrustedCertificates</em></a>.</p>
+<p>The user’s identity is determined by a distinguished name (DN)
+contained in the user’s certificate. The system retrieves the
+corresponding user from the access control policy (each user
+entry in the policy defines the subject’s DN) and applies the
+defined access control information to this user.</p>
+</div>
+</div>
+<div class="section" id="mac-in-opensplice">
+<h2>5.4. MAC in OpenSplice<a class="headerlink" href="#mac-in-opensplice" title="Permalink to this headline">¶</a></h2>
+<p>Mandatory Access Control (MAC) in Open Splice combines the
+Bell-LaPadula and Biba models to ensure confidentiality and data
+integrity. Each resource (object) has a classification which
+comprises a secrecy level, an integrity level and a set of
+compartments that this resource is intended for. Each user
+(subject) has a clearance which comprises a secrecy level, an
+integrity level and a set of compartments this user has a
+‘need-to-know’ for.</p>
+<p>In order to determine if a user is authorized to access a
+certain resource, in other words, if they can publish a certain
+topic or subscribe to a topic, the clearance of the user is
+compared to the classification of the resource. This process
+comprises the evaluation of the:</p>
+<ul class="simple">
+<li>secrecy level<ul>
+<li>subscribing is permitted if the resource’s secrecy level is
+identical or lower than the user’s secrecy level</li>
+<li>publishing is permitted if the resource’s secrecy level is
+identical or higher than the user’s secrecy level</li>
+</ul>
+</li>
+<li>integrity level<ul>
+<li>subscribing is permitted if the resource’s integrity level is
+identical or higher</li>
+<li>publishing is permitted if the resource’s integrity level is
+identical or lower</li>
+</ul>
+</li>
+<li>need to know (compartment)<ul>
+<li>publish/subscribe is permitted if the user’s set of
+compartments is a subset of the resource’s set of compartments</li>
+</ul>
+</li>
+</ul>
+<p>Access is only granted if <em>all three parts</em> of the user’s
+clearance (secrecy level, integrity level, and need-to-know) are
+evaluated positively against the resource’s classification.</p>
+<p>The following section,
+<a class="reference internal" href="accessctrlconfig.html#access-control-configuration"><em>Access Control Configuration</em></a>
+describes access control policy configuration elements for MAC
+in OpenSplice.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Access Control</a><ul>
+<li><a class="reference internal" href="#overview">5.1. Overview</a></li>
+<li><a class="reference internal" href="#mandatory-access-control">5.2. Mandatory Access Control</a><ul>
+<li><a class="reference internal" href="#bell-lapadula-confidentiality-model">5.2.1. Bell-LaPadula Confidentiality Model</a></li>
+<li><a class="reference internal" href="#biba-integrity-model">5.2.2. Biba Integrity Model</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#access-control-in-opensplice">5.3. Access Control in OpenSplice</a><ul>
+<li><a class="reference internal" href="#objects-to-be-protected">5.3.1. Objects to be Protected</a></li>
+<li><a class="reference internal" href="#secure-vs-insecure">5.3.2. Secure <em>vs.</em> Insecure</a></li>
+<li><a class="reference internal" href="#user-authentication">5.3.3. User Authentication</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#mac-in-opensplice">5.4. MAC in OpenSplice</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="securenettutorial.html"
+                        title="previous chapter">4. Secure Networking Tutorial</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="accessctrlconfig.html"
+                        title="next chapter">6. Access Control Configuration</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/accesscontrol.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="accessctrlconfig.html" title="6. Access Control Configuration"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="securenettutorial.html" title="4. Secure Networking Tutorial"
+             >previous</a> |</li>
+        <li><a href="index.html">Secure Networking Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

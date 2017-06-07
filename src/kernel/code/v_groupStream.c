@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -29,7 +37,6 @@
 #include "os_report.h"
 #include "os_heap.h"
 #include "os_stdlib.h"
-#include "ut_misc.h"
 
 /**
  * To be able to slave mechanisms to the mechanisms already implemented in the
@@ -82,8 +89,8 @@ isGroupMatched(
     c_string expr,
     c_voidp args)
 {
-    char* str;
-    unsigned int partitionLength, topicLength;
+    c_value strv, exprv, matchv;
+    os_size_t partitionLength, topicLength;
     c_string partition, topic;
     struct groupMatched* data;
 
@@ -95,22 +102,19 @@ isGroupMatched(
     partitionLength = strlen(partition);
     topicLength = strlen(topic);
 
-    /* Allocate temporary string on stack */
-    str = os_alloca(partitionLength + topicLength + 1 + 1); /* include '.' */
+    strv.kind = exprv.kind = V_STRING;
 
-    /* Build string */
-    os_strcpy(str, partition);
-    str[partitionLength] = '.';
-    os_strcpy(str + partitionLength + 1, topic);
+    exprv.is.String = expr;
 
-    /* Match string with pattern */
-    if(ut_patternMatch(str, expr)) {
-        data->matched = 1;
-    }
+    strv.is.String = os_alloca(partitionLength + topicLength + 1 + 1); /* include '.' */
+    os_strcpy(strv.is.String, partition);
+    strv.is.String[partitionLength] = '.';
+    os_strcpy(strv.is.String + partitionLength + 1, topic);
 
-    /* Because not all platforms properly support alloca.. */
-    os_freea(str);
+    matchv = c_valueStringMatch (exprv, strv);
+    data->matched = matchv.is.Boolean;
 
+    os_freea(strv.is.String);
     return (!data->matched);
 }
 
@@ -151,82 +155,6 @@ v_groupStreamConnectNewGroups(
     return;
 }
 
-void
-v_groupStreamNotify(
-    v_groupStream stream,
-    v_event e,
-    c_voidp userData)
-{
-    struct groupConnected data;
-    c_iter partitions;
-    c_bool interested;
-    v_partition partition, found;
-
-    OS_UNUSED_ARG(userData);
-    assert(stream != NULL);
-    assert(C_TYPECHECK(stream,v_groupStream));
-    if (e) {
-        if (e->kind == V_EVENT_NEW_GROUP) {
-            v_observerLock(v_observer(stream));
-
-            /*
-             * Check if group fits interest. This extra steps are needed because
-             * the groupActionStream does not create the groups that match the
-             * subscriber qos partition expression on creation. It only needs to
-             * connect to new groups once they are created. This is a different
-             * approach then for a data reader.
-             */
-            partition = v_group(e->userData)->partition;
-
-            /*
-             * Because already existing partitions are created and added to the
-             * subscriber of the groupActionStream at creation time, these
-             * partitions can be resolved from the subscriber. This is necessary to
-             * determine whether the groupActionStream should connect to the new
-             * group or if it is already connected.
-             */
-            partitions = v_subscriberLookupPartitions(v_reader(stream)->subscriber,
-                                                   v_partitionName(partition));
-            interested = FALSE;
-            found = v_partition(c_iterTakeFirst(partitions));
-
-            while(found){
-                if(interested == FALSE){
-                    if(strcmp(v_partitionName(partition),
-                              v_partitionName(found)) == 0){
-                        interested = TRUE;
-                    }
-                }
-                c_free(found);
-                found = v_partition(c_iterTakeFirst(partitions));
-            }
-            c_iterFree(partitions);
-
-            if(interested == TRUE){
-                /*
-                 * This means the group is interesting for this
-                 * groupActionStream. Now I have to check if the stream is already
-                 * connected to this group, because we wouldn't want to connect
-                 * multiple times to one single group.
-                 */
-                data.connected = FALSE;
-                data.group     = v_group(e->userData);
-
-                c_walk(stream->groups, (c_action)isGroupConnected, &data);
-
-                if(data.connected == FALSE){
-                    /*
-                     * The stream is not connected to the group yet, so connect now.
-                     */
-                    v_groupStreamSubscribeGroup(stream, v_group(e->userData));
-                }
-            }
-            v_observerUnlock(v_observer(stream));
-        }
-    }
-    return;
-}
-
 /**
  * PRE: observer must be locked.
  */
@@ -245,19 +173,17 @@ v_groupStreamNotifyDataAvailable(
      * calling this method.
      */
     C_STRUCT(v_event) event;
-    c_bool changed;
 
     assert(stream != NULL);
     assert(C_TYPECHECK(stream,v_groupStream));
 
-    changed = v_statusNotifyDataAvailable(v_entity(stream)->status);
+    v_statusNotifyDataAvailable(v_entity(stream)->status);
 
-    if (changed) {
-        event.kind = V_EVENT_DATA_AVAILABLE;
-        event.source = v_publicHandle(v_public(stream));
-        event.userData = NULL;
-        v_observableNotify(v_observable(stream), &event);
-    }
+    event.kind = V_EVENT_DATA_AVAILABLE;
+    event.source = v_observable(stream);
+    event.data = NULL;
+    v_observableNotify(v_observable(stream), &event);
+
     return;
 }
 
@@ -278,7 +204,6 @@ v_groupStreamInit(
     const c_char *name,
     v_subscriber subscriber,
     v_readerQos qos,
-    v_statistics rs,
     c_iter expr)
 {
     v_kernel kernel;
@@ -292,8 +217,8 @@ v_groupStreamInit(
     stream->expr = c_listNew(c_resolve(c_getBase(stream), "::c_string"));
     c_iterWalk(expr, fillExprList, stream->expr);
 
-    v_readerInit(v_reader(stream),name,subscriber,qos,rs,TRUE);
-    v_subscriberAddReader(subscriber,v_reader(stream));
+    v_readerInit(v_reader(stream), name, subscriber, qos, TRUE);
+    (void)v_subscriberAddReader(subscriber,v_reader(stream));
 }
 
 void
@@ -366,7 +291,7 @@ v_groupStreamSubscribeGroup(
     assert(C_TYPECHECK(stream, v_groupStream));
     assert(C_TYPECHECK(group, v_group));
 
-    if (v_reader(stream)->qos->durability.kind == v_topicQosRef(group->topic)->durability.kind) {
+    if (v_reader(stream)->qos->durability.v.kind == v_topicQosRef(group->topic)->durability.v.kind) {
         struct groupMatched data;
         /*
          * OSPL-1073: Check if the new group matches with the group-expression list. This
@@ -384,7 +309,7 @@ v_groupStreamSubscribeGroup(
         if(data.matched) {
             inserted = v_groupAddStream(group, stream);
             if(inserted == TRUE){
-                c_insert(stream->groups, group);
+                ospl_c_insert(stream->groups, group);
             }
         }
     }
@@ -458,7 +383,7 @@ v_groupStreamWrite(
             result = v_groupQueueWrite(v_groupQueue(stream), action);
             break;
         default:
-            OS_REPORT_1(OS_ERROR,"v_groupStreamWrite",0,
+            OS_REPORT(OS_CRITICAL,"v_groupStreamWrite",result,
                         "illegal entity kind (%d) specified",
                         v_objectKind(stream));
             assert(FALSE);

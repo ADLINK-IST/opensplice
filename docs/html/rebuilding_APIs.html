@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Vortex OpenSplice - documentation index</title>
+    <style type="text/css" media="all">
+      @import url("../css/maven-base.css");
+      @import url("../css/maven-theme.css");
+      @import url("../css/site.css");
+    </style>
+    <link rel="stylesheet" href="./docs/css/print.css" type="text/css" media="print" />
+    <meta name="Date-Revision-yyyymmdd" content="20141002" />
+    <meta http-equiv="Content-Language" content="en" />
+        
+ </head>
+ <body class="composite">
+    <div id="banner">
+       <a href="http://www.prismtech.com" id="bannerLeft">
+          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       </a>
+       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       </a>
+       <div class="clear">
+          <hr/>
+       </div>
+    </div>
+    <div id="breadcrumbs">
+       <div class="xright">
+          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
+          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+       </div>
+       <div class="clear">
+         <hr/>
+       </div>
+    </div>
+    <div id="leftColumn">
+      <div id="navcolumn">
+         <h5>Vortex OpenSplice</h5>
+         <ul>
+            <li class="none">
+            <a href="../../index.html" title = "Intro">Introduction</a>
+            </li>
+            <li class="none">
+              <a href="guides.html" title="APIs">User Guides</a>
+            </li>
+            <li class="none">
+              <a href="changedV6.html" title="Changes">Changes</a><br>
+            </li>
+            <li class="none">
+              <a href="platforms.html" title="Supported Platforms">Supported Platforms</a><br>
+            </li>
+            <li class="none">
+              <a href="known_issues.html" title="Changes">Known Issues</a><br>
+            </li>
+            <li class="none">
+              <a href="ddsi2_release_notes.html" title="Changes">DDSI Release Notes</a><br>
+            </li>
+            <li class="none">
+               <a href="rebuilding_APIs.html" title = "Rebuilding"><strong>Rebuilding the APIs</strong></a><br>
+            </li>
+            <li class="none">
+               <a href="upgrading.html" title = "Upgrading">Upgrading OpenSplice</a><br>
+            </li>
+            <li class="none">
+               <a href="../../examples/dcps/README.html" title = "Examples">Examples</a><br>
+            </li>
+            <li class="none">
+               <a href="third_party_licenses.html" title = "Third Party Licenses">Third party licenses</a><br>
+            </li>
+            <li class="none">
+              <a href="./../../LICENSE" title="License">License</a>
+            </li>
+          </ul>
+      </a>
+      </div>
+    </div>
+    <div id="bodyColumn">
+      <div id="contentBox">
+    
+    <h2><a name="sacpp">The OpenSplice APIs</a></h2>
+    <p>
+    OpenSplice ships with C, C++ (x2), C#, and Java (x2) APIs. C++ and Java have
+    the original DCPS API support (referred to as Classic)
+    and the newer ISO C++ and Java 5 PSM APIs.
+    
+    The C++ and Java APIs will have
+    been built with a specific ORB and a specific compiler in the case of the C++ API.
+    To reduce the number of installers PrismTech have to support, we have
+    provided the ability to rebuild the C++ and Java APIs to match your choice of
+    deployment environment; this is known as the custom library.
+    
+    The custom library has two modes, standalone (build with standard DDS types)
+    and CORBA cohabitation (built with CORBA types).
+    </p>
+    
+    <h2><a name="sacpp">Building your own Standalone C++ API</a></h2>
+    <p>
+        The OpenSplice DCPS API for the C++ language binding and new ISO C++ 
+        without Corba cohabitation is delivered using a specific compiler.
+    </p>
+    <p>
+        To be able to use a different compiler with the OpenSplice
+        Standalone C++ API or ISO C++ API, we deliver the source code for these languages
+        with the OpenSplice distribution. It is contained in a directory
+        <b>custom_lib/sacpp</b> or <b>custom_lib/isocpp(2)</b> along with a
+        <b>README</b> file describing how to generate the custom library.<br><br>
+        
+        <b>Note: In order to debug your application code on windows, you will need
+        to rebuild the DDS C++/ISO C++ API you are using in debug mode. Just select 
+        this option in the Visual Studio file suggested in the appropriate README.</b>
+    <p>
+
+    <h2><a name="ccpp">Building your own Corba C++ API</a></h2>
+    <p>
+        The OpenSplice DCPS API for the C++ language binding with Corba
+        cohabitation is delivered using the OpenFusion TAO ORB and a specific
+        compiler. 
+    </p>
+    <p>
+        The OpenSplice distribution contains a directory
+        <b>custom_lib/ccpp</b> containing the source code for building your own
+        Corba C++ API library for an ORB of your choice and compiler of your
+        choice. Located in this directory is a <b>README</b> file, describing
+        how to generate this custom library.
+    </p>
+
+    <h2><a name="java">Building your own Corba Java API</a></h2>
+    <p>
+        The OpenSplice DCPS API for the Java language binding with Corba
+        cohabitation is built with OpenFusion JacORB.
+    </p>
+    <p>
+        The OpenSplice Corba Java API can also be rebuilt against another
+        CORBA compliant Java ORB. Rebuilding using the Aonix PERC compiler is
+        also supported. A directory <b>custom_lib/cj</b> contains the necessary
+        source code, along with a <b>README</b> file which describes how to
+        generate the custom library.
+    </p>
+
+    <div class="clear">
+    <hr/>
+    </div>
+    <div id="footer">
+      <div class="xright">
+       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.      
+      </div>
+     <div class="clear">
+     <hr/>
+     </div>
+    </div>
+  </body>
+</html>

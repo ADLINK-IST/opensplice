@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -197,6 +205,7 @@ int OSPL_MAIN (int argc, char ** argv)
     checkStatus(status, "DDS_DomainParticipant_get_default_publisher_qos");
     pub_qos->partition.name._length = 1;
     pub_qos->partition.name._maximum = 1;
+    pub_qos->partition.name._release = TRUE;
     pub_qos->partition.name._buffer = DDS_StringSeq_allocbuf (1);
     checkHandle(pub_qos->partition.name._buffer, "DDS_StringSeq_allocbuf");
     pub_qos->partition.name._buffer[0] = DDS_string_dup (partitionName);
@@ -314,6 +323,7 @@ int OSPL_MAIN (int argc, char ** argv)
     DDS_free(reliable_topic_qos);
     DDS_free(setting_topic_qos);
     DDS_free(pub_qos);  /* Note that DDS_free recursively de-allocates all indirections as well!! */
+    DDS_free(dw_qos);
 
     /* De-allocate the type-names and TypeSupport objects. */
     DDS_free(nameServiceTypeName);

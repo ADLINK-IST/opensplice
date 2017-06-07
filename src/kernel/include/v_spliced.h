@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef V_SPLICED_H
@@ -17,8 +25,8 @@ extern "C" {
 #endif
 
 #include "kernelModule.h"
+#include "v_builtin.h"
 #include "os_if.h"
-#include "v_status.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -63,9 +71,8 @@ v_splicedPrepareTermination(
 OS_API c_bool
 v_splicedStartHeartbeat(
     v_spliced spliced,
-    v_duration period,
-    v_duration renewal,
-    c_long priority);
+    os_duration period,
+    os_duration renewal);
 
 OS_API c_bool
 v_splicedStopHeartbeat(
@@ -81,33 +88,80 @@ v_splicedBuiltinCAndMCommandDispatcher(
 
 OS_API v_result
 v_splicedGetMatchedSubscriptions(
-	v_spliced spliced,
+    v_spliced spliced,
     v_writer w,
-    v_statusAction action,
+    v_subscriptionInfo_action action,
     c_voidp arg);
 
 OS_API v_result
 v_splicedGetMatchedSubscriptionData(
-	v_spliced spliced,
+    v_spliced spliced,
     v_writer w,
     v_gid subscription,
-    v_statusAction action,
+    v_subscriptionInfo_action action,
     c_voidp arg);
 
 OS_API v_result
 v_splicedGetMatchedPublications(
-	v_spliced spliced,
+    v_spliced spliced,
     v_dataReader r,
-    v_statusAction action,
+    v_publicationInfo_action action,
     c_voidp arg);
 
 OS_API v_result
 v_splicedGetMatchedPublicationData(
-	v_spliced spliced,
+    v_spliced spliced,
     v_dataReader r,
     v_gid publication,
-    v_statusAction action,
+    v_publicationInfo_action action,
     c_voidp arg);
+
+/**
+ * \brief Setup the durability client within spliced.
+ *
+ * This method will setup the kernel durability client feature within spliced.
+ *
+ * Communication channel:
+ * partitionRequest     - The partition to send requests in.
+ * partitionDataGlobal  - The partition to expect 'global' data.
+ * partitionDataPrivate - The partition to expect 'private' data.
+ */
+OS_API v_result
+v_splicedDurabilityClientSetup(
+    v_spliced spliced,
+    c_iter durablePolicies,
+    const char* partitionRequest,
+    const char* partitionDataGlobal,
+    const char* partitionDataPrivate);
+
+/**
+ * \brief Acquire durability client from spliced.
+ */
+OS_API v_durabilityClient
+v_splicedDurabilityClientGet(
+    v_spliced spliced);
+
+/**
+ * \brief Durability client main thread loop.
+ *
+ * p - u_spliced
+ * arg - NULL
+ */
+OS_API void
+v_splicedDurabilityClientMain(
+    v_public p,
+    void *arg);
+
+/**
+ * \brief Terminate request for the durability client main thread loop.
+ *
+ * It is possible that the thread still runs when this function returns.
+ * The only guarantee is that the thread will terminate as quickly as
+ * possible.
+ */
+OS_API void
+v_splicedDurabilityClientTerminate(
+    v_spliced spliced);
 
 #undef OS_API
 

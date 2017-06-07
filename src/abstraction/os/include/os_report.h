@@ -1,24 +1,33 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef OS_REPORT_H
 #define OS_REPORT_H
 
-#if defined (__cplusplus)
-extern "C" {
-#endif
 
 #include "os_defs.h"
 #include <stdarg.h>
 #include "os_if.h"
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -26,6 +35,13 @@ extern "C" {
 #define OS_API OS_API_IMPORT
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
+
+/* Subcomponents might need to alter the report before actually handing it over
+ * to os_report. Since os_report truncates messages, those components can get
+ * away with fixed size buffers as well, but the maximum size must known at
+ * that point.
+ */
+#define OS_REPORT_BUFLEN 1024
 
 /* following new line macro can be used in report description to insert
  * a new line and indent to align next line.
@@ -37,37 +53,21 @@ Note - in the below the check of reportType against os_reportVerbosity is also p
 in os_report. By duplicating it we avoid putting the call onto the stack and evaluating
 args if not necessary.
 */
-#define OS_REPORT(type,context,code,description) \
-    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description)
+#define OS_REPORT(type,context,code,...) \
+    (((type) >= os_reportVerbosity) ? os_report((type),(context),__FILE__,__LINE__,(code),__VA_ARGS__) : (void)0)
 
-#define OS_REPORT_1(type,context,code,description,a1) \
-    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1)
+#define OS_REPORT_WID(type,context,code,id,...) \
+    (((type) >= os_reportVerbosity) ? os_report_w_domain((type),(context),__FILE__,__LINE__,(code),(id),__VA_ARGS__) : (void)0)
 
-#define OS_REPORT_2(type,context,code,description,a1,a2) \
-    if (type >= os_reportVerbosity)  os_report(type,context,__FILE__,__LINE__,code,description,a1,a2)
 
-#define OS_REPORT_3(type,context,code,description,a1,a2,a3) \
-    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3)
+#define OS_REPORT_STACK() \
+    os_report_stack()
 
-#define OS_REPORT_4(type,context,code,description,a1,a2,a3,a4) \
-    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4)
+#define OS_REPORT_FLUSH(condition) \
+    os_report_stack_flush((condition), OS_FUNCTION, __FILE__, __LINE__, -1)
 
-#define OS_REPORT_5(type,context,code,description,a1,a2,a3,a4,a5) \
-    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5)
-
-#define OS_REPORT_6(type,context,code,description,a1,a2,a3,a4,a5,a6) \
-    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6)
-
-#define OS_REPORT_7(type,context,code,description,a1,a2,a3,a4,a5,a6,a7) \
-    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6,a7)
-
-#define OS_REPORT_8(type,context,code,description,a1,a2,a3,a4,a5,a6,a7,a8) \
-    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6,a7,a8)
-
-#define OS_REPORT_9(type,context,code,description,a1,a2,a3,a4,a5,a6,a7,a8,a9) \
-    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6,a7,a8,a9)
-
-typedef void * os_IReportService_s;
+#define OS_REPORT_DUMPSTACK() \
+    os_report_dumpStack(OS_FUNCTION, __FILE__, __LINE__)
 
 typedef void * os_reportPlugin;
 
@@ -95,7 +95,7 @@ typedef enum os_reportType {
     OS_DEBUG,
     OS_INFO,
     OS_WARNING,
-    OS_API_INFO,
+    OS_API_INFO, /* Deprecated, only here for backwards compatibility */
     OS_ERROR,
     OS_CRITICAL,
     OS_FATAL,
@@ -116,19 +116,19 @@ struct os_reportEventV1_s
     os_reportType reportType;
     /** Context information relating to where the even was generated.
      * May contain a function or compnent name or a stacktrace */
-    const char* reportContext;
+    os_char* reportContext;
     /** The source file name where the report even was generated */
-    const char* fileName;
+    os_char* fileName;
     /** The source file line number where the report was generated */
     os_int32 lineNo;
     /** An integer code associated with the event. */
     os_int32 code;
     /** A description of the reported event */
-    const char *description;
+    os_char *description;
     /** A string identifying the thread the event occured in */
-    const char* threadDesc;
+    os_char* threadDesc;
     /** A string identifying the process the event occured in */
-    const char* processDesc;
+    os_char* processDesc;
 };
 
 #define OS_REPORT_EVENT_V1 1
@@ -156,73 +156,67 @@ typedef struct os_reportInfo_s {
 /* Docced in impl file */
 OS_API extern os_reportType os_reportVerbosity;
 
+typedef os_int32 (*os_reportGetDomainCallback)(void *arg);
+
+OS_API void
+os_reportRegisterDomainCallback(os_reportGetDomainCallback callback, void *arg);
+
+OS_API os_int32
+os_reportGetDomain(void);
+
 OS_API void
 os_reportInit(os_boolean forceReInit);
 
-OS_API void os_reportExit();
+OS_API void os_reportExit(void);
+
+/** \brief Report message directly and do not treat as formatting string
+ *
+ * Consider this function private. It should be invoked by reporting functions
+ * specified in the language bindings only.
+ *
+ * @param type type of report
+ * @param context context in which report was generated, often function name
+ *                from which function was invoked
+ * @param path path of file from which function was invoked
+ * @param line line of file from which function was invoked
+ * @param code error code associated with the report
+ * @param message message to report
+ */
+OS_API void
+os_report_noargs(
+    os_reportType type,
+    const os_char *context,
+    const os_char *path,
+    os_int32 line,
+    os_int32 code,
+    const os_char *message);
 
 OS_API void
 os_report(
-    os_reportType reportType,
-    const char   *reportContext,
-    const char   *fileName,
-    os_int32      lineNo,
-    os_int32      reportCode,
-    const char   *description,
-    ...);
+    os_reportType type,
+    const os_char *context,
+    const os_char *path,
+    os_int32 line,
+    os_int32 code,
+    const os_char *format,
+    ...) __attribute_format__((printf,6,7));
 
 OS_API void
-os_reportSetApiInfo(
-    const char   *reportContext,
-    const char   *sourceLine,
-    const char   *callStack,
-    os_int32      reportCode,
-    const char   *description,
-    ...);
-
-OS_API void
-os_reportSetApiInfoContext(
-    const char   *reportContext);
-
-OS_API void
-os_reportSetApiInfoLine(
-    const char   *sourceLine);
-
-OS_API void
-os_reportSetApiInfoStack(
-    const char   *callStack);
-
-OS_API void
-os_reportSetApiInfoCode(
-    os_int32      reportCode);
-
-OS_API void
-os_reportSetApiInfoDescription(
-    const char   *description,
-    ...);
+os_report_w_domain(
+        os_reportType type,
+        const os_char *context,
+        const os_char *path,
+        os_int32 line,
+        os_int32 code,
+        os_int32 domainId,
+        const os_char *format,
+        ...) __attribute_format__((printf,7,8));
 
 OS_API os_reportInfo *
 os_reportGetApiInfo(void);
 
 OS_API void
 os_reportClearApiInfo(void);
-
-OS_API os_int32
-os_registerReportService (
-    os_IReportService_s reportServiceContext,
-    void (*reportService)(
-    os_IReportService_s reportServiceContext,
-    os_reportType reportType,
-    const char *reportContext,
-    const char *fileName,
-    os_int32 lineNo,
-    os_int32 code,
-    const char *description,
-    va_list args));
-
-OS_API os_int32
-os_unregisterReportService(
-    os_IReportService_s reportServiceContext);
 
 OS_API os_int32
 os_reportRegisterPlugin(
@@ -233,6 +227,7 @@ os_reportRegisterPlugin(
     const char *typedreport_method_name,
     const char *finalize_method_name,
     os_boolean suppressDefaultLogs,
+    os_int32 domainId,
     os_reportPlugin *plugin);
 
 typedef void *os_reportPlugin_context;
@@ -268,6 +263,7 @@ os_reportInitPlugin(
     os_reportPlugin_report reportFunction,
     os_reportPlugin_typedreport typedReportFunction,
     os_boolean suppressDefaultLogs,
+    os_int32 domainId,
     os_reportPlugin *plugin);
 
 OS_API os_int32
@@ -275,11 +271,7 @@ os_reportUnregisterPlugin(
     os_reportPlugin plugin);
 
 OS_API void
-os_reportDisplayLogLocations();
-
-/* docced in implementation file */
-OS_API char*
-os_reportErrnoToString(int errNo);
+os_reportDisplayLogLocations(void);
 
 OS_API char *
 os_reportGetInfoFileName(void);
@@ -292,10 +284,163 @@ os_reportSetVerbosity(
     const char* newVerbosityString);
 
 OS_API void
-os_reportSetDoAppend(
-    os_boolean shouldAppend);
+os_reportRemoveStaleLogs(void);
+
+/*****************************************
+ * Report stack related functions
+ *****************************************/
+
+/**
+ * The os_report_stack operation enables a report stack for the current thread.
+ * The stack will be disabled again by the os_report_flush operation.
+ */
+OS_API void
+os_report_stack(void);
+
+/**
+ * The os_report_stack_open operation enables a report stack for the current thread.
+ * It initializes the report record with the file, line and the signature of the
+ * operation that called this operation.
+ * The stack will be disabled again by the os_report_flush operation.
+ */
+OS_API void
+os_report_stack_open(
+    const os_char *file,
+    os_int lineno,
+    const os_char *signature,
+    void *userInfo);
+
+/**
+ * The os_report_stack_free operation frees all memory allocated by the current
+ * thread for the report stack.
+ */
+OS_API void
+os_report_stack_free(
+    void);
+
+/**
+ * The os_report_flush_required checks if the report stack must be flushed.
+ * This function checks if the report stack is back at the top of the stack.
+ * When the report stack is not at the top the level moved up by one and returns
+ * FALSE. When the report stack is at the top level the function returns TRUE
+ * when the flush argument is TRUE or when the report stack contains critical
+ * reports or warnings which always need to be reported.
+ * When this function returns true the caller should call the function
+ * os_report_stack_unwind to flush the reports from the stack
+ */
+OS_API os_boolean
+os_report_stack_flush_required(
+    _In_ os_boolean flush);
+
+/**
+ * The os_report_stack_unwind operation removes the report message from the stack,
+ * and if valid is TRUE also writes them into the report device.
+ * This operation additionally disables the stack.
+ * Note that this function should only be called when the function
+ * os_report_stack_flush_required returns TRUE.
+ */
+OS_API void
+os_report_stack_unwind(
+    _In_ os_boolean flush,
+    _In_ const os_char *context,
+    _In_ const os_char *file,
+    _In_ os_int line,
+	_In_ os_int32 domainId) __nonnull((2,3));
+
+/**
+ * The os_report_stack_flush operation removes the report message from the stack,
+ * and if valid is TRUE also writes them into the report device.
+ * This operation additionally disables the stack.
+ */
+OS_API void
+os_report_stack_flush(
+    _In_ os_boolean flush,
+    _In_ const os_char *context,
+    _In_ const os_char *path,
+    _In_ os_int line,
+	_In_ os_int32 domainId) __nonnull((2,3));
+
+/**
+ * The os_report_flush operation removes the report message from the stack,
+ * and also writes them into the report device. Thus the report stack is
+ * always unwind. This operation additionally disables the stack.
+ */
+OS_API void
+os_report_flush_unconditional(
+    os_boolean valid,
+    const os_char *context,
+    const os_char *file,
+    os_int line,
+	os_int32 domainId);
+
+typedef os_char * (os_report_context_callback)(const os_char *context, os_char *buffer, os_uint buflen, void *arg);
+
+/**
+ * The os_report_flush_context operation removes the report message
+ * from the stack, and if valid is TRUE also writes them into the report device.
+ * It uses the context information stored in the report.
+ * The provided callback function is called to convert the function signature.
+ * This operation additionally disables the stack.
+ */
+OS_API void
+os_report_flush_context(
+    os_boolean valid,
+    os_report_context_callback callback,
+    void *arg);
+
+/**
+ * The os_report_flush_context_unconditional operation removes the report message
+ * from the stack and writes them into the report device.
+ * It uses the context information stored in the report.
+ * The provided callback function is called to convert the function signature.
+ * This operation additionally disables the stack.
+ */
+OS_API void
+os_report_flush_context_unconditional(
+    os_report_context_callback callback,
+    void *arg);
+
+/**
+ * The os_report_get_context operation returns the context information
+ * saved in the report stack
+ */
+OS_API os_boolean
+os_report_get_context(
+    const os_char **file,
+    os_int *lineno,
+    const os_char **signature,
+    void **userInfo);
 
 
+/**
+ * The os_report_dumpStack operation removes the report messages from the stack
+ * and writes them into the report device, regardless of the state the stack is
+ * in. This is useful in panic situations, where you want to dump the content of
+ * the current stack prior forcefully terminating the application.
+ * This operation keeps the stack in the same state as it was in before invocation,
+ * with the one exception that all messages in the stack that have been reported
+ * are now removed.
+ */
+OS_API void
+os_report_dumpStack(
+    const os_char *context,
+    const os_char *file,
+    const os_int line);
+
+/**
+ * The os_report_stack_size operation returns the number of messages in the report stack.
+ * This operation will return -1 when no stack is active.
+ */
+OS_API os_int32
+os_report_stack_size(void);
+
+/**
+ * The os_report_read operation returns the report message specified by a given index in the stack.
+ * This operation will return a null pointer when the index is out of range.
+ */
+OS_API os_reportEventV1
+os_report_read(
+    os_int32 index);
 
 #undef OS_API
 

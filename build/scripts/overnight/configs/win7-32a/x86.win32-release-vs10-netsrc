@@ -1,0 +1,15 @@
+SETUP_TYPE=x86.win32-release
+BUILD_DIST=yes
+BUILD_EXAMPLES=yes
+KEEP_DIST=yes
+BUILD_DBT=yes
+BUILD_RBT=yes
+RUN_DBT=no
+RUN_RBT_SP=no
+RUN_RBT_SHM=no
+RUN_EXAMPLES_SHM=no
+RUN_EXAMPLES_SP=yes
+
+. configs/`hostname`/common
+
+export OVERRIDE_INCLUDE_SRC_NETWORKING=yes

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include <time.h>
@@ -26,7 +34,7 @@
 #define MM_MS_AVAILABLE_FMT             "%14s"
 #define MM_MS_COUNT_HDR                 "count"
 #define MM_MS_COUNT_HDR_FMT             "%11s"
-#define MM_MS_COUNT_FMT                 "%11d"
+#define MM_MS_COUNT_FMT                 "%11"PA_PRId64
 #define MM_MS_USED_HDR                  "used"
 #define MM_MS_USED_HDR_FMT              "%14s"
 #define MM_MS_USED_FMT                  "%14s"
@@ -41,31 +49,31 @@
 #define MM_MS_REUSABLE_FMT              "%14s"
 #define MM_MS_FAILS_HDR                 "fails"
 #define MM_MS_FAILS_HDR_FMT             "%11s"
-#define MM_MS_FAILS_FMT                 "%11d"
+#define MM_MS_FAILS_FMT                 "%11"PA_PRIu64
 #define MM_MS_EXTRA_FMT                 "%s"
 
 #define MM_MS_D_FMT_WIDTH               "%11"
 #define MM_MS_D_AVAILABLE_HDR           "D-avail"
 #define MM_MS_D_AVAILABLE_HDR_FMT       MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_AVAILABLE_FMT           MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_AVAILABLE_FMT           MM_MS_D_FMT_WIDTH PA_PRIuSIZE
 #define MM_MS_D_USED_HDR                "D-used"
 #define MM_MS_D_USED_HDR_FMT            MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_USED_FMT                MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_USED_FMT                MM_MS_D_FMT_WIDTH PA_PRIuSIZE
 #define MM_MS_D_PREALLOCATED_HDR        "D-prealloc"
 #define MM_MS_D_PREALLOCATED_HDR_FMT    MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_PREALLOCATED_FMT        MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_PREALLOCATED_FMT        MM_MS_D_FMT_WIDTH PA_PRIdSIZE
 #define MM_MS_D_MAXUSED_HDR             "D-maxUsed"
 #define MM_MS_D_MAXUSED_HDR_FMT         MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_MAXUSED_FMT             MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_MAXUSED_FMT             MM_MS_D_FMT_WIDTH PA_PRIuSIZE
 #define MM_MS_D_FAILS_HDR               "D-fails"
 #define MM_MS_D_FAILS_HDR_FMT           MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_FAILS_FMT               MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_FAILS_FMT               MM_MS_D_FMT_WIDTH PA_PRIu64
 #define MM_MS_D_REUSABLE_HDR            "D-reusable"
 #define MM_MS_D_REUSABLE_HDR_FMT        MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_REUSABLE_FMT            MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_REUSABLE_FMT            MM_MS_D_FMT_WIDTH PA_PRIuSIZE
 #define MM_MS_D_COUNT_HDR               "D-count"
 #define MM_MS_D_COUNT_HDR_FMT           MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_COUNT_FMT               MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_COUNT_FMT               MM_MS_D_FMT_WIDTH PA_PRId64
 
 #define MM_MS_NEWLINE                   "\r\n"
 
@@ -151,12 +159,12 @@ to_string(
 
 void
 monitor_msAction (
-    v_entity entity,
+    v_public entity,
     c_voidp args
     )
 {
     time_t ct;
-    int cv;
+    c_size cv;
     char timbuf[30];
     char extra[70];
     c_mm mm;
@@ -257,17 +265,17 @@ monitor_msAction (
         strftime (timbuf, sizeof(timbuf), "%H:%M:%S", localtime(&ct));
     } else {
         /* no headers and print time as seconds since start of mmstat */
-        os_time now = os_timeGet();
-        os_sprintf(timbuf,"%d.%9.9d ",now.tv_sec,now.tv_nsec);
+        os_timeW now = os_timeWGet();
+        os_sprintf(timbuf,"%"PA_PRIu64".%9.9d ", OS_TIMEW_GET_SECONDS(now), OS_TIMEW_GET_NANOSECONDS(now));
     }
 
     if (msData->extendedMode) {
         cv = ((s.used * 40)/s.size);
-       os_strncpy (extra, "  |                                        |\r\n",
+        os_strncpy (extra, "  |                                        |",
                  sizeof(extra));
         extra [cv+3] = '*';
     } else {
-       os_strncpy (extra, "\r\n", sizeof(extra));
+        extra[0] = '\0';
     }
     if(msData->delta && msData->preallocated){
         printf (MM_MS_TIME_BUF_FMT
@@ -331,6 +339,7 @@ monitor_msAction (
                    MM_MS_REUSABLE_FMT
                    MM_MS_FAILS_FMT
                    MM_MS_EXTRA_FMT
+                   MM_MS_NEWLINE
                    ,
                    timbuf,
                    _size,
@@ -350,6 +359,7 @@ monitor_msAction (
                    MM_MS_REUSABLE_FMT
                    MM_MS_FAILS_FMT
                    MM_MS_EXTRA_FMT
+                   MM_MS_NEWLINE
                    ,
                    timbuf,
                    _size,

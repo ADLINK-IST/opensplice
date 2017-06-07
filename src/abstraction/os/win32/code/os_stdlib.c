@@ -1,27 +1,37 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
+
+#include "os_errno.h"
 #include "os_stdlib.h"
+
+#include "os_win32incs.h"
+
 #include "os_heap.h"
 #include "os_report.h"
 #include "os__socket.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <ctype.h>
-
 #include "os_stdlib_getopt.c"
 #include "../common/code/os_stdlib_locate.c"
 #include "../common/code/os_stdlib_bsearch.c"
+#include "../common/code/os_stdlib_strtod.c"
+#include "../common/code/os_stdlib_strtol.c"
 #include "../common/code/os_stdlib_strtok_r.c"
 
 static os_int32
@@ -45,7 +55,6 @@ os_mkdir(
         result = 0;
     } else {
         result = -1;
-        errno = GetLastError();
     }
     return result;
 }
@@ -53,7 +62,7 @@ os_mkdir(
 os_result
 os_gethostname(
     char *hostname,
-    os_uint buffersize)
+    size_t buffersize)
 {
     os_result result;
     char hostnamebuf[MAXHOSTNAMELEN];
@@ -253,124 +262,18 @@ os_sprintf(
 
    return result;
 }
+
+#pragma warning( disable : 4996 )
+int
+os_vfprintfnosigpipe(
+        FILE *file,
+        const char *format,
+        va_list args)
+{
+   return vfprintf(file, format, args);
+}
+
 #pragma warning( default : 4996 )
-
-static long long
-digit_value(
-    char digit,
-    os_int32 base)
-{
-    signed char val;
-
-    if (digit >= '0' && digit <= '9') {
-        val = digit - '0';
-        if (val >= base) {
-            val = -1;
-        }
-    } else if (digit >= 'a' && digit <= 'z') {
-        val = digit - 'a' + 10;
-        if (val >= base) {
-            val = -1;
-        }
-    } else if (digit >= 'A' && digit <= 'Z') {
-        val = digit - 'A' + 10;
-        if (val >= base) {
-            val = -1;
-        }
-    } else {
-        val = -1;
-    }
-
-    return (long long)val;
-}
-
-long long
-os_strtoll(
-    const char *str,
-    char **endptr,
-    os_int32 base)
-{
-    return _strtoi64(str, endptr, base);
-}
-
-unsigned long long
-os_strtoull(
-    const char *str,
-    char **endptr,
-    os_int32 base)
-{
-    return _strtoui64(str, endptr, base);
-}
-
-long long
-os_atoll(
-    const char *str)
-{
-    return os_strtoll(str, NULL, 10);
-}
-
-unsigned long long
-os_atoull(
-    const char *str)
-{
-    return os_strtoull(str, NULL, 10);
-}
-
-char *
-os_lltostr(
-    long long value,
-    char *endptr)
-{
-    long long lval;
-    long long sign;
-
-    if (value < 0LL) {
-        sign = -1LL;
-    } else {
-        sign = 1LL;
-    }
-    lval = value / 10LL;
-    if (sign < 0) {
-        endptr--;
-        *endptr = '0' + (char)((lval * 10LL) - value);
-    } else {
-        endptr--;
-        *endptr = '0' + (char)(value - (lval * 10LL));
-    }
-    value = lval * sign;
-    while (value > 0LL) {
-        lval = value / 10LL;
-        endptr--;
-        *endptr = '0' + (char)(value - (lval * 10LL));
-        value = lval;
-    }
-    if (sign < 0) {
-        endptr--;
-        *endptr = '-';
-    }
-    return endptr;
-}
-
-char *
-os_ulltostr(
-    unsigned long long value,
-    char *endptr)
-{
-    long long lval;
-
-    lval = value / 10ULL;
-    endptr--;
-    *endptr = '0' + (char)(value - (lval * 10ULL));
-    value = lval;
-    while (value > 0ULL) {
-        lval = value / 10ULL;
-        endptr--;
-        *endptr = '0' + (char)(value - (lval * 10ULL));
-        value = lval;
-    }
-    return endptr;
-}
-
 int
 os_strcasecmp(
     const char *s1,
@@ -394,7 +297,7 @@ int
 os_strncasecmp(
     const char *s1,
     const char *s2,
-    os_uint32 n)
+    size_t n)
 {
     int cr = 0;
 
@@ -426,8 +329,7 @@ os_stat(
     if (r == 0) {
         buf->stat_mode = _buf.st_mode;
         buf->stat_size = _buf.st_size;
-        buf->stat_mtime.tv_sec = _buf.st_mtime;
-        buf->stat_mtime.tv_nsec = 0;
+        buf->stat_mtime = OS_TIMEW_INIT(_buf.st_mtime, 0);
         result = os_resultSuccess;
     } else {
         result = os_resultFail;
@@ -500,6 +402,7 @@ os_result os_remove (const char *pathname)
 
 os_result os_rename (const char *oldpath, const char *newpath)
 {
+    (void)os_remove(newpath);
     return (rename (oldpath, newpath) == 0) ? os_resultSuccess : os_resultFail;
 }
 
@@ -550,7 +453,7 @@ os_fsync(
     return r;
 }
 
-char *
+const char *
 os_getTempDir()
 {
     char * dir_name = NULL;
@@ -578,7 +481,7 @@ os_getTempDir()
             "neither of environment variables TEMP, TMP, OSPL_TEMP were set");
     } else if(os_ensurePathExists(dir_name) != 0)
     {
-        OS_REPORT_1(OS_ERROR, "os_getTempDir", 0,
+        OS_REPORT(OS_ERROR, "os_getTempDir", 0,
             "Could not ensure all (sub)directories of the temporary directory "OS_REPORT_NL
             "path '%s' exist. "OS_REPORT_NL
             "This has consequences for the ability of OpenSpliceDDS to run "OS_REPORT_NL
@@ -628,11 +531,11 @@ os_ensurePathExists(
                     }
                     else
                     {
-                        OS_REPORT_3(OS_ERROR, "os_ensurePathExists", 0,
+                        OS_REPORT(OS_ERROR, "os_ensurePathExists", 0,
                         "Unable to create directory '%s' within path '%s'. Errorcode: %d",
                         tmp,
                         dir_name,
-                        (int)errno);
+                        os_getErrno());
                         result = -1;
                     }
                 }
@@ -692,6 +595,7 @@ os_vsnprintf(
 }
 #pragma warning( default : 4996 )
 
+#if _MSC_VER < 1900
 int
 snprintf(
          char *s,
@@ -710,6 +614,7 @@ snprintf(
 
    return result;
 }
+#endif
 
 os_ssize_t os_write(int fd, const void *buf, size_t count)
 {

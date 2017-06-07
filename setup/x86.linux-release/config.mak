@@ -10,16 +10,19 @@ else
 include $(OSPL_HOME)/setup/x86.linux-default.mak
 endif
 
-ifeq ($(FORCE_DEBUG_SYMBOLS), no) 
+ifeq ($(FORCE_DEBUG_SYMBOLS), no)
+# C only Compiler flags
+CFLAGS += -std=c99
+
 # Compiler flags
-CFLAGS_OPT       = -O4 -g -fno-strict-aliasing $(CFLAGS_LTO)
+CFLAGS_OPT       = -O3 -g -fno-strict-aliasing $(CFLAGS_LTO)
 CFLAGS_DEBUG     = -DNDEBUG
-JCFLAGS          = -g:none
+JCFLAGS          = -g
 
 #Csc compiler flags
 CSFLAGS_DEBUG    =
 else
-# Basically the release setting so it builds the core in release mode 
+# Basically the release setting so it builds the core in release mode
 # but also remove optimization and add debug symbols
 CFLAGS_OPT       = -O0
 CFLAGS_DEBUG     = -g -DNDEBUG

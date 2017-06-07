@@ -1,12 +1,20 @@
 /*
 *                         OpenSplice DDS
 *
-*   This software and documentation are Copyright 2006 to 2012 PrismTech
-*   Limited and its licensees. All rights reserved. See file:
-*
-*                     $OSPL_HOME/LICENSE
-*
-*   for full copyright notice and license terms.
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
 *
 */
 
@@ -24,7 +32,7 @@ namespace opensplice
 namespace core
 {
 
-InstanceHandleImpl::InstanceHandleImpl() : handle_(-1)
+InstanceHandleImpl::InstanceHandleImpl() : handle_(0)
 {
     // empty
 }
@@ -32,7 +40,7 @@ InstanceHandleImpl::InstanceHandleImpl() : handle_(-1)
 InstanceHandleImpl::InstanceHandleImpl(DDS::InstanceHandle_t h) : handle_(h) { }
 
 InstanceHandleImpl::InstanceHandleImpl(const dds::core::null_type& src)
-    : handle_(-1)
+    : handle_(0)
 {
     (void)src;
 }
@@ -46,14 +54,14 @@ InstanceHandleImpl::InstanceHandleImpl(const InstanceHandleImpl& other)
 InstanceHandleImpl&
 InstanceHandleImpl::operator=(const dds::core::null_type& src)
 {
-    handle_ = -1;
+    handle_ = 0;
     return *this;
 }
 
 bool
 InstanceHandleImpl::is_nil() const
 {
-    return (handle_ == -1);
+    return (handle_ == 0);
 }
 
 bool

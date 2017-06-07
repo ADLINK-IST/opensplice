@@ -1,16 +1,23 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v__lifespanAdmin.h"
-#include "v_time.h"
 #include "os_report.h"
 
 /**************************************************************
@@ -26,19 +33,11 @@ v_lifespanAdminNew(
     v_kernel kernel)
 {
     v_lifespanAdmin admin;
-
     admin = NULL;
-    admin = c_new(c_resolve(c_getBase(kernel), "kernelModule::v_lifespanAdmin"));
-    if (admin != NULL) {
-        admin->sampleCount = 0;
-        admin->head = NULL;
-        admin->tail = NULL;
-    } else {
-        OS_REPORT(OS_ERROR,
-                  "v_lifespanAdminNew",0,
-                  "Failed to allocate lifespan admin.");
-        assert(FALSE);
-    }
+    admin = c_new(c_resolve(c_getBase(kernel), "kernelModuleI::v_lifespanAdmin"));
+    admin->sampleCount = 0;
+    admin->head = NULL;
+    admin->tail = NULL;
     return admin;
 }
 
@@ -51,15 +50,14 @@ v_lifespanAdminInsert(
     v_lifespanSample sample)
 {
     v_lifespanSample placeHolder;
-    c_equality eq;
+    os_compare eq;
 
     assert(C_TYPECHECK(admin,v_lifespanAdmin));
     assert(C_TYPECHECK(sample,v_lifespanSample));
     assert(admin->sampleCount >= 0);
 
     CHECK_ADMIN(admin, sample);
-    eq = c_timeCompare(sample->expiryTime, C_TIME_INFINITE);
-    if (eq == C_EQ) {
+    if (OS_TIMEE_ISINFINITE(sample->expiryTime)) {
         return; /* no insert, since sample never expires! */
     }
 
@@ -69,14 +67,14 @@ v_lifespanAdminInsert(
         admin->tail = c_keep(sample);
     } else {
         placeHolder = admin->tail;
-        eq = c_timeCompare(placeHolder->expiryTime, sample->expiryTime);
-        while ((placeHolder->prev != NULL) && (eq != C_LT) /* >= */) {
+        eq = os_timeECompare(placeHolder->expiryTime, sample->expiryTime);
+        while ((placeHolder->prev != NULL) && (eq != OS_LESS) /* >= */) {
             placeHolder = placeHolder->prev;
             if (placeHolder != NULL) {
-                eq = c_timeCompare(placeHolder->expiryTime, sample->expiryTime);
+                eq = os_timeECompare(placeHolder->expiryTime, sample->expiryTime);
             }
         }
-        if (eq != C_LT) { /* insert before placeholder */
+        if (eq != OS_LESS) { /* insert before placeholder */
             assert(placeHolder == admin->head);
             sample->next = admin->head; /* transfer ref count */
             admin->head->prev = sample;
@@ -88,7 +86,7 @@ v_lifespanAdminInsert(
                 assert(placeHolder == admin->tail);
                 c_free(admin->tail);
                 admin->tail = c_keep(sample);
-	    }
+            }
             sample->next = placeHolder->next; /* transfer refcount */
             placeHolder->next = c_keep(sample);
             sample->prev = placeHolder;
@@ -103,15 +101,10 @@ v_lifespanAdminRemove(
     v_lifespanAdmin admin,
     v_lifespanSample sample)
 {
-    c_equality eq;
-
     assert(C_TYPECHECK(admin,v_lifespanAdmin));
     assert(C_TYPECHECK(sample,v_lifespanSample));
 
-    eq = c_timeCompare(sample->expiryTime, C_TIME_INFINITE);
-    if (eq == C_EQ) {
-        return; /* no insert, since sample never expires! */
-    }
+    if ((sample->next == NULL) && (sample->prev == NULL) && (admin->head != sample)) return;
 
     CHECK_ADMIN(admin, sample);
     if (sample == admin->head) {
@@ -163,22 +156,21 @@ v_lifespanAdminRemove(
 void
 v_lifespanAdminTakeExpired(
     v_lifespanAdmin admin,
+    os_timeE now,
     v_lifespanSampleAction action,
     c_voidp arg)
 {
     c_bool proceed;
     v_lifespanSample removed;
-    c_time now;
-    c_equality eq;
+    os_compare eq;
 
     assert(C_TYPECHECK(admin,v_lifespanAdmin));
 
     CHECK_ADMIN(admin, NULL);
     if (admin->head != NULL) {
-        now = v_timeGet();
-        eq = c_timeCompare(now, admin->head->expiryTime);
+        eq = os_timeECompare(now, admin->head->expiryTime);
         proceed = TRUE;
-        while ((proceed) && (eq != C_LT /* >= */) && (admin->head != NULL)) {
+        while ((proceed) && (eq != OS_LESS /* >= */) && (admin->head != NULL)) {
             removed = admin->head;
             if (action) {
                 proceed = action(removed, arg);
@@ -205,7 +197,7 @@ v_lifespanAdminTakeExpired(
                 c_free(removed);
             }
             if (admin->head != NULL) {
-                eq = c_timeCompare(now, admin->head->expiryTime);
+                eq = os_timeECompare(now, admin->head->expiryTime);
             }
         }
     }

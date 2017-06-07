@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "os_report.h"
@@ -21,53 +29,19 @@
 #include "c_filter.h"
 #include "c__querybase.h"
 #include "c_collection.h"
+#include "os_errno.h"
 
-#include <errno.h>
-
-#define c_qConstType(b) \
-        (b->baseCache.queryCache.c_qConst_t != NULL ? \
-         c_keep(b->baseCache.queryCache.c_qConst_t) : \
-         c_keep(b->baseCache.queryCache.c_qConst_t = c_resolve((b),"c_querybase::c_qConst")))
-
-#define c_qTypeType(b) \
-        (b->baseCache.queryCache.c_qType_t != NULL ? \
-         c_keep(b->baseCache.queryCache.c_qType_t) : \
-         c_keep(b->baseCache.queryCache.c_qType_t = c_resolve((b),"c_querybase::c_qType")))
-
-#define c_qVarType(b) \
-        (b->baseCache.queryCache.c_qVar_t != NULL ? \
-         c_keep(b->baseCache.queryCache.c_qVar_t) : \
-         c_keep(b->baseCache.queryCache.c_qVar_t = c_resolve((b),"c_querybase::c_qVar")))
-
-#define c_qFieldType(b) \
-        (b->baseCache.queryCache.c_qField_t != NULL ? \
-         c_keep(b->baseCache.queryCache.c_qField_t) : \
-         c_keep(b->baseCache.queryCache.c_qField_t = c_resolve((b),"c_querybase::c_qField")))
-
-#define c_qFuncType(b) \
-        (b->baseCache.queryCache.c_qFunc_t != NULL ? \
-         c_keep(b->baseCache.queryCache.c_qFunc_t) : \
-         c_keep(b->baseCache.queryCache.c_qFunc_t = c_resolve((b),"c_querybase::c_qFunc")))
-
-#define c_qPredType(b) \
-        (b->baseCache.queryCache.c_qPred_t != NULL ? \
-         c_keep(b->baseCache.queryCache.c_qPred_t) : \
-         c_keep(b->baseCache.queryCache.c_qPred_t = c_resolve((b),"c_querybase::c_qPred")))
-
-#define c_qKeyType(b) \
-        (b->baseCache.queryCache.c_qKey_t != NULL ? \
-         c_keep(b->baseCache.queryCache.c_qKey_t) : \
-         c_keep(b->baseCache.queryCache.c_qKey_t = c_resolve((b),"c_querybase::c_qKey")))
-
-#define c_qRangeType(b) \
-        (b->baseCache.queryCache.c_qRange_t != NULL ? \
-         c_keep(b->baseCache.queryCache.c_qRange_t) : \
-         c_keep(b->baseCache.queryCache.c_qRange_t = c_resolve((b),"c_querybase::c_qRange")))
-
-#define c_qExprType(b) \
-         (b->baseCache.queryCache.c_qExpr_t != NULL ? \
-         c_keep(b->baseCache.queryCache.c_qExpr_t) : \
-         c_keep(b->baseCache.queryCache.c_qExpr_t = c_resolve((b),"c_querybase::c_qExpr")))
+#define c_qKind_t(b)      (b->baseCache.queryCache.c_qKind_t)
+#define c_qBoundKind_t(b) (b->baseCache.queryCache.c_qBoundKind_t)
+#define c_qConst_t(b)     (b->baseCache.queryCache.c_qConst_t)
+#define c_qType_t(b)      (b->baseCache.queryCache.c_qType_t)
+#define c_qVar_t(b)       (b->baseCache.queryCache.c_qVar_t)
+#define c_qField_t(b)     (b->baseCache.queryCache.c_qField_t)
+#define c_qFunc_t(b)      (b->baseCache.queryCache.c_qFunc_t)
+#define c_qPred_t(b)      (b->baseCache.queryCache.c_qPred_t)
+#define c_qKey_t(b)       (b->baseCache.queryCache.c_qKey_t)
+#define c_qRange_t(b)     (b->baseCache.queryCache.c_qRange_t)
+#define c_qExpr_t(b)      (b->baseCache.queryCache.c_qExpr_t)
 
 /* returns the head of the iterator as a c_qRange object (non-destructive, i.e. a read, not a take) */
 #define c_qRangeIterHead(l) (c_qRange(c_iterObject(l, 0)))
@@ -78,6 +52,8 @@
         (c_valueCompare(r->start, r->end) == C_EQ) && \
         r->startKind == B_EXCLUDE && \
         r->endKind == B_EXCLUDE)
+
+#define c_sscanf(str, ...) (str?sscanf(str, __VA_ARGS__):0)
 
 /*
  * Optimizes the predicate and returns the optimized predicate.
@@ -90,9 +66,9 @@ c_filter
 c_filterNew(
     c_type type,
     q_expr predicate,
-    c_value params[])
+    const c_value params[])
 {
-    c_qPred filter;
+    c_qPred filter = NULL;
 
     c_qPredNew(type,NULL,predicate,params,(c_qPred *)&filter);
     return (c_filter)filter;
@@ -119,57 +95,45 @@ c_querybaseInit(
 
     module = c_metaDeclare(c_object(base),"c_querybase",M_MODULE);
 
-    o = c_metaDeclare(module,"c_qBoundKind",M_ENUMERATION);
-    type = c_object_t(base);
-    c_enumeration(o)->elements = c_arrayNew(type,3);
-    c_enumeration(o)->elements[0] =
-        (c_voidp)c_metaDeclare(module,"B_UNDEFINED",M_CONSTANT);
-    c_enumeration(o)->elements[1] =
-        (c_voidp)c_metaDeclare(module,"B_INCLUDE",M_CONSTANT);
-    c_enumeration(o)->elements[2] =
-        (c_voidp)c_metaDeclare(module,"B_EXCLUDE",M_CONSTANT);
+    o = c_metaDefine(module,M_ENUMERATION);
+        c_qBoundKind_t(base) = o;
+        c_enumeration(o)->elements = c_arrayNew(c_constant_t(base),3);
+        c_enumeration(o)->elements[0] = c_metaDeclareEnumElement(module,"B_UNDEFINED");
+        c_enumeration(o)->elements[1] = c_metaDeclareEnumElement(module,"B_INCLUDE");
+        c_enumeration(o)->elements[2] = c_metaDeclareEnumElement(module,"B_EXCLUDE");
     c_metaFinalize(o);
+    c_metaBind(module,"c_qBoundKind",o);
     c_free(o);
 
-    o = c_metaDeclare(module,"c_qKind",M_ENUMERATION);
-    c_enumeration(o)->elements = c_arrayNew(type,12);
-    c_enumeration(o)->elements[0] =
-        (c_voidp)c_metaDeclare(module,"CQ_FIELD",M_CONSTANT);
-    c_enumeration(o)->elements[1] =
-        (c_voidp)c_metaDeclare(module,"CQ_CONST",M_CONSTANT);
-    c_enumeration(o)->elements[2] =
-        (c_voidp)c_metaDeclare(module,"CQ_AND",M_CONSTANT);
-    c_enumeration(o)->elements[3] =
-        (c_voidp)c_metaDeclare(module,"CQ_OR",M_CONSTANT);
-    c_enumeration(o)->elements[4] =
-        (c_voidp)c_metaDeclare(module,"CQ_EQ",M_CONSTANT);
-    c_enumeration(o)->elements[5] =
-        (c_voidp)c_metaDeclare(module,"CQ_NE",M_CONSTANT);
-    c_enumeration(o)->elements[6] =
-        (c_voidp)c_metaDeclare(module,"CQ_LT",M_CONSTANT);
-    c_enumeration(o)->elements[7] =
-        (c_voidp)c_metaDeclare(module,"CQ_LE",M_CONSTANT);
-    c_enumeration(o)->elements[8] =
-        (c_voidp)c_metaDeclare(module,"CQ_GT",M_CONSTANT);
-    c_enumeration(o)->elements[9] =
-        (c_voidp)c_metaDeclare(module,"CQ_GE",M_CONSTANT);
-    c_enumeration(o)->elements[10] =
-        (c_voidp)c_metaDeclare(module,"CQ_LIKE",M_CONSTANT);
-    c_enumeration(o)->elements[11] =
-        (c_voidp)c_metaDeclare(module,"CQ_NOT",M_CONSTANT);
+    o = c_metaDefine(module,M_ENUMERATION);
+        c_qKind_t(base) = o;
+        c_enumeration(o)->elements = c_arrayNew(c_constant_t(base),12);
+        c_enumeration(o)->elements[0] = c_metaDeclareEnumElement(module,"CQ_FIELD");
+        c_enumeration(o)->elements[1] = c_metaDeclareEnumElement(module,"CQ_CONST");
+        c_enumeration(o)->elements[2] = c_metaDeclareEnumElement(module,"CQ_AND");
+        c_enumeration(o)->elements[3] = c_metaDeclareEnumElement(module,"CQ_OR");
+        c_enumeration(o)->elements[4] = c_metaDeclareEnumElement(module,"CQ_EQ");
+        c_enumeration(o)->elements[5] = c_metaDeclareEnumElement(module,"CQ_NE");
+        c_enumeration(o)->elements[6] = c_metaDeclareEnumElement(module,"CQ_LT");
+        c_enumeration(o)->elements[7] = c_metaDeclareEnumElement(module,"CQ_LE");
+        c_enumeration(o)->elements[8] = c_metaDeclareEnumElement(module,"CQ_GT");
+        c_enumeration(o)->elements[9] = c_metaDeclareEnumElement(module,"CQ_GE");
+        c_enumeration(o)->elements[10] = c_metaDeclareEnumElement(module,"CQ_LIKE");
+        c_enumeration(o)->elements[11] = c_metaDeclareEnumElement(module,"CQ_NOT");
     c_metaFinalize(o);
+    c_metaBind(module,"c_qKind",o);
     c_free(o);
 
     scope = c_metaDeclare(module,"c_qExpr",M_CLASS);
+        c_qExpr_t(base) = scope;
         c_class(scope)->extends = NULL;
-        type = ResolveType(scope,"c_qKind");
-        C_META_ATTRIBUTE_(c_qExpr,scope,kind,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_qExpr,scope,kind,c_qKind_t(base));
     c__metaFinalize(scope,FALSE);
     c_free(scope);
 
     scope = c_metaDeclare(module,"c_qConst",M_CLASS);
-        c_class(scope)->extends = c_class(c_qExprType(base));
+        c_qConst_t(base) = scope;
+        c_class(scope)->extends = c_class(c_keep(c_qExpr_t(base)));
         type = ResolveType(scope,"c_value");
         C_META_ATTRIBUTE_(c_qConst,scope,value,type);
         c_free(type);
@@ -177,45 +141,41 @@ c_querybaseInit(
     c_free(scope);
 
     scope = c_metaDeclare(module,"c_qType",M_CLASS);
-        c_class(scope)->extends = c_class(c_qExprType(base));
-        type = ResolveType(scope,"c_type");
-        C_META_ATTRIBUTE_(c_qType,scope,type,type);
-        c_free(type);
+        c_qType_t(base) = scope;
+        c_class(scope)->extends = c_class(c_keep(c_qExpr_t(base)));
+        C_META_ATTRIBUTE_(c_qType,scope,type,c_type_t(base));
     c__metaFinalize(scope,FALSE);
     c_free(scope);
 
     scope = c_metaDeclare(module,"c_qField",M_CLASS);
-        c_class(scope)->extends = c_class(c_qExprType(base));
-        type = ResolveType(scope,"c_field");
-        C_META_ATTRIBUTE_(c_qField,scope,field,type);
-        c_free(type);
+        c_qField_t(base) = scope;
+        c_class(scope)->extends = c_class(c_keep(c_qExpr_t(base)));
+        C_META_ATTRIBUTE_(c_qField,scope,field,c_field_t(base));
     c__metaFinalize(scope,FALSE);
     c_free(scope);
 
     scope = c_metaDeclare(module,"c_qFunc",M_CLASS);
+        c_qFunc_t(base) = scope;
         type = c_metaDefine(scope,M_COLLECTION);
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_qExpr>");
-            c_collectionType(type)->kind = C_ARRAY;
-            c_collectionType(type)->subType = c_qExprType(base);
+            c_collectionType(type)->kind = OSPL_C_ARRAY;
+            c_collectionType(type)->subType = c_keep(c_qExpr_t(base));
             c_collectionType(type)->maxSize = 0;
         c_metaFinalize(type);
 
-        c_class(scope)->extends = c_qExprType(base);
+        c_class(scope)->extends = c_keep(c_qExpr_t(base));
         C_META_ATTRIBUTE_(c_qFunc,scope,params,type);
         c_free(type);
     c__metaFinalize(scope,FALSE);
     c_free(scope);
 
     scope = c_metaDeclare(module,"c_qRange",M_CLASS);
+        c_qRange_t(base) = scope;
         c_class(scope)->extends = NULL;
-        type = ResolveType(scope,"c_qBoundKind");
-        C_META_ATTRIBUTE_(c_qRange,scope,startKind,type);
-        C_META_ATTRIBUTE_(c_qRange,scope,endKind,type);
-        c_free(type);
-        type = c_qExprType(base);
-        C_META_ATTRIBUTE_(c_qRange,scope,startExpr,type);
-        C_META_ATTRIBUTE_(c_qRange,scope,endExpr,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_qRange,scope,startKind,c_qBoundKind_t(base));
+        C_META_ATTRIBUTE_(c_qRange,scope,endKind,c_qBoundKind_t(base));
+        C_META_ATTRIBUTE_(c_qRange,scope,startExpr,c_qExpr_t(base));
+        C_META_ATTRIBUTE_(c_qRange,scope,endExpr,c_qExpr_t(base));
         type = ResolveType(scope,"c_value");
         C_META_ATTRIBUTE_(c_qRange,scope,start,type);
         C_META_ATTRIBUTE_(c_qRange,scope,end,type);
@@ -224,17 +184,14 @@ c_querybaseInit(
     c_free(scope);
 
     scope = c_metaDeclare(module,"c_qKey",M_CLASS);
+        c_qKey_t(base) = scope;
         c_class(scope)->extends = NULL;
-        type = c_qExprType(base);
-        C_META_ATTRIBUTE_(c_qKey,scope,expr,type);
-        c_free(type);
-        type = ResolveType(scope,"c_field");
-        C_META_ATTRIBUTE_(c_qKey,scope,field,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_qKey,scope,expr,c_qExpr_t(base));
+        C_META_ATTRIBUTE_(c_qKey,scope,field,c_field_t(base));
         type = c_metaDefine(scope,M_COLLECTION);
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_qRange>");
-            c_collectionType(type)->kind = C_ARRAY;
-            c_collectionType(type)->subType = c_qRangeType(base);
+            c_collectionType(type)->kind = OSPL_C_ARRAY;
+            c_collectionType(type)->subType = c_keep(c_qRange_t(base));
             c_collectionType(type)->maxSize = 0;
         c_metaFinalize(type);
         C_META_ATTRIBUTE_(c_qKey,scope,range,type);
@@ -242,146 +199,53 @@ c_querybaseInit(
     c__metaFinalize(scope,FALSE);
     c_free(scope);
 
-    scope = c_metaDeclare(module,"c_qPred",M_CLASS);
+    scope = c_metaDeclare(module,"c_qVar",M_CLASS);
+        c_qVar_t(base) = scope;
         c_class(scope)->extends = NULL;
-        type = ResolveType(scope,"c_bool");
-        C_META_ATTRIBUTE_(c_qPred,scope,fixed,type);
+        C_META_ATTRIBUTE_(c_qVar,scope,hasChanged,c_bool_t(base));
+        C_META_ATTRIBUTE_(c_qVar,scope,id,c_long_t(base));
+        type = c_metaDefine(scope,M_COLLECTION);
+            c_metaObject(type)->name = c_stringNew(base,"SET<c_qKey>");
+            c_collectionType(type)->kind = OSPL_C_SET;
+            c_collectionType(type)->subType = c_keep(c_qKey_t(base));
+            c_collectionType(type)->maxSize = 0;
+        c_metaFinalize(type);
+        C_META_ATTRIBUTE_(c_qVar,scope,keys,type);
         c_free(type);
-        type = c_qExprType(base);
-        C_META_ATTRIBUTE_(c_qPred,scope,expr,type);
-        c_free(type);
+        C_META_ATTRIBUTE_(c_qVar,scope,variable,c_qConst_t(base));
+        C_META_ATTRIBUTE_(c_qVar,scope,type,c_type_t(base));
+
+    c__metaFinalize(scope,FALSE);
+    c_free(scope);
+
+    scope = c_metaDeclare(module,"c_qPred",M_CLASS);
+        c_qPred_t(base) = scope;
+        c_class(scope)->extends = NULL;
+        C_META_ATTRIBUTE_(c_qPred,scope,fixed,c_bool_t(base));
+        C_META_ATTRIBUTE_(c_qPred,scope,expr,c_qExpr_t(base));
         type = c_metaDefine(scope,M_COLLECTION);
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_qKey>");
-            c_collectionType(type)->kind = C_ARRAY;
-            c_collectionType(type)->subType = c_qKeyType(base);
+            c_collectionType(type)->kind = OSPL_C_ARRAY;
+            c_collectionType(type)->subType = c_keep(c_qKey_t(base));
             c_collectionType(type)->maxSize = 0;
         c_metaFinalize(type);
         C_META_ATTRIBUTE_(c_qPred,scope,keyField,type);
         c_free(type);
         type = c_metaDefine(scope,M_COLLECTION);
             c_metaObject(type)->name = c_stringNew(base,"ARRAY<c_qVar>");
-            c_collectionType(type)->kind = C_ARRAY;
-            c_collectionType(type)->subType = c_qVarType(base);
+            c_collectionType(type)->kind = OSPL_C_ARRAY;
+            c_collectionType(type)->subType = c_keep(c_qVar_t(base));
             c_collectionType(type)->maxSize = 0;
         c_metaFinalize(type);
         C_META_ATTRIBUTE_(c_qPred,scope,varList,type);
         c_free(type);
-        type = c_qPredType(base);
-        C_META_ATTRIBUTE_(c_qPred,scope,next,type);
-        c_free(type);
-    c__metaFinalize(scope,FALSE);
-    c_free(scope);
-
-    scope = c_metaDeclare(module,"c_qVar",M_CLASS);
-        c_class(scope)->extends = NULL;
-        type = ResolveType(scope,"c_bool");
-        C_META_ATTRIBUTE_(c_qVar,scope,hasChanged,type);
-        c_free(type);
-        type = ResolveType(scope,"c_long");
-        C_META_ATTRIBUTE_(c_qVar,scope,id,type);
-        c_free(type);
-        type = c_metaDefine(scope,M_COLLECTION);
-            c_metaObject(type)->name = c_stringNew(base,"SET<c_qKey>");
-            c_collectionType(type)->kind = C_SET;
-            c_collectionType(type)->subType = c_qKeyType(base);
-            c_collectionType(type)->maxSize = 0;
-        c_metaFinalize(type);
-        C_META_ATTRIBUTE_(c_qVar,scope,keys,type);
-        c_free(type);
-        type = c_qConstType(base);
-        C_META_ATTRIBUTE_(c_qVar,scope,variable,type);
-        c_free(type);
-#if 1
-        type = ResolveType(scope,"c_type");
-        C_META_ATTRIBUTE_(c_qVar,scope,type,type);
-        c_free(type);
-#endif
+        C_META_ATTRIBUTE_(c_qPred,scope,next,c_qPred_t(base));
     c__metaFinalize(scope,FALSE);
     c_free(scope);
     c_free(module);
 
 #undef ResolveType
 }
-
-#if 0
-c_array
-c_keyNew(
-    c_type type,
-    c_iter fieldNames)
-{
-    c_array key;
-    c_long i, j, n;
-    c_string fieldName[1000];
-    c_type fieldType;
-    c_bool redefined;
-
-    if (fieldNames == NULL) {
-        return NULL;
-    }
-
-    i = 0; n = 0;
-    fieldName[n] = c_iterObject(fieldNames,i);
-    while (fieldName[n] != NULL) {
-        redefined = FALSE;
-        for (j=0;j<n;j++) {
-            if (strcmp(fieldName[n],fieldName[j]) == 0) {
-                redefined = TRUE;
-            }
-        }
-        if (!redefined) n++;
-        i++;
-        fieldName[n] = c_iterObject(fieldNames,i);
-    }
-
-    fieldType = c_resolve(c__getBase(type),"c_qField");
-    key = c_arrayNew(fieldType,n);
-    c_free(fieldType);
-
-    for (j=0; j<n; j++) {
-        key[j] = c_fieldNew(type,fieldName[j]);
-        if (key[j] == NULL) {
-            OS_REPORT_1(OS_API_INFO,
-                        "c_queribase::c_keyNew",0,
-                        "Key %s not found",
-                        fieldName[j]);
-            for (i=0; i<j; i++) c_free(key[i]);
-            c_free(key);
-            return NULL;
-        }
-    }
-    return key;
-}
-
-c_array
-c_keyDcl(
-    c_type t,
-    c_long size,
-    ...)
-{
-    va_list ap;
-    c_array key;
-    c_string fieldName;
-    c_long i;
-    c_type fieldType;
-
-    if (size < 1) {
-        return NULL;
-    }
-
-    fieldType = c_resolve(c__getBase(t),"c_qField");
-    key = c_arrayNew(fieldType,size);
-    c_free(fieldType);
-
-    va_start(ap,size);
-    for (i=0;i<size;i++) {
-        fieldName = va_arg(ap,c_string);
-        key[i] = c_fieldNew(t,fieldName);
-    }
-    va_end(ap);
-
-    return key;
-}
-#endif
 
 c_bool
 c_qRangeEval(
@@ -449,7 +313,7 @@ c_qValue(
     c_value v;
     c_value rightValue;
     c_value leftValue;
-    c_long i,size;
+    c_ulong i,size;
 
 #define _RVAL_(q,o) \
         (c_qValue(c_qFunc(q)->params[0],o))
@@ -457,15 +321,6 @@ c_qValue(
 #define _LVAL_(q,o) \
         (c_qValue(c_qFunc(q)->params[1],o))
 
-#if 0
-#define _CASE_(l,q,o) \
-        case CQ_##l: { \
-            c_value lv, rv; \
-            lv = _LVAL_(q,o); \
-            rv = _RVAL_(q,o); \
-            return c_valueCalculate(rv,lv,O_##l); \
-        }
-#else
 #define _CASE_(l,q,o) \
         case CQ_##l: \
             rightValue = _RVAL_(q,o);\
@@ -474,7 +329,6 @@ c_qValue(
             c_valueFreeRef(rightValue);\
             c_valueFreeRef(leftValue);\
             return v
-#endif
 
     switch(q->kind) {
     case CQ_FIELD:
@@ -532,6 +386,7 @@ c_qValue(
             v = c_valueCalculate(leftValue,rightValue,(c_operator)q->kind);
             c_valueFreeRef(rightValue);
         }
+        assert(i>1);
         c_valueFreeRef(leftValue);
     }
 #undef _CASE_
@@ -724,9 +579,10 @@ c_qRangeListAnd(
             /* in this case the range is such that no value could ever satisfy it
                e.g. [*..5] AND [10..*] ~~> no value satisfies both ranges
                so the result is <x>, i.e. a list which no variable can satisfy */
-            c_setRange(r1,r1->start,r1->startExpr,B_EXCLUDE,
-                          r1->start,r2->startExpr,B_EXCLUDE);
-            result = c_iterAppend(result,c_keep(r1));
+            r = c_new(c_qRange_t(c__getBase(r1->startExpr)));
+            c_setRange(r,r1->start,r1->startExpr,B_EXCLUDE,r1->start,r2->startExpr,B_EXCLUDE);
+            result = c_iterAppend(result,r);
+            r = NULL;
             while (r1 != NULL) {
                 c_free(r1);
                 r1 = c_iterTakeFirst(list1);
@@ -738,11 +594,12 @@ c_qRangeListAnd(
             }
             c_iterFree(list2);
             return result;
-        break;
         case C_LE:
-            c_setRange(r1,r2->start,r2->startExpr,r2->startKind,
-                          r1->end,  r1->endExpr,  r1->endKind);
-            result = c_iterAppend(result,r1);
+            r = c_new(c_qRange_t(c__getBase(r1->endExpr)));
+            c_setRange(r,r2->start,r2->startExpr,r2->startKind,r1->end,r1->endExpr,r1->endKind);
+            result = c_iterAppend(result,r);
+            r = NULL;
+            c_free(r1);
             r1 = c_iterTakeFirst(list1);
         break;
         case C_EQ:
@@ -797,8 +654,6 @@ makeRange(
     c_iter rangeList;
     c_bool inverse;
 
-    startKind = B_UNDEFINED;
-    endKind = B_UNDEFINED;
     rangeList = NULL;
 
 #define _LEFT_PARAM_(e)  (c_qExpr(c_qFunc(e)->params[0]))
@@ -838,30 +693,22 @@ makeRange(
 
         switch (e->kind) {
         case CQ_NE:
-            range = c_new(c_qRangeType(c__getBase(e)));
-            if (range) {
-                range->startKind = B_UNDEFINED;
-                range->endKind   = B_EXCLUDE;
-                range->startExpr = c_keep(valueExpr);
-                range->endExpr = c_keep(valueExpr);
-                range->end   = v;
-                range->start = v;
-                rangeList = c_iterNew(range);
-            } else {
-                assert(FALSE);
-            }
-            range = c_new(c_qRangeType(c__getBase(e)));
-            if (range) {
-                range->startKind = B_EXCLUDE;
-                range->endKind   = B_UNDEFINED;
-                range->startExpr = c_keep(valueExpr);
-                range->endExpr = c_keep(valueExpr);
-                range->end   = v;
-                range->start = v;
-                rangeList = c_iterAppend(rangeList,range);
-            } else {
-                assert(FALSE);
-            }
+            range = c_new(c_qRange_t(c__getBase(e)));
+            range->startKind = B_UNDEFINED;
+            range->endKind   = B_EXCLUDE;
+            range->startExpr = c_keep(valueExpr);
+            range->endExpr = c_keep(valueExpr);
+            range->end   = v;
+            range->start = v;
+            rangeList = c_iterNew(range);
+            range = c_new(c_qRange_t(c__getBase(e)));
+            range->startKind = B_EXCLUDE;
+            range->endKind   = B_UNDEFINED;
+            range->startExpr = c_keep(valueExpr);
+            range->endExpr = c_keep(valueExpr);
+            range->end   = v;
+            range->start = v;
+            rangeList = c_iterAppend(rangeList,range);
 
             /* In case v is a value of a reference type (string or object)
              * it should have been c_keeped when assigned to the 'start' and
@@ -886,29 +733,25 @@ makeRange(
             assert(FALSE);
             return NULL;
         }
-        range = c_new(c_qRangeType(c__getBase(e)));
-        if (range) {
-            if (inverse) {
-                range->startKind = endKind;
-                range->endKind   = startKind;
-            } else {
-                range->startKind = startKind;
-                range->endKind   = endKind;
-            }
-
-            range->startExpr = c_keep(valueExpr);
-            range->endExpr = c_keep(valueExpr);
-            range->end   = v;
-            range->start = v;
-
-            if (v.kind == V_STRING) {
-                c_keep(c_keep(v.is.String));
-            }
-            if (v.kind == V_OBJECT) {
-                c_keep(c_keep(v.is.Object));
-            }
+        range = c_new(c_qRange_t(c__getBase(e)));
+        if (inverse) {
+            range->startKind = endKind;
+            range->endKind   = startKind;
         } else {
-            assert(FALSE);
+            range->startKind = startKind;
+            range->endKind   = endKind;
+        }
+
+        range->startExpr = c_keep(valueExpr);
+        range->endExpr = c_keep(valueExpr);
+        range->end   = v;
+        range->start = v;
+
+        if (v.kind == V_STRING) {
+            c_keep(c_keep(v.is.String));
+        }
+        if (v.kind == V_OBJECT) {
+            c_keep(c_keep(v.is.Object));
         }
         return c_iterNew(range);
     default:
@@ -995,55 +838,112 @@ c_qVarCompare(
    If the expression is a string constant then it is the enum label and
    will be transformed into the enum value.
 */
-static void
+static c_qResult
 transformEnumLabelToValue(
     c_type type,
     c_qExpr expr)
 {
+    c_qResult result;
     c_type t;
     c_literal l;
 
     t = c_typeActualType(type);
-    switch (c_baseObject(t)->kind) {
-    case M_ENUMERATION:
-        if (expr->kind == CQ_CONST) {
-            if (c_qConst(expr)->value.kind == V_STRING) {
-                /* Transform string value into int value */
-                l = c_enumValue(c_enumeration(t),
-                                c_qConst(expr)->value.is.String);
-                c_free(c_qConst(expr)->value.is.String);
-                c_qConst(expr)->value = l->value;
-                c_free(l);
-            }
-        }
-    break;
-    case M_PRIMITIVE:
-        if (c_primitive(t)->kind == P_BOOLEAN) {
-            if (expr->kind == CQ_CONST) {
-                if (c_qConst(expr)->value.kind == V_STRING) {
+    if (t != NULL) {
+        result = CQ_RESULT_OK;
+        switch (c_baseObject(t)->kind) {
+        case M_ENUMERATION:
+            switch (expr->kind) {
+            case CQ_CONST:
+                switch (c_qConst(expr)->value.kind) {
+                case V_STRING:
                     /* Transform string value into int value */
-                    if (os_strncasecmp(c_qConst(expr)->value.is.String,
-                                              "true",5) == 0) {
+                    l = c_enumValue(c_enumeration(t),
+                                    c_qConst(expr)->value.is.String);
+                    if (l != NULL) {
                         c_free(c_qConst(expr)->value.is.String);
-                        c_qConst(expr)->value = c_boolValue(TRUE);
-                    } else if (os_strncasecmp(c_qConst(expr)->value.is.String,
-                                              "false",6) == 0) {
-                        c_free(c_qConst(expr)->value.is.String);
-                        c_qConst(expr)->value = c_boolValue(FALSE);
+                        c_qConst(expr)->value = l->value;
+                        c_free(l);
                     } else {
-                         OS_REPORT_1(OS_API_INFO,
-                                     "c_querybase",0,
-                                     "expected boolean value instead of \"%s\".",
-                                     c_qConst(expr)->value.is.String);
+                        OS_REPORT(OS_ERROR,
+                                    "c_querybase",0,
+                                    "expected enumeration value instead of \"%s\".",
+                                    c_qConst(expr)->value.is.String);
+                        result = CQ_RESULT_PRECOND_FAIL;
                     }
+                break;
+                case V_LONGLONG:
+                case V_ULONGLONG:
+                break;
+                case V_UNDEFINED:
+                break;
+                default:
+                    result = CQ_RESULT_PRECOND_FAIL;
+                break;
+                }
+            break;
+            case CQ_FIELD:
+                if (t == c_typeActualType(c_fieldType(c_qField(expr)->field))) {
+                    result = CQ_RESULT_OK;
+                } else {
+                    result = CQ_RESULT_PRECOND_FAIL;
+                }
+            break;
+            default:
+                result = CQ_RESULT_PRECOND_FAIL;
+            break;
+            }
+        break;
+        case M_PRIMITIVE:
+            if (c_primitive(t)->kind == P_BOOLEAN) {
+                switch (expr->kind) {
+                case CQ_CONST:
+                    switch (c_qConst(expr)->value.kind) {
+                    case V_STRING:
+                        /* Transform string value into int value */
+                        if (os_strncasecmp(c_qConst(expr)->value.is.String,
+                                                  "true",5) == 0) {
+                            c_free(c_qConst(expr)->value.is.String);
+                            c_qConst(expr)->value = c_boolValue(TRUE);
+                        } else if (os_strncasecmp(c_qConst(expr)->value.is.String,
+                                                  "false",6) == 0) {
+                            c_free(c_qConst(expr)->value.is.String);
+                            c_qConst(expr)->value = c_boolValue(FALSE);
+                        } else {
+                            OS_REPORT(OS_ERROR,
+                                        "c_querybase",0,
+                                        "expected boolean value instead of \"%s\".",
+                                        c_qConst(expr)->value.is.String);
+                            result = CQ_RESULT_PRECOND_FAIL;
+                        }
+                    break;
+                    case V_UNDEFINED:
+                    break;
+                    default:
+                        result = CQ_RESULT_PRECOND_FAIL;
+                    break;
+                    }
+                break;
+                case CQ_FIELD:
+                    if (t == c_typeActualType(c_fieldType(c_qField(expr)->field))) {
+                        result = CQ_RESULT_OK;
+                    } else {
+                        result = CQ_RESULT_PRECOND_FAIL;
+                    }
+                break;
+                default:
+                    result = CQ_RESULT_PRECOND_FAIL;
+                break;
                 }
             }
+        break;
+        default:
+            /* nothing to do here */
+        break;
         }
-    break;
-    default:
-        /* nothing to do here */
-    break;
+    } else {
+        result = CQ_RESULT_BAD_PARAMETER;
     }
+    return result;
 }
 
 /* this is a generic optimise method that will be executed on all node or
@@ -1053,42 +953,54 @@ transformEnumLabelToValue(
  * the expression can be determined and cached. This last optimisation
  * enables detailed error reports.
  */
-static void
+static c_qResult
 optimizeExpr(
     c_qExpr e,
     c_bool *fixed)
 {
-    c_qExpr p1,p2;
-    c_type type, t1, t2;
+    c_qResult result = CQ_RESULT_OK;
+    c_qExpr p1, p2;
+    c_type t1, t2;
 
     OS_UNUSED_ARG(fixed);
 
     p1 = c_qFunc(e)->params[0];
     p2 = c_qFunc(e)->params[1];
-    if ((p1->kind == CQ_FIELD) && (p2->kind == CQ_FIELD)) {
-        t1 = c_fieldType(c_qField(p1)->field);
-        t2 = c_fieldType(c_qField(p2)->field);
-        if (t1 != t2) {
-            OS_REPORT_2(OS_WARNING,
-                "c_querybase::optimizeExpr", 0,
-                "Detected inclompatible types between "
-                "field <%s> and field <%s>",
-                c_fieldName(c_qField(p1)->field),
-                c_fieldName(c_qField(p2)->field));
-        }
-        c_free(t1);
-        c_free(t2);
+    if (p1 == NULL || p2 == NULL) {
+        result = CQ_RESULT_PRECOND_FAIL;
+        goto err_precond;
     }
+
+    t1 = t2 = NULL;
     if (p1->kind == CQ_FIELD) {
-        type = c_fieldType(c_qField(p1)->field);
-        transformEnumLabelToValue(type,p2);
-        c_free(type);
+        t1 = c_fieldType(c_qField(p1)->field);
+        result = transformEnumLabelToValue(t1,p2);
+        if(result != CQ_RESULT_OK) {
+            goto err_transform;
+        }
     }
     if (p2->kind == CQ_FIELD) {
-        type = c_fieldType(c_qField(p2)->field);
-        transformEnumLabelToValue(type,p1);
-        c_free(type);
+        t2 = c_fieldType(c_qField(p2)->field);
+        result = transformEnumLabelToValue(t2,p1);
+        if(result != CQ_RESULT_OK) {
+            goto err_transform;
+        }
     }
+
+    if (p1->kind == CQ_FIELD && p2->kind == CQ_FIELD && t1 != t2) {
+        OS_REPORT(OS_WARNING,
+            "c_querybase::optimizeExpr", 0,
+            "Detected incompatible types between "
+            "field <%s> and field <%s>",
+            c_fieldName(c_qField(p1)->field),
+            c_fieldName(c_qField(p2)->field));
+    }
+
+err_transform:
+    c_free(t1);
+    c_free(t2);
+err_precond:
+    return result;
 }
 
 /* Note: this method will potentinally destroy the given expression */
@@ -1124,7 +1036,7 @@ c_qNot(
         r = e;
     break;
     default:
-        OS_REPORT_1(OS_API_INFO,
+        OS_REPORT(OS_ERROR,
                     "c_querybase::c_qNot",0,
                     "Unknown operator <%d>",
                     (int)e->kind);
@@ -1135,52 +1047,298 @@ c_qNot(
     return r;
 }
 
-static c_qExpr
+static c_qResult
+checkValueKindCompatibility (
+    c_valueKind k1,
+    c_valueKind k2)
+{
+    c_qResult result;
+
+    switch (k1) {
+    case V_OCTET:
+    case V_FLOAT: case V_DOUBLE:
+    case V_SHORT: case V_LONG: case V_LONGLONG:
+    case V_USHORT: case V_ULONG: case V_ULONGLONG:
+        switch(k2) {
+        case V_OCTET:
+        case V_SHORT: case V_LONG: case V_LONGLONG:
+        case V_USHORT: case V_ULONG: case V_ULONGLONG:
+        case V_FLOAT: case V_DOUBLE:
+            result = CQ_RESULT_OK;
+        break;
+        default:
+            result = CQ_RESULT_BAD_PARAMETER;
+        break;
+        }
+    break;
+    case V_CHAR: case V_STRING: case V_WCHAR: case V_WSTRING:
+    case V_BOOLEAN: case V_FIXED:
+    case V_ADDRESS: case V_OBJECT: case V_VOIDP:
+        if (k1 == k2) {
+            result = CQ_RESULT_OK;
+        } else {
+            result = CQ_RESULT_BAD_PARAMETER;
+        }
+    break;
+    default :
+        result = CQ_RESULT_BAD_PARAMETER;
+    }
+    return result;
+}
+
+static c_qResult
+checkTypeCompatiblity (
+    c_qExpr e1,
+    c_qExpr e2)
+{
+    c_valueKind k1;
+    c_valueKind k2;
+    c_qResult result;
+
+    switch (c_qExpr(e1)->kind) {
+    case CQ_FIELD:
+        k1 = c_fieldValueKind(c_qField(e1)->field);
+        switch (c_qExpr(e2)->kind) {
+        case CQ_FIELD:
+            k2 = c_fieldValueKind(c_qField(e2)->field);
+            result = checkValueKindCompatibility(k1, k2);
+        break;
+        case CQ_CONST:
+            k2 = c_qConst(e2)->value.kind;
+            if (k2 == V_UNDEFINED) { /* Variable, so for now result = ok. */
+                result = CQ_RESULT_OK;
+            } else {
+                if ((k2 == V_STRING) &&
+                    (k1 == V_CHAR) &&
+                    (strlen(c_qConst(e2)->value.is.String) < 2))
+                {
+                    result = CQ_RESULT_OK;
+                } else if ((k1 == V_USHORT || k1 == V_ULONG || k1 == V_ULONGLONG) &&
+                        k2 == V_LONGLONG && c_qConst(e2)->value.is.LongLong < 0 ) {
+                    result = CQ_RESULT_BAD_PARAMETER;
+                } else {
+                    result = checkValueKindCompatibility(k1, k2);
+                }
+            }
+        break;
+        case CQ_AND: case CQ_OR: case CQ_NOT:
+        case CQ_EQ: case CQ_NE: case CQ_LT: case CQ_LE: case CQ_GT: case CQ_GE:
+        case CQ_LIKE:
+            if (k1 == V_BOOLEAN) {
+                result = CQ_RESULT_OK;
+            } else {
+                result = CQ_RESULT_BAD_PARAMETER;
+            }
+        break;
+        default:
+            result = CQ_RESULT_BAD_PARAMETER;
+        break;
+        }
+    break;
+    case CQ_CONST:
+        k1 = c_qConst(e1)->value.kind;
+        if (k1 == V_UNDEFINED) { /* Variable, so for now result = ok. */
+            result = CQ_RESULT_OK;
+        } else {
+            switch (c_qExpr(e2)->kind) {
+            case CQ_FIELD:
+                k2 = c_fieldValueKind(c_qField(e2)->field);
+                if ((k1 == V_STRING) &&
+                    (k2 == V_CHAR) &&
+                    (strlen(c_qConst(e1)->value.is.String) < 2))
+                {
+                    result = CQ_RESULT_OK;
+                } else if ((k2 == V_USHORT || k2 == V_ULONG || k2 == V_ULONGLONG) &&
+                        k1 == V_LONGLONG && c_qConst(e1)->value.is.LongLong < 0 ) {
+                    result = CQ_RESULT_BAD_PARAMETER;
+                } else {
+                    result = checkValueKindCompatibility(k1, k2);
+                }
+            break;
+            case CQ_CONST:
+                k2 = c_qConst(e2)->value.kind;
+                if (k2 == V_UNDEFINED) { /* Variable, so for now result = ok. */
+                    result = CQ_RESULT_OK;
+                } else {
+                    if (((k1 == V_STRING) && (k2 == V_CHAR) &&
+                         (strlen(c_qConst(e1)->value.is.String) < 2)) ||
+                        ((k2 == V_STRING) && (k1 == V_CHAR) &&
+                         (strlen(c_qConst(e2)->value.is.String) < 2)))
+                    {
+                        result = CQ_RESULT_OK;
+                    } else if ((k1 == V_ULONGLONG && k2 == V_LONGLONG) ||
+                            (k2 == V_ULONGLONG && k1 == V_LONGLONG)) {
+                        result = CQ_RESULT_BAD_PARAMETER;
+                    } else {
+                        result = checkValueKindCompatibility(k1, k2);
+                    }
+                }
+            break;
+            case CQ_AND: case CQ_OR: case CQ_NOT:
+            case CQ_EQ: case CQ_NE: case CQ_LT: case CQ_LE: case CQ_GT: case CQ_GE:
+            case CQ_LIKE:
+                if (k1 == V_BOOLEAN) {
+                    result = CQ_RESULT_OK;
+                } else {
+                    result = CQ_RESULT_BAD_PARAMETER;
+                }
+            break;
+            default:
+                result = CQ_RESULT_BAD_PARAMETER;
+            break;
+            }
+        }
+    break;
+    case CQ_AND: case CQ_OR: case CQ_NOT:
+    case CQ_EQ: case CQ_NE: case CQ_LT: case CQ_LE: case CQ_GT: case CQ_GE:
+    case CQ_LIKE:
+        switch (c_qExpr(e2)->kind) {
+        case CQ_FIELD:
+            if (c_fieldValueKind(c_qField(e2)->field) == V_BOOLEAN) {
+                result = CQ_RESULT_OK;
+            } else {
+                result = CQ_RESULT_BAD_PARAMETER;
+            }
+        break;
+        case CQ_CONST:
+            if (c_qConst(e2)->value.kind == V_BOOLEAN) {
+                result = CQ_RESULT_OK;
+            } else {
+                result = CQ_RESULT_BAD_PARAMETER;
+            }
+        break;
+        case CQ_AND: case CQ_OR: case CQ_NOT:
+        case CQ_EQ: case CQ_NE: case CQ_LT: case CQ_LE: case CQ_GT: case CQ_GE:
+        case CQ_LIKE:
+            result = CQ_RESULT_OK;
+        break;
+        default:
+            result = CQ_RESULT_BAD_PARAMETER;
+        break;
+        }
+    break;
+    default:
+        result = CQ_RESULT_BAD_PARAMETER;
+    break;
+    }
+    return result;
+}
+
+static c_qResult
 makeExprQuery(
     q_expr e,
     c_type t,
     c_iter *varList,
-    c_bool *fixed)
+    c_bool *fixed,
+    c_qExpr *expr);
+
+static c_qResult
+makeBooleanExpr(
+    q_expr e,
+    c_type t,
+    c_iter *varList,
+    c_bool *fixed,
+    c_qExpr *expr)
 {
+    c_qResult result;
+    c_base base;
+    c_qExpr q = NULL;
+
+    if ((e == NULL) ||
+        (q_getKind(e) != T_FNC) ||
+        (t == NULL) ||
+        (expr == NULL))
+    {
+        result = CQ_RESULT_BAD_PARAMETER;
+    } else {
+        result = CQ_RESULT_OK;
+        base = c__getBase(t);
+        q = c_qExpr(c_new(c_qFunc_t(base)));
+        if (q) {
+            c_qFunc(q)->params = c_arrayNew(c_object_t(base),2);
+            if (c_qFunc(q)->params == NULL) {
+                result = CQ_RESULT_ERROR;
+            }
+            if (result == CQ_RESULT_OK) {
+                result = makeExprQuery(q_leftPar(e),t,varList,fixed, (c_qExpr *)&c_qFunc(q)->params[0]);
+                if (result == CQ_RESULT_OK) {
+                    result = makeExprQuery(q_rightPar(e),t,varList,fixed, (c_qExpr *)&c_qFunc(q)->params[1]);
+                }
+            }
+            if (result == CQ_RESULT_OK) {
+                switch (q_getTag(e)) {
+                case Q_EXPR_AND: q->kind=CQ_AND; break;
+                case Q_EXPR_OR: q->kind=CQ_OR; break;
+                case Q_EXPR_LIKE: q->kind=CQ_LIKE; result = optimizeExpr(q,fixed); break;
+                case Q_EXPR_EQ: q->kind=CQ_EQ; result = optimizeExpr(q,fixed); break;
+                case Q_EXPR_NE: q->kind=CQ_NE; result = optimizeExpr(q,fixed); break;
+                case Q_EXPR_LT: q->kind=CQ_LT; result = optimizeExpr(q,fixed); break;
+                case Q_EXPR_LE: q->kind=CQ_LE; result = optimizeExpr(q,fixed); break;
+                case Q_EXPR_GT: q->kind=CQ_GT; result = optimizeExpr(q,fixed); break;
+                case Q_EXPR_GE: q->kind=CQ_GE; result = optimizeExpr(q,fixed); break;
+                default : result = CQ_RESULT_PRECOND_FAIL; break;
+                }
+            }
+            if (result == CQ_RESULT_OK) {
+                result = checkTypeCompatiblity(c_qFunc(q)->params[0], c_qFunc(q)->params[1]);
+            }
+            if (result != CQ_RESULT_OK) {
+                c_free(q);
+                q = NULL;
+            }
+        } else {
+            result = CQ_RESULT_ERROR;
+        }
+        *expr = q;
+    }
+    return result;
+}
+
+
+static c_qResult
+makeExprQuery(
+    q_expr e,
+    c_type t,
+    c_iter *varList,
+    c_bool *fixed,
+    c_qExpr *expr)
+{
+    c_qResult result;
     c_qExpr r = NULL;
     c_qExpr c = NULL;
     c_qVar var;
     c_field f;
-    c_long id;
+    c_longlong id;
+    c_long id_as_long;
     c_base base;
     c_long i;
     q_expr p;
     c_char qn[1024];
 
     if (e == NULL) {
-        return NULL;
+        *expr = NULL;
+        return CQ_RESULT_OK;
     }
 
-#define _CASE_(eq) \
-        case Q_EXPR_##eq: \
-            r = c_qExpr(c_new(c_qFuncType(base))); \
-            if (r) { \
-                r->kind=CQ_##eq; \
-                c_qFunc(r)->params = c_arrayNew(c_object_t(base),2); \
-                c_qFunc(r)->params[0] = makeExprQuery(q_leftPar(e),t,varList,fixed); \
-                c_qFunc(r)->params[1] = makeExprQuery(q_rightPar(e),t,varList,fixed); \
-            }
+    result = CQ_RESULT_OK;
 
     base = c__getBase(t);
     switch (q_getKind(e)) {
     case T_FNC:
         switch (q_getTag(e)) {
-        _CASE_(AND);                         break;
-        _CASE_(OR);                          break;
-        _CASE_(LIKE); optimizeExpr(r,fixed); break;
-        _CASE_(EQ);   optimizeExpr(r,fixed); break;
-        _CASE_(NE);   optimizeExpr(r,fixed); break;
-        _CASE_(LT);   optimizeExpr(r,fixed); break;
-        _CASE_(LE);   optimizeExpr(r,fixed); break;
-        _CASE_(GT);   optimizeExpr(r,fixed); break;
-        _CASE_(GE);   optimizeExpr(r,fixed); break;
+        case Q_EXPR_AND:
+        case Q_EXPR_OR:
+        case Q_EXPR_LIKE:
+        case Q_EXPR_EQ:
+        case Q_EXPR_NE:
+        case Q_EXPR_LT:
+        case Q_EXPR_LE:
+        case Q_EXPR_GT:
+        case Q_EXPR_GE:
+            result = makeBooleanExpr(e,t,varList,fixed,&r);
+        break;
         case Q_EXPR_NOT:
-            r = makeExprQuery(q_getPar(e,0),t,varList,fixed);
+            result = makeExprQuery(q_getPar(e,0),t,varList,fixed, &r);
             r = c_qNot(r);
         break;
         case Q_EXPR_PROPERTY:
@@ -1192,104 +1350,132 @@ makeExprQuery(
             }
             f = c_fieldNew(t,qn);
             if (f == NULL) {
-                r = c_qExpr(c_new(c_qConstType(base)));
+                r = c_qExpr(c_new(c_qConst_t(base)));
                 if (r) {
                     r->kind = CQ_CONST;
                     c_qConst(r)->value = c_stringValue(c_stringNew(base,qn));
                 } else {
+                    result = CQ_RESULT_PRECOND_FAIL;
+                    (void)result;
                     assert(FALSE);
                 }
             } else {
-                r = c_qExpr(c_new(c_qFieldType(base)));
+                r = c_qExpr(c_new(c_qField_t(base)));
                 if (r) {
                     r->kind = CQ_FIELD;
                     c_qField(r)->field = f;
                 } else {
+                    result = CQ_RESULT_PRECOND_FAIL;
+                    (void)result;
                     assert(FALSE);
                 }
             }
         break;
         case Q_EXPR_CALLBACK:
-            r = c_qExpr(c_new(c_qFuncType(base)));
+            r = c_qExpr(c_new(c_qFunc_t(base)));
             if (r) {
                 r->kind = CQ_CALLBACK;
                 c_qFunc(r)->params = c_arrayNew(c_object_t(base),3);
-                c = c_qExpr(c_new(c_qTypeType(base)));
+                c = c_qExpr(c_new(c_qType_t(base)));
                 if (c) {
                     c->kind = CQ_TYPE;
                     c_qType(c)->type = c_keep(q_getTyp(q_getPar(e,0)));
                 }
                 c_qFunc(r)->params[0] = c;
-                c = c_qExpr(c_new(c_qConstType(base)));
+                c = c_qExpr(c_new(c_qConst_t(base)));
                 if (c) {
                     c->kind = CQ_CONST;
                     c_qConst(c)->value.kind = V_ADDRESS;
                     c_qConst(c)->value.is.Address = (c_address)q_getPar(e,1);
                 }
                 c_qFunc(r)->params[1] = c;
-                c_qFunc(r)->params[2] = makeExprQuery(q_getPar(e,2),t,varList,fixed);
+                result = makeExprQuery(q_getPar(e,2),t,varList,fixed, (c_qExpr *)&c_qFunc(r)->params[2]);
             } else {
+                result = CQ_RESULT_PRECOND_FAIL;
+                (void)result;
                 assert(FALSE);
             }
         break;
         default:
-            OS_REPORT_1(OS_API_INFO,
+            OS_REPORT(OS_ERROR,
                         "c_querybase::makeExprQuery",0,
                         "Unknown operator <%d>",
                         (int)q_getTag(e));
+            result = CQ_RESULT_BAD_PARAMETER;
+                (void)result;
             assert(FALSE);
-            r = NULL;
         }
-#undef _CASE_
     break;
     case T_INT:
-        r = c_qExpr(c_new(c_qConstType(base)));
+        r = c_qExpr(c_new(c_qConst_t(base)));
         if (r) {
             r->kind = CQ_CONST;
             c_qConst(r)->value.kind = V_LONGLONG;
             c_qConst(r)->value.is.LongLong = q_getInt(e);
         } else {
+            result = CQ_RESULT_PRECOND_FAIL;
+            (void)result;
+            assert(FALSE);
+        }
+    break;
+    case T_UINT:
+        r = c_qExpr(c_new(c_qConst_t(base)));
+        if (r) {
+            r->kind = CQ_CONST;
+            c_qConst(r)->value.kind = V_ULONGLONG;
+            c_qConst(r)->value.is.ULongLong = q_getUInt(e);
+        } else {
+            result = CQ_RESULT_PRECOND_FAIL;
+            (void)result;
             assert(FALSE);
         }
     break;
     case T_DBL:
-        r = c_qExpr(c_new(c_qConstType(base)));
+        r = c_qExpr(c_new(c_qConst_t(base)));
         if (r) {
             r->kind = CQ_CONST;
             c_qConst(r)->value.kind = V_DOUBLE;
             c_qConst(r)->value.is.Double = q_getDbl(e);
         } else {
+            result = CQ_RESULT_PRECOND_FAIL;
+            (void)result;
             assert(FALSE);
         }
     break;
     case T_CHR:
-        r = c_qExpr(c_new(c_qConstType(base)));
+        r = c_qExpr(c_new(c_qConst_t(base)));
         if (r) {
             r->kind = CQ_CONST;
             c_qConst(r)->value.kind = V_CHAR;
             c_qConst(r)->value.is.Char = q_getChr(e);
         } else {
+            result = CQ_RESULT_PRECOND_FAIL;
+            (void)result;
             assert(FALSE);
         }
     break;
     case T_STR:
-        r = c_qExpr(c_new(c_qConstType(base)));
+        r = c_qExpr(c_new(c_qConst_t(base)));
         if (r) {
             r->kind = CQ_CONST;
             c_qConst(r)->value.kind = V_STRING;
             c_qConst(r)->value.is.String = c_stringNew(base,q_getStr(e));
         } else {
+            result = CQ_RESULT_PRECOND_FAIL;
+            (void)result;
             assert(FALSE);
         }
     break;
     case T_ID:
         f = c_fieldNew(t,q_getId(e));
         if (f != NULL) {
-            r = c_qExpr(c_new(c_qFieldType(base)));
+            r = c_qExpr(c_new(c_qField_t(base)));
             if (r) {
                 r->kind = CQ_FIELD;
                 c_qField(r)->field = f;
             } else {
+                result = CQ_RESULT_PRECOND_FAIL;
+                (void)result;
                 assert(FALSE);
             }
         } else {
@@ -1298,46 +1484,56 @@ makeExprQuery(
     break;
     case T_VAR:
         id = q_getVar(e);
-        var = c_iterResolve(*varList,(c_iterResolveCompare)c_qVarCompare,&id);
+        assert (id <= 0x7fffffff);
+        id_as_long = (c_long) id;
+        var = c_iterResolve(*varList,(c_iterResolveCompare)c_qVarCompare,&id_as_long);
         if (var == NULL) {
-            r = c_qExpr(c_new(c_qConstType(base)));
+            r = c_qExpr(c_new(c_qConst_t(base)));
             if (r) {
                 r->kind = CQ_CONST;
                 c_qConst(r)->value = c_undefinedValue();
-                var = c_qVar(c_new(c_qVarType(base)));
-#if 1
+                var = c_qVar(c_new(c_qVar_t(base)));
                 var->type = NULL;
-#endif
-                var->id = id;
-                var->keys = c_setNew(c_qKeyType(base));
+                var->id = id_as_long;
+                var->keys = c_setNew(c_qKey_t(base));
                 var->variable = c_qConst(c_keep(r));
                 *varList = c_iterAppend(*varList,var);
             } else {
+                result = CQ_RESULT_PRECOND_FAIL;
+                (void)result;
                 assert(FALSE);
             }
         } else {
             r = c_keep(c_qExpr(var->variable));
         }
-        return r;
+    break;
     case T_TYP:
-        r = c_qExpr(c_new(c_qTypeType(base)));
+        r = c_qExpr(c_new(c_qType_t(base)));
         if (r) {
             r->kind = CQ_TYPE;
             c_qType(r)->type = q_getTyp(e);
         } else {
+            result = CQ_RESULT_PRECOND_FAIL;
+            (void)result;
             assert(FALSE);
         }
     break;
     default:
-        OS_REPORT_1(OS_API_INFO,
+        OS_REPORT(OS_ERROR,
                     "c_querybase::makeExprQuery",0,
                     "Unknown term type <%d>",
                     (int)q_getKind(e));
+        result = CQ_RESULT_BAD_PARAMETER;
+        (void)result;
         assert(FALSE);
-        r = NULL;
     break;
     }
-    return r;
+    if ((result != CQ_RESULT_OK) && (r != NULL)) {
+        c_free(r);
+        r = NULL;
+    }
+    *expr = r;
+    return result;
 }
 
 static c_bool
@@ -1345,7 +1541,7 @@ optimizeKey(
     c_qKey key)
 {
     c_iter rangeList;
-    c_long i,nrOfRanges;
+    c_ulong i,nrOfRanges;
     c_bool fixed = FALSE;
     c_qRange range,r1,r2;
 
@@ -1354,7 +1550,7 @@ optimizeKey(
         return FALSE;
     }
     nrOfRanges = c_iterLength(rangeList);
-    key->range = c_arrayNew(c_qRangeType(c__getBase(key)),nrOfRanges);
+    key->range = c_arrayNew(c_qRange_t(c__getBase(key)),nrOfRanges);
     for (i=0;i<nrOfRanges;i++) {
         key->range[i] = c_iterTakeFirst(rangeList);
     }
@@ -1411,48 +1607,46 @@ makeKeyQuery (
     c_iter KeyVarList = NULL;
     c_qVar var, foundVar;
     c_valueKind valueKind;
+    c_qResult result;
 
     valueKind = c_fieldValueKind(field);
     keyExpr = q_takeField(term,c_fieldName(field));
     base = c__getBase(field);
-    key = c_new(c_qKeyType(base));
-    if (key) {
-        key->field = c_keep(field);
-        key->expr = makeExprQuery(keyExpr,type,&KeyVarList,fixed);
+    key = c_new(c_qKey_t(base));
+    key->field = c_keep(field);
+    result = makeExprQuery(keyExpr,type,&KeyVarList,fixed, &key->expr);
+    if (result == CQ_RESULT_OK) {
         while ((var = c_iterTakeFirst(KeyVarList)) != NULL) {
             foundVar = c_iterResolve(*varList,(c_iterResolveCompare)c_qVarCompare,&var->id);
             if (foundVar != NULL) {
-                foundKey = c_insert(foundVar->keys,key);
+                foundKey = ospl_c_insert(foundVar->keys,key);
                 assert(foundKey == key);
                 c_free(var);
             } else {
-#if 1
                 c_type t;
                 t = c_typeActualType(c_fieldType(field));
                 assert(var->type == NULL);
                 var->type = NULL;
                 switch (c_baseObject(t)->kind) {
-                case M_ENUMERATION:
-                    var->type = c_keep(t);
-                break;
-                case M_PRIMITIVE:
-                    if (c_primitive(t)->kind == P_BOOLEAN) {
+                    case M_ENUMERATION:
                         var->type = c_keep(t);
-                    }
-                break;
-                default:
-                break;
+                        break;
+                    case M_PRIMITIVE:
+                        if (c_primitive(t)->kind == P_BOOLEAN) {
+                            var->type = c_keep(t);
+                        }
+                        break;
+                    default:
+                        break;
                 }
-#endif
                 c_qConst(var->variable)->value.kind = valueKind;
                 *varList = c_iterAppend(*varList,var);
-                foundKey = c_insert(var->keys,key);
+                foundKey = ospl_c_insert(var->keys,key);
                 assert(foundKey == key);
+                OS_UNUSED_ARG(foundKey);
             }
         }
         c_iterFree(KeyVarList);
-    } else {
-        assert(FALSE);
     }
     q_dispose(keyExpr);
     return key;
@@ -1465,7 +1659,7 @@ lookupVariable(
     c_array varList,
     c_qExpr e)
 {
-    c_long i,length;
+    c_ulong i,length;
 
     if (e->kind != CQ_CONST) {
         return NULL;
@@ -1484,7 +1678,7 @@ c_qVarInit(
     c_qVar var,
     c_qExpr expr,
     c_valueKind kind,
-    c_value params[])
+    const c_value params[])
 {
     c_value v,parValue;
     c_base base;
@@ -1496,6 +1690,14 @@ c_qVarInit(
     if (var == NULL) {
         return V_UNDEFINED;
     }
+
+    if (var->id < 0) {
+        OS_REPORT(OS_ERROR, "Query expression",0,
+                  "Invalid parameter specified [%d]",
+                  var->id);
+        return V_UNDEFINED;
+    }
+
     base = c__getBase(var);
     parValue.kind = kind;
     v = params[var->id];
@@ -1518,8 +1720,8 @@ c_qVarInit(
                         c_free(l);
                     } else {
                         metaName = c_metaName(c_metaObject(type));
-                        OS_REPORT_2(OS_ERROR,
-                                    "Database predicate",0,
+                        OS_REPORT(OS_ERROR,
+                                    "Query expression",0,
                                     "Value <%s> not part of Enum <%s>",
                                     v.is.String,
                                     metaName);
@@ -1527,61 +1729,60 @@ c_qVarInit(
                         parValue.kind = V_UNDEFINED;
                     }
                 } else {
-                    if (!sscanf(v.is.String,"%d",&parValue.is.Long)) {
+                    if (!c_sscanf(v.is.String,"%d",&parValue.is.Long)) {
                         parValue.kind = V_UNDEFINED;
                     }
                 }
             } else {
-                if (!sscanf(v.is.String,"%d",&parValue.is.Long)) {
+                if (!c_sscanf(v.is.String,"%d",&parValue.is.Long)) {
                     parValue.kind = V_UNDEFINED;
                 }
             }
         break;
         case V_ULONG:
-            if (!sscanf(v.is.String,"%u",&parValue.is.ULong)) {
+            if (!c_sscanf(v.is.String,"%u",&parValue.is.ULong)) {
                 parValue.kind = V_UNDEFINED;
             }
         break;
         case V_OCTET:
-            if (!sscanf(v.is.String,"%hd",&s)) {
+            if (!c_sscanf(v.is.String,"%hd",&s)) {
                 parValue.kind = V_UNDEFINED;
+            } else {
+                parValue.is.Octet = (c_octet)s;
             }
-            parValue.is.Octet = (c_octet)s;
         break;
         case V_SHORT:
-            if (!sscanf(v.is.String,"%hd",&parValue.is.Short)) {
+            if (!c_sscanf(v.is.String,"%hd",&parValue.is.Short)) {
                 parValue.kind = V_UNDEFINED;
             }
         break;
         case V_USHORT:
-            if (!sscanf(v.is.String,"%hu",&parValue.is.UShort)) {
+            if (!c_sscanf(v.is.String,"%hu",&parValue.is.UShort)) {
                 parValue.kind = V_UNDEFINED;
             }
         break;
         case V_FLOAT:
-            if (!sscanf(v.is.String,"%f",&parValue.is.Float)) {
+            if (!c_sscanf(v.is.String,"%f",&parValue.is.Float)) {
                 parValue.kind = V_UNDEFINED;
             }
         break;
         case V_DOUBLE:
-            if (!sscanf(v.is.String,"%lf",&parValue.is.Double)) {
+            if (!c_sscanf(v.is.String,"%lf",&parValue.is.Double)) {
                 parValue.kind = V_UNDEFINED;
             }
         break;
         case V_LONGLONG:
-            parValue.is.LongLong = os_atoll (v.is.String);
-            if (errno) {
+            if (!c_sscanf(v.is.String,"%" PA_SCNd64, &parValue.is.LongLong)) {
                 parValue.kind = V_UNDEFINED;
             }
         break;
         case V_ULONGLONG:
-            parValue.is.LongLong = os_atoll (v.is.String);
-            if (errno) {
+            if (!c_sscanf(v.is.String,"%" PA_SCNu64, &parValue.is.ULongLong)) {
                 parValue.kind = V_UNDEFINED;
             }
         break;
         case V_OBJECT:
-            if (!sscanf(v.is.String,"%p",&parValue.is.Object)) {
+            if (!c_sscanf(v.is.String,"%p",&parValue.is.Object)) {
                 parValue.kind = V_UNDEFINED;
             }
         break;
@@ -1595,7 +1796,7 @@ c_qVarInit(
             }
         break;
         case V_CHAR:
-            if (v.is.String != NULL) {
+            if ((v.is.String != NULL) && (strlen(v.is.String) < 2)) {
                 parValue.is.Char = *v.is.String;
             } else {
                 parValue.kind = V_UNDEFINED;
@@ -1616,10 +1817,9 @@ c_qVarInit(
     break;
     }
     if (parValue.kind == V_UNDEFINED) {
-        OS_REPORT_1(OS_ERROR,
-                    "Database predicate",0,
-                    "Set query parameter[%d] failed",
-                    var->id);
+        OS_REPORT(OS_ERROR, "Query expression",0,
+                  "Set query parameter[%d] failed",
+                  var->id);
     }
     c_qConst(var->variable)->value = parValue;
     return parValue.kind;
@@ -1645,6 +1845,23 @@ combinedKind(
     if (k2 == V_STRING) {
         return k1;
     }
+    /**
+     * Negative literal is always of type V_LONGLONG, positive literal is always of type V_ULONGLONG.
+     * When comparing a literal with a database field this might cause incompatibilities. Therefore
+     * always settle for the most restrictive type.
+     */
+    if ((k1 == V_LONGLONG) || (k1 == V_ULONGLONG)) {
+        if ((k2 == V_LONG) || (k2 == V_SHORT) || (k2 == V_ULONG) || (k2 == V_USHORT)) {
+            /* comparison between integer types is allowed. */
+            return k2;
+        }
+    }
+    if ((k2 == V_LONGLONG) || (k2 == V_ULONGLONG)) {
+        if ((k1 == V_LONG) || (k1 == V_SHORT) || (k1 == V_ULONG) || (k1 == V_USHORT)) {
+            /* comparison between integer types is allowed. */
+            return k1;
+        }
+    }
     /* The rest of all combinations are not specified for not yet being used. */
     return V_UNDEFINED;
 }
@@ -1653,7 +1870,7 @@ static c_valueKind
 c_qExprInitVars (
     c_qExpr e,
     c_array varList,
-    c_value params[])
+    const c_value params[])
 {
     if (e == NULL) {
         return V_UNDEFINED;
@@ -1677,6 +1894,7 @@ c_qExprInitVars (
         e2 = c_qFunc(e)->params[1];
         k1 = c_qExprInitVars (e1,varList,params);
         k2 = c_qExprInitVars (e2,varList,params);
+
         /* Determine the combined functions result type. */
         kr = combinedKind(k1,k2);
         if (kr == V_UNDEFINED) {
@@ -1687,20 +1905,23 @@ c_qExprInitVars (
         var = lookupVariable(varList,e1);
         if (var != NULL) {
             k1 = c_qVarInit(var,e2,kr,params);
+            if (k1 == V_UNDEFINED) {
+                return V_UNDEFINED;
+            }
         }
         /* If the parameter is an expression variable then set its value. */
         var = lookupVariable(varList,e2);
         if (var != NULL) {
             k2 = c_qVarInit(var,e1,kr,params);
+            if (k2 == V_UNDEFINED) {
+                return V_UNDEFINED;
+            }
         }
-
-        if (k1 == k2) {
-            /* values are equal, no translation required. */
-            return k1;
+        if ((k1 == V_UNDEFINED) || (k2 == V_UNDEFINED)) {
+            /* These kinds cannot be combined. */
+            return V_UNDEFINED;
         }
-        /* return the combined set argument result. */
-        return combinedKind(k1,k2);
-
+        return V_BOOLEAN;
     }
     case CQ_NOT:
         return c_qExprInitVars (c_qFunc(e)->params[0],varList,params);
@@ -1714,7 +1935,7 @@ c_qExprInitVars (
 
         var = lookupVariable(varList,c_qFunc(e)->params[2]);
         if (var != NULL) {
-            result = c_qVarInit(var,NULL,V_UNDEFINED,params);
+            (void) c_qVarInit(var,NULL,V_UNDEFINED,params);
 
         }
         v = c_qValue(c_qFunc(e)->params[0],NULL);
@@ -1739,44 +1960,56 @@ c_qExprInitVars (
 
 #endif
 
-static c_bool
+static c_qResult
 c_qPredInitVars (
     c_qPred p,
-    c_value params[])
+    const c_value params[])
 {
-    c_long i,nrOfKeys;
+    c_qResult result = CQ_RESULT_OK;
+    c_valueKind kind;
+    c_ulong i,nrOfKeys;
     c_qPred orExpr;
 
     if (p == NULL) {
         OS_REPORT(OS_WARNING,
                   "Database predicate",0,
                   "No predicate specified");
+        result = CQ_RESULT_BAD_PARAMETER;
     }
     if (p->varList == NULL) {
-        return TRUE;
+        return CQ_RESULT_OK;
     }
     if (params == NULL) {
         OS_REPORT(OS_ERROR,
                   "Database predicate",0,
                   "No arguments specified");
-        return FALSE;
+        result = CQ_RESULT_BAD_PARAMETER;
     }
     orExpr = p;
     nrOfKeys = c_arraySize(p->keyField);
-    while (orExpr != NULL) {
+    while ((result == CQ_RESULT_OK) && (orExpr != NULL)) {
         if (orExpr->expr != NULL) {
-            c_qExprInitVars (orExpr->expr,
+            kind = c_qExprInitVars (orExpr->expr,
                                     p->varList,
                                     params);
+            if (kind == V_UNDEFINED) {
+                result = CQ_RESULT_BAD_PARAMETER;
+            }
         }
-        for (i=0;i<nrOfKeys;i++) {
-            c_qExprInitVars (c_qKey(orExpr->keyField[i])->expr,
-                                    p->varList,
-                                    params);
+        for (i=0; (result == CQ_RESULT_OK) && (i<nrOfKeys); i++)
+        {
+            if (c_qKey(orExpr->keyField[i])->expr != NULL) {
+                kind = c_qExprInitVars (c_qKey(orExpr->keyField[i])->expr,
+                                        p->varList,
+                                        params);
+                if (kind == V_UNDEFINED) {
+                    result = CQ_RESULT_BAD_PARAMETER;
+                }
+            }
         }
         orExpr = orExpr->next;
     }
-    return TRUE;
+    return result;
 }
 
 c_qResult
@@ -1784,30 +2017,33 @@ c_qPredNew(
     c_type type,
     c_array keyList,
     q_expr pred,
-    c_value params[],
+    const c_value params[],
     c_qPred *qPred)
 {
+    c_qResult result;
     c_base base;
     q_expr e,term;
-    c_long k,nrOfKeys;
+    c_ulong k,nrOfKeys;
     c_qPred p,*ptr;
-    c_long i,nrOfVars;
+    c_ulong i,nrOfVars;
     c_iter varList = NULL;
     c_bool fixed;
 
     base = c__getBase(type);
     if ((pred == NULL) || (qPred == NULL)) {
         qPred = NULL;
-        OS_REPORT(OS_API_INFO,
+        OS_REPORT(OS_ERROR,
                   "c_querybase::c_qPredNew",0,
                   "predicate == <NULL>");
         return CQ_RESULT_PRECOND_FAIL;
+    } else {
+        result = CQ_RESULT_OK;
     }
     PRINT_EXPR("Predicate:\n",pred);
 
     e = q_takePar(pred,0);
     if (q_takePar(pred,0) != NULL) {
-        OS_REPORT(OS_API_INFO,
+        OS_REPORT(OS_ERROR,
                   "c_querybase::c_qPredNew",0,
                   "predicate has unknown extension");
         return CQ_RESULT_PRECOND_FAIL;
@@ -1826,14 +2062,15 @@ c_qPredNew(
     }
     fixed = FALSE;
     if (nrOfKeys == 0) {
-        p = c_new(c_qPredType(base));
-        if (p) {
-            p->keyField = NULL;
-            p->expr = makeExprQuery(e,type,&varList,&fixed);
-            p->next = NULL;
-            q_dispose(e);
-        } else {
-            assert(FALSE);
+        p = c_new(c_qPred_t(base));
+        p->keyField = NULL;
+        result = makeExprQuery(e,type,&varList,&fixed, &p->expr);
+        p->next = NULL;
+        q_dispose(e);
+        if (p->expr == NULL) {
+            c_free(p);
+            p = NULL;
+            result = CQ_RESULT_PRECOND_FAIL;
         }
     } else {
         q_disjunctify(e);
@@ -1842,48 +2079,57 @@ c_qPredNew(
         ptr = &p;
         p = NULL;
         while ((term = q_takeTerm(&e)) != NULL) {
-            *ptr = c_new(c_qPredType(base));
-            if (*ptr) {
-                (*ptr)->keyField = c_arrayNew(c_qKeyType(base),nrOfKeys);
-                for (k=0;k<nrOfKeys;k++) {
-                    (*ptr)->keyField[k] = makeKeyQuery(&term,
-                                                       type,
-                                                       keyList[k],
-                                                       &varList,
-                                                       &fixed);
+            *ptr = c_new(c_qPred_t(base));
+            (*ptr)->keyField = c_arrayNew(c_qKey_t(base),nrOfKeys);
+            for (k=0; (result == CQ_RESULT_OK) && (k<nrOfKeys); k++)
+            {
+                (*ptr)->keyField[k] = makeKeyQuery(&term,
+                                                   type,
+                                                   keyList[k],
+                                                   &varList,
+                                                   &fixed);
+                if ((*ptr)->keyField[k] == NULL) {
+                    result = CQ_RESULT_PRECOND_FAIL;
                 }
-                (*ptr)->expr = makeExprQuery(term,type,&varList,
-                                                       &fixed);
+            }
+            if (result == CQ_RESULT_OK) {
+                result = makeExprQuery(term,type,&varList, &fixed, &(*ptr)->expr);
                 (*ptr)->next = NULL;
                 ptr = &(*ptr)->next;
-                q_dispose(term);
             } else {
-                assert(FALSE);
+                c_free(*ptr);
+                *ptr = NULL;
             }
+            q_dispose(term);
         }
         assert(e == NULL);
         PRINT_PRED("Predicate:\n",p);
     }
 
-    nrOfVars = c_iterLength(varList);
-    p->varList = c_arrayNew(c_qVarType(base),nrOfVars);
-    for (i=0;i<nrOfVars;i++) {
-        p->varList[i] = c_iterTakeFirst(varList);
-    }
-    c_iterFree(varList);
+    if (result == CQ_RESULT_OK) {
+        assert(p);
+        nrOfVars = c_iterLength(varList);
+        p->varList = c_arrayNew(c_qVar_t(base),nrOfVars);
+        for (i=0;i<nrOfVars;i++) {
+            p->varList[i] = c_iterTakeFirst(varList);
+        }
+        c_iterFree(varList);
 
-    if (!c_qPredInitVars(p,params)) {
+        result = c_qPredInitVars(p,params);
+    }
+    if (result == CQ_RESULT_OK) {
+        PRINT_PRED("Predicate (vars resolved):\n",p);
+        if (p->keyField != NULL) {
+            assert(c_refCount(p->keyField) == 1);
+        }
+        p->fixed = fixed;
+        *qPred = c_qPredOptimize(p);
+    }
+    if ((result != CQ_RESULT_OK) && (p != NULL))
+    {
         c_free(p);
-        return CQ_RESULT_PRECOND_FAIL;
     }
-
-    PRINT_PRED("Predicate (vars resolved):\n",p);
-    if (p->keyField != NULL) {
-        assert(c_refCount(p->keyField) == 1);
-    }
-    p->fixed = fixed;
-    *qPred = c_qPredOptimize(p);
-    return CQ_RESULT_OK;
+    return result;
 }
 
 static c_qPred
@@ -1891,7 +2137,7 @@ c_qPredOptimize(
         c_qPred _this)
 {
 #define nextPred(p) (p ? p->next : NULL)
-    c_long k,nrOfKeys;
+    c_ulong k,nrOfKeys;
     c_qPred pred;
     c_qPred next;
     c_qPred predPrev = NULL;
@@ -1909,7 +2155,6 @@ c_qPredOptimize(
     }
 
     pred = _this;
-    next = nextPred(pred);
     resultPred = _this;
 
     PRINT_PRED("Predicate (before optimize):\n",pred);
@@ -1917,6 +2162,7 @@ c_qPredOptimize(
         next = nextPred(pred);
         delete = FALSE;
         nrOfKeys = c_arraySize(pred->keyField);
+        assert(pred->keyField || nrOfKeys == 0);
         for (k=0;!delete && k<nrOfKeys;k++) {
             pred->fixed = optimizeKey(pred->keyField[k]) || pred->fixed;
 
@@ -1944,7 +2190,7 @@ c_qPredOptimize(
                  * false.
                  */
                 c_free(resultPred->expr);
-                resultPred->expr = c_qExpr(c_new(c_qConstType(c__getBase(_this))));
+                resultPred->expr = c_qExpr(c_new(c_qConst_t(c__getBase(_this))));
                 if (resultPred->expr) {
                     resultPred->expr->kind = CQ_CONST;
                     c_qConst(resultPred->expr)->value = c_boolValue(FALSE);
@@ -1985,7 +2231,6 @@ setArg (
     base = c__getBase(var);
     v = &c_qConst(var->variable)->value;
 
-#if 1
     if (var->type) {
         c_literal l;
         c_type t;
@@ -1997,14 +2242,13 @@ setArg (
                 *v = l->value;
                 c_free(l);
             } else {
-                 OS_REPORT_1(OS_API_INFO,
+                 OS_REPORT(OS_ERROR,
                              "c_querybase::setArg",0,
                              "expected enum value instead of \"%s\".",
                              par);
                 return FALSE;
             }
             return TRUE;
-        break;
         case M_PRIMITIVE:
             if (c_primitive(t)->kind == P_BOOLEAN) {
                 if (os_strncasecmp(par, "true",5) == 0) {
@@ -2012,7 +2256,7 @@ setArg (
                 } else if (os_strncasecmp(par, "false",6) == 0) {
                     *v = c_boolValue(FALSE);
                 } else {
-                     OS_REPORT_1(OS_API_INFO,
+                     OS_REPORT(OS_ERROR,
                                  "c_querybase::setArg",0,
                                  "expected boolean value instead of \"%s\".",
                                  par);
@@ -2026,53 +2270,51 @@ setArg (
         break;
         }
     }
-#endif
     switch (v->kind) {
     case V_LONG:
-        if (!sscanf(par,"%d",&v->is.Long)) {
+        if (!c_sscanf(par,"%d",&v->is.Long)) {
             v->kind = V_UNDEFINED;
         }
     break;
     case V_ULONG:
-        if (!sscanf(par,"%u",&v->is.ULong)) {
+        if (!c_sscanf(par,"%u",&v->is.ULong)) {
             v->kind = V_UNDEFINED;
         }
     break;
     case V_OCTET:
-        if (!sscanf(par,"%hd",&s)) {
+        if (!c_sscanf(par,"%hd",&s)) {
             v->kind = V_UNDEFINED;
+        } else {
+            v->is.Octet = (c_octet)s;
         }
-        v->is.Octet = (c_octet)s;
     break;
     case V_SHORT:
-        if (!sscanf(par,"%hd",&v->is.Short)) {
+        if (!c_sscanf(par,"%hd",&v->is.Short)) {
             v->kind = V_UNDEFINED;
         }
     break;
     case V_USHORT:
-        if (!sscanf(par,"%hu",&v->is.UShort)) {
+        if (!c_sscanf(par,"%hu",&v->is.UShort)) {
             v->kind = V_UNDEFINED;
         }
     break;
     case V_FLOAT:
-        if (!sscanf(par,"%f",&v->is.Float)) {
+        if (!c_sscanf(par,"%f",&v->is.Float)) {
             v->kind = V_UNDEFINED;
         }
     break;
     case V_DOUBLE:
-        if (!sscanf(par,"%lf",&v->is.Double)) {
+        if (!c_sscanf(par,"%lf",&v->is.Double)) {
             v->kind = V_UNDEFINED;
         }
     break;
     case V_LONGLONG:
-        v->is.LongLong = os_atoll (par);
-        if (errno) {
+        if (!c_sscanf(par,"%" PA_SCNd64, &v->is.LongLong)) {
             v->kind = V_UNDEFINED;
         }
     break;
     case V_ULONGLONG:
-        v->is.LongLong = os_atoll (par);
-        if (errno) {
+        if (!c_sscanf(par,"%" PA_SCNu64, &v->is.ULongLong)) {
             v->kind = V_UNDEFINED;
         }
     break;
@@ -2081,7 +2323,7 @@ setArg (
             c_free(v->is.Object);
             v->is.Object = NULL;
         }
-        if (!sscanf(par,"%p",&v->is.Object)) {
+        if (!c_sscanf(par,"%p",&v->is.Object)) {
             v->kind = V_UNDEFINED;
         }
     break;
@@ -2118,7 +2360,7 @@ setKey(
 {
     c_qRange r;
     c_value v;
-    c_long i,nrOfRanges;
+    c_ulong i,nrOfRanges;
 
     if (key != NULL) {
         if (key->range != NULL) {
@@ -2168,7 +2410,7 @@ c_qPredSetArguments(
     c_qPred p,
     c_value params[])
 {
-    c_long i,length;
+    c_ulong i,length;
     c_qVar v;
 
     if (p == NULL) {
@@ -2202,7 +2444,7 @@ c_qPredSetArguments(
     }
 
     {
-        c_long k,nrOfKeys;
+        c_ulong k,nrOfKeys;
         c_qPred pred = p;
 
         while (pred != NULL) {
@@ -2235,7 +2477,7 @@ c_bool
 c_qKeyFree(
     c_qKey key)
 {
-    c_long i;
+    c_ulong i;
 
     if (key == NULL) {
         return TRUE;
@@ -2253,7 +2495,7 @@ c_qKeyEval(
     c_object o)
 {
     c_value v;
-    c_long i,length;
+    c_ulong i,length;
     c_qRange r;
     c_bool rangeResult;
 
@@ -2326,7 +2568,7 @@ c_qPredEval (
     c_qPred q,
     c_object o)
 {
-    c_long i,nrOfKeys;
+    c_ulong i,nrOfKeys;
     c_bool dontStop;
     c_value v;
 
@@ -2369,7 +2611,7 @@ c_qExprPrint(
     case CQ_FIELD:
     {
         c_array path;
-        c_long i,length;
+        c_ulong i,length;
         c_property property;
         c_member member;
         c_string metaName;
@@ -2447,7 +2689,7 @@ void
 c_qKeyPrint(
     c_qKey q)
 {
-    c_long i;
+    c_ulong i;
     c_qExprPrint(q->expr);
     if (q->range == NULL) {
         return;
@@ -2465,7 +2707,7 @@ void
 c_qPredPrint(
     c_qPred q)
 {
-    c_long i;
+    c_ulong i;
 
     printf("Query definition:\n");
     while (q != NULL) {

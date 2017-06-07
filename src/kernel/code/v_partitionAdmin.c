@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -16,9 +24,9 @@
 
 #include "v__policy.h"
 
-#include "os.h"
+#include "vortex_os.h"
 
-#define CLASSNAME "kernelModule::v_partitionAdmin"
+#define CLASSNAME "kernelModuleI::v_partitionAdmin"
 
 /**************************************************************
  * Private functions
@@ -261,7 +269,7 @@ v_partitionAdminNew(
     if (da != NULL) {
         da->partitions         = c_tableNew(v_kernelType(kernel, K_DOMAIN),"name");
         da->partitionInterests = c_tableNew(v_kernelType(kernel, K_DOMAININTEREST), "expression");
-        c_mutexInit(&da->mutex,SHARED_MUTEX);
+        c_mutexInit(c_getBase(da), &da->mutex);
 
         if ((da->partitions == NULL) || (da->partitionInterests == NULL)) {
             c_free(da);
@@ -349,7 +357,7 @@ v_partitionAdminRemove(
 c_bool
 v_partitionAdminSet(
     v_partitionAdmin da,
-    v_partitionPolicy partitionExpr,
+    v_partitionPolicyI partitionExpr,
     c_iter *addedPartitions,
     c_iter *removedPartitions)
 {
@@ -498,6 +506,19 @@ v_partitionAdminWalk(
     c_mutexLock(&da->mutex);
     result = c_tableWalk(da->partitions, action, arg);
     c_mutexUnlock(&da->mutex);
+
+    return result;
+}
+
+c_ulong
+v_partitionAdminCount(
+    v_partitionAdmin _this)
+{
+    c_ulong result;
+
+    c_mutexLock(&_this->mutex);
+    result = c_count(_this->partitions);
+    c_mutexUnlock(&_this->mutex);
 
     return result;
 }

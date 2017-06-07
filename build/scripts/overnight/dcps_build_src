@@ -36,7 +36,7 @@ then
     #inner which is DEPWORKDIR
     START_DIR=$DEPWORKDIR
 fi
-SRC=`find $START_DIR/install/HDE -name OpenSpliceDDS-src${EXT}`
+SRC=`find $START_DIR/install/HDE -name VortexOpenSplice-src${EXT}`
 
 if [ -f "${SRC}" ]
 then
@@ -44,7 +44,7 @@ then
         mkdir test-src
         cd test-src
         $EXTRACT ${SRC}
-        TOPLEVEL=`pwd`/OpenSpliceDDS
+        TOPLEVEL=`pwd`/VortexOpenSplice
         cd $TOPLEVEL
         if [ -d "$TOPLEVEL/ospli" ]
         then

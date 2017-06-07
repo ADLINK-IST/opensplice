@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_genLanguageHelper.h"
@@ -23,18 +31,24 @@ static IDL_CORBA_MODE corba_mode = IDL_MODE_UNKNOWN;
  * @bug OSPL-3369 Handle both below as other modes and languages once
  * re-engineered and no side effects confirmed */
 static os_boolean is_isocpp = OS_FALSE;
+static os_boolean is_isocpp2 = OS_FALSE;
 static os_boolean is_isocpp_types = OS_FALSE;
 static os_boolean is_gen_equality = OS_FALSE;
 static os_boolean is_isocpp_testmethods = OS_FALSE;
+static os_boolean is_face = OS_FALSE;
+static os_boolean is_isocpp_streams = OS_FALSE;
 /* columns are the IDL_MODE attributes
    rows are the IDL_LANG attributes
 */
 static int idl_supportedLanguageAndMode[IDL_LANG_COUNT][IDL_MODE_COUNT] = {
-  /* IDL_LANG_UNKNOWN */        {0, 0, 0},
-  /* IDL_LANG_C       */        {0, 0, 1},
-  /* IDL_LANG_CXX     */        {0, 1, 1},
-  /* IDL_LANG_CS      */        {0, 0, 1},
-  /* IDL_LANG_JAVA    */        {0, 1, 1}
+  /* IDL_LANG_UNKNOWN  */        {0, 0, 0},
+  /* IDL_LANG_C        */        {0, 0, 1},
+  /* IDL_LANG_CXX      */        {0, 1, 1},
+  /* IDL_LANG_CS       */        {0, 0, 1},
+  /* IDL_LANG_JAVA     */        {0, 1, 1},
+  /* IDL_LANG_ISOCPP2  */        {0, 0, 1},
+  /* IDL_LANG_LITE_CXX */        {0, 0, 1},
+  /* IDL_LANG_C99      */        {0, 0, 1}
     };
 
 
@@ -58,20 +72,27 @@ idl_getLanguageStr(void)
     switch (lang) {
     case IDL_LANG_C:
         str = "C";
-    break;
+        break;
+    case IDL_LANG_C99:
+        str = "C99";
+        break;
     case IDL_LANG_CXX:
+    case IDL_LANG_LITE_CXX:
         str = "C++";
-    break;
+        break;
     case IDL_LANG_CS:
         str = "C#";
-    break;
+        break;
     case IDL_LANG_JAVA:
         str = "JAVA";
-    break;
+        break;
+    case IDL_LANG_ISOCPP2:
+        str = "ISOCPP";
+        break;
     case IDL_LANG_UNKNOWN:
     default:
         str = "<unknown>";
-    break;
+        break;
     }
     return str;
 }
@@ -126,6 +147,7 @@ idl_languageAndModeSupported(void)
        * @bug OSPL-3369 Temporary sanity check for isocpp settings */
       if (idl_getIsISOCppTypes()
             && lang != IDL_LANG_CXX
+            && lang != IDL_LANG_ISOCPP2
             && corba_mode != IDL_MODE_STANDALONE)
       {
           is_ok = 0;
@@ -146,9 +168,12 @@ idl_languageId(
 
     switch (lang) {
     case IDL_LANG_C:
+    case IDL_LANG_C99:
         id = idl_cId (identifier);
     break;
     case IDL_LANG_CXX:
+    case IDL_LANG_ISOCPP2:
+    case IDL_LANG_LITE_CXX:
         id = idl_cxxId (identifier);
     break;
     case IDL_LANG_CS:
@@ -177,10 +202,15 @@ idl_scopeStackLanguage(
 
     switch (lang) {
     case IDL_LANG_C:
+    case IDL_LANG_C99:
         id = idl_scopeStackC (scope, "_", name);
     break;
     case IDL_LANG_CXX:
+    case IDL_LANG_ISOCPP2:
         id = idl_scopeStackCxx (scope, "::", name);
+    break;
+    case IDL_LANG_CS:
+        id = idl_scopeStackCsharp(scope, ".", name);
     break;
     case IDL_LANG_JAVA:
         id = idl_scopeStackJava (scope, ".", name);
@@ -203,9 +233,12 @@ idl_corbaLanguageTypeFromTypeSpec (
 
     switch (lang) {
     case IDL_LANG_C:
+    case IDL_LANG_C99:
         id = idl_corbaCTypeFromTypeSpec (typeSpec);
     break;
     case IDL_LANG_CXX:
+    case IDL_LANG_ISOCPP2:
+    case IDL_LANG_LITE_CXX:
         id = idl_corbaCxxTypeFromTypeSpec (typeSpec);
     break;
     case IDL_LANG_JAVA:
@@ -226,10 +259,17 @@ idl_genLanguageConstGetter(void)
 
     switch (lang) {
     case IDL_LANG_C:
+    case IDL_LANG_C99:
         getter = idl_genCConstantGetter();
     break;
     case IDL_LANG_CXX:
+    case IDL_LANG_ISOCPP2:
+    case IDL_LANG_LITE_CXX:
         getter = idl_genCxxConstantGetter();
+    break;
+    case IDL_LANG_CS:
+        getter = idl_genCsharpConstantGetter();
+    break;
     case IDL_LANG_JAVA:
         getter = idl_genJavaConstantGetter();
     break;
@@ -254,15 +294,28 @@ idl_getIsISOCpp()
 }
 
 void
+idl_setIsISOCpp2(os_boolean itIs)
+{
+    is_isocpp2 = itIs;
+}
+
+os_boolean
+idl_getIsISOCpp2()
+{
+    return is_isocpp2;
+}
+
+void
 idl_setIsISOCppTypes(os_boolean itIs)
 {
-    is_isocpp_types = itIs;
+    if(!idl_getIsISOCppStreams())
+        is_isocpp_types = itIs;
 }
 
 os_boolean
 idl_getIsISOCppTypes()
 {
-    return is_isocpp_types;
+    return !idl_getIsISOCppStreams() ? is_isocpp_types : OS_FALSE;
 }
 
 void
@@ -287,4 +340,28 @@ os_boolean
 idl_getIsISOCppTestMethods()
 {
     return is_isocpp_testmethods;
+}
+
+void
+idl_setIsFace(os_boolean itIs)
+{
+    is_face = itIs;
+}
+
+os_boolean
+idl_getIsFace()
+{
+    return is_face;
+}
+
+void
+idl_setIsISOCppStreams(os_boolean itIs)
+{
+    is_isocpp_streams = itIs;
+}
+
+os_boolean
+idl_getIsISOCppStreams()
+{
+    return is_isocpp_streams;
 }

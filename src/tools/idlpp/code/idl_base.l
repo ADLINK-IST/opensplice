@@ -7,8 +7,11 @@
  **********************************************************************/
 #include <os_heap.h>
 #include <os_stdlib.h>
+#include <os_errno.h>
 #include <ctype.h>
 #include <c_stringSupport.h>
+
+#include "idl_genLanguageHelper.h"
 
 /**********************************************************************
  *
@@ -27,14 +30,9 @@
 
 static int compareStrings(const char *String1, const char *String2);
 static int extractToken(const char *_String);
-static int extractIdent(char *str);
-static int extractString(char *str);
+static os_size_t extractIdent(char *str);
+static os_size_t extractString(char *str);
 static void preprocessor_directive(char *str);
-
-/* TODO: Check if this static var is necessary.
-         Copied this from idlpp (RT) */
-static long long intValue;
-static unsigned long long uintValue;
 
 %}
 
@@ -113,7 +111,7 @@ ODL_Identifier          [a-zA-Z_][a-zA-Z0-9_]*
 "["                     { pc(); return IDLTOK_LEPAR; }
 "]"                     { pc(); return IDLTOK_REPAR; }
 
-"@annotation"			{ pc(); return IDLTOK_ANNOTATION; }
+"@Annotation"			{ pc(); return IDLTOK_ANNOTATION; }
 "@"						{ pc(); return IDLTOK_AT; }
 "//@"					{ pc(); return IDLTOK_AT_POST; }
 
@@ -130,16 +128,19 @@ ODL_Identifier          [a-zA-Z_][a-zA-Z0-9_]*
 {Fixed_Literal3}        |
 {Fixed_Literal4}        { pc();return FixedPtLiteral;
                         }
-{Int_Literal}           { sscanf (yytext, "%llu", (unsigned long long *)&intValue);
-                          yylval.Integer = intValue;
+{Int_Literal}           { unsigned long long uintValue;
+                          sscanf (yytext, "%llu", &uintValue);
+                          yylval.Integer = (c_longlong) uintValue;
                           pc();return IntegerLiteral;
                         }
-{Oct_Literal}           { sscanf(yytext,"%llo",&uintValue);
-                          yylval.Integer = uintValue;
+{Oct_Literal}           { unsigned long long uintValue;
+                          sscanf(yytext,"%llo",&uintValue);
+                          yylval.Integer = (c_longlong) uintValue;
                           pc();return IntegerLiteral;
                         }
-{Hex_Literal}           { sscanf(yytext,"%llx",&uintValue);
-                          yylval.Integer = uintValue;
+{Hex_Literal}           { unsigned long long uintValue;
+                          sscanf(yytext,"%llx",&uintValue);
+                          yylval.Integer = (c_longlong) uintValue;
                           pc();return IntegerLiteral;
                         }
 
@@ -306,10 +307,10 @@ extractToken(const char *_String)
    return Identifier;
 }
 
-static int
+static os_size_t
 extractIdent(char *str)
 {
-   int length = strlen(str);
+   os_size_t length = strlen(str);
    if (str[0] == '_') {
       /* escaped identifier, remove the preceeding _ */
       length--;
@@ -321,10 +322,10 @@ extractIdent(char *str)
    return length;
 }
 
-static int
+static os_size_t
 extractString(char *str)
 {
-   int length = strlen(str) - 1;
+   os_size_t length = strlen(str) - 1;
    yylval.String = (char*)os_malloc(length);
    os_strncpy(yylval.String, ++str, length-1);
    yylval.String[length-1]=0;
@@ -334,7 +335,8 @@ extractString(char *str)
 static void
 preprocessor_directive(char *str)
 {
-    int lineNumber, length;
+    int lineNumber;
+    os_size_t length;
     char *fileName, *ptr;
     c_iter pragmaItems;
     char *pragmaName, *typeName, *fieldName, *newFieldName;
@@ -410,6 +412,8 @@ preprocessor_directive(char *str)
                 }
                 valueString[0] = '\0';
                 if (mo) {
+                    newFieldName = NULL;
+
                     while (c_iterLength(pragmaItems)) {
                         fieldName = c_iterTakeFirst(pragmaItems);
                         if (fieldName[0] == '_') { /* escape character, which must be removed */
@@ -423,6 +427,10 @@ preprocessor_directive(char *str)
                         if (c_iterLength(pragmaItems)) {
                             strcat(valueString, ",");
                         }
+                        if(newFieldName){
+                            os_free(newFieldName);
+                            newFieldName = NULL;
+                        }
                     }
                 }
                 idl_stacDefAdd (idl_stacDefDefGet(), scope, typeName, valueString);
@@ -433,12 +441,16 @@ preprocessor_directive(char *str)
                 idl_streamsDefAdd(idl_streamsDefDefGet(), scope, typeName);
             }
         }
+        /* Turn off newtypes generation for files generated for isocpp streams */
+        else if(pragmaName && strcmp(pragmaName, "isostream") == 0) {
+            idl_setIsISOCppStreams(OS_TRUE);
+        }
     }
     /* The Visual Studio compiler generates different output */
     if (strncmp (str, "line", 4) == 0) { /* Visual Studio only */
         str = &str[4]; /* Skip the line expression */
     }
-    lineNumber = strtol(str,&ptr,10);
+    lineNumber = (int) strtol(str,&ptr,10);
     while ((*ptr != 0) && ((*ptr == ' ') || (*ptr == '\t'))) ptr++;
     if (*ptr == '"') {
         ptr++;
@@ -451,7 +463,7 @@ preprocessor_directive(char *str)
         return;
     }
     while (isprint((int)*ptr) && (*ptr != '"')) ptr++;
-    length = abs((size_t)ptr - (size_t)fileName);
+    length = (os_size_t) (ptr - fileName);
     if (length >= MAX_FILENAME_LENGTH) {
         fprintf(stderr,"filename <%s> exceeds max length of %d\n",fileName,MAX_FILENAME_LENGTH);
         exit(-1);

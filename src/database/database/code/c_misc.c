@@ -1,15 +1,23 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#include "os.h"
+#include "vortex_os.h"
 #include "c__base.h"
 #include "c_collection.h"
 #include "os_report.h"
@@ -66,7 +74,7 @@ c_checkType (
 #ifndef NDEBUG
         if(o != NULL){
             str = c_metaObject(c__getType(o))->name;
-            OS_REPORT_2(OS_ERROR, "Database", 0,
+            OS_REPORT(OS_ERROR, "Database", 0,
                     "Type mismatch: object type is %s but %s was expected\n",
                     str,name);
         }
@@ -100,23 +108,23 @@ c_instanceOf (
                 found = TRUE; /** assume TRUE **/
             } else if (strcmp(str,name) != 0) {
                 switch (c_baseObject(type)->kind) {
-                case M_CLASS:
-                    type = c_type(c_class(type)->extends);
-                    if (type == NULL) {
-                        if ((strcmp(str,"c_base") == 0) && (strcmp(name,"c_module") == 0)) {
-                            found = TRUE;
+                    case M_CLASS:
+                        type = c_type(c_class(type)->extends);
+                        if (type == NULL) {
+                            if ((strcmp(str,"c_base") == 0) && (strcmp(name,"c_module") == 0)) {
+                                found = TRUE;
+                            }
+                            stop = TRUE;
                         }
+                        break;
+                    case M_TYPEDEF:
+                        type = c_typeDef(type)->alias;
+                        if (type == NULL) {
+                            stop = TRUE;
+                        }
+                        break;
+                    default:
                         stop = TRUE;
-                    }
-                break;
-                case M_TYPEDEF:
-                    type = c_typeDef(type)->alias;
-                    if (type == NULL) {
-                        stop = TRUE;
-                    }
-                break;
-                default:
-                  stop = TRUE;
                 }
             } else {
                 found = TRUE;
@@ -130,15 +138,15 @@ static void
 copyReferences(
     c_type module,
     c_voidp dest,
-    c_voidp data);
+    const void *data);
 
 static void
 copyStructReferences(
     c_structure m,
     c_voidp dest,
-    c_voidp data)
+    const void *data)
 {
-    c_long i,length;
+    c_ulong i,length;
     c_member member;
     c_type type;
     c_object *ref;
@@ -174,9 +182,9 @@ static void
 copyInterfaceReferences(
     c_interface m,
     c_voidp dest,
-    c_voidp data)
+    const void *data)
 {
-    c_long i,length;
+    c_ulong i,length;
     c_property property;
     c_type type;
     c_object *ref;
@@ -214,7 +222,7 @@ static void
 copyReferences(
     c_type module,
     c_voidp dest,
-    c_voidp data)
+    const void *data)
 {
     switch (c_baseObject(module)->kind) {
     case M_STRUCTURE:
@@ -240,10 +248,11 @@ copyReferences(
 void
 c_copyIn (
     c_type type,
-    c_voidp data,
+    const void *data,
     c_voidp *dest)
 {
-    c_long size, subSize, i;
+    c_ulong size, i;
+    os_size_t subSize;
     c_type t, refType;
 
     if (data == NULL) {
@@ -253,23 +262,23 @@ c_copyIn (
     t = c_typeActualType(type);
     if (c_baseObject(t)->kind == M_COLLECTION) {
         switch(c_collectionType(t)->kind) {
-        case C_STRING:
+        case OSPL_C_STRING:
             *dest = c_stringNew(c_getBase(t),data);
             return;
-        case C_LIST:
-        case C_BAG:
-        case C_SET:
-        case C_MAP:
-        case C_DICTIONARY:
+        case OSPL_C_LIST:
+        case OSPL_C_BAG:
+        case OSPL_C_SET:
+        case OSPL_C_MAP:
+        case OSPL_C_DICTIONARY:
             OS_REPORT(OS_WARNING,"Database misc",0,
                       "c_copyIn: ODL collections unsupported");
         break;
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             refType = c_typeActualType(c_collectionType(type)->subType);
             subSize = refType->size;
             size = c_collectionType(t)->maxSize;
             if (size == 0) {
-                size = c_arraySize(data);
+                size = c_arraySize(c_array(data));
                 *dest = c_newArray(c_collectionType(t), size);
             }
             if (size > 0) {
@@ -288,10 +297,10 @@ c_copyIn (
                 }
             }
         break;
-        case C_SEQUENCE:
+        case OSPL_C_SEQUENCE:
             refType = c_typeActualType(c_collectionType(type)->subType);
             subSize = refType->size;
-            size = c_sequenceSize(data);
+            size = c_sequenceSize(c_sequence(data));
             if (size > 0) {
                 *dest = c_newSequence(c_collectionType(t), size);
                 if (c_typeIsRef(refType)) {
@@ -310,7 +319,7 @@ c_copyIn (
             }
         break;
         default:
-            OS_REPORT_1(OS_ERROR,"Database misc",0,
+            OS_REPORT(OS_ERROR,"Database misc",0,
                         "c_copyIn: unknown collection kind (%d)",
                         c_collectionType(t)->kind);
             assert(FALSE);
@@ -328,12 +337,12 @@ c_copyIn (
 
 
 
-static c_bool c__cloneReferences (c_type module, c_voidp data, c_voidp dest);
+static c_bool c__cloneReferences (c_type module, const void *data, c_voidp dest);
 
 static c_bool
 _cloneReference (
     c_type type,
-    c_voidp data,
+    const void *data,
     c_voidp dest)
 {
     c_type t = type;
@@ -352,7 +361,7 @@ _cloneReference (
     break;
     case M_BASE:
     case M_COLLECTION:
-        if ((c_collectionType(t)->kind == C_ARRAY) &&
+        if ((c_collectionType(t)->kind == OSPL_C_ARRAY) &&
             (c_collectionType(t)->maxSize != 0)) {
             c__cloneReferences(t, data, dest);
         } else {
@@ -379,7 +388,7 @@ _cloneReference (
 static c_bool
 c__cloneReferences (
     c_type module,
-    c_voidp data,
+    const void *data,
     c_voidp dest)
 {
     c_type refType;
@@ -388,8 +397,9 @@ c__cloneReferences (
     c_sequence seq, destseq;
     c_property property;
     c_member member;
-    c_long i,j,length,size;
-    c_long nrOfRefs,nrOfLabs;
+    c_ulong i,j,length;
+    os_size_t size;
+    c_ulong nrOfRefs,nrOfLabs;
     c_value v;
 
     switch (c_baseObject(module)->kind) {
@@ -448,7 +458,6 @@ c__cloneReferences (
                       "illegal union switch type detected");
             assert(FALSE);
             return FALSE;
-        break;
         }
 #undef _CASE_
         references = c_union(module)->references;
@@ -475,7 +484,7 @@ c__cloneReferences (
     case M_COLLECTION:
         refType = c_typeActualType(c_collectionType(module)->subType);
         switch (c_collectionType(module)->kind) {
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             ar = c_array(data);
             destar = c_array(dest);
             length = c_collectionType(module)->maxSize;
@@ -495,7 +504,7 @@ c__cloneReferences (
                 }
             }
         break;
-        case C_SEQUENCE:
+        case OSPL_C_SEQUENCE:
             seq = c_sequence(data);
             destseq = c_sequence(dest);
             length = c_sequenceSize(seq);
@@ -561,10 +570,11 @@ c__cloneReferences (
 void
 c_cloneIn (
     c_type type,
-    c_voidp data,
+    const void *data,
     c_voidp *dest)
 {
-    c_long size,subSize;
+    c_ulong size;
+    os_size_t subSize;
     c_type t;
 
     if (data == NULL) {
@@ -575,22 +585,22 @@ c_cloneIn (
     t = c_typeActualType(type);
     if (c_baseObject(t)->kind == M_COLLECTION) {
         switch(c_collectionType(t)->kind) {
-        case C_STRING:
+        case OSPL_C_STRING:
             *dest = c_stringNew(c_getBase(t), data);
             break;
-        case C_LIST:
-        case C_BAG:
-        case C_SET:
-        case C_MAP:
-        case C_DICTIONARY:
+        case OSPL_C_LIST:
+        case OSPL_C_BAG:
+        case OSPL_C_SET:
+        case OSPL_C_MAP:
+        case OSPL_C_DICTIONARY:
             OS_REPORT(OS_WARNING,"Database misc",0,
                       "c_cloneIn: ODL collections unsupported");
         break;
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             subSize = c_collectionType(t)->subType->size;
             size = c_collectionType(t)->maxSize;
             if (size == 0) {
-                size = c_arraySize(data);
+                size = c_arraySize(c_array(data));
                 *dest = c_newArray(c_collectionType(t), size);
             }
             if (size > 0) {
@@ -599,9 +609,9 @@ c_cloneIn (
                 c__cloneReferences(t, data, *dest);
             }
             break;
-        case C_SEQUENCE:
+        case OSPL_C_SEQUENCE:
             subSize = c_collectionType(t)->subType->size;
-            size = c_sequenceSize(data);
+            size = c_sequenceSize(c_sequence(data));
             *dest = c_newSequence(c_collectionType(t), size);
             if (size > 0) {
                 memcpy(*dest, data, size * subSize);
@@ -609,9 +619,8 @@ c_cloneIn (
                 c__cloneReferences(t, data, *dest);
             }
             break;
-        break;
         default:
-            OS_REPORT_1(OS_ERROR,"Database misc",0,
+            OS_REPORT(OS_ERROR,"Database misc",0,
                         "c_cloneIn: unknown collection kind (%d)",
                         c_collectionType(t)->kind);
             assert(FALSE);
@@ -642,7 +651,7 @@ extractStructReferences(
     c_object o,
     void *data)
 {
-    c_long i,length;
+    c_ulong i,length;
     c_member member;
     c_type type;
     c_object *ref;
@@ -685,7 +694,7 @@ extractInterfaceReferences(
     c_object o,
     void *data)
 {
-    c_long i,length;
+    c_ulong i,length;
     c_property property;
     c_type type;
     c_object *ref;
@@ -751,7 +760,8 @@ c_copyOut (
     c_object o,
     c_voidp *data)
 {
-    c_long i,size;
+    os_size_t i;
+    os_size_t size;
     c_type t,subType;
 
     if (data == NULL) {
@@ -776,19 +786,19 @@ c_copyOut (
     }
     if (c_baseObject(t)->kind == M_COLLECTION) {
         switch(c_collectionType(t)->kind) {
-        case C_STRING:
+        case OSPL_C_STRING:
             *data = os_strdup((c_char *)o);
         break;
-        case C_LIST:
-        case C_BAG:
-        case C_SET:
-        case C_MAP:
-        case C_DICTIONARY:
+        case OSPL_C_LIST:
+        case OSPL_C_BAG:
+        case OSPL_C_SET:
+        case OSPL_C_MAP:
+        case OSPL_C_DICTIONARY:
             OS_REPORT(OS_WARNING,"Database misc",0,
                       "c_copyOut: ODL collections unsupported");
             assert(FALSE);
         break;
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             size = c_collectionType(t)->maxSize;
             if (size > 0) {
                 subType = c_collectionType(t)->subType;
@@ -801,13 +811,13 @@ c_copyOut (
                 OS_REPORT(OS_WARNING,"Database misc",0,
                           "c_copyOut: dynamic sized arrays unsupported");
             }
-        case C_SEQUENCE:
+        case OSPL_C_SEQUENCE:
             OS_REPORT(OS_WARNING,"Database misc",0,
                       "c_copyOut: sequences unsupported");
             assert(FALSE);
         break;
         default:
-            OS_REPORT_1(OS_ERROR,"Database misc",0,
+            OS_REPORT(OS_ERROR,"Database misc",0,
                         "c_copyOut: unknown collection kind (%d)",
                         c_collectionType(t)->kind);
             assert(FALSE);

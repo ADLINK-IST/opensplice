@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.config.swing;
@@ -18,8 +26,10 @@ import javax.swing.JFrame;
 import javax.swing.WindowConstants;
 import javax.swing.JSplitPane;
 
+import org.opensplice.common.util.ConfigModeIntializer;
 import org.opensplice.common.view.StatusPanel;
 import org.opensplice.config.meta.MetaConfiguration;
+
 import javax.swing.JScrollPane;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
@@ -34,7 +44,10 @@ public class HelpWindow extends JFrame implements TreeSelectionListener {
     private JScrollPane elementTreeScrollPane = null;
     private JScrollPane docScrollPane = null;
     private MetaNodeDocPane docPane = null;
-    
+
+    public static final String    OSPL_HELP_WINDOW_TITLE      = "Vortex OpenSplice Configurator | Help";
+    public static final String    LITE_HELP_WINDOW_TITLE      = "Vortex Lite Configurator | Help";
+
     /**
      * This is the default constructor
      */
@@ -53,9 +66,19 @@ public class HelpWindow extends JFrame implements TreeSelectionListener {
         this.setSize(640, 480);
         this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         this.setContentPane(getJContentPane());
-        this.setTitle("OpenSplice Configurator | Help");        
+        setWindowTitle(ConfigModeIntializer.CONFIGURATOR_MODE);
         getElementTree().getSelectionModel().addTreeSelectionListener(this);
         getDocPane().setNode(getElementTree().getSelectedMetaElement());
+    }
+
+    public void setWindowTitle (int configMode) {
+        String windowTitle = "Configurator | Help";
+        if (configMode == ConfigModeIntializer.LITE_MODE) {
+            windowTitle = LITE_HELP_WINDOW_TITLE;
+        } else {
+            windowTitle = OSPL_HELP_WINDOW_TITLE;
+        }
+        this.setTitle(windowTitle);
     }
 
     /**
@@ -141,6 +164,7 @@ public class HelpWindow extends JFrame implements TreeSelectionListener {
         return docPane;
     }
 
+    @Override
     public void valueChanged(TreeSelectionEvent e) {
         getDocPane().setNode(getElementTree().getSelectedMetaElement());
     }

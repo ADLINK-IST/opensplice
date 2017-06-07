@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef V_DATAREADERINSTANCE_H
@@ -19,6 +27,7 @@
 
 #include "v_kernel.h"
 #include "v_state.h"
+#include "v_instance.h"
 #include "v_dataReader.h"
 #include "v_dataReaderSample.h"
 #include "os_if.h"
@@ -51,7 +60,7 @@
 /* Getter functions for the instance state */
 
 #define v_dataReaderInstanceState(_this) \
-        (v_dataReaderInstance(_this)->instanceState)
+        (v_instanceState(_this))
 
 #define v_dataReaderInstanceStateTest(_this, state)    \
         (v_stateTest(v_dataReaderInstanceState(_this), state))
@@ -60,49 +69,37 @@
         (v_stateTestOr(v_dataReaderInstanceState(_this), state))
 
 #define v_dataReaderInstanceSampleCount(_this) \
-        (v_dataReaderInstance(_this)->sampleCount)
+        (v_dataReaderInstance(_this)->resourceSampleCount)
 
-#if 0
-#define v_dataReaderInstanceEmpty(_this) \
-        ((v_dataReaderInstanceSampleCount(_this) == 0) && \
-         (!v_dataReaderInstanceStateTest(_this, L_STATECHANGED)))
-#else
 #define v_dataReaderInstanceEmpty(_this) \
         (v_dataReaderInstanceOldest(_this) == NULL)
-#endif
 
 #define v_dataReaderInstanceNoWriters(_this) \
         (v_dataReaderInstance(_this)->liveliness == 0)
 
 #define v_dataReaderInstanceReader(_this) \
-        (v_dataReader(v_index(v_dataReaderInstance(_this)->index)->reader))
-
-/*
- * Functions to set and get the datareaderInstance userdata field
- */
-OS_API c_voidp v_dataReaderInstanceGetUserData
-						(v_dataReaderInstance _this);
-
-OS_API void v_dataReaderInstanceSetUserData
-						(v_dataReaderInstance _this, c_voidp userDataDataReaderInstance);
+        (v_dataReader(((v_index)v_dataReaderInstance(_this)->index)->reader))
 
 /*
  * Function to create a new message (with instance key(s) filled-in)
  */
-OS_API v_message v_dataReaderInstanceCreateMessage
-                        (v_dataReaderInstance _this);
+OS_API v_message
+v_dataReaderInstanceCreateMessage (
+    v_dataReaderInstance _this);
 
 /*
  * Function to get the datareaderInstance index->notEmptyList field
  */
-OS_API c_collection v_dataReaderInstanceGetNotEmptyInstanceSet
-                        (v_dataReaderInstance _this);
+OS_API c_collection
+v_dataReaderInstanceGetNotEmptyInstanceSet (
+    v_dataReaderInstance _this);
 
 /*
  * Function to get the datareaderInstance index->notEmptyList count
  */
-OS_API c_ulong v_dataReaderInstanceGetNotEmptyInstanceCount
-                        (v_dataReaderInstance _this);
+OS_API c_ulong
+v_dataReaderInstanceGetNotEmptyInstanceCount (
+    v_dataReaderInstance _this);
 
 
 #undef OS_API

@@ -1,3 +1,6 @@
+using System;
+using System.Threading;
+using System.Collections.Generic;
 namespace test.sacs
 {
     /// <date>Jun 16, 2005</date>
@@ -17,6 +20,27 @@ namespace test.sacs
 
         public bool onInconsistentTopicCalled = false;
         public DDS.InconsistentTopicStatus ictStatus;
+
+        Dictionary<DDS.StatusKind, Semaphore> semaphoresParticipant = new Dictionary<DDS.StatusKind, Semaphore>();
+
+        public MyParticipantListener(Dictionary<DDS.StatusKind, Semaphore> s)
+        {
+            semaphoresParticipant = s;
+        }
+
+        public MyParticipantListener()
+        {
+        }
+
+        public override void OnDataAvailable(DDS.IDataReader reader)
+        {
+            onDataAvailableCalled = true;
+            Semaphore sem = null;
+            if (semaphoresParticipant.TryGetValue(DDS.StatusKind.DataAvailable, out sem) == true)
+            {
+                sem.Release();
+            }
+        }
 
         public override void Reset()
         {

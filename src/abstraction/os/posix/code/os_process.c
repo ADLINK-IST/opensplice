@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file os/posix/code/os_process.c
@@ -22,6 +30,7 @@
 #include "os_stdlib.h"
 #include "os_init.h"
 #include "os_time.h"
+#include "os_errno.h"
 
 #include <sys/types.h>
 #ifndef OSPL_NO_VMEM
@@ -35,7 +44,6 @@
 #include <string.h>
 #include <assert.h>
 #include <sched.h>
-#include <errno.h>
 #ifndef INTEGRITY
 #include <signal.h>
 #endif
@@ -51,426 +59,21 @@ static char* processName = NULL;
 #else
 extern char **environ;
 #endif
-static os_procTerminationHandler _ospl_termHandler   = (os_procTerminationHandler)0;
-
-#ifndef INTEGRITY
-#ifndef VXWORKS_RTP
-#define _SIGNALVECTOR_(sig) _ospl_oldSignalVector##sig
-static struct sigaction _SIGNALVECTOR_(SIGINT);
-static struct sigaction _SIGNALVECTOR_(SIGQUIT);
-static struct sigaction _SIGNALVECTOR_(SIGHUP);
-static struct sigaction _SIGNALVECTOR_(SIGTERM);
-
-#ifdef __APPLE__
-#define CATCH_EXCEPTIONS 0
-#else
-#define CATCH_EXCEPTIONS 1
-#endif
-
-#if CATCH_EXCEPTIONS
-static struct sigaction _SIGNALVECTOR_(SIGILL);
-static struct sigaction _SIGNALVECTOR_(SIGABRT);
-static struct sigaction _SIGNALVECTOR_(SIGFPE);
-static struct sigaction _SIGNALVECTOR_(SIGSEGV);
-#endif
-
-static struct sigaction _SIGNALVECTOR_(SIGPIPE);
-static struct sigaction _SIGNALVECTOR_(SIGALRM);
-static struct sigaction _SIGNALVECTOR_(SIGUSR1);
-static struct sigaction _SIGNALVECTOR_(SIGUSR2);
-/*static struct sigaction _SIGNALVECTOR_(SIGTSTOP); -- ignore for now */
-static struct sigaction _SIGNALVECTOR_(SIGTTIN);
-/*static struct sigaction _SIGNALVECTOR_(SIGTTOUT); -- ignore for now */
-
-
-#define OSPL_SIGNALHANDLERTHREAD_TERMINATE 1 /* Instruct thread to terminate */
-#define OSPL_SIGNALHANDLERTHREAD_EXIT      2 /* Instruct thread to call exit() */
-
-static pthread_t _ospl_signalHandlerThreadId;
-static int _ospl_signalHandlerThreadTerminate = 0;
-#endif
-static int installSignalHandler = 1;
-static int _ospl_signalpipe[2] = { 0, 0};
-
-/* private functions */
-#if !defined VXWORKS_RTP && !defined PIKEOS_POSIX
-static int
-isSignallingSafe(
-    int reportReason)
-{
-
-    if(!installSignalHandler && reportReason){
-        OS_REPORT(OS_WARNING, "OS abstraction layer", 0,
-                  "Did not install signal handlers to cleanup resources.\n"\
-                  "              To ensure cleanup for Java applications, the path to the 'jsig' library\n"\
-                  "              (libjsig.so) must be set in the LD_PRELOAD environment variable.\n"\
-                  "              This library is part of your Java distribution.\n"\
-                  "              To ensure proper cleanup set this before starting your application.");
-    }
-    return installSignalHandler;
-}
-
-static void
-signalHandler(
-    int sig,
-    siginfo_t *info,
-    void *arg)
-{
-    os_int32 terminate;
-    os_terminationType reason;
-    int result;
-    (void)info;
-    (void)arg;
-
-    OS_UNUSED_ARG(info);
-    OS_UNUSED_ARG(arg);
-
-    if (_ospl_termHandler) {
-        switch (sig) {
-            case SIGINT:
-            case SIGQUIT:
-            case SIGHUP:
-            case SIGTERM:
-                reason = OS_TERMINATION_NORMAL;
-            break;
-            default:
-                reason = OS_TERMINATION_ERROR;
-            break;
-        }
-        terminate = _ospl_termHandler(reason);
-    } else {
-        terminate = 1;
-    }
-
-    if (terminate) {
-        /* The signalHandlerThread will always perform the
-         * exit() call.
-         */
-        _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_EXIT;
-        result = write(_ospl_signalpipe[1], &sig, sizeof(int));
-    }
-}
-
-/* This thread is introduced to ensure there is always 1 thread
- * that is capable of handling signals
- */
-static void *
-signalHandlerThread(
-    void *arg)
-{
-    sigset_t sigset;
-    int sig;
-    int result;
-    (void)arg;
-
-    OS_UNUSED_ARG(arg);
-
-    sigemptyset(&sigset);
-    pthread_sigmask(SIG_SETMASK, &sigset, NULL);
-
-    result = -1;
-    while (result == -1) {
-        result = read(_ospl_signalpipe[0], &sig, sizeof(int));
-    }
-    /* first call previous signal handler, if not default */
-    switch (sig) {
-    case -1: /* used for terminating this thread! */
-        assert(_ospl_signalHandlerThreadTerminate != OSPL_SIGNALHANDLERTHREAD_EXIT);
-    break;
-    case SIGINT:
-        if ((_SIGNALVECTOR_(SIGINT).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGINT).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGINT).sa_handler(SIGINT);
-        }
-    break;
-    case SIGQUIT:
-        if ((_SIGNALVECTOR_(SIGQUIT).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGQUIT).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGQUIT).sa_handler(SIGQUIT);
-        }
-    break;
-    case SIGHUP:
-        if ((_SIGNALVECTOR_(SIGHUP).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGHUP).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGHUP).sa_handler(SIGHUP);
-        }
-    break;
-    case SIGTERM:
-        if ((_SIGNALVECTOR_(SIGTERM).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGTERM).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGTERM).sa_handler(SIGTERM);
-        }
-    break;
-#if CATCH_EXCEPTIONS
-    case SIGILL:
-        if ((_SIGNALVECTOR_(SIGILL).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGILL).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGILL).sa_handler(SIGILL);
-        }
-    break;
-    case SIGABRT:
-        if ((_SIGNALVECTOR_(SIGABRT).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGABRT).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGABRT).sa_handler(SIGABRT);
-        }
-    break;
-    case SIGFPE:
-        if ((_SIGNALVECTOR_(SIGFPE).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGFPE).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGFPE).sa_handler(SIGFPE);
-        }
-    break;
-    case SIGSEGV:
-        if ((_SIGNALVECTOR_(SIGSEGV).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGSEGV).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGSEGV).sa_handler(SIGSEGV);
-        }
-    break;
-#endif
-    case SIGPIPE:
-        if ((_SIGNALVECTOR_(SIGPIPE).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGPIPE).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGPIPE).sa_handler(SIGPIPE);
-        }
-    break;
-    case SIGALRM:
-        if ((_SIGNALVECTOR_(SIGALRM).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGALRM).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGALRM).sa_handler(SIGALRM);
-        }
-    break;
-    case SIGUSR1:
-        if ((_SIGNALVECTOR_(SIGUSR1).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGUSR1).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGUSR1).sa_handler(SIGUSR1);
-        }
-    break;
-    case SIGUSR2:
-        if ((_SIGNALVECTOR_(SIGUSR2).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGUSR2).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGUSR2).sa_handler(SIGUSR2);
-        }
-    break;
-/*  Only in newer POSIX versions, ignoring for now
-    case SIGTSTOP:
-        if ((_SIGNALVECTOR_(SIGTSTOP).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGTSTOP).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGTSTOP).sa_handler(SIGTSTOP);
-        }
-    break;
-*/    case SIGTTIN:
-        if ((_SIGNALVECTOR_(SIGTTIN).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGTTIN).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGTTIN).sa_handler(SIGTTIN);
-        }
-    break;
-/*  Only in newer POSIX versions, ignoring for now
-    case SIGTTOUT:
-        if ((_SIGNALVECTOR_(SIGTTOUT).sa_handler != SIG_DFL) &&
-            (_SIGNALVECTOR_(SIGTTOUT).sa_handler != SIG_IGN)) {
-            _SIGNALVECTOR_(SIGTTOUT).sa_handler(SIGTTOUT);
-        }
-    break;
-*/    default:
-        assert(0);
-    }
-    if (_ospl_signalHandlerThreadTerminate == OSPL_SIGNALHANDLERTHREAD_EXIT) {
-        if(!os_serviceGetSingleProcess())
-        {
-            exit(0);
-        } else
-        {
-            _exit(0);
-        }
-    }
-    return NULL;
-}
-
-#define _SIGACTION_(sig) sigaction(sig,&action,&_ospl_oldSignalVector##sig)
-#define _SIGCURRENTACTION_(sig) sigaction(sig, NULL, &_ospl_oldSignalVector##sig)
-#endif
-#endif
 
 /* protected functions */
 void
 os_processModuleInit(void)
 {
-#if !defined INTEGRITY && !defined VXWORKS_RTP && !defined PIKEOS_POSIX
-    struct sigaction action;
-    pthread_attr_t      thrAttr;
-    int result;
-
-    result = pipe(_ospl_signalpipe);
-    pthread_attr_init(&thrAttr);
-    pthread_attr_setstacksize(&thrAttr, 4*1024*1024); /* 4MB */
-    pthread_create(&_ospl_signalHandlerThreadId, &thrAttr, signalHandlerThread, (void*)0);
-
-
-    /* install signal handlers */
-    action.sa_handler = 0;
-    action.sa_sigaction = signalHandler;
-    sigfillset(&action.sa_mask); /* block all signals during handling of a signal */
-    action.sa_flags = SA_SIGINFO;
-
-
-    _SIGCURRENTACTION_(SIGINT);
-
-    /* If the user has set a signal handler or explicitly told the system to
-     * ignore the signal, we don't set a handler ourselves. It's the
-     * responsibility of the user to make sure exit() is called to
-     * terminate the application to make sure all shared memory resources
-     * are properly cleaned up. This is on a per signal basis.
-     */
-    if ((_SIGNALVECTOR_(SIGINT).sa_handler == SIG_DFL) ||
-        (_SIGNALVECTOR_(SIGINT).sa_handler == SIG_IGN)) {
-        _SIGACTION_(SIGINT);
-    }
-    _SIGCURRENTACTION_(SIGQUIT);
-
-    if ((_SIGNALVECTOR_(SIGQUIT).sa_handler == SIG_DFL) ||
-        (_SIGNALVECTOR_(SIGQUIT).sa_handler == SIG_IGN)) {
-        _SIGACTION_(SIGQUIT);
-    }
-    _SIGCURRENTACTION_(SIGHUP);
-
-    if ((_SIGNALVECTOR_(SIGHUP).sa_handler == SIG_DFL) ||
-        (_SIGNALVECTOR_(SIGHUP).sa_handler == SIG_IGN)) {
-        _SIGACTION_(SIGHUP);
-    }
-    _SIGCURRENTACTION_(SIGTERM);
-
-    if ((_SIGNALVECTOR_(SIGTERM).sa_handler == SIG_DFL) ||
-        (_SIGNALVECTOR_(SIGTERM).sa_handler == SIG_IGN)) {
-        _SIGACTION_(SIGTERM);
-    }
-
-    if(isSignallingSafe(1)){
-#if CATCH_EXCEPTIONS
-        _SIGCURRENTACTION_(SIGILL);
-
-        if ((_SIGNALVECTOR_(SIGILL).sa_handler == SIG_DFL) ||
-            (_SIGNALVECTOR_(SIGILL).sa_handler == SIG_IGN)) {
-            _SIGACTION_(SIGILL);
-        }
-        _SIGCURRENTACTION_(SIGABRT);
-
-        if ((_SIGNALVECTOR_(SIGABRT).sa_handler == SIG_DFL) ||
-            (_SIGNALVECTOR_(SIGABRT).sa_handler == SIG_IGN)) {
-            _SIGACTION_(SIGABRT);
-        }
-        _SIGCURRENTACTION_(SIGFPE);
-
-        if ((_SIGNALVECTOR_(SIGFPE).sa_handler == SIG_DFL) ||
-            (_SIGNALVECTOR_(SIGFPE).sa_handler == SIG_IGN)) {
-            _SIGACTION_(SIGFPE);
-        }
-        _SIGCURRENTACTION_(SIGSEGV);
-
-        if ((_SIGNALVECTOR_(SIGSEGV).sa_handler == SIG_DFL) ||
-            (_SIGNALVECTOR_(SIGSEGV).sa_handler == SIG_IGN)) {
-            _SIGACTION_(SIGSEGV);
-        }
-#endif
-        _SIGCURRENTACTION_(SIGPIPE);
-
-        if ((_SIGNALVECTOR_(SIGPIPE).sa_handler == SIG_DFL) ||
-            (_SIGNALVECTOR_(SIGPIPE).sa_handler == SIG_IGN)) {
-            _SIGACTION_(SIGPIPE);
-        }
-        _SIGCURRENTACTION_(SIGALRM);
-
-        if ((_SIGNALVECTOR_(SIGALRM).sa_handler == SIG_DFL) ||
-            (_SIGNALVECTOR_(SIGALRM).sa_handler == SIG_IGN)) {
-            _SIGACTION_(SIGALRM);
-        }
-        _SIGCURRENTACTION_(SIGUSR1);
-
-        if ((_SIGNALVECTOR_(SIGUSR1).sa_handler == SIG_DFL) ||
-            (_SIGNALVECTOR_(SIGUSR1).sa_handler == SIG_IGN)) {
-            _SIGACTION_(SIGUSR1);
-        }
-        _SIGCURRENTACTION_(SIGUSR2);
-
-        if ((_SIGNALVECTOR_(SIGUSR2).sa_handler == SIG_DFL) ||
-            (_SIGNALVECTOR_(SIGUSR2).sa_handler == SIG_IGN)) {
-            _SIGACTION_(SIGUSR2);
-        }
-        /* Only in newer POSIX versions, ignoring for now
-        _SIGCURRENTACTION_(SIGTSTOP);
-        _SIGACTION_(SIGTSTOP);
-        */
-        _SIGCURRENTACTION_(SIGTTIN);
-
-        if ((_SIGNALVECTOR_(SIGTTIN).sa_handler == SIG_DFL) ||
-            (_SIGNALVECTOR_(SIGTTIN).sa_handler == SIG_IGN)) {
-            _SIGACTION_(SIGTTIN);
-        }
-        /* Only in newer POSIX versions, ignoring for now
-        _SIGCURRENTACTION_(SIGTTOUT);
-        _SIGACTION_(SIGTTOUT);
-        */
-    }
-#endif
+    return;
 }
 
-#undef _SIGACTION_
-#undef _SIGCURRENTACTION_
-#undef _SIGDEFAULT_
-
-#define _SIGACTION_(sig) sigaction(sig,&_ospl_oldSignalVector##sig, NULL)
 void
 os_processModuleExit(void)
 {
-#if !defined INTEGRITY && !defined VXWORKS_RTP && !defined PIKEOS_POSIX
-    int sig = -1;
-    void *thread_result;
-
-    /* deinstall signal handlers */
-    _SIGACTION_(SIGINT);
-    _SIGACTION_(SIGQUIT);
-    _SIGACTION_(SIGHUP);
-    _SIGACTION_(SIGTERM);
-
-
-    if(isSignallingSafe(0)){
-#if CATCH_EXCEPTIONS
-        _SIGACTION_(SIGILL);
-        _SIGACTION_(SIGABRT);
-        _SIGACTION_(SIGFPE);
-        _SIGACTION_(SIGSEGV);
-#endif
-        _SIGACTION_(SIGPIPE);
-        _SIGACTION_(SIGALRM);
-        _SIGACTION_(SIGUSR1);
-        _SIGACTION_(SIGUSR2);
-        _SIGACTION_(SIGTTIN);
-    }
-    _ospl_signalHandlerThreadTerminate = OSPL_SIGNALHANDLERTHREAD_TERMINATE;
-    if (pthread_self() != _ospl_signalHandlerThreadId) {
-        write(_ospl_signalpipe[1], &sig, sizeof(sig));
-        pthread_join(_ospl_signalHandlerThreadId, &thread_result);
-    }
-#endif
-    if(processName) {
-        os_free(processName);
-    }
+    os_free(processName);
 }
-#undef _SIGACTION_
 
 /* public functions */
-
-
-
-os_procTerminationHandler
-os_procSetTerminationHandler(
-    os_procTerminationHandler handler)
-{
-    os_procTerminationHandler oldHandler;
-
-    oldHandler = _ospl_termHandler;
-    _ospl_termHandler = handler;
-    return oldHandler;
-}
 
 /** \brief Register an process exit handler
  *
@@ -503,18 +106,19 @@ os_procAtExit(
 }
 #endif
 
-void
-os_procSetSignalHandlingEnabled(
-    os_uint enabled)
+/** \brief Returns if threads are terminated by atexit
+ *
+ * Return values:
+ * TRUE - if threads are ungracefully terminated by atexit
+ * FALSE - all other situations
+ */
+#ifndef PIKEOS_POSIX
+os_boolean
+os_procAreThreadsTerminatedByAtExit(void)
 {
-#ifndef INTEGRITY
-    if(enabled == 0){
-        installSignalHandler = 0;
-    } else {
-        installSignalHandler = 1;
-    }
-#endif
+    return FALSE;
 }
+#endif
 
 /** \brief Terminate the process and return the status
  *         the the parent process
@@ -532,7 +136,26 @@ os_procExit(
 }
 #endif
 
-#if !defined VXWORKS_RTP
+#if !defined VXWORKS_RTP && !defined __QNX__
+
+/* When a string is converted into an argument, the quotes have done their
+ * job and should be stripped. */
+static char*
+strip_quotes(char *str) {
+    char *idx = str;
+    char *shift = NULL;
+    while (*idx != '\0') {
+        if ((*idx == '\"') || (*idx == '\'')) {
+            for (shift = idx; *shift != '\0'; shift++) {
+                *shift = *(shift + 1);
+            }
+        } else {
+            idx++;
+        }
+    }
+    return str;
+}
+
 /** \brief Create a process that is an instantiation of a program
  *
  * First an argument list is built from \b arguments.
@@ -572,6 +195,7 @@ os_procCreate(
     int dq_open = 0;
     int dq_close = 0;
     char *argin;
+    char *arg;
     struct sched_param sched_param, sched_current;
     int sched_policy;
     char environment[512];
@@ -588,6 +212,9 @@ os_procCreate(
     } else if (procAttr->schedClass == OS_SCHED_DEFAULT) {
         sched_policy = SCHED_OTHER;
     } else {
+        OS_REPORT(OS_WARNING, "os_procCreate", 2,
+                    "scheduling class outside valid range for executable: %s",
+                    name);
         return os_resultInvalid;
     }
     if (procAttr->schedPriority < sched_get_priority_min (sched_policy) ||
@@ -595,12 +222,15 @@ os_procCreate(
 
         procAttr->schedPriority = (sched_get_priority_max (sched_policy) +
                                    sched_get_priority_min(sched_policy)) / 2;
-        OS_REPORT_1(OS_WARNING, "os_procCreate", 2,
+        OS_REPORT(OS_WARNING, "os_procCreate", 2,
             "scheduling priority outside valid range for the policy reverted to valid value (%s)",
             name);
     }
     if (access(executable_file, X_OK) != 0) {
         rv = os_resultInvalid;
+        OS_REPORT(OS_WARNING, "os_procCreate", 2,
+                            "Insufficient rights to execute executable %s",
+                            name);
     } else {
         /* first translate the input string into an argv structured list */
         argin = os_malloc(strlen(arguments) + 1);
@@ -608,29 +238,18 @@ os_procCreate(
         argv[0] = os_malloc(strlen(name) + 1);
         argv[0] = os_strcpy(argv[0], name);
         while (go_on && (unsigned int)argc <= (sizeof(argv)/(sizeof(char *)))) {
+            /* Get the start of the next argument. */
             while (argin[i] == ' ' || argin[i] == '\t' ) {
                 i++;
             }
+
             if (argin[i] == '\0' ) {
                 break;
-            } else if (argin[i] == '\'') {
-                if (sq_open == sq_close) {
-                    sq_open++;
-                    argv[argc] = &argin[i];
-                } else {
-                    sq_close++;
-                }
-                i++;
-            } else if (argin[i] == '\"') {
-                if (dq_open == dq_close) {
-                    dq_open++;
-                } else {
-                    dq_close++;
-                }
-                i++;
             } else {
-                argv[argc] = &argin[i];
-                argc++;
+                /* Remember the start of this argument. */
+                arg = &argin[i];
+
+                /* Get the remainder of this argument. */
                 while ((argin[i] != ' ' && argin[i] != '\t') ||
                        (sq_open != sq_close) ||
                        (dq_open != dq_close)) {
@@ -638,29 +257,35 @@ os_procCreate(
                         go_on = 0;
                         break;
                     } else if (argin[i] == '\'') {
-                        sq_close++;
-                        if ((sq_open == sq_close) && (dq_open == dq_close)) {
-                            argin[i] = '\0';
+                        if (sq_open == sq_close) {
+                            sq_open++;
+                        } else {
+                            sq_close++;
                         }
-                        i++;
                     } else if (argin[i] == '\"') {
-                        dq_close++;
-                        if ((dq_open == dq_close) && (sq_open == sq_close)) {
-                            argin[i] = '\0';
+                        if (dq_open == dq_close) {
+                            dq_open++;
+                        } else {
+                            dq_close++;
                         }
-                        i++;
-                    } else {
-                        i++;
                     }
+                    i++;
                 }
                 argin[i] = '\0';
                 i++;
+
+                /* Store this argument when it's not empty. */
+                arg = strip_quotes(arg);
+                if (*arg != '\0') {
+                    argv[argc] = arg;
+                    argc++;
+                }
             }
         }
         argv [argc] = NULL;
         if ((pid = fork()) == -1) {
-            OS_REPORT_3(OS_WARNING, "os_procCreate", 1,
-                        "fork failed with error %d (%s, %s)", errno, executable_file, name);
+            OS_REPORT(OS_WARNING, "os_procCreate", 1,
+                        "fork failed with error %d (%s, %s)", os_getErrno(), executable_file, name);
             rv = os_resultFail;
         } else if (pid == 0) {
             /* child process */
@@ -668,18 +293,18 @@ os_procCreate(
                 sched_param.sched_priority = procAttr->schedPriority;
 
                 if (sched_setscheduler(pid, SCHED_FIFO, &sched_param) == -1) {
-                    OS_REPORT_3(OS_WARNING, "os_procCreate", 1,
+                    OS_REPORT(OS_WARNING, "os_procCreate", 1,
                             "sched_setscheduler failed with error %d (%s) for process '%s'",
-                            errno, strerror(errno), name);
+                            os_getErrno(), os_strError(os_getErrno()), name);
                 }
             } else {
                     sched_getparam (0, &sched_current);
                     if (sched_current.sched_priority != procAttr->schedPriority) {
                         sched_param.sched_priority = procAttr->schedPriority;
                         if (sched_setscheduler(pid, SCHED_OTHER, &sched_param) == -1) {
-                            OS_REPORT_4(OS_WARNING, "os_procCreate", 1,
+                            OS_REPORT(OS_WARNING, "os_procCreate", 1,
                                         "sched_setscheduler failed with error %d (%s). Requested priority was %d, current is %d",
-                                        errno, name, procAttr->schedPriority,
+                                        os_getErrno(), name, procAttr->schedPriority,
                                         sched_current.sched_priority);
                     }
                 }
@@ -702,7 +327,7 @@ os_procCreate(
             char **environ = *_NSGetEnviron ();
 #endif
             if (execve(executable_file, argv, environ) == -1) {
-                OS_REPORT_2(OS_WARNING, "os_procCreate", 1, "execve failed with error %d (%s)", errno, executable_file);
+                OS_REPORT(OS_WARNING, "os_procCreate", 1, "execve failed with error %d (%s)", os_getErrno(), executable_file);
             }
             /* if executing this, something has gone wrong */
             rv = os_resultFail; /* Just to fool QAC */
@@ -758,7 +383,7 @@ os_procCheckStatus(
         rv = os_resultSuccess;
     } else if (result == 0) {
         rv = os_resultBusy;
-    } else if ((result == -1) && (errno == ECHILD)) {
+    } else if ((result == -1) && (os_getErrno() == ECHILD)) {
         rv = os_resultUnavailable;
     } else {
         rv = os_resultFail;
@@ -766,17 +391,6 @@ os_procCheckStatus(
     return rv;
 }
 #endif
-
-/** \brief Return the integer representation of the given process ID
- *
- * Possible Results:
- * - returns the integer representation of the given process ID
- */
-os_int
-os_procIdToInteger(os_procId id)
-{
-   return (os_int)id;
-}
 
 /** \brief Return the process ID of the calling process
  *
@@ -823,20 +437,20 @@ os_procFigureIdentity(
     size = os_procGetProcessName(process_name,_OS_PROCESS_DEFAULT_NAME_LEN_);
     if (size > 0) {
         size = snprintf(procIdentity, procIdentitySize, "%s <%d>",
-                        process_name, os_procIdToInteger(os_procIdSelf()));
+                        process_name, os_procIdSelf());
     }
     else {
          /* No processname could be determined, so default to PID */
          size = snprintf(procIdentity, procIdentitySize, "<%d>",
-                 os_procIdToInteger(os_procIdSelf()));
+                 os_procIdSelf());
      }
-    return (os_int32)size;
+    return size;
 }
 
 #undef _OS_PROCESS_DEFAULT_CMDLINE_LEN_
 #undef _OS_PROCESS_PROCFS_PATH_FMT_
 #undef _OS_PROCESS_DEFAULT_NAME_LEN_
-
+#ifndef INTEGRITY
 #if !defined (VXWORKS_RTP) && !defined (PIKEOS_POSIX)
 
 /* os_procServiceDestroy will need an alternative for VXWORKS when ospl
@@ -860,7 +474,7 @@ os_procServiceDestroy(
 {
     int killResult;
     os_result osr = os_resultFail;
-    os_time sleepTime;
+    const os_duration sleepTime = 100*OS_DURATION_MILLISECOND;
     int waitPid;
     int exitStatus;
     os_int32 sleepCount = 0;
@@ -874,7 +488,6 @@ os_procServiceDestroy(
      * reported.
      */
 
-    printf("Wait %.1f seconds for all processes to terminate\n", checkcount/10.0f);
     pidgrp = getpgid(pid); /* in case needed by killgrp and avoids reading from file */
 
     killResult = kill (pid, SIGTERM);
@@ -882,8 +495,6 @@ os_procServiceDestroy(
     /* wait for process */
 
     /* use 10th of a second sleep periods */
-    sleepTime.tv_sec  = 0;
-    sleepTime.tv_nsec = 100000000;
     sleepCount = checkcount;
 
     while (sleepCount > 0)
@@ -902,7 +513,7 @@ os_procServiceDestroy(
             {
                 /* the process has now terminated, obtain its exit status */
 
-                OS_REPORT_3(OS_INFO, "setExitStatus", 0,
+                OS_REPORT(OS_INFO, "setExitStatus", 0,
                     "Process spliced <%d> %s %d",
                     pid,
                     WIFEXITED(exitStatus) ? "exited normally, exit status:" : (
@@ -913,7 +524,7 @@ os_procServiceDestroy(
                 osr = os_resultSuccess;
                 break;
             }
-            else if (waitPid == -1 && errno == ECHILD)
+            else if (waitPid == -1 && os_getErrno() == ECHILD)
             {
                 /* already gone, no exit status information available */
                 osr = os_resultSuccess;
@@ -933,7 +544,7 @@ os_procServiceDestroy(
             printf (".");
             fflush(stdout);
         }
-        os_nanoSleep(sleepTime);    /* shutdown attempt interval */
+        os_sleep(sleepTime);    /* shutdown attempt interval */
         sleepCount--;
 
     }
@@ -944,7 +555,10 @@ os_procServiceDestroy(
     if(killpg(pidgrp, 0) == 0)     /* is this ok for blocking? */
     {
         killResult = killpg (pidgrp, SIGKILL);
-        OS_REPORT_2(OS_INFO, "removeProcesses", 0, "Sent KILL signal to pg %d - killpg returned %d", pidgrp, killResult);
+        OS_REPORT(OS_WARNING, "removeProcesses", 0,
+                "The OpenSplice Domain service <%d> did not terminate in time, "
+                "sent KILL signal to process group (ret %d)",
+                pidgrp, killResult);
         if (killResult == 0)
         {
             osr = os_resultSuccess;
@@ -980,7 +594,7 @@ os_procServiceDestroy(
                 {
                     /* the process has now terminated, obtain its exit status */
 
-                    OS_REPORT_3(OS_INFO, "setExitStatus", 0,
+                    OS_REPORT(OS_INFO, "setExitStatus", 0,
                         "Process spliced <%d> %s %d",
                         pid,
                         WIFEXITED(exitStatus) ? "exited normally, exit status:" : (
@@ -991,7 +605,7 @@ os_procServiceDestroy(
                     osr = os_resultSuccess;
                     break;
                 }
-                else if (waitPid == -1 && errno == ECHILD)
+                else if (waitPid == -1 && os_getErrno() == ECHILD)
                 {
                     /* already gone, no exit status information available */
                     osr = os_resultSuccess;
@@ -1012,7 +626,7 @@ os_procServiceDestroy(
                 fflush(stdout);
             }
 
-            os_nanoSleep(sleepTime);  /* shutdown attempt interval */
+            os_sleep(sleepTime);  /* shutdown attempt interval */
             sleepCount--;
 
         }
@@ -1020,7 +634,10 @@ os_procServiceDestroy(
         if(killpg(pidgrp, 0) == 0)     /* is this ok for blocking? */
         {
             killResult = killpg (pidgrp, SIGKILL);
-            OS_REPORT_2(OS_INFO, "removeProcesses", 0, "Sent KILL signal to pg %d - killpg returned %d", pidgrp, killResult);
+            OS_REPORT(OS_WARNING, "removeProcesses", 0,
+                    "The OpenSplice Domain service <%d> did not terminate in time, "
+                    "sent KILL signal to process group (ret %d)",
+                    pidgrp, killResult);
             if (killResult == 0)
             {
                 osr = os_resultSuccess;
@@ -1038,6 +655,7 @@ os_procServiceDestroy(
     return osr;
 }
 
+#endif
 #endif
 
 /** \brief Send a signal to the identified process
@@ -1063,15 +681,17 @@ os_procDestroy(
     os_int32 signal)
 {
     os_result rv;
+    os_int err;
 
     if (procId == OS_INVALID_PID) {
         return os_resultInvalid;
     }
 
     if (kill(procId, signal) == -1) {
-        if (errno == EINVAL) {
+        err = os_getErrno ();
+        if (err == EINVAL) {
             rv = os_resultInvalid;
-        } else if (errno == ESRCH) {
+        } else if (err == ESRCH) {
             rv = os_resultUnavailable;
         } else {
             rv = os_resultFail;
@@ -1109,12 +729,12 @@ os_procAttrGetClass(void)
           class = OS_SCHED_TIMESHARE;
           break;
        case -1:
-          OS_REPORT_1(OS_WARNING, "os_procAttrGetClass", 1,
-                      "sched_getscheduler failed with error %d", errno);
+          OS_REPORT(OS_WARNING, "os_procAttrGetClass", 1,
+                    "sched_getscheduler failed with error %d", os_getErrno());
           class = OS_SCHED_DEFAULT;
           break;
        default:
-          OS_REPORT_1(OS_WARNING, "os_procAttrGetClass", 1,
+          OS_REPORT(OS_WARNING, "os_procAttrGetClass", 1,
                       "sched_getscheduler unexpected return value %d", policy);
           class = OS_SCHED_DEFAULT;
           break;
@@ -1135,11 +755,12 @@ os_procAttrGetPriority(void)
     param.sched_priority = 0;
     if (sched_getparam(getpid(), &param) == -1)
     {
-       OS_REPORT_1 (OS_WARNING, "os_procAttrGetPriority", 1,
-                    "sched_getparam failed with error %d", errno);
+       OS_REPORT (OS_WARNING, "os_procAttrGetPriority", 1,
+                    "sched_getparam failed with error %d", os_getErrno());
     }
     return param.sched_priority;
 }
+#endif
 #endif
 
 #if !defined ( OSPL_NO_VMEM ) && !defined(_POSIX_MEMLOCK)
@@ -1167,11 +788,11 @@ os_procMLockAll(
     if (r == 0) {
         result = os_resultSuccess;
     } else {
-        if (errno == EPERM) {
+        if (os_getErrno() == EPERM) {
             OS_REPORT(OS_ERROR, "os_procMLockAll",
                 0, "Current process has insufficient privilege");
         } else {
-            if (errno == ENOMEM) {
+            if (os_getErrno() == ENOMEM) {
                 OS_REPORT(OS_ERROR, "os_procMLockAll",
                     0, "Current process has non-zero RLIMIT_MEMLOCK");
             }
@@ -1202,11 +823,11 @@ os_procMLock(
     if (r == 0) {
         result = os_resultSuccess;
     } else {
-        if (errno == EPERM) {
+        if (os_getErrno() == EPERM) {
             OS_REPORT(OS_ERROR, "os_procMLock",
                 0, "Current process has insufficient privilege");
         } else {
-            if (errno == ENOMEM) {
+            if (os_getErrno() == ENOMEM) {
                 OS_REPORT(OS_ERROR, "os_procMLock",
                     0, "Current process has non-zero RLIMIT_MEMLOCK");
             }
@@ -1232,11 +853,11 @@ os_procMUnlock(
     if (r == 0) {
         result = os_resultSuccess;
     } else {
-        if (errno == EPERM) {
+        if (os_getErrno() == EPERM) {
             OS_REPORT(OS_ERROR, "os_procMLock",
                 0, "Current process has insufficient privilege");
         } else {
-            if (errno == ENOMEM) {
+            if (os_getErrno() == ENOMEM) {
                 OS_REPORT(OS_ERROR, "os_procMLock",
                     0, "Current process has non-zero RLIMIT_MEMLOCK");
             }
@@ -1272,5 +893,3 @@ os_procMUnlockAll(void)
     return os_resultSuccess;
 #endif
 }
-
-#endif

@@ -158,21 +158,20 @@ UTL_WString::canonicalize()
  */
 
 // Compare two WString *
-long
-UTL_WString::compare(UTL_WString *s)
+bool UTL_WString::compare(UTL_WString *s)
 {
    char *s_c_str;
-   long result;
+   bool result;
 
    if (c_str == NULL || s == NULL || (s_c_str = s->get_canonical_rep()) == NULL)
-      result = I_FALSE;
+      result = false;
    else
-      result = (strcmp(c_str, s_c_str) == 0) ? I_TRUE : I_FALSE;
+      result = (strcmp(c_str, s_c_str) == 0) ? true : false;
 
    /*
     * Check that the names are typed consistently
     */
-   if (result == I_TRUE && strcmp(p_str, s->get_string()) != 0)
+   if (result && strcmp(p_str, s->get_string()) != 0)
       idl_global->err()->name_case_error(p_str, s->get_string());
 
    return result;

@@ -1,15 +1,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.com;
+
+import java.util.Arrays;
 
 import org.opensplice.cm.CMException;
 import org.opensplice.cm.DataReader;
@@ -34,6 +44,7 @@ import org.opensplice.cm.Waitset;
 import org.opensplice.cm.Writer;
 import org.opensplice.cm.WriterSnapshot;
 import org.opensplice.cm.data.GID;
+import org.opensplice.cm.data.Mask;
 import org.opensplice.cm.data.Sample;
 import org.opensplice.cm.data.UserData;
 import org.opensplice.cm.meta.MetaType;
@@ -83,6 +94,8 @@ public class JniCommunicator implements Communicator {
     private final QoSSerializer qosSerializer;
     private final StatisticsDeserializer statisticsDeserializer;
     private boolean initialized;
+    // This static boolean variable may be accessed and set from native code in
+    // cmj_factory.c
     private static boolean connectionAlive;
 
     static {
@@ -97,58 +110,58 @@ public class JniCommunicator implements Communicator {
 
     /**
      * Creates a new JNI communication handler for the Control & Monitoring API.
-     * 
+     *
      * @throws org.opensplice.cm.CMException
      *             Thrown when the C JNI library cannot be loaded (libcmjni) or
      *             one of the XML (de)serializers cannot be initialised.
      */
-    public JniCommunicator() throws CommunicationException{
+    public JniCommunicator(String uri) throws CommunicationException {
         initialized = false;
-        JniCommunicator.connectionAlive = false;
+        connectionAlive = false;
         entityDeserializer = DataTransformerFactory.getEntityDeserializer(this,
-                                DataTransformerFactory.XML);
-        typeDeserializer = DataTransformerFactory.getMetaTypeDeserializer(
-                                DataTransformerFactory.XML);
-        entitySerializer = DataTransformerFactory.getEntitySerializer(
-                                DataTransformerFactory.XML);
-        statusDeserializer = DataTransformerFactory.getStatusDeserializer(
-                                DataTransformerFactory.XML);
-        snapshotDeserializer = DataTransformerFactory.getSnapshotDeserializer(this,
-                                DataTransformerFactory.XML);
-        snapshotSerializer = DataTransformerFactory.getSnapshotSerializer(
-                                DataTransformerFactory.XML);
-        untypedSampleDeserializer = DataTransformerFactory.getUntypedSampleDeserializer(
-                                DataTransformerFactory.XML);
-        storageDeserializer = DataTransformerFactory.getStorageDeserializer(
-                                DataTransformerFactory.XML);
-        storageSerializer = DataTransformerFactory.getStorageSerializer(
-                                DataTransformerFactory.XML);
-        userDataSerializer = DataTransformerFactory.getUserDataSerializer(
-                                DataTransformerFactory.XML);
-        qosDeserializer = DataTransformerFactory.getQoSDeserializer(
-                                DataTransformerFactory.XML);
-        qosSerializer = DataTransformerFactory.getQoSSerializer(
-                                DataTransformerFactory.XML);
-        statisticsDeserializer = DataTransformerFactory.getStatisticsDeserializer(
-                                 DataTransformerFactory.XML);
+                DataTransformerFactory.XML);
+        typeDeserializer = DataTransformerFactory
+                .getMetaTypeDeserializer(DataTransformerFactory.XML);
+        entitySerializer = DataTransformerFactory
+                .getEntitySerializer(DataTransformerFactory.XML);
+        statusDeserializer = DataTransformerFactory
+                .getStatusDeserializer(DataTransformerFactory.XML);
+        snapshotDeserializer = DataTransformerFactory.getSnapshotDeserializer(
+                this, DataTransformerFactory.XML);
+        snapshotSerializer = DataTransformerFactory
+                .getSnapshotSerializer(DataTransformerFactory.XML);
+        untypedSampleDeserializer = DataTransformerFactory
+                .getUntypedSampleDeserializer(DataTransformerFactory.XML);
+        storageDeserializer = DataTransformerFactory
+                .getStorageDeserializer(DataTransformerFactory.XML);
+        storageSerializer = DataTransformerFactory
+                .getStorageSerializer(DataTransformerFactory.XML);
+        userDataSerializer = DataTransformerFactory
+                .getUserDataSerializer(DataTransformerFactory.XML);
+        qosDeserializer = DataTransformerFactory
+                .getQoSDeserializer(DataTransformerFactory.XML_TIME_64);
+        qosSerializer = DataTransformerFactory
+                .getQoSSerializer(DataTransformerFactory.XML_TIME_64);
+        statisticsDeserializer = DataTransformerFactory
+                .getStatisticsDeserializer(DataTransformerFactory.XML);
+        this.initialise(uri);
     }
 
-    @Override
-    public synchronized void initialise(String url) throws CommunicationException{
+    private void initialise(String url) throws CommunicationException {
         String result = jniInitialise();
 
         if((result == null) || (!(result.equals("<result>OK</result>")))){
             throw new CommunicationException("Could not initialise.");
         }
         initialized = true;
-        JniCommunicator.connectionAlive = true;
+        connectionAlive = true;
     }
 
     @Override
     public void detach() throws CommunicationException{
         String result = jniDetach();
         initialized = false;
-        JniCommunicator.connectionAlive = false;
+        connectionAlive = false;
 
         if((result == null) || (!(result.equals("<result>OK</result>")))){
             throw new CommunicationException("Could not detach.");
@@ -167,6 +180,22 @@ public class JniCommunicator implements Communicator {
             result = entityDeserializer.deserializeEntityList(xmlEntities);
         } catch (TransformationException e) {
             throw new CommunicationException("Could not resolve owned entities.");
+        }
+        return result;
+    }
+
+    @Override
+    public Entity[] entityGetEntityTree(Entity entity, long childIndex, long childSerial) throws CommunicationException{
+        Entity[] result = null;
+        this.checkConnection();
+
+        try {
+            String xmlEntity = entitySerializer.serializeEntity(entity);
+            String xmlEntities = this.jniGetEntityTree(xmlEntity, Long.toString(childIndex), Long.toString(childSerial));
+            this.checkConnection();
+            result = entityDeserializer.deserializeEntityList(xmlEntities);
+        } catch (TransformationException e) {
+            throw new CommunicationException("Could not resolve child entities.");
         }
         return result;
     }
@@ -409,6 +438,32 @@ public class JniCommunicator implements Communicator {
             }
         } catch (TransformationException e) {
             throw new CommunicationException("Could not find topic.");
+        }
+        return result;
+    }
+
+    @Override
+    public int participantGetDomainId(Participant participant)
+            throws CommunicationException {
+        int result;
+        this.checkConnection();
+
+        try{
+            String xmlEntity = entitySerializer.serializeEntity(participant);
+            String domainId = this.jniParticipantGetDomainId(xmlEntity);
+            this.checkConnection();
+            try {
+                result = Integer.parseInt(domainId);
+            } catch(NumberFormatException nfe) {
+                throw new CommunicationException("Received invalid domainId (."
+                        + domainId + ")");
+            }
+            if (result == -1) {
+                throw new CommunicationException(
+                        "Participant no longer available.");
+            }
+        } catch (TransformationException e) {
+            throw new CommunicationException("Could not resolve domain id.");
         }
         return result;
     }
@@ -705,41 +760,6 @@ public class JniCommunicator implements Communicator {
     }
 
     @Override
-    public void publisherPublish(Publisher p, String expression) throws CommunicationException {
-        this.checkConnection();
-
-        try {
-            String xmlEntity = entitySerializer.serializeEntity(p);
-            String xmlResult = this.jniPublisherPublish(xmlEntity, expression);
-            this.checkConnection();
-
-            if(!("<result>OK</result>".equals(xmlResult))){
-                throw new CommunicationException("Publication failed.");
-            }
-        } catch (TransformationException e) {
-            throw new CommunicationException("Publication failed");
-        }
-
-    }
-
-    @Override
-    public void subscriberSubscribe(Subscriber s, String expression) throws CommunicationException {
-        this.checkConnection();
-
-        try{
-            String xmlEntity = entitySerializer.serializeEntity(s);
-            String xmlResult = this.jniSubscriberSubscribe(xmlEntity, expression);
-            this.checkConnection();
-
-            if(!("<result>OK</result>".equals(xmlResult))){
-                throw new CommunicationException("Subscription failed.");
-            }
-        } catch (TransformationException e) {
-            throw new CommunicationException("Subscription failed.");
-        }
-    }
-
-    @Override
     public Writer writerNew(Publisher p, String name, Topic t, WriterQoS qos) throws CommunicationException {
         Writer wri;
         String xmlQos = null;
@@ -786,7 +806,7 @@ public class JniCommunicator implements Communicator {
 
         try{
             String xmlDataReader = entitySerializer.serializeEntity(d);
-            String result = this.jniDataReaderWaitForHistoricalData(xmlDataReader, time.sec, time.nsec);
+            String result = this.jniDataReaderWaitForHistoricalDataTime64(xmlDataReader, time.getValue());
             this.checkConnection();
 
             if(!("<result>OK</result>".equals(result))){
@@ -921,9 +941,9 @@ public class JniCommunicator implements Communicator {
         }
         return statistics;
     }
-    
-	@Override
-	public Statistics[] entityGetStatistics(Entity[] entities) throws CommunicationException {
+
+    @Override
+    public Statistics[] entityGetStatistics(Entity[] entities) throws CommunicationException {
         Statistics [] statistics = null;
         this.checkConnection();
 
@@ -939,7 +959,7 @@ public class JniCommunicator implements Communicator {
             throw new CommunicationException("Could not get statistics.");
         }
         return statistics;
-	}
+    }
 
     @Override
     public void entityResetStatistics(Entity entity, String fieldName) throws CommunicationException {
@@ -1047,7 +1067,7 @@ public class JniCommunicator implements Communicator {
 
         try{
             String xmlWaitset = entitySerializer.serializeEntity(waitset);
-            String xmlEntities = this.jniWaitsetTimedWait(xmlWaitset, time.sec, time.nsec);
+            String xmlEntities = this.jniWaitsetTimedWaitTime64(xmlWaitset, time.getValue());
             this.checkConnection();
 
             Entity[] entityResult = entityDeserializer.deserializeEntityList(xmlEntities);
@@ -1101,7 +1121,7 @@ public class JniCommunicator implements Communicator {
     }
 
     private void checkConnection() throws CommunicationException{
-        if(this.initialized && !JniCommunicator.connectionAlive){
+        if (this.initialized && !connectionAlive) {
             throw new ConnectionLostException();
         } else if (!this.initialized){
            throw new CommunicationException ("Connection has been closed already.");
@@ -1185,7 +1205,7 @@ public class JniCommunicator implements Communicator {
             Result r = storageDeserializer.deserializeReadResult_Result(storageReadResult);
             if(!r.equals(Result.SUCCESS)){
                 /* TODO: create StorageException or something like that */
-                data = null;
+
             } else {
                 /* Retrieve the metadata. TODO: Only resolve if type unkown; i.e.
                  * cache the output. */
@@ -1225,11 +1245,116 @@ public class JniCommunicator implements Communicator {
         return meta;
     }
 
+    @Override
+    public void beginCoherentChanges(Publisher publisher)
+            throws CommunicationException {
+        this.checkConnection();
+
+        try {
+            String xmlPublisher = entitySerializer.serializeEntity(publisher);
+            String result = this.jniBeginCoherentChanges(xmlPublisher);
+            this.checkConnection();
+
+            if (!("<result>OK</result>".equals(result))) {
+                throw new CommunicationException(result.substring(8,
+                        result.length() - 9));
+            }
+        } catch (TransformationException e) {
+            throw new CommunicationException(
+                    "Could not begin coherent changes on Publisher.");
+        }
+    }
+
+    @Override
+    public void endCoherentChanges(Publisher publisher)
+            throws CommunicationException {
+        this.checkConnection();
+
+        try {
+            String xmlPublisher = entitySerializer.serializeEntity(publisher);
+            String result = this.jniEndCoherentChanges(xmlPublisher);
+            this.checkConnection();
+
+            if (!("<result>OK</result>".equals(result))) {
+                throw new CommunicationException(result.substring(8,
+                        result.length() - 9));
+            }
+        } catch (TransformationException e) {
+            throw new CommunicationException(
+                    "Could not end coherent changes on Publisher.");
+        }
+    }
+
+    @Override
+    public void beginAccess(Subscriber subscriber)
+            throws CommunicationException {
+        this.checkConnection();
+
+        try {
+            String xmlSubscriber = entitySerializer.serializeEntity(subscriber);
+            String result = this.jniBeginAccess(xmlSubscriber);
+            this.checkConnection();
+
+            if (!("<result>OK</result>".equals(result))) {
+                throw new CommunicationException(result.substring(8,
+                        result.length() - 9));
+            }
+        } catch (TransformationException e) {
+            throw new CommunicationException(
+                    "Could not begin access on Subscriber.");
+        }
+    }
+
+    @Override
+    public void endAccess(Subscriber subscriber) throws CommunicationException {
+        this.checkConnection();
+
+        try {
+            String xmlSubscriber = entitySerializer.serializeEntity(subscriber);
+            String result = this.jniEndAccess(xmlSubscriber);
+            this.checkConnection();
+
+            if (!("<result>OK</result>".equals(result))) {
+                throw new CommunicationException(result.substring(8,
+                        result.length() - 9));
+            }
+        } catch (TransformationException e) {
+            throw new CommunicationException(
+                    "Could not end access on Subscriber.");
+        }
+    }
+
+    @Override
+    public DataReader[] subscriberGetDataReaders(Subscriber subscriber,
+            Mask mask) throws CommunicationException {
+        Entity[] entities;
+        DataReader[] dataReaders = null;
+        this.checkConnection();
+
+        try {
+            String xmlSubscriber = entitySerializer.serializeEntity(subscriber);
+
+            String xmlEntities = this.jniGetDataReaders(xmlSubscriber,
+                    mask.getValue());
+            this.checkConnection();
+            entities = entityDeserializer.deserializeEntityList(xmlEntities);
+
+            this.checkConnection();
+            dataReaders = Arrays.asList(entities).toArray(
+                    new DataReader[entities.length]);
+        } catch (TransformationException e) {
+            throw new CommunicationException(
+                    "Could not get DataReaders on Subscriber ("
+                            + e.getMessage() + ").");
+        }
+        return dataReaders;
+    }
+
     /*Init/detach.*/
     private native String   jniInitialise();
     private native String   jniDetach();
 
-    private native String	jniGetVersion();
+    private native String    jniGetVersion();
 
     /*Entity functions.*/
     private native void     jniEntityFree(String xmlEntity);
@@ -1237,6 +1362,7 @@ public class JniCommunicator implements Communicator {
     private native String   jniEntityQoS(String xmlEntity);
     private native String   jniEntitySetQoS(String xmlEntity, String xmlQoS);
     private native String   jniGetOwnedEntities(String xmlEntity, String filter);
+    private native String   jniGetEntityTree(String xmlEntity, String childIndex, String childSerial);
     private native String   jniGetDependantEntities(String xmlEntity, String filter);
     private native String   jniEntityResetStatistics(String xmlEntity, String fieldName);
     private native String   jniEntityGetStatistics(String xmlEntity);
@@ -1249,6 +1375,7 @@ public class JniCommunicator implements Communicator {
     private native String   jniParticipantAllTopics(String xmlTopic);
     private native String   jniParticipantAllDomains(String xmlDomain);
     private native String   jniParticipantFindTopic(String xmlParticipant, String topicName);
+    private native String   jniParticipantGetDomainId(String xmlParticipant);
     private native String   jniRegisterType(String participant, String type);
 
     private native String   jniPublisherNew(String participant, String name, String qos);
@@ -1285,12 +1412,20 @@ public class JniCommunicator implements Communicator {
     private native String   jniWriterUnregister(String writer, String data);
 
     /*Publisher functions*/
-    private native String   jniPublisherPublish(String publisher, String expr);
     private native String   jniCreateWriter(String publisher, String name, String topic, String qos);
 
+    private native String jniBeginCoherentChanges(String publisher);
+
+    private native String jniEndCoherentChanges(String publisher);
+
     /*Subscriber functions*/
-    private native String   jniSubscriberSubscribe(String subscriber, String expr);
     private native String   jniCreateDataReader(String subscriber, String name, String view, String qos);
+
+    private native String jniBeginAccess(String subscriber);
+
+    private native String jniEndAccess(String subscriber);
+
+    private native String jniGetDataReaders(String subscriber, int mask);
 
     /*Waitset functions*/
     private native String   jniWaitsetNew(String participant);
@@ -1298,11 +1433,14 @@ public class JniCommunicator implements Communicator {
     private native String   jniWaitsetDetach(String waitset, String entity);
     private native String   jniWaitsetWait(String waitset);
 
-    private native String jniWaitsetTimedWait(String waitset, int sec, int nsec);
+    private native String   jniWaitsetTimedWait(String waitset, int sec, int nsec);
+    private native String   jniWaitsetTimedWaitTime64(String waitset, long waitTime);
+
     private native int      jniWaitsetGetEventMask(String waitset);
     private native String   jniWaitsetSetEventMask(String waitset, int mask);
 
     private native String   jniDataReaderWaitForHistoricalData(String dataReader, int sec, int nsec);
+    private native String   jniDataReaderWaitForHistoricalDataTime64(String dataReader, long timeout);
 
     /*Storage functions*/
     private native String   jniStorageOpen(String attrs);

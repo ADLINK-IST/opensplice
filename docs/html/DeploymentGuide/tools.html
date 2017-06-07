@@ -1,0 +1,448 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>11. Tools &mdash; The OpenSplice Deployment Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The OpenSplice Deployment Guide" href="index.html" />
+    <link rel="next" title="12. Configuration" href="guide.html" />
+    <link rel="prev" title="10. The DbmsConnect Service" href="dbmsconnect-service.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="guide.html" title="12. Configuration"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dbmsconnect-service.html" title="10. The DbmsConnect Service"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <span class="target" id="tools"></span><div class="section" id="id1">
+<h1>11. Tools<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
+<p><em>The Vortex OpenSplice distribution contains several tools for a variety of different
+purposes. This chapter categorizes the various tools and gives some background
+about each of them. For each tool it either refers to the appropriate manual, or
+provides a separate section with a detailed description of the tools’
+possibilities and command-line interface.</em></p>
+<div class="section" id="introduction">
+<h2>11.1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The Vortex OpenSplice tool chain is comprised of the following categories:</p>
+<ul class="simple">
+<li>Compilers/Code generators:<ul>
+<li><tt class="docutils literal"><span class="pre">idlpp</span></tt> (IDL Pre-processor):
+Parses and validates an IDL file containing
+your DCPS data model. When valid, it generates a language specific
+representation of this data model accompanied by the corresponding DCPS
+accessor classes (<em>e.g.</em> <tt class="docutils literal"><span class="pre">DataReader</span></tt>, <tt class="docutils literal"><span class="pre">DataWriter</span></tt> and <tt class="docutils literal"><span class="pre">TypeSupport</span></tt>).
+More details about this tool can be found in the <em>IDL Pre-processor Guide</em>
+contained in the file <tt class="docutils literal"><span class="pre">OpenSplice_PreProcessor_usermanual.pdf</span></tt>.</li>
+<li><tt class="docutils literal"><span class="pre">rmipp</span></tt> (RMI pre-processor):
+Parses and validates an IDL file containing
+your RMI interface model. When valid, it generates a language-specific
+representation of this interface accompanied by the corresponding RMI-DDS
+translators. More details about this tool can be found in section 3.4 of
+the <em>OpenSplice RMI over DDS Getting Started Guide</em> contained in the file
+<tt class="docutils literal"><span class="pre">OpenSplice_RMI_GettingStarted.pdf</span></tt>.</li>
+</ul>
+</li>
+<li>Configuration Editor:<ul>
+<li><tt class="docutils literal"><span class="pre">osplconf</span></tt> (OpenSplice Configurator):
+A GUI-based editor for the
+Vortex OpenSplice configuration files, providing context sensitive validation
+and help. More details about this tool can be found in
+<a class="reference internal" href="#osplconf-the-opensplice-configuration-editor">osplconf: the OpenSplice Configuration editor</a>.</li>
+</ul>
+</li>
+<li>Control &amp; Monitoring Tools:<ul>
+<li><tt class="docutils literal"><span class="pre">ospl</span></tt> (OpenSplice service manager):
+A tool that can be used to start,
+stop and monitor the Vortex OpenSplice Domain Service (only applicable to
+the Federated Deployment Mode). More details about this tool can be found
+in <a class="reference internal" href="#ospl-the-opensplice-service-manager">ospl: the OpenSplice service manager</a>.</li>
+<li><tt class="docutils literal"><span class="pre">mmstat</span></tt> (Memory Management Statistics):
+A tool that can display several
+statistics about the shared memory that is currently being used by an
+OpenSplice Domain Service (only applicable to the Federated Deployment
+Mode). More details about this tool can be found in
+<a class="reference internal" href="#mmstat-memory-management-statistics">mmstat: Memory Management Statistics</a>.</li>
+<li><tt class="docutils literal"><span class="pre">ospltun</span></tt> (OpenSplice Tuner):
+A tool that can be used to monitor and
+control individual DCPS entities. With this tool you can display the
+DCPS Entity trees of your application, watch (and possibly modify) the
+Qos settings of an individual DCPS entity, monitor the status flags it has
+currently raised, examine many more statistics about these entities, and
+even monitor and inject samples into your DCPS Readers/Writers. It can
+connect directly into the shared memory (restricted to the Federated
+Deployment Mode), or through a socket to a pre-configured Tuner Service
+using the SOAP protocol. More details about this tool can be found in
+the <em>OpenSplice Tuner Guide</em> contained in the file
+<tt class="docutils literal"><span class="pre">OpenSplice_Tuner_usermanual.pdf</span></tt>.</li>
+<li><tt class="docutils literal"><span class="pre">ospltest</span></tt> (OpenSplice Tester):
+An automated testing and debugging tool
+that can be used to receive and display messages produced in OpenSplice,
+and to transmit your own messages either manually or with a script.
+Like the Tuner, it can connect directly to the shared memory (restricted
+to the Federated Deployment Mode), or through a socket to a pre-configured
+Tuner Service using the SOAP protocol. More details about this tool can be
+found in the <em>OpenSplice Automated Testing and Debugging Tool User Guide</em>
+contained in the file <tt class="docutils literal"><span class="pre">OpenSplice_TesterUserGuide.pdf</span></tt>.</li>
+<li><tt class="docutils literal"><span class="pre">nodemon</span></tt> (OpenSplice Node Monitor):
+A tool that publishes the following system-monitoring data into the OpenSplice
+backbone. More details about this tool can be found in the <em>OpenSplice Node Monitor User Guide</em>
+contained in the file <tt class="docutils literal"><span class="pre">OpenSplice_TNodeMonitorGuide.pdf</span></tt>.</li>
+</ul>
+</li>
+</ul>
+<p>The following sections will provide some more details about those tools that do not
+have a separate manual.</p>
+</div>
+<div class="section" id="osplconf-the-opensplice-configuration-editor">
+<span id="id2"></span><h2>11.2. osplconf: the OpenSplice Configuration editor<a class="headerlink" href="#osplconf-the-opensplice-configuration-editor" title="Permalink to this headline">¶</a></h2>
+<p>The OpenSplice Configuration Editor provides the following command line
+instruction:</p>
+<p><strong>-uri=[URI]</strong> — specifies the domain config file that needs to be opened</p>
+<blockquote>
+<div><em>e.g.</em> <tt class="docutils literal"><span class="pre">osplconf</span> <span class="pre">-uri=$OSPL_URI</span></tt></div></blockquote>
+<p>When started, the OpenSplice Configuration Editor can help you in several
+ways to tailor the deployment settings for your Vortex OpenSplice system:</p>
+<ul class="simple">
+<li>It displays the configured services as separate tabs in a tabbed pane.</li>
+<li>For each service, it displays the relevant service settings in a
+hierarchical tree.</li>
+<li>For each setting, it provides a context-sensitive description in the
+bottom pane.
+The content of this context-sensitive help is identical to the
+textual descriptions contained in the <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section.
+These descriptions also give some additional information,
+such as the unit of an attribute (<em>e.g.</em> Bytes per resolution tick).</li>
+<li>The value of each element/attribute can be edited.</li>
+<li>A context-sensitive validation algorithm will check whether your input
+satisfies the relevant criteria.<ul>
+<li>When the input color is orange, you are editing the value.</li>
+<li>When the text field color is red, the value is unacceptable.</li>
+<li>When the text field color is white, the new input value has been accepted.</li>
+</ul>
+</li>
+</ul>
+<p>A typical view of the OpenSplice Configurator is displayed below:</p>
+<p class="centered" id="typical-configurator-view">
+<strong><strong>Typical Configurator view</strong></strong></p><a class="reference internal image-reference" href="_images/Configurator_Default.jpg"><img alt="Typical Configurator view" class="align-center" src="_images/Configurator_Default.jpg" style="height: 70mm;" /></a>
+<p>A config file is opened using the top menu bar (<em>File &gt; Open</em>) or the keyboard
+shortcut <tt class="docutils literal"><span class="pre">Ctrl+O</span></tt>.</p>
+<p>The appropriate service tab is selected.</p>
+<p>If the appropriate service is not configured, and so its tab is not visible on the top, it
+can be added by using the top menu-bar (<em>Edit &gt; Add Service</em>).</p>
+<p>The hierarchical tree on the left can be used to browse through the settings
+applicable to the Service and possibly modify them.</p>
+<p>The right pane shows the settings of the currently selected tree node.
+An item prefixed with a ‘<tt class="docutils literal"><span class="pre">&#64;</span></tt>’ represents an XML attribute. The other items represent
+XML elements.</p>
+<p>If the appropriate setting is not currently configured, and therefore not visible in the
+tree, you can add it by right-clicking anywhere in the tree to open a context-sensitive
+sub-menu displaying all available settings for that particular element in the tree.</p>
+<p class="centered" id="adding-an-element-in-configurator">
+<strong><strong>Adding an element in Configurator</strong></strong></p><a class="reference internal image-reference" href="_images/Configurator_AddElement.jpg"><img alt="Adding an element in Configurator" class="align-center" src="_images/Configurator_AddElement.jpg" style="height: 70mm;" /></a>
+<p>Once the appropriate modifications have been made, and are accepted by the
+Configurator, the config file can be saved using the top menu bar
+(<em>File &gt; Save</em>) or the keyboard shortcut <tt class="docutils literal"><span class="pre">Ctrl+S</span></tt>.</p>
+<p>Likewise, a config file can be written from scratch by using the top menu bar
+(<em>File &gt; New</em>) or the keyboard shortcut <tt class="docutils literal"><span class="pre">Ctrl+N</span></tt>.</p>
+</div>
+<div class="section" id="ospl-the-opensplice-service-manager">
+<span id="id3"></span><h2>11.3. ospl: the OpenSplice service manager<a class="headerlink" href="#ospl-the-opensplice-service-manager" title="Permalink to this headline">¶</a></h2>
+<p>The OpenSplice service manager (<tt class="docutils literal"><span class="pre">ospl</span></tt>) is a tool that monitors and controls the
+lifecycle of the OpenSplice Domain Service (spliced), which in turn monitors and
+controls all other OpenSplice services. This tool is only applicable to the Federated
+Deployment Mode, because the Single Process Deployment Mode doesn’t need to
+run external services. Basically you can view the OpenSplice service manager as a
+controller around the OpenSplice Domain Service, that can be used to pass the
+following command-line instructions to the Domain Service:</p>
+<dl class="docutils">
+<dt><strong>start [URI]</strong> — Starts a Domain Service for the specified URI</dt>
+<dd><p class="first">(It looks for the environment variable <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> when no URI is explicitly
+passed.) The Domain Service will in turn parse the config file indicated by
+the URI and start all configured services according to their settings.</p>
+<p>When done, the OpenSplice service manager will return one of the following
+exit codes:</p>
+<p><strong>0</strong>  : normal termination (when the Domain Service has successfully started)</p>
+<p><strong>1</strong>  : a <em>recoverable error</em> has occurred (<em>e.g.</em> out of resources)</p>
+<p><strong>2</strong>  : an <em>unrecoverable error</em> has occurred (<em>e.g.</em> config file contains errors).</p>
+<p class="last">When also passing the <tt class="docutils literal"><span class="pre">-f</span></tt> flag, the OpenSplice service manager will not return
+the command prompt, but remain blocked until the Domain Service successfully
+terminates. Any termination event sent to the service manager will in that case
+be forwarded to the Domain Service it manages.</p>
+</dd>
+<dt><strong>stop [URI]</strong> — Stops the Domain Service for the specified URI</dt>
+<dd><p class="first">(It looks for the environment variable <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> when no URI is
+explicitly passed.) The Domain Service will in turn wait for all the
+services it currently monitors to terminate gracefully and will then
+terminate itself.</p>
+<p>When done, the OpenSplice service manager will return one of the
+following exit codes:</p>
+<p><strong>0</strong>  : normal termination when the Domain Service has successfully terminated.</p>
+<p><strong>2</strong>  : an unrecoverable error has occurred (<em>e.g.</em> config file cannot be resolved).</p>
+<p class="last">When passing the <tt class="docutils literal"><span class="pre">-a</span></tt> flag instead of a URI, the OpenSplice manager is
+instructed to terminate all Domain Services that are currently running on the
+local node.</p>
+</dd>
+<dt><strong>status [URI]</strong> — Prints the status of the Domain Service for the specified URI</dt>
+<dd>(It looks for the environment variable <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> when no URI is explicitly
+passed.) When a Domain with the specified URI cannot be found, it prints nothing.</dd>
+<dt><strong>list</strong> — Lists all Domain Services by name</dt>
+<dd>(<em>i.e.</em> the name configured in the <tt class="docutils literal"><span class="pre">OpenSplice/Domain/Name</span></tt> element
+of the config file). This behaviour is similar to the status option,
+but then for all Domains that are currently running on the local node.</dd>
+</dl>
+<p>There are a couple of other flags that can be used to display valuable information:</p>
+<blockquote>
+<div><p><strong>-v</strong> — prints the version number of the current OpenSplice release.</p>
+<p><strong>-h</strong> — prints help for all command-line options.</p>
+</div></blockquote>
+<p>Note that the default behaviour of <tt class="docutils literal"><span class="pre">ospl</span></tt> without any command-line arguments is to
+display help.</p>
+</div>
+<div class="section" id="mmstat-memory-management-statistics">
+<span id="id4"></span><h2>11.4. mmstat: Memory Management Statistics<a class="headerlink" href="#mmstat-memory-management-statistics" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">Mmstat</span></tt> is a command-line tool that can display valuable information about the
+shared memory statistics of an OpenSplice Domain (this is only applicable to the
+Federated Deployment Mode, since the Single Process Deployment Mode does not
+use shared memory). The Domain to which <tt class="docutils literal"><span class="pre">mmstat</span></tt> must attach can be passed as a
+command-line parameter, and consists of a URI to the config file specifying the
+Domain. When no URI is passed, <tt class="docutils literal"><span class="pre">mmstat</span></tt> will attach to the Domain specified in the
+environment variable <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt>.</p>
+<p>Basically <tt class="docutils literal"><span class="pre">mmstat</span></tt> can run in four separate modes, which all display their status at
+regular intervals. This interval time is by default set to 3 seconds, but can be
+overruled by passing the <tt class="docutils literal"><span class="pre">-i</span></tt> flag followed by an interval value specified in
+milliseconds.</p>
+<p>The following modes can be distinguished using the specified flags:</p>
+<blockquote>
+<div><p><strong>-m</strong> — The memory statistics mode (default mode)</p>
+<p><strong>-M</strong> — The memory statistics difference mode</p>
+<p><strong>-t</strong> — The meta-object references mode</p>
+<p><strong>-T</strong> — The meta-object references difference mode</p>
+</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">Mmstat</span></tt> will keep on displaying an updated status after every interval until
+the <tt class="docutils literal"><span class="pre">q</span></tt> key is pressed, or until the total number of iterations reaches the
+<tt class="docutils literal"><span class="pre">sample_count</span></tt> limit that can be specified by passing the <tt class="docutils literal"><span class="pre">-s</span></tt> flag followed
+by the preferred number of iterations. Intermediate status updates can be enforced
+by pressing the <tt class="docutils literal"><span class="pre">t</span></tt> key.</p>
+<p>The following subsections provide detailed descriptions of the different
+<tt class="docutils literal"><span class="pre">mmstat</span></tt> modes mentioned above.</p>
+<div class="section" id="the-memory-statistics-mode">
+<span id="id5"></span><h3>11.4.1. The memory statistics mode<a class="headerlink" href="#the-memory-statistics-mode" title="Permalink to this headline">¶</a></h3>
+<p>In the memory statistics mode <tt class="docutils literal"><span class="pre">mmstat</span></tt> basically displays some general shared
+memory statistics that can help in correctly estimating the required size of
+the shared memory database in the configuration file.</p>
+<p>The numbers that will be displayed in this mode are:</p>
+<ul class="simple">
+<li>the total amount of shared memory still available (<em>i.e.</em> currently not in use).</li>
+<li>the number of objects currently allocated in the shared memory.</li>
+<li>the amount of shared memory that is currently in use by the allocated objects.</li>
+<li>the worstcase amount of shared memory that has been in use so far.</li>
+<li>the amount of shared memory that is currently marked as reuasble.
+(Reusable memory is memory that is conceptually available, but it might
+be fragmented in small chunks that cannot be allocated in bigger chunks.)</li>
+</ul>
+<p>The memory statistics mode is the default mode for <tt class="docutils literal"><span class="pre">mmstat</span></tt>, and it is selected when
+no explicit mode selection argument is passed. It can also be selected explicitly by
+passing the <tt class="docutils literal"><span class="pre">-m</span></tt> flag.</p>
+<p class="centered" id="typical-mmstat-view">
+<strong><strong>Typical mmstat view</strong></strong></p><a class="reference internal image-reference" href="_images/Mmstat_Default.jpg"><img alt="Typical mmstat view" class="align-center" src="_images/Mmstat_Default.jpg" style="height: 70mm;" /></a>
+</div>
+<div class="section" id="the-memory-statistics-difference-mode">
+<span id="id6"></span><h3>11.4.2. The memory statistics difference mode<a class="headerlink" href="#the-memory-statistics-difference-mode" title="Permalink to this headline">¶</a></h3>
+<p>The memory statistics difference mode works very similarly to the memory
+statistics mode, but instead of displaying the current values of each measurement it
+displays the changes of each value relative to the previous measurement. This
+provides a good overview of the dynamics of your shared memory, such as whether
+it remains stable, whether it is rapidly being consumed/released, and so on.</p>
+<p class="centered" id="mmstat-memory-statistics-difference-mode">
+<strong><strong>Mmstat memory statistics difference mode</strong></strong></p><a class="reference internal image-reference" href="_images/Mmstat_Default_Diff.jpg"><img alt="Mmstat memory statistics difference mode" class="align-center" src="_images/Mmstat_Default_Diff.jpg" style="height: 70mm;" /></a>
+<p>The numbers that will be displayed in this mode are:</p>
+<ul class="simple">
+<li>the difference in the amount of available shared memory relative
+to the previous measurement.</li>
+<li>the difference in the number of objects that is allocated in the
+shared memory relative to the previous measurement.</li>
+<li>the difference in the amount of shared memory that is in use by
+the allocated objects relative to the previous measurement.</li>
+<li>the difference in the worstcase amount of shared memory that has
+been allocated since the previous measurement. Notice that this
+value can only go up and so the difference can never be negative.</li>
+</ul>
+<p>The memory statistics difference mode can be selected by explicitly
+passing the <tt class="docutils literal"><span class="pre">-M</span></tt> flag as a command-line parameter.</p>
+</div>
+<div class="section" id="the-meta-object-references-mode">
+<span id="id7"></span><h3>11.4.3. The meta-object references mode<a class="headerlink" href="#the-meta-object-references-mode" title="Permalink to this headline">¶</a></h3>
+<p>In the meta-object references mode <tt class="docutils literal"><span class="pre">mmstat</span></tt> basically displays which objects are
+currently populating the shared memory.</p>
+<p class="centered" id="mmstat-meta-object-references-mode">
+<strong><strong>Mmstat meta-object references mode</strong></strong></p><a class="reference internal image-reference" href="_images/Mmstat_refMode.jpg"><img alt="Mmstat meta-object references mode" class="align-center" src="_images/Mmstat_refMode.jpg" style="height: 70mm;" /></a>
+<p>For this purpose it will iterate through all datatypes known to the Domain,
+and for each datatype it will display the following information:</p>
+<ul class="simple">
+<li>the number of objects currently allocated for the indicated type.</li>
+<li>the memory allocation footprint of a single object of the indicated type.</li>
+<li>the combined size taken by all objects of the indicated type.</li>
+<li>The kind of object (<em>e.g.</em> class, collection, <em>etc.</em>).</li>
+<li>The kind of collection (when appropriate).</li>
+<li>The fully scoped typename.</li>
+</ul>
+<p>In normal circumstances the reference list will be so long (only the bootstrap will
+already inject hundreds of types into the Domain) that it will not fit on one screen.
+For that reason there are several ways to restrict the number of items that are
+displayed, by filtering out the non-interesting items:</p>
+<ul>
+<li><p class="first">A filter can be specified by passing the <tt class="docutils literal"><span class="pre">-f</span></tt> flag, followed by a (partial)
+typename. This restricts the list to the only those datatypes that match the filter.</p>
+</li>
+<li><p class="first">The maximum number of items that may be displayed can be specified by passing
+the <tt class="docutils literal"><span class="pre">-n</span></tt> flag, followed by the maximum value.</p>
+<p>This is especially useful when combined with another flag that determines the
+order in which the items will be displayed. For example, when the items are sorted
+by memory footprint, passing <tt class="docutils literal"><span class="pre">-n10</span></tt> will only display the top ten datatypes that
+have the biggest footprint.</p>
+</li>
+</ul>
+<p>The order of the items in the list can be controlled by passing the <tt class="docutils literal"><span class="pre">-o</span></tt> flag,
+followed by a character specifying the ordering criterion. The following characters
+are supported:</p>
+<blockquote>
+<div><p><strong>C</strong> — Sort by object Count
+(<em>i.e.</em> the number of allocated objects from the indicated datatype).</p>
+<p><strong>S</strong> — Sort by object Size
+(<em>i.e.</em> the memory footprint of a single object from the indicated datatype).</p>
+<p><strong>T</strong> — Sort by Total size
+(<em>i.e.</em> the combined memory footprint of all objects allocated from
+the indicated datatype).</p>
+</div></blockquote>
+</div>
+<div class="section" id="the-meta-object-references-difference-mode">
+<span id="id8"></span><h3>11.4.4. The meta-object references difference mode<a class="headerlink" href="#the-meta-object-references-difference-mode" title="Permalink to this headline">¶</a></h3>
+<p>The meta-object references difference mode is very similar to the meta-object
+references mode, but instead of displaying the current values of each measurement it
+displays the changes of each value relative to the previous measurement. This
+provides a good overview of the dynamics of your shared memory, such as whether
+the number of objects remains stable, whether it is rapidly increasing/decreasing,
+and so on.</p>
+<p>The fields that are displayed in this mode are similar to the fields displayed in the
+meta-object references mode, except that the numbers displayed in the first and third
+column are now specifying the changes relative to the previous measurement.</p>
+<p>All the flags that are applicable to the meta-object references mode are also
+applicable to the meta-object references difference mode, but keep in mind that
+ordering (when specified) is now based on the absolute value of the difference
+between the current and the previous measurement. This way big negative changes
+will still be displayed at the top of the list.</p>
+<p class="centered" id="mmstat-meta-object-references-difference-mode">
+<strong><strong>Mmstat meta-object references difference mode</strong></strong></p><a class="reference internal image-reference" href="_images/Mmstat_refDiffMode.jpg"><img alt="Mmstat meta-object references difference mode" class="align-center" src="_images/Mmstat_refDiffMode.jpg" style="height: 70mm;" /></a>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">11. Tools</a><ul>
+<li><a class="reference internal" href="#introduction">11.1. Introduction</a></li>
+<li><a class="reference internal" href="#osplconf-the-opensplice-configuration-editor">11.2. osplconf: the OpenSplice Configuration editor</a></li>
+<li><a class="reference internal" href="#ospl-the-opensplice-service-manager">11.3. ospl: the OpenSplice service manager</a></li>
+<li><a class="reference internal" href="#mmstat-memory-management-statistics">11.4. mmstat: Memory Management Statistics</a><ul>
+<li><a class="reference internal" href="#the-memory-statistics-mode">11.4.1. The memory statistics mode</a></li>
+<li><a class="reference internal" href="#the-memory-statistics-difference-mode">11.4.2. The memory statistics difference mode</a></li>
+<li><a class="reference internal" href="#the-meta-object-references-mode">11.4.3. The meta-object references mode</a></li>
+<li><a class="reference internal" href="#the-meta-object-references-difference-mode">11.4.4. The meta-object references difference mode</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dbmsconnect-service.html"
+                        title="previous chapter">10. The DbmsConnect Service</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="guide.html"
+                        title="next chapter">12. Configuration</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tools.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="guide.html" title="12. Configuration"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dbmsconnect-service.html" title="10. The DbmsConnect Service"
+             >previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

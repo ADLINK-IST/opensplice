@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -27,10 +35,8 @@
 #include <sstream>
 #ifdef _WIN32
 #include "os_stdlib.h"
+#include <Windows.h>
 #else
-#ifdef _WRS_KERNEL
-#define USE_NANOSLEEP
-#endif
 #endif
 
 #define MAX_MSG_LEN 256
@@ -381,6 +387,21 @@ DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::enable (
     return realParticipant->enable();
 }
 
+ DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::set_property (
+    const ::DDS::Property & a_property
+) THROW_ORB_EXCEPTIONS
+{
+     return realParticipant->set_property(a_property);
+}
+
+ DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_property (
+    DDS::Property & a_property
+) THROW_ORB_EXCEPTIONS
+{
+     return realParticipant->get_property(a_property);
+}
+
+
 DDS::StatusCondition_ptr DDS::ExtDomainParticipantImpl::get_statuscondition (
 ) THROW_ORB_EXCEPTIONS {
     return realParticipant->get_statuscondition();
@@ -631,6 +652,13 @@ DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::get_current_time (
     DDS::Time_t & current_time
 ) THROW_ORB_EXCEPTIONS {
     return realParticipant->get_current_time(current_time);
+}
+
+DDS::ReturnCode_t DDS::ExtDomainParticipantImpl::delete_historical_data (
+        const char * partition_expression,
+        const char * topic_expression
+) THROW_ORB_EXCEPTIONS {
+    return realParticipant->delete_historical_data(partition_expression, topic_expression);
 }
 
 DDS::ExtDomainParticipant_var::~ExtDomainParticipant_var() {

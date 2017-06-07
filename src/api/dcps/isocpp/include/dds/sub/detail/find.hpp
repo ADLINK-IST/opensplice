@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2012 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef OSPL_DDS_SUB_DETAIL_FIND_HPP_
@@ -59,7 +67,6 @@ find(const dds::sub::Subscriber& sub,
                 dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
                 org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
                 dr->init_builtin(ddsdr, ddsdr->get_topicdescription());
-                dr.retain();
                 org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdr, dr);
 
                 *begin = dr;
@@ -92,7 +99,6 @@ find(const dds::sub::Subscriber& sub,
             dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
             org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
             dr->init_builtin(ddsdr, ddsdr->get_topicdescription());
-            dr.retain();
             org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdr, dr);
 
             *begin = dr;
@@ -124,7 +130,6 @@ find(const dds::sub::Subscriber& sub,
             dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
             org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
             dr->init_builtin(ddsdr, ddsdr->get_topicdescription());
-            dr.retain();
             org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdr, dr);
 
             *begin = dr;
@@ -156,7 +161,6 @@ find(const dds::sub::Subscriber& sub,
             dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
             org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
             dr->init_builtin(ddsdr, ddsdr->get_topicdescription());
-            dr.retain();
             org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdr, dr);
 
             *begin = dr;
@@ -191,7 +195,6 @@ find(const dds::sub::Subscriber& sub,
             dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
             org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
             dr->init_builtin(ddsdrseq[i], ddsdrseq[i]->get_topicdescription());
-            dr.retain();
             org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdrseq[i], dr);
 
             *begin = dr;
@@ -226,7 +229,6 @@ find(const dds::sub::Subscriber& sub,
             dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
             org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
             dr->init_builtin(ddsdrseq[i], ddsdrseq[i]->get_topicdescription());
-            dr.retain();
             org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdrseq[i], dr);
 
             *begin = dr;

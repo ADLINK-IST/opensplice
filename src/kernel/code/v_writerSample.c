@@ -1,36 +1,33 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 
 #include "v_writerSample.h"
 #include "v_writer.h"
+#include "v_group.h"
 #include "os_report.h"
 
 #define v_sample(s) ((v_sample)(s))
 
-void
-_v_writerSampleClear(
-    v_writerSample sample)
-{
-    assert(sample);
-    assert(C_TYPECHECK(sample,v_writerSample));
-
-    sample->resend = FALSE;
-    sample->decayCount = 0;
-}
-
-
 v_writerSample
-_v_writerSampleNew(
+v_writerSampleNew(
     v_writer writer,
     v_message message)
 {
@@ -41,111 +38,35 @@ _v_writerSampleNew(
     assert(message);
     assert(C_TYPECHECK(message,v_message));
 
-    sample = v_writerSample(c_new(writer->sampleType));
-
-    if (sample) {
-        v_writerSampleTemplate(sample)->message = c_keep(message);
-        sample->next = NULL;
-        sample->prev = NULL;
-        sample->sequenceNumber = 1;
-        sample->sentBefore = FALSE;
-        v_writerSampleClear(sample);
-    } else {
-        OS_REPORT(OS_ERROR,
-                  "v_writerSampleNew",0,
-                  "Failed to allocate sample.");
-        assert(FALSE);
-    }
-
+    sample = c_new(writer->sampleType);
+    v_writerResendItem(sample)->kind = V_RESENDITEM_WRITERSAMPLE;
     assert(C_TYPECHECK(sample,v_writerSample));
 
+    v_writerSampleTemplate(sample)->message = c_keep(message);
+
+    /* c_new(...) does a memset(0), so the rest of the fields are all OK */
+    assert(v_writerResendItem(sample)->scope == V_RESEND_NONE);
     return sample;
 }
 
-
-/* Precondition: protect the sample yourself */
-v_writerSampleStatus
-_v_writerSampleGetStatus(
-    v_writerSample sample)
-{
-    v_writerSampleStatus result;
-
-    assert(sample);
-    assert(C_TYPECHECK(sample,v_writerSample));
-
-    if ((c_long)sample->resend == TRUE) {
-        /* Someone has rejected the sample, resend it */
-        result = V_SAMPLE_RESEND;
-    } else {
-        if ((c_long)sample->decayCount > 0) {
-            result = V_SAMPLE_KEEP;
-        } else {
-            result = V_SAMPLE_RELEASE;
-        }
-    }
-
-    return result;
-}
-
-
 /* Precondition: protect the sample yourself */
 void
-_v_writerSampleRelease(
-    v_writerSample sample)
-{
-    assert(sample);
-    assert(C_TYPECHECK(sample,v_writerSample));
-
-    if (sample->decayCount > 0) {
-       sample->decayCount--;
-    }
-}
-
-
-/* Precondition: protect the sample yourself */
-void
-_v_writerSampleKeep (
-    v_writerSample sample,
-    c_long count)
-{
-    assert(sample);
-    assert(C_TYPECHECK(sample,v_writerSample));
-    assert(count >= 0);
-
-    sample->decayCount = count;
-}
-
-
-/* Precondition: protect the sample yourself */
-void
-_v_writerSampleResend (
+v_writerSampleSetResendScope (
     v_writerSample sample,
     v_resendScope resendScope)
 {
     assert(sample);
     assert(C_TYPECHECK(sample,v_writerSample));
 
-    sample->resend = TRUE;
-    sample->resendScope = resendScope;
-}
-
-void
-_v_writerSampleSetSentBefore(
-    v_writerSample _this,
-    c_bool sentBefore)
-{
-    assert(_this);
-    assert(C_TYPECHECK(_this,v_writerSample));
-
-    _this->sentBefore = sentBefore;
+    v_writerResendItem(sample)->scope = resendScope;
 }
 
 c_bool
-_v_writerSampleHasBeenSentBefore(
+v_writerSampleHasBeenSentBefore(
     v_writerSample _this)
 {
     assert(_this);
     assert(C_TYPECHECK(_this,v_writerSample));
 
-    return _this->sentBefore;
+    return v_writerResendItem(_this)->scope != V_RESEND_NONE;
 }

@@ -1,0 +1,1 @@
+mvn -Pwindows clean package

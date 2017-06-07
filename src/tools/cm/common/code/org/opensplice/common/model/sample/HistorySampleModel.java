@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**
@@ -16,9 +24,10 @@
 package org.opensplice.common.model.sample;
 
 import org.opensplice.cm.Reader;
-import org.opensplice.cm.data.Message;
 import org.opensplice.cm.data.Sample;
-import org.opensplice.cm.data.UserData;
+import org.opensplice.cm.meta.MetaType;
+import org.opensplice.cmdataadapter.CmDataException;
+import org.opensplice.cmdataadapter.TypeInfo.TypeEvolution;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.model.table.UserDataSingleTableModel;
 import org.opensplice.common.model.table.UserDataTableModel;
@@ -41,32 +50,26 @@ public class HistorySampleModel extends ReaderSampleModel {
      * @param _sample The Sample, which history must be added.
      * @throws CommonException
      */
-    public HistorySampleModel(Reader _reader, Sample _sample) throws CommonException{
-        super(_reader);
+    public HistorySampleModel(Reader _reader, Sample _sample, TypeEvolution _typeEvolution) throws CommonException{
+        super(_reader, _typeEvolution);
         sample = _sample;
         if(sample != null){
-            Message msg = sample.getMessage();
-            
-            if(msg != null){
-                UserData ud = msg.getUserData();
-                
-                if(ud != null){
-                    try {
-                        userDataModel = new UserDataTableModel(ud.getUserDataType());
-                    } catch (CommonException e) {
-                        /*This exception will not occur here.*/
-                    }
-                    singleUserDataModel = new UserDataSingleTableModel(
-                                                    ud.getUserDataType(), false);
-                    this.addSample(sample);
-                }
+            MetaType mt = null;
+            try {
+                mt = typeInfo.getMetaType();
+            } catch (CmDataException e) {
+                throw new CommonException(e.getMessage());
             }
+            userDataModel = new UserDataTableModel(mt);
+            singleUserDataModel = new UserDataSingleTableModel(mt, false);
+            this.addSample(sample);
         }
     }
     
     /**
      * Does nothing.
      */
+    @Override
     public Sample read() {
         return null;
     }
@@ -74,6 +77,7 @@ public class HistorySampleModel extends ReaderSampleModel {
     /**
      * Does nothing.
      */
+    @Override
     public Sample take() {
         return null;
     }
@@ -85,6 +89,7 @@ public class HistorySampleModel extends ReaderSampleModel {
      * 
      * @param s The Sample, which history is administrated.
      */
+    @Override
     protected boolean addSample(Sample s){
         if(s != null){
             userDataModel.clear();

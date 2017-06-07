@@ -1,8 +1,14 @@
 . "$OSPL_HOME/bin/checkconf"
 
-SPLICE_HOST=armv6l.linux-release
+if [ "$SPLICE_HOST" = "" ]
+then
+   SPLICE_HOST=armv6l.linux-release
+fi
+
 SPLICE_TARGET=armv6l.linux-release
 export SPLICE_HOST SPLICE_TARGET
+SPLICE_TARGET_FULL=armv6l.linux
+export SPLICE_TARGET_FULL
 echo
 
 ERRS=0
@@ -14,8 +20,13 @@ flex_check || ERRS=1
 gsoap_check || ERRS=1
 javac_check || ERRS=1
 gmcs_check || ERRS=1
-tao_check || ERRS=1
-jacorb_check || ERRS=1
+if [ "$CROSS" != "1" ]
+then
+  tao_check || ERRS=1
+  jacorb_check || ERRS=1
+fi
+protoc_check || ERRS=1
+c99_check || ERRS=1
 
 if [ -z $REPORT ]
 then

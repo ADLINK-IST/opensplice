@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "os_iterator.h"
@@ -35,7 +43,7 @@ ut_macroAttribNew(
     os_char startToken,
     os_char openToken,
     os_char closeToken)
-{    
+{
     ut_macroAttrib macroAttrib = os_malloc((size_t)OS_SIZEOF(ut_macroAttrib));
 
     macroAttrib->startToken = startToken;
@@ -48,7 +56,7 @@ ut_macroAttribNew(
 void
 ut_macroAttribFree(
     const ut_macroAttrib macroAttrib)
-{    
+{
     os_free(macroAttrib);
 }
 
@@ -64,7 +72,7 @@ ut_macro
 ut_macroNew (
     const os_char *name,
     const os_char *value)
-{    
+{
     ut_macro macro = os_malloc((size_t)OS_SIZEOF(ut_macro));
 
     macro->name = os_strdup(name);
@@ -75,8 +83,8 @@ ut_macroNew (
 void
 ut_macroFree (
     const ut_macro macro)
-{   
-    os_free(macro->name);   
+{
+    os_free(macro->name);
     os_free(macro->value);
     os_free(macro);
 }
@@ -103,10 +111,10 @@ OS_STRUCT(ut_macroSet) {
 };
 
 static os_equality
-ut_macroNameMatch(
-    const ut_macro macro,
-    const os_char *name)
+ut_macroNameMatch(const void *m, const void *n)
 {
+    const ut_macro macro = (ut_macro)m;
+    const os_char *name = (const os_char *)n;
     os_equality result = OS_NE;
 
     if (strcmp(macro->name, name) == 0) {
@@ -195,7 +203,7 @@ ut_streamInit(
     const os_char *stream_val)
 {
     stream->stream = os_strdup(stream_val);
-    stream->length = strlen(stream_val);
+    stream->length = (os_uint32)strlen(stream_val);
     stream->curpos = 0;
     return stream;
 }
@@ -225,7 +233,8 @@ os_int32
 ut_streamLength(
     const ut_stream stream)
 {
-    return stream->length;
+    assert (stream->length <= OS_MAX_INTEGER(os_int32));
+    return (os_int32) stream->length;
 }
 
 /****************************************************************
@@ -421,7 +430,7 @@ ut_dirOutNew(
                     os_mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
                     status = os_stat(dirName, &statBuf);
                 }
-                if (!OS_ISDIR (statBuf.stat_mode)) {
+                if (status != os_resultSuccess || !OS_ISDIR (statBuf.stat_mode)) {
 #ifdef WIN32
                     if ((strlen(dirName) == 2) && (dirName[1] == ':')) {
                         /*This is a device like for instance: 'C:'*/
@@ -449,7 +458,7 @@ ut_dirOutNew(
                 }
                 ut_outputdir = os_strdup(name);
 
-                if (!OS_ISDIR(statBuf.stat_mode)) {
+                if (status != os_resultSuccess || !OS_ISDIR(statBuf.stat_mode)) {
 #ifdef WIN32
                     if ((strlen(dirName) == 2) && (dirName[1] == ':')) {
                         /*This is a device like for instance: 'C:'. Check if it exists...*/
@@ -521,7 +530,7 @@ ut_fileOutNew(
     ut_fileOut stream;
     os_char *fname;
     os_char * filename;
-    
+
     stream = os_malloc((size_t)OS_SIZEOF(ut_fileOut));
     if (ut_outputdir) {
         fname = os_malloc(strlen(ut_outputdir) + strlen(os_fileSep()) + strlen(name) + 1);
@@ -529,7 +538,7 @@ ut_fileOutNew(
     } else {
         fname = os_strdup(name);
     }
-    filename = os_fileNormalize(fname); 
+    filename = os_fileNormalize(fname);
     stream->file = fopen(filename, mode);
     os_free(fname);
     os_free(filename);
@@ -793,6 +802,8 @@ ut_tmplExpGetMacroDoubleArg (
     ut_streamOut arg2Stream;
     int return_val;
 
+    OS_UNUSED_ARG(arg2);
+
     arg1Stream = ut_streamOutNew(0);
 
     while ((ut_streamInCur(si) != '\n') && (ut_streamInCur(si) != ',')) {
@@ -968,7 +979,7 @@ ut_tmplExpProcessMacro (
 
         if (ut_tmplExpGetMacroSingleArg(tmplExp, si, string)) {
             for (ni = 0; ni < strlen(string); ni++) {
-                string[ni] = toupper(string[ni]);
+                string[ni] = (os_char)toupper(string[ni]);
             }
             ut_tmplExpInsertText(so, string);
         } else {

@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. Using Vortex OpenSplice with Vortex Cloud and Vortex Fog &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="7. Licensing OpenSplice" href="licensing.html" />
+    <link rel="prev" title="5. Installation and Configuration" href="install-configure.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="licensing.html" title="7. Licensing OpenSplice"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="install-configure.html" title="5. Installation and Configuration"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="using-vortex-opensplice-with-vortex-cloud-and-vortex-fog">
+<span id="using-opensplice-with-vortex-cloud"></span><h1>6. Using Vortex OpenSplice with Vortex Cloud and Vortex Fog<a class="headerlink" href="#using-vortex-opensplice-with-vortex-cloud-and-vortex-fog" title="Permalink to this headline">¶</a></h1>
+<p>If Vortex OpenSplice is deployed using the <em>DDSI2/DDSI2E</em> network-services
+in a LAN or a private cloud (multicast-enabled cloud) and Vortex Fog
+is configured to discover user applications using UDP-multicast in the
+LAN/private cloud, then Vortex OpenSplice does not need to be configured
+with any particular configuration property as Vortex Fog will discover
+and communicate with Vortex OpenSplice using the standardized multicast IP
+address and UDP ports. The only constraint is that both Vortex OpenSplice
+and Vortex Cloud are configured to participate in the same DDS domain
+(<tt class="docutils literal"><span class="pre">domainID</span></tt>).</p>
+<p>If Vortex OpenSplice is deployed in a WAN (without multicast-support), then
+it needs to be configured to use the TCP transport. It also needs to be
+configured with the peers of one or several Discovery Services (DS) of
+the deployed Vortex Cloud. If multiple DS&#8217;s are available, Vortex OpenSplice
+may be configured with several discovery service peers in a peers
+group.</p>
+<p><strong>Example with a single discovery service locator:</strong></p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;DDSI2Service</span> <span class="na">name=</span><span class="s">&quot;ddsi2&quot;</span><span class="nt">&gt;</span>
+<span class="nt">&lt;General&gt;</span>
+.....
+     <span class="nt">&lt;/General&gt;</span>
+<span class="nt">&lt;TCP&gt;</span>
+<span class="nt">&lt;Enable&gt;</span>True<span class="nt">&lt;/Enable&gt;</span>
+<span class="nt">&lt;/TCP&gt;</span>
+<span class="nt">&lt;Discovery&gt;</span>
+<span class="nt">&lt;Peers&gt;</span>
+<span class="nt">&lt;Peer&gt;</span>1.1.1.1:7400<span class="nt">&lt;/Peer&gt;</span>
+<span class="nt">&lt;/Peers&gt;</span>
+<span class="nt">&lt;/Discovery&gt;</span>
+</pre></div>
+</div>
+<p><strong>Example with two discovery service locators:</strong></p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;Discovery&gt;</span>
+<span class="nt">&lt;Peers&gt;</span>
+<span class="nt">&lt;Peer&gt;</span>1.1.1.1:7400<span class="nt">&lt;/Peer&gt;</span>
+<span class="nt">&lt;Peer&gt;</span>2.2.2.2:7400<span class="nt">&lt;/Peer&gt;</span>
+<span class="nt">&lt;/Peers&gt;</span>
+<span class="nt">&lt;/Discovery&gt;</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+<em>NOTE:</em> Unlike when deployed on a multicast LAN (where the <tt class="docutils literal"><span class="pre">domainID</span></tt>
+determines the multicast-address used for discovery), the addressed DS
+of Vortex Cloud will discover (and subsequently match) data from <em>any</em>
+DDS-domain utilized by Vortex OpenSplice. Utilizing multiple Vortex Cloud
+discovery services in the WAN (<em>i.e.</em> one per domain) allows for
+domain-specific discovery and subsequent routing if required.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="install-configure.html"
+                        title="previous chapter">5. Installation and Configuration</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="licensing.html"
+                        title="next chapter">7. Licensing OpenSplice</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/using-with-cloud.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="licensing.html" title="7. Licensing OpenSplice"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="install-configure.html" title="5. Installation and Configuration"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

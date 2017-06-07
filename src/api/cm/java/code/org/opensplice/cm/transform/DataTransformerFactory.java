@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**
@@ -23,7 +31,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.opensplice.cm.com.Communicator;
 import org.xml.sax.SAXException;
-
 import org.opensplice.cm.meta.*;
 import org.opensplice.cm.transform.xml.*;
 
@@ -287,9 +294,13 @@ public class DataTransformerFactory {
     public static QoSDeserializer getQoSDeserializer(int kind){
         QoSDeserializer qd = null;
         
-        if(kind == XML){
+        if(kind == XML || kind == XML_TIME_64){
             try {
-                qd = new QoSDeserializerXML();
+                if (kind == XML_TIME_64) {
+                    qd = new QoSDeserializerXMLTime64();
+                } else {
+                    qd = new QoSDeserializerXML();
+                }
             } catch (ParserConfigurationException e) {
                 logger.logp(Level.SEVERE, "DataHandlerFactory", "getQoSDeserializer", "ParserConfigurationException: " + e.getMessage());
                 System.err.println("Parser could not be intialized.\nUnrecoverable exception. Bailing out...");
@@ -303,10 +314,17 @@ public class DataTransformerFactory {
     public static QoSSerializer getQoSSerializer(int kind){
         QoSSerializer qd = null;
         
-        if(kind == XML){
+        switch (kind) {
+        case XML:
             qd = new QoSSerializerXML();
+            break;
+        case XML_PRE_V6_6:
+            qd = new QoSSerializerXMLPreV6_6();
+            break;
+        case XML_TIME_64:
+            qd = new QoSSerializerXMLTime64();
+            break;
         }
-        
         return qd;
     }
     
@@ -334,4 +352,6 @@ public class DataTransformerFactory {
      * Transformer kind that specifies that transformation from or to XML is needed.
      */
     public static final int XML = 0;
+    public static final int XML_PRE_V6_6 = 1;
+    public static final int XML_TIME_64 = 2;
 }

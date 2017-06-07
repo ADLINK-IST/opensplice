@@ -1,0 +1,6 @@
+This is the version of snappy-c that we build into networking.
+It is based on the Andi Kleen port, commit id e42f0b5990, with the following changes:
+- We build with -fPIC and no scatter-gather support.
+- Implemented byte-swapping operations which aren't provided in RHEL4/5.
+- Force 32-bit build if indicated by $PROC == x86
+- Portability fixes for non-gcc and Solaris

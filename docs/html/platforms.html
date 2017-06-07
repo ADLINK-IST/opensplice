@@ -1,0 +1,686 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Vortex OpenSplice - documentation index</title>
+    <style type="text/css" media="all">
+      @import url("../css/maven-base.css");
+      @import url("../css/maven-theme.css");
+      @import url("../css/site.css");
+    </style>
+    <link rel="stylesheet" href="./docs/css/print.css" type="text/css" media="print" />
+    <meta name="Date-Revision-yyyymmdd" content="20141002" />
+    <meta http-equiv="Content-Language" content="en" />
+        
+ </head>
+ <body class="composite">
+    <div id="banner">
+       <a href="http://www.prismtech.com" id="bannerLeft">
+          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       </a>
+       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       </a>
+       <div class="clear">
+          <hr/>
+       </div>
+    </div>
+    <div id="breadcrumbs">
+       <div class="xright">
+          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
+          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+       </div>
+       <div class="clear">
+         <hr/>
+       </div>
+    </div>
+    <div id="leftColumn">
+      <div id="navcolumn">
+         <h5>Vortex OpenSplice</h5>
+         <ul>
+            <li class="none">
+            <a href="../../index.html" title = "Intro">Introduction</a>
+            </li>
+            <li class="none">
+              <a href="guides.html" title="APIs">User Guides</a>
+            </li>
+            <li class="none">
+              <a href="changedV6.html" title="Changes">Changes</a><br>
+            </li>
+            <li class="none">
+              <a href="platforms.html" title="Supported Platforms"><strong>Supported Platforms</strong></a><br>
+            </li>
+            <li class="none">
+              <a href="known_issues.html" title="Changes">Known Issues</a><br>
+            </li>
+            <li class="none">
+              <a href="ddsi2_release_notes.html" title="Changes">DDSI Release Notes</a><br>
+            </li>
+            <li class="none">
+               <a href="rebuilding_APIs.html" title = "User Guide">Rebuilding the APIs</a><br>
+            </li>
+            <li class="none">
+               <a href="upgrading.html" title = "Upgrading">Upgrading OpenSplice</a><br>
+            </li>
+            <li class="none">
+               <a href="../../examples/dcps/README.html" title = "Examples">Examples</a><br>
+            </li>
+            <li class="none">
+               <a href="third_party_licenses.html" title = "Third Party Licenses">Third party licenses</a><br>
+            </li>
+            <li class="none">
+              <a href="./../../LICENSE" title="License">License</a>
+            </li>
+          </ul>
+      </a>
+      </div>
+    </div>
+    <div id="bodyColumn">
+      <div id="contentBox">
+
+    <h2><a name="platforms">Supported Platforms</a></h2>
+      <p>
+        PrismTech supports a wide variety of platforms. An 
+        up-to-date list of platforms is provided on PrismTech's
+        web site at 
+        <a href= "http://www.prismtech.com" target="web">
+          www.prismtech.com
+        </a>.
+        Additional platforms can be supported according to demand.
+      </p>
+      <p>
+        OpenSplice DDS consists of an HDE (Host Development Environment) and an RTS
+        (RunTime System). The HDE is used to develop DDS applications. It includes
+        tooling for code generation as well as the environment for executing
+        OpenSplice DDS application programs. The RTS is an environment that is only
+        used for executing the OpenSplice DDS application programs on the target
+        environment. It excludes the tooling for generation of the OpenSplice DDS
+        application programs.
+        <table cols=11>
+          <caption>
+            DCPS HDE/RTS Qualified Platforms
+          </caption>
+            <tr>
+              <th rowspan=2>Host Platform</th>
+              <th rowspan=2>Target Platform</th>
+              <th colspan=9>DCPS API Language Binding</th>
+              <th rowspan=2>Availability</th>
+            </tr>
+            <tr>
+              <th>C (SAC)<br><i>compiler</i></th>
+              <th>C++ [Old](ISOCPP)<br><i>compiler</i></th>
+              <th>C++ [New](ISOCPP2)<br><i>compiler</i></th>
+              <th>C++ [Old](SACPP)<br><i>compiler</i></th>
+              <th>Corba C++ (CCPP)<br><i>compiler/ORB</i></th>
+              <th>Custom Corba C++</th>
+              <th>Java (SAJ)<br><i>JDK</i></th>
+              <th>Corba Java (CJ)<br><i>JDK</i></th>
+              <th>C#</th>
+            </tr>
+            <tr>
+              <td>SPARC/Solaris 10 (32-bit)</td>
+              <td>SPARC/Solaris 10 (32-bit)</td>
+              <td>Sun Studio 12.2</td>
+              <td>Sun Studio 12.2</td>
+              <td>Sun Studio 12.2</td>
+              <td>Sun Studio 12.2</td>
+              <td>Sun Studio 12.2 / OpenFusion TAO 2.1</td>
+              <td>see <a href="rebuilding_APIs.html">custom c++</a></td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>SPARC/Solaris 10 (32-bit)</td>
+              <td>SPARC/Solaris 10 (32-bit)</td>
+              <td>gcc 4.2</td>
+              <td>gcc 4.2</td>
+              <td>gcc 4.2</td>
+              <td>gcc 4.2</td>
+              <td>unsupported</td>
+              <td>unsupported</a></td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 3.0 and up (32-bit) and (64-bit)</td>
+              <td>x86 / Linux kernel 3.0 and up (32-bit) and (64-bit)</td>
+              <td>gcc 4.6, 4.8</td>
+              <td>gcc 4.6, 4.8</td>
+              <td>gcc 4.6, 4.8</td>
+              <td>gcc 4.6, 4.8</td>
+              <td>gcc 4.6, 4.8 / OpenFusion TAO 2.1</td>
+              <td>see <a href="rebuilding_APIs.html">custom c++</a></td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>unsupported</td>
+              <td>GA - tested on Ubuntu12</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>gcc 3.4, gcc 4.1, gcc 4.4</td>
+              <td>gcc 4.1, gcc 4.4</td>
+              <td>gcc 4.1, gcc 4.4</td>
+              <td>gcc 3.4, gcc 4.1, gcc 4.4</td>
+              <td>gcc 3.4, gcc 4.1, gcc 4.4 / OpenFusion TAO 1.6.1</td>
+              <td>see <a href="rebuilding_APIs.html">custom c++</a></td>
+              <td>Oracle Java 6,7,8 and Atego PERC 5.3 </td>
+              <td>Oracle Java 6,7,8 and Atego PERC 5.3</td>
+              <td>unsupported</td>
+              <td>GA - tested on RHEL4,RHEL5,RHEL6,Debian6</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (64-bit)</td>
+              <td>x86 / Linux kernel 2.6 and up (64-bit)</td>
+              <td>gcc 4.1, gcc 4.4</td>
+              <td>gcc 4.1, gcc 4.4</td>
+              <td>gcc 4.1, gcc 4.4</td>
+              <td>gcc 4.1, gcc 4.4</td>
+              <td>gcc 4.1, gcc 4.4 / OpenFusion TAO 1.6.1</td>
+              <td>see <a href="rebuilding_APIs.html">custom c++</a></td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>unsupported</td>
+              <td>GA - tested on RHEL5,RHEL6</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (64-bit)</td>
+              <td>x86 / ELinOS 4.2 (<a href="#note1">*1</a>)</td>
+              <td>x86_486-gcc version 3.4.4</td>
+              <td>x86_486-gcc version 3.4.4</td>
+              <td>x86_486-gcc version 3.4.4</td>
+              <td>x86_486-g++ version 3.4.4</td>
+              <td>unsupported</td>
+              <td>unsupported</a></td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>x86 / ELinOS 5.1 (<a href="#note1">*1</a>)</td>
+              <td>x86_486-gcc version 4.1</td>
+              <td>x86_486-gcc version 4.1</td>
+              <td>x86_486-gcc version 4.1</td>
+              <td>x86_486-gcc version 4.1</td>
+              <td>gcc 4 / OpenFusion TAO 2.1</td>
+              <td>see <a href="rebuilding_APIs.html">custom c++</a></a></td>
+              <td>Oracle Java 6,7,8</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>x86 / ELinOS 5.2 (<a href="#note1">*1</a>)</td>
+              <td>x86_486-gcc version 4.1</td>
+              <td>x86_486-gcc version 4.1</td>
+              <td>x86_486-gcc version 4.1</td>
+              <td>x86_486-gcc version 4.1</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (64-bit)</td>
+              <td>x86 / QNX 6.5 (<a href="#note1">*1</a>)</td>
+              <td>qcc version 4.4.2</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>QCC version 4.4.2</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Beta</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>Visual Studio 2005 Standard</td>
+              <td>Visual Studio 2005 Standard</td>
+              <td>Visual Studio 2005 Standard</td>
+              <td>Visual Studio 2005 Standard</td>
+              <td>Visual Studio 2005 Standard/ OpenFusion TAO 2.1</td>
+              <td>see <a href="rebuilding_APIs.html">custom c++</a></td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Visual Studio 2005 Standard</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP/7 (32/64-bit)</td>
+              <td>x86 / Microsoft Windows 2003 Server/XP/7 (32/64-bit))</td>
+              <td>Visual Studio 2008 Standard</td>
+              <td>Visual Studio 2008 Standard</td>
+              <td>Visual Studio 2008 Standard</td>
+              <td>Visual Studio 2008 Standard</td>
+              <td>Visual Studio 2008 Standard / OpenFusion TAO 2.1</td>
+              <td>see <a href="rebuilding_APIs.html">custom c++</a></td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Visual Studio 2008 Standard</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP/7 (32/64-bit)</td>
+              <td>x86 / Microsoft Windows 2003 Server/XP/7 (32/64-bit)</td>
+              <td>Visual Studio 2010 Standard</td>
+              <td>Visual Studio 2010 Standard</td>
+              <td>Visual Studio 2010 Standard</td>
+              <td>Visual Studio 2010 Standard</td>
+              <td>Visual Studio 2010 Standard / OpenFusion TAO2.1</td>
+              <td>see <a href="rebuilding_APIs.html">custom c++</a></td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Visual Studio 2010 Standard</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP/7 (32/64-bit)</td>
+              <td>x86 / Microsoft Windows 2003 Server/XP/7 (32/64-bit)</td>
+              <td>Visual Studio 2012 Standard</td>
+              <td>Visual Studio 2012 Standard</td>
+              <td>Visual Studio 2012 Standard</td>
+              <td>Visual Studio 2012 Standard</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Visual Studio 2013 Standard</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP/7 (32/64-bit)</td>
+              <td>x86 / Microsoft Windows 2003 Server/XP/7 (32/64-bit)</td>
+              <td>Visual Studio 2013 Standard</td>
+              <td>Visual Studio 2013 Standard</td>
+              <td>Visual Studio 2013 Standard</td>
+              <td>Visual Studio 2013 Standard</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Oracle Java 6,7,8</td>
+              <td>Visual Studio 2013 Standard</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows XP (32-bit)</td>
+              <td>PENTIUM / VxWorks 5.5.1 (32-bit)</td>
+              <td>Tornado 2.2/gcc-2.96</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows XP (32-bit)</td>
+              <td>PowerPC604 / VxWorks 5.5.1 (32-bit)</td>
+              <td>Tornado 2.2/gcc-2.96</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>SPARC/Solaris 8 (32-bit)</td>
+              <td>PowerPC604 / VxWorks 5.5.1 (32-bit)</td>
+              <td>Tornado 2.2/gcc-2.96</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>PowerPC604 / VxWorks 6.6 RTP (32-bit)</td>
+              <td>Workbench 3.0</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Workbench 3.0</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>PENTIUM / VxWorks 6.6 RTP (32-bit)</td>
+              <td>Workbench 3.0</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Workbench 3.0</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>PowerPC604 / VxWorks 6.5 RTP (32-bit)</td>
+              <td>Workbench 2.6</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Workbench 2.6</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>PowerPC604 / VxWorks 6.5 RTP (32-bit)</td>
+              <td>Workbench 2.6</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Workbench 2.6</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>PENTIUM / VxWorks 6.5 RTP (32-bit)</td>
+              <td>Workbench 2.6</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Workbench 2.6</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>MVME5100/ Integrity 5.0.9 (<a href="#note3">*3</a>)</td>
+              <td>Multi 4.2.3 </td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Multi 4.2.3 </td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>beta</td>
+            </tr>
+            <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>armv4i/ Windows CE 6.0 (32-bit)</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Visual Studio .NET 2005</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+             <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>SIMPENTIUM / VxWorks 6.7.1 RTP (32-bit)</td>
+              <td>Workbench 3.1</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Workbench 3.1</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+            </tr>
+            <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>PENTIUM4 / VxWorks 6.8 RTP (32-bit)</td>
+              <td>Workbench 3.2</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Workbench 3.2</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+           </tr>
+           <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>PENTIUM4 / VxWorks 6.8 RTP + Kernel SMP (32-bit)</td>
+              <td>Workbench 3.2</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Workbench 3.2</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+           </tr>
+           <tr>
+              <td>x86 / Microsoft Windows 2003 Server/XP (32-bit)</td>
+              <td>PENITUM/PENTIUM4/e500v2 target for VxWorks 6.9 RTP + Kernel UP (32-bit)</td>
+              <td>Workbench 3.3</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Workbench 3.3</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+           </tr>
+           <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>PENITUM/PENTIUM4/e500v2 target for VxWorks 6.9 RTP + Kernel UP (32-bit)</td>
+              <td>Workbench 3.3</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>Workbench 3.3</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+           </tr>
+           <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>POWERPC74xx / DENX 4.0</td>
+              <td>gcc 4.0</td>
+              <td>gcc 4.0</td>
+              <td>gcc 4.0</td>
+              <td>gcc 4.0</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+           </tr>
+           <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>PPC / LynxOS 5</td>
+              <td>gcc 3.4.3</td>
+              <td>gcc 3.4.3</td>
+              <td>gcc 3.4.3</td>
+              <td>gcc 3.4.3</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+           </tr>
+           <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>x86 / PikeOS POSIX 3.3 </td>
+              <td>gcc 4.4.5</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>gcc 4.4.5 </td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+           </tr>
+           <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>fsl_mpc8308_rdb glibc small / WindRiver Linux 4.3 </td>
+              <td>gcc 4.4.1</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>gcc 4.4.1 </td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+           </tr>
+           <tr>
+              <td>x86 / Linux kernel 2.6 and up (32-bit)</td>
+              <td>common_pc glibc small / WindRiver Linux 4.3 </td>
+              <td>gcc 4.4.1</td>
+              <td>gcc 4.4.1</td>
+              <td>gcc 4.4.1</td>
+              <td>gcc 4.4.1 </td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+           </tr>
+           <tr>
+              <td>x86_64 / Linux kernel 2.6 and up (64-bit)</td>
+              <td>armv7l (arm-linux-gnueabihf) / Ubuntu12 </td>
+              <td>gcc 4.8.2</td>
+              <td>gcc 4.8.2</td>
+              <td>gcc 4.8.2</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+           </tr>
+           <tr>
+              <td>x86_64 / Linux kernel 2.6 and up (64-bit)</td>
+              <td>armv7l (arm-linux-gnueabihf) / Ubuntu14 </td>
+              <td>gcc 4.8.2</td>
+              <td>gcc 4.8.2</td>
+              <td>gcc 4.8.2</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>unsupported</td>
+              <td>GA</td>
+           </tr>
+         </table>
+      <br>
+      <b><i><a name="note1">*1</a> - Cross-development to unix-like targets. Install the HDE distribution on the
+          host and the RTS distribution on the target. The release.com scripts in each set up the environment for
+          development and runtime respectively. The RTS is distributed as a tar file in these cases.</i></b>
+      <br><br>
+      <b><i><a name="note3">*3</a> - GreenHills Integrity requires the patch: patch_3010.iff. This is Green Hills Software patch number 3010.
+                 Created on: Tue Feb 12 16:10:08 PST 2008 Other information:
+                 Bug fix for ConditionVariables code in libutil.a. This
+                 patch was made against INTEGRITY 5.0.9 for the pcx86 and
+                 mvme5100-750 BSPs. UK incident #15741.</i></b>
+      <br><br>
+      <br>
+
+      <i>A beta level supported platform indicates that PrismTech has not yet consolidated all its test
+      infrastructure as per the GA platforms. PrismTech ensures that beta level platforms are still
+      robust, but they will be marked as beta until they meet the GA level test criteria.</i>
+      </p>
+      
+      <h3>DBMSConnect</h3>
+      <p>OpenSplice DBMSConnect is based on SQL99 and utilizes ODBC 2.x to interface with 3rd party DBMS systems.
+      Interoperability has been verified with mySQL 5.0 and Microsoft SQL-server 2008. With limited strict
+      conformance of most RDBMSs to both the SQL as well as the ODBC standard, support for other customer-chosen
+      DBMS-systems may require a porting activity of the DBMSConnect service.</p> 
+
+      <p>As SQL tables have no support for unbounded sequences and sequences of complex types,
+      mapping such DDS_Types to tables is not supported.</p>
+
+    <h2><a name="Prerequisites">Prerequisites</a></h2>
+
+      <h3>OpenSplice DDS Tuner</h3>
+      <p>
+        The OpenSplice DDS Tuner requires the Java Runtime Environment: Oracle JRE 6, 7 or 8.
+      </p>
+
+      <h3>OpenSplice DDS Configurator</h3>
+      <p>
+        The OpenSplice DDS Configurator requires the Java Runtime Environment: Oracle JRE 6, 7 or 8.
+      </p>
+
+      <h3>OpenSplice DDS Tester</h3>
+      <p>
+        The OpenSplice DDS Tester requires the Java Runtime Environment: Oracle JRE 7 or 8.
+      </p>
+
+      <h3>OpenSplice DBMSConnect</h3>
+      <p>
+        OpenSplice DBMSConnect is tested with MySQL V5.x and MS SQLServer 2008. If you require
+        other database support then please contact PrismTech.
+      </p>
+    <div class="clear">
+    <hr/>
+    </div>
+    <div id="footer">
+      <div class="xright">
+       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.      
+      </div>
+     <div class="clear">
+     <hr/>
+     </div>
+    </div>
+  </body>
+</html>

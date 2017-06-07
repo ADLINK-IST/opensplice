@@ -1,15 +1,23 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#include "os.h"
+#include "vortex_os.h"
 
 #include "v_cfElement.h"
 #include "v_cfNode.h"
@@ -149,8 +157,8 @@ v_cfElementInit (
 
     v_cfNodeInit(v_cfNode(element), config, V_CFELEMENT, tagName);
 
-    attrType = c_resolve(c_getBase(element), "kernelModule::v_cfAttribute");
-    nodeType = c_resolve(c_getBase(element), "kernelModule::v_cfNode");
+    attrType = c_resolve(c_getBase(element), "kernelModuleI::v_cfAttribute");
+    nodeType = c_resolve(c_getBase(element), "kernelModuleI::v_cfNode");
     keyList = "name";
 
     element->attributes = c_tableNew(attrType, keyList);
@@ -174,8 +182,7 @@ v_cfElementAddAttribute (
     assert(C_TYPECHECK(element, v_cfElement));
     assert(C_TYPECHECK(attribute, v_cfAttribute));
 
-    attr = v_cfAttribute(c_insert(element->attributes, 
-                                 c_object(attribute)));
+    attr = v_cfAttribute(ospl_c_insert(element->attributes, c_object(attribute)));
 
     return attr;
 }
@@ -190,8 +197,7 @@ v_cfElementAddChild(
     assert(C_TYPECHECK(element, v_cfElement));
     assert(C_TYPECHECK(child, v_cfNode));
 
-    ch = v_cfNode(c_insert(element->children, 
-                          c_object(child)));
+    ch = v_cfNode(ospl_c_insert(element->children, c_object(child)));
 
     return ch;
 }
@@ -271,9 +277,9 @@ v_cfElementXPath(
     const c_char *posInExpr;
     const c_char *slash;
     char *attribEnd;
-    c_ulong length;
+    os_size_t length;
     struct getChildrenArg arg;
-    c_long nrToProcess;
+    c_ulong nrToProcess;
     v_cfNode node;
 
     assert(C_TYPECHECK(element, v_cfElement));
@@ -289,7 +295,7 @@ v_cfElementXPath(
         if (node->kind == V_CFELEMENT) { /* do not process data elements */
             if (slash) {
 
-            	length = C_ADDRESS(slash) - C_ADDRESS(posInExpr);
+                length = C_ADDRESS(slash) - C_ADDRESS(posInExpr);
             } else {
                 length = strlen(posInExpr);
             }
@@ -342,7 +348,6 @@ v_cfElementXPath(
             c_iterFree(arg.children);
 
             if (slash) {
-
                 posInExpr = (const c_char *)(C_ADDRESS(slash) + 1U);
                 slash = strchr(posInExpr, XPATH_SEPERATOR);
             }

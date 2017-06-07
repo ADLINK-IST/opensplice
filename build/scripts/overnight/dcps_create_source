@@ -1,5 +1,7 @@
 #!/bin/bash
 
+CURR_YEAR=2017
+
 . buildsys/functions
 
 ProcessArgs $*
@@ -28,6 +30,20 @@ buildZip ()
    then
        return 1
    fi
+}
+
+getLauncher ()
+{
+    LVER=$(grep LAUNCHER_VERSION= $WORKDIR/tmpsrc/osplo/etc/launcher.txt)
+    LURL=$(grep -i LAUNCHER_URL $WORKDIR/tmpsrc/osplo/etc/launcher.txt)
+
+    LAUNCHER_VERSION=$(echo ${LVER#L*=})
+    LAUNCHER_URL=$(echo ${LURL#L*=})
+    LAUNCHER_URL+=${LAUNCHER_VERSION}
+
+    #Download only the launcher zip files from the releases area into
+    #a directory named launcher within the ospl-3rd-party-software directory
+    wget -qr -l 2 -nd -P launcher -A zip -R html,gif $LAUNCHER_URL
 }
 
 if [ "$CREATE_SOURCE" != "yes" ]
@@ -66,41 +82,6 @@ ArchiveLogs
     fi
 ) || exit 1
 
-(
-    if [ -n "$INCLUDE_3RD_PARTY_SOFTWARE" ]
-    then
-        cd $WORKDIR
-        git clone -n $INCLUDE_3RD_PARTY_SOFTWARE
-        if [ $? != 0 ] 
-        then
-            exit 1
-        fi
-        cd ospl-3rd-party-software
-        git archive --format=tar --prefix=ospl-3rd-party-software/ --output=$LOGDIR/ospl-3rd-party-software.tar HEAD
-        if [ $? != 0 ] 
-        then
-            exit 1
-        fi
-        cd ..
-        gzip -9 $LOGDIR/ospl-3rd-party-software.tar
-        if [ $? != 0 ] 
-        then
-            exit 1
-        fi
-        if [ -f "$LOGDIR/ospl-3rd-party-software.tar" ]
-        then
-            rm $LOGDIR/ospl-3rd-party-software.tar
-        fi
-        cd -
-
-        git archive -9 --format=zip --prefix=ospl-3rd-party-software/ --output=$LOGDIR/ospl-3rd-party-software.zip HEAD
-        if [ $? != 0 ] 
-        then
-            exit 1
-        fi
-    fi
-) || exit 1
-
 #the etc/license.lic has been added to the .gitattributes so it ignores the file
 #during an archive
 (
@@ -115,24 +96,26 @@ ArchiveLogs
             exit 1
         fi
         git archive --format=tar --prefix=$OSPLO_SRC HEAD | tar -P -xf -
-        if [ $? != 0 ] 
+        if [ $? != 0 ]
         then
             exit 1
         fi
         cp $OSPL_HOME/etc/BUILDINFO $OSPLO_SRC/etc/.
-        if [ $? != 0 ] 
+        if [ $? != 0 ]
         then
             exit 1
         fi
 
+        find $OSPLO_SRC -name "*"  -type f  -exec sed -i "s/TO_YEAR/$CURR_YEAR/g" '{}' \;
+
         cd $WORKDIR/tmpsrc
-        buildTarGZ $LOGDIR/OpenSpliceDDS_src_osplo osplo > /dev/null 2>&1
-        if [ $? != 0 ] 
+        buildTarGZ $LOGDIR/VortexOpenSplice_src_osplo osplo > /dev/null 2>&1
+        if [ $? != 0 ]
         then
             exit 1
         fi
-        buildZip $LOGDIR/OpenSpliceDDS_src_osplo osplo > /dev/null 2>&1
-        if [ $? != 0 ] 
+        buildZip $LOGDIR/VortexOpenSplice_src_osplo osplo > /dev/null 2>&1
+        if [ $? != 0 ]
         then
             exit 1
         fi
@@ -146,15 +129,23 @@ ArchiveLogs
         exit 1
     fi
     git archive --format=tar --prefix=$OSPLI_SRC HEAD | tar -P -xf -
-    if [ $? != 0 ] 
+    if [ $? != 0 ]
     then
         exit 1
     fi
     cp $OSPL_HOME/etc/BUILDINFO $OSPLI_SRC/etc/.
-    if [ $? != 0 ] 
+    if [ $? != 0 ]
     then
         exit 1
     fi
+
+    cd $OSPL_HOME/src/tools/protobuf/gpb/
+    git archive --format=tar --prefix=$OSPLI_SRC/src/tools/protobuf/gpb/ HEAD | tar -P -xf -
+    if [ $? != 0 ]
+    then
+        exit 1
+    fi
+    cd -
 
     #MPC_ROOT needs to be added as the archive above ignores it
     cd submods/MPC_ROOT/
@@ -164,18 +155,62 @@ ArchiveLogs
         exit 1
     fi
 
+    find $OSPLI_SRC -name "*"  -type f  -exec sed -i "s/TO_YEAR/$CURR_YEAR/g" '{}' \;
+
     cd $WORKDIR/tmpsrc
-    buildTarGZ $LOGDIR/OpenSpliceDDS_src_ospli ospli > /dev/null 2>&1
-    if [ $? != 0 ] 
+    buildTarGZ $LOGDIR/VortexOpenSplice_src_ospli ospli > /dev/null 2>&1
+    if [ $? != 0 ]
     then
         exit 1
     fi
-    buildZip $LOGDIR/OpenSpliceDDS_src_ospli ospli > /dev/null 2>&1
-    if [ $? != 0 ] 
+    buildZip $LOGDIR/VortexOpenSplice_src_ospli ospli > /dev/null 2>&1
+    if [ $? != 0 ]
     then
         exit 1
     fi
     cd -
+) || exit 1
+
+(
+    if [ -n "$INCLUDE_3RD_PARTY_SOFTWARE" ]
+    then
+        cd $WORKDIR
+        git clone -n $INCLUDE_3RD_PARTY_SOFTWARE
+        if [ $? != 0 ]
+        then
+            exit 1
+        fi
+        cd ospl-3rd-party-software
+
+        getLauncher
+
+        git archive --format=tar --prefix=ospl-3rd-party-software/ --output=$LOGDIR/ospl-3rd-party-software.tar HEAD
+        if [ $? != 0 ]
+        then
+            exit 1
+        fi
+
+        tar --append --file=$LOGDIR/ospl-3rd-party-software.tar launcher/*
+
+        cd ..
+        gzip -9 $LOGDIR/ospl-3rd-party-software.tar
+        if [ $? != 0 ]
+        then
+            exit 1
+        fi
+        if [ -f "$LOGDIR/ospl-3rd-party-software.tar" ]
+        then
+            rm $LOGDIR/ospl-3rd-party-software.tar
+        fi
+        cd -
+
+        git archive -9 --format=zip --prefix=ospl-3rd-party-software/ --output=$LOGDIR/ospl-3rd-party-software.zip HEAD
+        if [ $? != 0 ]
+        then
+            exit 1
+        fi
+        zip -r $LOGDIR/ospl-3rd-party-software.zip launcher/
+    fi
 ) || exit 1
 
 exit 0

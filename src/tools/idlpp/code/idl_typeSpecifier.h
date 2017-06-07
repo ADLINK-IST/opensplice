@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef IDL_TYPESPECIFIER_H
@@ -138,13 +146,13 @@ C_CLASS(idl_typeArray);
 idl_typeArray
 idl_typeArrayNew (
     idl_typeSpec ofType,
-    c_long size);
+    c_ulong size);
 
 void
 idl_typeArrayFree (
     idl_typeArray typeArray);
 
-c_long
+c_ulong
 idl_typeArraySize (
     idl_typeArray typeArray);
 
@@ -167,13 +175,13 @@ C_CLASS(idl_typeSeq);
 idl_typeSeq
 idl_typeSeqNew (
     idl_typeSpec ofType,
-    c_long maxSize);
+    c_ulong maxSize);
 
 void
 idl_typeSeqFree (
     idl_typeSeq typeSeq);
 
-c_long
+c_ulong
 idl_typeSeqMaxSize (
     idl_typeSeq typeSeq);
 
@@ -225,7 +233,7 @@ C_CLASS(idl_typeUnion);
 idl_typeUnion
 idl_typeUnionNew (
     idl_typeSpec switchKind,
-    c_long noCases);
+    c_ulong noCases);
 
 void
 idl_typeUnionFree (
@@ -235,7 +243,7 @@ idl_typeSpec
 idl_typeUnionSwitchKind (
     idl_typeUnion typeUnion);
 
-c_long
+c_ulong
 idl_typeUnionNoCases (
     idl_typeUnion typeUnion);
 
@@ -249,13 +257,13 @@ C_CLASS(idl_typeStruct);
 
 idl_typeStruct
 idl_typeStructNew (
-    c_long noMembers);
+    c_ulong noMembers);
 
 void
 idl_typeStructFree (
     idl_typeStruct typeStruct);
 
-c_long
+c_ulong
 idl_typeStructNoMembers (
     idl_typeStruct typeStruct);
 
@@ -269,13 +277,13 @@ C_CLASS(idl_typeEnum);
 
 idl_typeEnum
 idl_typeEnumNew (
-    c_long noElements);
+    c_ulong noElements);
 
 void
 idl_typeEnumFree (
     idl_typeEnum typeEnum);
 
-c_long
+c_ulong
 idl_typeEnumNoElements (
     idl_typeEnum typeEnum);
 
@@ -301,14 +309,13 @@ idl_typeBasicType (
 
 void
 idl_typeBasicSetMaxlen (
-    idl_typeBasic typeBasic, c_long maxLen);
+    idl_typeBasic typeBasic, c_ulong maxLen);
 
-c_long
+c_ulong
 idl_typeBasicMaxlen (
     idl_typeBasic typeBasic);
-	/* returns -1 for wrong type 		*/
-	/* returns  0 for unbounded sequence 	*/
-	/* returns >0 for bounded sequence 	*/
+	/* returns  0 for unbounded sequence and scalar types */
+	/* returns >0 for bounded sequence */
 
 /***********************************************************
  * idl_labelSpec
@@ -320,7 +327,7 @@ C_CLASS(idl_labelSpec);
 
 idl_labelSpec
 idl_labelSpecNew (
-    idl_typeSpec labelKind, c_long noLabels);
+    idl_typeSpec labelKind, c_ulong noLabels);
 
 void
 idl_labelSpecFree (
@@ -330,7 +337,7 @@ idl_typeSpec
 idl_labelSpecLabelKind (
     idl_labelSpec labelSpec);
 
-c_long
+c_ulong
 idl_labelSpecNoLabels (
     idl_labelSpec labelSpec);
 
@@ -433,5 +440,8 @@ idl_labelValueVal (
 c_bool
 idl_isContiguous(
     c_type type);
+
+c_bool
+idl_isAnonymousType(idl_scope scope);
 
 #endif /* IDL_TYPESPECIFIER_H */

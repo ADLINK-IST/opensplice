@@ -1,26 +1,135 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "saj_Topic.h"
 #include "saj_utilities.h"
 #include "saj_qosUtils.h"
-#include "saj_status.h"
-#include "saj_topicListener.h"
-#include "saj_extTopicListener.h"
+#include "u_observable.h"
+#include "v_kernelParser.h"
 
-#include "gapi.h"
+#include "saj__report.h"
 
-#include "os_report.h"
+struct copyArg {
+    JNIEnv *env;
+    jobject object;
+};
+
+static v_result
+copy_inconsistent_topic_status (
+    c_voidp info,
+    c_voidp arg)
+{
+    v_result result = V_RESULT_OK;
+    struct v_inconsistentTopicInfo *from = (struct v_inconsistentTopicInfo *)info;
+    struct copyArg *copyArg = (struct copyArg *)arg;
+    copyArg->object = saj_inconsistentTopicStatus_new(copyArg->env, from);
+    if (copyArg->object == NULL) {
+        result = V_RESULT_INTERNAL_ERROR;
+    }
+    return result;
+}
 
 #define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_TopicImpl_##name
+
+/*
+ * Method: jniTopicNew
+ * Param : domain participant
+ * Param : topic name
+ * Param : topicQos qos
+ * Return: u_topic
+ */
+JNIEXPORT jlong JNICALL
+SAJ_FUNCTION(jniTopicNew) (
+    JNIEnv  *env,
+    jobject this,
+    jlong uParticipant,
+    jstring jtopicName,
+    jstring jtypeName,
+    jstring jkeyList,
+    jobject qos)
+{
+    u_topic uTopic = NULL;
+    u_topicQos uQos;
+    saj_returnCode result;
+    const os_char *topicName;
+    const os_char *typeName;
+    const os_char *keyList;
+    jobject userData;
+
+    assert(jtopicName != NULL);
+    assert(jtypeName != NULL);
+    assert(jkeyList != NULL);
+    assert(qos != NULL);
+
+    topicName = GET_STRING_UTFCHAR(env, jtopicName, 0);
+    if (topicName != NULL){
+        typeName = GET_STRING_UTFCHAR(env, jtypeName, 0);
+        if (typeName != NULL){
+            keyList = GET_STRING_UTFCHAR(env, jkeyList, 0);
+            if (keyList != NULL){
+                uQos = u_topicQosNew(NULL);
+                if (uQos != NULL) {
+                    result = saj_topicQosCopyIn(env, qos, uQos);
+                    if (result == SAJ_RETCODE_OK){
+                        uTopic = u_topicNew(SAJ_VOIDP(uParticipant), topicName, typeName, keyList, uQos);
+                        if (uTopic != NULL) {
+                            userData = NEW_GLOBAL_REF(env, this);
+                            u_observableSetUserData(SAJ_VOIDP(uTopic), userData);
+                        }
+                    }
+                    u_topicQosFree(uQos);
+                }
+                RELEASE_STRING_UTFCHAR(env, jkeyList, keyList);
+            }
+            RELEASE_STRING_UTFCHAR(env, jtypeName, typeName);
+        }
+        RELEASE_STRING_UTFCHAR(env, jtopicName, topicName);
+    }
+
+    return (jlong)(PA_ADDRCAST)uTopic;
+
+    CATCH_EXCEPTION:
+    return 0;
+}
+
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniTopicFree) (
+    JNIEnv  *env,
+    jobject this,
+    jlong uTopic)
+{
+    saj_returnCode result;
+    u_result uResult;
+    jobject userData;
+
+    OS_UNUSED_ARG(env);
+    OS_UNUSED_ARG(this);
+
+    if (uTopic) {
+        userData = u_observableSetUserData(u_observable(SAJ_VOIDP(uTopic)), NULL);
+        DELETE_GLOBAL_REF(env, userData);
+    }
+    uResult = u_objectClose(SAJ_VOIDP(uTopic));
+    result = saj_retcode_from_user_result(uResult);
+
+    return result;
+}
 
 /**
  * Class:     org_opensplice_dds_dcps_TopicImpl
@@ -29,35 +138,48 @@
  */
 JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetInconsistentTopicStatus)(
-    JNIEnv *env, 
+    JNIEnv *env,
     jobject jtopic,
+    jlong uTopic,
     jobject jstatusHolder)
 {
-    gapi_topic topic;
-    jobject jstatus;
-    gapi_inconsistentTopicStatus status;
-    saj_returnCode rc;
-    gapi_returnCode_t result;
-    
-    if(jstatusHolder){
-        topic = (gapi_topic) saj_read_gapi_address(env, jtopic);
-        result = gapi_topic_get_inconsistent_topic_status(topic, &status);
-        
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_statusCopyOutInconsistentTopicStatus(env, &status, &jstatus);
-            
-            if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder, 
-                            GET_CACHED(inconsistentTopicStatusHolder_value_fid), jstatus);
-                (*env)->DeleteLocalRef(env, jstatus);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
-        }
-    } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
+    u_result uResult;
+    saj_returnCode retcode;
+    struct copyArg copyArg;
+
+    assert(jstatusHolder);
+    OS_UNUSED_ARG(jtopic);
+
+    copyArg.env = env;
+    copyArg.object = NULL;
+
+    uResult = u_topicGetInconsistentTopicStatus(SAJ_VOIDP(uTopic), TRUE, copy_inconsistent_topic_status, &copyArg);
+    retcode = saj_retcode_from_user_result(uResult);
+    if (retcode == SAJ_RETCODE_OK) {
+        SET_FIELD(env, Object, jstatusHolder, inconsistentTopicStatusHolder_value, copyArg.object);
+        DELETE_LOCAL_REF(env, copyArg.object);
     }
-    return (jint)result;
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+static v_result
+copy_all_data_disposed_topic_status (
+    c_voidp info,
+    c_voidp arg)
+{
+    struct v_allDataDisposedInfo *from = (struct v_allDataDisposedInfo *)info;
+    struct copyArg *copyArg = (struct copyArg *)arg;
+
+    copyArg->object = NEW_OBJECT(copyArg->env, GET_CACHED(allDataDisposedTopicStatus_class),
+                                 GET_CACHED(allDataDisposedTopicStatus_constructor_mid),
+                                 (jint)from->totalCount, (jint)from->totalChanged);
+
+    return V_RESULT_OK;
+    CATCH_EXCEPTION: return U_RESULT_INTERNAL_ERROR;
 }
 
 /**
@@ -67,35 +189,32 @@ SAJ_FUNCTION(jniGetInconsistentTopicStatus)(
  */
 JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetAllDataDisposedTopicStatus)(
-    JNIEnv *env, 
+    JNIEnv *env,
     jobject jtopic,
+    jlong uTopic,
     jobject jstatusHolder)
 {
-    gapi_topic topic;
-    jobject jstatus;
-    gapi_allDataDisposedTopicStatus status;
-    saj_returnCode rc;
-    gapi_returnCode_t result;
-    
-    if(jstatusHolder){
-        topic = (gapi_topic) saj_read_gapi_address(env, jtopic);
-        result = gapi_topic_get_all_data_disposed_topic_status(topic, &status);
-        
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_statusCopyOutAllDataDisposedTopicStatus(env, &status, &jstatus);
-            
-            if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder, 
-                            GET_CACHED(allDataDisposedTopicStatusHolder_value_fid), jstatus);
-                (*env)->DeleteLocalRef(env, jstatus);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
-        }
-    } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
+    u_result uResult;
+    saj_returnCode retcode;
+    struct copyArg copyArg;
+
+    assert(jstatusHolder);
+    OS_UNUSED_ARG(jtopic);
+
+    copyArg.env = env;
+    copyArg.object = NULL;
+
+    uResult = u_topicGetAllDataDisposedStatus(SAJ_VOIDP(uTopic), TRUE, copy_all_data_disposed_topic_status, &copyArg);
+    retcode = saj_retcode_from_user_result(uResult);
+    if (retcode == SAJ_RETCODE_OK) {
+        SET_FIELD(env, Object, jstatusHolder, allDataDisposedTopicStatusHolder_value, copyArg.object);
+        DELETE_LOCAL_REF(env, copyArg.object);
     }
-    return (jint)result;
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
 }
 
 /**
@@ -107,37 +226,30 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetQos)(
     JNIEnv *env,
     jobject jtopic,
+    jlong uTopic,
     jobject jqosHolder)
 {
-    gapi_topicQos* qos;
-    saj_returnCode rc;
-    gapi_returnCode_t result;
-    jobject jqos;
-    gapi_topic topic;
-    
-    if(jqosHolder != NULL){
-        topic = (gapi_topic)saj_read_gapi_address(env, jtopic);
-        jqos = NULL;
-    
-        qos = gapi_topicQos__alloc();
-        result = gapi_topic_get_qos(topic, qos);
-        
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_TopicQosCopyOut(env, qos, &jqos);
-            gapi_free(qos);
-            
-            if(rc == SAJ_RETCODE_OK){        
-                (*env)->SetObjectField(env, jqosHolder, 
-                        GET_CACHED(topicQosHolder_value_fid), jqos);
-                (*env)->DeleteLocalRef(env, jqos);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
+    saj_returnCode retcode;
+    u_topicQos uQos;
+    jobject jqos = NULL;
+
+    assert(jqosHolder != NULL);
+    OS_UNUSED_ARG(jtopic);
+
+    retcode = saj_retcode_from_user_result(u_topicGetQos(SAJ_VOIDP(uTopic), &uQos));
+    if (retcode == SAJ_RETCODE_OK) {
+        retcode = saj_topicQosCopyOut(env, uQos, &jqos);
+        u_topicQosFree(uQos);
+        if (retcode == SAJ_RETCODE_OK) {
+            SET_OBJECT_FIELD(env, jqosHolder, topicQosHolder_value, jqos);
+            DELETE_LOCAL_REF(env, jqos);
         }
-    } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
     }
-    return (jint)result;
+
+    return retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
 }
 
 /**
@@ -149,124 +261,27 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniSetQos)(
     JNIEnv *env,
     jobject jtopic,
+    jlong uTopic,
     jobject jqos)
 {
-    gapi_topicQos* qos;
-    gapi_topic topic;
-    saj_returnCode rc;
-    jint result;
-    
-    qos = gapi_topicQos__alloc();
-    topic = (gapi_topic)saj_read_gapi_address(env, jtopic);
-    rc = saj_TopicQosCopyIn(env, jqos, qos);
-    result = (jint)GAPI_RETCODE_ERROR;
-    
-    if(rc == SAJ_RETCODE_OK){
-        result = (jint)gapi_topic_set_qos(topic, qos); 
-    }
-    gapi_free(qos);
-    
-    return result;
-}
+    saj_returnCode retcode = SAJ_RETCODE_ERROR;
+    u_topicQos uQos;
+    u_result uResult;
 
-/**
- * Class:     org_opensplice_dds_dcps_TopicImpl
- * Method:    jniGetListener
- * Signature: ()LDDS/TopicListener;
- */
-JNIEXPORT jobject JNICALL
-SAJ_FUNCTION(jniGetListener)(
-    JNIEnv *env,
-    jobject jtopic)
-{
-    jobject jlistener;
-    struct gapi_topicListener listener;
-    gapi_topic topic;
-    
-    jlistener = NULL;
-    topic = (gapi_topic)saj_read_gapi_address(env, jtopic);
-    listener = gapi_topic_get_listener(topic);
-    
-    jlistener = saj_read_java_listener_address(listener.listener_data);
+    assert(jqos != NULL);
+    OS_UNUSED_ARG(jtopic);
 
-    return jlistener;
-}
-
-/**
- * Class:     org_opensplice_dds_dcps_TopicImpl
- * Method:    jniSetListener
- * Signature: (LDDS/TopicListener;I)I
- */
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniSetListener)(
-    JNIEnv *env,
-    jobject jtopic,
-    jobject jlistener,
-    jint jmask)
-{
-    struct gapi_topicListener* listener;
-    gapi_topic topic;
-    gapi_returnCode_t grc = GAPI_RETCODE_OK;
-
-    jclass tempClass;
-    jboolean result;
-
-    /* We can check Java instances in the jni layer, so here we check
-     * that if the mask is set to GAPI_ALL_DATA_DISPOSED_STATUS we have
-     * been given an ExtDomainParticipantListener to call. If not then
-     * an error is reported and a GAPI_RETCODE_BAD_PARAMETER status is
-     * returned. */
-    if(jmask & GAPI_ALL_DATA_DISPOSED_STATUS) {
-        tempClass = (*env)->FindClass(env, "DDS/ExtTopicListener");
-        result = (*env)->IsInstanceOf(env, jlistener, tempClass);
-        if(result == JNI_FALSE) {
-            OS_REPORT(OS_ERROR, "dcpssaj", 0, "ExtTopicListener must be used when the ALL_DATA_DISPOSED_STATUS bit is set.");
-            grc = GAPI_RETCODE_BAD_PARAMETER;
-        }  
-    }
-
-    if(grc == GAPI_RETCODE_OK){
-        topic = (gapi_topic)saj_read_gapi_address(env, jtopic);
-
-        if(jmask & GAPI_ALL_DATA_DISPOSED_STATUS) {
-            listener = saj_extTopicListenerNew(env, jlistener);
-        } else {
-            listener = saj_topicListenerNew(env, jlistener);
+    uQos = u_topicQosNew(NULL);
+    if (uQos != NULL) {
+        retcode = saj_topicQosCopyIn(env, jqos, uQos);
+        if (retcode == SAJ_RETCODE_OK) {
+            uResult = u_topicSetQos(SAJ_VOIDP(uTopic), uQos);
+            retcode = saj_retcode_from_user_result(uResult);
         }
-
-        grc = gapi_topic_set_listener(topic, listener, (unsigned long int)jmask);
-    
-        if(grc == GAPI_RETCODE_OK){
-            if(listener != NULL){
-                saj_write_java_listener_address(env, topic, listener->listener_data);
-            }
-        }
-    } 
-    return (jint)grc; 
-}
-
-/**
- * Class:     org_opensplice_dds_dcps_TopicImpl
- * Method:    jniGetTypeName
- * Signature: ()Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL
-SAJ_FUNCTION(jniGetTypeName)(
-    JNIEnv *env,
-    jobject jtopic)
-{
-    gapi_topic topic;
-    jstring jtypeName = NULL;
-    gapi_string typeName;
-    
-    topic = (gapi_topic) saj_read_gapi_address(env, jtopic);
-    typeName = gapi_topic_get_type_name(topic);
-    
-    if(typeName != NULL){
-        jtypeName = (*env)->NewStringUTF(env, typeName);
-        gapi_free(typeName);
+        u_topicQosFree(uQos);
     }
-    return jtypeName;
+
+    return retcode;
 }
 
 /**
@@ -277,45 +292,52 @@ SAJ_FUNCTION(jniGetTypeName)(
 JNIEXPORT jstring JNICALL
 SAJ_FUNCTION(jniGetName)(
     JNIEnv *env,
-    jobject jtopic)
+    jobject jtopic,
+    jlong uTopic)
 {
-    gapi_topic topic;
-    jstring jname = NULL;
-    gapi_string name;
-    
-    topic = (gapi_topic) saj_read_gapi_address(env, jtopic);
-    name = gapi_topic_get_name(topic);
-    
-    if(name != NULL){
-        jname = (*env)->NewStringUTF(env, name);
-        gapi_free(name);
+    jstring jname;
+    os_char *name;
+
+    OS_UNUSED_ARG(jtopic);
+    jname = NULL;
+
+    name = u_topicName(SAJ_VOIDP(uTopic));
+    if (name != NULL) {
+        jname = NEW_STRING_UTF(env, name);
+        os_free(name);
     }
+
     return jname;
+
+    CATCH_EXCEPTION:
+    os_free(name);
+    return 0;
 }
 
-/**
- * Class:     org_opensplice_dds_dcps_TopicImpl
- * Method:    jniGetParticipant
- * Signature: ()LDDS/DomainParticipant;
- */
-JNIEXPORT jobject JNICALL
-SAJ_FUNCTION(jniGetParticipant)(
+JNIEXPORT jstring JNICALL
+SAJ_FUNCTION(jniGetTypeName)(
     JNIEnv *env,
-    jobject jtopic)
+    jobject jtopic,
+    jlong uTopic)
 {
-    gapi_topic topic;
-    gapi_domainParticipant participant;
-    jobject jparticipant;
-    
-    jparticipant = NULL;
-    topic = (gapi_topic) saj_read_gapi_address(env, jtopic);
-    participant = gapi_topic_get_participant(topic);
-    
-    if(participant != NULL){
-        jparticipant = saj_read_java_address(participant);
+    jstring jname;
+    os_char *name;
+
+    OS_UNUSED_ARG(jtopic);
+    jname = NULL;
+
+    name = u_topicTypeName(SAJ_VOIDP(uTopic));
+    if (name != NULL) {
+        jname = NEW_STRING_UTF(env, name);
+        os_free(name);
     }
-    return jparticipant;
-}  
+
+    return jname;
+
+    CATCH_EXCEPTION:
+    os_free(name);
+    return 0;
+}
 
 /*
  * Class:     org_opensplice_dds_dcps_TopicImpl
@@ -325,15 +347,137 @@ SAJ_FUNCTION(jniGetParticipant)(
 JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniDisposeAllData)(
     JNIEnv *env,
-    jobject jtopic)
+    jobject jtopic,
+    jlong uTopic)
 {
-    gapi_topic topic;
-    gapi_returnCode_t result;
+    u_result uResult;
+    saj_returnCode retcode;
 
-    topic = (gapi_topic) saj_read_gapi_address(env, jtopic);
-    result = gapi_topic_dispose_all_data(topic);
+    OS_UNUSED_ARG(env);
+    OS_UNUSED_ARG(jtopic);
 
-    return (jint)result;
+    uResult = u_topicDisposeAllData(SAJ_VOIDP(uTopic));
+    retcode = saj_retcode_from_user_result(uResult);
+
+    return (jint)retcode;
 }
-  
+
+/*
+ * Class:     org_opensplice_dds_dcps_TopicImpl
+ * Method:    jniValidateFilter
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniValidateFilter)(
+    JNIEnv *env,
+    jobject jtopic,
+    jlong uTopic,
+    jstring jexpression,
+    jobjectArray jparameters)
+{
+    saj_returnCode retcode = SAJ_RETCODE_BAD_PARAMETER;
+    jobject *jParam = NULL;
+    const os_char *predicate = NULL;
+    const char **strings = NULL; /* Const because it will hold const char *elements. */
+    c_value *params = NULL;
+    q_expr expr;
+    os_uint32 nrOfParams = 0;
+    os_uint32 i;
+
+    OS_UNUSED_ARG(env);
+    OS_UNUSED_ARG(jtopic);
+
+    if ((uTopic != 0) && (jexpression != NULL)) {
+        if (jparameters) {
+            nrOfParams = GET_ARRAY_LENGTH(env, jparameters);
+        }
+        if (nrOfParams < 100) {
+            predicate = GET_STRING_UTFCHAR(env, jexpression, 0);
+            if (predicate != NULL) {
+                expr = v_parser_parse(predicate);
+                if (expr) {
+                    if(nrOfParams > 0) {
+                        jParam = os_malloc(nrOfParams * sizeof(jobject));
+                        strings = os_malloc(nrOfParams * sizeof(char *));
+                        params = os_malloc(nrOfParams * sizeof(struct c_value));
+                        for (i =0; i<nrOfParams; i++) {
+                            jParam[i] = GET_OBJECTARRAY_ELEMENT(env, jparameters, i);
+                            strings[i] = GET_STRING_UTFCHAR(env, jParam[i], 0);
+                            params[i] = c_stringValue((const c_string) strings[i]);
+                        }
+                    }
+                    if (u_topicContentFilterValidate2(SAJ_VOIDP(uTopic), expr, params)) {
+                        retcode = SAJ_RETCODE_OK;
+                    } else {
+                        retcode = SAJ_RETCODE_BAD_PARAMETER;
+                        SAJ_REPORT(retcode,
+                            "filter_expression '%s' is invalid.", predicate);
+                    }
+                    q_dispose(expr);
+                    for (i =0; i<nrOfParams; i++) {
+                        RELEASE_STRING_UTFCHAR(env, jParam[i], strings[i]);
+                        DELETE_LOCAL_REF(env, jParam[i]);
+                    }
+                    if (params != NULL) {
+                        os_free((void *) params);
+                    }
+                    if (strings != NULL) {
+                        os_free((void *) strings);
+                    }
+                    if (jParam != NULL) {
+                        os_free(jParam);
+                    }
+                } else {
+                    retcode = SAJ_RETCODE_BAD_PARAMETER;
+                    SAJ_REPORT(retcode,
+                        "filter_expression '%s' is invalid.", predicate);
+                }
+                RELEASE_STRING_UTFCHAR(env, jexpression, predicate);
+            } else {
+                retcode = SAJ_RETCODE_BAD_PARAMETER;
+                SAJ_REPORT(retcode,"filter_expression is invalid.");
+            }
+        } else {
+            retcode = SAJ_RETCODE_BAD_PARAMETER;
+            SAJ_REPORT(retcode,
+                "Invalid number of filter_parameters '%u', maximum is 99.",
+                nrOfParams);
+        }
+    }
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+/*
+ * Class:     org_opensplice_dds_dcps_TopicImpl
+ * Method:    jniGetKeyExpr
+ * Signature: ()I
+ */
+JNIEXPORT jstring JNICALL
+SAJ_FUNCTION(jniGetKeyExpr)(
+    JNIEnv *env,
+    jobject jtopic,
+    jlong uTopic)
+{
+    jstring jkeys;
+    os_char *keys;
+
+    OS_UNUSED_ARG(jtopic);
+    jkeys = NULL;
+
+    keys = u_topicKeyExpr(SAJ_VOIDP(uTopic));
+    if (keys != NULL) {
+        jkeys = NEW_STRING_UTF(env, keys);
+        os_free(keys);
+    }
+    return jkeys;
+    CATCH_EXCEPTION:
+    os_free(keys);
+    return 0;
+}
+
+
 #undef SAJ_FUNCTION

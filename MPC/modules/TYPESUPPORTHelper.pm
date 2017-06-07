@@ -71,10 +71,12 @@ sub get_output {
 
   ## Need to know what to generate now
   my $language = '';
+  my $mode = '';
   my $standalone = 1;
   my $output_dir = '';
   my $is_streams = '';
   my $generate_tests = '';
+  my $face = '';
   my $left_over_args;
   my $ret;
   ($ret, $left_over_args) = _GetOptionsFromString($idlpp_args,
@@ -83,7 +85,9 @@ sub get_output {
                               'C' => sub { $standalone = 0 },
                               'T' => \$generate_tests,
                               'd=s' => \$output_dir,
-                              'l=s' => \$language);
+                              'l=s' => \$language,
+                              'm=s' => \$mode,
+                              'F' => \$face);
 
   if ($output_dir ne '' && $output_dir !~ /\/$/ )
   {
@@ -125,21 +129,53 @@ sub get_output {
   }
   else
   {
-    if ($language eq 'c')
+    if ($language eq 'isocpp2')
     {
-        ## sac can be done with the usual mechanism as it very sensibly
-        ## opted to stick to consistently just suffixing the file base name
-        ## with something
+        push @filenames, "$output_dir$base" . "SplDcps.cpp";
+        push @filenames, "$output_dir$base" . "SplDcps.h";
+        push @filenames, "$output_dir$base" . '_DCPS.hpp';
+        if ($standalone == 1)
+        {
+            push @filenames, "$output_dir$base" . ".cpp";
+            push @filenames, "$output_dir$base" . ".h";
+        }
+        else
+        {
+            # @todo - This is a workaround hack. Headers and inline are
+            # getting picked up but these aren't. Remove & raise / fix bug.
+            push @filenames, "$output_dir$base" . "Dcps.idl";
+        }
+        if ($face == 1)
+        {
+            push @filenames, "$output_dir$base" . "_FACE.cpp";
+            push @filenames, "$output_dir$base" . "_FACE.hpp";
+        }
     }
     else
     {
-        if ($language eq 'cs')
-        {
-            push @filenames, "$output_dir$base" . ".cs";
-            push @filenames, "$output_dir$base" . "Dcps.cs";
-            push @filenames, "$output_dir$base" . "SplDcps.cs";
-            push @filenames, "$output_dir" . 'I' . "$base" . "Dcps.cs";
-        }
+      if ($language eq 'c')
+      {
+          if ($mode eq 'SPLTYPE')
+          {
+              push @filenames, "$output_dir$base" . "SplType.h";
+          }
+          else
+          {
+              ## sac can be done with the usual mechanism as it very sensibly
+              ## opted to stick to consistently just suffixing the file base name
+              ## with something
+          }
+      }
+      else
+      {
+          if ($language eq 'cs')
+          {
+              push @filenames, "$output_dir$base" . ".cs";
+              push @filenames, "$output_dir$base" . "Dcps.cs";
+              push @filenames, "$output_dir$base" . "SplDcps.cs";
+              push @filenames, "$output_dir" . 'I' . "$base" . "Dcps.cs";
+          }
+      }
     }
   }
   return \@filenames;

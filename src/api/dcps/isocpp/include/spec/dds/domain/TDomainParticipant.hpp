@@ -54,6 +54,7 @@ class DomainParticipantListener;
  * them from applications running on different domains. In this way, several
  * independent distributed applications can coexist in the same physical
  * network without interfering, or even being aware of each other.
+ * See \ref DCPS_Modules_DomainParticipant "Domain Participant" for more information
  */
 template <typename DELEGATE>
 class dds::domain::TDomainParticipant : public ::dds::core::TEntity<DELEGATE>
@@ -91,7 +92,7 @@ public:
     TDomainParticipant(uint32_t                                          id,
                        const dds::domain::qos::DomainParticipantQos&   qos,
                        dds::domain::DomainParticipantListener*         listener = NULL,
-                       const dds::core::status::StatusMask&            event_mask = dds::core::status::StatusMask::all());
+                       const dds::core::status::StatusMask&            event_mask = dds::core::status::StatusMask::none());
 
 public:
     OMG_DDS_BASIC_REF_TYPE(TDomainParticipant, ::dds::core::TEntity, DELEGATE)

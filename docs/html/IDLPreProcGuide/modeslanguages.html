@@ -1,0 +1,283 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>8. Modes, Languages and Processing steps &mdash; IDL PreProcessor Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="IDL PreProcessor Guide" href="index.html" />
+    <link rel="next" title="9. Extensible and Dynamic Topic Types for DDS annotation support" href="topictypes.html" />
+    <link rel="prev" title="7. Keys" href="keys.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="topictypes.html" title="9. Extensible and Dynamic Topic Types for DDS annotation support"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="keys.html" title="7. Keys"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="modes-languages-and-processing-steps">
+<span id="id1"></span><h1>8. Modes, Languages and Processing steps<a class="headerlink" href="#modes-languages-and-processing-steps" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="integrated-c-orb">
+<h2>8.1. Integrated C++ ORB<a class="headerlink" href="#integrated-c-orb" title="Permalink to this headline">¶</a></h2>
+<p>The generic diagram for the ORB integrated C++ context is shown in
+the diagram <a class="reference internal" href="#id2">Integrated C++ ORB</a>.</p>
+<p>The Vortex OpenSplice IDL Pre-processor generates IDL code for the specialized
+<em>TypeSupport</em>, <em>DataReader</em> and <em>DataWriter</em>, as well as C++ implementations
+and support code. The ORB pre-processor generates from the generated IDL
+interfaces the C++ specialized interfaces for that specific ORB. These interfaces
+are included by the application C++ code as well as the OpenSplice DDS generated
+specialized C++ implementation code. The application C++ code as well as the
+specialized C++ implementation code (with the support functions) is compiled into
+object code and linked together with the applicable OpenSplice libraries and the
+ORB libraries.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>Vortex OpenSplice libraries are provided for linking with OpenFusion TAO. However
+the source code of the C++ API is also available to build against your own ORB
+and/or compiler version.</dd>
+</dl>
+<p class="centered" id="id2">
+<strong><strong>Integrated C++ ORB</strong></strong></p><a class="reference internal image-reference" href="_images/IntegratedCppORB.png"><img alt="Integrated C++ ORB" class="align-center" src="_images/IntegratedCppORB.png" style="width: 150mm;" /></a>
+<p>The role of the Vortex OpenSplice IDL Pre-processor functionality is expanded in
+<a class="reference internal" href="#integrated-c-orb-opensplice-idl-pre-processor-details">Integrated C++ ORB OpenSplice IDL Pre-processor Details</a>.
+It shows in more detail which files are generated, given an input file (in
+this example <tt class="docutils literal"><span class="pre">foo.idl</span></tt>).</p>
+<p class="centered" id="integrated-c-orb-opensplice-idl-pre-processor-details">
+<strong><strong>Integrated C++ ORB OpenSplice IDL Pre-processor Details</strong></strong></p><a class="reference internal image-reference" href="_images/IntegratedCppORB_detail.png"><img alt="Integrated C++ ORB OpenSplice IDL Pre-processor Details" class="align-center" src="_images/IntegratedCppORB_detail.png" style="width: 150mm;" /></a>
+<p>The file <tt class="docutils literal"><span class="pre">foo.h</span></tt> is the only file that needs to be included by the application.
+It includes all files needed by the application to interact with the DCPS interface.</p>
+<p>The file <tt class="docutils literal"><span class="pre">fooDcps.idl</span></tt> is an IDL definition of the specialized <em>TypeSupport</em>,
+<em>DataReader</em> and <em>DataWriter</em> interfaces, which will be used to generate ORB-specific
+C++ interface files.</p>
+<p>The <tt class="docutils literal"><span class="pre">fooDcps_impl.*</span></tt> files contain the specialized <em>TypeSupport</em>, <em>DataReader</em>
+and <em>DataWriter</em> implementation classes needed to communicate the type <em>via</em>
+OpenSplice DDS.</p>
+<p>The <tt class="docutils literal"><span class="pre">fooSplDcps.*</span></tt> files contain support functions required by OpenSplice DDS
+in order to be able to handle the specific data types.</p>
+</div>
+<div class="section" id="c-standalone">
+<h2>8.2. C++ Standalone<a class="headerlink" href="#c-standalone" title="Permalink to this headline">¶</a></h2>
+<p>The <em>C++ standalone</em> mode provides a Vortex OpenSplice context which does not
+need an ORB. Vortex OpenSplice resolves all implied IDL-to-C++ language mapping
+functions and requirements.</p>
+<p>The only difference when using the standalone mode is that DDS is used
+as the naming scope for definitions and functions instead of the
+CORBA naming scope (the CORBA namespace is still supported, however,
+for compatibility purposes).</p>
+<p>The diagram <a class="reference internal" href="#id4">C Standalone</a> is an overview of the artifacts and
+processing stages related to the C standalone context.
+For C++ the different stages are equal to the C standalone context.
+Because there is no ORB involved, all pre-processing is performed by the
+OpenSplice DDS IDL Pre-processor. The generated specialized implementations
+and the application’s C++ code must be compiled into object code, plus all objects
+must be linked with the appropriate Vortex OpenSplice libraries.</p>
+</div>
+<div class="section" id="isoc">
+<h2>8.3. ISOC++<a class="headerlink" href="#isoc" title="Permalink to this headline">¶</a></h2>
+<p>The <em>ISOC++</em> mode provides a Vortex OpenSplice context which does not need an
+ORB. Vortex OpenSplice resolves all implied IDL-to-C++ language mapping
+functions and requirements. Much like C++ standalone mode, the CORBA naming
+scope is not used but <tt class="docutils literal"><span class="pre">C99</span></tt> types are used in place of
+<tt class="docutils literal"><span class="pre">DDS::</span></tt> types, as specified in the
+<a class="reference internal" href="bibliography.html#omg-iso-iec-c-language-2013"><em>ISO/IEC C++ language mapping specification</em></a>.</p>
+</div>
+<div class="section" id="isoc-2">
+<h2>8.4. ISOC++2<a class="headerlink" href="#isoc-2" title="Permalink to this headline">¶</a></h2>
+<p>The <em>ISOC++2</em> mode provides a Vortex OpenSplice context which does not need an
+ORB. Vortex OpenSplice resolves all implied IDL-to-C++ language mapping
+functions and requirements. Much like C++ standalone mode, the CORBA naming
+scope is not used but <tt class="docutils literal"><span class="pre">C99</span></tt> types are used in place of
+<tt class="docutils literal"><span class="pre">DDS::</span></tt> types, as specified in the
+<a class="reference internal" href="bibliography.html#omg-iso-iec-c-language-2013"><em>ISO/IEC C++ language mapping specification</em></a>.</p>
+</div>
+<div class="section" id="id3">
+<h2>8.5. C Standalone<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>The <em>C standalone</em> mode provides an OpenSplice DDS context which does not need
+an ORB. Vortex OpenSplice resolves all implied IDL to C language mapping
+functions and requirements. The only difference when using the standalone
+mode is that DDS is used as the naming scope for definitions and functions.</p>
+<p>The diagram <a class="reference internal" href="#id4">C Standalone</a>
+shows an overview of the artifacts and processing stages related to the C
+standalone context. Because there is no ORB involved, all the pre-processing is
+done by the Vortex OpenSplice IDL Pre-processor. The generated specialized class
+implementations and the application’s C code must be compiled into object code,
+plus all objects must be linked with the appropriate Vortex OpenSplice libraries.</p>
+<p class="centered" id="id4">
+<strong><strong>C Standalone</strong></strong></p><a class="reference internal image-reference" href="_images/CStandalone.png"><img alt="C Standalone" class="align-center" src="_images/CStandalone.png" style="width: 150mm;" /></a>
+<p>The role of the Vortex OpenSplice IDL Pre-processor functionality is expanded in
+the diagram <a class="reference internal" href="#c-standalone-opensplice-idl-pre-processor-details">C Standalone OpenSplice IDL Pre-processor Details</a>,
+providing more detail about the files generated when provided with an
+input file (<tt class="docutils literal"><span class="pre">foo.idl</span></tt> this example).</p>
+<p class="centered" id="c-standalone-opensplice-idl-pre-processor-details">
+<strong><strong>C Standalone OpenSplice IDL Pre-processor Details</strong></strong></p><a class="reference internal image-reference" href="_images/CStandalone_detail.png"><img alt="C Standalone OpenSplice IDL Pre-processor Details" class="align-center" src="_images/CStandalone_detail.png" style="width: 150mm;" /></a>
+<p>The file <tt class="docutils literal"><span class="pre">foo.h</span></tt> is the only file that needs to be included by the application.
+It itself includes all necessary files needed by the application in order to
+interact with the DCPS interface.</p>
+<p>The file <tt class="docutils literal"><span class="pre">fooDcps.h</span></tt> contains all definitions related to the IDL input file in
+accordance with the
+<a class="reference internal" href="bibliography.html#omg-c-language-1999"><em>OMG&#8217;s IDL-to-C language mapping specification</em></a>.</p>
+<p>The <tt class="docutils literal"><span class="pre">fooSacDcps.*</span></tt> files contain the specialized <em>TypeSupport</em>, <em>DataReader</em>
+and <em>DataWriter</em> classes needed to communicate the type <em>via</em> OpenSplice DDS.</p>
+<p>The <tt class="docutils literal"><span class="pre">fooSplDcps.*</span></tt> files contain support functions required by OpenSplice DDS in
+order to be able to handle the specific data types.</p>
+</div>
+<div class="section" id="c99-standalone">
+<h2>8.6. C99 Standalone<a class="headerlink" href="#c99-standalone" title="Permalink to this headline">¶</a></h2>
+<p>The <em>C99 standalone</em> mode is simular to the <em>C standalone</em> mode. The difference
+is that the <em>C99 standalone</em> mode is used to support the C99 version of the
+C programming language. Except for some small changes in the generated artifacts
+this mode operates the equal to the <em>C standalone</em> mode. See for a description
+of the processing stages the description in <a class="reference internal" href="#section-c-standalone">section C Standalone</a>.</p>
+<p>The difference with the <em>C standalone</em> mode is that the primitive types are mapped
+to the corresponding C99 types. Further bounded strings are mapped to char array&#8217;s
+with a upperboundone larger than specified in the idl to allow for the terminating
+0 character.</p>
+<p>Further an additional file <tt class="docutils literal"><span class="pre">fooDcps.c</span></tt> is generated which contains the information
+to register the type information with OpenSplice DDS.</p>
+</div>
+<div class="section" id="java-standalone">
+<h2>8.7. Java Standalone<a class="headerlink" href="#java-standalone" title="Permalink to this headline">¶</a></h2>
+<p>The <em>Java standalone</em> mode provides a Vortex OpenSplice context without the need of
+an ORB, which still enables portability of application code because all IDL Java
+language mapping implied functions and requirements are resolved by Vortex OpenSplice.</p>
+<p>The diagram <a class="reference internal" href="#id5">Java Standalone</a> shows an overview of the artifacts and
+processing stages related to the Java standalone context.
+The Vortex OpenSplice IDL Pre-processor generates the
+application data classes from IDL according the language mapping. The Vortex OpenSplice
+IDL Pre-processor additionally generates classes for the specialized
+TypeSupport, DataReader and DataWriter interfaces. All generated code must
+be compiled with the Java compiler as well as the application Java code.</p>
+<p class="centered" id="id5">
+<strong><strong>Java Standalone</strong></strong></p><a class="reference internal image-reference" href="_images/JavaStandalone.png"><img alt="Java Standalone" class="align-center" src="_images/JavaStandalone.png" style="width: 150mm;" /></a>
+<p>The role of the Vortex OpenSplice IDL Pre-processor functionality is more magnified
+in the diagram <a class="reference internal" href="#java-standalone-opensplice-idl-pre-processor-details">Java Standalone OpenSplice IDL Pre-Processor Details</a>.
+It shows in more detail which files are generated based upon input file
+(in this example <tt class="docutils literal"><span class="pre">foo.idl</span></tt>).</p>
+<p class="centered" id="java-standalone-opensplice-idl-pre-processor-details">
+<strong><strong>Java Standalone OpenSplice IDL Pre-Processor Details</strong></strong></p><a class="reference internal image-reference" href="_images/JavaStandalone_detail.png"><img alt="Java Standalone OpenSplice IDL Pre-Processor Details" class="align-center" src="_images/JavaStandalone_detail.png" style="width: 150mm;" /></a>
+</div>
+<div class="section" id="integrated-java-orb">
+<h2>8.8. Integrated Java ORB<a class="headerlink" href="#integrated-java-orb" title="Permalink to this headline">¶</a></h2>
+<p>The <em>Java CORBA</em> mode provides a Vortex OpenSplice context for the JacORB
+ORB. The Vortex OpenSplice IDL Pre-processor generates IDL code for the
+specialized <em>TypeSupport</em>, <em>DataReader</em> and <em>DataWriter</em>, as well as Java
+implementations and support code. The ORB pre-processor generates the
+Java <tt class="docutils literal"><span class="pre">‘Foo’</span></tt> classes, which must be done manually. These classes are
+included with the application Java code as well as the OpenSplice DDS
+generated specialized Java implementation code.
+The application Java code as well as the specialized Java implementation code
+(with the support functions) is compiled into class files and can be used
+together with the applicable OpenSplice libraries and the ORB libraries.</p>
+<p>The artifacts and processing stages related to the Java CORBA cohabitation context
+are similar to those of the standalone mode, with one exception:
+the <tt class="docutils literal"><span class="pre">‘Foo’</span></tt> classes will not be generated by the Vortex OpenSplice IDL Pre-processor.
+Instead these classes should be generated by the JacORB IDL Pre-processor.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">8. Modes, Languages and Processing steps</a><ul>
+<li><a class="reference internal" href="#integrated-c-orb">8.1. Integrated C++ ORB</a></li>
+<li><a class="reference internal" href="#c-standalone">8.2. C++ Standalone</a></li>
+<li><a class="reference internal" href="#isoc">8.3. ISOC++</a></li>
+<li><a class="reference internal" href="#isoc-2">8.4. ISOC++2</a></li>
+<li><a class="reference internal" href="#id3">8.5. C Standalone</a></li>
+<li><a class="reference internal" href="#c99-standalone">8.6. C99 Standalone</a></li>
+<li><a class="reference internal" href="#java-standalone">8.7. Java Standalone</a></li>
+<li><a class="reference internal" href="#integrated-java-orb">8.8. Integrated Java ORB</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="keys.html"
+                        title="previous chapter">7. Keys</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="topictypes.html"
+                        title="next chapter">9. Extensible and Dynamic Topic Types for DDS annotation support</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/modeslanguages.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="topictypes.html" title="9. Extensible and Dynamic Topic Types for DDS annotation support"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="keys.html" title="7. Keys"
+             >previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

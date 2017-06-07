@@ -1,4 +1,3 @@
-
 /*
  
 COPYRIGHT
@@ -75,8 +74,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * interfaces.
  */
 
-#include "idl.h"
-#include "idl_extern.h"
+#include <idl.h>
+#include <idl_extern.h>
 
 /*
  * Constructor(s) and destructor
@@ -89,7 +88,8 @@ AST_Interface::AST_Interface ()
 
 AST_Interface::AST_Interface
 (
-   idl_bool local,
+   bool local,
+   bool abstract,
    UTL_ScopedName *n,
    AST_Interface **ih,
    long nih,
@@ -101,7 +101,8 @@ AST_Interface::AST_Interface
    pd_inherits (ih),
    pd_n_inherits (nih)
 {
-   set_local(local);
+   set_local (local);
+   set_abstract (abstract);
 }
 
 /*
@@ -166,7 +167,7 @@ AST_Constant *AST_Interface::fe_add_constant(AST_Constant *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -220,7 +221,7 @@ AST_Exception *AST_Interface::fe_add_exception(AST_Exception *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -274,7 +275,7 @@ AST_Attribute *AST_Interface::fe_add_attribute(AST_Attribute *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -328,63 +329,68 @@ AST_Operation *AST_Interface::fe_add_operation(AST_Operation *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
 
 /*
- * Add an AST_Structure (a struct declaration) to this scope
+ * Add an AST_Structure (a struct declaration) to this scope.
+ * May be a declaration or a pre-declaration.
  */
-AST_Structure *AST_Interface::fe_add_structure(AST_Structure *t)
+
+AST_Structure *AST_Interface::fe_add_structure (AST_Structure * s)
 {
-   AST_Decl *d;
+   AST_Decl * d;
 
-   /*
-    * Can't add to interface which was not yet defined
-    */
+   // Can't add to interface if not yet defined
 
-   if (!is_defined())
+   if (!is_defined ())
    {
-      idl_global->err()->error2(UTL_Error::EIDL_DECL_NOT_DEFINED, this, t);
+      idl_global->err()->error2 (UTL_Error::EIDL_DECL_NOT_DEFINED, this, s);
       return NULL;
    }
 
-   /*
-    * Already defined and cannot be redefined? Or already used?
-    */
-   if ((d = lookup_for_add (t)) != NULL)
+   d = lookup_for_add (s);
+
+   if (d)
    {
-      if (!can_be_redefined(d))
-      {
-         idl_global->err()->error3(UTL_Error::EIDL_REDEF, t, this, d);
-         return NULL;
-      }
+      /* Check for existing declaration or pre-declaration */
 
-      if (referenced(d))
+      if (d->node_type () == AST_Decl::NT_struct)
       {
-         idl_global->err()->error3(UTL_Error::EIDL_DEF_USE, t, this, d);
-         return NULL;
-      }
+         AST_Structure * fwd = AST_Structure::narrow_from_decl (d);
+         if (fwd->is_defined () && s->is_defined ())
+         {
+            /* Invalid duplicate declaration */
 
-      if (t->has_ancestor(d))
+            idl_global->err()->error3 (UTL_Error::EIDL_REDEF, s, this, d);
+         }
+         else
+         {
+            if (! fwd->is_defined () && s->is_defined ())
+            {
+               reorder (d);
+            }
+
+            // Return existing
+
+            delete s;
+            s = fwd;
+         }
+      }
+      else
       {
-         idl_global->err()->redefinition_in_scope(t, d);
-         return NULL;
+         idl_global->err()->error3 (UTL_Error::EIDL_REDEF, s, this, d);
       }
    }
+   else
+   {
+      add_to_scope (s);
+      add_to_referenced (s, false);
+   }
 
-   /*
-    * Add it to scope
-    */
-   add_to_scope(t);
-
-   /*
-    * Add it to set of locally referenced symbols
-    */
-   add_to_referenced(t, I_FALSE);
-
-   return t;
+   return s;
 }
 
 /*
@@ -436,63 +442,66 @@ AST_Enum *AST_Interface::fe_add_enum(AST_Enum *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
 
 /*
- * Add an AST_Union (a union declaration) to this scope
+ * Add an AST_Union (a union declaration) to this scope.
+ * May be a declaration or a pre-declaration.
  */
-AST_Union *AST_Interface::fe_add_union(AST_Union *t)
-{
-   AST_Decl *d;
 
-   /*
-    * Can't add to interface which was not yet defined
-    */
+AST_Union *AST_Interface::fe_add_union (AST_Union * u)
+{
+   AST_Decl * d;
+
+   // Can't add to interface if not yet defined
 
    if (!is_defined())
    {
-      idl_global->err()->error2(UTL_Error::EIDL_DECL_NOT_DEFINED, this, t);
+      idl_global->err()->error2 (UTL_Error::EIDL_DECL_NOT_DEFINED, this, u);
       return NULL;
    }
 
-   /*
-    * Already defined and cannot be redefined? Or already used?
-    */
-   if ((d = lookup_for_add (t)) != NULL)
+   d = lookup_for_add (u);
+
+   if (d)
    {
-      if (!can_be_redefined(d))
-      {
-         idl_global->err()->error3(UTL_Error::EIDL_REDEF, t, this, d);
-         return NULL;
-      }
+      /* Check for existing declaration or pre-declaration */
 
-      if (referenced(d))
+      if (d->node_type () == AST_Decl::NT_union)
       {
-         idl_global->err()->error3(UTL_Error::EIDL_DEF_USE, t, this, d);
-         return NULL;
-      }
+         AST_Union * fwd = AST_Union::narrow_from_decl (d);
+         if (fwd->is_defined () && u->is_defined ())
+         {
+            idl_global->err()->error3 (UTL_Error::EIDL_REDEF, u, this, d);
+         }
+         else
+         {
+            if (! fwd->is_defined () && u->is_defined ())
+            {
+               reorder (d);
+            }
 
-      if (t->has_ancestor(d))
+            // Return existing
+
+            delete u;
+            u = fwd;
+         }
+      }
+      else
       {
-         idl_global->err()->redefinition_in_scope(t, d);
-         return NULL;
+         idl_global->err()->error3 (UTL_Error::EIDL_REDEF, u, this, d);
       }
    }
+   else
+   {
+      add_to_scope (u);
+      add_to_referenced (u, false);
+   }
 
-   /*
-    * Add it to scope
-    */
-   add_to_scope(t);
-
-   /*
-    * Add it to set of locally referenced symbols
-    */
-   add_to_referenced(t, I_FALSE);
-
-   return t;
+   return u;
 }
 
 /*
@@ -547,7 +556,7 @@ AST_EnumVal *AST_Interface::fe_add_enum_val(AST_EnumVal *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -601,7 +610,7 @@ AST_Typedef *AST_Interface::fe_add_typedef(AST_Typedef *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -653,7 +662,7 @@ AST_Interface::fe_add_opaque(AST_Opaque* t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -729,7 +738,7 @@ AST_Value *AST_Interface::fe_add_valuetype(AST_Value *v)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(v, I_FALSE);
+   add_to_referenced(v, false);
 
    return v;
 }
@@ -805,7 +814,7 @@ AST_BoxedValue *AST_Interface::fe_add_boxed_valuetype(AST_BoxedValue *v)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(v, I_FALSE);
+   add_to_referenced(v, false);
 
    return v;
 }
@@ -813,12 +822,20 @@ AST_BoxedValue *AST_Interface::fe_add_boxed_valuetype(AST_BoxedValue *v)
 /*
  * Dump this AST_Interface node to the ostream o
  */
-void
-AST_Interface::dump(ostream &o)
+void AST_Interface::dump (ostream &o)
 {
    long i;
 
-   o << (local() == I_TRUE ? "local" : "") << " interface ";
+   if (local () == true)
+   {
+      o << "local";
+   }
+   if (abstract () == true)
+   {
+      o << "abstract";
+   }
+   o << " interface ";
+
    local_name()->dump(o);
    o << " ";
 
@@ -841,37 +858,31 @@ AST_Interface::dump(ostream &o)
    o << "}";
 }
 
-/*
- * Data accessors
- */
+void AST_Interface::virt_set_gen_any (void)
+{
+   set_scoped_gen_any ();
+}
 
-AST_Interface **
-AST_Interface::inherits()
+AST_Interface ** AST_Interface::inherits()
 {
    return pd_inherits;
 }
 
-void
-AST_Interface::set_inherits(AST_Interface **i)
+void AST_Interface::set_inherits(AST_Interface **i)
 {
    pd_inherits = i;
 }
 
-long
-AST_Interface::n_inherits()
+long AST_Interface::n_inherits()
 {
    return pd_n_inherits;
 }
 
-void
-AST_Interface::set_n_inherits(long i)
+void AST_Interface::set_n_inherits(long i)
 {
    pd_n_inherits = i;
 }
 
-/*
- * Narrowing methods
- */
-IMPL_NARROW_METHODS2(AST_Interface, AST_Type, UTL_Scope)
-IMPL_NARROW_FROM_DECL(AST_Interface)
-IMPL_NARROW_FROM_SCOPE(AST_Interface)
+IMPL_NARROW_METHODS2 (AST_Interface, AST_Type, UTL_Scope)
+IMPL_NARROW_FROM_DECL (AST_Interface)
+IMPL_NARROW_FROM_SCOPE (AST_Interface)

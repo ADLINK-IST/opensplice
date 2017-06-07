@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file os/common/code/os_sharedmem_heap.c
@@ -17,7 +25,7 @@
 
 #ifdef OS_SHAREDMEM_HEAP_DISABLE
 
-os_result 
+static os_result
 os_heap_sharedMemoryAttach (
     const char *name,
     const os_sharedAttr *sharedAttr,
@@ -26,12 +34,12 @@ os_heap_sharedMemoryAttach (
     return os_resultFail;
 }
 
-os_result os_heap_sharedMemoryDestroy (const char *name)
+static os_result os_heap_sharedMemoryDestroy (const char *name)
 {
     return os_resultFail;
 }
 
-os_result
+static os_result
 os_heap_sharedMemoryCreate (
     const char *name,
     os_sharedAttr *sharedAttr,
@@ -40,12 +48,22 @@ os_heap_sharedMemoryCreate (
     return os_resultFail;
 }
 
-os_result os_heap_sharedMemoryDetach (const char *name, void *address)
+static os_result os_heap_sharedMemoryDetach (const char *name, void *address, os_int32 id)
 {
     return os_resultFail;
 }
 
-os_result os_heap_sharedSize (const char *name, os_address *size)
+static os_result os_heap_sharedSize (const char *name, os_address *size)
+{
+    return os_resultFail;
+}
+
+static os_state os_heap_sharedMemoryGetState(os_int32 id)
+{
+    return OS_STATE_NONE;
+}
+
+static os_result os_heap_sharedMemorySetState(os_int32 id, os_state state)
 {
     return os_resultFail;
 }
@@ -71,11 +89,13 @@ typedef struct os_sm {
     /** Address of the shared memory */
     void		*address;
     /** Size of the shared memory */
-    os_uint32           size;
+    os_address          size;
     /** Number of attachments to the shared memory */
     os_int32            nattach;
     /** Id of the shared memory */
     os_int32            id;
+    /** State of the shared memory */
+    os_state            state;
 } os_sm;
 
 /** Mutex for locking the shared memory data */
@@ -88,20 +108,17 @@ static os_sm    *os_smAdmin = NULL;
  *
  * Initialize the mutex \b os_smAdminLock
  */
-void
+static void
 os_heap_sharedMemoryInit(void)
 {
-    os_mutexAttr mutexAttr;
-
-    os_mutexAttrInit(&mutexAttr);
-    mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
-    os_mutexInit(&os_smAdminLock, &mutexAttr);
-    return;
+    if(os_mutexInit(&os_smAdminLock, NULL) != os_resultSuccess) {
+        abort();
+    }
 }
 
 /** \brief Deinitialize the shared memory on heap data
  */
-void
+static void
 os_heap_sharedMemoryExit(void)
 {
     /* It is assumed that the application has freed */
@@ -168,14 +185,14 @@ os_heap_search_entry_name_and_id(
     return rv;
 }
 
-os_result
+static os_result
 os_heap_sharedMemoryGetNameFromId(
     os_int32 id,
     char **name)
 {
-
     os_sm *sm;
     os_result rv = os_resultFail;
+    os_mutexLock(&os_smAdminLock);
     sm = os_smAdmin;
     *name = NULL;
     while (sm != NULL) {
@@ -187,6 +204,7 @@ os_heap_sharedMemoryGetNameFromId(
             sm = sm->next;
         }
     }
+    os_mutexUnlock(&os_smAdminLock);
     return rv;
 }
 
@@ -274,7 +292,7 @@ os_heap_remove_entry(
  * the named shared memory, \b os_resultFail is returned
  * to the calling thread and no resources are allocated.
  */
-os_result
+static os_result
 os_heap_sharedMemoryCreate(
     const char *name,
     const os_sharedAttr *sharedAttr,
@@ -296,6 +314,7 @@ os_heap_sharedMemoryCreate(
             sm->size = size;
             sm->name = os_malloc((unsigned int)(strlen (name) + 1));
             sm->id = id;
+            sm->state = OS_STATE_NONE;
             if (sm->name) {
                 os_strcpy(sm->name, name);
                 sm->address = os_malloc(size);
@@ -305,14 +324,14 @@ os_heap_sharedMemoryCreate(
                 } else {
                     os_free(sm->name);
                     os_free(sm);
-                    OS_REPORT_1(OS_ERROR, "os_heap_sharedMemoryCreate", 1, "Out of heap memory (%s)", name);
+                    OS_REPORT(OS_ERROR, "os_heap_sharedMemoryCreate", 1, "Out of heap memory (%s)", name);
                 }
             } else {
                 os_free(sm);
-                OS_REPORT_1(OS_ERROR, "os_heap_sharedMemoryCreate", 1, "Out of heap memory (%s)", name);
+                OS_REPORT(OS_ERROR, "os_heap_sharedMemoryCreate", 1, "Out of heap memory (%s)", name);
             }
         } else {
-            OS_REPORT_1(OS_ERROR, "os_heap_sharedMemoryCreate", 1, "Out of heap memory (%s)", name);
+            OS_REPORT(OS_ERROR, "os_heap_sharedMemoryCreate", 1, "Out of heap memory (%s)", name);
         }
     }
     os_mutexUnlock(&os_smAdminLock);
@@ -337,7 +356,7 @@ os_heap_sharedMemoryCreate(
  * Then free the shared memory (\b sm->address), the
  * name (\b sm->name) and the entry itself (\b sm).
  */
-os_result
+static os_result
 os_heap_sharedMemoryDestroy(
     const char *name)
 {
@@ -349,11 +368,11 @@ os_heap_sharedMemoryDestroy(
     if (sm == NULL) {
         os_mutexUnlock(&os_smAdminLock);
         rv = os_resultFail;
-        OS_REPORT_1(OS_ERROR, "os_heap_sharedMemoryDestroy", 2, "Entry not found by name (%s)", name);
+        OS_REPORT(OS_ERROR, "os_heap_sharedMemoryDestroy", 2, "Entry not found by name (%s)", name);
     } else if (sm->nattach > 0) {
         os_mutexUnlock(&os_smAdminLock);
         rv = os_resultFail;
-        OS_REPORT_1(OS_ERROR, "os_heap_sharedMemoryDestroy", 3, "Still users attached (%s)", name);
+        OS_REPORT(OS_ERROR, "os_heap_sharedMemoryDestroy", 3, "Still users attached (%s)", name);
     } else {
         sm = os_heap_remove_entry(name);
         os_mutexUnlock(&os_smAdminLock);
@@ -379,7 +398,7 @@ os_heap_sharedMemoryDestroy(
  * increase \b sm->nattach to indicate the number of attachments
  * and release the list before returning \b os_resultSuccess.
  */
-os_result
+static os_result
 os_heap_sharedMemoryAttach(
     const char *name,
     void **mapped_address)
@@ -392,7 +411,7 @@ os_heap_sharedMemoryAttach(
     if (sm == NULL) {
         os_mutexUnlock(&os_smAdminLock);
         rv = os_resultFail;
-	/* OS_REPORT_1(OS_ERROR, "os_heap_sharedMemoryAttach", 2, "Entry not found by name (%s)", name); */
+	/* OS_REPORT(OS_ERROR, "os_heap_sharedMemoryAttach", 2, "Entry not found by name (%s)", name); */
     } else {
         *mapped_address = sm->address;
         sm->nattach++;
@@ -415,10 +434,11 @@ os_heap_sharedMemoryAttach(
  * the number of attachemnts and release the list before
  * returning \b os_resultSuccess.
  */
-os_result
+static os_result
 os_heap_sharedMemoryDetach(
     const char *name,
-    void *address)
+    void *address,
+    os_int32 id)
 {
     os_sm *sm;
     os_result rv;
@@ -431,7 +451,7 @@ os_heap_sharedMemoryDetach(
     if (sm == NULL) {
         os_mutexUnlock(&os_smAdminLock);
         rv = os_resultFail;
-        OS_REPORT_1(OS_ERROR, "os_heap_sharedMemoryAttach", 2, "Entry not found by name (%s)", name);
+        OS_REPORT_WID(OS_ERROR, "os_heap_sharedMemoryAttach", 2, id, "Entry not found by name (%s)", name);
     } else {
         sm->nattach--;
         os_mutexUnlock(&os_smAdminLock);
@@ -440,7 +460,7 @@ os_heap_sharedMemoryDetach(
     return rv;
 }
 
-os_result
+static os_result
 os_heap_sharedSize(
     const char *name,
     os_address *size)
@@ -466,13 +486,60 @@ os_heap_sharedSize(
         if (sm == NULL) {
             os_mutexUnlock(&os_smAdminLock);
             rv = os_resultFail;
-            OS_REPORT_1(OS_ERROR, "os_heap_sharedSize", 2, "Entry not found by name (%s)", name);
+            OS_REPORT(OS_ERROR, "os_heap_sharedSize", 2, "Entry not found by name (%s)", name);
         } else {
             *size = sm->size;
             os_mutexUnlock(&os_smAdminLock);
             rv = os_resultSuccess;
         }
     }
+
+    return rv;
+}
+
+
+static os_state
+os_heap_sharedMemoryGetState(
+    os_int32 id)
+{
+    os_state state = OS_STATE_NONE;
+    os_sm *sm;
+
+    os_mutexLock(&os_smAdminLock);
+    sm = os_smAdmin;
+    while (sm != NULL) {
+        if (sm->id == id) {
+            state = sm->state;
+            break;
+        } else {
+            sm = sm->next;
+        }
+    }
+    os_mutexUnlock(&os_smAdminLock);
+
+    return state;
+}
+
+static os_result
+os_heap_sharedMemorySetState(
+    os_int32 id,
+    os_state state)
+{
+    os_result rv = os_resultUnavailable;
+    os_sm *sm;
+
+    os_mutexLock(&os_smAdminLock);
+    sm = os_smAdmin;
+    while (sm != NULL) {
+        if (sm->id == id) {
+            sm->state = state;
+            rv = os_resultSuccess;
+        break;
+        } else {
+            sm = sm->next;
+        }
+    }
+    os_mutexUnlock(&os_smAdminLock);
 
     return rv;
 }

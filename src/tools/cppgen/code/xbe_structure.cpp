@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl.h"
@@ -23,6 +31,8 @@
 #include "xbe_cppfwd.h"
 #include "xbe_scopestack.h"
 #include "xbe_genlist.h"
+
+#include "xbe_predefined.h"
 
 // -------------------------------------------------
 //  BE_STRUCTURE IMPLEMENTATION
@@ -657,7 +667,7 @@ void be_structure::Generate (be_ClientHeader& source)
               << (is_sequency ? "&" : "") << " _val_) { this->" << field->get_local_name() << "_ = _val_; }" << nl;
           source.Outdent();
           if (!(field->get_be_type()->IsPrimitiveType()
-                  && !field->get_be_type()->IsEnumeratedType())) {
+                  || field->get_be_type()->IsEnumeratedType())) {
               os << "#ifdef OSPL_DDS_CXX11" << nl;
               source.Indent();
               // C++ 11 move assignement op
@@ -686,10 +696,26 @@ void be_structure::Generate (be_ClientHeader& source)
             if(mit != m_fields.begin())
                 os << tab << tab;
 
-            os  << relName << (BE_Globals::isocpp_new_types ? "_" : "")
-                << " == _other."
-                << relName << (BE_Globals::isocpp_new_types ? "_" : "")
-                << (mit != final_field ? " &&" : ";") << nl;
+            be_Type *fieldType = field->get_be_type();
+            be_typedef *fieldBase = (be_typedef *) fieldType->narrow((long) & be_typedef::type_id);
+            if (fieldBase) {
+                fieldType = be_typedef::_beBase(fieldBase);
+            }
+            be_predefined_type * pdt = (be_predefined_type *) fieldType->narrow((long) & be_predefined_type::type_id);
+            if (pdt && ( pdt->pt() == AST_PredefinedType::PT_boolean)) {
+                /* Booleans must both be either FALSE, or not FALSE. That is not the same thing as total equality!! */
+                os  << "((" << relName << (BE_Globals::isocpp_new_types ? "_" : "")
+                    << " && _other."
+                    << relName << (BE_Globals::isocpp_new_types ? "_" : "")
+                    << ") || (!" << relName << (BE_Globals::isocpp_new_types ? "_" : "")
+                    << " && !_other."
+                    << relName << (BE_Globals::isocpp_new_types ? "_))" : "))");
+            } else {
+                os  << relName << (BE_Globals::isocpp_new_types ? "_" : "")
+                    << " == _other."
+                    << relName << (BE_Globals::isocpp_new_types ? "_" : "");
+            }
+            os << (mit != final_field ? " &&" : ";") << nl;
 
           }
           os << tab << "}" << nl;

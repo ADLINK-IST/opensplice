@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef V_TOPIC_H
@@ -15,6 +23,8 @@
 #include "v_kernel.h"
 #include "v_entity.h"
 #include "v_status.h"
+#include "v_topicAdapter.h"
+#include "v_topicImpl.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -41,68 +51,73 @@ extern "C" {
 #define v_topicName(_this) \
         (v_entityName(v_topic(_this)))
 
-#define v_topicMessageType(_this) \
-        (v_topic(_this)->messageType)
+#define v_topicIsAdapter(_this)\
+        (v_objectKind(_this) == K_TOPIC_ADAPTER)
 
-#define v_topicMessageKeyList(_this) \
-        (v_topic(_this)->messageKeyList)
+#define v_topicMessageType(o) \
+        (v_topicIsAdapter(o) ? v_topicAdapter(o)->topic->messageType : v_topicImpl(o)->messageType)
 
-#define v_topicDataType(_this) \
-        (v_topic(_this)->dataField->type)
+#define v_topicMessageKeyList(o) \
+        (v_topicIsAdapter(o) ? v_topicAdapter(o)->topic->messageKeyList : v_topicImpl(o)->messageKeyList)
 
-#define v_topicQosRef(_this) \
-        (v_topic(_this)->qos)
+#define v_topicDataType(o) \
+        (v_topicIsAdapter(o) ? v_topicAdapter(o)->topic->dataType : v_topicImpl(o)->dataType)
 
-#define v_topicKeyExpr(_this) \
-        (v_topic(_this)->keyExpr)
+#define v_topicQosRef(o) \
+        (v_topicIsAdapter(o) ? v_topicAdapter(o)->topic->qos : v_topicImpl(o)->qos)
 
-#define v_topicDataOffset(_this) \
-        (v_topic(_this)->dataField->offset)
+#define v_topicKeyExpr(o) \
+        (v_topicIsAdapter(o) ? v_topicAdapter(o)->topic->keyExpr : v_topicImpl(o)->keyExpr)
 
-#define v_topicData(_this,_msg) \
-        ((c_voidp)C_DISPLACE(_msg,v_topicDataOffset(_this)))
+#define v_topicAccessMode(o)\
+        (v_topicIsAdapter(o) ? v_topicAdapter(o)->topic->accessMode : v_topicImpl(o)->accessMode)
 
-#define v_topicAccessMode(_this)\
-        (v_topic(_this)->accessMode)
+#define v_topicCrcOfName(o)\
+        (v_topicIsAdapter(o) ? v_topicAdapter(o)->topic->crcOfName : v_topicImpl(o)->crcOfName)
 
-OS_API v_topic
-v_topicNew(
-    v_kernel kernel,
-    const c_char *name,
-    const c_char *typeName,
-    const c_char *keyList,
-    v_topicQos qos);
+#define v_topicCrcOfTypeName(o)\
+        (v_topicIsAdapter(o) ? v_topicAdapter(o)->topic->crcOfTypeName : v_topicImpl(o)->crcOfTypeName)
+
 
 OS_API void
 v_topicFree(
-    v_topic topic);
+    v_topic _this);
 
 OS_API v_result
 v_topicEnable(
-    v_topic topic);
-
-OS_API void
-v_topicAnnounce(
-    v_topic topic);
-
-OS_API v_message
-v_topicMessageNew(
-    v_topic topic);
-
-OS_API c_char *
-v_topicMessageKeyExpr(
-    v_topic topic);
-
-OS_API c_iter
-v_topicLookupWriters(
-    v_topic topic);
-
-OS_API c_iter
-v_topicLookupReaders(
-    v_topic topic);
+    v_topic _this);
 
 OS_API v_topicQos
 v_topicGetQos(
+    v_topic _this);
+
+OS_API v_result
+v_topicSetQos (
+    v_topic _this,
+    v_topicQos qos);
+
+OS_API void
+v_topicAnnounce(
+    v_topic _this);
+
+OS_API v_message
+v_topicMessageNew(
+    v_topic _this);
+
+OS_API v_message
+v_topicMessageNew_s(
+    v_topic _this);
+
+OS_API c_char *
+v_topicMessageKeyExpr(
+    v_topic _this);
+
+OS_API c_iter
+v_topicLookupWriters(
+    v_topic _this);
+
+OS_API c_iter
+v_topicLookupReaders(
     v_topic topic);
 
 OS_API v_result
@@ -122,8 +137,13 @@ v_topicGetAllDataDisposedStatus(
    v_statusAction action,
    c_voidp arg);
 
-OS_API c_type
-v_topicGetUserType (
+OS_API os_char *
+v_topicMetaDescriptor (
+    v_topic _this);
+
+OS_API v_result
+v_topicFillTopicInfo (
+    struct v_topicInfo *info,
     v_topic topic);
 
 #undef OS_API

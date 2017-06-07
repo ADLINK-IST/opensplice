@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -19,8 +27,11 @@
 
 #include <os_cond.h>
 #include <assert.h>
-#include <errno.h>
+#include "os_errno.h"
 #include <os_signature.h>
+
+#include <time.h>
+#include <sys/time.h>
 
 #include "os_init.h"
 
@@ -43,12 +54,17 @@ extern int ospl_lkst_enabled;
  */
 os_result os_condInit (os_cond *cond, os_mutex *dummymtx __attribute__ ((unused)), const os_condAttr *condAttr)
 {
+  os_condAttr defAttr;
   assert (cond != NULL);
-  assert (condAttr != NULL);
 #ifdef OSPL_STRICT_MEM
   assert(cond->signature != OS_COND_MAGIC_SIG);
 #endif
-  if (condAttr->scopeAttr != OS_SCOPE_SHARED || os_serviceGetSingleProcess ())
+
+  if(!condAttr) {
+    os_condAttrInit(&defAttr);
+    condAttr = &defAttr;
+  }
+  if (condAttr->scopeAttr != OS_SCOPE_SHARED)
   {
     pthread_cond_init (&cond->cond, NULL);
   }
@@ -71,17 +87,17 @@ os_result os_condInit (os_cond *cond, os_mutex *dummymtx __attribute__ ((unused)
  * \b os_condDestroy calls \b pthread_cond_destroy to destroy the
  * posix condition variable.
  */
-os_result os_condDestroy (os_cond *cond)
+void os_condDestroy (os_cond *cond)
 {
   assert (cond != NULL);
 #ifdef OSPL_STRICT_MEM
   assert(cond->signature == OS_COND_MAGIC_SIG);
 #endif
-  pthread_cond_destroy (&cond->cond);
+  if (pthread_cond_destroy (&cond->cond) != 0)
+    abort();
 #ifdef OSPL_STRICT_MEM
   cond->signature = 0;
 #endif
-  return os_resultSuccess;
 }
 
 /** \brief Wait for the condition
@@ -89,7 +105,7 @@ os_result os_condDestroy (os_cond *cond)
  * \b os_condWait calls \b pthread_cond_wait to wait
  * for the condition.
  */
-os_result os_condWait (os_cond *cond, os_mutex *mutex)
+void os_condWait (os_cond *cond, os_mutex *mutex)
 {
   assert (cond != NULL);
   assert (mutex != NULL);
@@ -101,14 +117,14 @@ os_result os_condWait (os_cond *cond, os_mutex *mutex)
   if (ospl_lkst_enabled)
     lkst_track_op (mutex, LKST_UNLOCK, mach_absolute_time (), 0);
 #endif
-  pthread_cond_wait (&cond->cond, &mutex->mutex);
+  if (pthread_cond_wait (&cond->cond, &mutex->mutex) != 0)
+    abort();
 #if HAVE_LKST
   /* Have no way of determining whether it was uncontended or not, and
      if not, how long the wait was. */
   if (ospl_lkst_enabled)
     lkst_track_op (mutex, LKST_LOCK, mach_absolute_time (), 0);
 #endif
-  return os_resultSuccess;
 }
 
 /** \brief Wait for the condition but return when the specified
@@ -127,29 +143,37 @@ os_result os_condWait (os_cond *cond, os_mutex *mutex)
  * \b pthread_cond_timedwait is absolute, no remaining time must be
  * calculated.
  */
-os_result os_condTimedWait (os_cond *cond, os_mutex *mutex, const os_time *time)
+os_result os_condTimedWait (os_cond *cond, os_mutex *mutex, os_duration timeout)
 {
   struct timespec t;
   int result;
-  os_time wakeup_time;
+  os_timeW wt;
+  struct timeval tv;
 
   assert (cond != NULL);
   assert (mutex != NULL);
-  assert (time != NULL);
+  assert (OS_DURATION_ISPOSITIVE(timeout));
 #ifdef OSPL_STRICT_MEM
   assert( cond->signature == OS_COND_MAGIC_SIG );
   assert( mutex->signature == OS_MUTEX_MAGIC_SIG );
 #endif
 
-  wakeup_time = os_timeAdd (os_timeGet(), *time);
-  t.tv_sec = wakeup_time.tv_sec;
-  t.tv_nsec = wakeup_time.tv_nsec;
-
+  (void) gettimeofday (&tv, NULL);
+  wt = OS_TIMEW_INIT(tv.tv_sec, 1000 * tv.tv_usec);
+  wt = os_timeWAdd(wt, timeout);
+  t.tv_sec = (time_t)OS_TIMEW_GET_SECONDS(wt);
+  t.tv_nsec = OS_TIMEW_GET_NANOSECONDS(wt);
 #if HAVE_LKST
   if (ospl_lkst_enabled)
     lkst_track_op (mutex, LKST_UNLOCK, mach_absolute_time (), 0);
 #endif
+  /* By default Darwin uses the realtime clock in pthread_cond_timedwait().
+   * Unfortunately Darwin has not (yet) implemented
+   * pthread_condattr_setclock(), so we cannot tell it to use the
+   * the monotonic clock. */
   result = pthread_cond_timedwait (&cond->cond, &mutex->mutex, &t);
+  if (result != 0 && result != ETIMEDOUT)
+    abort();
 #if HAVE_LKST
   /* Have no way of determining whether it was uncontended or not, and
      if not, how long the wait was. */
@@ -165,14 +189,14 @@ os_result os_condTimedWait (os_cond *cond, os_mutex *mutex, const os_time *time)
  * \b os_condSignal calls \b pthread_cond_signal to signal
  * the condition.
  */
-os_result os_condSignal (os_cond *cond)
+void os_condSignal (os_cond *cond)
 {
   assert (cond != NULL);
 #ifdef OSPL_STRICT_MEM
   assert( cond->signature == OS_COND_MAGIC_SIG );
 #endif
-  pthread_cond_signal (&cond->cond);
-  return os_resultSuccess;
+  if (pthread_cond_signal (&cond->cond) != 0)
+    abort();
 }
 
 /** \brief Signal the condition and wakeup all threads waiting
@@ -181,14 +205,14 @@ os_result os_condSignal (os_cond *cond)
  * \b os_condBroadcast calls \b pthread_cond_broadcast to broadcast
  * the condition.
  */
-os_result os_condBroadcast (os_cond *cond)
+void os_condBroadcast (os_cond *cond)
 {
   assert (cond != NULL);
 #ifdef OSPL_STRICT_MEM
   assert( cond->signature == OS_COND_MAGIC_SIG );
 #endif
-  pthread_cond_broadcast (&cond->cond);
-  return os_resultSuccess;
+  if (pthread_cond_broadcast (&cond->cond) != 0)
+    abort();
 }
 
 #include <../common/code/os_cond_attr.c>

@@ -1,0 +1,27 @@
+parseconditions:
+    desc: DBMSConnect - cpp LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: write_msg
+          type: line
+          inst: 2
+          required: yes
+          line: "*Hi *here, I will send you 10 * messages."
+
+        - name: sql_dds_dbms
+          type: line
+          inst: 10
+          required: yes
+          line: "SqlToDdsAndDbms: Message no*"
+
+        - name: sql_dds_only
+          type: line
+          inst: 10
+          required: yes
+          line: "SqlToDdsOnly: Message no*"

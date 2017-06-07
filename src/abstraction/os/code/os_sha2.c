@@ -140,7 +140,7 @@ typedef os_uint64 sha2_word64;	/* Exactly 8 bytes */
 #define REVERSE32(w,x)	{ \
 	sha2_word32 tmp = (w); \
 	tmp = (tmp >> 16) | (tmp << 16); \
-	(x) = ((tmp & 0xff00ff00UL) >> 8) | ((tmp & 0x00ff00ffUL) << 8); \
+	(x) = ((tmp & 0xff00ff00U) >> 8) | ((tmp & 0x00ff00ffU) << 8); \
 }
 #define REVERSE64(w,x)	{ \
 	sha2_word64 tmp = (w); \
@@ -442,9 +442,6 @@ static void SHA256_Transform(SHA256_CTX* context, const sha2_word32* data) {
 	context->state[5] += f;
 	context->state[6] += g;
 	context->state[7] += h;
-
-	/* Clean up */
-	a = b = c = d = e = f = g = h = T1 = 0;
 }
 
 #else /* SHA2_UNROLL_TRANSFORM */
@@ -522,9 +519,6 @@ static void SHA256_Transform(SHA256_CTX* context, const sha2_word32* data) {
 	context->state[5] += f;
 	context->state[6] += g;
 	context->state[7] += h;
-
-	/* Clean up */
-	a = b = c = d = e = f = g = h = T1 = T2 = 0;
 }
 
 #endif /* SHA2_UNROLL_TRANSFORM */
@@ -557,7 +551,6 @@ void os_SHA256Update(SHA256_CTX* context, const sha2_byte *data, size_t len) {
 			MEMCPY_BCOPY(&context->buffer[usedspace], data, len);
 			context->bitcount += len << 3;
 			/* Clean up: */
-			usedspace = freespace = 0;
 			return;
 		}
 	}
@@ -573,8 +566,6 @@ void os_SHA256Update(SHA256_CTX* context, const sha2_byte *data, size_t len) {
 		MEMCPY_BCOPY(context->buffer, data, len);
 		context->bitcount += len << 3;
 	}
-	/* Clean up: */
-	usedspace = freespace = 0;
 }
 
 void os_SHA256Final(sha2_byte digest[], SHA256_CTX* context) {
@@ -637,7 +628,6 @@ void os_SHA256Final(sha2_byte digest[], SHA256_CTX* context) {
 
 	/* Clean up state data: */
 	MEMSET_BZERO(context, sizeof(SHA256_CTX));
-	usedspace = 0;
 }
 
 char *os_SHA256End(SHA256_CTX* context, char buffer[]) {

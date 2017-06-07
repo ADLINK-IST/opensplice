@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -20,6 +28,7 @@
 #include "v_subscriber.h"
 #include "v_configuration.h"
 #include "v__policy.h"
+#include "v__participant.h"
 #include "os_heap.h"
 #include "os_report.h"
 
@@ -79,14 +88,13 @@ v_partitionStringMatchesExpression(
     return result;
 }
 
-/* Public */
-
 v_partition
 v_partitionNew(
     v_kernel kernel,
     const c_char *name,
     v_partitionQos qos)
 {
+    c_iter existing;
     v_partition partition, found;
 
     OS_UNUSED_ARG(qos);
@@ -96,16 +104,22 @@ v_partitionNew(
     assert(name != NULL);
     assert(v_partitionExpressionIsAbsolute(name));
 
-    partition = v_partition(v_objectNew(kernel,K_DOMAIN));
-    v_entityInit(v_entity(partition),name, NULL, TRUE);
+    existing = v_resolvePartitions(kernel, name);
 
-    found = v_addPartition(kernel,partition);
-
-    if (found != partition) {
-        v_partitionFree(partition);
-        c_free(partition); /* v_partitionFree has removed all dependancies, now delete local reference */
-        partition = c_keep(found); /* this one will be returned, so a keep is required */
+    if(c_iterLength(existing) > 0) {
+        assert(c_iterLength(existing) == 1);
+        partition = c_iterTakeFirst(existing);
+    } else {
+        partition = v_partition(v_objectNew(kernel,K_DOMAIN));
+        v_entityInit(v_entity(partition),name, TRUE);
+        found = v_addPartition(kernel,partition);
+        if (found != partition) {
+            v_partitionFree(partition);
+            c_free(partition); /* v_partitionFree has removed all dependencies, now delete local reference */
+            partition = found;
+        }
     }
+    c_iterFree(existing);
     return partition;
 }
 
@@ -144,11 +158,9 @@ v_partitionLookupPublishers(
     participant = v_participant(c_iterTakeFirst(participants));
 
     while (participant != NULL) {
-        c_lockRead(&participant->lock);
-        entities = ospl_c_select(participant->entities, 0);
-        c_lockUnlock(&participant->lock);
-        entity = v_entity(c_iterTakeFirst(entities));
+        entities = v_participantGetEntityList(participant);
 
+        entity = v_entity(c_iterTakeFirst(entities));
         while (entity != NULL) {
             if (v_objectKind(entity) == K_PUBLISHER) {
                 partitions = v_publisherLookupPartitions(v_publisher(entity),
@@ -195,11 +207,9 @@ v_partitionLookupSubscribers(
     participant = v_participant(c_iterTakeFirst(participants));
 
     while (participant != NULL) {
-        c_lockRead(&participant->lock);
-        entities = ospl_c_select(participant->entities, 0);
-        c_lockUnlock(&participant->lock);
-        entity = v_entity(c_iterTakeFirst(entities));
+        entities = v_participantGetEntityList(participant);
 
+        entity = v_entity(c_iterTakeFirst(entities));
         while (entity != NULL) {
             if(v_objectKind(entity) == K_SUBSCRIBER) {
                 partitions = v_subscriberLookupPartitions(v_subscriber(entity),
@@ -236,17 +246,7 @@ v_partitionInterestNew(
     const char *partitionExpression)
 {
     v_partitionInterest result = NULL;
-
-
     result = c_new(v_kernelType(kernel, K_DOMAININTEREST));
-    if (result) {
-        result->expression = c_stringNew(c_getBase(c_object(kernel)), partitionExpression);
-    } else {
-        OS_REPORT(OS_ERROR,
-                  "v_partitionInterestNew",0,
-                  "Failed to allocate partition interest.");
-        assert(FALSE);
-    }
-
+    result->expression = c_stringNew(c_getBase(c_object(kernel)), partitionExpression);
     return result;
 }

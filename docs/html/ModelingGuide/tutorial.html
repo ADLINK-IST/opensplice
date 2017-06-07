@@ -1,0 +1,1259 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>9. Tutorial &mdash; Modeling Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.5.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Modeling Guide" href="index.html" />
+    <link rel="next" title="10. Appendix A" href="appendixa.html" />
+    <link rel="prev" title="8. Compiling and Running" href="compileandrun.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="appendixa.html" title="10. Appendix A"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="compileandrun.html" title="8. Compiling and Running"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tutorial">
+<span id="id1"></span><h1>9. Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p><em>This tutorial uses an example DDS-based chatroom system consisting
+of three autonomous applications (the Application Model) plus data
+type definitions (the Information Model) to demonstrate how to use
+the basic features of the Vortex OpenSplice Modeler modeling tool.</em></p>
+<p>The purpose of this tutorial is not to describe DDS nor the
+example application&#8217;s in-depth logic and architecture, but
+rather to show how a project can be created, modeled and
+implemented using the Vortex OpenSplice Modeler.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd><table border="1" class="first last docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><p class="first">A completed <em>Chatroom</em> example project is included with Vortex
+OpenSplice Modeler. The completed example can be opened by
+right-clicking in the Project Explorer, choosing <em>New &gt; Example</em>
+to open the <em>New Example</em> dialog, selecting <em>Chatroom</em>, then
+clicking the <em>Finish</em> button. The Chatroom project and three
+other projects, which contains the Chatroom&#8217;s generated and
+(example) user-written code, should open in the Project
+Explorer.</p>
+<p>Java and C++ versions of the Chatroom example are covered in
+this tutorial. The source code, for Java and C++, is provided
+in <a class="reference internal" href="appendixa.html#appendix-a"><em>Appendix A</em></a>
+<a class="reference internal" href="appendixa.html#appx-a-java"><em>Chatroom Example Java Source Code</em></a>,
+and <a class="reference internal" href="appendixb.html#appendix-b"><em>Appendix B</em></a>
+<a class="reference internal" href="appendixb.html#appx-b-cpp"><em>Chatroom Example C++ Source Code</em></a>.</p>
+<p class="last">A thorough tutorial on DDS, including a detailed description
+of the Chatroom example, is provided in the Vortex OpenSplice <em>C
+Tutorial Guide</em> <a class="footnote-reference" href="#id5" id="id2">[1]</a> .</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<div class="section" id="example-chatroom-overview">
+<h2>9.1. Example Chatroom Overview<a class="headerlink" href="#example-chatroom-overview" title="Permalink to this headline">¶</a></h2>
+<p>The tutorial example, <em>Chatroom</em>, is a simple system which enables
+people to chat with each other. The system consists of
+autonomous applications, distributed amongst the system&#8217;s peers,
+which transmit messages between the system&#8217;s users (see
+<a class="reference internal" href="#basic-chatroom-architecture">Basic Chatroom Architecture</a>).</p>
+<p>This tutorial uses the Chatroom example to demonstrate how to:</p>
+<ul class="simple">
+<li>create a Vortex OpenSplice project which can generate the source
+code and interfaces for a DDS-based distributed application</li>
+<li>add Modeler&#8217;s components, DDS entities, and resources to the
+project</li>
+<li>create a model which establishes the relationships between
+the application&#8217;s entities</li>
+<li>generate Vortex OpenSplice-compliant source code</li>
+<li>implement the applications business logic and associated
+interfaces which use the generated code</li>
+</ul>
+<p>The services or functions that the Chatroom provides includes:</p>
+<ul class="simple">
+<li>enabling users to log on and off the chatroom<ul>
+<li>the users, called <em>chatters</em>, have unique IDs to identify them</li>
+</ul>
+</li>
+<li>controlling user load by tracking who logs on and off of the
+chatroom</li>
+<li>enabling users to see which users are logged on to the
+chatroom</li>
+<li>enabling users to post messages to other chatters</li>
+<li>enabling users to subscribe to the messages being published
+by other users<ul>
+<li>messages are transmitted directly from the message publishers
+to all subscribers</li>
+</ul>
+</li>
+</ul>
+<p>The Chatroom employs the DDS-DCPS architectural approach, which
+is similar to a peer-to-peer architecture. Individual chatroom
+application nodes are distributed across hosts in a network (see
+<a class="reference internal" href="#basic-chatroom-architecture">Basic Chatroom Architecture</a>).</p>
+<p>Each chatroom application communicates directly with each of the
+others. This architecture is scalable and has a degree of fault
+tolerance (the chatroom system will continue to operate even
+if a node fails).</p>
+<p class="centered" id="basic-chatroom-architecture">
+<strong><strong>Basic Chatroom Architecture</strong></strong></p><a class="reference internal image-reference" href="_images/017_ChatroomArchitecture.png"><img alt="Basic Chatroom Architecture" class="align-center" src="_images/017_ChatroomArchitecture.png" style="width: 140mm;" /></a>
+<p>The Chatroom system consists of:</p>
+<ul>
+<li><p class="first">autonomous applications which perform specific tasks (the
+Application Model):</p>
+<ul class="simple">
+<li><strong>Chatter</strong> - responsible for publishing the identity of the
+user, followed by all chat messages he or she wishes to
+transmit. (This application is <em>write-only</em>.)</li>
+<li><strong>MessageBoard</strong> - responsible for subscribing itself to all chat
+messages and for displaying them in the order in which they are
+received. (This application is <em>read-only</em>).</li>
+<li><strong>UserLoad</strong> - This part is responsible for continuously keeping
+track of users that join and leave the Chatroom. (This
+application is <em>read-only</em>).</li>
+</ul>
+<p>Each of these applications are modeled as separate processes.
+They use the standard output to print their messages (output has
+been kept rudimentary in order to enable the example to remain
+focused on the efficient utilization of the DCPS).</p>
+</li>
+<li><p class="first">data types which define the structure of the data or
+information which constitute the messages that users transmit
+between each other (the Information Model).</p>
+</li>
+</ul>
+<p>The Chatroom&#8217;s applications are constructed from:</p>
+<ul class="simple">
+<li>standard DDS entities, including<ul>
+<li>DomainParticipants</li>
+<li>Publishers</li>
+<li>Subscribers</li>
+<li>Topics</li>
+<li>Content Filter Topics</li>
+<li>Listeners</li>
+<li>Partitions</li>
+<li>DataWriters and DataReaders</li>
+<li>WaitSets</li>
+<li>Conditions</li>
+</ul>
+</li>
+<li>interfaces, implemented by the developer, which provide the
+Chatroom&#8217;s business logic</li>
+</ul>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+The DDS-specific parts of the applications are generated by
+Vortex OpenSplice Modeler and do not need to be implemented by
+the developer.</p>
+</div>
+<div class="section" id="creating-the-chatroom">
+<h2>9.2. Creating the Chatroom<a class="headerlink" href="#creating-the-chatroom" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd><table border="1" class="first last docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>The pathnames shown here use Unix forward slash ( <tt class="docutils literal"><span class="pre">/</span></tt> )
+delimiters: Windows users should replace the forward slashes
+( <tt class="docutils literal"><span class="pre">/</span></tt> ) in the pathnames with back slashes ( <tt class="docutils literal"><span class="pre">\</span></tt> ) as
+well as adding the drive letter (for example, <tt class="docutils literal"><span class="pre">c:\</span></tt>).</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p>Here is an outline of the steps to follow
+to create the Chatroom in the Modeler:</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Create a Project to contain the Chatroom application
+and information models.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Import an IDL specification which defines the structure
+and Topic types (the Information Model) into the Tutorial
+project.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Create a <em>Chat</em> module to hold the Chatroom components.</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div>Create the <em>ChatMessage_topic</em>, <em>NamedMessage_topic</em> and
+the <em>NameService_topic</em> (part of the Information Model) that
+the Chatroom requires.</div></blockquote>
+<p><strong>Step 5</strong></p>
+<blockquote>
+<div>Set QoS policy values for the DDS entities.</div></blockquote>
+<p><strong>Step 6</strong></p>
+<blockquote>
+<div>Create a partition which application&#8217;s subscribers and
+publishers will be associated with.</div></blockquote>
+<p><strong>Step 7</strong></p>
+<blockquote>
+<div>Use the Diagram Editor to model the Chatroom&#8217;s
+applications.</div></blockquote>
+<p><strong>Step 8</strong></p>
+<blockquote>
+<div>Generate the DDS-related source code from the
+application and information models.</div></blockquote>
+<p><strong>Step 9</strong></p>
+<blockquote>
+<div>Implement the <em>Chatter</em>, <em>MessageBoard</em> and <em>UserLoad</em>
+applications&#8217; business logic.</div></blockquote>
+<p><strong>Step 10</strong></p>
+<blockquote>
+<div>Compile the code.</div></blockquote>
+<p><strong>Step 11</strong></p>
+<blockquote>
+<div>Run and test the application.</div></blockquote>
+<p>These steps are described in detail below.</p>
+<div class="section" id="step-1-create-a-project">
+<h3>9.2.1. Step 1:  Create a Project<a class="headerlink" href="#step-1-create-a-project" title="Permalink to this headline">¶</a></h3>
+<p>Create a Project which will contain the information model and
+the applications (<em>Chatter</em>, <em>MessageBoard</em> and <em>UserLoad</em>) that
+will be modeled for the Chatroom.</p>
+<ol class="arabic">
+<li><p class="first">If the Vortex OpenSplice Design Perspective is not open, then
+open it by clicking on the Window menu icon <a class="reference internal" href="_images/000_icon_WindowMenu.png"><img alt="winicon" src="_images/000_icon_WindowMenu.png" style="height: 4mm;" /></a>
+(located in the upper right-hand corner of the Workbench,
+above the Outline Section), then choosing <em>Other &gt; Open
+Perspective &gt; Vortex OpenSplice Design</em>.</p>
+</li>
+<li><p class="first">Create a new project by choosing <em>File &gt; New &gt; Vortex
+OpenSplice Project</em> from the Menu Bar.</p>
+</li>
+<li><p class="first">Enter the name <tt class="docutils literal"><span class="pre">Tutorial</span></tt> into the <em>Project Name</em> text
+box: this will be the project&#8217;s name.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+If you clear the <em>Use Default Location</em> check box, then you
+can save to your project to any directory by entering its
+location into the <em>Location</em> text box.</p>
+</li>
+<li><p class="first">Click the <em>Finish</em> button to create the Tutorial project.
+The Tutorial project should now appear in the Project
+Explorer window (located on the left-hand side of the
+Eclipse Workbench).</p>
+<p>Clicking the tree expansion icon <a class="reference internal" href="_images/000_icon_Expand.png"><img alt="exptree" src="_images/000_icon_Expand.png" style="height: 4mm;" /></a> will reveal the
+project&#8217;s model and default module components.</p>
+</li>
+</ol>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>Eclipse only auto-saves the project when the project is created.
+Eclipse does not auto-save any subsequent changes to a project.
+Remember to save any changes or additions to your project using
+<em>File &gt; Save</em> from the menu or the <em>[Ctrl]+[S]</em> short-cut key
+combination.</dd>
+</dl>
+<p class="centered" id="new-project-in-vortex-opensplice-design-perspective">
+<strong><strong>New Project in Vortex OpenSplice Design Perspective</strong></strong></p><a class="reference internal image-reference" href="_images/018_NewProjectDesignPerpec.png"><img alt="New Project in Vortex OpenSplice Design Perspective" class="align-center" src="_images/018_NewProjectDesignPerpec.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="step-2-provide-an-information-model">
+<h3>9.2.2. Step 2:  Provide an Information Model<a class="headerlink" href="#step-2-provide-an-information-model" title="Permalink to this headline">¶</a></h3>
+<p>Import an Interface Definition Language (IDL) specification
+which defines the data types and Topic types for the messages
+and other data the Chatroom needs (the Information Model).</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Vortex OpenSplice distributes data using structured data types. The
+data types are transported using Topics. The OMG&#8217;s Interface
+Definition Language (IDL), which is platform- and implementation
+language-independent, is used by Vortex OpenSplice Modeler to
+define the data types. The IDL definitions imported into the
+project provide the data type definitions which constitute the
+project&#8217;s information model.</p>
+<p><strong>To import the IDL definitions for the Tutorial project:</strong></p>
+<ol class="arabic">
+<li><p class="first">Choose <em>File &gt; Import &gt; Vortex OpenSplice &gt; Vortex OpenSplice
+IDL Import Wizard</em>, then click the <em>Next</em> button.</p>
+</li>
+<li><p class="first">In the <em>Vortex OpenSplice IDL Import Wizard</em>:</p>
+<p>a) Enter <tt class="docutils literal"><span class="pre">Tutorial</span></tt> into the Destination Folder entry
+box by using the <em>Browse</em> button (located adjacent to the
+box) to navigate to the Tutorial folder.</p>
+<p>b) Enter <tt class="docutils literal"><span class="pre">&lt;ospl&gt;/examples/dcps/tutorial/idl/chat.idl</span></tt>
+into the <em>IDL Source</em> text box (or use the adjacent
+<em>Browse</em> button to navigate to the file), where:</p>
+<blockquote>
+<div><p><tt class="docutils literal"><span class="pre">&lt;ospl&gt;</span></tt> is your Vortex OpenSplice installation&#8217;s home directory</p>
+<p><tt class="docutils literal"><span class="pre">&lt;lang&gt;</span></tt> is the target language (<tt class="docutils literal"><span class="pre">Java</span></tt> or <tt class="docutils literal"><span class="pre">C++</span></tt>)</p>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a>
+Windows users should replace the forward slashes ( <tt class="docutils literal"><span class="pre">/</span></tt> )
+in the pathname with back slashes ( <tt class="docutils literal"><span class="pre">\</span></tt> ).</p>
+</div></blockquote>
+<p>c) Click <em>Finish</em>
+when done.</p>
+</li>
+</ol>
+<p>A new model, called <em>Chat</em>, should appear (provided Eclipse
+is set to automatically build projects: this is the default
+behaviour). The <em>Chat model</em> will contain the <em>Chat module</em>
+and its data types (<em>ChatMessage</em>, <em>NamedMessage</em> and
+<em>NameService</em>).</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><table border="1" class="first last docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>The Chatroom&#8217;s <em>NameService</em> data type should not be confused
+with the OMG&#8217;s CORBA <em>Naming Service</em> of the same name; they
+are not related in any way.</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt><em>ChatMessage</em> -</dt>
+<dd>Contains the message to be published, a
+message index and the ID of the user publishing the message.</dd>
+<dt><em>NamedMessage</em> -</dt>
+<dd>Contains the user name, user ID, message and
+message index, information that the MessageBoard application
+requires.</dd>
+<dt><em>NameService</em> -</dt>
+<dd>Contains the details of a single user, their userID and name.</dd>
+</dl>
+<p>The IDL definitions for these data types are shown in the
+following code extract.</p>
+<div class="highlight-idl"><div class="highlight"><pre><span class="o">/*****************************************************************</span>
+ <span class="o">*</span>
+ <span class="o">*</span> Copyright (c) 2006 to 2016
+ <span class="o">*</span> PrismTech Ltd.
+ <span class="o">*</span> All rights Reserved.
+ <span class="o">*</span>
+ <span class="o">*</span> LOGICAL_NAME<span class="o">:</span>    Chat.idl
+ <span class="o">*</span> <span class="k">FUNCTION</span><span class="o">:</span>        Vortex OpenSplice Tutorial example code.
+ <span class="o">*</span> MODULE<span class="o">:</span>          Tutorial <span class="k">for</span> the Java programming language.
+ <span class="o">*</span> DATE             june 2006.
+ <span class="o">******************************************************************</span>
+ <span class="o">*</span>
+ <span class="o">*</span> This file contains the data definitions <span class="k">for</span> the tutorial examples.
+ <span class="o">*</span>
+ <span class="o">***/</span>
+
+module Chat {
+
+    const <span class="nb">long</span> MAX_NAME <span class="o">=</span> 32;
+    typedef <span class="nb">string</span><span class="o">&lt;</span>MAX_NAME<span class="o">&gt;</span> nameType;
+
+    struct ChatMessage {
+        <span class="nb">long</span>      userID;          <span class="o">//</span> owner <span class="k">of</span> <span class="nb">message</span>
+        <span class="nb">long</span>      index;           <span class="o">//</span> <span class="nb">message</span> number
+        <span class="nb">string</span>    content;         <span class="o">//</span> <span class="nb">message</span> body
+    };
+<span class="o">#</span>pragma keylist ChatMessage userID
+
+    struct NameService {
+        <span class="nb">long</span>     userID;           <span class="o">//</span> unique user identification
+        nameType name;             <span class="o">//</span> name <span class="k">of</span> the user
+    };
+<span class="o">#</span>pragma keylist NameService userID
+
+    struct NamedMessage {
+        <span class="nb">long</span>     userID;           <span class="o">//</span> unique user identification
+        nameType userName;         <span class="o">//</span> user name
+        <span class="nb">long</span>     index;            <span class="o">//</span> <span class="nb">message</span> number
+        <span class="nb">string</span>   content;          <span class="o">//</span> <span class="nb">message</span> body
+    };
+<span class="o">#</span>pragma keylist NamedMessage userID
+
+};
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-3-create-a-chat-module">
+<h3>9.2.3. Step 3:  Create a Chat module<a class="headerlink" href="#step-3-create-a-chat-module" title="Permalink to this headline">¶</a></h3>
+<p>Create a Chat module for containing the Chatroom components.</p>
+<ol class="arabic">
+<li><p class="first">Expand the model called model in the Project Explorer
+to show the default module. Right-click on the default
+module to display the context menu. Choose the New Module
+option from the context menu.</p>
+</li>
+<li><p class="first">In the <em>New Module</em> wizard:</p>
+<p>a) Enter <tt class="docutils literal"><span class="pre">Chat</span></tt> into
+the <em>Name</em> field.</p>
+<p>b) Click <em>Finish</em>
+when done.</p>
+</li>
+</ol>
+<p>The <em>Chat</em> module should now appear as a child node of the
+default module.</p>
+</div>
+<div class="section" id="step-4-create-the-topics">
+<h3>9.2.4. Step 4:  Create the Topics<a class="headerlink" href="#step-4-create-the-topics" title="Permalink to this headline">¶</a></h3>
+<p>Create the <em>ChatMessage_topic</em>, <em>NamedMessage_topic</em> and
+<em>NameService_topic</em> (part of the Information Model) that the
+Chatroom requires.</p>
+<p>To create the <em>ChatMessage_topic</em>:</p>
+<ol class="arabic">
+<li><p class="first">Expand the model called <em>model</em> in the Project Explorer
+to display the <em>Chat</em> module. Right-click the <em>Chat</em> module
+to display the context menu. Choose the <em>New Topic</em> option
+from the context menu.</p>
+</li>
+<li><p class="first">In the <em>New Topic</em> wizard:</p>
+<p>a) Enter <tt class="docutils literal"><span class="pre">ChatMessage_topic</span></tt> into
+the <em>Name</em> field.</p>
+<p>b) Click the <em>Browse</em> button adjacent to the <em>Data Type</em>
+text box; this opens the <em>Data Type Selection</em> dialog.
+Navigate to the <em>ChatMessage</em> struct in the Chat <em>module</em>
+within the Chat <em>model</em>, then select the Chat <em>struct</em>,
+then click the <em>OK</em> button to confirm.</p>
+<p>c) Click <em>Finish</em>
+when done.</p>
+</li>
+</ol>
+<p>The <em>ChatMessage_topic</em> should now appear as a child of the
+module under the default model.</p>
+<p>Repeat these steps for the <em>NamedMessage_topic</em> and
+<em>NameService_topic</em>, but selecting the <em>NamedMessage</em> struct
+or the <em>NameService</em> struct, respectively, in the <em>Data Type
+Selection</em> dialog.</p>
+<p><em>The Tutorial project should now contain the Chat Model, Chat
+Module, structs and topics as shown in the illustration below.</em></p>
+<p class="centered" id="tutorial-s-data-types-and-associated-topics">
+<strong><strong>Tutorial&#8217;s Data Types and Associated Topics</strong></strong></p><a class="reference internal image-reference" href="_images/019_DataTypesAndTopics.png"><img alt="Tutorial's Data Types and Associated Topics" class="align-center" src="_images/019_DataTypesAndTopics.png" style="width: 100mm;" /></a>
+</div>
+<div class="section" id="step-5-set-the-qos-policy-values">
+<h3>9.2.5. Step 5:  Set the QoS policy values<a class="headerlink" href="#step-5-set-the-qos-policy-values" title="Permalink to this headline">¶</a></h3>
+<p>Each DDS entity instance is automatically assigned a set of QoS
+policies, appropriately named the QoS Set. A QoS Set contains
+only the policies which are appropriate for the particular
+entity instance&#8217;s type. A QoS Set&#8217;s policy values are given
+pre-defined default values. These values can be changed using
+the QoS Set Editor.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+A QoS policy consists of one or more properties, each property
+has a value. Strictly speaking, the <em>value</em> should be referred
+to as a <em>policy&#8217;s property value</em>. However, for brevity, the term
+<em>policy value</em> is used here to mean the policy&#8217;s property value.</p>
+<p>The Topics associated with the NameService and ChatMessage
+information models will be used to demonstrate how to set QoS
+policy values. The policies and their property values are:</p>
+<div class="line-block" id="policy-values-for-the-chatroom-topics">
+<div class="line"><strong>Policy Values for the Chatroom Topics</strong></div>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Topic Name</th>
+<th class="head">Policy</th>
+<th class="head">Property: Value</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>ChatMessage_topic</td>
+<td>RELIABILITY</td>
+<td>Kind: RELIABLE</td>
+</tr>
+<tr class="row-odd"><td rowspan="2">NameService_topic</td>
+<td>DURABILITY</td>
+<td>Kind: TRANSIENT</td>
+</tr>
+<tr class="row-even"><td>RELIABILITY</td>
+<td>Kind: RELIABLE</td>
+</tr>
+<tr class="row-odd"><td>NamedMessage_topic</td>
+<td>RELIABILITY</td>
+<td>Kind: RELIABLE</td>
+</tr>
+</tbody>
+</table>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Note that <em>NamedMessage_topic</em> must have its QoS values set
+identically to <em>ChatMessage_topic</em>.</p>
+<p>The Reliability policy&#8217;s <em>Kind</em> property will be changed to
+<tt class="docutils literal"><span class="pre">RELIABLE</span></tt>. To change this policy value:</p>
+<ol class="arabic">
+<li><p class="first">Select ChatMessage_topic in the Project Explorer, then
+expand it to display its QoS Set component (displayed
+with the QoS icon <a class="reference internal" href="_images/000_icon_QoSSet.png"><img alt="qosicon" src="_images/000_icon_QoSSet.png" style="height: 4mm;" /></a>).</p>
+</li>
+<li><p class="first">Select the QoS Set component.</p>
+</li>
+<li><p class="first">Open the Vortex OpenSplice QoS Editor.</p>
+<p>a) Double-click the
+QoS Set component</p>
+<p><em>OR</em></p>
+<p>b) Right-click the QoS Set component, then choose
+<em>Splice QoS Set Editor</em> from the pop-up menu.</p>
+<p>The QoS Editor is shown below.</p>
+</li>
+</ol>
+<p class="centered" id="qos-editor-s-overview-page">
+<strong><strong>QoS Editor&#8217;s Overview page</strong></strong></p><a class="reference internal image-reference" href="_images/020_QoSEditor_Overview.png"><img alt="QoS Editor's Overview page" class="align-center" src="_images/020_QoSEditor_Overview.png" style="width: 145mm;" /></a>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+The QoS Editor consists of three pages, Overview, Values and
+Imports, which are accessed by using the tabs located along the
+bottom of the editor&#8217;s window.</p>
+<ol class="arabic" start="4">
+<li><p class="first">Choose the <em>Values</em> tab to display the <em>Edit QoS Policy
+Values</em> page. The screen contains:</p>
+<ul class="simple">
+<li>QoS Policies list - users can alter the property values of
+the policies which appear in this list</li>
+<li>Resultant QoS Set - lists all QoS policies for the entity
+which this QoS Set is assigned to</li>
+</ul>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+The <em>Show Default Values</em> check box, located below the
+<em>Resultant QoS Set</em>, enables policies and their default
+values to be shown in the list when the check box is set.</p>
+</li>
+<li><p class="first">Click the <em>Add</em> button adjacent to the list; this displays
+the <em>New QoS Policy</em> dialog.</p>
+</li>
+</ol>
+<p>Select <em>Reliability</em> from the drop-down list; this will add the
+policy to the <em>QoS Policies</em> list.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+The dialog&#8217;s drop-down list contains only the policies which are
+appropriate for the entity. For example, this QoS Set is
+assigned to a Topic entity, therefore only the policies which
+are appropriate for a Topic appear in the list.</p>
+<p>The <em>Reliability</em> policy should appear in the QoS Policies as
+shown in the illustration below.</p>
+<p class="centered" id="qos-editor-and-reliability-policy-s-property-value">
+<strong><strong>QoS Editor and Reliability Policy&#8217;s Property Value</strong></strong></p><a class="reference internal image-reference" href="_images/021_QoSEditor_Reliability.png"><img alt="QoS Editor and Reliability Policy's Property Value" class="align-center" src="_images/021_QoSEditor_Reliability.png" style="width: 145mm;" /></a>
+<ol class="arabic" start="6">
+<li><p class="first">Select <em>Reliability</em> from the <em>QoS Policies</em> list; a
+<em>Reliability Values</em> screen will be displayed in the lower
+left-hand corner of the page. The <em>Reliability Details</em>
+screen enables the property values for the selected QoS
+policy to be changed.</p>
+<p>Set the <em>Kind</em> value to <tt class="docutils literal"><span class="pre">RELIABLE</span></tt>. The <em>Resultant QoS Set</em>
+will be updated automatically to show the new QoS policy
+value (see
+<a class="reference internal" href="#qos-editor-and-reliability-policy-s-property-value">QoS Editor and Reliability Policy&#8217;s Property Value</a>).</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Clear the <em>Show Default Values</em> check box to hide or show the
+policy values which are inherited from Default QoS Set&#8217;s. The
+value will always be shown if the policy value has been added to
+a non-default imported set or the current set.</p>
+</li>
+</ol>
+<ol class="arabic simple" start="7">
+<li>Save the changes (using <em>File &gt; Save</em> or <em>[Ctrl]+[S]</em>).
+Close the QoS Editor by clicking on the <em>X</em> in the <em>QoS</em>
+tab located at the top of the editor.</li>
+</ol>
+<p>Repeat the above steps to set the <em>NamedMessage_topic</em>&#8216;s
+<em>Reliability</em> and <em>Durability</em> policies, plus the
+<em>NameService_topic</em>&#8216;s <em>Reliability</em> policy as shown in
+the table <a class="reference internal" href="#policy-values-for-the-chatroom-topics">Policy Values for the Chatroom Topics</a>.</p>
+</div>
+<div class="section" id="step-6-create-the-chatroom-partition">
+<h3>9.2.6. Step 6:  Create the ChatRoom Partition<a class="headerlink" href="#step-6-create-the-chatroom-partition" title="Permalink to this headline">¶</a></h3>
+<p>The ChatRoom partition is used to ensure that only topics
+published to that partition are received by the system&#8217;s
+subscribers; all other topics are ignored. This allows other
+applications to publish and subscribe to the same topics without
+interfering with the ChatRoom applications.</p>
+<p>Right-click the Chat module and choose <em>New Partition</em>. Change
+both the <em>Name</em> and <em>Partition name</em> fields to read <tt class="docutils literal"><span class="pre">ChatRoom</span></tt>.</p>
+<p>Click <em>Finish</em> and the ChatRoom partition will be added to the
+Chat module.</p>
+</div>
+<div class="section" id="step-7-create-the-application-models">
+<h3>9.2.7. Step 7:  Create the Application Models<a class="headerlink" href="#step-7-create-the-application-models" title="Permalink to this headline">¶</a></h3>
+<p>Add required entities using the Project Explorer and Diagram
+Editor, then model the Chatroom&#8217;s <em>ChatterApplication</em>,
+<em>MessageBoardApplication</em> and <em>UserLoadApplication</em> applications.
+All applications should be created within the Model called <em>model</em>.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+The steps given below generally use the Project Explorer to add
+entities, although entities can also be added using the Diagram
+editor.</p>
+<ol class="arabic">
+<li><p class="first">A Vortex OpenSplice Modeler <em>Application</em> component
+represents an executable application.</p>
+<p>To add an Application component that represents the
+Chatroom&#8217;s <em>ChatterApplication</em> application:</p>
+<p>a) Right-click on the Chat module in the Project Explorer,
+then choose <em>New Application</em> from the pop-up dialog;
+this will display the <em>New Splice Application</em> dialog.</p>
+<p>b) Enter <tt class="docutils literal"><span class="pre">ChatterApplication</span></tt> into the
+<em>Name</em> text box.</p>
+<p>c) Click the <em>Finish</em> button. The new <em>ChatterApplication</em>
+Application component should appear in the Project Explorer
+under the Chat module.</p>
+<p>d) Save the
+changes.</p>
+</li>
+<li><p class="first"><em>DomainParticpants</em> provide connections to information.
+To add a DomainParticpant to the <em>ChatterApplication</em>:</p>
+<p>a) Right-click on the <em>ChatterApplication</em> in the Project
+Explorer, then choose <em>New Domain Participant</em> from the pop-up
+dialog; this will display the <em>New Domain Participant</em> dialog.</p>
+<p>b) Enter <tt class="docutils literal"><span class="pre">Participant</span></tt> in the <em>Name</em> text box; this will
+be the DomainParticipant&#8217;s name.</p>
+<p>c) Click the <em>Finish</em> button. The new Participant component
+should appear in the Project Explorer under the
+<em>ChatterApplication</em> application.</p>
+<p>d) Save the changes (as before, use <em>File &gt; Save</em>
+or <em>[Ctrl]+[S]</em>).</p>
+</li>
+<li><p class="first"><em>Diagram</em> components are used to model the applications.
+To add a diagram component to the project:</p>
+<p>a) Choose <em>File &gt; New &gt; Diagram</em> from the Eclipse menu;
+this opens the <em>New Splice Diagram</em> dialog.</p>
+<p>b) Click the <em>Browse</em> button adjacent to the <em>Module</em>
+text box; this opens the <em>Select Module</em> dialog.
+Navigate to and select the Chat module, then click the
+<em>OK</em> button.</p>
+<p>c) Enter <tt class="docutils literal"><span class="pre">ChatDiagram</span></tt> into the <em>Name</em> text box;
+this will be the diagram&#8217;s name.</p>
+<p>d) Click the <em>Finish</em> button. The new <em>ChatDiagram</em>
+component should appear in the Project Explorer under
+the Chat module.</p>
+</li>
+<li><p class="first">Add the remaining entities using the Diagram Editor
+and ChatDiagram.</p>
+<p>a) Double-click on the <em>ChatDiagram</em> component <em>OR</em>
+right-click it and choose <em>Edit Diagram</em> in the pop-up
+dialog; this opens <em>ChatDiagram</em> in the Diagram Editor.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+The Diagram Editor&#8217;s tool palette appears on the left-hand
+side of the editor. This palette can be used to add the
+entities to the project.</p>
+<p>Entities which have been added to the project, but do not
+appear in the diagram can be placed in the diagram by locating
+the entity in the Project Explorer, then dragging the entity
+into the Diagram Editor&#8217;s canvas area (the large area located
+to the right side of the palette, in central area of the
+Eclipse Workbench).</p>
+<p>b) Locate the <em>ChatterApplication</em> component in the Project
+Explorer, then drag <a class="footnote-reference" href="#id6" id="id3">[2]</a> it to the Diagram Editor&#8217;s canvas; a
+rectangular box should appear with <em>ChatterApplication</em> name
+displayed in the top section of the box. The Application box
+symbol is used as a container for other entities.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Symbols and containers can be moved or resized by selecting the
+container then, respectively, clicking and dragging inside the
+container or clicking a control point (the small, solid boxes
+located along the container&#8217;s perimeter and corners) then
+dragging it until the desired size is achieved, then releasing
+the mouse button.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+The view of the Diagram&#8217;s canvas can be zoomed in or out using
+<em>View &gt; Zoom In</em> or <em>Zoom Out</em>, <em>OR</em> by using the <em>[Ctrl]+[=]</em>
+or <em>[Ctrl]+[-]</em> shortcut key combinations.</p>
+<p>Move the <em>ChatterApplication</em> container to the upper left-hand
+corner of the diagram canvas; this is to provide space in the
+canvas to add other entities.</p>
+<p>Save the project.</p>
+<p>c) Choose the <em>Publisher</em> tool from the Diagram Editor&#8217;s tool
+palette. Drag the Publisher tool to the <em>Participant</em> container;
+a new Publisher symbol, called <em>Publisher1</em>, should appear inside
+<em>Participant</em>. Rename <em>Publisher1</em> to <em>Publisher</em> by right-clicking
+on the <em>Publisher1</em> symbol, choosing <em>Rename</em> on the pop-up dialog
+which opens, then changing the name in the <em>Rename Vortex OpenSplice
+Object</em> dialog.</p>
+<p>d) A <em>DataWriter</em> must be added to <em>Publisher</em>. Choose the
+DataWriter tool, then drag it to <em>Publisher</em>; new DataWriter
+symbols should appear in <em>Publisher</em>.</p>
+<p>e) Save the
+project.</p>
+</li>
+</ol>
+<p>The ChatDiagram should now appear as shown below.</p>
+<p class="centered" id="initial-chatdiagram-and-chatter">
+<strong><strong>Initial ChatDiagram and Chatter</strong></strong></p><a class="reference internal image-reference" href="_images/022_ChatDiagram_Chatter.png"><img alt="Initial ChatDiagram and Chatter" class="align-center" src="_images/022_ChatDiagram_Chatter.png" style="width: 140mm;" /></a>
+<ol class="arabic" start="5">
+<li><p class="first">The Chatroom&#8217;s Topics, <em>ChatMessage_topic</em> and
+<em>NameService_topic</em>, need to be associated with <em>Publisher</em>.
+Topics communicate with Publishers and Subscribers through
+DataWriters and DataReaders, respectively.</p>
+<p>a) Drag the <em>ChatMessage_topic</em> and <em>NameService_topic</em> from the
+Project Explorer to a free area of the ChatDiagram canvas.</p>
+<p>b) Choose the Connection Tool <a class="reference internal" href="_images/000_icon_TopicConnect.png"><img alt="connect" src="_images/000_icon_TopicConnect.png" style="height: 4mm;" /></a> located in the
+Diagram Editor&#8217;s tool palette.</p>
+<p>c) Click on the <em>ChatMessage_topic</em> symbol, drag the cursor to the
+<em>DataWriter symbol</em> in <em>Publisher</em>, then release the mouse button;
+a connection line, with an arrow pointing to the
+<em>ChatMessage_topic</em>, will be created. Rename the <em>DataWriter</em> to
+<em>ChatMessageDataWriter</em> (right-click on the <em>DataWriter</em> symbol,
+choose <em>Rename</em> in the pop-up dialog, then change the name in the
+<em>Rename Vortex OpenSplice Object</em> dialog).</p>
+<p>d) Click on the <em>NameService_topic</em> symbol, drag the cursor to
+<em>Publisher</em> - <strong>not</strong> to the <em>DataWriter</em> symbol - then release
+the mouse button; a new <em>DataWriter</em> will be created in <em>Publisher</em>
+and a line will connect it with the <em>NameService_topic</em>. Rename the
+new <em>DataWriter</em> as <em>NameServiceDataWriter</em>.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+DataWriters and DataReaders are created automatically when
+dragging the <em>Topic Connection Tool</em> cursor from Topic to
+Publisher or Subscriber symbols.</p>
+<p>e) Add the <em>ChatRoom</em> Partition using the <em>Partition</em> tool, then
+connect it to <em>Publisher</em> using the <em>Partition Connection Tool</em>.</p>
+<p>f) Save the project.
+The <em>ChatDiagram</em> should appear as shown below.</p>
+</li>
+</ol>
+<p class="centered" id="chatterapplication-with-connected-topics">
+<strong><strong>ChatterApplication with Connected Topics</strong></strong></p><a class="reference internal image-reference" href="_images/023_ChatterApp_Topics.png"><img alt="ChatterApplication with Connected Topics" class="align-center" src="_images/023_ChatterApp_Topics.png" style="width: 100mm;" /></a>
+<ol class="arabic" start="6">
+<li><p class="first">The Application models for the <em>MessageBoardApplication</em> and
+<em>UserLoadApplication</em> programs need to be added to the project,
+along with their related entities and connections. The
+instructions given in the previous steps and sub-steps can be
+used as a guide to adding the entities and connections.</p>
+<p>a) For the <em>MessageBoardApplication</em>, add an Application component
+called <em>MessageBoardApplication</em> to the Chat module and
+DomainParticipants called <em>Participant</em> and <em>PrivateParticipant</em> to
+the <em>MessageBoardApplication</em> Application.</p>
+<p><em>PrivateParticipant</em> is used to simulate a multi-topic <a class="footnote-reference" href="#id7" id="id4">[3]</a> .
+The <em>PrivateParticipant</em> subscribes to <em>ChatMessage_topic</em> and
+<em>NameService_topic</em>, as well as re-publishing them as a
+<em>NamedMessage</em>.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+The view of the Diagram&#8217;s canvas can be zoomed out to provide
+more visible space using <em>View &gt; Zoom Out</em> or by using the
+<em>[Ctrl]+[-]</em> shortcut key combination. Also, when the diagram
+is larger than the visible part of the canvas, the visible
+part can be moved by selecting the <em>Outline</em> view, then dragging
+the light-blue transparent rectangle (which represents the
+visible part of the canvas) until the required part of the
+diagram is visible.</p>
+<p>Drag <em>MessageBoardApplication</em> into the <em>ChatDiagram</em>.</p>
+<p>The message board application ignores messages from its own
+user. In order to perform message filtering, a Content Filtered
+Topic will be used to filter out messages with a particular
+<em>userID</em>.</p>
+<p>A Content Filtered Topic is added to a diagram by choosing the
+<em>Content Filtered Topic Tool</em> from the Tool palette, then dragging
+and dropping it onto the diagram. A wizard dialog will then
+open. Enter <tt class="docutils literal"><span class="pre">NamedMessageFilteredTopic</span></tt> as the name.
+Select <em>::Chat</em> as the module. Choose the related topic by
+clicking the <em>Browse</em> button beside the <em>Topic</em> field. Set the
+related topic to <em>NamedMessage_topic</em> in the <em>::Chat</em> module.
+Finally, enter <tt class="docutils literal"><span class="pre">userID</span> <span class="pre">&lt;&gt;</span> <span class="pre">%0</span></tt> as the <em>Filter Expression</em>.</p>
+<p>Drag the <em>NamedMessage_topic</em>, <em>ChatMessage_topic</em> and
+<em>NameService_topic</em> into the <em>ChatDiagram</em> from the
+Project Explorer.</p>
+<p>Add a <em>Subscriber</em> instance to the <em>Participant</em>, rename it to
+<em>Subscriber</em> (right-click on its symbol, choose <em>Rename</em>
+and change the name in the <em>Rename Vortex OpenSplice Object</em>
+dialog), then create a connection from the <em>NamedMessage_topic</em> to
+the <em>Participant&#8217;s Subscriber</em> instance (the connection will be
+linked through a <em>DataReader</em>). Rename this DataReader to
+<em>NamedMessageDataReader</em>.</p>
+<p>Connect the <em>Subscriber</em> entity to the <em>ChatRoom</em> Partition.</p>
+<p>Add a <em>Subscriber</em> to the <em>PrivateParticipant</em> and rename it as
+<em>Subscriber</em>. Connect this <em>Subscriber</em> to the <em>NameService_topic</em>,
+renaming the created <em>DataReader</em> to <em>NameServiceDataReader</em>.
+Connect the <em>Subscriber</em> to the <em>ChatMessage_topic</em>, again renaming
+the created <em>DataReader</em> to <em>ChatMessageDataReader</em>.</p>
+<p>Next, add a Publisher named <em>Publisher</em> to the <em>PrivateParticipant</em>.
+Connect this <em>Publisher</em> to the <em>NamedMessage_topic</em>, renaming the
+created <em>DataWriter</em> to <em>NamedMessageDataWriter</em>.</p>
+<p>Next, connect both the <em>Subscriber</em> and the <em>Publisher</em> to the
+<em>ChatRoom</em> partition using the <em>Partition Connection Tool</em>.</p>
+<p>Listeners need to be added to the <em>MessageBoardApplication</em>
+application in order to listen for new messages. Add a listener
+by choosing the <em>Listener Tool</em> from the Diagram Editor&#8217;s Tool
+palette. Drop a listener into the <em>MessageBoardApplication</em>
+application. Rename the listener as
+<em>NamedMessageDataReaderListener</em>. Connect the listener to the
+<em>NamedMessageDataReader</em> located inside the <em>Participant&#8217;s
+Subscriber</em> symbol by using the <em>Listener Connection Tool</em>.</p>
+<p>Add a second listener. Rename this listener as
+<em>ChatMessageDataReaderListener</em>. Connect this listener to the
+<em>ChatMessageDataReader</em> located in the <em>PrivateParticipant&#8217;s
+Subscriber</em>.</p>
+<p>The status mask must now be set on both listeners.</p>
+<p>Select each listener in turn. In the <em>Properties View</em>, expand
+the <em>Status Mask</em> section, then set the <em>DATA_AVAILABLE</em> status
+to <tt class="docutils literal"><span class="pre">True</span></tt> using the drop-down list.</p>
+<p>b) For the <em>UserLoadApplication</em>, add an Application called
+<em>UserLoadApplication</em> to the Chat module and a DomainParticipant
+called <em>Participant</em> to the <em>UserLoadApplication</em>.</p>
+<p>Drag <em>UserLoadApplication</em> into the <em>ChatDiagram</em>.</p>
+<p>Add a Subscriber instance, to be named <em>Subscriber</em>, to the
+<em>Participant</em>, create connections from the <em>ChatMessage_topic</em> and
+<em>NameService_topic</em> to the <em>Participant&#8217;s Subscriber</em> instance (the
+connection will be linked through <em>DataReaders</em>). Rename the
+<em>DataReaders</em> to be <em>ChatMessageDataReader</em> and
+<em>NameServiceDataReader</em>, respectively. Edit the QoS Set associated
+with the <em>ChatMessageDataReader</em>. Add a <em>History</em> policy to the set,
+changing the kind to <tt class="docutils literal"><span class="pre">KEEP_ALL</span></tt>.</p>
+<p>In the ChatDiagram, drag a WaitSet and place it into the
+<em>UserLoadApplication</em> application.</p>
+<p>Right-click the <em>WaitSet</em> figure and rename it to <em>UserLoadWaitSet</em>.</p>
+<p>Drag a GuardCondition into the application. Rename it to
+<em>GuardCondition</em>.</p>
+<p>Choose the <em>Connection Tool</em> and connect the <em>GuardCondition</em> to
+the <em>UserLoadWaitSet</em>.</p>
+<p>Drag a <em>StatusCondition</em> object into the application. Rename the
+<em>StatusCondition</em> object to <em>StatusCondition</em> and connect it to the
+<em>UserLoadWaitSet</em>.</p>
+<p>Choose the <em>Connection Tool</em> again and connect the
+<em>ChatMessageDataReader</em> to the newly-created <em>StatusCondition</em>
+object.</p>
+<p>Drag a <em>ReadCondition</em> object into the application. Rename the
+<em>ReadCondition</em> object to <em>ReadCondition</em> and connect it to the
+<em>UserLoadWaitSet</em> and the <em>NameServiceDataReader</em>.</p>
+<p>Drag a <em>QueryCondition</em> into the application. Rename it to
+<em>QueryCondition</em> and connect it to the <em>UserLoadWaitSet</em> as well
+as to the <em>ChatMessageDataReader</em>.</p>
+<p>Open the QueryCondition&#8217;s <em>Properties</em> dialog to set the filter
+expressions. Click on the arrow next to <em>Query Expression</em> to
+display the properties for the expression. Nexrt, click on the
+<em>Sub Query Expression</em>; this displays a button. Click the button
+and enter <tt class="docutils literal"><span class="pre">&quot;userID=%0&quot;</span></tt> in the <em>Expression</em> text box.
+Click the <em>OK</em> button to finish.</p>
+<p>Set the state masks for the <em>Query</em> and <em>ReadCondition</em> as well as
+the status mask for the <em>StatusCondition</em> as shown in the table
+below.</p>
+<div class="line-block" id="condition-states">
+<div class="line"><strong>Condition States</strong></div>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="30%" />
+<col width="39%" />
+<col width="30%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Mask</th>
+<th class="head">Name</th>
+<th class="head">Value</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td colspan="3"><em>StatusCondition</em></td>
+</tr>
+<tr class="row-odd"><td>Status Mask</td>
+<td>LIVELINESS_CHANGED_STATE</td>
+<td>True</td>
+</tr>
+<tr class="row-even"><td colspan="3"><em>QueryCondition</em></td>
+</tr>
+<tr class="row-odd"><td>Instance State Mask</td>
+<td>ANY_INSTANCE_STATE</td>
+<td>True</td>
+</tr>
+<tr class="row-even"><td>Sample State Mask</td>
+<td>ANY_SAMPLE_STATE</td>
+<td>True</td>
+</tr>
+<tr class="row-odd"><td>View State Mask</td>
+<td>ANY_VIEW_STATE</td>
+<td>True</td>
+</tr>
+<tr class="row-even"><td colspan="3"><em>ReadCondition</em></td>
+</tr>
+<tr class="row-odd"><td>Instance State Mask</td>
+<td>ALIVE_INSTANCE_STATE</td>
+<td>True</td>
+</tr>
+<tr class="row-even"><td>Sample State Mask</td>
+<td>NOT_READ_SAMPLE_STATE</td>
+<td>True</td>
+</tr>
+<tr class="row-odd"><td>View State Mask</td>
+<td>NEW_VIEW_STATE</td>
+<td>True</td>
+</tr>
+</tbody>
+</table>
+<p>Finally, connect the <em>Subscriber</em> to the <em>ChatRoom</em> Partition
+and save the project.</p>
+</li>
+</ol>
+<p>The <em>ChatDiagram</em> and the <em>Chatroom</em> Application model are now
+complete. The entities and connections should appear in the
+<em>ChatDiagram</em> as shown in the following illustration.</p>
+<p class="centered" id="chatroom-application-model">
+<strong><strong>Chatroom Application Model</strong></strong></p><a class="reference internal image-reference" href="_images/024_ChatroomApp_Model.png"><img alt="Chatroom Application Model" class="align-center" src="_images/024_ChatroomApp_Model.png" style="width: 145mm;" /></a>
+</div>
+<div class="section" id="step-8-generate-the-source-code">
+<h3>9.2.8. Step 8:  Generate the source code<a class="headerlink" href="#step-8-generate-the-source-code" title="Permalink to this headline">¶</a></h3>
+<p>Generate the DDS-related source code from the application and
+information models.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Vortex OpenSplice must be installed and configured on the system in
+order to generate the source code.</p>
+<p>The source code for the applications can be generated by
+right-clicking on the <em>Chat module</em> within the Chat <em>model</em> in
+the <em>Tutorial</em> project, then choosing <em>Export Module</em> from the
+context menu. The <em>Export Wizard</em> dialog should be displayed.
+Perform the following:</p>
+<ol class="arabic simple">
+<li>The <em>Project Name</em> text box contains the name of the
+exported project. Enter a project name in the text box.</li>
+<li>Choose the desired target language from the <em>Target Language</em>
+drop-down menu.</li>
+<li>Click the <em>Finish</em> button to accept the options and generate
+the source code.</li>
+</ol>
+<p>Three additional projects should be generated. The default
+values for the project name in the Export Wizard are:
+<tt class="docutils literal"><span class="pre">ChatterApplication</span></tt>, <tt class="docutils literal"><span class="pre">UserLoadApplication</span></tt> and
+<tt class="docutils literal"><span class="pre">MessageBoardApplication</span></tt>. Each project will contain two source
+folders, <tt class="docutils literal"><span class="pre">src</span></tt> and <tt class="docutils literal"><span class="pre">generated</span></tt>. The <tt class="docutils literal"><span class="pre">src</span></tt> folders are for
+user-written code and the <tt class="docutils literal"><span class="pre">generated</span></tt> folders contain the code
+generated by the Modeler.</p>
+<p>In addition, a required <tt class="docutils literal"><span class="pre">jar</span></tt> file from Vortex OpenSplice, which
+contains the DDS Java libraries, are automatically added to each
+project&#8217;s build path. The added <tt class="docutils literal"><span class="pre">jar</span></tt> file is and <tt class="docutils literal"><span class="pre">dcpssaj.jar</span></tt>.</p>
+</div>
+<div class="section" id="step-9-implement-the-applications-business-logic">
+<h3>9.2.9. Step 9:  Implement the applications&#8217; business logic<a class="headerlink" href="#step-9-implement-the-applications-business-logic" title="Permalink to this headline">¶</a></h3>
+<p>Implement the <em>Chatter</em>, <em>Message Board</em> and <em>User Load</em>
+applications&#8217; business logic.</p>
+<p>The generated code simplifies development work through the
+creation of entities and by establishing the correct QoS values.</p>
+<div class="section" id="java-implementation">
+<h4>9.2.9.1. Java Implementation<a class="headerlink" href="#java-implementation" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p>The only Java files that users need to reference from their
+manually written code are located in the <em>Chat</em> package within a
+source folder called <tt class="docutils literal"><span class="pre">generated</span></tt>. The simplest way to access these
+generated files is to declare the <tt class="docutils literal"><span class="pre">import</span> <span class="pre">Chat.*</span></tt> in their Java
+code:</p>
+<div class="highlight-java"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">Chat.*</span><span class="o">;</span>
+</pre></div>
+</div>
+<p>Each application is represented by a single class. These are:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">ChatterApplication</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">UserLoadApplication</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">MessageBoardApplication</span></tt></li>
+</ul>
+<p>The application and its contained entities are set up by
+statically calling the <tt class="docutils literal"><span class="pre">start()</span></tt> method on the application
+classes. For example:</p>
+<div class="highlight-java"><div class="highlight"><pre><span class="n">ChatterApplication</span><span class="o">.</span><span class="na">start</span> <span class="o">();</span>
+</pre></div>
+</div>
+<p>Contained entities can then be retrieved from the application
+using <tt class="docutils literal"><span class="pre">get*()</span></tt> methods. For example, the following call would
+be made to retrieve the <tt class="docutils literal"><span class="pre">ChatMessageDataWriter</span></tt> from the
+<em>Chatter</em> application:</p>
+<div class="highlight-java"><div class="highlight"><pre><span class="n">ChatMessageDataWriter</span> <span class="n">talker</span> <span class="o">=</span>
+   <span class="n">ChatterApplication</span><span class="o">.</span><span class="na">Participant</span><span class="o">.</span><span class="na">Publisher</span><span class="o">.</span>
+      <span class="n">ChatMessageDataWriter</span><span class="o">.</span><span class="na">getDataWriter</span><span class="o">();</span>
+</pre></div>
+</div>
+<p>Users should develop their application code in a <em>chatroom</em> module
+located in the relevant project&#8217;s <tt class="docutils literal"><span class="pre">src</span></tt> folder. It is suggested,
+for this tutorial example, using <tt class="docutils literal"><span class="pre">Chatter.java</span></tt>,
+<tt class="docutils literal"><span class="pre">MessageBoard.java</span></tt>, <tt class="docutils literal"><span class="pre">UserLoad.java</span></tt>,
+<tt class="docutils literal"><span class="pre">ChatMessageDataReaderListenerImpl.java</span></tt> and
+<tt class="docutils literal"><span class="pre">NamedMessageDataReaderListenerImple.java</span></tt>
+as the program names.</p>
+<p>The code for these programs, as well as a <tt class="docutils literal"><span class="pre">ErrorHandler.java</span></tt>
+utility class, is located in the <em>Chatroom</em> example project and in
+<a class="reference internal" href="appendixa.html#appendix-a"><em>Appendix A: Chatroom Example Java Source Code</em></a>.</p>
+</div>
+<div class="section" id="c-implementation">
+<h4>9.2.9.2. C++ Implementation<a class="headerlink" href="#c-implementation" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p>The only C++ files that users need to reference from their
+manually written code are located in the <em>Chat</em> namespace within
+the source folder called <tt class="docutils literal"><span class="pre">generated</span></tt>.</p>
+<p>For all entities in the model, only the generated abstract base
+classes (<tt class="docutils literal"><span class="pre">*Wrapper.h</span></tt>) should be included in the business logic.
+The only exception is the application wrapper implementation
+header which needs to be included when the application wrapper
+must be instantiated. These implementation headers are:</p>
+<blockquote>
+<div><p><tt class="docutils literal"><span class="pre">#include</span> <span class="pre">&quot;Chat/ChatterApplicationWrapperImplementation.h&quot;</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">#include</span> <span class="pre">&quot;Chat/ChatterApplication/MyAppDPWrapper.h&quot;</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">#include</span> <span class="pre">&quot;Chat/ChatterApplication/MyAppDP/MyPublisherWrapper.h&quot;</span></tt></p>
+</div></blockquote>
+<p>Each application is represented by a single class. These are:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">ChatterApplication</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">UserLoadApplication</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">MessageBoardApplication</span></tt></li>
+</ul>
+<p>The application and its contained entities are instantiated by
+calling the <tt class="docutils literal"><span class="pre">start()</span></tt> method on an application instance. For
+example:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">Chat</span><span class="o">::</span><span class="n">ChatterApplicationWrapper</span><span class="o">*</span> <span class="n">chatApp</span> <span class="o">=</span> <span class="k">new</span>
+<span class="n">Chat</span><span class="o">::</span><span class="n">ChatterApplicationWrapperImplementation</span><span class="p">;</span>
+<span class="n">chatApp</span><span class="o">-&gt;</span><span class="n">start</span> <span class="p">();</span>
+</pre></div>
+</div>
+<p>Contained entities can then be retrieved from the application
+using <tt class="docutils literal"><span class="pre">get&lt;entity_name&gt;Wrapper()</span></tt> methods. For example, the
+following call would be made to retrieve the publisher from the
+ChatterApplication:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="nl">DDS</span><span class="p">:</span><span class="n">Publisher</span><span class="o">*</span> <span class="n">publisher</span> <span class="o">=</span>
+   <span class="n">chatApp</span><span class="o">-&gt;</span><span class="n">getParticipantWrapper</span><span class="p">()</span><span class="o">-&gt;</span>
+      <span class="n">getPublisherWrapper</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getPublisher</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>Users should develop their application code in a <em>chatroom</em> module
+located in the relevant project&#8217;s <tt class="docutils literal"><span class="pre">src</span></tt> folder. It is suggested,
+for this tutorial example, using <tt class="docutils literal"><span class="pre">Chatter.cpp</span></tt>,
+<tt class="docutils literal"><span class="pre">MessageBoard.cpp</span></tt>, <tt class="docutils literal"><span class="pre">UserLoad.cpp</span></tt>,
+<tt class="docutils literal"><span class="pre">ChatMessageDataReaderListenerImpl.cpp</span></tt> and
+<tt class="docutils literal"><span class="pre">NamedMessageDataReaderListenerImple.cpp</span></tt>
+as the program names.</p>
+<p>The code for these programs is located in the Chatroom C++
+example project in
+<a class="reference internal" href="appendixb.html#appendix-b"><em>Appendix B: Chatroom Example C++ Source Code</em></a>.</p>
+</div>
+</div>
+<div class="section" id="step-10-compile-the-code">
+<h3>9.2.10. Step 10: Compile the code<a class="headerlink" href="#step-10-compile-the-code" title="Permalink to this headline">¶</a></h3>
+<p>Vortex OpenSplice Modeler is configured to automatically compile
+and build the code in a user&#8217;s workspace: users do not need to
+do anything to compile their code, plus real-time feedback about
+errors is automatically provided.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+It is suggested the default Eclipse setting for automatic
+building is retained (in other words, enabled).</p>
+<p>However, the automatic building can be disabled, if desired, by
+clicking the <em>Project</em> menu and then de-selecting the <em>Build
+Automatically</em> option.</p>
+<p>When automatic building is disabled the Project can then be
+built by choosing <em>Clean…</em> from the <em>Project</em> menu. Projects are
+rebuilt after they are cleaned. A dialog is shown for cleaning
+all projects or selected projects.</p>
+</div>
+<div class="section" id="step-11-run-and-test-the-chatroom-application">
+<h3>9.2.11. Step 11: Run and test the Chatroom application<a class="headerlink" href="#step-11-run-and-test-the-chatroom-application" title="Permalink to this headline">¶</a></h3>
+<p>The Vortex OpenSplice daemon must be started before running Vortex
+OpenSplice applications in Eclipse. The daemon can be started, as
+well as stopped, using the HDE icon&#8217;s drop-down menu <a class="reference internal" href="_images/000_icon_HDE.png"><img alt="hdeicon" src="_images/000_icon_HDE.png" style="height: 4mm;" /></a>
+located on the Eclipse <em>Icon Bar</em>.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd><table border="1" class="first last docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Starting an Vortex OpenSplice daemon is only required when
+running a <em>Shared Memory</em> Deployment. For more details about
+starting  OpenSplice, please see the OpenSplice <em>Deployment
+Guide</em>.</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p>The HDE icon drop-down menu contains:</p>
+<ul class="simple">
+<li><strong>Start OSPL</strong> - starts the daemon - <em>note no feedback given</em></li>
+<li><strong>Stop OSPL</strong> - stops the daemon - <em>note no feedback given</em></li>
+<li><strong>Run Tuner</strong> - launches the Vortex OpenSplice Tuner</li>
+<li><strong>Run Configurator</strong> - launches the Vortex OpenSplice configurator</li>
+</ul>
+<p>After the daemon is started each application can run by
+right-clicking on the Java or C++ class in the Project Explorer
+(for example <tt class="docutils literal"><span class="pre">Chatter.java</span></tt> or <tt class="docutils literal"><span class="pre">Chatter.cpp</span></tt>), choosing
+<em>Run As &gt; Vortex OpenSplice Java Application</em> or
+<em>Run As &gt; Vortex OpenSplice Local C++ Application</em>.
+The output of the application is displayed in the console.</p>
+<p>It is suggested that, for this example, <tt class="docutils literal"><span class="pre">MessageBoard</span></tt> is run
+first, followed by <tt class="docutils literal"><span class="pre">UserLoad</span></tt> and finally <tt class="docutils literal"><span class="pre">Chatter</span></tt> in order
+for the applications to correctly interact.</p>
+<p>Each application is run in its own console. The <em>Console View</em>,
+located at the bottom of the Eclipse screen, has a button for
+selecting the active console.</p>
+<p>The daemon should be shut down when finished running the
+applications by using the tool bar button and drop-down menu.</p>
+<div class="section" id="application-output">
+<h4>9.2.11.1. Application Output<a class="headerlink" href="#application-output" title="Permalink to this headline">¶</a></h4>
+<p>The output of each application should be as shown below:</p>
+<p><strong>Chatter</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>Writing message: &quot;Hi there, I will send you 10 more messages.&quot;
+Writing message: &quot;Message no. 1&quot;
+Writing message: &quot;Message no. 2&quot;
+Writing message: &quot;Message no. 3&quot;
+Writing message: &quot;Message no. 4&quot;
+Writing message: &quot;Message no. 5&quot;
+Writing message: &quot;Message no. 6&quot;
+Writing message: &quot;Message no. 7&quot;
+Writing message: &quot;Message no. 8&quot;
+Writing message: &quot;Message no. 9&quot;
+Writing message: &quot;Message no. 10&quot;
+</pre></div>
+</div>
+<p><strong>MessageBoard</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>MessageBoard has opened: send a ChatMessage with userID = -1
+     to close it....
+
+Chatter1: Hi there, I will send you 10 more messages.
+Chatter1: Message no. 1
+Chatter1: Message no. 2
+Chatter1: Message no. 3
+Chatter1: Message no. 4
+Chatter1: Message no. 5
+Chatter1: Message no. 6
+Chatter1: Message no. 7
+Chatter1: Message no. 8
+Chatter1: Message no. 9
+Chatter1: Message no. 10
+
+Termination message received: exiting...
+</pre></div>
+</div>
+<p><strong>UserLoad</strong></p>
+<div class="highlight-python"><div class="highlight"><pre>New User: Chatter1
+Departed user Chatter1 had sent 11 messages.
+UserLoad has terminated.
+</pre></div>
+</div>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="id5" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>Although the <em>Tutorial Guide</em> is written for the C language,
+the descriptions and information provided are useful generally.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id6" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>Using the mouse, left-click on the component, drag it
+to the desired location, then release the mouse button.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id7" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td>Vortex OpenSplice Modeler does not currently support multi-topics.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">9. Tutorial</a><ul>
+<li><a class="reference internal" href="#example-chatroom-overview">9.1. Example Chatroom Overview</a></li>
+<li><a class="reference internal" href="#creating-the-chatroom">9.2. Creating the Chatroom</a><ul>
+<li><a class="reference internal" href="#step-1-create-a-project">9.2.1. Step 1:  Create a Project</a></li>
+<li><a class="reference internal" href="#step-2-provide-an-information-model">9.2.2. Step 2:  Provide an Information Model</a></li>
+<li><a class="reference internal" href="#step-3-create-a-chat-module">9.2.3. Step 3:  Create a Chat module</a></li>
+<li><a class="reference internal" href="#step-4-create-the-topics">9.2.4. Step 4:  Create the Topics</a></li>
+<li><a class="reference internal" href="#step-5-set-the-qos-policy-values">9.2.5. Step 5:  Set the QoS policy values</a></li>
+<li><a class="reference internal" href="#step-6-create-the-chatroom-partition">9.2.6. Step 6:  Create the ChatRoom Partition</a></li>
+<li><a class="reference internal" href="#step-7-create-the-application-models">9.2.7. Step 7:  Create the Application Models</a></li>
+<li><a class="reference internal" href="#step-8-generate-the-source-code">9.2.8. Step 8:  Generate the source code</a></li>
+<li><a class="reference internal" href="#step-9-implement-the-applications-business-logic">9.2.9. Step 9:  Implement the applications&#8217; business logic</a><ul>
+<li><a class="reference internal" href="#java-implementation">9.2.9.1. Java Implementation</a></li>
+<li><a class="reference internal" href="#c-implementation">9.2.9.2. C++ Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#step-10-compile-the-code">9.2.10. Step 10: Compile the code</a></li>
+<li><a class="reference internal" href="#step-11-run-and-test-the-chatroom-application">9.2.11. Step 11: Run and test the Chatroom application</a><ul>
+<li><a class="reference internal" href="#application-output">9.2.11.1. Application Output</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="compileandrun.html"
+                        title="previous chapter">8. Compiling and Running</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="appendixa.html"
+                        title="next chapter">10. Appendix A</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="appendixa.html" title="10. Appendix A"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="compileandrun.html" title="8. Compiling and Running"
+             >previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

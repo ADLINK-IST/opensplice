@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.view.entity;
@@ -39,8 +47,8 @@ import javax.swing.table.TableColumnModel;
 
 import org.opensplice.cm.CMException;
 import org.opensplice.cm.DataReader;
-import org.opensplice.cm.DataTypeUnsupportedException;
 import org.opensplice.cm.Entity;
+import org.opensplice.cm.EntityFilter;
 import org.opensplice.cm.Participant;
 import org.opensplice.cm.Partition;
 import org.opensplice.cm.Publisher;
@@ -50,11 +58,13 @@ import org.opensplice.cm.Reader;
 import org.opensplice.cm.Subscriber;
 import org.opensplice.cm.Topic;
 import org.opensplice.cm.Writer;
+import org.opensplice.cmdataadapter.TypeInfo;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.controller.EntityInfoListener;
 import org.opensplice.common.controller.MainWindowOpener;
 import org.opensplice.common.model.ModelListener;
 import org.opensplice.common.model.ModelRegister;
+import org.opensplice.common.model.TypeHandler;
 import org.opensplice.common.model.table.EntityAttributeTableModel;
 import org.opensplice.common.model.table.status.EntityStatusTableModel;
 import org.opensplice.common.model.table.status.PartitionStatusTableModel;
@@ -69,7 +79,7 @@ import org.opensplice.common.view.table.StatisticsTable;
 
 
 /**
- * Represents an interal frame that is capable of resolving and displaying
+ * Represents an internal frame that is capable of resolving and displaying
  * Entity information. Its responsibility is to:
  * - Resolve and display Entity attributes as well as their values.
  * - Resolve and display Entity status.
@@ -88,7 +98,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
 	private JTable statusTable = null;
     private QoSTable qosTable = null;
 	private JPanel qosPanel = null;
-    private EntityInfoPane dataTypePane = null;
+    private EntityInfoTabView dataTypeView = null;
     private JScrollPane statisticsPane = null;
     private StatisticsTable statisticsTable = null;
     private Timer updateTimer = null;
@@ -178,8 +188,8 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
     public boolean setDataTypeContentType(String contentType){
         boolean result = false;
         
-        if((dataTypePane != null) && (contentType != null)){
-            result = dataTypePane.setViewType(contentType);
+        if((dataTypeView != null) && (contentType != null)){
+            result = dataTypeView.getEntityInfoPane().setViewType(contentType);
             
         }
         type = contentType;
@@ -303,14 +313,14 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                 } else if(selected.equals(dataTypeScrollPane)){
                     refreshItem.setEnabled(false);
                     
-                    if(dataTypePane == null){
+                    if(dataTypeView == null){
                         setCursor(new Cursor(Cursor.WAIT_CURSOR));
                         setStatus("Initializing data type pane...", true, true);
                         
                         Runnable worker = new Runnable(){
                             @Override
                             public void run(){
-                                dataTypeScrollPane.setViewportView(getDataTypePane());
+                                dataTypeScrollPane.setViewportView(getDataTypeView());
                                 setStatus("Data type pane initialized", false, false);
                                 setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
                             }
@@ -646,25 +656,34 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
 	}
     
     /**
-     * This method intializes dataTypePane. It is only displayed for Topic
-     * entities and displays the data type of the Topic.
+     * This method intializes dataTypeView. It is only displayed for Topic, Reader,
+     * or Writer entities and displays associated the data type of the entity.
      * 
-     * @return The EntityInfoPane that displays the data type of the Topic. 
+     * @return The EntityInfoTabView that displays the data type of the Topic, Writer, or Reader.
      */
-    private EntityInfoPane getDataTypePane(){
-        if (dataTypePane == null){
-            
-            dataTypePane = new EntityInfoPane(type);
-            
+    private EntityInfoTabView getDataTypeView(){
+        if (dataTypeView == null){
+            boolean handleException = false;
+            TypeInfo typeInfo = null;
+            Topic t = null;
             try {
                 if(entity instanceof Topic){
-                    dataTypePane.setSelection(((Topic)entity).getDataType());
-                } else if(entity instanceof Reader){
-                    dataTypePane.setSelection(((Reader)entity).getDataType());
-                }  else if(entity instanceof Writer){
-                    dataTypePane.setSelection(((Writer)entity).getDataType());
+                    typeInfo = TypeHandler.getTypeHandler().getTypeInfo((Topic) entity);
+                } else if(entity instanceof Reader || entity instanceof Writer) {
+                    t = (Topic) entity.getOwnedEntities(EntityFilter.TOPIC)[0];
+                    typeInfo = TypeHandler.getTypeHandler().getTypeInfo(t);
                 }
-            } catch (CMException e) {
+            } catch (CommonException ce) {
+                handleException = true;
+            } catch (CMException cme) {
+                handleException = true;
+            } finally {
+                if (t != null) {
+                    t.free();
+                }
+            }
+            dataTypeView = new EntityInfoTabView(type, typeInfo);
+            if (handleException) {
                 if(updateTimer != null){
                     if(updateTimer.isRunning()){
                         updateTimer.stop();
@@ -673,11 +692,9 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                 }
                 this.fireFrameChanged("entity_freed");
                 this.dispose();
-            } catch (DataTypeUnsupportedException de) {
-                dataTypePane.setSelection("Data type not supported.");
             }
         }
-        return dataTypePane;
+        return dataTypeView;
     }
     
 	/**

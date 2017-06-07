@@ -3,12 +3,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -32,6 +40,12 @@ extern "C" {
  * only use this in tests as this is lock intrusive*/
 #define C_MM_STATS 2
 
+#define C_MM_RESERVATION_NO_CHECK    ((os_address)-1)
+#define C_MM_RESERVATION_ZERO        (0)
+#define C_MM_RESERVATION_LOW         (10000)
+#define C_MM_RESERVATION_HIGH        (100000)
+
+
 typedef enum c_mm_mode {
     MM_SHARED,  /* really using shared memory */
     MM_PRIVATE, /* this allocator in process-private memory */
@@ -46,8 +60,8 @@ struct c_mmStatus_s {
     c_size used;
     c_size maxUsed;
     c_size garbage;
-    c_long count;
-    c_ulong fails;
+    c_longlong count;
+    c_ulonglong fails;
     /* The cached field will be filled with the amount of memory allocated for
      * caches (including all headers). */
     c_size cached;
@@ -66,6 +80,7 @@ struct c_mmStatus_s {
 
 OS_API c_mm c_mmCreate (void *address, c_size size, c_size threshold);
 OS_API c_mmStatus c_mmState (c_mm mm, c_ulong flags);
+OS_API c_mm_mode c_mmMode (c_mm mm);
 
 OS_API os_int64 c_mmGetUsedMem (c_mm mm);
 
@@ -73,6 +88,7 @@ OS_API void c_mmSuspend(c_mm mm);
 OS_API int c_mmResume(c_mm mm);
 
 OS_API void *c_mmCheckPtr(c_mm mm, void *ptr);
+OS_API c_size c_mmSize (c_mm mm);
 
 #undef OS_API
 

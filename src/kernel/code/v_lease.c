@@ -1,21 +1,29 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "v__lease.h"
 #include "v__leaseManager.h"
 
-#include "v_time.h"
 #include "v_event.h"
 
+#include "vortex_os.h"
 #include "os_report.h"
 
 /* For design information, see v_leaseManager.c */
@@ -23,22 +31,18 @@
 /**************************************************************
  * Private function/struct declarations
  **************************************************************/
+
 static void
 v_leaseInit(
     v_lease _this,
     v_kernel k,
-    v_duration leaseDuration);
+    v_leaseKind kind,
+    os_duration leaseDuration);
 
 static c_bool
 v_leaseCollectObservers(
     c_object o,
     c_voidp arg);
-
-static void
-v_leaseRenewCommon(
-    v_lease _this,
-    v_duration* leaseDuration,
-    c_bool internal);
 
 /**************************************************************
  * constructor/destructor
@@ -46,30 +50,47 @@ v_leaseRenewCommon(
 v_lease
 v_leaseNew(
     v_kernel k,
-    v_duration leaseDuration)
+    v_leaseKind kind,
+    os_duration leaseDuration)
 {
     v_lease _this;
 
     _this = v_lease(v_objectNew(k, K_LEASE));
     if(_this) {
-        v_leaseInit(_this, k, leaseDuration);
+        v_leaseInit(_this, k, kind, leaseDuration);
     }
     return _this;
+}
+
+v_lease
+v_leaseMonotonicNew(
+    v_kernel k,
+    os_duration leaseDuration)
+{
+    return v_leaseNew(k, V_LEASE_KIND_MONOTONIC, leaseDuration);
+}
+
+v_lease
+v_leaseElapsedNew(
+    v_kernel k,
+    os_duration leaseDuration)
+{
+    return v_leaseNew(k, V_LEASE_KIND_ELAPSED, leaseDuration);
 }
 
 void
 v_leaseInit(
     v_lease _this,
     v_kernel k,
-    v_duration leaseDuration)
+    v_leaseKind kind,
+    os_duration leaseDuration)
 {
     if (_this != NULL) {
         assert(C_TYPECHECK(_this, v_lease));
 
-        c_mutexInit(&_this->mutex, SHARED_MUTEX);
-        _this->expiryTime = c_timeAdd(v_timeGet(), leaseDuration);
+        c_mutexInit(c_getBase(_this), &_this->mutex);
+        v_leaseTimeInit(&_this->expiryTime, kind, leaseDuration);
         _this->duration = leaseDuration;
-        _this->lastRenewInternal = FALSE;
         _this->observers = c_setNew(v_kernelType(k, K_LEASEMANAGER));
     }
 }
@@ -121,24 +142,7 @@ v_leaseUnlock(
 void
 v_leaseRenew(
     v_lease _this,
-    v_duration* leaseDuration /* may be NULL */)
-{
-    v_leaseRenewCommon(_this, leaseDuration, FALSE);
-}
-
-void
-v_leaseRenewInternal(
-    v_lease _this,
-    v_duration* leaseDuration /* may be NULL */)
-{
-    v_leaseRenewCommon(_this, leaseDuration, TRUE);
-}
-
-static void
-v_leaseRenewCommon(
-    v_lease _this,
-    v_duration* leaseDuration /* may be NULL */,
-    c_bool internal)
+    os_duration leaseDuration)
 {
     c_iter observers;
     v_leaseManager observer;
@@ -148,14 +152,12 @@ v_leaseRenewCommon(
 
         v_leaseLock(_this);
         /* If a duration is supplied, replace the current lease duration */
-        if(leaseDuration != NULL) {
-            _this->duration = *leaseDuration;
+        if(!OS_DURATION_ISINVALID(leaseDuration)) {
+            _this->duration = leaseDuration;
         }
 
         /* Update the expiryTime */
-        _this->expiryTime = c_timeAdd(v_timeGet(), _this->duration);
-        _this->lastRenewInternal = internal;
-
+        v_leaseTimeUpdate(&_this->expiryTime, _this->duration);
         /* Notify observers */
         observers = NULL;
         c_walk(_this->observers, v_leaseCollectObservers, &observers);
@@ -182,11 +184,11 @@ v_leaseCollectObservers(
     return TRUE;
 }
 
-v_duration
+os_duration
 v_leaseDuration(
     v_lease _this)
 {
-    v_duration duration;
+    os_duration duration;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_lease));
@@ -198,11 +200,11 @@ v_leaseDuration(
     return duration;
 }
 
-v_duration
+os_duration
 v_leaseDurationNoLock(
     v_lease _this)
 {
-    v_duration duration;
+    os_duration duration;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_lease));
@@ -212,11 +214,11 @@ v_leaseDurationNoLock(
     return duration;
 }
 
-c_time
+v_leaseTime
 v_leaseExpiryTime(
     v_lease _this)
 {
-    c_time expTime;
+    v_leaseTime expTime;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_lease));
@@ -228,28 +230,14 @@ v_leaseExpiryTime(
     return expTime;
 }
 
-c_time
+v_leaseTime
 v_leaseExpiryTimeNoLock(
     v_lease _this)
 {
-    c_time expTime;
-
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_lease));
 
-    expTime = _this->expiryTime;
-
-    return expTime;
-}
-
-c_bool
-v_leaseLastRenewInternalNoLock(
-    v_lease _this)
-{
-    assert(_this != NULL);
-    assert(C_TYPECHECK(_this, v_lease));
-
-    return _this->lastRenewInternal;
+    return _this->expiryTime;
 }
 
 c_bool

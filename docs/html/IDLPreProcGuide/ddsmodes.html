@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. OpenSplice Modes and Languages &mdash; IDL PreProcessor Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="IDL PreProcessor Guide" href="index.html" />
+    <link rel="next" title="6. IDL Pre-processor Grammar" href="grammar.html" />
+    <link rel="prev" title="4. Command Line Options" href="commandline.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="grammar.html" title="6. IDL Pre-processor Grammar"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="commandline.html" title="4. Command Line Options"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="opensplice-modes-and-languages">
+<span id="id1"></span><h1>5. OpenSplice Modes and Languages<a class="headerlink" href="#opensplice-modes-and-languages" title="Permalink to this headline">¶</a></h1>
+<p><em>The Vortex OpenSplice IDL Pre-processor supports two modes:</em></p>
+<ul class="simple">
+<li><em>Standalone</em> mode where the application is only used with Vortex OpenSplice</li>
+<li><em>ORB-integrated</em> mode where the application is used with an ORB as well
+as with Vortex OpenSplice</li>
+</ul>
+<p>In a <em>standalone</em> context, Vortex OpenSplice provides, apart from the DDS/DCPS
+related artifacts, all the artifacts implied by the lDL language specific mapping. In
+this case the used name space is DDS instead of the name space implied by the IDL
+language specific mapping.</p>
+<p>In an <em>ORB-integrated</em> context, the ORB pre-processor will provide for the artifacts
+implied by the lDL language specific mapping, while Vortex OpenSplice only
+provides the DDS/DCPS related artifacts. The application data type representation
+provided by the ORB is also used within the Vortex OpenSplice context. In this way
+application data types can be shared between the ORB and Vortex OpenSplice within
+one application program.</p>
+<p>The languages and modes that Vortex OpenSplice supports are listed in the table below.</p>
+<p class="centered">
+<strong><strong>Supported Modes and Languages</strong></strong></p><table border="1" class="docutils">
+<colgroup>
+<col width="25%" />
+<col width="25%" />
+<col width="25%" />
+<col width="25%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Language</th>
+<th class="head">Mode</th>
+<th class="head">OpenSplice Library</th>
+<th class="head">ORB Template Path</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">C</span></tt></td>
+<td>Standalone</td>
+<td><p class="first"><tt class="docutils literal"><span class="pre">dcpssac.so</span></tt></p>
+<p class="last"><tt class="docutils literal"><span class="pre">dcpsac.lib</span></tt></p>
+</td>
+<td><tt class="docutils literal"><span class="pre">SAC</span></tt></td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">C++</span></tt></td>
+<td>ORB Integrated</td>
+<td><tt class="docutils literal"><span class="pre">dcpsccpp.so</span></tt></td>
+<td><p class="first"><tt class="docutils literal"><span class="pre">CCPP/DDS_Open</span></tt><tt class="docutils literal"><span class="pre">Fusion_1_4_1</span></tt></p>
+<p><em>for UNIX-like</em>
+<em>platforms, and</em></p>
+<p><tt class="docutils literal"><span class="pre">CCPP\DDS_Open</span></tt><tt class="docutils literal"><span class="pre">Fusion_1_5_1</span></tt></p>
+<p class="last"><em>for the Windows</em>
+<em>platform</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">C++</span></tt></td>
+<td>Standalone</td>
+<td><tt class="docutils literal"><span class="pre">dcpssacpp.so</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">SACPP</span></tt></td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">ISOC++</span></tt></td>
+<td>ISOCPP Types</td>
+<td><tt class="docutils literal"><span class="pre">dcpsisocpp.so</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">ISOCPP</span></tt></td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">ISOC++</span></tt></td>
+<td>ORB Integrated</td>
+<td><tt class="docutils literal"><span class="pre">dcpsisocpp.so</span></tt></td>
+<td><p class="first"><tt class="docutils literal"><span class="pre">CCPP/DDS_Open</span></tt><tt class="docutils literal"><span class="pre">Fusion_1_4_1</span></tt></p>
+<p><em>for UNIX-like</em>
+<em>platforms, and</em></p>
+<p><tt class="docutils literal"><span class="pre">CCPP\DDS_Open</span></tt><tt class="docutils literal"><span class="pre">Fusion_1_5_1</span></tt></p>
+<p class="last"><em>for the Windows</em>
+<em>platform</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">ISOC++2</span></tt></td>
+<td>ISOCPP Types</td>
+<td><tt class="docutils literal"><span class="pre">dcpsisocpp2.so</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">ISOCPP2</span></tt></td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">Java</span></tt></td>
+<td>Standalone</td>
+<td><tt class="docutils literal"><span class="pre">dcpssaj.jar</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">SAJ</span></tt></td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">Java</span></tt></td>
+<td>ORB integrated</td>
+<td><tt class="docutils literal"><span class="pre">dcpscj.jar</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">SAJ</span></tt></td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">C#</span></tt></td>
+<td>Standalone</td>
+<td><tt class="docutils literal"><span class="pre">dcpssacs</span></tt>
+<tt class="docutils literal"><span class="pre">Assembly.dll</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">SACS</span></tt></td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">C99</span></tt></td>
+<td>Standalone</td>
+<td><p class="first"><tt class="docutils literal"><span class="pre">dcpsc99.so</span></tt></p>
+<p class="last"><tt class="docutils literal"><span class="pre">dcpsc99.lib</span></tt></p>
+</td>
+<td><tt class="docutils literal"><span class="pre">C99</span></tt></td>
+</tr>
+</tbody>
+</table>
+<p>The mappings for each language are in accordance with their respective
+OMG Language Mapping Specifications (see <a class="reference internal" href="bibliography.html#references"><em>the Bibliography</em></a>
+for a list of references).</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="commandline.html"
+                        title="previous chapter">4. Command Line Options</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="grammar.html"
+                        title="next chapter">6. IDL Pre-processor Grammar</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/ddsmodes.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="grammar.html" title="6. IDL Pre-processor Grammar"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="commandline.html" title="4. Command Line Options"
+             >previous</a> |</li>
+        <li><a href="index.html">IDL PreProcessor Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

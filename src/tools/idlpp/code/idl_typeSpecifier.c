@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**
@@ -236,7 +244,7 @@ idl_typeUserUnset (
 C_STRUCT(idl_typeArray) {
     C_EXTENDS(idl_typeUser);
     idl_typeSpec arrayType;
-    c_long	 size;
+    c_ulong	 size;
 };
 
 /** @brief create a new idl_typeArray instance
@@ -246,10 +254,10 @@ C_STRUCT(idl_typeArray) {
  * @return A new array class holding the specified type and the size
  */
 idl_typeArray
-idl_typeArrayNew (idl_typeSpec ofType, c_long size)
+idl_typeArrayNew (idl_typeSpec ofType, c_ulong size)
 {
-    idl_typeArray typeArray = os_malloc ((size_t)C_SIZEOF(idl_typeArray));
-    memset(typeArray, 0x00, (size_t)C_SIZEOF(idl_typeArray));
+    idl_typeArray typeArray = os_malloc (C_SIZEOF(idl_typeArray));
+    memset(typeArray, 0x00, C_SIZEOF(idl_typeArray));
 
     typeArray->arrayType = ofType;
     typeArray->size = size;
@@ -297,7 +305,7 @@ idl_typeArrayFree (
  * @param typeArray Class to operate on
  * @return The size of the array
  */
-c_long
+c_ulong
 idl_typeArraySize (
     idl_typeArray typeArray)
 {
@@ -326,7 +334,7 @@ idl_typeArrayActual (
     idl_typeArray typeArray)
 {
     if (idl_typeSpecType(idl_typeSpec(typeArray->arrayType)) == idl_tarray) {
-	return idl_typeArrayActual (idl_typeArray(typeArray->arrayType));
+        return idl_typeArrayActual (idl_typeArray(typeArray->arrayType));
     } else {
         return typeArray->arrayType;
     }
@@ -338,7 +346,7 @@ idl_typeArrayActual (
 C_STRUCT(idl_typeSeq) {
     C_EXTENDS(idl_typeUser);
     idl_typeSpec seqType;
-    c_long	maxSize;
+    c_ulong	maxSize;
 };
 
 /** @brief create a new idl_typeSeq instance
@@ -348,10 +356,10 @@ C_STRUCT(idl_typeSeq) {
  * @return A new sequence holding the specified type and with the specified maximum size
  */
 idl_typeSeq
-idl_typeSeqNew (idl_typeSpec ofType, c_long maxSize)
+idl_typeSeqNew (idl_typeSpec ofType, c_ulong maxSize)
 {
-    idl_typeSeq typeSeq = os_malloc ((size_t)C_SIZEOF(idl_typeSeq));
-    memset(typeSeq, 0x00, (size_t)C_SIZEOF(idl_typeSeq));
+    idl_typeSeq typeSeq = os_malloc (C_SIZEOF(idl_typeSeq));
+    memset(typeSeq, 0x00, C_SIZEOF(idl_typeSeq));
 
     typeSeq->seqType = ofType;
     typeSeq->maxSize = maxSize;
@@ -399,7 +407,7 @@ idl_typeSeqFree (
  * @param typeSeq Class to operate on
  * @return The maxiumu size of the sequence, where 0 specifies unlimited
  */
-c_long
+c_ulong
 idl_typeSeqMaxSize (
     idl_typeSeq typeSeq)
 {
@@ -455,8 +463,8 @@ idl_typeDefNew (
     idl_typeSpec referedType,
     idl_typeSpec actualType)
 {
-    idl_typeDef typeDef = os_malloc ((size_t)C_SIZEOF(idl_typeDef));
-    memset(typeDef, 0x00, (size_t)C_SIZEOF(idl_typeDef));
+    idl_typeDef typeDef = os_malloc (C_SIZEOF(idl_typeDef));
+    memset(typeDef, 0x00, C_SIZEOF(idl_typeDef));
 
     typeDef->referedType = referedType;
     typeDef->actualType = actualType;
@@ -576,7 +584,7 @@ idl_typeDefResolveFully (
  ***********************************************************/
 C_STRUCT(idl_typeUnion) {
     C_EXTENDS(idl_typeUser);
-    c_long	noCases;
+    c_ulong	noCases;
     idl_typeSpec switchKind;
 };
 
@@ -590,10 +598,10 @@ C_STRUCT(idl_typeUnion) {
 idl_typeUnion
 idl_typeUnionNew (
     idl_typeSpec switchKind,
-    c_long noCases)
+    c_ulong noCases)
 {
-    idl_typeUnion typeUnion = os_malloc ((size_t)C_SIZEOF(idl_typeUnion));
-    memset(typeUnion, 0x00, (size_t)C_SIZEOF(idl_typeUnion));
+    idl_typeUnion typeUnion = os_malloc (C_SIZEOF(idl_typeUnion));
+    memset(typeUnion, 0x00, C_SIZEOF(idl_typeUnion));
 
     typeUnion->switchKind = switchKind;
     typeUnion->noCases = noCases;
@@ -654,7 +662,7 @@ idl_typeUnionSwitchKind (
  * @param typeUnion Class to operate on
  * @return The number of union cases related to the union
  */
-c_long
+c_ulong
 idl_typeUnionNoCases (
     idl_typeUnion typeUnion)
 {
@@ -666,7 +674,7 @@ idl_typeUnionNoCases (
  ***********************************************************/
 C_STRUCT(idl_typeStruct) {
     C_EXTENDS(idl_typeUser);
-    c_long	noMembers;
+    c_ulong	noMembers;
 };
 
 /** @brief create a new idl_typeStruct instance
@@ -677,10 +685,10 @@ C_STRUCT(idl_typeStruct) {
  */
 idl_typeStruct
 idl_typeStructNew (
-    c_long noMembers)
+    c_ulong noMembers)
 {
-    idl_typeStruct typeStruct = os_malloc ((size_t)C_SIZEOF(idl_typeStruct));
-    memset(typeStruct, 0x00, (size_t)C_SIZEOF(idl_typeStruct));
+    idl_typeStruct typeStruct = os_malloc (C_SIZEOF(idl_typeStruct));
+    memset(typeStruct, 0x00, C_SIZEOF(idl_typeStruct));
 
     typeStruct->noMembers = noMembers;
     idl_typeSpec(typeStruct)->type = idl_tstruct;
@@ -705,7 +713,7 @@ idl_typeStructFree (
  * @param typeStruct Class to operate on
  * @return The number of members in the structure
  */
-c_long
+c_ulong
 idl_typeStructNoMembers (
     idl_typeStruct typeStruct)
 {
@@ -717,7 +725,7 @@ idl_typeStructNoMembers (
  ***********************************************************/
 C_STRUCT(idl_typeEnum) {
     C_EXTENDS(idl_typeUser);
-    c_long	noElements;
+    c_ulong	noElements;
 };
 
 /** @brief create a new idl_typeEnum instance
@@ -728,10 +736,10 @@ C_STRUCT(idl_typeEnum) {
  */
 idl_typeEnum
 idl_typeEnumNew (
-    c_long noElements)
+    c_ulong noElements)
 {
-    idl_typeEnum typeEnum = os_malloc ((size_t)C_SIZEOF(idl_typeEnum));
-    memset(typeEnum, 0x00, (size_t)C_SIZEOF(idl_typeEnum));
+    idl_typeEnum typeEnum = os_malloc (C_SIZEOF(idl_typeEnum));
+    memset(typeEnum, 0x00, C_SIZEOF(idl_typeEnum));
 
     typeEnum->noElements = noElements;
     idl_typeSpec(typeEnum)->type = idl_tenum;
@@ -756,7 +764,7 @@ idl_typeEnumFree (
  * @param typeEnum Class to operate on
  * @return The number of elements in the enumeration
  */
-c_long
+c_ulong
 idl_typeEnumNoElements (
     idl_typeEnum typeEnum)
 {
@@ -769,8 +777,8 @@ idl_typeEnumNoElements (
 C_STRUCT(idl_typeBasic) {
     C_EXTENDS(idl_typeUser);
     idl_basicType basicType;
-    c_long max_len; /* for bounded string only 		*/
-		    /* for unbounded string set to 0 	*/
+    c_ulong max_len; /* for bounded string only 		*/
+		     /* for unbounded string set to 0 	*/
 };
 
 /** @brief create a new idl_typeBasic instance
@@ -782,11 +790,11 @@ idl_typeBasic
 idl_typeBasicNew (
     idl_basicType basicType)
 {
-    idl_typeBasic typeBasic = os_malloc ((size_t)C_SIZEOF(idl_typeBasic));
-    memset(typeBasic, 0x00, (size_t)C_SIZEOF(idl_typeBasic));
+    idl_typeBasic typeBasic = os_malloc (C_SIZEOF(idl_typeBasic));
+    memset(typeBasic, 0x00, C_SIZEOF(idl_typeBasic));
 
     typeBasic->basicType = basicType;
-    typeBasic->max_len = -1;
+    typeBasic->max_len = 0;
     idl_typeSpec(typeBasic)->type = idl_tbasic;
     idl_typeSpec(typeBasic)->hasRef = FALSE;
 
@@ -825,7 +833,7 @@ idl_typeBasicType (
 void
 idl_typeBasicSetMaxlen (
     idl_typeBasic typeBasic,
-    c_long maxLen)
+    c_ulong maxLen)
 {
     if (typeBasic->basicType == idl_string) {
 	typeBasic->max_len = maxLen;
@@ -837,22 +845,18 @@ idl_typeBasicSetMaxlen (
  * @param typeBasic Class to operate on
  * @return The specified maximum length (only != 0 for bounded strings)
  */
-c_long
+c_ulong
 idl_typeBasicMaxlen (
     idl_typeBasic typeBasic)
 {
-    if (typeBasic->basicType == idl_string) {
-	return typeBasic->max_len;
-    } else {
-	return -1;
-    }
+    return typeBasic->max_len;
 }
 
 /***********************************************************
  * idl_labelSpec
  ***********************************************************/
 C_STRUCT(idl_labelSpec) {
-    c_long noLabels;
+    c_ulong noLabels;
     idl_typeSpec labelKind;
 };
 
@@ -866,9 +870,9 @@ C_STRUCT(idl_labelSpec) {
 idl_labelSpec
 idl_labelSpecNew (
     idl_typeSpec labelKind,
-    c_long noLabels)
+    c_ulong noLabels)
 {
-    idl_labelSpec labelSpec = os_malloc ((size_t)C_SIZEOF(idl_labelSpec));
+    idl_labelSpec labelSpec = os_malloc (C_SIZEOF(idl_labelSpec));
 
     labelSpec->labelKind = labelKind;
     labelSpec->noLabels = noLabels;
@@ -927,7 +931,7 @@ idl_labelSpecLabelKind (
  * @param labelSpec Class to operate on
  * @return The number of the labels
  */
-c_long
+c_ulong
 idl_labelSpecNoLabels (
     idl_labelSpec labelSpec)
 {
@@ -950,7 +954,7 @@ idl_labelVal
 idl_labelValDefault (
     idl_labelVal alternativeValue)
 {
-    idl_labelVal labelVal = os_malloc((size_t)C_SIZEOF(idl_labelVal));
+    idl_labelVal labelVal = os_malloc(C_SIZEOF(idl_labelVal));
 
     labelVal->labelType = idl_ldefault;
 
@@ -998,7 +1002,7 @@ idl_labelDefault
 idl_labelDefaultNew (
     idl_labelVal alternativeVal)
 {
-    idl_labelDefault labelDefault = os_malloc ((size_t)C_SIZEOF(idl_labelDefault));
+    idl_labelDefault labelDefault = os_malloc (C_SIZEOF(idl_labelDefault));
 
     idl_labelVal(labelDefault)->labelType = idl_ldefault;
     labelDefault->alternativeVal = alternativeVal;
@@ -1050,7 +1054,7 @@ idl_labelEnumNew (
     idl_scope scope,
     const char *val)
 {
-    idl_labelEnum labelEnum = os_malloc ((size_t)C_SIZEOF(idl_labelEnum));
+    idl_labelEnum labelEnum = os_malloc (C_SIZEOF(idl_labelEnum));
 
     idl_labelVal(labelEnum)->labelType = idl_lenum;
     labelEnum->labelVal = os_strdup(val);
@@ -1112,7 +1116,7 @@ idl_labelValue
 idl_labelValueNew (
     c_value val)
 {
-    idl_labelValue labelValue = os_malloc((size_t)C_SIZEOF(idl_labelValue));
+    idl_labelValue labelValue = os_malloc(C_SIZEOF(idl_labelValue));
 
     idl_labelVal(labelValue)->labelType = idl_lvalue;
     labelValue->labelVal = val;
@@ -1155,13 +1159,13 @@ c_bool
 idl_isContiguous(
     c_type type)
 {
-    c_long i;
+    c_ulong i;
 
     switch (c_baseObject(type)->kind) {
 #if 0
     case M_COLLECTION:
         switch(c_collectionType(type)->kind) {
-        case C_ARRAY:
+        case OSPL_C_ARRAY:
             if (c_collectionType(type)->maxSize == 0) {
                 return FALSE;
             } else {
@@ -1203,3 +1207,13 @@ idl_isContiguous(
     }
 }
 
+c_bool
+idl_isAnonymousType(idl_scope scope)
+{
+    idl_scopeType scopeType = idl_scopeElementType(idl_scopeIndexed(scope, idl_scopeStackSize(scope) - 1));
+    if (scopeType == idl_tStruct || scopeType == idl_tUnion) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}

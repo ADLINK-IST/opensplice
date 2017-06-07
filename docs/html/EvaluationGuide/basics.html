@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. OpenSplice Enterprise Basics &mdash; OpenSplice Evaluation and Benchmarking Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Evaluation and Benchmarking Guide" href="index.html" />
+    <link rel="next" title="4. OpenSplice Architectural Modes" href="architectural.html" />
+    <link rel="prev" title="2. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="architectural.html" title="4. OpenSplice Architectural Modes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="opensplice-enterprise-basics">
+<span id="id1"></span><h1>3. OpenSplice Enterprise Basics<a class="headerlink" href="#opensplice-enterprise-basics" title="Permalink to this headline">¶</a></h1>
+<p>OpenSplice Enterprise is configured using an XML configuration file.
+In this file, the user specifies the architectural model and the
+OpenSplice Enterprise services that are to run when the DDS
+infrastructure is started.</p>
+<p>The <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> environment variable refers to the specific XML
+configuration file that is used for the current deployment. The
+default value refers to the <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> file located in the <tt class="docutils literal"><span class="pre">etc/config</span></tt>
+directory of the OpenSplice Enterprise installation. The installation
+directory itself can be referred to by the <tt class="docutils literal"><span class="pre">OSPL_HOME</span></tt> environment
+variable. Please see <a class="reference internal" href="running.html#the-opensplice-enterprise-environment"><em>The OpenSplice Enterprise Environment</em></a> for
+details of how to set up the OpenSplice Enterprise environment.</p>
+<p>A number of other sample configuration files that can be used when
+benchmarking OpenSplice Enterprise are also provided in
+the <tt class="docutils literal"><span class="pre">etc/config</span></tt> directory.</p>
+<p>The <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable is of the form:</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></dt>
+<dd><tt class="docutils literal"><span class="pre">OSPL_URI=file://$OSPL_HOME/etc/config/ospl.xml</span></tt></dd>
+<dt><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></dt>
+<dd><tt class="docutils literal"><span class="pre">OSPL_URI=file://%OSPL_HOME%\etc\config\ospl.xml</span></tt></dd>
+</dl>
+<p>You can refer to the <tt class="docutils literal"><span class="pre">OpenSplice_DeploymentGuide.pdf</span></tt> later for more details
+of the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable; for now, let us see what aspects of the
+OpenSplice deployment are controlled by this file.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>The OpenSplice Enterprise Launcher tool assists with the
+selection of the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable. There is a <em>Configurations</em> menu
+that lists the sample configuration files that are available.</dd>
+</dl>
+<div class="figure" id="the-launcher-tool">
+<a class="reference internal image-reference" href="_images/LauncherTools.png"><img alt="The Launcher tool" src="_images/LauncherTools.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>The Launcher tool</strong></p>
+</div>
+<p>The OpenSplice Enterprise Launcher tool is also able to run the
+examples and performance tests that are described later in this
+document.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">2. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="architectural.html"
+                        title="next chapter">4. OpenSplice Architectural Modes</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/basics.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="architectural.html" title="4. OpenSplice Architectural Modes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

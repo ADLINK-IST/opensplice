@@ -5,7 +5,7 @@ TARGET_LINK_DIR := $(SPLICE_LIBRARY_PATH)
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
-CFLAGS  += $(SHCFLAGS) $(MTCFLAGS)
+CFLAGS  += $(SHCFLAGS)
 CINCS   += -I$(OSPL_HOME)/src/database/database/include
 CINCS   += -I$(OSPL_HOME)/src/database/database/code
 

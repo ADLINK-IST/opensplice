@@ -1,0 +1,8 @@
+$sp($(spaces))typedef sequence<$(typename)> $(typename)StreamBuf;
+
+$sp($(spaces))struct $(typename)StreamSample {
+$sp($(spaces))      ::DDS::Streams::StreamId id;
+$sp($(spaces))      $(typename)StreamBuf buffer;
+$sp($(spaces))};
+$sp($(spaces))#pragma keylist $(typename)StreamSample id
+$sp($(spaces))#pragma isostream

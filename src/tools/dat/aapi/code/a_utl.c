@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -20,7 +28,7 @@ a_utlContext
 a_utlInit()
 {
 	a_utlContext context = a_memAlloc(sizeof(struct a_utlContext_s));
-	context->sw_start = os_timeGet();
+	context->sw_start = os_timeGetMonotonic();
 	context->sw_stop  = context->sw_start;
 	return context;
 }
@@ -46,7 +54,7 @@ void
 a_utlStopWatchStart(
 	a_utlContext context)
 {
-	context->sw_start = os_timeGet();
+	context->sw_start = os_timeGetMonotonic();
 }
 
 
@@ -57,7 +65,7 @@ void
 a_utlStopWatchStop(
 	a_utlContext context)
 {
-	context->sw_stop = os_timeGet();
+	context->sw_stop = os_timeGetMonotonic();
 }
 
 
@@ -139,23 +147,23 @@ a_utlCollKindStr(
 	c_collKind kind)
 {
 	switch(kind) {
-		case C_UNDEFINED:   return "C_UNDEFINED";  break;
-		case C_LIST:        return "C_LIST";       break;
-		case C_ARRAY:       return "C_ARRAY";      break;
-		case C_BAG:         return "C_BAG";        break;
-		case C_SET:         return "C_SET";        break;
-		case C_MAP:         return "C_MAP";        break;
-		case C_DICTIONARY:  return "C_DICTIONARY"; break;
-		case C_SEQUENCE:    return "C_SEQUENCE";   break;
-		case C_STRING:      return "C_STRING";     break;
-		case C_WSTRING:     return "C_WSTRING";    break;
-		case C_QUERY:       return "C_QUERY";      break;
-		case C_SCOPE:       return "C_SCOPE";      break;
-		case C_COUNT:       return "C_COUNT";      break;
+		case OSPL_C_UNDEFINED:   return "C_UNDEFINED";  break;
+		case OSPL_C_LIST:        return "C_LIST";       break;
+		case OSPL_C_ARRAY:       return "C_ARRAY";      break;
+		case OSPL_C_BAG:         return "C_BAG";        break;
+		case OSPL_C_SET:         return "C_SET";        break;
+		case OSPL_C_MAP:         return "C_MAP";        break;
+		case OSPL_C_DICTIONARY:  return "C_DICTIONARY"; break;
+		case OSPL_C_SEQUENCE:    return "C_SEQUENCE";   break;
+		case OSPL_C_STRING:      return "C_STRING";     break;
+		case OSPL_C_WSTRING:     return "C_WSTRING";    break;
+		case OSPL_C_QUERY:       return "C_QUERY";      break;
+		case OSPL_C_SCOPE:       return "C_SCOPE";      break;
+		case OSPL_C_COUNT:       return "C_COUNT";      break;
 		default:            return "(unknown)";    break;
 	}
 }
-		
+
 
 
 /* Returns a (static) string representation of a

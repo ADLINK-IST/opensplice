@@ -39,10 +39,22 @@ then
    do 
       if [ $RES = 0 ]
       then
-         Store $i distro/
-         RES=$?
+         if [[ `echo "$i" | grep "TEST"` != "" ]]
+         then
+            echo "TEST installer not backed off ..."
+         else
+            Store $i distro/
+            RES=$?
+         fi
       fi
    done
+fi
+
+# Copy the list of features that are written as part of the dcps_build_dist to the distro
+# section on the scoreboard.
+if [ -f $DEPWORKDIR/features.txt ]
+then
+   Store $DEPWORKDIR/features.txt distros/
 fi
 
 if [ $RES = 0 ]

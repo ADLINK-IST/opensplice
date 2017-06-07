@@ -66,6 +66,19 @@ public:
      * can see both together; otherwise, it may, for example,
      * erroneously interpret that the aircraft is on a collision course.
      *
+     * The following constraints apply to the use of coherent sets:
+     * - Ownership has no effect on the completeness of a transactions, i.e.
+     *   it behaves as if ownership is applied after a transaction has
+     *   become complete and before making samples visible.
+     * - A time-based filter has no effect on the completeness of a transaction,
+     *   i.e. it behaves as if messages are filtered out after a transaction
+     *   has become complete and before making samples visible.
+     * - Deleting writers or changing RxO QoS values that would break
+     *   connectivity is not allowed and results in a PRECONDTION_NOT_MET
+     * - A transaction that cannot be delivered because of insufficient
+     *   resources i.e. keep all policy hitting the resource limits are
+     *   currently discarded.
+     *
      * @param pub the publisher
      */
     explicit TCoherentSet(const dds::pub::Publisher& pub);

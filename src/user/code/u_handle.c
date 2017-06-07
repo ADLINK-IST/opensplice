@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "u__types.h"
@@ -16,7 +24,7 @@
 
 const u_handle U_HANDLE_NIL;
 
-static int u__handleResult (v_handleResult result)
+static u_result u__handleResult (v_handleResult result)
 {
     return ((result == V_HANDLE_OK) ? U_RESULT_OK :
             (result == V_HANDLE_EXPIRED) ? U_RESULT_ALREADY_DELETED :
@@ -25,40 +33,60 @@ static int u__handleResult (v_handleResult result)
 
 u_handle
 u_handleNew(
-    v_public object)
+    const v_public object)
 {
     v_handle handle;
-    assert (object != NULL);
+
+    assert(object != NULL);
+
     handle = v_publicHandle(object);
     return handle;
 }
 
 u_result
 u_handleClaim (
-    u_handle _this,
-    c_voidp  instance)
+    const u_handle _this,
+    const c_voidp  instance)
 {
-    return u__handleResult (v_handleClaim (_this, instance));
+    u_result result;
+    v_handleResult vresult;
+
+    assert(instance);
+
+    if (v_handleIsNil(_this)) {
+        result = U_RESULT_ILL_PARAM;
+    } else {
+        vresult = v_handleClaim(_this,instance);
+        result = u__handleResult(vresult);
+    }
+
+    return result;
 }
 
 u_result
 u_handleRelease(
-    u_handle _this)
+    const u_handle _this)
 {
-    return u__handleResult (v_handleRelease (_this));
+    u_result result;
+
+    assert(!v_handleIsNil(_this));
+
+    result = u__handleResult(v_handleRelease(_this));
+
+    return result;
 }
 
-c_bool
+u_bool
 u_handleIsEqual(
-    u_handle h1,
-    u_handle h2)
+    const u_handle h1,
+    const u_handle h2)
 {
-    return v_handleIsEqual (h1, h2);
+    return v_handleIsEqual(h1,h2);
 }
 
-c_bool
+u_bool
 u_handleIsNil(
-    u_handle h)
+    const u_handle _this)
 {
-    return v_handleIsNil (h);
+    return v_handleIsNil(_this);
 }

@@ -1,0 +1,34 @@
+parseconditions:
+    desc: HelloWorld LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+
+        - name: ws_pub_write
+          type: line
+          inst: 2
+          required: yes
+          line: "=== [*Publisher] * a message containing :"
+
+        - name: ws_userid
+          type: line
+          inst: All
+          required: yes
+          line: "userID  : 1"
+
+        - name: ws_msg_first
+          type: line
+          inst: 1
+          required: yes
+          line: "Message : \"First Hello\""
+
+        - name: ws_msg_again
+          type: line
+          inst: 1
+          required: yes
+          line: "Message : \"Hello again\""

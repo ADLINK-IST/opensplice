@@ -1,0 +1,552 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. Appendix A &mdash; Vortex OpenSplice Record and Replay API Reference</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Vortex OpenSplice Record and Replay API Reference" href="index.html" />
+    <link rel="next" title="8. References" href="bibliography.html" />
+    <link rel="prev" title="6. Impact on DDS Domain" href="impact.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="bibliography.html" title="8. References"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="impact.html" title="6. Impact on DDS Domain"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="appendix-a">
+<span id="id1"></span><h1>7. Appendix A<a class="headerlink" href="#appendix-a" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="rnr-topic-api-idl-specification">
+<span id="id2"></span><h2>7.1. RnR Topic API IDL specification<a class="headerlink" href="#rnr-topic-api-idl-specification" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre>/* Record &amp; Replay data model
+ *
+ * This IDL file contains the R&amp;R data model. The file is divided in two sections:
+ * helper types and topics that use these types.
+ */
+
+#include &quot;dds_dcps.idl&quot;
+
+module RnR {
+    /************************ TYPES ************************/
+
+    /* ValueKind is the discriminator of the &#39;value&#39; union of a KeyValue */
+    enum ValueKind {
+        VALUEKIND_STRING,
+        VALUEKIND_LONG,
+        VALUEKIND_FLOAT,
+        VALUEKIND_BOOLEAN,
+        VALUEKIND_TIME
+    };
+
+    /* ConditionKind the discriminator of the &#39;Condition&#39; union type */
+    enum ConditionKind {
+        COND_REL_TIME,
+        COND_ABS_TIME,
+        COND_DATA,
+        COND_LIFECYCLE
+    };
+
+    /* CommandKind is the discriminator of the &#39;kind&#39; union of a Command */
+    enum CommandKind {
+        ADD_RECORD_COMMAND,
+        REMOVE_RECORD_COMMAND,
+        ADD_REPLAY_COMMAND,
+        REMOVE_REPLAY_COMMAND,
+        START_SCENARIO_COMMAND,
+        STOP_SCENARIO_COMMAND,
+        SUSPEND_SCENARIO_COMMAND,
+        CONFIG_COMMAND,
+        SETREPLAYSPEED_COMMAND,
+        TRUNCATE_COMMAND,
+        GENERIC_COMMAND
+    };
+
+    /* ServiceState contains the possible states of an R&amp;R service */
+    enum ServiceState {
+        SERVICE_INITIALISING,    /* Service is starting */
+        SERVICE_OPERATIONAL,     /* Builtin-scenario is started, service is able
+                                    to receive commands */
+        SERVICE_TERMINATING,     /* Service is stopping all scenarios and shutting
+                                    down */
+        SERVICE_TERMINATED       /* Service is terminated */
+    };
+
+    /* ScenarioState contains the possible states of a R&amp;R scenario */
+    enum ScenarioState {
+        SCENARIO_RUNNING,        /* Scenario is active and able to receive and
+                                    process commands */
+        SCENARIO_STOPPED,        /* Scenario is stopped and unable to receive
+                                    commands */
+        SCENARIO_SUSPENDED       /* Scenario is suspended and will resume
+                                    processing commands when scenario is
+                                    (re)started or continued */
+    };
+
+    /* StorageState contains the possible states of a R&amp;R storage */
+    enum StorageState {
+        STORAGE_READY,           /* Defined, but not opened yet. */
+        STORAGE_OPEN,            /* Storage successfully opened */
+        STORAGE_ERROR,           /* An unrecoverable error has occurred in the
+                                    storage */
+        STORAGE_OUTOFRESOURCES,  /* Storage is out-of-resources */
+        STORAGE_CLOSED           /* Storage has been closed */
+    };
+
+    /* Condition is a union, used to express conditions in the Command topic */
+    union Condition switch (ConditionKind) {
+        case COND_REL_TIME:             /* Relative time since previous command, */
+            DDS::Duration_t relTime;    /* i.e. the time that has passed since the
+                                           previous command was processed */
+        case COND_ABS_TIME:             /* Absolute (wall) time, */
+            DDS::Time_t absTime;        /* i.e. a fixed point in time */
+        case COND_DATA:                 /* Content-expression on data samples */
+            string dataExpr;            /* i.e. a specific sample matching the
+                                           expression, was published in the DDS
+                                           domain */
+        case COND_LIFECYCLE:            /* Content-expression on data lifecycle, */
+            string lifecycleExpr;       /* i.e. a specific instance transitions
+                                           from alive to not alive */
+    };
+
+    union Value switch(ValueKind) {
+        case VALUEKIND_STRING:       /* Value is a string */
+            string sValue;
+        case VALUEKIND_LONG:         /* Value is a long number */
+            long lValue;
+        case VALUEKIND_FLOAT:        /* Value is a floating-point number */
+            float fValue;
+        case VALUEKIND_BOOLEAN:      /* Value is a boolean */
+            boolean bValue;
+        case VALUEKIND_TIME:         /* Value is a timestamp */
+            DDS::Time_t tValue;
+    };
+
+    /* Generic key:value type, where value is an union supporting various
+       kinds of values */
+    struct KeyValue {
+        string keyval;                   /* String key */
+        Value value;
+    };
+
+    /* Used for specifying a range of times */
+    /* For every valid TimeRange &#39;start&#39; &lt;= &#39;end&#39; should hold */
+    struct TimeRange {
+        /* Absolute time (inclusive) indicating the start of the range. When
+         * start.sec == TIME_INVALID_SEC and start.nanosec == TIME_INVALID_NSEC,
+         * start is considered to be smaller than all times it is compared to
+         * (i.e., start is interpreted as -INFINITY). */
+        DDS::Time_t start;
+        /* Absolute time (inclusive) indicating the end of the range. When
+         * end.sec == TIME_INVALID_SEC and end.nanosec == TIME_INVALID_NSEC,
+         * end is considered to be greater than all times it is compared to
+         * (i.e., end is interpreted as +INFINITY). */
+        DDS::Time_t end;
+    };
+
+    /* Command-type to add record-interest to a storage */
+    struct AddRecordCommand {
+        string storage;                         /* Name identifying a storage to
+                                                   record to */
+
+        /* Meta-filters */
+        sequence&lt;string&gt; interestExpr;          /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to record */
+        sequence&lt;string&gt; blacklistExpr;         /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to block from
+                                                   record */
+
+        /* Content filters */
+        sequence&lt;string&gt; filterExpr;            /* Sequence of content-filter-
+                                                   expressions */
+        sequence&lt;string&gt; excludedAttributeExpr; /* Sequence of expressions to
+                                                   exclude specific members of
+                                                   topics */
+    };
+
+    /* Command-type to remove record-interest from a storage */
+    struct RemoveRecordCommand {
+        string storage;                         /* Name identifying a storage to
+                                                   stop recording to */
+
+        /* Meta-filters */
+        sequence&lt;string&gt; interestExpr;          /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to stop recording */
+        sequence&lt;string&gt; blacklistExpr;         /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to stop blocking
+                                                   from record */
+
+        /* Content filters */
+        sequence&lt;string&gt; filterExpr;            /* Sequence of content-filter-
+                                                   expressions */
+        sequence&lt;string&gt; excludedAttributeExpr; /* Sequence of expressions to
+                                                   exclude specific members of
+                                                   topics */
+    };
+
+    /* Command-type to add replay-interest to a storage */
+    struct AddReplayCommand {
+        string storage;                         /* Name identifying a storage to
+                                                   replay from */
+
+        /* Meta-filters */
+        sequence&lt;string&gt; interestExpr;          /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to replay */
+        sequence&lt;string&gt; blacklistExpr;         /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to block from
+                                                   replay */
+        sequence&lt;TimeRange&gt; timeExpr;           /* Sequence of time-ranges to
+                                                   replay. When empty no filtering
+                                                   on time is done */
+
+        /* Content filters */
+        sequence&lt;string&gt; filterExpr;            /* Sequence of content-filter-
+                                                   expressions */
+
+        /* Resource limits */
+        boolean useOriginalTimestamps;          /* If true, replay with original
+                                                   timestamps. If false use current
+                                                   time */
+
+        /* If TRUE, fast-forward to first matching sample. If FALSE, a delay will
+         * be introduced before the sample is inserted, to resemble timing
+         * behaviour of the recording */
+        boolean skipToFirstSample;
+    };
+
+    /* Command-type to remove replay-interest from a storage */
+    struct RemoveReplayCommand {
+        string storage;                         /* Name identifying a storage to
+                                                   stop replaying from */
+
+        /* Meta-filters */
+        sequence&lt;string&gt; interestExpr;          /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to stop replaying */
+        sequence&lt;string&gt; blacklistExpr;         /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to stop blocking
+                                                   from replay */
+        sequence&lt;TimeRange&gt; timeExpr;           /* Sequence of time-ranges to
+                                                   stop replaying */
+
+        /* Content filters */
+        sequence&lt;string&gt; filterExpr;            /* Sequence of content-filter-
+                                                   expressions */
+    };
+
+    /* Command-type to set the replay-speed of a storage */
+    struct SetReplaySpeedCommand {
+        string storage;                         /* Name identifying a storage to
+                                                   replay from */
+        float speed;                            /* Replay speed factor */
+    };
+
+    /* Container type of the per-topic storage statistics */
+    struct TopicStatistics {
+        string name;                            /* partition.topic name */
+        long numberOfSamplesRecorded;           /* Total number of samples
+                                                   recorded */
+        long numberOfBytesRecorded;             /* Total number of bytes
+                                                   recorded */
+        long recordRateMinimum;                 /* Record rates (per publication
+                                                   period) */
+        long recordRateAverage;
+        long recordRateMaximum;
+        long numberOfSamplesReplayed;           /* Total number of samples
+                                                   replayed */
+        long numberOfBytesReplayed;             /* Total number of bytes
+                                                   replayed */
+        long replayRateMinimum;                 /* Replay rates (per publication
+                                                   period) */
+        long replayRateAverage;
+        long replayRateMaximum;
+    };
+
+    union Kind switch(CommandKind) {
+        case ADD_RECORD_COMMAND:                /* Record command */
+            AddRecordCommand addRecord;
+        case REMOVE_RECORD_COMMAND:
+            RemoveRecordCommand removeRecord;
+        case ADD_REPLAY_COMMAND:                /* Replay command */
+            AddReplayCommand addReplay;
+        case REMOVE_REPLAY_COMMAND:
+            RemoveReplayCommand removeReplay;
+        case CONFIG_COMMAND:                    /* Config command */
+            sequence&lt;KeyValue&gt; config;
+        case START_SCENARIO_COMMAND:            /* Scenario-control commands */
+        case STOP_SCENARIO_COMMAND:
+        case SUSPEND_SCENARIO_COMMAND:
+            string name;
+        case SETREPLAYSPEED_COMMAND:            /* Storage replay-speed command */
+            SetReplaySpeedCommand setreplayspeed;
+        case TRUNCATE_COMMAND:                  /* Storage truncate command */
+            string storage;
+        case GENERIC_COMMAND:                   /* For future extensibility */
+            sequence&lt;KeyValue&gt; extCommands;
+    };
+
+    /************************ TOPICS ************************/
+
+    /* Topic used to control an R&amp;R service */
+    struct Command {
+        string scenarioName;        /* Name identifying the scenario to which
+                                       this command belongs */
+        string rnrId;               /* Name identifying the service, or &#39;*&#39;
+                                       to address all services */
+        Kind kind;
+        sequence&lt;Condition&gt; conditions; /* Sequence of conditions which must
+                                           all be true before the command is
+                                           executed */
+    };
+#pragma keylist Command scenarioName
+
+    /* Topic used to monitor the status of an R&amp;R service */
+    struct ServiceStatus {
+        string rnrId;               /* Name identifying the service */
+        ServiceState state;         /* Current state of the service */
+    };
+#pragma keylist ServiceStatus rnrId
+
+    /* Topic used to monitor the status of an R&amp;R scenario */
+    struct ScenarioStatus {
+        string rnrId;               /* Name identifying the service */
+        string scenarioName;        /* Name identifying the scenario */
+        ScenarioState state;        /* Current state of the scenario */
+    };
+#pragma keylist ScenarioStatus scenarioName rnrId
+
+    /* Topic used to monitor the status of a storage controlled by
+       an R&amp;R service */
+    struct StorageStatus {
+        string rnrId;               /* Name identifying the service */
+        string storageName;         /* Name identifying the storage */
+        StorageState state;         /* Current state of the storage */
+        string storageAttr;         /* Current storage attributes */
+
+        sequence&lt;KeyValue&gt; properties;  /* key = property name,
+                                           value = property value */
+    };
+#pragma keylist StorageStatus storageName rnrId
+
+    /* Topic used to publish statistics of a storage */
+    struct StorageStatistics {
+        string rnrId;
+        string storageName;
+        sequence&lt;TopicStatistics&gt; statistics;
+    };
+#pragma keylist StorageStatistics storageName rnrId
+};
+
+module RnR_V2 {
+    /* In v2 of the RnR API, the following changes were made:
+     * - a KeyValue sequence &#39;extensions&#39; has been added for future
+     *   extensions of Command.
+     * - The Add- and RemoveReplayCommand contain a KeyValue sequence
+     *   &#39;transformations&#39; for changing properties
+     *   of samples upon replay.
+     */
+
+     /************************ TYPES ************************/
+
+    /* Command-type to add replay-interest with transformations to a storage */
+    struct AddReplayCommand {
+        string storage;                         /* Name identifying a storage
+                                                   to replay from */
+
+        /* Meta-filters */
+        sequence&lt;string&gt; interestExpr;          /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to replay */
+        sequence&lt;string&gt; blacklistExpr;         /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to block from
+                                                   replay */
+        sequence&lt;RnR::TimeRange&gt; timeExpr;           /* Sequence of time-ranges to
+                                                        replay. When empty no
+                                                        filtering on time is
+                                                        done */
+
+        /* Content filters */
+        sequence&lt;string&gt; filterExpr;            /* Sequence of content-filter-
+                                                   expressions */
+
+        /* Resource limits */
+        boolean useOriginalTimestamps;          /* If true, replay with original
+                                                   timestamps. If false use
+                                                   current time */
+
+        /* If TRUE, fast-forward to first matching sample.
+         * If FALSE, a delay will be introduced before the sample
+         * is inserted, to resemble timing behaviour of the recording */
+        boolean skipToFirstSample;
+
+        /* Transformations */
+        sequence&lt;RnR::KeyValue&gt; transformations;     /* QoS transformations to
+                                                        apply to the sample before
+                                                        replaying */
+    };
+
+    /* Command-type to remove replay-interest with transformations */
+    struct RemoveReplayCommand {
+        string storage;                         /* Name identifying a storage to
+                                                   stop replaying from */
+
+        /* Meta-filters */
+        sequence&lt;string&gt; interestExpr;          /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to stop replaying */
+        sequence&lt;string&gt; blacklistExpr;         /* Sequence of &#39;partition.topic&#39;
+                                                   expressions to stop blocking
+                                                   from replay */
+        sequence&lt;RnR::TimeRange&gt; timeExpr;           /* Sequence of time-ranges to
+                                                        stop replaying */
+
+        /* Content filters */
+        sequence&lt;string&gt; filterExpr;            /* Sequence of content-filter-
+                                                   expressions */
+
+        /* Transformations */
+        sequence&lt;RnR::KeyValue&gt; transformations;     /* QoS transformations
+                                                        to stop replaying */
+    };
+
+    union Kind switch(RnR::CommandKind) {
+        case ADD_RECORD_COMMAND:                /* Record command */
+            RnR::AddRecordCommand addRecord;
+        case REMOVE_RECORD_COMMAND:
+            RnR::RemoveRecordCommand removeRecord;
+        case ADD_REPLAY_COMMAND:                /* Replay command */
+            AddReplayCommand addReplay;
+        case REMOVE_REPLAY_COMMAND:
+            RemoveReplayCommand removeReplay;
+        case CONFIG_COMMAND:                    /* Config command */
+            sequence&lt;RnR::KeyValue&gt; config;
+        case START_SCENARIO_COMMAND:            /* Scenario-control commands */
+        case STOP_SCENARIO_COMMAND:
+        case SUSPEND_SCENARIO_COMMAND:
+            string name;
+        case SETREPLAYSPEED_COMMAND:            /* Storage replay-speed command */
+            RnR::SetReplaySpeedCommand setreplayspeed;
+        case TRUNCATE_COMMAND:                  /* Storage truncate command */
+            string storage;
+        case GENERIC_COMMAND:                   /* For future extensibility */
+            sequence&lt;RnR::KeyValue&gt; extCommands;
+    };
+
+    /************************ TOPICS ************************/
+
+    /* Topic used to control an R&amp;R service */
+    struct Command {
+        string scenarioName;        /* Name identifying the scenario to which
+                                       this command belongs */
+        string rnrId;               /* Name identifying the service, or &#39;*&#39; to
+                                       address all services */
+        Kind kind;
+        sequence&lt;RnR::Condition&gt; conditions; /* Sequence of conditions which
+                                                must all be true before the
+                                                command is executed */
+        sequence&lt;RnR::KeyValue&gt; extensions;  /* Sequence reserved for future
+                                                enhancements */
+    };
+#pragma keylist Command scenarioName
+};
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">7. Appendix A</a><ul>
+<li><a class="reference internal" href="#rnr-topic-api-idl-specification">7.1. RnR Topic API IDL specification</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="impact.html"
+                        title="previous chapter">6. Impact on DDS Domain</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bibliography.html"
+                        title="next chapter">8. References</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/appendixa.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="bibliography.html" title="8. References"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="impact.html" title="6. Impact on DDS Domain"
+             >previous</a> |</li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

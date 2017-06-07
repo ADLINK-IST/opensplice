@@ -18,6 +18,13 @@ module DDS {
 
     typedef BUILTIN_TOPIC_KEY_TYPE_NATIVE BuiltinTopicKey_t[3];
     typedef sequence<string> StringSeq;
+    typedef short DataRepresentationId_t;
+
+    const DataRepresentationId_t XCDR_REPRESENTATION  = 0;
+    const DataRepresentationId_t XML_REPRESENTATION   = 0x001;
+    const DataRepresentationId_t OSPL_REPRESENTATION  = 0x400;
+    const DataRepresentationId_t GPB_REPRESENTATION   = 0x401;
+    const DataRepresentationId_t INVALID_REPRESENTATION = 0x7FFF;
 
     struct Duration_t {
         long sec;
@@ -147,12 +154,75 @@ module DDS {
     };
 
     struct DurabilityServiceQosPolicy {
-    Duration_t service_cleanup_delay;
-    HistoryQosPolicyKind history_kind;
+        Duration_t service_cleanup_delay;
+        HistoryQosPolicyKind history_kind;
         long history_depth;
         long max_samples;
         long max_instances;
         long max_samples_per_instance;
+    };
+
+    struct ProductDataQosPolicy {
+        string value;
+    };
+
+    struct EntityFactoryQosPolicy {
+        boolean autoenable_created_entities;
+    };
+
+    struct ShareQosPolicy {
+        string name;
+        boolean enable;
+    };
+
+    struct WriterDataLifecycleQosPolicy {
+        boolean autodispose_unregistered_instances;
+        Duration_t autopurge_suspended_samples_delay;
+        Duration_t autounregister_instance_delay;
+    };
+
+    enum InvalidSampleVisibilityQosPolicyKind {
+        NO_INVALID_SAMPLES,
+        MINIMUM_INVALID_SAMPLES,
+        ALL_INVALID_SAMPLES
+    };
+
+    struct InvalidSampleVisibilityQosPolicy {
+        InvalidSampleVisibilityQosPolicyKind kind;
+    };
+
+// @discrepancy The below QoS did not exist in ./etc/idlpp/dds_dcps.idl Retain ?
+
+    struct SubscriptionKeyQosPolicy {
+        boolean use_key_list;
+        StringSeq key_list;
+    };
+
+// @discrepancy End of above discrepancy
+
+    struct ReaderDataLifecycleQosPolicy {
+        Duration_t autopurge_nowriter_samples_delay;
+        Duration_t autopurge_disposed_samples_delay;
+        boolean autopurge_dispose_all;
+        // @discrepancy The below member existed in this file but did not
+        // in ./etc/idlpp/dds_dcps.idl. Retain ?
+        boolean enable_invalid_samples; // @deprecated Will be replaced by invalid_sample_visibility in due time
+        InvalidSampleVisibilityQosPolicy invalid_sample_visibility;
+    };
+
+    struct UserKeyQosPolicy {
+        boolean enable;
+        string expression;
+    };
+
+    struct ReaderLifespanQosPolicy {
+        boolean use_lifespan;
+        Duration_t duration;
+    };
+
+    struct TypeHash {
+        unsigned long long msb;
+        unsigned long long lsb;
     };
 
     struct ParticipantBuiltinTopicData {
@@ -181,6 +251,15 @@ module DDS {
     };
 #pragma keylist TopicBuiltinTopicData key
 
+    struct TypeBuiltinTopicData {
+        string name;
+        DataRepresentationId_t data_representation_id;
+        TypeHash type_hash;
+        octSeq meta_data;
+        octSeq extentions;
+    };
+#pragma keylist TypeBuiltinTopicData name data_representation_id type_hash.msb type_hash.lsb
+
     struct PublicationBuiltinTopicData {
         BuiltinTopicKey_t key;
         BuiltinTopicKey_t participant_key;
@@ -194,7 +273,6 @@ module DDS {
         LifespanQosPolicy lifespan;
         DestinationOrderQosPolicy destination_order;
         UserDataQosPolicy user_data;
-        // @discrepancy The below 'ownership' member was not present in ./etc/idlpp/dds_dcps.idl
         OwnershipQosPolicy ownership;
         OwnershipStrengthQosPolicy ownership_strength;
         PresentationQosPolicy presentation;
@@ -214,7 +292,6 @@ module DDS {
         LatencyBudgetQosPolicy latency_budget;
         LivelinessQosPolicy liveliness;
         ReliabilityQosPolicy reliability;
-        // @discrepancy The below 'ownership' member was not present in ./etc/idlpp/dds_dcps.idl
         OwnershipQosPolicy ownership;
         DestinationOrderQosPolicy destination_order;
         UserDataQosPolicy user_data;
@@ -225,6 +302,59 @@ module DDS {
         GroupDataQosPolicy group_data;
     };
 #pragma keylist SubscriptionBuiltinTopicData key
+
+    struct CMParticipantBuiltinTopicData {
+        BuiltinTopicKey_t key;
+        ProductDataQosPolicy product;
+    };
+#pragma keylist CMParticipantBuiltinTopicData key
+
+    struct CMPublisherBuiltinTopicData {
+        BuiltinTopicKey_t key;
+        ProductDataQosPolicy product;
+        BuiltinTopicKey_t participant_key;
+        string name;
+        EntityFactoryQosPolicy entity_factory;
+        PartitionQosPolicy partition;
+    };
+#pragma keylist CMPublisherBuiltinTopicData key
+
+    struct CMSubscriberBuiltinTopicData {
+        BuiltinTopicKey_t key;
+        ProductDataQosPolicy product;
+        BuiltinTopicKey_t participant_key;
+        string name;
+        EntityFactoryQosPolicy entity_factory;
+        ShareQosPolicy share;
+        PartitionQosPolicy partition;
+    };
+#pragma keylist CMSubscriberBuiltinTopicData key
+
+    struct CMDataWriterBuiltinTopicData {
+        BuiltinTopicKey_t key;
+        ProductDataQosPolicy product;
+        BuiltinTopicKey_t publisher_key;
+        string name;
+        HistoryQosPolicy history;
+        ResourceLimitsQosPolicy resource_limits;
+        WriterDataLifecycleQosPolicy writer_data_lifecycle;
+    };
+#pragma keylist CMDataWriterBuiltinTopicData key
+
+    struct CMDataReaderBuiltinTopicData {
+        BuiltinTopicKey_t key;
+        ProductDataQosPolicy product;
+        BuiltinTopicKey_t subscriber_key;
+        string name;
+        HistoryQosPolicy history;
+        ResourceLimitsQosPolicy resource_limits;
+        ReaderDataLifecycleQosPolicy reader_data_lifecycle;
+        UserKeyQosPolicy subscription_keys;
+        ReaderLifespanQosPolicy reader_lifespan;
+        ShareQosPolicy share;
+    };
+#pragma keylist CMDataReaderBuiltinTopicData key
+
 };
 
 #endif /* OSPL_DDS_BUILTINTOPICS_IDL */

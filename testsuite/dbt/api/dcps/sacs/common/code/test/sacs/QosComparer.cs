@@ -79,6 +79,7 @@ namespace test.sacs
 
             defaultReaderDataLifecycleQosPolicy.AutopurgeDisposedSamplesDelay = DDS.Duration.Infinite;
             defaultReaderDataLifecycleQosPolicy.AutopurgeNowriterSamplesDelay = DDS.Duration.Infinite;
+            defaultReaderDataLifecycleQosPolicy.AutopurgeDisposeAll = false;
             defaultReaderDataLifecycleQosPolicy.EnableInvalidSamples = true;
 
             defaultTopicAndDataReaderReliabilityQosPolicy.Kind = DDS.ReliabilityQosPolicyKind.BestEffortReliabilityQos;
@@ -991,6 +992,12 @@ namespace test.sacs
                 ))
             {
                 System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.AutoPurgeDisposedSamplesDelay' differ"
+                    );
+                return false;
+            }
+            if (policy1.AutopurgeDisposeAll != policy2.AutopurgeDisposeAll)
+            {
+                System.Console.Error.WriteLine("'ReaderDataLifecycleQosPolicy.AutopurgeDisposeAll' differ"
                     );
                 return false;
             }

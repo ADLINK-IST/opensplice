@@ -1,0 +1,28 @@
+parseconditions:
+    desc: DBMSconnect LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+
+        - name: board_open
+          type: line
+          inst: 1
+          required: yes
+          line: "SQL-MessageBoard has opened: *"
+
+        - name: term_msg
+          type: line
+          inst: 1
+          required: yes
+          line: "Termination message received: exiting..."
+
+        - name: sqlddsdbms_msg
+          type: line
+          inst: 10
+          required: yes
+          line: "SqlToDdsAndDbms: Message no*"

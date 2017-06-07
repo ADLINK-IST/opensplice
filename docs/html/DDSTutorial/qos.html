@@ -1,0 +1,390 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Quality of Service &mdash; The Data Distribution Service Tutorial</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Data Distribution Service Tutorial" href="index.html" />
+    <link rel="next" title="5. Appendix A" href="appendix-A.html" />
+    <link rel="prev" title="3. Reading and Writing Data" href="readandwrite.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="appendix-A.html" title="5. Appendix A"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="readandwrite.html" title="3. Reading and Writing Data"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">DDS Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="quality-of-service">
+<span id="id1"></span><h1>4. Quality of Service<a class="headerlink" href="#quality-of-service" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="the-dds-qos-model">
+<h2>4.1. The DDS QoS Model<a class="headerlink" href="#the-dds-qos-model" title="Permalink to this headline">¶</a></h2>
+<p>DDS provides applications policies to control a wide set of non-functional
+properties, such as data availability, data delivery, data timeliness
+and resource usage. The figure below shows the full list of QoS policies
+available.</p>
+<p class="centered" id="dds-qos-policies">
+<strong><strong>DDS QoS Policies</strong></strong></p><a class="reference internal image-reference" href="_images/DDS-QoS-policies-01.png"><img alt="DDS QoS Policies" class="align-center" src="_images/DDS-QoS-policies-01.png" style="height: 60mm;" /></a>
+<p>The semantics and the behaviour of entities, such as a
+topic, data reader, and data writer, can be controlled through available
+QoS policies. The policies that control an end-to-end property are
+considered as part of the subscription matching.</p>
+<p class="centered" id="dds-request-vs-offer-qos-model">
+<strong><strong>DDS Request vs. Offer QoS Model</strong></strong></p><a class="reference internal image-reference" href="_images/Request-vs-Offer-01.png"><img alt="DDS Request vs. Offer QoS Model" class="align-center" src="_images/Request-vs-Offer-01.png" style="height: 60mm;" /></a>
+<p>DDS uses a ‘request <em>vs.</em> offer’ QoS-matching approach, as shown
+in the figure <a class="reference internal" href="#dds-request-vs-offer-qos-model">DDS Request vs. Offer QoS Model</a> in which a data
+reader matches a data writer if and only if the QoS it is requesting for
+the given topic does not exceed (<em>i.e.</em> it is no more stringent than) the
+QoS with which the data is produced by the data writer. DDS subscriptions
+are matched against the topic type and name, as well as against the QoS
+being offered and requested by data writers and readers.</p>
+<p>This DDS matching mechanism ensures that:</p>
+<blockquote>
+<div><ul class="simple">
+<li>types are preserved end-to-end due to the topic type matching, and</li>
+<li>end-to-end QoS invariants are also preserved.</li>
+</ul>
+</div></blockquote>
+<p>The remainder of this chapter describes the most important QoS policies
+in DDS.</p>
+<div class="section" id="data-availability">
+<h3>4.1.1. Data availability<a class="headerlink" href="#data-availability" title="Permalink to this headline">¶</a></h3>
+<p>DDS provides the following QoS policies that control the availability of
+data to domain participants:</p>
+<ul>
+<li><p class="first">The <tt class="docutils literal"><span class="pre">DURABILITY</span></tt> policy controls the lifetime of the data written
+to the global data space in a domain. Supported durability levels
+include:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">VOLATILE</span></tt>, which specifies that once data is published
+it is not maintained by DDS for delivery to late-joining applications;</li>
+<li><tt class="docutils literal"><span class="pre">TRANSIENT_LOCAL</span></tt>, which specifies that publishers store data
+locally so that late-joining subscribers get the last-published item
+if a publisher is still alive;</li>
+<li><tt class="docutils literal"><span class="pre">TRANSIENT</span></tt>, which ensures that the GDS maintains the information
+outside the local scope of any publishers for use by late-joining
+subscribers; and</li>
+<li><tt class="docutils literal"><span class="pre">PERSISTENT</span></tt>, which ensures that the GDS stores the information
+persistently so to make it available to late joiners even after the
+shutdown and restart of the whole system.</li>
+</ul>
+<p>Durability is achieved by relying on a durability service whose properties
+are configured by means of the <tt class="docutils literal"><span class="pre">DURABILITY_SERVICE</span></tt> QoS of non-volatile
+topics.</p>
+</li>
+<li><p class="first">The <tt class="docutils literal"><span class="pre">LIFESPAN</span></tt> QoS policy controls the interval of time during which a
+data sample is valid. The default value is <tt class="docutils literal"><span class="pre">infinite</span></tt>, with alternative
+values being the time-span for which the data can be considered valid.</p>
+</li>
+<li><p class="first">The <tt class="docutils literal"><span class="pre">HISTORY</span></tt> QoS policy controls the number of data samples (<em>i.e.</em>
+subsequent writes of the same topic) that must be stored for readers
+or writers. Possible values are the last sample, the last <em>n</em>
+samples, or all samples.</p>
+</li>
+</ul>
+<p>These DDS data availability QoS policies decouple applications in time and
+space. They also enable these applications to cooperate in highly
+dynamic environments characterized by continuous joining and leaving of
+publishers and subscribers. Such properties are particularly relevant in
+Systems-of-Systems (SoS) since they increase the decoupling of the
+component parts.</p>
+</div>
+<div class="section" id="data-delivery">
+<h3>4.1.2. Data delivery<a class="headerlink" href="#data-delivery" title="Permalink to this headline">¶</a></h3>
+<p>DDS provides the following QoS policies that control how data is
+delivered and how publishers can claim exclusive rights on data updates:</p>
+<ul class="simple">
+<li>The <tt class="docutils literal"><span class="pre">PRESENTATION</span></tt> QoS policy gives control on how changes to the
+information model are presented to subscribers. This QoS gives control of
+the ordering as well as the coherency of data updates. The scope at
+which it is applied is defined by the access scope, which can be one
+of <tt class="docutils literal"><span class="pre">INSTANCE</span></tt>, <tt class="docutils literal"><span class="pre">TOPIC</span></tt>, or <tt class="docutils literal"><span class="pre">GROUP</span></tt> level.</li>
+<li>The <tt class="docutils literal"><span class="pre">RELIABILITY</span></tt> QoS policy controls the level of reliability
+associated with data diffusion. Possible choices are <tt class="docutils literal"><span class="pre">RELIABLE</span></tt> and
+<tt class="docutils literal"><span class="pre">BEST_EFFORT</span></tt> distribution.</li>
+<li>The <tt class="docutils literal"><span class="pre">PARTITION</span></tt> QoS policy gives control over the association between
+DDS partitions (represented by a string name) and a specific instance of
+a publisher/subscriber. This association provides DDS implementations
+with an abstraction that allow segregation of traffic generated by
+different partitions, thereby improving overall system scalability
+and performance.</li>
+<li>The <tt class="docutils literal"><span class="pre">DESTINATION_ORDER</span></tt> QoS policy controls the order of changes made
+by publishers to some instance of a given topic. DDS allows the
+ordering of different changes according to source or destination
+timestamps.</li>
+<li>The <tt class="docutils literal"><span class="pre">OWNERSHIP</span></tt> QoS policy controls which writer &#8216;owns&#8217; the
+write-access to a topic when there are multiple writers and ownership
+is <tt class="docutils literal"><span class="pre">EXCLUSIVE</span></tt>. Only the writer with the highest
+<tt class="docutils literal"><span class="pre">OWNERSHIP_STRENGTH</span></tt> can publish the data. If the <tt class="docutils literal"><span class="pre">OWNERSHIP</span></tt>
+QoS policy value is shared, multiple writers can concurrently update a
+topic. <tt class="docutils literal"><span class="pre">OWNERSHIP</span></tt> thus helps to manage replicated publishers of
+the same data.</li>
+</ul>
+<p>These DDS data delivery QoS policies control the reliability and availability of
+data, thereby allowing the delivery of the right data to the right place
+at the right time. More elaborate ways of selecting the right data are
+offered by the DDS content-awareness profile, which allows applications to
+select information of interest based upon their content. These QoS policies
+are particularly useful in <a class="reference internal" href="acronyms.html#acro-sos"><em>SoS</em></a> since they can be used to
+finely tune how <em>and to whom</em> data is delivered, thus limiting not only the
+amount of resources used, but also minimizing the level of interference by
+independent data streams.</p>
+</div>
+<div class="section" id="data-timeliness">
+<h3>4.1.3. Data timeliness<a class="headerlink" href="#data-timeliness" title="Permalink to this headline">¶</a></h3>
+<p>DDS provides the following QoS policies to control the timeliness properties
+of distributed data:</p>
+<ul class="simple">
+<li>The <tt class="docutils literal"><span class="pre">DEADLINE</span></tt> QoS policy allows applications to define the maximum
+inter-arrival time for data. DDS can be configured to automatically
+notify applications when deadlines are missed.</li>
+<li>The <tt class="docutils literal"><span class="pre">LATENCY_BUDGET</span></tt> QoS policy provides a means for applications
+to inform DDS of the urgency associated with transmitted data. The
+latency budget specifies the time period within which DDS must distribute
+the information. This time period starts from the moment the data is
+written by a publisher until it is available in the subscriber&#8217;s
+data-cache ready for use by readers.</li>
+<li>The <tt class="docutils literal"><span class="pre">TRANSPORT_PRIORITY</span></tt> QoS policy allows applications to control
+the importance associated with a topic or with a topic instance, thus
+allowing a DDS implementation to prioritize more important data
+relative to less important data. These QoS policies help ensure that
+mission-critical information needed to reconstruct the shared
+operational picture is delivered in a timely manner.</li>
+</ul>
+<p>These DDS data timeliness QoS policies provide control over the temporal
+properties of data. Such properties are particularly relevant in
+<a class="reference internal" href="acronyms.html#acro-sos"><em>SoS</em></a> since they can be used to define and control the
+temporal aspects of various subsystem data exchanges, whilst ensuring that
+bandwidth is exploited optimally.</p>
+</div>
+<div class="section" id="resources">
+<h3>4.1.4. Resources<a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h3>
+<p>DDS defines the following QoS policies to control the network and computing
+resources that are essential to meet data dissemination requirements:</p>
+<ul class="simple">
+<li>The <tt class="docutils literal"><span class="pre">TIME_BASED_FILTER</span></tt> QoS policy allows applications to specify the
+minimum inter-arrival time between data samples, thereby expressing
+their capability to consume information at a maximum rate. Samples
+that are produced at a faster pace are not delivered. This policy
+helps a DDS implementation optimize network bandwidth, memory, and
+processing power for subscribers that are connected over
+limited-bandwidth networks or which have limited computing capabilities.</li>
+<li>The <tt class="docutils literal"><span class="pre">RESOURCE_LIMITS</span></tt> QoS policy allows applications to control the
+maximum available storage to hold topic instances and a related number
+of historical samples. DDS&#8217;s QoS policies support the various elements and
+operating scenarios that constitute net-centric mission-critical
+information management. By controlling these QoS policies it is
+possible to scale DDS from low-end embedded systems connected with narrow
+and noisy radio links, to high-end servers connected to high-speed
+fiber-optic networks.</li>
+</ul>
+<p>These DDS resource QoS policies provide control over the local and end-to-end
+resources, such as memory and network bandwidth. Such properties are
+particularly relevant in <a class="reference internal" href="acronyms.html#acro-sos"><em>SoS</em></a> since they are characterized by
+largely heterogeneous subsystems, devices, and network connections that often
+require down-sampling, as well as overall limits on the amount
+of resources used.</p>
+</div>
+<div class="section" id="configuration">
+<h3>4.1.5. Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>The QoS policies described above provide control over the most important
+aspects of data delivery, availability, timeliness, and resource usage.
+DDS also supports the definition and distribution of user-specified
+bootstrapping information <em>via</em> the following QoS policies:</p>
+<ul class="simple">
+<li>The <tt class="docutils literal"><span class="pre">USER_DATA</span></tt> QoS policy allows applications to associate a sequence
+of octets to domain participants, data readers and data writers. This
+data is then distributed by means of a built-in topic. This QoS
+policy is commonly used to distribute security credentials.</li>
+<li>The <tt class="docutils literal"><span class="pre">TOPIC_DATA</span></tt> QoS policy allows applications to associate a sequence
+of octets with a topic. This bootstrapping information is distributed
+by means of a built-in topic. A common use of this QoS policy is to
+extend topics with additional information, or meta-information, such
+as IDL type-codes or XML schemas.</li>
+<li>The <tt class="docutils literal"><span class="pre">GROUP_DATA</span></tt> QoS policy allows applications to associate a sequence
+of octets with publishers and subscribers; this bootstrapping
+information is distributed by means built-in topics. A typical use of
+this information is to allow additional application control over
+subscriptions matching.</li>
+</ul>
+<p>These DDS configuration QoS policies provide useful a mechanism for
+bootstrapping and configuring applications that run in <a class="reference internal" href="acronyms.html#acro-sos"><em>SoS</em></a>.
+This mechanism is particularly relevant in SoS since it provides a
+fully-distributed means of providing configuration information.</p>
+</div>
+<div class="section" id="setting-qos">
+<h3>4.1.6. Setting QoS<a class="headerlink" href="#setting-qos" title="Permalink to this headline">¶</a></h3>
+<p>All the code examples you have have seen so far did rely on default
+QoS settings, so that we did not have to be concerned with defining the
+desired QoS. <a class="reference internal" href="#setting-qos-on-dds-entities">Setting QoS on DDS entities</a> shows how you can create and
+set QoS on DDS entities.</p>
+<div class="line-block" id="setting-qos-on-dds-entities">
+<div class="line"><strong>Setting QoS on DDS entities</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>    <span class="c1">// create a Domain Participant, -1 defaults to value defined in configuration file</span>
+    <span class="n">dds</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">DomainParticipant</span> <span class="n">dp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+
+    <span class="n">dds</span><span class="o">::</span><span class="n">topic</span><span class="o">::</span><span class="n">qos</span><span class="o">::</span><span class="n">TopicQos</span> <span class="n">topicQos</span>
+                 <span class="o">=</span> <span class="n">dp</span><span class="p">.</span><span class="n">default_topic_qos</span><span class="p">()</span>
+                     <span class="o">&lt;&lt;</span> <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">Durability</span><span class="o">::</span><span class="n">Transient</span><span class="p">()</span>
+                     <span class="o">&lt;&lt;</span> <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">Reliability</span><span class="o">::</span><span class="n">Reliable</span><span class="p">();</span>
+
+    <span class="n">dds</span><span class="o">::</span><span class="n">topic</span><span class="o">::</span><span class="n">Topic</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&quot;TempSensor&quot;</span><span class="p">,</span> <span class="n">topicQos</span><span class="p">);</span>
+
+    <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">qos</span><span class="o">::</span><span class="n">PublisherQos</span> <span class="n">pubQos</span>
+                 <span class="o">=</span> <span class="n">dp</span><span class="p">.</span><span class="n">default_publisher_qos</span><span class="p">()</span>
+                     <span class="o">&lt;&lt;</span> <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">Partition</span><span class="p">(</span><span class="s">&quot;building-1:floor-2:room:3&quot;</span><span class="p">);</span>
+
+    <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">Publisher</span> <span class="n">pub</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="n">pubQos</span><span class="p">);</span>
+
+    <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">qos</span><span class="o">::</span><span class="n">DataWriterQos</span> <span class="n">dwqos</span> <span class="o">=</span> <span class="n">topic</span><span class="p">.</span><span class="n">qos</span><span class="p">();</span>
+    <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">policy</span><span class="o">::</span><span class="n">TransportPriority</span> <span class="n">transportPriority</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>
+    <span class="n">dwqos</span> <span class="o">&lt;&lt;</span> <span class="n">transportPriority</span><span class="p">;</span> 
+
+    <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">DataWriter</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">dw</span><span class="p">(</span><span class="n">pub</span><span class="p">,</span> <span class="n">topic</span><span class="p">,</span> <span class="n">dwqos</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Along with an API to explicitly create QoS, DDS also provides the concept
+of a <tt class="docutils literal"><span class="pre">QoSProvider</span></tt> to make it possible to externalize the definition
+of the QoS and make it a deployment-time concern. The listing below shows how
+the <tt class="docutils literal"><span class="pre">QoSProvider</span></tt> can be used to fetch a QoS definition from a file.</p>
+<div class="line-block" id="setting-qos-on-dds-entities-using-the-qosprovider">
+<div class="line"><strong>Setting QoS on DDS entities using the QoSProvider</strong></div>
+</div>
+<div class="highlight-cpp"><div class="highlight"><pre>   <span class="n">dds</span><span class="o">::</span><span class="n">core</span><span class="o">::</span><span class="n">QosProvider</span> <span class="n">qp</span><span class="p">(</span><span class="s">&quot;file://defaults.xml&quot;</span><span class="p">,</span> <span class="s">&quot;DDS DefaultQosProfile&quot;</span><span class="p">);</span>
+
+  <span class="c1">// create a Domain Participant, -1 defaults to value defined in configuration file</span>
+   <span class="n">dds</span><span class="o">::</span><span class="n">domain</span><span class="o">::</span><span class="n">DomainParticipant</span> <span class="n">dp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+
+   <span class="n">dds</span><span class="o">::</span><span class="n">topic</span><span class="o">::</span><span class="n">qos</span><span class="o">::</span><span class="n">TopicQos</span> <span class="n">topicQos</span> <span class="o">=</span> <span class="n">qp</span><span class="p">.</span><span class="n">topic_qos</span><span class="p">();</span>
+
+   <span class="n">dds</span><span class="o">::</span><span class="n">topic</span><span class="o">::</span><span class="n">Topic</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">topic</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="s">&quot;TempSensor&quot;</span><span class="p">,</span> <span class="n">topicQos</span><span class="p">);</span>
+
+   <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">qos</span><span class="o">::</span><span class="n">PublisherQos</span> <span class="n">pubQos</span> <span class="o">=</span> <span class="n">qp</span><span class="p">.</span><span class="n">publisher_qos</span><span class="p">();</span>
+   <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">Publisher</span> <span class="n">pub</span><span class="p">(</span><span class="n">dp</span><span class="p">,</span> <span class="n">pubQos</span><span class="p">);</span>
+
+   <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">qos</span><span class="o">::</span><span class="n">DataWriterQos</span> <span class="n">dwqos</span> <span class="o">=</span> <span class="n">qp</span><span class="p">.</span><span class="n">datawriter_qos</span><span class="p">();</span>
+   <span class="n">dds</span><span class="o">::</span><span class="n">pub</span><span class="o">::</span><span class="n">DataWriter</span><span class="o">&lt;</span><span class="n">tutorial</span><span class="o">::</span><span class="n">TempSensorType</span><span class="o">&gt;</span> <span class="n">dw</span><span class="p">(</span><span class="n">pub</span><span class="p">,</span> <span class="n">topic</span><span class="p">,</span> <span class="n">dwqos</span><span class="p">);</span>  
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="summary">
+<h2>4.2. Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>This chapter has explained the role of QoS in DDS and shown how the various
+policies can be used to control the most important aspects of
+communication, data availability and resource usage. The code examples
+have also illustrated that setting QoS is pretty straightforward and the use
+of the <tt class="docutils literal"><span class="pre">QoSProvider</span></tt> can be of great help in making the selection of QoS
+a deployment concern.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Quality of Service</a><ul>
+<li><a class="reference internal" href="#the-dds-qos-model">4.1. The DDS QoS Model</a><ul>
+<li><a class="reference internal" href="#data-availability">4.1.1. Data availability</a></li>
+<li><a class="reference internal" href="#data-delivery">4.1.2. Data delivery</a></li>
+<li><a class="reference internal" href="#data-timeliness">4.1.3. Data timeliness</a></li>
+<li><a class="reference internal" href="#resources">4.1.4. Resources</a></li>
+<li><a class="reference internal" href="#configuration">4.1.5. Configuration</a></li>
+<li><a class="reference internal" href="#setting-qos">4.1.6. Setting QoS</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#summary">4.2. Summary</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="readandwrite.html"
+                        title="previous chapter">3. Reading and Writing Data</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="appendix-A.html"
+                        title="next chapter">5. Appendix A</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/qos.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="appendix-A.html" title="5. Appendix A"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="readandwrite.html" title="3. Reading and Writing Data"
+             >previous</a> |</li>
+        <li><a href="index.html">DDS Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

@@ -78,30 +78,29 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 ** USE: Included from ast.hh
 */
 
-#include "idl_fwd.h"
-#include "idl_narrow.h"
-#include "ast_type.h"
-#include "utl_scope.h"
-#include "ast_decl.h"
+#include <idl_fwd.h>
+#include <idl_narrow.h>
+#include <ast_type.h>
+#include <utl_scope.h>
+#include <ast_decl.h>
 
 
 class AST_Interface : public virtual AST_Type, public virtual UTL_Scope
 {
-
 public:
-   // Operations
 
-   // Constructor(s)
-   AST_Interface();
-   AST_Interface(idl_bool local,
-                 UTL_ScopedName *n,
-                 AST_Interface **ih,
-                 long nih,
-                 const UTL_Pragmas &p);
-   virtual ~AST_Interface()
-   {}
+   AST_Interface ();
+   AST_Interface
+   (
+      bool local,
+      bool abstract,
+      UTL_ScopedName *n,
+      AST_Interface **ih,
+      long nih,
+      const UTL_Pragmas &p
+   );
+   virtual ~AST_Interface() {}
 
-   // Data Accessors
    AST_Interface **inherits();
    void set_inherits(AST_Interface **i);
    long n_inherits();
@@ -110,25 +109,28 @@ public:
    // Is this interface defined? This predicate returns FALSE when an
    // interface was forward declared but not defined yet, and TRUE in
    // all other cases.
-   idl_bool is_defined()
+
+   bool is_defined()
    {
-      return (pd_n_inherits < 0) ? I_FALSE : I_TRUE;
+      return (pd_n_inherits < 0) ? false : true;
    }
 
-   // Narrowing
    DEF_NARROW_METHODS2(AST_Interface, AST_Type, UTL_Scope);
    DEF_NARROW_FROM_DECL(AST_Interface);
    DEF_NARROW_FROM_SCOPE(AST_Interface);
 
-   // AST Dumping
    virtual void dump(ostream &o);
+
+protected:
+
+    virtual void virt_set_gen_any (void);
 
 private:
    // Data
    AST_Interface **pd_inherits; // Inherited interfaces
    // This is an array of pointers
    // to the inherited interfaces
-   long pd_n_inherits; // How many of them?
+   long pd_n_inherits; // How many of them? (-1 flags not defined)
 
    // Scope Management Protocol
    friend int yyparse();
@@ -148,4 +150,4 @@ private:
 
 };
 
-#endif           // _AST_INTERFACE_AST_INTERFACE_HH
+#endif

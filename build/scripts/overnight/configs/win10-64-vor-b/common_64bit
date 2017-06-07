@@ -1,0 +1,10 @@
+. ./configs/`hostname`/common
+
+export VS_ENV_SCRIPT="C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\vcvarsx86_amd64.bat"
+
+export JAVA_HOME="c:/Program Files/Java/jdk1.6.0_37"
+export ZLIB_HOME=
+export QTDIR=c:\\cygwin64\\home\\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_64bit
+export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-vs2015
+export PROTOBUF_LIB_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-vs2015/src
+unset TAO_ROOT

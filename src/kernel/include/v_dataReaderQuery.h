@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef V_DATAREADERQUERY_H
@@ -47,10 +55,12 @@ extern "C" {
 
 OS_API v_dataReaderQuery
 v_dataReaderQueryNew(
-    v_dataReader r,
-    const c_char *name,
-    q_expr predicate,
-    c_value params[]);
+    v_dataReader reader,
+    const os_char *name,
+    const os_char *expression,
+    const os_char *params[],
+    const os_uint32 nrOfParams,
+    const os_uint32 sampleMask);
 
 OS_API void
 v_dataReaderQueryFree(
@@ -66,45 +76,51 @@ OS_API c_bool
 v_dataReaderQueryTriggerTest(
     v_dataReaderQuery _this);
 
-OS_API c_bool
+OS_API v_result
 v_dataReaderQueryRead(
     v_dataReaderQuery _this,
     v_readerSampleAction action,
-    c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
-OS_API c_bool
+OS_API v_result
 v_dataReaderQueryTake(
     v_dataReaderQuery _this,
     v_readerSampleAction action,
-     c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
-OS_API c_bool
+OS_API v_result
 v_dataReaderQueryReadInstance(
     v_dataReaderQuery _this,
     v_dataReaderInstance i,
     v_readerSampleAction action,
-    c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
-OS_API c_bool
+OS_API v_result
 v_dataReaderQueryTakeInstance(
     v_dataReaderQuery _this,
     v_dataReaderInstance i,
     v_readerSampleAction action,
-    c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
-OS_API c_bool
+OS_API v_result
 v_dataReaderQueryReadNextInstance(
     v_dataReaderQuery _this,
     v_dataReaderInstance i,
     v_readerSampleAction action,
-    c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
-OS_API c_bool
+OS_API v_result
 v_dataReaderQueryTakeNextInstance(
     v_dataReaderQuery _this,
     v_dataReaderInstance i,
     v_readerSampleAction action,
-    c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
 OS_API void
 v_dataReaderQueryDeinit(
@@ -118,8 +134,13 @@ v_dataReaderQueryNotifyDataAvailable(
 OS_API c_bool
 v_dataReaderQuerySetParams(
     v_dataReaderQuery _this,
-    q_expr predicate,
-    c_value params[]);
+    const os_char *params[],
+    const os_uint32 nrOfParams);
+
+OS_API c_bool
+v_dataReaderQueryTestSample(
+    v_dataReaderQuery _this,
+    v_dataReaderSample sample);
 
 #undef OS_API
 

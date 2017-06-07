@@ -1,0 +1,243 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>OpenSplice Getting Started Guide &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="opensplice-getting-started-guide">
+<h1>OpenSplice Getting Started Guide<a class="headerlink" href="#opensplice-getting-started-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-getting-started-guide">1.1. About the Getting Started Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#conventions">1.2. Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="about-ospl.html">2. About Vortex Opensplice</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="about-ospl.html#why-vortex-opensplice">2.1. Why Vortex OpenSplice</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about-ospl.html#vortex-opensplice-architecture">2.2. Vortex OpenSplice Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about-ospl.html#single-process-library-architecture">2.3. Single Process Library Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about-ospl.html#shared-memory-architecture">2.4. Shared Memory architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about-ospl.html#vortex-opensplice-features-and-benefits">2.5. Vortex OpenSplice Features and Benefits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about-ospl.html#conclusion">2.6. Conclusion</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="product-info.html">3. Product Details</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="product-info.html#key-components">3.1. Key Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="product-info.html#language-and-compiler-bindings">3.2. Language and Compiler Bindings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="product-info.html#interaction-patterns">3.3. Interaction patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="product-info.html#support-for-evolutionary-data-models">3.4. Support for evolutionary data models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="product-info.html#building-your-own-c">3.5. Building your own C++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="product-info.html#platforms">3.6. Platforms</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">4. Documentation and Support</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="documentation.html#vortex-opensplice-documentation-set">4.1. Vortex OpenSplice Documentation Set</a></li>
+<li class="toctree-l2"><a class="reference internal" href="documentation.html#information-sources">4.2. Information Sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="documentation.html#support">4.3. Support</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="install-configure.html">5. Installation and Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install-configure.html#vortex-opensplice-development-and-run-time">5.1. Vortex OpenSplice Development and Run-Time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install-configure.html#installation-for-unix-and-windows-platforms">5.2. Installation for UNIX and Windows Platforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install-configure.html#installation-on-other-platforms">5.3. Installation on Other Platforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install-configure.html#configuration">5.4. Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install-configure.html#examples">5.5. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="using-with-cloud.html">6. Using Vortex OpenSplice with Vortex Cloud and Vortex Fog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="licensing.html">7. Licensing OpenSplice</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="licensing.html#general">7.1. General</a></li>
+<li class="toctree-l2"><a class="reference internal" href="licensing.html#development-and-deployment-licenses">7.2. Development and Deployment Licenses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="licensing.html#installing-the-license-file">7.3. Installing the License File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="licensing.html#running-the-license-manager-daemon">7.4. Running the License Manager Daemon</a></li>
+<li class="toctree-l2"><a class="reference internal" href="licensing.html#utilities">7.5. Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="launcher.html">8. Launcher</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="launcher.html#the-launcher-utility">8.1. The Launcher utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="launcher.html#starting-the-launcher">8.2. Starting the Launcher</a></li>
+<li class="toctree-l2"><a class="reference internal" href="launcher.html#stopping-the-launcher">8.3. Stopping the Launcher</a></li>
+<li class="toctree-l2"><a class="reference internal" href="launcher.html#troubleshooting-improper-startup">8.4. Troubleshooting Improper Startup</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="platforms.html">9. Platform-specific Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vxworks-551.html">10. VxWorks 5.5.1</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-551.html#vxworks-and-tornado">10.1. VxWorks and Tornado</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-551.html#building-a-vxworks-kernel">10.2. Building a VxWorks Kernel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-551.html#scenarios-for-building-the-opensplice-examples">10.3. Scenarios for Building the OpenSplice Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-551.html#the-opensplice-examples-all-linked-in-one-complete-dkm-recommended">10.4. The OpenSplice Examples (All linked in one complete DKM - <em>recommended</em>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-551.html#overriding-opensplice-configuration-at-runtime">10.5. Overriding OpenSplice configuration at runtime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-551.html#running-the-examples">10.6. Running the Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-551.html#background">10.7. Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-551.html#how-to-start-spliced-and-related-services">10.8. How to start spliced and related services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-551.html#the-osplconf2c-command">10.9. The osplconf2c command</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-551.html#the-opensplice-examples-alternative-scenario-with-multiple-dkms">10.10. The OpenSplice Examples (Alternative scenario, with multiple DKMs)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="vxworks-6-rtp.html">11. VxWorks 6.x RTP</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-6-rtp.html#vxworks-real-time-processes">11.1. VxWorks Real Time Processes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-6-rtp.html#installation">11.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-6-rtp.html#vxworks-kernel-requirements">11.3. VxWorks Kernel Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-6-rtp.html#deploying-vortex-opensplice">11.4. Deploying Vortex OpenSplice</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-6-rtp.html#opensplice-examples">11.5. OpenSplice Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="vxworks-6-kernel.html">12. VxWorks 6.x Kernel Mode</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-6-kernel.html#vxworks-kernel-requirements">12.1. VxWorks Kernel Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-6-kernel.html#deploying-vortex-opensplice">12.2. Deploying Vortex OpenSplice</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-6-kernel.html#opensplice-examples">12.3. OpenSplice Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-6-kernel.html#running-the-examples-all-linked-in-one-complete-dkm-recommended">12.4. Running the Examples (All linked in one complete DKM – <em>recommended</em>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vxworks-6-kernel.html#running-the-examples-alternative-scenario-with-multiple-dkms-apponly-style">12.5. Running the Examples (Alternative scenario, with multiple DKMs – ‘AppOnly’ style)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="integrity.html">13. Integrity</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="integrity.html#integrity-and-ghs-multi">13.1. Integrity and GHS Multi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity.html#the-ospl-projgen-command">13.2. The ospl_projgen Command</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity.html#pingpong-example">13.3. PingPong Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity.html#changing-the-ospl-projgen-arguments">13.4. Changing the ospl_projgen Arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity.html#critical-warning-about-object-10-and-object-11">13.5. Critical Warning about <em>Object 10</em> and <em>Object 11</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity.html#amending-opensplice-dds-configuration-with-multi">13.6. Amending OpenSplice DDS Configuration with <em>Multi</em></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="windowsce.html">14. Windows CE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="windowsce.html#prerequisites">14.1. Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="windowsce.html#setting-registry-values-with-a-cab-file">14.2. Setting Registry Values with a CAB File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="windowsce.html#the-vortex-opensplice-environment">14.3. The Vortex OpenSplice Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="windowsce.html#secure-networking">14.4. Secure Networking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="windowsce.html#deploying-opensplice-dds">14.5. Deploying OpenSplice DDS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="windowsce.html#using-the-mmstat-diagnostic-tool-on-windows-ce">14.6. Using the <em>mmstat</em> Diagnostic Tool on Windows CE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="windowsce.html#opensplice-examples">14.7. OpenSplice Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pikeos-posix.html">15. PikeOS POSIX</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pikeos-posix.html#how-to-build-for-pikeos">15.1. How to Build for PikeOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pikeos-posix.html#deployment-notes">15.2. Deployment Notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pikeos-posix.html#limitations">15.3. Limitations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pikeos-posix.html#pikeos-on-windows-hosts">15.4. PikeOS on Windows Hosts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="unixarm.html">16. UNIX ARM platform</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="unixarm.html#installation-for-unix-arm-platform">16.1. Installation for UNIX ARM platform</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="elinos.html">17. ELinOS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="elinos.html#deployment-notes">17.1. Deployment notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="elinos.html#limitations">17.2. Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">18. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">18.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">18.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">OpenSplice Getting Started Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

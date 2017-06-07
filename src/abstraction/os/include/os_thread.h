@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /****************************************************************
@@ -22,10 +30,6 @@
 
 #include "os_defs.h"
 
-/* include OS specific header file			*/
-#include "include/os_thread.h"
-#include "os_if.h"
-
 #if defined (__cplusplus)
 extern "C" {
 #endif
@@ -38,7 +42,6 @@ extern "C" {
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 /* Number of slots in Thread Private Memory */
-#define OS_THREAD_MEM_ARRAY_SIZE (8)
 
 typedef enum os_threadMemoryIndex {
     OS_THREAD_CLOCK_OFFSET,
@@ -48,7 +51,12 @@ typedef enum os_threadMemoryIndex {
     OS_THREAD_API_INFO,
     OS_THREAD_WARNING,
     OS_THREAD_ALLOCATOR_STATE,
-    OS_THREAD_NAME
+    OS_THREAD_NAME,
+    OS_THREAD_REPORT_STACK,
+    OS_THREAD_PROCESS_INFO,
+    OS_THREAD_STATE, /* Used for monitoring thread progress */
+    OS_THREAD_STR_ERROR,
+    OS_THREAD_MEM_ARRAY_SIZE /* Number of slots in Thread Private Memory */
 } os_threadMemoryIndex;
 
 /** \brief Platform dependent thread identification
@@ -203,6 +211,21 @@ os_threadFigureIdentity(
     char *threadIdentity,
     os_uint32 threadIdentitySize);
 
+/** \brief Get name of current thread
+ *
+ * Postcondition:
+ * - \b name is ""
+ *     the thread name could not be determined
+ * - \b name is "<thread name>"
+ *     the thread name could be determined
+ *
+ * \b name will not be filled beyond the specified \b length
+ */
+OS_API os_int32
+os_threadGetThreadName(
+    os_char *name,
+    os_uint32 length);
+
 /** \brief Set the default thread attributes
  *
  * Postcondition:
@@ -211,11 +234,15 @@ os_threadFigureIdentity(
  *
  * Possible Results:
  * - assertion failure: threadAttr = NULL
- * - returns os_resultSuccess
  */
-OS_API os_result
+OS_API void
 os_threadAttrInit(
-    os_threadAttr *threadAttr);
+        os_threadAttr *threadAttr)
+    __nonnull_all__;
+
+
+/** \brief Definition for thread private memory destructor */
+typedef int (*os_threadPrivMemDestructor)(void* threadMem, void* userArg);
 
 /** \brief Allocate thread private memory
  *
@@ -225,6 +252,8 @@ os_threadAttrInit(
  * indexed by \b index. If the indexed thread reference
  * array location already contains a reference, no
  * memory will be allocated and NULL is returned.
+ * \b A registered destructor \b destructor will be
+ * called if the private memory will be deleted.
  *
  * Possible Results:
  * - returns NULL if
@@ -240,7 +269,9 @@ os_threadAttrInit(
 OS_API void *
 os_threadMemMalloc(
     os_int32 index,
-    os_size_t size);
+    os_size_t size,
+    os_threadPrivMemDestructor destructor,
+    void* userArgs);
 
 /** \brief Free thread private memory
  *

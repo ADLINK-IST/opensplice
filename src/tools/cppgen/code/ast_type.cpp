@@ -71,43 +71,42 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * IDL type constructs.
  */
 
-#include "idl.h"
-#include "idl_extern.h"
+#include <idl.h>
+#include <idl_extern.h>
 
 /*
  * Constructor(s) and destructor
  */
 AST_Type::AST_Type()
-   : pd_local (I_FALSE)
+   : pd_local (false),
+     pd_abstract (false)
 {}
 
 AST_Type::AST_Type(AST_Decl::NodeType nt, UTL_ScopedName *n, const UTL_Pragmas &p)
    : AST_Decl(nt, n, p),
-     pd_local(I_FALSE)
+     pd_local(false),
+     pd_abstract (false)
 {}
 
-/*
- * Private operations
- */
-
-/*
- * Public operations
- */
-idl_bool AST_Type::local ()
+bool AST_Type::local ()
 {
    return pd_local;
 }
 
-void AST_Type::set_local(const idl_bool l)
+void AST_Type::set_local (const bool l)
 {
    pd_local = l;
 }
 
-/*
- * Redefinition of inherited virtual operations
- */
+bool AST_Type::abstract ()
+{
+   return pd_abstract;
+}
 
+void AST_Type::set_abstract (const bool a)
+{
+   pd_abstract = a;
+}
 
-// Narrowing
 IMPL_NARROW_METHODS1(AST_Type, AST_Decl)
 IMPL_NARROW_FROM_DECL(AST_Type)

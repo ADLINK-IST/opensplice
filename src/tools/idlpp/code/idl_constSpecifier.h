@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef IDL_CONSTSPECIFIER_H
@@ -27,7 +35,7 @@ typedef enum {
     idl_mul,
     idl_div,
     idl_mod,
-    idl_not 
+    idl_not
 } idl_exprKind;
 
 typedef enum {
@@ -41,19 +49,19 @@ typedef enum {
 C_CLASS(idl_operand);
 
 /* idl_constExpression class */
-#define idl_constExpression(o)	((idl_constExpression)(o))
+#define idl_constExpression(o)  ((idl_constExpression)(o))
 C_CLASS(idl_constExpression);
 
 /* idl_constLiteral class */
-#define idl_constLiteral(o)	((idl_constLiteral)(o))
+#define idl_constLiteral(o)     ((idl_constLiteral)(o))
 C_CLASS(idl_constLiteral);
 
 /* idl_constOperand class */
-#define idl_constOperand(o)	((idl_constOperand)(o))
+#define idl_constOperand(o)     ((idl_constOperand)(o))
 C_CLASS(idl_constOperand);
 
 /* idl_constSpec class */
-#define idl_constSpec(o)	((idl_constSpec)(o))
+#define idl_constSpec(o)        ((idl_constSpec)(o))
 C_CLASS(idl_constSpec);
 
 /***********************************************************
@@ -78,9 +86,9 @@ char *idl_constExpressionImage (idl_constExpression constExpression);
 
 void idl_constExpressionAdd (idl_constExpression constExpression, idl_operand operand);
 
-c_long idl_constExpressionSize (idl_constExpression constExpression);
+c_ulong idl_constExpressionSize (idl_constExpression constExpression);
 
-idl_operand idl_constExpressionMember (idl_constExpression constExpression, c_long index);
+idl_operand idl_constExpressionMember (idl_constExpression constExpression, c_ulong index);
 
 /***********************************************************
  * idl_constLiteral

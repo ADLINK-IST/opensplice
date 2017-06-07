@@ -18,4 +18,4 @@ include $(OSPL_HOME)/setup/makefiles/target.mak
 
 # Generate the C++ interfaces from the IDL descriptions.
 $(IDL_CS): $(IDL_DIR)/$(TOPIC_IDL)
-	idlpp -l cs -S $<
+	$(WINCMD) idlpp -l cs -S -I$(OSPL_HOME)/etc/idl $<

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v__kernel.h"
@@ -16,46 +24,27 @@
 #include "c_sync.h"
 
 #include "os_report.h"
+#include "os_abstract.h"
 
 v_result
 v_deliveryWaitListWait (
     v_deliveryWaitList _this,
-    v_duration timeout)
+    os_duration timeout)
 {
     v_result result = V_RESULT_OK;
-    c_syncResult r;
 
+    assert(_this);
     assert(C_TYPECHECK(_this,v_deliveryWaitList));
 
-    if (_this->readerGID != NULL) {
-        c_mutexLock(&_this->mutex);
-        if(c_timeCompare(timeout, C_TIME_INFINITE) != C_EQ)
-        {
-            r = c_condTimedWait(&_this->cv,&_this->mutex,timeout);
-        }
-        else
-        {
-            r = c_condWait(&_this->cv,&_this->mutex);
-        }
-        c_mutexUnlock(&_this->mutex);
-
-        switch (r) {
-        case SYNC_RESULT_SUCCESS:
-           result = V_RESULT_OK;
-        break;
-        case SYNC_RESULT_TIMEOUT:
-           result = V_RESULT_TIMEOUT;
-        break;
-        case SYNC_RESULT_UNAVAILABLE:
-        case SYNC_RESULT_BUSY:
-        case SYNC_RESULT_INVALID:
-        case SYNC_RESULT_FAIL:
-        default:
-            result = V_RESULT_PRECONDITION_NOT_MET;
-        break;
-        }
+    c_mutexLock(&_this->mutex);
+    while (result == V_RESULT_OK && _this->readerGID != NULL) {
+        /* TODO: Due to spurious wake-ups and the use of a *relative* timeout,
+         * the provided timeout can be exceeded. When the hibernation work is
+         * available, this should be eliminated by keeping track of the
+         * monotonic clock or absolute sleeps should be supported instead. */
+        result = v_condWait(&_this->cv, &_this->mutex, timeout);
     }
-
+    c_mutexUnlock(&_this->mutex);
     return result;
 }
 
@@ -64,37 +53,44 @@ v_deliveryWaitListNotify (
     v_deliveryWaitList _this,
     v_deliveryInfoTemplate msg)
 {
-    c_ulong size, i, count;
-    v_gid *list;
+    c_array toFree = NULL;
 
+    assert(_this);
     assert(C_TYPECHECK(_this,v_deliveryWaitList));
     assert(msg);
 
-    list = (v_gid *)_this->readerGID;
-    if(msg->userData.sequenceNumber == _this->sequenceNumber)
-    {
-        count = 0;
-        
+    if(msg->userData.sequenceNumber == _this->sequenceNumber) {
+        c_ulong size, i;
+        v_gid *list;
+
+        c_mutexLock(&_this->mutex);
+
+        list = (v_gid *)_this->readerGID;
+
         size = c_arraySize(_this->readerGID);
-        for (i=0; i<size; i++) {
-            if (v_gidEqual(list[i],msg->userData.readerGID)) {
-                /* Set the found readerGID to zero,
-                 * iThe waitlist can be unblocked when
-                 * all expected systemIds are zero.
-                 * In that case count will be 0.
-                 */
+        assert(size >= _this->waitCount);
+        for (i = 0; i < size; i++) {
+            if (v_gidEqual(list[i], msg->userData.readerGID)) {
+                /* Set the found readerGID to zero, the waitlist can be
+                 * unblocked when all expected systemIds are zero. In that case
+                 * _this->waitCount will be 0. */
                 v_gidSetNil(list[i]);
+                _this->waitCount--;
+                break;
             }
-            count += v_gidSystemId(list[i]);
         }
-        if (count == 0) {
-            c_free(_this->readerGID);
+
+        if (_this->waitCount == 0) {
+            toFree = _this->readerGID; /* Free the list outside the lock */
             _this->readerGID = NULL;
-            c_mutexLock(&_this->mutex);
             c_condSignal(&_this->cv);
-            c_mutexUnlock(&_this->mutex);
         }
+
+        c_mutexUnlock(&_this->mutex);
     }
+
+    c_free(toFree);
+
     return V_RESULT_OK;
 }
 
@@ -103,77 +99,76 @@ v_deliveryWaitListIgnore (
     v_deliveryWaitList _this,
     v_gid readerGID)
 {
-    c_ulong size, i, count;
+    c_array toFree = NULL;
+    c_ulong size, i;
     v_gid *list;
 
+    assert(_this);
     assert(C_TYPECHECK(_this,v_deliveryWaitList));
 
-    count = 0;
+    c_mutexLock(&_this->mutex);
     size = c_arraySize(_this->readerGID);
+    assert(size >= _this->waitCount);
     list = (v_gid *)_this->readerGID;
-    for (i=0; i<size; i++) {
-        if (v_gidEqual(list[i],readerGID)) {
-            /* Set the found reader gid to zero,
-             * iThe waitlist can be unblocked when
-             * all expected systemIds are zero.
-             * In that case count will be 0.
-             */
+    for (i = 0; i < size; i++) {
+        if (v_gidEqual(list[i], readerGID)) {
+            /* Set the found readerGID to zero, the waitlist can be
+             * unblocked when all expected systemIds are zero. In that case
+             * _this->waitCount will be 0. */
             v_gidSetNil(list[i]);
+            _this->waitCount--;
+            break;
         }
-        count += v_gidSystemId(list[i]);
     }
-    if (count == 0) {
-        c_free(_this->readerGID);
+
+    if (_this->waitCount == 0) {
+        toFree = _this->readerGID; /* Free the list outside the lock */
         _this->readerGID = NULL;
-        c_mutexLock(&_this->mutex);
         c_condSignal(&_this->cv);
-        c_mutexUnlock(&_this->mutex);
     }
+    c_mutexUnlock(&_this->mutex);
+
+    c_free(toFree);
+
     return V_RESULT_OK;
 }
 
-C_CLASS(copySystemIdsArg);
-C_STRUCT(copySystemIdsArg)
+C_CLASS(copyGIDsArg);
+C_STRUCT(copyGIDsArg)
 {
     c_array readerGID;
-    c_long index;
+    c_ulong index;
 };
 
 static c_bool
-copySystemIds (
+copyGID (
     c_object o,
     c_voidp arg)
 {
     v_deliveryPublisher p = v_deliveryPublisher(o);
-    copySystemIdsArg a = (copySystemIdsArg)arg;
+    copyGIDsArg a = (copyGIDsArg)arg;
     v_gid *list;
 
     list = (v_gid *)a->readerGID;
     list[a->index++] = p->readerGID;
     assert(p->count > 0);
+
     return TRUE;
 }
 
 static c_array
 copyReaderGIDsFromPublications(
-    v_deliveryGuard _this)
+    v_deliveryGuard _this /* must be locked */)
 {
     /* copy system Ids from _this->publications */
-    C_STRUCT(copySystemIdsArg) arg;
-    c_long size;
+    C_STRUCT(copyGIDsArg) arg;
 
-    if (_this->publications) {
-        size = c_count(_this->publications);
-    } else {
-        size = 0;
-    }
-    if (size > 0) {
-        arg.readerGID = c_arrayNew(_this->gidType,size);
-        arg.index = 0;
-        c_walk(_this->publications, copySystemIds, &arg);
-    } else {
-        arg.readerGID = NULL;
-    }
+    assert(_this);
+    assert(C_TYPECHECK(_this, v_deliveryGuard));
+
+    arg.readerGID = c_arrayNew(_this->gidType, c_count(_this->publications));
+    arg.index = 0;
+    c_walk(_this->publications, copyGID, &arg);
 
     return arg.readerGID;
 }
@@ -185,58 +180,37 @@ v_deliveryWaitListNew(
 {
     v_deliveryWaitList waitlist = NULL;
     v_deliveryWaitList found;
-    c_syncResult sr;
     c_type type;
 
+    assert(_this);
     assert(C_TYPECHECK(_this,v_deliveryGuard));
 
-    if (_this) {
-        /* lookup or create a writer specific admin.
-         */
-        type = c_subType(_this->waitlists);
-        waitlist = c_new(type);
-        c_free(type);
-        if (waitlist) {
-            waitlist->sequenceNumber = msg->sequenceNumber;
-            waitlist->readerGID = copyReaderGIDsFromPublications(_this);
-            waitlist->guard = _this;
-            c_mutexInit(&waitlist->mutex, SHARED_MUTEX);
-            c_condInit(&waitlist->cv, &waitlist->mutex, SHARED_COND);
-            /* When modifying the contents of the WaitList collection in the deliveryGuard,
-             * we must first acquire its lock. */
-            sr = c_mutexLock(&_this->mutex);
-            if (sr == SYNC_RESULT_SUCCESS)
-            {
-                found = c_tableInsert(_this->waitlists, waitlist);
-                sr = c_mutexUnlock(&_this->mutex);
-            }
-            if (sr == SYNC_RESULT_SUCCESS) {
-                if (found != waitlist) {
-                    /* This should not happen! */
-                    OS_REPORT(OS_ERROR,
-                              "v_deliveryWaitListNew",0,
-                              "detected inconsistent waitlist admin.");
-                    c_free(waitlist);
-                    waitlist = NULL;
-                }
-            } else {
-                waitlist = NULL;
-                OS_REPORT_2(OS_ERROR,
-                          "v_deliveryWaitListNew",0,
-                          "Failed to claim/release mutex; _this = 0x%x, msg = 0x%x.",
-                          _this, msg);
-            }
-        } else {
-            OS_REPORT(OS_ERROR,
-                      "v_deliveryWaitListNew",0,
-                      "Failed to allocate v_deliveryWaitList object.");
-            assert(FALSE);
-        }
+    /* lookup or create a writer specific admin.
+     */
+    type = c_subType(_this->waitlists);
+    waitlist = c_new_s(type);
+    c_free(type);
+    if (waitlist) {
+        c_mutexInit(c_getBase(waitlist), &waitlist->mutex);
+        c_condInit(c_getBase(waitlist), &waitlist->cv, &waitlist->mutex);
+        waitlist->sequenceNumber = msg->sequenceNumber;
+        waitlist->guard = _this;
+
+        /* When modifying the contents of the WaitList collection in the deliveryGuard,
+         * we must first acquire its lock. */
+        c_mutexLock(&_this->mutex);
+        waitlist->readerGID = copyReaderGIDsFromPublications(_this);
+        waitlist->waitCount = c_arraySize(waitlist->readerGID);
+        found = c_tableInsert(_this->waitlists, waitlist);
+        assert(found == waitlist);
+        (void)found;
+        c_mutexUnlock(&_this->mutex);
     } else {
-        OS_REPORT(OS_ERROR,
-                  "v_deliveryWaitListNew",0,
-                  "Operation failed: illegal parameter (_this == NULL).");
+        OS_REPORT(OS_FATAL,
+                  "v_deliveryWaitListNew",V_RESULT_INTERNAL_ERROR,
+                  "Failed to allocate v_deliveryWaitList object.");
     }
+
     return waitlist;
 }
 
@@ -246,7 +220,6 @@ v_deliveryWaitListFree(
 {
     v_deliveryWaitList found;
     v_deliveryGuard guard;
-    c_syncResult sr;
     v_result result;
 
     assert(C_TYPECHECK(_this,v_deliveryWaitList));
@@ -257,24 +230,14 @@ v_deliveryWaitListFree(
         /* When modifying the contents of the WaitList collection in the deliveryGuard,
          * we must first acquire the lock of its guard. */
         guard = v_deliveryGuard(_this->guard);
-        sr = c_mutexLock(&guard->mutex);
-        if (sr == SYNC_RESULT_SUCCESS)
-        {
-            found = c_remove(guard->waitlists, _this, NULL, NULL);
-            sr = c_mutexUnlock(&guard->mutex);
-        }
-        if (sr == SYNC_RESULT_SUCCESS) {
-            assert(found == _this);
-            assert(c_refCount(found) == 2);
-            c_free(found);
-            c_free(_this);
-            result = V_RESULT_OK;
-        } else {
-            result = V_RESULT_INTERNAL_ERROR;
-            OS_REPORT_1(OS_ERROR,
-                      "v_deliveryWaitListFree",0,
-                      "Failed to claim/release mutex; _this = 0x%x.", _this);
-        }
+        c_mutexLock(&guard->mutex);
+        found = c_remove(guard->waitlists, _this, NULL, NULL);
+        c_mutexUnlock(&guard->mutex);
+        assert(found == _this);
+        assert(c_refCount(found) == 2);
+        c_free(found);
+        c_free(_this);
+        result = V_RESULT_OK;
     } else {
         result = V_RESULT_ILL_PARAM;
     }

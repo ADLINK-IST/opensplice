@@ -105,7 +105,7 @@ public:
    char *get_canonical_rep();
 
    // Compare two WString *
-   virtual long compare(UTL_WString *s);
+   virtual bool compare(UTL_WString *s);
 
    inline operator const char*()
    {

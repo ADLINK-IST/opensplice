@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.model.table.qos;
@@ -195,9 +203,13 @@ public class ReaderQoSTableModel extends EntityQoSTableModel {
             data[1] = "READER_DATA_LIFECYCLE";
             data[2] = "autopurge_nowriter_samples_delay";
             this.addRow(data);
-            
+
             row++;
             data[2] = "autopurge_disposed_samples_delay";
+            this.addRow(data);
+
+            row++;
+            data[2] = "autopurge_dispose_all";
             this.addRow(data);
             
             row++;
@@ -332,9 +344,13 @@ public class ReaderQoSTableModel extends EntityQoSTableModel {
             data[0] = "READER_DATA_LIFECYCLE";
             data[1] = "autopurge_nowriter_samples_delay";
             this.addRow(data);
-            
+
             row++;
             data[1] = "autopurge_disposed_samples_delay";
+            this.addRow(data);
+
+            row++;
+            data[1] = "autopurge_dispose_all";
             this.addRow(data);
             
             row++;
@@ -489,10 +505,12 @@ public class ReaderQoSTableModel extends EntityQoSTableModel {
             if(rcp != null){
                 this.setValueAt(rcp.autopurge_nowriter_samples_delay, row++, valueColumn);
                 this.setValueAt(rcp.autopurge_disposed_samples_delay, row++, valueColumn);
+                this.setValueAt(new Boolean(rcp.autopurge_dispose_all), row++, valueColumn);
                 this.setValueAt(new Boolean(rcp.enable_invalid_samples), row++, valueColumn);
             } else {
                 this.setValueAt(nill, row++, valueColumn);
                 this.setValueAt(nill, row++, valueColumn);
+                this.setValueAt(Boolean.FALSE, row++, valueColumn);
                 this.setValueAt(Boolean.FALSE, row++, valueColumn);
             }
             ReaderLifespanPolicy rlsp = qos.getLifespan();
@@ -758,6 +776,11 @@ public class ReaderQoSTableModel extends EntityQoSTableModel {
                 row++;
             }
             if ((Boolean) this.getValueAt(row, checkBoxColumn)) {
+                this.setValueAt(new Boolean(rcp.autopurge_dispose_all), row++, valueColumn);
+            } else {
+                row++;
+            }
+            if ((Boolean) this.getValueAt(row, checkBoxColumn)) {
                 this.setValueAt(new Boolean(rcp.enable_invalid_samples), row++, valueColumn);
             } else {
                 row++;
@@ -770,6 +793,11 @@ public class ReaderQoSTableModel extends EntityQoSTableModel {
             }
             if ((Boolean) this.getValueAt(row, checkBoxColumn)) {
                 this.setValueAt(nill, row++, valueColumn);
+            } else {
+                row++;
+            }
+            if ((Boolean) this.getValueAt(row, checkBoxColumn)) {
+                this.setValueAt(Boolean.FALSE, row++, valueColumn);
             } else {
                 row++;
             }

@@ -1,3 +1,3 @@
 [submodule "submods/MPC_ROOT"]
 	path = submods/MPC_ROOT
-	url = git://github.com/OpenSplice/MPC_ROOT.git
+	url = git://github.com/PrismTech/MPC_ROOT.git

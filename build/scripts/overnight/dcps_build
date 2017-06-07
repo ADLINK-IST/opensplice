@@ -44,9 +44,9 @@ then
         rm -f $MODEL_DB_FILE
     fi
     echo "++++++++COVERITY generating $MODEL_DB_FILE from $MODEL_FILE"
-    echo "++++++++COMMAND [cov-make-library -of $MODEL_DB_FILE $MODEL_FILE]"
-    cov-make-library -of $MODEL_DB_FILE $MODEL_FILE 
-    if [ $? != 0 ] 
+    echo "++++++++COMMAND [cov-make-library --concurrency -of $MODEL_DB_FILE $MODEL_FILE]"
+    cov-make-library --concurrency -of $MODEL_DB_FILE $MODEL_FILE
+    if [ $? != 0 ]
     then
         exit 2
     fi
@@ -58,7 +58,7 @@ then
         echo "++++++++COMMAND [cov-configure $i]"
         cov-configure $i
     done
-    BUILD_CMD="cov-build --dir $CACHE_DIR sh -c"   
+    BUILD_CMD="cov-build --dir $CACHE_DIR sh -c"
     echo "++++++++COVERITY building CACHE_DIR - $CACHE_DIR"
     echo "++++++++COMMAND [$BUILD_CMD make VERBOSE=yes]"
     #Clean the cache dir as the unique directory path makes coverity
@@ -70,7 +70,7 @@ then
 fi
 
 $BUILD_CMD make VERBOSE=yes
-if [ $? != 0 ] 
+if [ $? != 0 ]
 then
     exit 2
 fi
@@ -87,7 +87,7 @@ then
             echo "++++++++COMMAND [cov-analyze --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE $COV_C_CPP_ANALYSIS_OPTIONS $COV_C_CPP_ANALYSIS_EXTRA_OPTIONS]"
             cov-analyze --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE \
                 $COV_C_CPP_ANALYSIS_OPTIONS $COV_C_CPP_ANALYSIS_EXTRA_OPTIONS
-            if [ $? != 0 ] 
+            if [ $? != 0 ]
             then
                 exit 2
             fi
@@ -97,7 +97,7 @@ then
             echo "++++++++COMMAND [cov-analyze-java --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE $COV_JAVA_ANALYSIS_OPTIONS $COV_JAVA_ANALYSIS_EXTRA_OPTIONS]"
             cov-analyze-java --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE \
                 $COV_JAVA_ANALYSIS_OPTIONS $COV_JAVA_ANALYSIS_EXTRA_OPTIONS
-            if [ $? != 0 ] 
+            if [ $? != 0 ]
             then
                 exit 2
             fi
@@ -106,11 +106,15 @@ then
         echo "++++++++COMMAND [cov-commit-defects --dir $CACHE_DIR --host $COV_SERVER --port $COV_PORT --user $COV_USER --password $COV_PASSWORD --stream $STREAM]"
         cov-commit-defects --dir $CACHE_DIR --host $COV_SERVER --port $COV_PORT \
             --user $COV_USER --password $COV_PASSWORD --stream $STREAM
-        if [ $? != 0 ] 
+        if [ $? != 0 ]
         then
             exit 2
         fi
     done
 fi
+
+# Create all features file as a reference for the features enabled found on the scoreboard.
+find $OSPL_HOME -name 'setup_*' | xargs grep 'INCLUDE_' | awk '{ print $2 }' | grep 'INCLUDE_' | sort | uniq >> $OSPL_HOME/all_features.txt
+find $OSPL_OUTER_HOME -name 'setup_*' | xargs grep 'INCLUDE_' | awk '{ print $2 }' | grep 'INCLUDE_' | sort | uniq >> $OSPL_HOME/all_features.txt
 
 exit 0

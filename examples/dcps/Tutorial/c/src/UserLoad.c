@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -43,7 +51,7 @@
 /* entities required by all threads. */
 static DDS_GuardCondition           escape;
 
-/* Sleeper thread: sleeps 60 seconds and then triggers the WaitSet. */
+/* Sleeper thread: sleeps 60 or 90 seconds and then triggers the WaitSet. */
 void *
 delayedEscape(
     void *arg)
@@ -52,7 +60,7 @@ delayedEscape(
 #ifdef _WIN32
     Sleep(60000);
 #else
-    sleep(60);     /* wait for 60 sec. */
+    sleep(90);     /* wait for 90 sec. */
 #endif
     status = DDS_GuardCondition_set_trigger_value(escape, TRUE);
     checkStatus(status, "DDS_GuardCondition_set_trigger_value");
@@ -207,6 +215,7 @@ int OSPL_MAIN (int argc, char ** argv)
     checkStatus(status, "DDS_DomainParticipant_get_default_subscriber_qos");
     sub_qos->partition.name._length = 1;
     sub_qos->partition.name._maximum = 1;
+    sub_qos->partition.name._release = TRUE;
     sub_qos->partition.name._buffer = DDS_StringSeq_allocbuf (1);
     checkHandle(sub_qos->partition.name._buffer, "DDS_StringSeq_allocbuf");
     sub_qos->partition.name._buffer[0] = DDS_string_dup (partitionName);
@@ -295,6 +304,7 @@ int OSPL_MAIN (int argc, char ** argv)
     checkHandle(guardList, "DDS_ConditionSeq__alloc");
     guardList->_maximum = 3;
     guardList->_length = 0;
+    guardList->_release = TRUE;
     guardList->_buffer = DDS_ConditionSeq_allocbuf(3);
     checkHandle(guardList->_buffer, "DDS_ConditionSeq_allocbuf");
 
@@ -420,6 +430,8 @@ int OSPL_MAIN (int argc, char ** argv)
     DDS_free(escape);
     DDS_free(setting_topic_qos);
     DDS_free(reliable_topic_qos);
+    DDS_free(message_qos);
+    DDS_free(sub_qos);
     DDS_free(nameServiceTypeName);
     DDS_free(chatMessageTypeName);
     DDS_free(nameServiceTS);

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "cmx__serviceState.h"
@@ -16,18 +24,20 @@
 
 c_char*
 cmx_serviceStateInit(
-    v_serviceState entity)
+    v_serviceState state)
 {
     char buf[512];
-    
-    if(v_entityName(entity) == NULL){
-        os_sprintf(buf, "<kind>SERVICESTATE</kind><statename>NULL</statename><state>%s</state>", 
-        cmx_serviceStateKindToString(entity->stateKind));
+
+    assert(state);
+
+    if(state->name == NULL){
+        os_sprintf(buf, "<kind>SERVICESTATE</kind><statename>NULL</statename><state>%s</state>",
+        cmx_serviceStateKindToString(state->stateKind));
     } else {
-       os_sprintf(buf, "<kind>SERVICESTATE</kind><statename>%s</statename><state>%s</state>", 
-        v_entityName(entity),
-        cmx_serviceStateKindToString(entity->stateKind));
-    }    
+        os_sprintf(buf, "<kind>SERVICESTATE</kind><statename>%s</statename><state>%s</state>",
+        state->name,
+        cmx_serviceStateKindToString(state->stateKind));
+    }
     return (c_char*)(os_strdup(buf));
 }
 
@@ -36,9 +46,9 @@ cmx_serviceStateKindToString(
     v_serviceStateKind stateKind)
 {
     const c_char* r;
-    
+
     r = NULL;
-    
+
     switch(stateKind){
         case STATE_NONE:                        r = "NONE";         break;
         case STATE_INITIALISING:                r = "INITIALISING"; break;
@@ -57,7 +67,7 @@ cmx_serviceStateKindFromString(
     const c_char* stateKind)
 {
     v_serviceStateKind result;
-    
+
     if(stateKind == NULL){
         result = STATE_NONE;
     } else if(strcmp(stateKind, "INITIALISING") == 0){

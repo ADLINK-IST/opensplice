@@ -101,18 +101,23 @@ namespace test.sacs
         {
             Test.Framework.TestResult result;
             string sh;
-            DDS.ErrorCode eh;
             DDS.ReturnCode rc;
+            DDS.ErrorInfo errInfo = new DDS.ErrorInfo();
             rc = factory.DeleteParticipant(participant);
             if (rc != DDS.ReturnCode.Ok)
             {
-                if (DDS.ErrorInfo.Update() != DDS.ReturnCode.Ok)
+                if (rc != DDS.ReturnCode.PreconditionNotMet)
+                {
+                    return new Test.Framework.TestResult("Returncode did not match PreconditionNotMet"
+                        , "Got returncode: " + rc + " expected PreconditionNotMet(4)", TestVerdict.Pass, TestVerdict.Fail);
+                }
+                if (errInfo.Update() != DDS.ReturnCode.Ok)
                 {
                     return new Test.Framework.TestResult("Update returns OK after the error occurred"
                         , "Update did not return OK after the error occurred", TestVerdict.Pass, TestVerdict.Fail);
                 }
 
-                rc = DDS.ErrorInfo.GetLocation(out sh);
+                rc = errInfo.GetLocation(out sh);
                 if (rc != DDS.ReturnCode.Ok)
                 {
                     return new Test.Framework.TestResult("get_location returns OK and modifies string"
@@ -120,7 +125,7 @@ namespace test.sacs
                 }
                 System.Console.WriteLine("Location: " + sh);
                 sh = null;
-                rc = DDS.ErrorInfo.GetMessage(out sh);
+                rc = errInfo.GetMessage(out sh);
                 if (rc != DDS.ReturnCode.Ok)
                 {
                     return new Test.Framework.TestResult("get_message returns OK and modifies string"
@@ -128,7 +133,7 @@ namespace test.sacs
                 }
                 System.Console.WriteLine("Message: " + sh);
                 sh = null;
-                rc = DDS.ErrorInfo.GetStackTrace(out sh);
+                rc = errInfo.GetStackTrace(out sh);
                 if (rc != DDS.ReturnCode.Ok)
                 {
                     return new Test.Framework.TestResult("get_stack_trace returns OK and modifies string"
@@ -136,27 +141,13 @@ namespace test.sacs
                 }
                 System.Console.WriteLine("Stack trace: " + sh);
                 sh = null;
-                rc = DDS.ErrorInfo.GetSourceLine(out sh);
+                rc = errInfo.GetSourceLine(out sh);
                 if (rc != DDS.ReturnCode.Ok)
                 {
                     return new Test.Framework.TestResult("get_source_line returns OK and modifies string"
                         , "Different result and/or string not modified", TestVerdict.Pass, TestVerdict.Fail);
                 }
                 System.Console.WriteLine("Source line: " + sh);
-                eh = (DDS.ErrorCode)(-1);
-                rc = DDS.ErrorInfo.GetCode(out eh);
-                if ((rc != DDS.ReturnCode.Ok) || (eh == (DDS.ErrorCode)(-1)))
-                {
-                    return new Test.Framework.TestResult("get_code returns OK and does modify error code"
-                        , "Different result and/or error code not modified", TestVerdict.Pass, TestVerdict.Fail);
-                }
-                System.Console.WriteLine("Returncode: " + rc);
-                System.Console.WriteLine("Error code: " + eh);
-                if (eh != DDS.ErrorCode.ContainsEntities)
-                {
-                    return new Test.Framework.TestResult("Expected errorcode " + DDS.ErrorCode.ContainsEntities,
-                        "Obtained errorcode " + eh, TestVerdict.Pass, TestVerdict.Fail);
-                }
                 result = new Test.Framework.TestResult("sacs_errorinfo_tc2 successfull", "sacs_errorinfo_tc2_successfull",
                     TestVerdict.Pass, TestVerdict.Pass);
             }

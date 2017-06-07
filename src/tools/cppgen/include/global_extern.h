@@ -74,6 +74,6 @@ extern IDL_GlobalData *idl_global; // Contains all "global" data
 
 // Return TRUE when the name of this AST_Decl can be reused in
 // a definition in this scope
-extern idl_bool can_be_redefined(AST_Decl *);
+extern bool can_be_redefined(AST_Decl *);
 
 #endif           // _GLOBAL_EXTERN_GLOBAL_EXTERN_HH

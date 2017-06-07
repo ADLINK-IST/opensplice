@@ -1,0 +1,2316 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Using the Vortex OpenSplice Tuner &mdash; Tuner Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Tuner Guide" href="index.html" />
+    <link rel="next" title="4. Contacts &amp; Notices" href="contacts.html" />
+    <link rel="prev" title="2. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="4. Contacts &amp; Notices"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Tuner Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="using-the-vortex-opensplice-tuner">
+<span id="using-the-opensplice-tuner"></span><h1>3. Using the Vortex OpenSplice Tuner<a class="headerlink" href="#using-the-vortex-opensplice-tuner" title="Permalink to this headline">¶</a></h1>
+<p><em>This section describes how to use the Vortex OpenSplice Tuner,
+including how to start, stop, perform connection management, manage
+entities and data, and perform other related tasks.</em></p>
+<div class="section" id="starting-and-stopping-the-tuner">
+<h2>3.1. Starting and Stopping the Tuner<a class="headerlink" href="#starting-and-stopping-the-tuner" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="starting">
+<h3>3.1.1. Starting<a class="headerlink" href="#starting" title="Permalink to this headline">¶</a></h3>
+<p>Vortex OpenSplice Tuner has been implemented in the Java language. The
+supported platforms for the Tuner are listed in the <em>Release Notes</em> in
+the section ‘Supported Platforms’. The Tuner will work on all
+platforms that support JAVA (SAJ) SDK.</p>
+<p>The Vortex OpenSplice Tuner provides a command line instruction for
+specifying the domain config file that the tuner needs to connect to.</p>
+<p>The option is</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">-uri=&lt;URI&gt;</span></tt></div></blockquote>
+<p>An example command:</p>
+<div class="highlight-python"><div class="highlight"><pre>%  ospltun -uri=$OSPL_URI
+</pre></div>
+</div>
+<p>The following subsections provide the startup procedures for the
+verified operating systems.</p>
+<div class="section" id="solaris-and-linux">
+<h4>3.1.1.1. Solaris and Linux<a class="headerlink" href="#solaris-and-linux" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<p>Before starting Vortex OpenSplice Tuner, the Vortex OpenSplice environment
+must be set correctly. This can be realized by starting a shell and
+executing the release.com application located in the root directory
+of the OpenSplice installation (from now on referred to by
+<tt class="docutils literal"><span class="pre">&lt;OSPL_HOME&gt;</span></tt>):</p>
+<div class="highlight-python"><div class="highlight"><pre>%  . &lt;OSPL_HOME&gt;/release.com
+</pre></div>
+</div>
+<p>Once the environment has been initialized correctly, the OpenSplice
+DDS Tuner can be started by typing the following command in the shell:</p>
+<div class="highlight-python"><div class="highlight"><pre>%  ospltun
+</pre></div>
+</div>
+<p>When Vortex OpenSplice Tuner is started, the main window is presented to
+the user. (See the illustration <a class="reference internal" href="#the-main-tuner-window">The Main Tuner Window</a>.)</p>
+</div>
+<div class="section" id="windows">
+<h4>3.1.1.2. Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<p>The Vortex OpenSplice environment must be set correctly before starting
+the Vortex OpenSplice Tuner. This is done by opening a command prompt
+and executing the <tt class="docutils literal"><span class="pre">release.bat</span></tt> file which is located in the root
+directory of the Vortex OpenSplice installation (herein referred to by
+<tt class="docutils literal"><span class="pre">&lt;OSPL_HOME&gt;</span></tt>).</p>
+<div class="highlight-python"><div class="highlight"><pre>%  . &lt;OSPL_HOME&gt;/release.bat
+</pre></div>
+</div>
+<p>The Vortex OpenSplice Tuner can be started by typing the following
+command in the command prompt after the environment has been
+initialized correctly:</p>
+<div class="highlight-python"><div class="highlight"><pre>%  ospltun
+</pre></div>
+</div>
+<p>The tuner’s main window is displayed when the Vortex OpenSplice Tuner is
+started (see <a class="reference internal" href="#the-main-tuner-window">The Main Tuner Window</a>).</p>
+</div>
+</div>
+<div class="section" id="graphical-user-interface-conventions">
+<h3>3.1.2. Graphical User Interface Conventions<a class="headerlink" href="#graphical-user-interface-conventions" title="Permalink to this headline">¶</a></h3>
+<p>Some conventions are used for all graphical components of the
+Vortex OpenSplice Tuner. Each window of Vortex OpenSplice Tuner provides a
+menu bar. Each menu bar has three menus:</p>
+<dl class="docutils">
+<dt><strong>File</strong> -</dt>
+<dd>The <em>File</em> menu always provides an option to close the window
+(<em>File &gt; Close</em>).</dd>
+<dt><strong>Edit</strong> -</dt>
+<dd>The <em>Edit</em> menu provides facilities to interact with the
+OpenSplice system.</dd>
+<dt><strong>View</strong> -</dt>
+<dd>The <em>View</em> menu provides options to modify the view on data in
+the window.</dd>
+</dl>
+<p>The <em>View</em> menu also provides an option to look up the main window.
+This can be achieved by choosing <em>View &gt; Show main window</em> in the menu
+bar. This results in the displaying and focusing of the main window.</p>
+<p>All windows are also equipped with a <em>status bar</em>. This status bar is
+used by Vortex OpenSplice Tuner to provide the user with information
+about the status or to report feedback about actions taken by the
+user. The status bar is colored <em>yellow</em> when a warning message is
+displayed and colored <em>red</em> when an error message is displayed.</p>
+<p>Sometimes a status bar also contains a ‘light’, which is located in
+the right corner of the status bar. This light provides information
+about the availability of the entities where the window depends on.
+If these entities are available, the light is colored <em>green</em>. If not,
+then it is colored <em>red</em>.</p>
+<p>A lot of menu items in the menus of several windows of OpenSplice
+Tuner can also be triggered using a combination of keyboard keys
+(short-cut). If such a keyboard shortcut is available for a specific
+menu item, it is displayed at the right side of the menu item in
+<em>blue</em>. The specific keyboard shortcuts are not discussed in this
+manual.</p>
+</div>
+<div class="section" id="main-window">
+<h3>3.1.3. Main Window<a class="headerlink" href="#main-window" title="Permalink to this headline">¶</a></h3>
+<p>When Vortex OpenSplice Tuner is started the main window appears.</p>
+<p class="centered" id="the-main-tuner-window">
+<strong><strong>The Main Tuner Window</strong></strong></p><a class="reference internal image-reference" href="_images/002_MainWindow.png"><img alt="The Main Tuner Window" class="align-center" src="_images/002_MainWindow.png" style="width: 70mm;" /></a>
+<p>The title bar displays <em>Vortex OpenSplice Tuner (&lt;connected_domain_uri&gt;)</em>.</p>
+<p>The entity tree in the main window displays the entities in
+OpenSplice as well as their relationships. The selected view
+determines which relationships are displayed
+(see <a class="reference internal" href="#entity-relationships">Entity Relationships</a>). The current view name is displayed
+in the bottom right corner of the entity tree.</p>
+<p>The status bar provides information about the status of the window or
+about the action that is currently being executed. The status bar of
+the main window is equipped with a ‘light’ (located at the right
+corner of the status bar). This ‘light’ provides information about
+the connection. If OpenSplice Tuner is currently connected to a
+OpenSplice domain, it is colored <em>green</em> (as in the illustration
+above). If not, it is colored <em>red</em>.</p>
+<p class="centered" id="the-window-list">
+<strong><strong>The Window List</strong></strong></p><a class="reference internal image-reference" href="_images/003_WindowList.png"><img alt="The Window List" class="align-center" src="_images/003_WindowList.png" style="width: 70mm;" /></a>
+<p>The window list of the main window is a pull-down menu, which
+contains all OpenSplice Tuner windows. The values in the
+window list match the titles of the windows. If an entry in the list
+is selected, the associated window is opened and it receives the
+focus. When a new window is opened, it is added to the window list;
+it is removed from this list when the window is closed again.</p>
+</div>
+<div class="section" id="shutdown">
+<h3>3.1.4. Shutdown<a class="headerlink" href="#shutdown" title="Permalink to this headline">¶</a></h3>
+<p>OpenSplice Tuner can be exited at any time by choosing <em>File &gt; Exit</em> in
+the menu bar of the main window or by clicking the ‘close’ (X) icon at
+the top-right corner of the main window.</p>
+<p>When OpenSplice Tuner is currently connected to a specific OpenSplice
+domain (see <a class="reference internal" href="#connection-management">Connection Management</a>), it asks for confirmation to
+close that connection.</p>
+<p class="centered" id="the-confirm-exit-dialog">
+<strong><strong>The Confirm Exit Dialog</strong></strong></p><a class="reference internal image-reference" href="_images/004_ConfirmExit.png"><img alt="The Confirm Exit Dialog" class="align-center" src="_images/004_ConfirmExit.png" style="width: 70mm;" /></a>
+</div>
+</div>
+<div class="section" id="connection-management">
+<h2>3.2. Connection Management<a class="headerlink" href="#connection-management" title="Permalink to this headline">¶</a></h2>
+<p>To be able to monitor and control the OpenSplice system, OpenSplice
+Tuner needs access to a specific domain. This section describes the
+various connection types that are supported by OpenSplice Tuner,
+including how a connection to a specific OpenSplice domain and node
+can be opened and how a connection can be closed.</p>
+<div class="section" id="connection-types">
+<h3>3.2.1. Connection Types<a class="headerlink" href="#connection-types" title="Permalink to this headline">¶</a></h3>
+<p>OpenSplice Tuner offers the possibility to connect to a specific
+domain on a specific node in two different ways:</p>
+<dl class="docutils">
+<dt><strong>Local</strong> -</dt>
+<dd>OpenSplice Tuner connects to a specific domain that
+is available on the same <em>node</em> as where it is started. For local
+connections, OpenSplice Tuner connects to an OpenSplice domain using
+the Java Native Interface (JNI). This is the default connection type.</dd>
+<dt><strong>Remote</strong> -</dt>
+<dd>OpenSplice connects to a specific domain that is available
+on a node in the same <em>network</em> as the node where it started. For
+remote connections, OpenSplice Tuner connects to a OpenSplice domain
+using the Simple Object Access Protocol (SOAP).</dd>
+</dl>
+<p>The Tuner determines the connection type based on the given domain
+URI/URL in the connection dialog (see <a class="reference internal" href="#open-a-connection">Open a Connection</a>).</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> A local connection is preferred over a remote connection
+because communication with OpenSplice is faster and does not cause any
+network traffic. It is therefore less intrusive than a remote
+connection and it improves the performance of OpenSplice Tuner.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> By using a remote connection, OpenSplice Tuner also supports
+monitoring and controlling OpenSplice on embedded platforms that do
+not provide a graphical user interface (VxWorks for example)</p>
+</div>
+<div class="section" id="open-a-connection">
+<h3>3.2.2. Open a Connection<a class="headerlink" href="#open-a-connection" title="Permalink to this headline">¶</a></h3>
+<p>OpenSplice Tuner can only open a connection when it is not currently
+connected.</p>
+<p>To open a connection, choose <em>File &gt; Connect</em> in the menu
+bar. This action opens a dialog that asks the user to provide
+a domain URI.</p>
+<p>This domain URI can represent any of the following values:</p>
+<blockquote>
+<div><p><em>a</em>: Integer Domain ID (<em>e.g.</em> <tt class="docutils literal"><span class="pre">1</span></tt>)</p>
+<p><em>b</em>: Domain URI (<em>e.g.</em> <tt class="docutils literal"><span class="pre">file:///home/Prismtech/ospl.xml</span></tt>)</p>
+<p><em>c</em>: SOAP service URL (<em>e.g.</em> <tt class="docutils literal"><span class="pre">http://192.168.1.20:8000</span></tt>)</p>
+</div></blockquote>
+<p>Value <em>b</em> can be selected from a file chooser. Click the <em>Browse</em>
+button to open a file chooser.</p>
+<ul class="simple">
+<li>Values <em>a</em> and <em>b</em> imply a <em>local</em> connection type.</li>
+<li>Value <em>c</em> implies a <em>remote</em> connection type.</li>
+</ul>
+<p>When value <em>c</em> is used, make sure that the OpenSplice Control &amp;
+Monitoring SOAP (CMSOAP) service is running at the supplied SOAP
+service URL.</p>
+<p>When the <em>OK</em> button is clicked, OpenSplice Tuner tries to open a
+connection to the domain that is associated with the supplied domain
+URI. If the domain exists, OpenSplice Tuner connects to that domain.
+If it does not exist, the message ‘Supplied URI not available’ appears
+in the status bar of the dialog window.</p>
+<p>When domain URI value <em>c</em> is used and the CMSOAP service and/or
+OpenSplice is not running at the specified node URL, the message
+‘IOException: Connection refused’ appears in the status bar of the
+dialog window.</p>
+<p>The Connect operation can be cancelled by clicking the <em>Cancel</em>
+button. This makes the dialog window close. OpenSplice Tuner is still
+disconnected afterwards.</p>
+<div class="section" id="connection-history">
+<h4>3.2.2.1. Connection History<a class="headerlink" href="#connection-history" title="Permalink to this headline">¶</a></h4>
+<p>OpenSplice Tuner keeps a history of connections. It remembers four
+connections per connection at most. The connection history is located
+in the <em>File</em> menu between the <em>Disconnect</em> and <em>Exit</em> menu items.</p>
+<p class="centered" id="id1">
+<strong><strong>Connection History</strong></strong></p><a class="reference internal image-reference" href="_images/005_ConnHistory.png"><img alt="Connection History" class="align-center" src="_images/005_ConnHistory.png" style="width: 70mm;" /></a>
+<p>When a specific connection is displayed in the history in the <em>File</em>
+menu it does <em>NOT</em> mean that it is currently connectable.</p>
+<p>A connection in the history list can be opened by clicking <em>File &gt;
+&lt;connection&gt;</em> in the menu bar. If the connection is available, it is
+opened. The result of the action is displayed in the status bar of
+the main window.</p>
+</div>
+</div>
+<div class="section" id="close-a-connection">
+<h3>3.2.3. Close a Connection<a class="headerlink" href="#close-a-connection" title="Permalink to this headline">¶</a></h3>
+<p>Once a connection is opened, it can be closed again. This can be
+achieved by clicking <em>File &gt; Disconnect</em> in the menu bar. The result of
+the disconnect action is displayed in the status bar of the main
+window.</p>
+</div>
+</div>
+<div class="section" id="entity-information">
+<h2>3.3. Entity Information<a class="headerlink" href="#entity-information" title="Permalink to this headline">¶</a></h2>
+<p>To be able to use the OpenSplice system for the distribution of data,
+applications need to create all kinds of entities. Entities are, for
+instance: domain participants, subscribers and publishers. The
+OpenSplice system administers these entities. Each entity type has
+its own characteristics (attributes, status, QoS policies, data type)
+and relations to other entities. OpenSplice Tuner provides facilities
+to observe entities in the OpenSplice system and browse over their
+(mutual) relationships using different views (see <a class="reference internal" href="#entity-relationships">Entity Relationships</a>).</p>
+<p>OpenSplice Tuner displays internal OpenSplice entities. Most entities
+map on a DCPS entity, but some entities do not. The table below provides
+an overview of OpenSplice entities that can be shown by OpenSplice Tuner
+as well as how they map on DCPS entities.</p>
+<p class="centered" id="mapping-of-opensplice-entities-on-dcps-entities">
+<strong><strong>Mapping of OpenSplice Entities on DCPS Entities</strong></strong></p><table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="18%" />
+<col width="55%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">DCPS Entity</th>
+<th class="head">OpenSplice
+Entity</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>DomainParticipant</td>
+<td>Participant</td>
+<td>A DCPS DomainParticipant is
+presented as a Participant
+in OpenSplice.</td>
+</tr>
+<tr class="row-odd"><td>Service</td>
+<td>&nbsp;</td>
+<td><p class="first">Represents a service of OpenSplice.
+A service is a special OpenSplice
+application that adds functionality
+to OpenSplice. Services that are
+currently available are:</p>
+<p><em>Networking</em> - Realizes the
+communication between separate
+OpenSplice nodes.</p>
+<p><em>Durability</em> - Realizes the durable
+properties of data in a OpenSplice
+system.</p>
+<p class="last"><em>CMSOAP</em> - service that allows a
+remote connection of OpenSplice
+Tuner to the current OpenSplice node.</p>
+</td>
+</tr>
+<tr class="row-even"><td>Topic</td>
+<td>Topic</td>
+<td>A DCPS Topic is also presented as
+a Topic in OpenSplice.</td>
+</tr>
+<tr class="row-odd"><td>Partition</td>
+<td>Partition</td>
+<td>DCPS does not specify a Partition as
+an Entity, but as a policy in the
+quality of service of a Publisher and
+a Subscriber. In OpenSplice, however,
+it is presented as a Partition
+entity.</td>
+</tr>
+<tr class="row-even"><td>Subscriber</td>
+<td>Subscriber</td>
+<td>A DCPS Subscriber is also presented
+as a Subscriber in OpenSplice.</td>
+</tr>
+<tr class="row-odd"><td>Publisher</td>
+<td>Publisher</td>
+<td>A DCPS Publisher is also presented
+as a Publisher in OpenSplice.</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>Reader</td>
+<td>OpenSplice specifies a Reader
+as an abstract base Entity
+for a DataReader and Query.</td>
+</tr>
+<tr class="row-odd"><td>DataReader</td>
+<td>DataReader</td>
+<td>A DCPS DataReader is also presented
+as a DataReader in OpenSplice.</td>
+</tr>
+<tr class="row-even"><td>ReadCondition</td>
+<td>Query</td>
+<td>A DCPS ReadCondition is presented
+as a Query in OpenSplice.</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>NetworkReader</td>
+<td>Internal Reader type for the
+networking service.</td>
+</tr>
+<tr class="row-even"><td>DataWriter</td>
+<td>Writer</td>
+<td>A DCPS DataWriter is presented
+as a Writer in OpenSplice.</td>
+</tr>
+<tr class="row-odd"><td>ContentFilteredTopic</td>
+<td>View +
+Topic +
+Query</td>
+<td>A DCPS ContentFilteredTopic is
+presented as a combination of
+a View, Topic and a Query.</td>
+</tr>
+<tr class="row-even"><td>MultiTopic</td>
+<td>View +
+Join +
+Topics
+(+ Query)</td>
+<td>A DCPS MultiTopic is
+presented as a combination of
+a View, Join, multiple Topics and
+possibly a Query.</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td>WaitSet</td>
+<td>Represents an internal WaitSet
+object</td>
+</tr>
+</tbody>
+</table>
+<p>To observe entity information, right-click on a specific entity in
+the entity tree of the main window. This will trigger a popup menu
+that displays the possible actions for that entity. Choose <em>Display
+Entity</em> to observe the selected entity.</p>
+<p class="centered" id="display-entity-information">
+<strong><strong>Display Entity Information</strong></strong></p><a class="reference internal image-reference" href="_images/006_DisplayEntityInfo.png"><img alt="Display Entity Information" class="align-center" src="_images/006_DisplayEntityInfo.png" style="width: 70mm;" /></a>
+<p>This action will create a new window with entity information. This new
+window consists of a menu bar and a certain number of tabs. These
+tabs will be explained in the following sections.</p>
+<div class="section" id="attributes">
+<h3>3.3.1. Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
+<p>This tab is available for all entities. Each entity type has its own
+attributes. Some of them are available for all entity types, others
+only for that specific entity type.</p>
+<p class="centered" id="entity-attributes">
+<strong><strong>Entity Attributes</strong></strong></p><a class="reference internal image-reference" href="_images/007_EntityAttributes.png"><img alt="Entity Attributes" class="align-center" src="_images/007_EntityAttributes.png" style="width: 80mm;" /></a>
+<p>Attributes that are available for every entity type are:</p>
+<blockquote>
+<div><p><em>Kind</em> - the entity type</p>
+<p><em>Name</em> - the entity name</p>
+<p><em>Handle index and serial</em> - the internal identification of the entity</p>
+<p><em>Address</em> - the heap memory address of the entity</p>
+<p><em>Enabled</em> - shows the state of the entity</p>
+</div></blockquote>
+<p>Both <em>handle index and serial</em> as well as <em>address</em> are considered as
+internals and therefore are only displayed when the <em>Display internals</em>
+configuration option in the OpenSplice Tuner preferences is set to
+<tt class="docutils literal"><span class="pre">true</span></tt> (see <a class="reference internal" href="#preferences">Preferences</a>).</p>
+<p>The illustration above shows the attributes for a Topic entity. Besides the
+default attributes, a Topic entity contains two extra attributes:</p>
+<blockquote>
+<div><p><em>Key list</em> - represents the key list of the Topic (comma separated)</p>
+<p><em>Type name</em> - represents the type name of the Topic</p>
+</div></blockquote>
+</div>
+<div class="section" id="status">
+<h3>3.3.2. Status<a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h3>
+<p>Some entity types have a status. As the name says, it provides
+information about the communication status of the entity. Entity
+types that have a communication status are:</p>
+<ul class="simple">
+<li>Subscriber</li>
+<li>Topic</li>
+<li>DataReader</li>
+<li>Writer</li>
+</ul>
+<p>The status attributes depend on the type of the entity. The status of
+a specific entity can be resolved by clicking the Status tab in the
+entity information window. The illustration below shows the status
+attributes of a Topic entity.</p>
+<p class="centered" id="entity-status">
+<strong><strong>Entity Status</strong></strong></p><a class="reference internal image-reference" href="_images/008_EntityStatus.png"><img alt="Entity Status" class="align-center" src="_images/008_EntityStatus.png" style="width: 80mm;" /></a>
+<p>The status information can be updated automatically. This can be
+achieved by setting the <em>Auto update entity information</em> configuration
+option in the OpenSplice Tuner preferences.</p>
+</div>
+<div class="section" id="qos">
+<h3>3.3.3. QoS<a class="headerlink" href="#qos" title="Permalink to this headline">¶</a></h3>
+<p>OpenSplice relies on the use of Quality of Service (QoS). A QoS is a
+set of characteristics that controls some aspects of the behaviour of
+OpenSplice.</p>
+<p>QoS is comprised of individual QoS policies and is associated with a
+specific entity. The QoS policies depend on the type of the entity.
+Entity types that are equipped with a QoS are:</p>
+<ul class="simple">
+<li>Participant</li>
+<li>Topic</li>
+<li>Subscriber</li>
+<li>Publisher</li>
+<li>DataReader</li>
+<li>Writer</li>
+</ul>
+<p>The following subsections describe how the QoS of a
+specific entity can be inspected and how to modify a QoS.</p>
+<div class="section" id="inspect-qos">
+<h4>3.3.3.1. Inspect QoS<a class="headerlink" href="#inspect-qos" title="Permalink to this headline">¶</a></h4>
+<p>The illustration below shows the Quality of Service (QoS) of a specific
+Topic in OpenSplice. The QoS of a specific entity is displayed in the
+<em>QoS</em> tab of the entity information window. The QoS of the entity can be
+inspected by clicking the <em>QoS</em> tab in the entity information window.
+To refresh the QoS of the entity, the <em>Get</em> button (located at the
+bottom-left corner of the <em>QoS</em> tab) can be clicked when the <em>QoS</em>
+tab is selected.</p>
+<p class="centered" id="entity-qos">
+<strong><strong>Entity QoS</strong></strong></p><a class="reference internal image-reference" href="_images/009_EntityQoS.png"><img alt="Entity QoS" class="align-center" src="_images/009_EntityQoS.png" style="width: 80mm;" /></a>
+</div>
+<div class="section" id="modify-qos">
+<h4>3.3.3.2. Modify QoS<a class="headerlink" href="#modify-qos" title="Permalink to this headline">¶</a></h4>
+<p>It is possible to modify the Quality of Service (QoS) settings
+of a specific entity. OpenSplice Tuner allows modification of the QoS
+settings when the <em>QoS</em> tab of the entity information window is
+selected. Once an entity is enabled, not all QoS policies can be
+modified any more. The values of the QoS policies that are <em>not</em>
+editable are colored <em>gray</em>. When clicking on a value of a QoS policy
+that is currently editable (one of the cells located in the <em>Value</em>
+column), the contents of that cell can be edited. During
+the editing, the contents of the cell are constantly validated. If
+the current input is valid, the cell is colored <em>orange</em> and if not, it
+is colored <em>red</em>. To confirm the input, press <em>Enter</em>. The cell is then
+colored <em>white</em> again. If the current input is not valid, it cannot be
+confirmed. To cancel the editing of the cell, press the <em>Esc</em> key. The
+content of cell is reset to the value it had before the cell was
+edited and the cell is colored <em>white</em> again.</p>
+<p>When all QoS policies have the desired value, the QoS can be applied
+to the entity by clicking the <em>Set</em> button (located at the bottom-right
+corner of the <em>QoS</em> tab. The result of the action is displayed in the
+status bar of the window.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> The modification of a specific Quality of Service influences the
+behaviour of the entity it belongs to.</p>
+</div>
+</div>
+<div class="section" id="data-type">
+<h3>3.3.4. Data Type<a class="headerlink" href="#data-type" title="Permalink to this headline">¶</a></h3>
+<p>Some entity types have a data type or relate to one. The data type
+can be observed when the Data type tab is selected in the entity
+information window.</p>
+<p class="centered" id="entity-data-type">
+<strong><strong>Entity Data Type</strong></strong></p><a class="reference internal image-reference" href="_images/010_EntityDataType.png"><img alt="Entity Data Type" class="align-center" src="_images/010_EntityDataType.png" style="width: 80mm;" /></a>
+<p>Entity types that provide a data type are:</p>
+<ul class="simple">
+<li>Topic</li>
+<li>Writer</li>
+<li>DataReader</li>
+</ul>
+<p>This tab displays the data type name, and the data type definition in
+plain text format. To make the text more readable, the data type
+representation can be changed to HTML text format. This can be achieved
+by choosing <em>View &gt; Data type representation &gt; &lt;Representation&gt;</em> in the
+Menu Bar.</p>
+<p class="centered" id="entity-data-type-representation">
+<strong><strong>Entity Data Type Representation</strong></strong></p><a class="reference internal image-reference" href="_images/011_EntityDataTypeRep.png"><img alt="Entity Data Type Representation" class="align-center" src="_images/011_EntityDataTypeRep.png" style="width: 80mm;" /></a>
+<p>The default value of the data type representation can be modified.
+This can be achieved by setting the Datatype content type
+configuration option in the OpenSplice Tuner <a class="reference internal" href="#preferences">Preferences</a>.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> Plain text takes less processing time than HTML, but
+the HTML version is easier to read.</p>
+</div>
+<div class="section" id="statistics">
+<h3>3.3.5. Statistics<a class="headerlink" href="#statistics" title="Permalink to this headline">¶</a></h3>
+<p>Some entity types keep track of statistical information. This
+information can be monitored in OpenSplice Tuner by selecting the
+<em>Statistics</em> tab in the entity information window. The
+statistical information can be updated automatically. This can be
+achieved by setting the <em>Auto update entity information</em> configuration
+option in the OpenSplice Tuner preferences.</p>
+<p>The following entities have statistics:</p>
+<ul class="simple">
+<li>Reader</li>
+<li>Writer</li>
+<li>Durability</li>
+<li>Networking</li>
+<li>CMSOAP</li>
+</ul>
+<p class="centered" id="entity-statistics">
+<strong><strong>Entity Statistics</strong></strong></p><a class="reference internal image-reference" href="_images/012_EntityStatistics.png"><img alt="Entity Statistics" class="align-center" src="_images/012_EntityStatistics.png" style="width: 80mm;" /></a>
+<p>As well as monitoring statistical information, OpenSplice Tuner also
+provides facilities to reset (parts of) this information. When
+right-clicking on a specific row in the table of the <em>Statistics</em> tab, a
+popup menu with two options appears (see illustration above). The first
+option results in a reset of the selected counter. The second option results
+in a reset of <em>all</em> statistical information of the entity.</p>
+</div>
+</div>
+<div class="section" id="entity-relationships">
+<h2>3.4. Entity Relationships<a class="headerlink" href="#entity-relationships" title="Permalink to this headline">¶</a></h2>
+<p>To be able to observe how entities work together, it is necessary to
+observe their (mutual) relationships. OpenSplice Tuner provides three
+different approaches to observe these relationships:</p>
+<dl class="docutils">
+<dt><strong>Participant view</strong> -</dt>
+<dd>Displays participant entities of the local node as
+top-level entities</dd>
+<dt><strong>Topic view</strong> -</dt>
+<dd>Displays topic entities as top-level entities</dd>
+<dt><strong>Partition view</strong> -</dt>
+<dd>Displays partition entities of the local node as
+top-level entities</dd>
+</dl>
+<p>Each view consists of a tree of entities. The layout of the entity
+tree in the main window is determined by the selected view and the
+available entities in OpenSplice.</p>
+<p>To change the view on entity relations, choose <em>View &gt; &lt;View type&gt;</em>
+in the menu bar. The default view on startup is determined
+by the <a class="reference internal" href="#default-entity-tree-type">Default entity tree type</a> configuration option in the
+OpenSplice Tuner <a class="reference internal" href="#preferences">Preferences</a>.</p>
+<p class="centered" id="choose-entity-view">
+<strong><strong>Choose Entity View</strong></strong></p><a class="reference internal image-reference" href="_images/013_SelectEntityView.png"><img alt="Choose Entity View" class="align-center" src="_images/013_SelectEntityView.png" style="width: 80mm;" /></a>
+<div class="section" id="enable-and-disable-displaying-relationships">
+<h3>3.4.1. Enable and Disable Displaying Relationships<a class="headerlink" href="#enable-and-disable-displaying-relationships" title="Permalink to this headline">¶</a></h3>
+<p>By default, only top-level entities are displayed in a view. This
+means, for instance, that the topic view only displays topic entities.
+It is also possible to observe all relationships of the top-level
+entities to other entities. When all relationships need to be
+displayed, choose <em>View &gt; Display Entity relations</em> in the menu bar
+(see <a class="reference internal" href="#choose-entity-view">Choose Entity View</a>).</p>
+<p>Besides enabling or disabling the displaying of all
+entity relations, it is also possible to enable or disable these
+relations on entity level. This can be done by right-clicking on
+an entity in the entity tree and then choosing <em>Hide Entity relations</em>
+to disable display and <em>Display Entity relations</em> to enable
+display.</p>
+<p class="centered" id="enable-and-disable-entity-relations">
+<strong><strong>Enable and Disable Entity Relations</strong></strong></p><a class="reference internal image-reference" href="_images/014_EnableEntityRel.png"><img alt="Enable and Disable Entity Relations" class="align-center" src="_images/014_EnableEntityRel.png" style="width: 70mm;" /></a>
+<p>When the <em>Display Entity relations</em> check box is enabled in the <em>View</em>
+menu (see <a class="reference internal" href="#choose-entity-view">Choose Entity View</a>), <em>all</em> entity relations are displayed.
+By selecting <em>Hide Entity relations</em> on a specific entity, the displaying
+of relations can be disabled for that specific entity. That will color
+the concerning entity <em>gray</em> in the entity tree.</p>
+<p>The other way around is also possible. When the <em>Display Entity relations</em>
+check box is unchecked in the <em>View</em> menu, <em>no</em> entity relations are displayed.
+By selecting <em>Display Entity relations</em> on a specific entity, the
+displaying of the relations is enabled for that specific entity. That
+will color the concerning entity <em>green</em> in the entity tree.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> Disabling entity relations and only enabling the relations that need
+to be observed makes OpenSplice Tuner less intrusive for OpenSplice.</p>
+</div>
+<div class="section" id="refresh-relationships">
+<h3>3.4.2. Refresh Relationships<a class="headerlink" href="#refresh-relationships" title="Permalink to this headline">¶</a></h3>
+<p>Once the relationships have been resolved, by default they are <em>not</em>
+kept up to date.</p>
+<p>Updates can be applied in two ways.</p>
+<ul class="simple">
+<li>By choosing <em>Edit &gt; Refresh entity tree</em> in the menu bar the entire
+tree is refreshed.</li>
+<li>By right-clicking on an entity in the tree and choosing <em>Refresh
+Entity relations</em> the relations of that specific entity can be
+refreshed (<a class="reference internal" href="#enable-and-disable-entity-relations">Enable and Disable Entity Relations</a>).</li>
+</ul>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> Refreshing entity relations on entity level rather then a complete
+refresh of the tree takes less processing time and is less intrusive
+for OpenSplice.</p>
+<p>Entity relations can also be updated automatically. This can be
+achieved by setting the <a class="reference internal" href="#auto-update-entity-tree">Auto update entity tree</a> configuration option
+in the OpenSplice Tuner <a class="reference internal" href="#preferences">Preferences</a>.</p>
+</div>
+</div>
+<div class="section" id="data-injection-and-consumption">
+<h2>3.5. Data Injection and Consumption<a class="headerlink" href="#data-injection-and-consumption" title="Permalink to this headline">¶</a></h2>
+<p>OpenSplice Tuner provides facilities for data injection and
+consumption. Data injection can be accomplished in several ways:</p>
+<ul class="simple">
+<li>using an existing writer</li>
+<li>using a self-created writer</li>
+<li>using a self-created reader-writer</li>
+</ul>
+<p>Creating a writer to inject data can be realized by creating a
+publisher followed by creating a writer or by creating a
+reader-writer (see <a class="reference internal" href="#data-injection-and-consumption">Data Injection and Consumption</a>).</p>
+<p>For consuming data, the following options are available:</p>
+<ul class="simple">
+<li>using an existing reader</li>
+<li>using a self-created reader</li>
+<li>using a self-created reader-writer</li>
+<li>inspecting the data in an existing reader database (consume data
+by making a snapshot of an existing reader)</li>
+<li>inspecting the history cache of an existing writer (consume data
+by making a snapshot of the history of an existing writer)</li>
+</ul>
+<p>The following sections describe how to perform these tasks.</p>
+<div class="section" id="creating-a-publisher">
+<h3>3.5.1. Creating a Publisher<a class="headerlink" href="#creating-a-publisher" title="Permalink to this headline">¶</a></h3>
+<p>One way to inject data in OpenSplice is to create a publisher and
+writer. A publisher can be attached to one or more partitions in the
+domain where OpenSplice Tuner is currently participating.</p>
+<p class="centered" id="main-window-edit-menu">
+<strong><strong>Main Window Edit Menu</strong></strong></p><a class="reference internal image-reference" href="_images/015_EditMenu.png"><img alt="Main Window Edit Menu" class="align-center" src="_images/015_EditMenu.png" style="width: 80mm;" /></a>
+<p>To create a publisher, choose <em>Edit &gt; Create Publisher</em> in the menu bar
+of the main window (shown above), or right-click on the OpenSplice Tuner
+participant in the entity tree and then select the <em>Create
+Publisher</em> item (see illustration below).</p>
+<p class="centered" id="opensplice-tuner-participant-actions">
+<strong><strong>OpenSplice Tuner Participant Actions</strong></strong></p><a class="reference internal image-reference" href="_images/016_ParticipantActions.png"><img alt="OpenSplice Tuner Participant Actions" class="align-center" src="_images/016_ParticipantActions.png" style="width: 80mm;" /></a>
+<p>Both of these actions will result in the display of the
+<em>Create Publisher</em> dialog.</p>
+<p class="centered" id="create-publisher-dialog">
+<strong><strong>Create Publisher dialog</strong></strong></p><a class="reference internal image-reference" href="_images/017_CreatePublisher.png"><img alt="Create Publisher dialog" class="align-center" src="_images/017_CreatePublisher.png" style="width: 80mm;" /></a>
+<p>The value provided in the <em>Name</em> field becomes the name of the publisher
+(as displayed in the entity tree).</p>
+<p>The Qos settings of the publisher can be set on the <em>PublisherQos</em> tab.</p>
+<p>The <em>Partition name</em> field on the <em>PublisherQos</em> tab determines the
+publisher’s partition(s).</p>
+<p>To attach the publisher to multiple partitions, the comma (<tt class="docutils literal"><span class="pre">,</span></tt>)
+can be used as a separator and the asterisk (<tt class="docutils literal"><span class="pre">*</span></tt>) can be used
+as a wild card. Partitions that do not already exist are created
+in OpenSplice, except for parts of the expression that contain
+a wild card.</p>
+<p>For example, the name <tt class="docutils literal"><span class="pre">part*,abc</span></tt> makes the publisher publish in all
+available partitions that start with <tt class="docutils literal"><span class="pre">part</span></tt> including <tt class="docutils literal"><span class="pre">part</span></tt> itself
+and also in partition <tt class="docutils literal"><span class="pre">abc</span></tt> (the partition <tt class="docutils literal"><span class="pre">abc</span></tt> will be created if
+it does not already exist in the connected OpenSplice domain).</p>
+<p>The <em>Presentation</em> fields on the <em>PublisherQos</em> tab determines the
+publisher’s Presentation policy setting. This policy is also an RxO policy,
+thus it affects QoS compatibility matching for readers and writers.</p>
+<p>Additionally, Tuner supports coherent and ordered access. So if <em>coherent_access</em>
+is true, and the <em>access_scope</em> is <em>TOPIC</em> or <em>GROUP</em>, then the option to publish
+coherent sets will be available when selecting the publisher. See
+<a class="reference internal" href="#publishing-coherent-sets">Publishing Coherent Sets</a>.</p>
+<p>When the <em>OK</em> button is clicked, the input is validated. If the input
+is correct, the publisher is created. The newly-created publisher
+will appear in the entity tree (when entity relations are enabled;
+see <a class="reference internal" href="#enable-and-disable-displaying-relationships">Enable and Disable Displaying Relationships</a>). If the input is
+not correct, an error message will appear in the status bar of
+the dialog box.</p>
+<p>The Create publisher action can be cancelled by clicking the <em>Cancel</em>
+button. In this case, no publisher will be created.</p>
+</div>
+<div class="section" id="creating-a-writer">
+<h3>3.5.2. Creating a Writer<a class="headerlink" href="#creating-a-writer" title="Permalink to this headline">¶</a></h3>
+<p>A writer can only be created if one or more publishers have already
+been created. A writer can be created by choosing <em>Edit &gt; Create
+Writer</em> in the menu bar (see <a class="reference internal" href="#main-window-edit-menu">Main Window Edit Menu</a>) or right-clicking
+on a created publisher entity in the tree then choosing the
+<em>Create Writer</em> item.</p>
+<p>Both of these actions will result in the display of the dialog box
+shown below.</p>
+<p class="centered" id="create-writer-dialog">
+<strong><strong>Create Writer dialog</strong></strong></p><a class="reference internal image-reference" href="_images/018_CreateWriter.png"><img alt="Create Writer dialog" class="align-center" src="_images/018_CreateWriter.png" style="width: 90mm;" /></a>
+<p>The <em>Name</em> field determines the name of the
+writer (as displayed in the entity tree). The <em>Publisher</em> field
+determines to which publisher the writer will be attached (determines
+the partition(s) the writer will write its data in). The <em>Topic</em> field
+determines which topic the writer will be able to write.</p>
+<p>By default the QoS settings of the Writer are copied from the Topic
+it writes. However, it is also possible to override these settings by
+specifying its own QoS settings/profile (see <a class="reference internal" href="#qos-profiles">QoS Profiles</a>) in the
+<em>WriterQoS</em> tab.</p>
+<p>When the <em>OK</em> button is clicked, the input is validated. If the input
+is correct, the writer is created. The newly-created writer
+will appear in the entity tree (when entity relations are enabled;
+see <a class="reference internal" href="#enable-and-disable-displaying-relationships">Enable and Disable Displaying Relationships</a>).</p>
+<p>If the input is <em>not</em> correct, an error message will appear in the
+status bar of the dialog window.</p>
+<p>The Create writer action can be cancelled by clicking the <em>Cancel</em>
+button. In this case, no writer will be created.</p>
+</div>
+<div class="section" id="creating-a-subscriber">
+<h3>3.5.3. Creating a subscriber<a class="headerlink" href="#creating-a-subscriber" title="Permalink to this headline">¶</a></h3>
+<p>One way to consume data from OpenSplice is to create a subscriber and
+a data reader. A subscriber can be attached to one or more partitions
+in the domain where OpenSplice Tuner is currently participating.</p>
+<p>To create a subscriber, choose <em>Edit &gt; Create Subscriber</em> in the menu
+bar of the main window (see <a class="reference internal" href="#main-window-edit-menu">Main Window Edit Menu</a>) or right-click
+the SPLICE Tuner participant in the entity tree then choose the <em>Create
+Subscriber</em> item.</p>
+<p>Both of these actions will result in the display of the dialog box
+shown below.</p>
+<p class="centered" id="create-subscriber-dialog">
+<strong><strong>Create Subscriber dialog</strong></strong></p><a class="reference internal image-reference" href="_images/019_CreateSubscriber.png"><img alt="Create Subscriber dialog" class="align-center" src="_images/019_CreateSubscriber.png" style="width: 70mm;" /></a>
+<p>The value provided in the <em>Name</em> field becomes the name of the
+subscriber (as displayed in the entity tree). The Qos
+settings of the subscriber can be set on the <em>SubscriberQos</em> tab. The
+<em>Partition name</em> field in the <em>SubscriberQos</em> tab determines the
+subscriber’s partition(s).</p>
+<p>To attach the subscriber to multiple partitions, the comma (<tt class="docutils literal"><span class="pre">,</span></tt>)
+can be used as a separator and the asterisk (<tt class="docutils literal"><span class="pre">*</span></tt>) can be used as a
+wild card. Partitions that do not already exist are created in
+OpenSplice, except for parts of the expression that contain a wild
+card.</p>
+<p>The <em>Presentation</em> fields on the <em>PublisherQos</em> tab determines the
+publisher’s Presentation policy setting. This policy is also an RxO policy,
+thus it affects QoS compatibility matching for readers and writers.</p>
+<p>Additionally, Tuner supports coherent and ordered access. So if <em>coherent_access</em>
+is true, and the <em>access_scope</em> is <em>TOPIC</em> or <em>GROUP</em>, then the option to read
+available data on all the subscriber&#8217;s readers will be available when selecting
+the subscriber. See <a class="reference internal" href="#access-data-on-readers">Access Data On Readers</a>.</p>
+<p>When the <em>OK</em> button is clicked, the input is validated. If the input
+is correct, the subscriber is created. The newly-created subscriber
+will appear in the entity tree (when entity relations are enabled;
+see <a class="reference internal" href="#enable-and-disable-displaying-relationships">Enable and Disable Displaying Relationships</a>).</p>
+<p>If the input is not correct, an error message will appear
+in the status bar of the dialog box.</p>
+<p>The Create subscriber action can be cancelled by clicking the
+<em>Cancel</em> button. In this case, no subscriber will be created.</p>
+</div>
+<div class="section" id="creating-a-reader">
+<h3>3.5.4. Creating a Reader<a class="headerlink" href="#creating-a-reader" title="Permalink to this headline">¶</a></h3>
+<p>A reader can only be created if one or more subscribers have already
+been created.</p>
+<p>A reader can be created by choosing <em>Edit &gt; Create Reader</em>
+in the menu bar (see <a class="reference internal" href="#main-window-edit-menu">Main Window Edit Menu</a>) or by right-clicking on
+a created subscriber entity in the tree then choosing the <em>Create Reader</em>
+item.</p>
+<p>Both of these actions will result in the display of the dialog box
+shown below.</p>
+<p class="centered" id="create-reader-dialog">
+<strong><strong>Create Reader Dialog</strong></strong></p><a class="reference internal image-reference" href="_images/020_CreateReader.png"><img alt="Create Reader Dialog" class="align-center" src="_images/020_CreateReader.png" style="width: 70mm;" /></a>
+<p>The <em>Name</em> field determines the name of the reader (as displayed in the
+entity tree).</p>
+<p>The <em>Subscriber</em> field determines to which subscriber the
+reader will be attached (determines the partition(s) the reader will
+consume data from).</p>
+<p>The <em>Topic</em> field determines which topic the reader
+will be able to consume.</p>
+<p>The <em>Query</em> field can be used to specify a
+query for the reader so only data that matches the query will be
+consumed.</p>
+<p>The <em>WaitForHistoricalData</em> field determines whether the
+Reader will wait for historical data to arrive during creation
+(maximum of 30 seconds). In this case the Reader will still receive
+historical data.</p>
+<p>By default the QoS settings of the Reader are copied from the Topic
+it reads. However, it is also possible to override these settings by
+specifying its own QoS settings/profile (see <a class="reference internal" href="#qos-profiles">QoS Profiles</a>)
+in the <em>ReaderQoS</em> tab.</p>
+<p>When the <em>OK</em> button is clicked, the input is validated. If the input
+is correct, the reader is created. The newly-created reader
+will appear in the entity tree (when entity relations are enabled;
+see <a class="reference internal" href="#enable-and-disable-displaying-relationships">Enable and Disable Displaying Relationships</a>).</p>
+<p>If the input is not correct, an error message will appear in the
+status bar of the dialog window.</p>
+<p>The Create reader action can be cancelled by clicking the <em>Cancel</em>
+button. In this case, no reader will be created.</p>
+</div>
+<div class="section" id="creating-a-readerwriter">
+<span id="id2"></span><h3>3.5.5. Creating a ReaderWriter<a class="headerlink" href="#creating-a-readerwriter" title="Permalink to this headline">¶</a></h3>
+<p>The creation of a publisher, writer, subscriber and reader can be
+simplified by directly creating a reader-writer. This action creates
+a publisher, writer, subscriber and reader in one action.</p>
+<p>There are two possible ways of creating a reader-writer. The
+reader-writer can be created by using a partition expression <em>or</em> by
+using a single partition. In both cases a window will appear where
+the reader-writer attributes and Qos settings of the publisher,
+writer, subscriber and reader can be changed.</p>
+<div class="section" id="partition-expression">
+<h4>3.5.5.1. Partition Expression<a class="headerlink" href="#partition-expression" title="Permalink to this headline">¶</a></h4>
+<p>The creation of a reader-writer by using a partition expression
+allows a reader-writer to inject and consume in multiple partitions.</p>
+<p>To create such a reader-writer, choose <em>Edit &gt; Create Reader-Writer &gt;
+Partition expression</em> in the menu bar of the main window (see
+<a class="reference internal" href="#main-window-edit-menu">Main Window Edit Menu</a>) <em>or</em> right-click on the SPLICE Tuner participant
+in the entity tree then choose the
+<em>Create Reader-Writer &gt; Partition expression</em> item.</p>
+<p>Both of these actions will result in the display of the dialog box
+shown below.</p>
+<p class="centered" id="create-reader-writer-partition-expression-dialog">
+<strong><strong>Create Reader-Writer (Partition expression) dialog</strong></strong></p><a class="reference internal image-reference" href="_images/021_CreateReaderWriterPartitionExpr.png"><img alt="Create Reader-Writer (Partition expression) dialog" class="align-center" src="_images/021_CreateReaderWriterPartitionExpr.png" style="width: 70mm;" /></a>
+<p>The value provided in the <em>Partition expression</em> field determines
+the publisher and subscriber partition(s). To attach them to multiple
+partitions, the comma (<tt class="docutils literal"><span class="pre">,</span></tt>) can be used as separation and the asterisk
+(<tt class="docutils literal"><span class="pre">*</span></tt>) can be used as wild card. Partitions that do not exist are created
+in OpenSplice, except for parts of the expression that contain a wild card.</p>
+<p>The <em>Topic</em> field determines the topic the reader-writer will read and
+write.</p>
+<p>The <em>WaitForHistoricalData</em> field determines whether the Reader
+will wait for historical data to arrive during creation (maximum of
+30 seconds). In this case the Reader will still receive historical
+data.</p>
+<p>By default the QoS settings of the Reader/Writer are copied from the
+Topic it reads/writes. However, it is also possible to override these
+settings by specifying its own QoS settings/profile (see
+<a class="reference internal" href="#qos-profiles">QoS Profiles</a>) in the <em>WriterQoS</em> and <em>ReaderQoS</em> tabs.</p>
+<p>When the <em>OK</em> button is clicked, the input is validated. If the input
+is correct, the reader-writer is created. The newly-created
+publisher, writer, subscriber and reader will appear in the entity tree
+(when entity relations are enabled;
+see <a class="reference internal" href="#enable-and-disable-displaying-relationships">Enable and Disable Displaying Relationships</a>).</p>
+<p>The reader-writer window is also presented. If the input is not correct,
+an error message will appear in the status bar of the dialog window.</p>
+<p>The Create action can be cancelled by clicking the <em>Cancel</em> button.
+In this case, no publisher, subscriber, reader and writer will
+be created.</p>
+<p>See also <a class="reference internal" href="#consuming-data-using-a-reader-writer">Consuming Data Using a Reader-Writer</a>.</p>
+<p>The dialog window for creating a reader-writer using a partition
+expression can also be summoned by right-clicking a topic entity in
+the entity tree and choosing <em>Create Reader-Writer &gt; Partition
+expression</em>). There is one difference between the two actions mentioned
+above: the <em>Topic</em> field will only contain the selected topic in the
+entity tree instead of all topics in the domain.</p>
+</div>
+<div class="section" id="existing-partition">
+<h4>3.5.5.2. Existing Partition<a class="headerlink" href="#existing-partition" title="Permalink to this headline">¶</a></h4>
+<p>The creation of a reader-writer by using a single partition allows a
+reader-writer to inject and consume in one already existing
+partition.</p>
+<p>To create such a reader-writer, choose <em>Edit &gt; Create
+Reader-Writer &gt; Existing Partition</em> in the menu bar of the main window
+(<a class="reference internal" href="#main-window-edit-menu">Main Window Edit Menu</a>) <em>or</em> right-click on the SPLICE Tuner participant
+in the entity tree then choose the <em>Create Reader-Writer &gt; Existing Partition</em>
+item.</p>
+<p>Both of these actions will result in the display of the dialog box
+shown below.</p>
+<p class="centered" id="create-reader-writer-existing-partition-dialog">
+<strong><strong>Create Reader-Writer (existing partition) dialog</strong></strong></p><a class="reference internal image-reference" href="_images/022_CreateReaderWriterPartitionExist.png"><img alt="Create Reader-Writer (existing partition) dialog" class="align-center" src="_images/022_CreateReaderWriterPartitionExist.png" style="width: 70mm;" /></a>
+<p>The value provided in the <em>Partition</em> field determines the
+publisher and subscriber partition.</p>
+<p>The <em>Topic</em> field determines the topic the reader-writer will read and
+write.</p>
+<p>The <em>WaitForHistoricalData</em> field determines whether the Reader
+will wait for historical data to arrive during creation (maximum of
+30 seconds). In this case the Reader will still receive historical
+data.</p>
+<p>By default the QoS settings of the Reader/Writer are copied from the
+Topic it reads/writes. However, it is also possible to override these
+settings by specifying its own QoS settings/profile (see
+<a class="reference internal" href="#qos-profiles">QoS Profiles</a>) in the <em>WriterQoS</em> and <em>ReaderQoS</em> tabs.</p>
+<p>When the <em>OK</em> button is clicked, the input is validated. If the input
+is correct, the reader-writer is created. The newly-created
+publisher, writer, subscriber and reader will appear in the entity
+tree (when entity relations are enabled;
+see <a class="reference internal" href="#enable-and-disable-displaying-relationships">Enable and Disable Displaying Relationships</a>).
+The reader-writer window is presented to the user. If the input
+is not correct, an error message will appear in the status bar
+of the dialog window.</p>
+<p>The Create action can be cancelled by clicking the <em>Cancel</em> button.
+In this case, no publisher, subscriber, reader and writer will be created.</p>
+<p>The dialog for creating a reader-writer for a single partition
+can also be summoned in two other ways.</p>
+<p>The first one is right-clicking a topic entity in the entity tree and
+choosing <em>Create Reader-Writer &gt; Existing Partition</em>. (Note that the
+<em>Topic</em> field will only contain the selected topic in the entity tree
+instead of all topics in the domain.)</p>
+<p>The second one is right-clicking a partition entity in the
+entity tree and choosing <em>Create Reader-Writer &gt; Existing Partition</em>.
+(Note that the <em>Partition</em> field in the dialog window will only contain
+the selected partition in the entity tree instead of all partitions in
+the domain.)</p>
+</div>
+</div>
+<div class="section" id="creating-a-snapshot-of-a-reader-database">
+<h3>3.5.6. Creating a Snapshot of a Reader Database<a class="headerlink" href="#creating-a-snapshot-of-a-reader-database" title="Permalink to this headline">¶</a></h3>
+<p>OpenSplice Tuner also provides facilities to browse through data in
+an existing application reader database without influencing it. This
+can be achieved by making a ‘snapshot’ of that database. Create a
+snapshot by right-clicking on the reader that needs to be examined
+then choosing <em>Make database snapshot</em>.</p>
+<p class="centered" id="create-reader-snapshot">
+<strong><strong>Create Reader Snapshot</strong></strong></p><a class="reference internal image-reference" href="_images/023_CreateReaderSnapshot.png"><img alt="Create Reader Snapshot" class="align-center" src="_images/023_CreateReaderSnapshot.png" style="width: 70mm;" /></a>
+<p>The <em>Make database snapshot</em> action makes OpenSplice Tuner create a
+snapshot of the contents of that specific database and open a reader
+snapshot window that allows browsing through the contents of the
+database.</p>
+</div>
+<div class="section" id="creating-a-snapshot-of-writer-history-cache">
+<h3>3.5.7. Creating a Snapshot of Writer History Cache<a class="headerlink" href="#creating-a-snapshot-of-writer-history-cache" title="Permalink to this headline">¶</a></h3>
+<p>OpenSplice Tuner also provides facilities to browse through data in
+the history cache of an existing application writer without
+influencing it. This can be achieved by making a ‘snapshot’ of the
+history of the writer. Create a snapshot by right-clicking on the
+writer that needs to be examined then choosing <em>Make history snapshot</em>.</p>
+<p class="centered" id="create-writer-snapshot">
+<strong><strong>Create Writer Snapshot</strong></strong></p><a class="reference internal image-reference" href="_images/024_CreateWriterSnapshot.png"><img alt="Create Writer Snapshot" class="align-center" src="_images/024_CreateWriterSnapshot.png" style="width: 70mm;" /></a>
+<p>The <em>Make history snapshot</em> action makes OpenSplice Tuner create a
+snapshot of the history of that specific writer and open a writer
+snapshot window.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> Whether or not there is a history available for a specific writer
+depends on the Quality of Service settings of that writer.</p>
+</div>
+<div class="section" id="delete-entity">
+<h3>3.5.8. Delete Entity<a class="headerlink" href="#delete-entity" title="Permalink to this headline">¶</a></h3>
+<p>Self-created entities can also be deleted. This can be achieved by
+right-clicking the entity to delete in the entity tree followed by
+selecting the <em>Delete Entity</em> item in the popup menu that appears,
+or by choosing <em>Edit &gt; Delete Entity</em> in the menu bar.</p>
+<p>When the entity is deleted, it is also removed from the entity tree.
+If the entity could not be deleted, the reason is displayed in the
+status bar of the main window.</p>
+</div>
+<div class="section" id="injecting-data">
+<h3>3.5.9. Injecting Data<a class="headerlink" href="#injecting-data" title="Permalink to this headline">¶</a></h3>
+<p>If the correct entities are available, data can be injected into
+OpenSplice. The methods to do this are explained in the following
+subsections.</p>
+<div class="section" id="injecting-data-using-a-writer">
+<h4>3.5.9.1. Injecting Data Using a Writer<a class="headerlink" href="#injecting-data-using-a-writer" title="Permalink to this headline">¶</a></h4>
+<p>Data can be injected using an existing application writer or a
+self-created writer. To create or modify and inject data, OpenSplice
+Tuner offers a writer window. Such a window can be opened by
+right-clicking a writer entity in the entity tree followed by
+choosing the <em>Write data</em> item.</p>
+<p class="centered" id="the-writer-window">
+<strong><strong>The Writer Window</strong></strong></p><a class="reference internal image-reference" href="_images/025_WriterWindow.png"><img alt="The Writer Window" class="align-center" src="_images/025_WriterWindow.png" style="width: 70mm;" /></a>
+<p>The window consists of:</p>
+<dl class="docutils">
+<dt><strong>Title Bar</strong> -</dt>
+<dd>Displays the title. Its format is:
+<em>&lt;topic_name&gt;&#64;&lt;partition(s)&gt; &gt; Writer.</em></dd>
+<dt><strong>Menu Bar</strong> -</dt>
+<dd>Contains the <em>File</em>, <em>Edit</em> and <em>View</em> menus.</dd>
+<dt><strong>User Data View</strong> -</dt>
+<dd>View that consists of a table that displays the data
+the writer can write.</dd>
+<dt><strong>Button Panel</strong> -</dt>
+<dd>Contains buttons to register, unregister, write and
+dispose data in OpenSplice.</dd>
+<dt><strong>Status Bar</strong> -</dt>
+<dd>Displays the current action as well as the status of the
+writer.</dd>
+</dl>
+<p>The user data view displays all fields in the data, which depend on
+the data type of the topic that the writer is able to write. It
+consists of three columns.</p>
+<blockquote>
+<div><p>The first column displays the type of a field in the data.</p>
+<p>The second column displays the name of a field in the data. Nested
+fields in the data are separated by a dot. The fields that are part
+of the key of the topic are colored green.</p>
+<p>The third column displays the current value of the field. When the
+window is opened, they have the default value (the default value
+depends on the type of the field).</p>
+</div></blockquote>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> The field type names are <em>not</em> the same as how they have been
+specified in IDL. They are displayed as internal OpenSplice types.
+This means (in most cases) that a prefix <tt class="docutils literal"><span class="pre">c_</span></tt> is added and <tt class="docutils literal"><span class="pre">unsigned</span></tt>
+is transformed in <tt class="docutils literal"><span class="pre">u</span></tt>. For example: the type <tt class="docutils literal"><span class="pre">long</span></tt> in IDL becomes
+<tt class="docutils literal"><span class="pre">c_long</span></tt> and <tt class="docutils literal"><span class="pre">unsigned</span> <span class="pre">long</span></tt> becomes <tt class="docutils literal"><span class="pre">c_ulong</span></tt>.</p>
+<p>To edit the value of a field, click the <em>Field value</em> of that field.
+The field is colored <em>orange</em> while editing (see illustration). The
+writer window starts an editor when a specific field value is clicked.
+The editor type depends on the Field type. For primitive types like <tt class="docutils literal"><span class="pre">long</span></tt>
+and <tt class="docutils literal"><span class="pre">float</span></tt> as well as for strings, a simple text field is created. To
+confirm the input in a text field, simply press the <em>Enter</em> key. For
+<tt class="docutils literal"><span class="pre">enumeration</span></tt> and <tt class="docutils literal"><span class="pre">boolean</span></tt> types, a pull-down menu with the possible
+options appears. The input in a pull-down menu does not have to be
+confirmed.</p>
+<p class="centered" id="writer-window-edit-field-value">
+<strong><strong>Writer Window Edit Field Value</strong></strong></p><a class="reference internal image-reference" href="_images/026_WriterWindowEditField.png"><img alt="Writer Window Edit Field Value" class="align-center" src="_images/026_WriterWindowEditField.png" style="width: 70mm;" /></a>
+<p>During the editing, the value is constantly validated. When the
+current value of the Field value is not valid, the field is colored
+<em>red</em> (see illustration) and the input cannot be confirmed. To cancel the
+editing, press the <em>Esc</em> key. The value of the field is reset to the
+value it had before the editing began.</p>
+<p class="centered" id="writer-window-input-error">
+<strong><strong>Writer Window Input Error</strong></strong></p><a class="reference internal image-reference" href="_images/027_WriterWindowInputError.png"><img alt="Writer Window Input Error" class="align-center" src="_images/027_WriterWindowInputError.png" style="width: 70mm;" /></a>
+<p>When all fields are set to the desired value, the data can be
+injected into OpenSplice.</p>
+<p>The <em>Register</em> button in the button panel (in <a class="reference internal" href="#the-writer-window">The Writer Window</a>)
+or <em>Edit &gt; Register instance</em> in the menu bar will inform OpenSplice that
+the particular instance will be modified, meaning that OpenSplice will
+handle the instance more efficiently.</p>
+<p>To undo this the <em>Unregister</em> button can be clicked or <em>Edit &gt; Unregister
+instance</em> in the menu bar. This will inform OpenSplice that the particular
+instance will not be modified any more.</p>
+<p>Data can be injected by clicking the <em>Write</em> button in the button panel
+or by choosing <em>Edit &gt; Write</em> in the menu bar. When the current input
+is not valid as shown in <a class="reference internal" href="#writer-window-input-error">Writer Window Input Error</a>, the data cannot
+be written. A write action will result in the error message in the
+status bar of the writer window: ‘Data could not be written, because
+input is not valid’.</p>
+<p>When a field value has not been confirmed, but the current input is
+valid, the write action will result in a confirmation of the input
+followed by a write action.</p>
+<p>If data was successfully written, the message ‘Data written’ appears
+in the status bar.</p>
+<p>Besides writing data, it can also be disposed. Data in OpenSplice
+can be disposed by clicking the <em>Dispose</em> button in the button panel
+or by choosing <em>Edit &gt; Dispose</em> in the menu bar. The mechanism of the
+dispose is the same as the one for the write action.</p>
+<p>The write and dispose action can also be combined. This can be done
+by clicking the <em>WriteDispose</em> button or <em>Edit &gt; WriteDispose</em> in the
+menu bar. This will first write the data and then dispose it.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Data that is injected will also arrive at data readers of other
+running OpenSplice applications that are subscribed to this data.
+This also applies to disposing of data.</p>
+<p>The Entity information of the Writer associated with the Writer
+window can be resolved by choosing <em>File &gt; Show Writer info</em>.</p>
+</div>
+<div class="section" id="injecting-data-using-a-reader-writer">
+<h4>3.5.9.2. Injecting Data Using a Reader-Writer<a class="headerlink" href="#injecting-data-using-a-reader-writer" title="Permalink to this headline">¶</a></h4>
+<p>The creation of a reader-writer results in the popup of a
+reader-writer window. The reader-writer window is a
+combination of a reader window and a writer window.</p>
+<p class="centered" id="the-reader-writer-window">
+<strong><strong>The Reader-Writer Window</strong></strong></p><a class="reference internal image-reference" href="_images/028_ReaderWriterWindow.png"><img alt="The Reader-Writer Window" class="align-center" src="_images/028_ReaderWriterWindow.png" style="width: 70mm;" /></a>
+<p>The reader-writer window provides facilities for both injecting
+and consuming data. It consists of:</p>
+<dl class="docutils">
+<dt><strong>Title Bar</strong> -</dt>
+<dd>Displays the title of the window. The format is
+<em>&lt;topic_name&gt;&#64;&lt;partition(s)&gt; | Reader-Writer (&lt;mode&gt;)</em></dd>
+<dt><strong>Menu Bar</strong> -</dt>
+<dd>The menu bar for the window.</dd>
+<dt><strong>Sample information Table</strong> -</dt>
+<dd>Displays sample information of a specific sample.</dd>
+<dt><strong>Data Table</strong> -</dt>
+<dd>Consists of three tabs. The reader and writer are combined using
+these three tabs. The <em>List</em> and <em>Single</em> tabs belong to
+the reader and the <em>Writer</em> tab belongs to the writer.</dd>
+<dt><strong>Button Panel</strong> -</dt>
+<dd>Contains a combination of reader and writer window buttons.</dd>
+<dt><strong>Status Bar</strong> -</dt>
+<dd>Displays information about the current action and the
+state of the reader-writer.</dd>
+</dl>
+<p>The <em>Writer</em> tab of the user data view is selected in
+<a class="reference internal" href="#the-reader-writer-window">The Reader-Writer Window</a>. It looks the same as the user data view
+of the writer window in <a class="reference internal" href="#the-writer-window">The Writer Window</a>, but for collection types
+a right-click menu is available.</p>
+<p>When you right-click on a field value cell which contains collection
+type data and then choose the <em>Add Details</em>, a new window will open
+(see <a class="reference internal" href="#detailed-writer-tab">Detailed Writer tab</a>), which looks the same as the writer window
+(which is described in <a class="reference internal" href="#injecting-data-using-a-writer">Injecting Data Using a Writer</a>) except that the
+<em>Write</em> and <em>Dispose</em> buttons are replaced by a
+single <em>Save</em> button.</p>
+<p>The illustration below shows a sample with five elements: <tt class="docutils literal"><span class="pre">id</span></tt> and
+four sequence fields named <tt class="docutils literal"><span class="pre">text</span></tt>, <tt class="docutils literal"><span class="pre">iVector</span></tt>, <tt class="docutils literal"><span class="pre">fVector</span></tt> and
+<tt class="docutils literal"><span class="pre">pVector</span></tt>.</p>
+<p class="centered" id="add-details-menu-item-for-collection-types">
+<strong><strong>Add Details menu item for collection types</strong></strong></p><a class="reference internal image-reference" href="_images/029_WriterCollectionTypes.png"><img alt="Add Details menu item for collection types" class="align-center" src="_images/029_WriterCollectionTypes.png" style="width: 70mm;" /></a>
+<p>It is only possible in the <em>Writer</em> tab to edit primitive elements.
+For collection types use the right-click menu item <em>Add Details</em>.
+In the illustration, only the field name <tt class="docutils literal"><span class="pre">id</span></tt> can be edited in this window;
+for all other types use the <em>Add Details</em> item, which opens a new
+window with the content of the selected field type.</p>
+<p>The next illustration shows the detailed information from the
+<tt class="docutils literal"><span class="pre">pVector</span></tt> element.</p>
+<p class="centered" id="detailed-writer-tab">
+<strong><strong>Detailed Writer tab</strong></strong></p><a class="reference internal image-reference" href="_images/030_WriterDetail.png"><img alt="Add Details menu item for collection types" class="align-center" src="_images/030_WriterDetail.png" style="width: 70mm;" /></a>
+<p>This element again has a collection type vector
+and thus the <em>Add Details</em> item is available to edit the content of
+this element. The rest of the types can be edited in the current window.
+When the <em>Save</em> button is clicked all filled-in data in the current
+window will be saved and in the main reader-writer window the field value
+of the edited field type will be updated.</p>
+<p>For data types containing a two dimensional sequence, the process is similar.
+The next illustration shows the field <em>seq2D</em>, which is a sequence of a sequence
+of longs.</p>
+<p class="centered" id="detailed-writer-tab-for-2d-sequence">
+<strong><strong>Detailed Writer tab</strong></strong></p><a class="reference internal image-reference" href="_images/030a_WriterDetail2d.png"><img alt="Add Details menu item for for 2D sequence types" class="align-center" src="_images/030a_WriterDetail2d.png" style="width: 140mm;" /></a>
+<p>When editing two dimensional sequences such as this, <em>Add details</em> is first selected
+in the main reader-writer window and the detail view of the first order sequence is
+displayed. <em>Add details</em> must then be selected in this window&#8217;s writer tab to access
+the detail window of the second order sequence, of the first order&#8217;s first index.</p>
+<p>This second order sequence, <em>seq2D[0]</em> can then be filled in by typing in a value in
+the editing cell on the writer tab, and clicking <em>Save</em> the value to an index of the
+second order sequence. Index selection is done by clicking on a row in the <em>List</em> tab.
+If no row is selected, <em>Save</em> will add a new index to the sequence.</p>
+<p>When done editing the second order sequence, the window can be closed, and the next
+index of the first order collection can be edited by selecting <em>Add details</em> again.
+This will bring up the details window for <em>seq2D[1]</em>.</p>
+<p>Continuing in this fashion, the two dimensional sequence can be filled in. The current
+table row in the <em>List</em> tab can be deselected by clicking outside of the table or by
+pressing the <em>Esc</em> key.</p>
+<p>To delete the contents of a collection, in the main reader-writer window, right click
+on the collection in the writer tab, and select <em>Clear details</em>.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div><strong>NOTE</strong>: You <em>must</em> click the <em>Write</em> button in the parent
+reader-writer window for any changes made in the <em>Writer</em> tab
+to be written to the system.</div></blockquote>
+<p>The facilities of the <em>List</em> and <em>Single</em> tabs of the user data view and
+the Sample information view is the same as for the reader window.</p>
+<p>The buttons in the button panel are a combination of the buttons in a
+reader window and a writer window.</p>
+<p>The <em>&lt;&lt;</em>, <em>&lt;</em>, <em>&gt;</em> and <em>&gt;&gt;</em> buttons are
+described in <a class="reference internal" href="#consuming-data-using-a-reader-writer">Consuming Data Using a Reader-Writer</a>.</p>
+<p>Information about the <em>Register</em>, <em>Write</em>, <em>WriteDispose</em> and <em>Unregister</em>
+buttons can be found in <a class="reference internal" href="#injecting-data-using-a-writer">Injecting Data Using a Writer</a>.</p>
+<p>In contrast to a reader window and writer window, the closing of
+a reader-writer window (this can be done by clicking the ‘close’ (X) icon
+in the top-right corner of the window or by choosing <em>File &gt; Close</em> in
+the menu bar), will result in the automatic deletion of all entities
+that concern the reader-writer (a publisher, writer, subscriber and a
+reader).</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Data that is injected will also arrive at data readers of other
+running OpenSplice applications that are subscribed to this data.</p>
+<p>This also applies to disposing of data.</p>
+<p>The Entity information of the Reader and Writer associated with the
+ReaderWriter window can be resolved by choosing respectively
+<em>File &gt; Show Reader info</em> or <em>File &gt; Show Writer info</em>.</p>
+</div>
+<div class="section" id="detailed-reader-writer-window">
+<h4>3.5.9.3. Detailed Reader-Writer window<a class="headerlink" href="#detailed-reader-writer-window" title="Permalink to this headline">¶</a></h4>
+<p>The detailed reader-writer window is combination of a reader window
+and a writer window.</p>
+<p class="centered" id="id3">
+<strong><strong>Detailed Reader-Writer window</strong></strong></p><a class="reference internal image-reference" href="_images/031_ReaderWriterWindowDetail.png"><img alt="Detailed Reader-Writer window" class="align-center" src="_images/031_ReaderWriterWindowDetail.png" style="width: 70mm;" /></a>
+<p>The detailed reader-writer window provides facilities for both
+injecting and consuming data. It consists of:</p>
+<dl class="docutils">
+<dt><strong>Title Bar</strong> -</dt>
+<dd>Displays the title of the window, which is the name of
+the column from which the right-click was done that created the
+window.</dd>
+<dt><strong>Menu Bar</strong> -</dt>
+<dd>The menu bar for the window.</dd>
+<dt><strong>Data Table</strong> -</dt>
+<dd>Consists of three tabs. The reader and writer are
+combined using these three tabs. The <em>List</em> and <em>Single</em> tabs belong
+to the reader and the <em>Writer</em> tab belongs to the writer.</dd>
+<dt><strong>Button Panel</strong> -</dt>
+<dd>Contains a <em>Save</em> button.</dd>
+<dt><strong>Status Bar</strong> -</dt>
+<dd>Displays information about the current action and the
+state of the reader-writer.</dd>
+</dl>
+<p>The <em>List</em> tab of the user data view is selected in the illustration.
+It looks almost the same as the user data view from the reader-writer window
+except that the <em>List</em> tab user data always starts with an index column
+displaying the index of that element inside the collection. In this
+case the <tt class="docutils literal"><span class="pre">pVector</span></tt> element consists of three sub-elements each having
+<tt class="docutils literal"><span class="pre">state</span></tt>, <tt class="docutils literal"><span class="pre">x</span></tt>, <tt class="docutils literal"><span class="pre">y</span></tt>, and <tt class="docutils literal"><span class="pre">vector</span></tt> fields. The <tt class="docutils literal"><span class="pre">vector</span></tt> field is
+again a collection type and can thus be viewed in detail.</p>
+<p>The facilities of the <em>List</em> and <em>Single</em> tabs of the user data view are
+the same as for the reader-writer window.</p>
+</div>
+</div>
+<div class="section" id="consuming-data">
+<h3>3.5.10. Consuming Data<a class="headerlink" href="#consuming-data" title="Permalink to this headline">¶</a></h3>
+<p>If the correct entities are available, data can be consumed from
+OpenSplice. The methods to do this are explained in the subsections
+below.</p>
+<div class="section" id="consuming-data-using-a-reader">
+<h4>3.5.10.1. Consuming Data Using a Reader<a class="headerlink" href="#consuming-data-using-a-reader" title="Permalink to this headline">¶</a></h4>
+<p>Data can be consumed using an existing application reader or a
+self-created reader. To consume data, OpenSplice Tuner offers a
+reader window. Such a window can be opened by right-clicking an
+entity in the entity tree in the main window followed by selecting
+the Read data item. A reader window is shown below.</p>
+<p class="centered" id="the-reader-window">
+<strong><strong>The Reader Window</strong></strong></p><a class="reference internal image-reference" href="_images/032_ReaderWindow.png"><img alt="The Reader Window" class="align-center" src="_images/032_ReaderWindow.png" style="width: 70mm;" /></a>
+<p>The window consists of:</p>
+<dl class="docutils">
+<dt><strong>Title Bar</strong> -</dt>
+<dd>Displays the title. Format is:
+<em>&lt;topic_name&gt;&#64;&lt;partition(s)&gt; | Reader (&lt;mode&gt;)</em>.</dd>
+<dt><strong>Menu Bar</strong> -</dt>
+<dd>Consists of <em>File</em>, <em>Edit</em> and <em>View</em> menus.</dd>
+<dt><strong>Sample information View</strong> -</dt>
+<dd>Displays the sample information of one specific sample.</dd>
+<dt><strong>User Data View</strong> -</dt>
+<dd>Displays the user data of the samples that have been
+consumed by OpenSplice Tuner.</dd>
+<dt><strong>Button Panel</strong> -</dt>
+<dd>Contains buttons to consume data from OpenSplice.</dd>
+<dt><strong>Status Bar</strong> -</dt>
+<dd>Displays the current action as well as the status of the
+reader.</dd>
+</dl>
+<p>Multiple views on consumed data are available in the window. Without
+interaction, no data is consumed by OpenSplice Tuner. The buttons on
+the button panel enable browsing through the data in the reader
+database.</p>
+<p>The <em>&gt;</em> button (or <em>Edit &gt; Next</em> in the menu bar) selects the next sample
+that has been consumed in the <em>List</em> and <em>Single</em> tabs of the User data
+view as well as the Sample information view. If the last consumed
+sample is selected, a new sample is consumed from the reader
+database. If no more samples are available in the reader database,
+the notification ‘No more data available’ will appear in the status
+bar.</p>
+<p>The <em>&lt;</em> button (or <em>Edit &gt; Previous</em>) selects the previous sample in the
+view. If the first one is selected, the notification ‘No more
+previous data’ is displayed in the status bar. This action does not
+trigger OpenSplice Tuner to consume data.</p>
+<p>The <em>&gt;&gt;</em> button (or <em>Edit &gt; Next 50</em>) selects the 50th sample counted
+from the currently-selected one. The samples are consumed from the
+reader database if fewer samples are available in the user
+data view. If no more samples are available, the notification ‘No
+more data available’ is displayed in the status bar.</p>
+<p>The <em>&lt;&lt;</em> button (or <em>Edit &gt; Previous 50</em>) selects 50 samples back,
+counted from the currently-selected one. If the first one is
+currently selected, the notification ‘No more previous data
+available’ is displayed in the status bar. If there are <em>some</em> previous
+samples, but fewer than 50, the first sample is selected. This action
+does not trigger OpenSplice Tuner to consume data.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Data that is consumed by OpenSplice Tuner from an application data
+reader cannot be consumed any more by the application that created
+that specific data reader.</p>
+<p>The Entity information of the Reader associated with the Reader
+window can be resolved by choosing <em>File &gt; Show Reader info</em>.</p>
+<div class="section" id="sample-information-view">
+<h5>3.5.10.1.1. Sample Information View<a class="headerlink" href="#sample-information-view" title="Permalink to this headline">¶</a></h5>
+<p>The sample information view displays information about the currently
+selected sample in the user data view. When an application injects
+data, OpenSplice adds information to it. This information is called
+<em>sample information</em> in OpenSplice Tuner. It is displayed in the sample
+information view. This information consists of:</p>
+<dl class="docutils">
+<dt><strong>sample_state</strong> -</dt>
+<dd>Indicates whether or not the sample has already been read.</dd>
+<dt><strong>view_state</strong> -</dt>
+<dd>Indicates whether the DataReader has already seen samples for the
+most current generation of the related instance.</dd>
+<dt><strong>instance_state</strong> -</dt>
+<dd>Indicates whether the instance is currently in existence, or if
+it has been disposed, the reason why is was disposed.</dd>
+<dt><strong>valid_data</strong> -</dt>
+<dd>Indicates whether the read data is valid or not.</dd>
+<dt><strong>disposed_generation_count</strong> -</dt>
+<dd>Indicates the number of times the instances has become alive after
+it was disposed explicitly by a Writer, at the time the sample
+was received.</dd>
+<dt><strong>no_writers_generation_count</strong> -</dt>
+<dd>Indicates the number of times the instance has become alive after
+it was disposed because there were no writers, at the time the
+sample was received.</dd>
+<dt><strong>insert_timestamp</strong> -</dt>
+<dd>The time the sample was inserted in the reader database.</dd>
+<dt><strong>source_timestamp</strong> -</dt>
+<dd>The time the message was written.</dd>
+<dt><strong>write_insert_latency</strong> -</dt>
+<dd>The time between write and insert.</dd>
+<dt><strong>writerGID</strong> -</dt>
+<dd>Identification of the writer that wrote the message.</dd>
+<dt><strong>instanceGID</strong> -</dt>
+<dd>Identification of the instance of the sample.</dd>
+<dt><strong>sampleSequenceNumber</strong> -</dt>
+<dd>Sequence number of the sample.</dd>
+<dt><strong>qos</strong> -</dt>
+<dd>The Quality of Service of the message (not implemented yet).</dd>
+</dl>
+<p>The selection in the User data view determines the information in the
+Sample information view. OpenSplice Tuner automatically displays the
+sample information that is associated with the user data that is
+selected in User data view.</p>
+</div>
+<div class="section" id="user-data-view">
+<h5>3.5.10.1.2. User Data View<a class="headerlink" href="#user-data-view" title="Permalink to this headline">¶</a></h5>
+<p>The user data view contains two tables that both offer a different
+view: <em>List table</em> and <em>Single table</em>.</p>
+<p>The <em>Single table</em> is capable of displaying one specific instance of
+user data. This view displays all fields in the data, which depend on
+the data type of the topic that the reader is able to consume. It
+consists of three columns. The first column displays the type of a
+field in the data. The second column displays the name of a field in
+the data. Nested fields in the data are separated by a dot. The
+fields that are part of the key of the topic are colored green. The
+third column displays the current value of the field. When the window
+is opened, they have the value <tt class="docutils literal"><span class="pre">N/A</span></tt>.</p>
+<p>The <em>List table</em> is capable of displaying multiple samples in a table.</p>
+<p>The list view is selected in <a class="reference internal" href="#the-reader-window">The Reader Window</a>. Each row represents
+one instance of user data from a sample that is consumed from OpenSplice.
+Each column represents a field in the data. Key fields are colored
+<em>green</em>.</p>
+</div>
+<div class="section" id="show-details-of-data-that-contains-a-collection-type">
+<h5>3.5.10.1.3. Show details of data that contains a collection type<a class="headerlink" href="#show-details-of-data-that-contains-a-collection-type" title="Permalink to this headline">¶</a></h5>
+<p>When you right-click on a cell which contains collection type data
+and then choose the <em>Show Details</em> item (see the illustration below),
+a new window will open, which is similar to the reader-writer window
+(described in <a class="reference internal" href="#id3">Detailed Reader-Writer window</a>); the new window shows
+the details  of the chosen collection type.</p>
+<p class="centered" id="show-details-item">
+<strong><strong>Show Details item</strong></strong></p><a class="reference internal image-reference" href="_images/033_ShowDetails.png"><img alt="Show Details item" class="align-center" src="_images/033_ShowDetails.png" style="width: 70mm;" /></a>
+</div>
+<div class="section" id="sorting-data">
+<h5>3.5.10.1.4. Sorting Data<a class="headerlink" href="#sorting-data" title="Permalink to this headline">¶</a></h5>
+<p>Data in the <em>List</em> table of the User data view can be sorted by column.
+This can be achieved by right-clicking any cell in the column that
+needs to be sorted followed by selecting the <em>Sort ascending</em> item to
+sort the column in ascending order or the <em>Sort descending</em> item to sort
+the column in descending order.</p>
+<p class="centered" id="list-view-actions">
+<strong><strong>List View actions</strong></strong></p><a class="reference internal image-reference" href="_images/034_ListViewActions.png"><img alt="List View actions" class="align-center" src="_images/034_ListViewActions.png" style="width: 70mm;" /></a>
+</div>
+<div class="section" id="filters">
+<h5>3.5.10.1.5. Filters<a class="headerlink" href="#filters" title="Permalink to this headline">¶</a></h5>
+<p>It is possible to apply one or more filters on data in the List table
+of the user data view. Data in the table that does not match one or
+more of these filters is hidden.</p>
+<p>To apply a filter, right-click on a specific cell in the table followed
+by selecting the <em>Apply filter &#8216;&lt;value&gt;&#8217; on &lt;field_name&gt;</em> item.</p>
+<p>The illustration <a class="reference internal" href="#list-view-actions">List View actions</a> above shows the application of
+the filter <tt class="docutils literal"><span class="pre">&quot;23&quot;</span></tt> on the field <tt class="docutils literal"><span class="pre">&quot;long_2&quot;</span></tt>. This means that data
+that does not have the value <tt class="docutils literal"><span class="pre">23</span></tt> for the field <tt class="docutils literal"><span class="pre">long_2</span></tt> will be
+hidden. The illustration below shows the data in the table from after
+the filter shown above is applied. Multiple filters can be applied altogether.</p>
+<p class="centered" id="remove-a-filter">
+<strong><strong>Remove a Filter</strong></strong></p><a class="reference internal image-reference" href="_images/035_RemoveFilter.png"><img alt="Remove a Filter" class="align-center" src="_images/035_RemoveFilter.png" style="width: 70mm;" /></a>
+<p>Once a filter has been applied, it can also be removed again. This
+will result in the display of the data that was hidden because it
+did not match that filter. Removing a filter can be achieved by
+right-clicking on a cell in the column where the filter was applied
+and selecting the <em>Remove filter &#8216;&lt;value&gt;&#8217; on &lt;field_name&gt;</em> item or by
+selecting <em>Edit &gt; Remove filter &gt; &lt;field_name&gt;:&lt;value&gt;</em> in the menu bar.</p>
+</div>
+<div class="section" id="reordering-columns">
+<h5>3.5.10.1.6. Reordering Columns<a class="headerlink" href="#reordering-columns" title="Permalink to this headline">¶</a></h5>
+<p>A column in the <em>List</em> table of the User data view can be moved to
+another location by left-clicking the column header and dragging it
+to the new location in the view.</p>
+</div>
+<div class="section" id="removing-columns">
+<h5>3.5.10.1.7. Removing Columns<a class="headerlink" href="#removing-columns" title="Permalink to this headline">¶</a></h5>
+<p>Sometimes not all fields in the data are interesting. These fields
+can be removed from the <em>List</em> table in the User data view. This can be
+done by right-clicking the relevant column and choosing <em>Remove
+column</em> from the popup menu. The column will be removed from the <em>List</em>
+table, and it cannot be displayed again in that specific window.</p>
+</div>
+<div class="section" id="consumption-mode">
+<h5>3.5.10.1.8. Consumption Mode<a class="headerlink" href="#consumption-mode" title="Permalink to this headline">¶</a></h5>
+<p>The reader window supports two modes for data consumption. The first
+mode is the take mode. This is the default mode. In this mode, each
+consumed sample is removed from the database after it has been read.</p>
+<p>The second mode is the read mode. In this mode, a consumed sample is
+only marked as read in the database after it is read, but not
+removed. The consumption mode can be changed by choosing <em>Edit &gt; Take</em>
+mode in the menu bar to select the take mode or by choosing <em>Edit &gt;
+Read</em> mode to select the read mode.</p>
+</div>
+<div class="section" id="monitoring">
+<h5>3.5.10.1.9. Monitoring<a class="headerlink" href="#monitoring" title="Permalink to this headline">¶</a></h5>
+<p>The reader window supports monitoring the reader database. This means
+it consumes samples from the database and displays them right after
+they become available. Monitoring is possible in both read mode and
+take mode. To enable monitoring, choose <em>Edit &gt; Start monitoring</em> in
+the menu bar. This will disable all actions for the reader window
+until monitoring is stopped. Monitoring can be stopped by choosing
+<em>Edit &gt; Stop monitoring</em> in the menu bar.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+Monitoring increases the intrusiveness of OpenSplice Tuner on
+OpenSplice.</p>
+</div>
+<div class="section" id="clear-data">
+<h5>3.5.10.1.10. Clear Data<a class="headerlink" href="#clear-data" title="Permalink to this headline">¶</a></h5>
+<p>The data in the List table of the User data view can be removed from
+the view. There are two ways to do it.</p>
+<p>The first way is to remove only the selected sample. This can be
+done by choosing <em>Edit &gt; Clear selection</em> in the menu bar.</p>
+<p>The second way is to remove all data in the table. This can be
+done by choosing <em>Edit &gt; Clear list</em> in the menu bar.</p>
+</div>
+</div>
+<div class="section" id="inspecting-data-in-a-reader-database-snapshot">
+<h4>3.5.10.2. Inspecting Data in a Reader Database Snapshot<a class="headerlink" href="#inspecting-data-in-a-reader-database-snapshot" title="Permalink to this headline">¶</a></h4>
+<p>The creation of a snapshot of a reader database results in the popup
+of a reader snapshot window. Such a reader snapshot window is shown
+below.</p>
+<p class="centered" id="reader-snapshot-window">
+<strong><strong>Reader Snapshot Window</strong></strong></p><a class="reference internal image-reference" href="_images/036_ReaderSnapshotWindow.png"><img alt="Reader Snapshot Window" class="align-center" src="_images/036_ReaderSnapshotWindow.png" style="width: 70mm;" /></a>
+<p>This window consists of:</p>
+<dl class="docutils">
+<dt><strong>Title Bar</strong> -</dt>
+<dd>Displays information about the snapshot. The format of
+the title is: <em>&lt;topic_name&gt;&#64;&lt;partition(s)&gt; | ReaderSnapshot (&lt;heap
+address&gt;)(&lt;mode&gt;)</em>.</dd>
+<dt><strong>Menu Bar</strong> -</dt>
+<dd>Contains three menus that provide several facilities for
+accessing and modifying the snapshot as well as the view on the data.</dd>
+<dt><strong>Sample information View</strong> -</dt>
+<dd>Displays the sample information of the sample that is associated
+with the currently selected instance of user data in the User data view.</dd>
+<dt><strong>User Data View</strong> -</dt>
+<dd>Provides different views for displaying the instances of user data
+in the snapshot.</dd>
+<dt><strong>Button Panel</strong> -</dt>
+<dd>Offers facilities to browse through the data in the snapshot.</dd>
+<dt><strong>Status Bar</strong> -</dt>
+<dd>Provides information about the status of the snapshot or
+actions that are currently being executed.</dd>
+</dl>
+<p>The facilities for browsing through the data in the snapshot and for
+modifying the view are equal to the facilities that are available for
+a writer snapshot window, reader window and a reader-writer window.
+See <a class="reference internal" href="#consuming-data">Consuming Data</a>.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+When a reader snapshot window is closed, the reader snapshot is
+deleted.</p>
+</div>
+<div class="section" id="inspecting-data-in-a-writer-history-snapshot">
+<h4>3.5.10.3. Inspecting Data in a Writer History Snapshot<a class="headerlink" href="#inspecting-data-in-a-writer-history-snapshot" title="Permalink to this headline">¶</a></h4>
+<p>The creation of a snapshot of writer history cache results in the
+popup of a writer snapshot window. Such a window looks almost the
+same as a reader window and has the same capabilities. A writer
+snapshot window is shown below.</p>
+<p class="centered" id="writer-snapshot-window">
+<strong><strong>Writer Snapshot Window</strong></strong></p><a class="reference internal image-reference" href="_images/037_WriterSnapshotWindow.png"><img alt="Writer Snapshot Window" class="align-center" src="_images/037_WriterSnapshotWindow.png" style="width: 70mm;" /></a>
+<p>The window consists of:</p>
+<dl class="docutils">
+<dt><strong>Title Bar</strong> -</dt>
+<dd>Displays the title. Format is:
+<em>&lt;topic_name&gt;&#64;&lt;partition(s)&gt; | WriterSnapshot(&lt;heap_address&gt;)(&lt;mode&gt;)</em>.</dd>
+<dt><strong>Menu Bar</strong> -</dt>
+<dd>Consists of <em>File</em>, <em>Edit</em> and <em>View</em> menus.</dd>
+<dt><strong>Sample information View</strong> -</dt>
+<dd>Displays the sample information of one
+specific sample.</dd>
+<dt><strong>User Data View</strong> -</dt>
+<dd>Displays the user data that is consumed by OpenSplice Tuner.</dd>
+<dt><strong>Button Panel</strong> -</dt>
+<dd>Contains buttons to consume data from OpenSplice.</dd>
+<dt><strong>Status Bar</strong> -</dt>
+<dd>Displays the current action as well as the status of the snapshot.</dd>
+</dl>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a>
+When a writer snapshot window is closed, the writer snapshot is
+deleted.</p>
+</div>
+<div class="section" id="consuming-data-using-a-reader-writer">
+<h4>3.5.10.4. Consuming Data Using a Reader-Writer<a class="headerlink" href="#consuming-data-using-a-reader-writer" title="Permalink to this headline">¶</a></h4>
+<p>The creation of a reader-writer results in the popup of a
+reader-writer window (<a class="reference internal" href="#the-reader-writer-window">The Reader-Writer Window</a>). The reader-writer
+window is combination of a reader window and a writer window. It provides
+both the reader and writer window facilities.</p>
+</div>
+<div class="section" id="injecting-and-consuming-data-with-coherent-and-ordered-access">
+<h4>3.5.10.5. Injecting and Consuming Data With Coherent and Ordered Access<a class="headerlink" href="#injecting-and-consuming-data-with-coherent-and-ordered-access" title="Permalink to this headline">¶</a></h4>
+<p>Vortex OpenSplice supports setting of the Presentation policy of publishers
+and subscribers. As a result, Tuner can set these policies on its own created
+publishers and subscribers and be able to inject/consume coherent sets of
+data into/from the system.</p>
+<div class="section" id="publishing-coherent-sets">
+<h5>3.5.10.5.1. Publishing Coherent Sets<a class="headerlink" href="#publishing-coherent-sets" title="Permalink to this headline">¶</a></h5>
+<p>Tuner is able to create and publish coherent sets of data for either existing
+publishers in the system or from its own created publishers. To create a coherent
+publisher in Tuner, see <a class="reference internal" href="#creating-a-publisher">Creating a Publisher</a>.</p>
+<p>In the main window&#8217;s entity tree, in either participant or partition view mode,
+right click a publisher that has its <em>access_scope</em> set to either <em>TOPIC</em> or
+<em>GROUP</em>, and its <em>coherent_access</em> set to <em>true</em>. If these conditions are true,
+then the right click context menu will show a new item called <strong>Publish coherent
+sets</strong>. Selecting this menu option will bring up the coherent publish window.</p>
+<p class="centered" id="coherent-publisher-window">
+<strong><strong>Coherent Publisher Window</strong></strong></p><a class="reference internal image-reference" href="_images/037a_CoherentPublisherWindow.png"><img alt="Coherent Publisher Window" class="align-center" src="_images/037a_CoherentPublisherWindow.png" style="width: 70mm;" /></a>
+<p>This view contains two parts: the list of writers currently under this Publisher,
+and the user data table containing data about the outgoing samples in a coherent set.</p>
+<p>The actions available to the user in this view are:</p>
+<ul class="simple">
+<li><em>Begin coherent changes</em></li>
+<li><em>End coherent changes</em></li>
+<li><em>Refresh writer list</em></li>
+</ul>
+<p><em>Begin coherent changes</em> will set the publisher in coherent mode. In this state, samples
+written by this publisher&#8217;s writers will not be made visible to remote readers (under a
+subscriber with matching Presentation policy) until the <em>End coherent changes</em> action is
+made. Otherwise, samples written while the publisher is not in coherent mode are published
+normally.</p>
+<p>Samples can be constructed and written from this view by either double clicking or right
+clicking on a writer in the writers list and selecting <em>Write data</em>. This brings up a
+writer window identical to the one in <a class="reference internal" href="#injecting-data-using-a-writer">Injecting Data Using a Writer</a>, only this one
+will update the Coherent publish window with written data.</p>
+<p>When a sample is constructed in the writer window and then written, disposed, or any other
+writer action made, and if the publisher is in coherent mode, then the sample will appear
+in the Coherent publish window&#8217;s data table.</p>
+<p>The data table displays the written sample&#8217;s instance key, the outgoing instance state, and
+the originating writer&#8217;s name. Samples in the data table can be double clicked to bring up a
+read only view of the writer window to view the sample&#8217;s fields.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a> Once a sample has been written from the writer window, regardless if the publisher
+is in coherent mode or not, it is live in the system and cannot be edited.</p>
+<p>Once editing a set of coherent data is complete, clicking <em>End coherent changes</em> button will
+notify the publisher that the set is complete, and remote coherent subscribers will allow
+access to the published data.</p>
+<p>The <em>Refresh writer list</em> action (accessible from the <em>Edit</em> menu or <strong>F5</strong> keystroke)
+refreshes the current list writers that the publisher owns, if any writers were created or
+deleted since the creation of the window.</p>
+</div>
+<div class="section" id="access-data-on-readers">
+<h5>3.5.10.5.2. Access Data On Readers<a class="headerlink" href="#access-data-on-readers" title="Permalink to this headline">¶</a></h5>
+<p>Tuner is able to access data from a subscriber scope, specifically for viewing coherent and/or
+ordered sets of data for either existing subscribers in the system or from its own created
+subscribers. To create a coherent subscriber in Tuner, see <a class="reference internal" href="#creating-a-subscriber">Creating a Subscriber</a>.</p>
+<p>In the main window&#8217;s entity tree, in either participant or partition view mode,
+right click a subscriber that has its <em>access_scope</em> set to either <em>TOPIC</em> or
+<em>GROUP</em>, and its <em>coherent_access</em> set to <em>true</em>. If these conditions are true,
+then the right click context menu will show a new item called <strong>Access data on readers</strong>.
+Selecting this menu option will bring up the subscriber access window.</p>
+<p class="centered" id="subscriber-access-window">
+<strong><strong>Subscriber Access Window</strong></strong></p><a class="reference internal image-reference" href="_images/037b_SubscriberAccessWindow.png"><img alt="Subscriber Access Window" class="align-center" src="_images/037b_SubscriberAccessWindow.png" style="width: 70mm;" /></a>
+<p>This view contains a single component, a table containing samples that are taken from the
+subscriber&#8217;s data readers in a coherent and ordered set (if the subscriber&#8217;s Presentation policy
+has those attributes set).</p>
+<p>The actions available to the user in this view are:</p>
+<ul class="simple">
+<li><em>Access available data</em></li>
+<li><em>Clear table</em></li>
+</ul>
+<p><em>Access available data</em> Will access all owned data reader entities that have data available, in
+order, and will display all samples returned in the data table. The table displays the instance
+key and key value, the instance and view state of the sample, and the originating reader name that
+received the sample. A grayed out row also appears after the end of the table, to visually separate
+distinct accesses form each other.</p>
+<p>Double clicking or right clicking on a table row and selecting the <em>View data</em> action will bring
+up a reader frame displaying the full sample info and user data of the selection. This particular
+reader frame is only for viewing the current selection of the subscriber&#8217;s data table, the
+read/take, import/export, and monitoring functions are disabled.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> Note that the <em>Access available data</em> action on a coherent subscriber will populate the data
+table with completed coherent publications, it will also display any samples that were published
+incoherently. That is to say, a writer under a coherent publisher is capable of writing data
+outside of a coherent change block, in which case, the data is received by compatible data readers
+normally.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> <em>Access available data</em> action only uses <em>take</em> on owned data readers.</p>
+<p><em>Clear table</em> Clears all rows from the data table.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="exporting-and-importing">
+<h2>3.6. Exporting and Importing<a class="headerlink" href="#exporting-and-importing" title="Permalink to this headline">¶</a></h2>
+<p>Next to injecting and consuming data, OpenSplice Tuner also provides
+facilities to export information from OpenSplice to a file on disk,
+and to import information from a file on disk.</p>
+<p>There are two kinds of information that can be exported/imported.
+It is possible to export/import a Topic and also samples for that Topic.</p>
+<p>OpenSplice Tuner considers the Topic itself as <em>metadata</em> and the
+samples for a Topic as <em>data</em>. OpenSplice Tuner exports both metadata
+and data to disk in XML format.
+See the section <a class="reference internal" href="#exporting-and-importing">Exporting and Importing</a>.</p>
+<div class="section" id="export-metadata">
+<h3>3.6.1. Export Metadata<a class="headerlink" href="#export-metadata" title="Permalink to this headline">¶</a></h3>
+<p>Topics in OpenSplice can be exported to a file on disk with
+OpenSplice Tuner. Once a Topic is exported, it can for instance be
+imported in another OpenSplice domain later on. It might also be
+useful to re-insert the Topic after a restart of OpenSplice.</p>
+<p>Exported metadata consists of:</p>
+<ul class="simple">
+<li>Topic Name</li>
+<li>Topic Type Name</li>
+<li>Topic Key List</li>
+<li>Topic Data Type</li>
+<li>Topic Quality of Service</li>
+</ul>
+<p>Exporting metadata can be achieved by choosing <em>Edit &gt; Export metadata</em>
+in the menu of the main window (<a class="reference internal" href="#main-window-edit-menu">Main Window Edit Menu</a>) or by
+right-clicking a Topic entity in the entity tree of the main window
+followed by selecting <em>Export metadata</em> from the popup menu that
+appears (see <a class="reference internal" href="#enable-and-disable-entity-relations">Enable and Disable Entity Relations</a>).
+Both of these actions will result in the display of the dialog
+window shown below.</p>
+<p class="centered" id="export-metadata-dialog">
+<strong><strong>Export Metadata dialog</strong></strong></p><a class="reference internal image-reference" href="_images/038_ExportMetadataDialog.png"><img alt="Export Metadata dialog" class="align-center" src="_images/038_ExportMetadataDialog.png" style="width: 70mm;" /></a>
+<p>The value provided in the <em>Topic</em> field determines the topic that needs
+to be exported to disk. The <em>File</em> field determines the location where
+OpenSplice Tuner will store the information. By clicking the <em>Browse</em>
+button it is possible to select the location to store the information
+using a file chooser.</p>
+<p>When the <em>OK</em> button is clicked, the input is validated. If the input
+is correct, the metadata is exported. If the input is not correct, an
+error message will appear in the status bar of the dialog window. The
+<em>export metadata</em> action can be cancelled by clicking the <em>Cancel</em>
+button. In this case, no metadata will be exported.</p>
+</div>
+<div class="section" id="export-data">
+<h3>3.6.2. Export Data<a class="headerlink" href="#export-data" title="Permalink to this headline">¶</a></h3>
+<p>Next to topics, samples in OpenSplice can also be exported. Just as
+with the creation of a reader-writer, exporting data is available in
+two modes.</p>
+<ul class="simple">
+<li>Exporting data from one existing partition.</li>
+<li>Exporting data from partitions that match a user-defined expression.</li>
+</ul>
+<p>It is also possible to export data from an existing reader using the
+list view of a reader window and reader-writer window.</p>
+<p>It is not necessary to export the metadata prior to exporting the
+data, because OpenSplice Tuner exports the metadata of the data as
+well.</p>
+<div class="section" id="id4">
+<h4>3.6.2.1. Existing Partition<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
+<p>Data from an existing partition can be exported by:</p>
+<ul class="simple">
+<li><em>Choosing Edit &gt; Export data &gt; Existing Partition</em> from the menu bar
+of the main window</li>
+<li>Right-clicking a partition entity in the entity tree of the main
+window followed by choosing <em>Export data</em> from the popup menu that
+appears.</li>
+<li>Right-clicking a topic entity in the entity tree of the main
+window followed by choosing <em>Export data &gt; Existing Partition</em> from
+the popup menu that appears.</li>
+</ul>
+<p>All of these actions result in the popup of the dialog window
+shown below.</p>
+<p class="centered" id="export-data-existing-partition-dialog">
+<strong><strong>Export Data (Existing Partition) dialog</strong></strong></p><a class="reference internal image-reference" href="_images/039_ExportDataExistPart.png"><img alt="Export Data (Existing Partition) dialog" class="align-center" src="_images/039_ExportDataExistPart.png" style="width: 70mm;" /></a>
+<p>The <em>Topic</em> field specifies the topic whose data must be exported.</p>
+<p>The <em>Partition</em> field determines from which partition the data must be
+exported.</p>
+<p>The <em>Query</em> field can optionally be used to specify a query, so only
+data that matches the query will be exported.</p>
+<p>The <em>File</em> field determines the location where to store the data. The
+<em>Browse</em> button can be used to select that location from within a file
+chooser.</p>
+<p>The export functionality uses a reader to gain access to the
+data that needs to be exported.</p>
+<p>The <em>WaitForHistoricalData</em> field determines whether the Reader
+will wait for historical data to arrive during creation
+(maximum of 30 seconds). In this case the Reader will
+still receive historical data.</p>
+<p>By default the QoS settings of the Reader are copied from the Topic
+it reads. However, it is also possible to override these settings by
+specifying its own QoS settings/profile (see <a class="reference internal" href="#qos-profiles">QoS Profiles</a>) in
+the <em>ReaderQoS</em> tab. The QoS settings of the Reader influence the
+data that will be exported.</p>
+<p>When the <em>OK</em> button is clicked, the input is validated. If the input
+is correct, all data that matches the topic, partition (and query) is
+exported to the specified file.</p>
+<p>If the file already exists, it is overwritten.</p>
+<p>If the input is not correct, an error message will appear in the
+status bar of the dialog window.</p>
+<p>The Export data action can be cancelled by clicking the <em>Cancel</em>
+button. In this case, no data will be exported.</p>
+</div>
+<div class="section" id="id5">
+<h4>3.6.2.2. Partition Expression<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h4>
+<p>Exporting data according to a partition expression looks a lot like
+exporting data from an existing partition. The only difference is
+that the data is exported from <em>all</em> partitions that match the supplied
+partition expression instead of only exporting data from one
+partition.</p>
+<p>To export data according to a partition expression, choose
+<em>Edit &gt; Export data &gt; Partition expression</em> from the menu bar of the
+main window or right-click a Topic entity followed by choosing
+<em>Export data &gt; Partition expression</em> from the popup menu that appears.
+Both of these actions result in the display of a dialog window as
+shown below.</p>
+<p class="centered" id="export-data-partition-expression-dialog">
+<strong><strong>Export Data (Partition Expression) dialog</strong></strong></p><a class="reference internal image-reference" href="_images/040_ExportDataPartExpr.png"><img alt="Export Data (Partition Expression) dialog" class="align-center" src="_images/040_ExportDataPartExpr.png" style="width: 70mm;" /></a>
+<p>The <em>Topic</em>, <em>Query</em> and <em>File</em> input fields match the ones in the dialog
+window above.</p>
+<p>The <em>Partition</em> field accepts a partition expression.</p>
+<p>The export functionality uses a reader to gain access to
+the data that needs to be exported. The <em>WaitForHistoricalData</em> field
+determines whether the Reader will wait for historical data to arrive
+during creation (maximum of 30 seconds). In this case the Reader will
+still receive historical data.</p>
+<p>By default the QoS settings of the Reader are copied from the Topic
+it reads. However, it is also possible to override these settings by
+specifying its own QoS settings/profile (see <a class="reference internal" href="#qos-profiles">QoS Profiles</a>) in
+the ReaderQoS tab. The QoS settings of the Reader influence the
+data that will be exported.</p>
+<p>When the <em>OK</em> button is clicked, the input is validated.</p>
+<p>If the input is correct, all data that matches the topic, partition
+expression (and query) is exported to the specified file. If the file
+already exists, it is overwritten. If the input is not correct, an error
+message appears in the status bar of the dialog window.</p>
+<p>The Export data action can be cancelled by clicking the <em>Cancel</em> button.
+In this case, no data will be exported.</p>
+</div>
+<div class="section" id="from-existing-reader">
+<h4>3.6.2.3. From Existing Reader<a class="headerlink" href="#from-existing-reader" title="Permalink to this headline">¶</a></h4>
+<p>OpenSplice Tuner also provides facilities to export data from an
+existing reader. This can be achieved from within a reader window and
+reader-writer window. To export data from a reader window or
+reader-writer window, choose <em>Edit &gt; Export</em> from the menu of that
+window. This action results in the display of the dialog window
+shown below.</p>
+<p class="centered" id="export-data-from-existing-reader-dialog">
+<strong><strong>Export Data (From Existing Reader) dialog</strong></strong></p><a class="reference internal image-reference" href="_images/041_ExportDataFrmExsting.png"><img alt="Export Data (From Existing Reader) dialog" class="align-center" src="_images/041_ExportDataFrmExsting.png" style="width: 70mm;" /></a>
+<p>Because both <em>Topic</em> and <em>Partition</em> are already known, only the <em>File</em>
+has to be specified in the dialog window.</p>
+<p>The <em>Browse</em> button allows the selection of a file in a file chooser.</p>
+<p>When the <em>OK</em> button is clicked, the input is validated.</p>
+<p>If the input is correct, all data in the list view of the window is
+exported to the specified file. If the file already exists, it is
+overwritten. If the input is not correct, an error message appears
+in the status bar of the dialog window.</p>
+<p>The Export data action can be cancelled by clicking the <em>Cancel</em> button.
+In this case, no data will be exported.</p>
+</div>
+</div>
+<div class="section" id="import-metadata">
+<h3>3.6.3. Import Metadata<a class="headerlink" href="#import-metadata" title="Permalink to this headline">¶</a></h3>
+<p>Exported metadata can be imported again. Successful importing of
+metadata in a specific OpenSplice domain results in the creation of a
+topic in that OpenSplice domain.</p>
+<p>To import metadata choose <em>Edit &gt; Import metadata</em> from the menu bar
+of the main window. This results in the display of the dialog window
+shown below.</p>
+<p class="centered" id="import-metadata-dialog">
+<strong><strong>Import Metadata dialog</strong></strong></p><a class="reference internal image-reference" href="_images/042_ImportMetadata.png"><img alt="Import Metadata dialog" class="align-center" src="_images/042_ImportMetadata.png" style="width: 70mm;" /></a>
+<p>The <em>File</em> input field must specify the location of the file that
+contains the exported metadata. A file chooser can be used to look up
+the file by clicking the <em>Browse</em> button and selecting the file there.</p>
+<p>When the <em>OK</em> button is clicked, the input is validated.</p>
+<p>If the input is correct, the metadata in the specified file is imported
+into the connected OpenSplice domain. If the topic already exists with
+exactly the same characteristics (name, type name, key list, data type
+and quality of service), importing is also allowed but has no use.</p>
+<p>If the input is not correct or a topic with the same name but other
+characteristics already exists in the connected domain, an error
+message appears in the status bar of the dialog window.</p>
+<p>The Import metadata action can be cancelled by clicking the <em>Cancel</em>
+button. In this case, no data will be imported.</p>
+</div>
+<div class="section" id="import-data">
+<h3>3.6.4. Import Data<a class="headerlink" href="#import-data" title="Permalink to this headline">¶</a></h3>
+<p>Just like exported metadata, exported data can also be imported into
+a specific OpenSplice domain. When importing data, OpenSplice Tuner
+also checks whether the metadata of the data that needs to be
+imported is already available. If so, it checks to see if the metadata
+matches the metadata of the data to import. If not, it also imports
+the metadata. This means it is not necessary to import the metadata
+prior to importing the data when the metadata is unknown in the
+OpenSplice domain.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Data that is imported will arrive at all data readers of running
+OpenSplice applications that are participating in that domain and are
+subscribed to this data.</p>
+<div class="section" id="original-partition-s">
+<h4>3.6.4.1. Original Partition(s)<a class="headerlink" href="#original-partition-s" title="Permalink to this headline">¶</a></h4>
+<p>Importing data in its original partition(s) means that the data will
+be imported into the partitions it was exported from.</p>
+<p>Choosing <em>Edit &gt; Import data &gt; Original Partition(s)</em> from the menu bar
+of the main window results in the display of the dialog illustrated
+below.</p>
+<p class="centered" id="import-data-original-partition-dialog">
+<strong><strong>Import Data (original Partition) dialog</strong></strong></p><a class="reference internal image-reference" href="_images/043_ImportDataOrigPartition.png"><img alt="Import Data (original Partition) dialog" class="align-center" src="_images/043_ImportDataOrigPartition.png" style="width: 70mm;" /></a>
+<p>The <em>File</em> input field must specify the location of the data on disk.</p>
+<p>The <em>Make selection</em> allows importing a subset of the data in the file
+specified by the <em>File</em> input field.</p>
+<p>The Import data action can be cancelled by clicking the <em>Cancel</em>
+button. In this case, no data will be imported.</p>
+<p>When the <em>OK</em> button is clicked and the <em>Make selection</em> check box is
+unchecked, OpenSplice Tuner validates the specified file and if so
+imports all data in the file into the original partition(s).</p>
+<p>If the <em>Make selection</em> check box is checked when the <em>OK</em> button is
+clicked, the Import window shown below is displayed.</p>
+<p class="centered" id="the-import-window">
+<strong><strong>The Import Window</strong></strong></p><a class="reference internal image-reference" href="_images/044_ImportWindow.png"><img alt="The Import Window" class="align-center" src="_images/044_ImportWindow.png" style="width: 70mm;" /></a>
+<p>The import window consists of:</p>
+<dl class="docutils">
+<dt><strong>Title Bar</strong> -</dt>
+<dd>Displays the title. Format is: <em>&lt;file_name&gt;(&lt;mode&gt;)</em>.</dd>
+<dt><strong>Menu Bar</strong> -</dt>
+<dd>Consists of <em>File</em>, <em>Edit</em> and <em>View</em> menus.</dd>
+<dt><strong>Sample information View</strong> -</dt>
+<dd>Displays the sample information of one specific sample.</dd>
+<dt><strong>User Data View</strong> -</dt>
+<dd>Displays the user data that is read by OpenSplice Tuner from the
+input file.</dd>
+<dt><strong>Button Panel</strong> -</dt>
+<dd>Contains buttons to consume data from the input file.</dd>
+<dt><strong>Status Bar</strong> -</dt>
+<dd>Displays the current action as well as the status of the snapshot.</dd>
+</dl>
+<p>Initially no data is displayed in the import window. By clicking the
+<em>&gt;</em> and the <em>&gt;&gt;</em> buttons, the data in the file on disk is loaded and
+displayed in the window. Once data is displayed, it can be injected
+or disposed in the connected domain and partition.</p>
+<p>Data can be injected by selecting the desired sample followed by
+choosing <em>Edit &gt; Write</em> in the menu bar of the import window or by
+clicking the <em>Write</em> button at the bottom of the import window. To
+write all displayed data, choose <em>Edit &gt; Write all</em> from the menu bar
+of the import window.</p>
+<p>To dispose data, select the desired sample in the import window
+followed by choosing <em>Edit &gt; Dispose</em> in the menu bar or by clicking
+the <em>Dispose</em> button at the bottom of the import window. To dispose all
+displayed data, choose <em>Edit &gt; Dispose all</em> from the menu bar of the
+import window.</p>
+<p>Samples that are injected or disposed are removed from the view in
+the import window.</p>
+<p>Information about the <em>Register</em>, <em>WriteDispose</em> and <em>Unregister</em> buttons
+can be found in the section <a class="reference internal" href="#injecting-data-using-a-writer">Injecting Data Using a Writer</a>.</p>
+</div>
+<div class="section" id="id6">
+<h4>3.6.4.2. Existing Partition<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h4>
+<p>Importing data in an existing partition almost works the same as
+importing it in its original partition. The only difference is that
+the partition to import the data in can be chosen now. To import data
+into an existing partition choose <em>Edit &gt; Import data &gt; Existing
+Partition</em> in the menu bar of the main window or right-click a
+partition entity in the entity tree of the main window followed by
+selecting <em>Import data</em> in the popup menu that appears. Both of these
+actions result in the display of the dialog window shown below.</p>
+<p class="centered" id="import-data-existing-partition-dialog">
+<strong><strong>Import Data (existing Partition) dialog</strong></strong></p><a class="reference internal image-reference" href="_images/045_ImportDataExistingPartition.png"><img alt="Import Data (existing Partition) dialog" class="align-center" src="_images/045_ImportDataExistingPartition.png" style="width: 70mm;" /></a>
+<p>The <em>File</em> input field must specify the location of the data on disk.</p>
+<p>The <em>Partition</em> field specifies the partition where the data must be
+imported in.</p>
+<p>The <em>Make selection</em> allows importing a subset of the data
+in the file specified by the <em>File</em> input field.</p>
+<p>The Import data action can be cancelled by clicking the <em>Cancel</em>
+button. In this case, no data will be imported.</p>
+<p>When the <em>OK</em> button is clicked and the <em>Make selection</em> check box is
+unchecked, OpenSplice Tuner validates the specified file. If the
+specified file is valid, all data in the file is imported into the
+original partition(s). If the <em>Make selection</em> check box is checked
+when the <em>OK</em> button is clicked, the import window as illustrated
+earlier [44] is displayed.</p>
+<p>By using the import window a subset of the data can be injected or
+disposed in the specified partition.</p>
+</div>
+<div class="section" id="id7">
+<h4>3.6.4.3. Partition Expression<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h4>
+<p>Importing data in an existing partition almost works the same as
+importing it in its original partition and importing data in an
+existing partition. When using a partition expression, it is possible
+to import data into <em>all</em> partitions that match a specific expression.</p>
+<p>To import data using a partition expression choose <em>Edit &gt; Import data
+&gt; Partition expression</em> in the menu bar of the main window. This
+action results in the display of the dialog window shown below.</p>
+<p class="centered" id="import-data-partition-expression-dialog">
+<strong><strong>Import Data (Partition expression) dialog</strong></strong></p><a class="reference internal image-reference" href="_images/046_ImportDataPartitionExpr.png"><img alt="Import Data (Partition expression) dialog" class="align-center" src="_images/046_ImportDataPartitionExpr.png" style="width: 70mm;" /></a>
+<p>The <em>File</em> input field must specify the location of the data on disk.</p>
+<p>The <em>Partition</em> field specifies a partition expression, which describes
+all partitions where the data must be imported in.</p>
+<p>The <em>Make selection</em> allows importing a subset of the data in the file
+specified by the <em>File</em> input field.</p>
+<p>The Import data action can be cancelled by clicking the <em>Cancel</em>
+button. In this case, no data will be imported.</p>
+<p>When the <em>OK</em> button is clicked and the <em>Make selection</em> check box is
+unchecked, OpenSplice Tuner validates the specified file and if so
+imports all data in the file into the original partition(s). If the
+<em>Make selection</em> check box is checked when the <em>OK</em> button is clicked,
+the import window (<a class="reference internal" href="#the-import-window">The Import Window</a>) is displayed. By using
+the import window a subset of the data can be injected or disposed
+in the specified partition.</p>
+</div>
+</div>
+</div>
+<div class="section" id="preferences">
+<h2>3.7. Preferences<a class="headerlink" href="#preferences" title="Permalink to this headline">¶</a></h2>
+<p>OpenSplice Tuner remembers user preferences. These preferences are
+stored on disk in
+<tt class="docutils literal"><span class="pre">&lt;USER_HOME&gt;/.ospl_tooling.properties.&lt;OpenSplice</span> <span class="pre">Version&gt;</span></tt>.</p>
+<p>(The <tt class="docutils literal"><span class="pre">&lt;USER_HOME&gt;</span></tt> variable represents the home directory of the user).
+The preferences can be modified by choosing Edit &gt; Preferences in the
+menu bar of the main window. This action results in the display of a
+dialog to edit the preferences.</p>
+<p class="centered" id="edit-preferences">
+<strong><strong>Edit Preferences</strong></strong></p><a class="reference internal image-reference" href="_images/047_EditPreferences.png"><img alt="Edit Preferences" class="align-center" src="_images/047_EditPreferences.png" style="width: 70mm;" /></a>
+<p>There are seven configuration options and four tabs for creating and
+editing Writer, Reader, Publisher and Subscriber QoS Profiles (see
+also <a class="reference internal" href="#qos-profiles">QoS Profiles</a>).</p>
+<p>All options, their meaning and their possible values are explained in
+the following subsections. The preferences are saved to disk so they
+will be remembered when OpenSplice Tuner is exited.</p>
+<p>Once the options are set to the desired value, they can be saved by
+clicking the <em>OK</em> button. This action triggers OpenSplice Tuner to save
+the preferences to disk. The dialog window is closed when the
+preferences have been saved successfully. If the input is not
+correct, an error message appears in the status bar of the dialog
+window.</p>
+<p>The Edit preferences action can be cancelled by clicking the
+<em>Cancel</em> button. In this case, the preferences will not be saved.</p>
+<div class="section" id="auto-update-entity-information">
+<h3>3.7.1. Auto Update Entity information<a class="headerlink" href="#auto-update-entity-information" title="Permalink to this headline">¶</a></h3>
+<p>This option determines whether the information in an entity
+information window is updated automatically and at what frequency.
+This only applies to the status of the entity that is displayed in
+the <em>Status</em> tab of that window (see <a class="reference internal" href="#status">Status</a>). The value of
+this setting must be expressed in milliseconds. The value of the
+option must be &gt;= <tt class="docutils literal"><span class="pre">500</span></tt> or <tt class="docutils literal"><span class="pre">-1</span></tt>. When <tt class="docutils literal"><span class="pre">-1</span></tt> is supplied, no automatic
+updates are performed. With a value &gt;= <tt class="docutils literal"><span class="pre">500</span></tt>, an update is performed
+every value period. If the value approaches <tt class="docutils literal"><span class="pre">500</span></tt>, the intrusiveness of
+OpenSplice Tuner on OpenSplice increases.</p>
+<p>The default value for this option is <tt class="docutils literal"><span class="pre">2000</span></tt>.</p>
+</div>
+<div class="section" id="auto-update-entity-tree">
+<span id="id8"></span><h3>3.7.2. Auto Update Entity Tree<a class="headerlink" href="#auto-update-entity-tree" title="Permalink to this headline">¶</a></h3>
+<p>This option determines whether the entity relations (see
+<a class="reference internal" href="#entity-relationships">Entity Relationships</a>) in the entity tree in the main window
+are updated automatically and at what frequency.</p>
+<p>The value of this setting must be expressed in milliseconds.</p>
+<p>The value of this option must be &gt;= <tt class="docutils literal"><span class="pre">500</span></tt> or <tt class="docutils literal"><span class="pre">-1</span></tt>. When
+<tt class="docutils literal"><span class="pre">-1</span></tt> is supplied, no automatic updates are performed. With a value &gt;=
+<tt class="docutils literal"><span class="pre">500</span></tt>, an update is performed every value period. If the value
+approaches <tt class="docutils literal"><span class="pre">500</span></tt>, the intrusiveness of OpenSplice Tuner on OpenSplice
+increases.</p>
+<p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;-1&quot;</span></tt>.</p>
+</div>
+<div class="section" id="default-entity-tree-type">
+<span id="id9"></span><h3>3.7.3. Default Entity Tree Type<a class="headerlink" href="#default-entity-tree-type" title="Permalink to this headline">¶</a></h3>
+<p>This option determines the default view for the entity tree in the
+main window. There are three options: <tt class="docutils literal"><span class="pre">&quot;participant&quot;</span></tt>, <tt class="docutils literal"><span class="pre">&quot;topic&quot;</span></tt>
+and <tt class="docutils literal"><span class="pre">&quot;partition&quot;</span></tt>. The view can be changed during execution
+(see <a class="reference internal" href="#entity-relationships">Entity Relationships</a>).</p>
+<p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;topic&quot;</span></tt>.</p>
+</div>
+<div class="section" id="logging">
+<h3>3.7.4. Logging<a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h3>
+<p>This option can be used to log internal OpenSplice Tuner information.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+This setting is intended for OpenSplice Tuner engineering purposes
+only and should <em>not</em> be used.</p>
+<p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;&quot;</span></tt>.</p>
+</div>
+<div class="section" id="datatype-content-type">
+<h3>3.7.5. Datatype Content Type<a class="headerlink" href="#datatype-content-type" title="Permalink to this headline">¶</a></h3>
+<p>This option determines the default content type for the displaying of
+entity data types in the Data type tab of an entity information
+window. There are two options: <tt class="docutils literal"><span class="pre">&quot;text/plain&quot;</span></tt> and <tt class="docutils literal"><span class="pre">&quot;text/html&quot;</span></tt>.
+(See <a class="reference internal" href="#data-type">Data Type</a>.)</p>
+<p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;text/plain&quot;</span></tt>.</p>
+</div>
+<div class="section" id="display-entity-relations">
+<h3>3.7.6. Display Entity Relations<a class="headerlink" href="#display-entity-relations" title="Permalink to this headline">¶</a></h3>
+<p>This option determines whether entity relations are visible by
+default. There are two possibilities: <tt class="docutils literal"><span class="pre">&quot;true&quot;</span></tt> and <tt class="docutils literal"><span class="pre">&quot;false&quot;</span></tt>.</p>
+<p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;false&quot;</span></tt>.</p>
+</div>
+<div class="section" id="display-internals">
+<h3>3.7.7. Display Internals<a class="headerlink" href="#display-internals" title="Permalink to this headline">¶</a></h3>
+<p>This option determines whether OpenSplice internals are visible in
+the information that is shown by OpenSplice Tuner. There are two
+possibilities for this option: <tt class="docutils literal"><span class="pre">&quot;true&quot;</span></tt> and <tt class="docutils literal"><span class="pre">&quot;false&quot;</span></tt>.</p>
+<p>When <tt class="docutils literal"><span class="pre">&quot;true&quot;</span></tt> is selected, internals are displayed; if <tt class="docutils literal"><span class="pre">&quot;false&quot;</span></tt>
+is selected, they are not.</p>
+<p>This option currently only has impact on which attributes of an
+entity are displayed.</p>
+<p>The default value for this option is <tt class="docutils literal"><span class="pre">&quot;false&quot;</span></tt>.</p>
+</div>
+</div>
+<div class="section" id="qos-profiles">
+<h2>3.8. QoS Profiles<a class="headerlink" href="#qos-profiles" title="Permalink to this headline">¶</a></h2>
+<p>The OpenSplice Tuner can store QoS Profiles for the following
+entities:</p>
+<ul class="simple">
+<li>Writer</li>
+<li>Reader</li>
+<li>Publisher</li>
+<li>Subscriber</li>
+</ul>
+<p>A QoS profile is a pre-defined set of QoS settings identified by a
+name. This set can be used when creating a writer, reader, publisher
+or subscriber.</p>
+<p>For each entity a seperate tab is available in all creation windows
+of the specified entities.</p>
+<p>For the Writer and Reader a pre-defined QoS profile <tt class="docutils literal"><span class="pre">TopicQoS</span></tt> is
+automatically added. This profile contains all QoS settings of the
+chosen Topic.</p>
+<p>For the Publisher and Subscriber a pre-defined QoS profile <tt class="docutils literal"><span class="pre">DefaultQoS</span></tt>
+is automatically added. This profile is based on the default qos
+settings as described in the DDS specification for the chosen entity.
+When creating and editing QoS profiles through the Preferences window
+these default QoS Profiles are not displayed.</p>
+<div class="section" id="qos-profile-window">
+<h3>3.8.1. QoS Profile window<a class="headerlink" href="#qos-profile-window" title="Permalink to this headline">¶</a></h3>
+<p>A QoS profile window contains a drop-down list (<em>Default Qos Profile</em>)
+of defined QoS Profiles for that Entity.</p>
+<p class="centered" id="the-qos-profile-window">
+<strong><strong>The QoS Profile Window</strong></strong></p><a class="reference internal image-reference" href="_images/048_QoS_Profiles.png"><img alt="The QoS Profile Window" class="align-center" src="_images/048_QoS_Profiles.png" style="width: 70mm;" /></a>
+<p>Below the drop-down list there is an action bar (<em>Profile Actions</em>)
+with four buttons. The rest of the window contains the QoS table
+where all QoS settings can be viewed and changed.</p>
+<p>The <em>New</em> button creates a new QoS profile based on the default qos
+settings as described in the DDS specification for the chosen entity.
+When the <em>New</em> button is clicked, a dialog box appears for entering a
+name for the new profile.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Two names are <em>reserved</em> for internal QoS settings: <tt class="docutils literal"><span class="pre">DefaultQoS</span></tt>
+and <tt class="docutils literal"><span class="pre">TopicQoS</span></tt>; these names cannot be used for user-created QoS profiles.</p>
+<p>The <em>Save</em> button saves the QoS settings as shown in the QoS table to
+the currently-selected QoS Profile.</p>
+<p>The <em>Save As</em> button saves the QoS settings as shown in the QoS table
+to a new QoS profile.</p>
+<p>When the <em>Save As</em> button is clicked, a dialog box appears for entering
+a name for the new profile.</p>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a>
+Two names are <em>reserved</em> for internal QoS settings: <tt class="docutils literal"><span class="pre">DefaultQoS</span></tt>
+and <tt class="docutils literal"><span class="pre">TopicQoS</span></tt>; these names cannot be used for user-created QoS profiles.</p>
+<p>The <em>Remove</em> button removes the currently-selected QoS profile from the
+QoS Profile list.</p>
+<p>All QoS fields in the QoS table have a checkbox in front of them
+which determines whether the field is editable:</p>
+<ul class="simple">
+<li>If the checkbox is checked the value cannot be edited and will
+automatically get the value as defined in the selected QoS profile.</li>
+<li>If the checkbox is <a href="#id10"><span class="problematic" id="id11">*</span></a>un*checked the QoS field will get the value that
+is currently set in that field when the QoS profile is saved or the
+entity is created.</li>
+</ul>
+<p>All QoS profiles are stored in the Tuner Preferences file in
+<tt class="docutils literal"><span class="pre">&lt;USER_HOME&gt;/.ospl_tooling.properties.&lt;OpenSplice</span> <span class="pre">Version&gt;</span></tt>
+where <tt class="docutils literal"><span class="pre">&lt;USER_HOME&gt;</span></tt> represents the home directory of the user.</p>
+</div>
+</div>
+<div class="section" id="support-for-google-protocol-buffers">
+<h2>3.9. Support for Google Protocol Buffers<a class="headerlink" href="#support-for-google-protocol-buffers" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="about-google-protocol-buffers-in-tuner">
+<h3>3.9.1. About Google Protocol Buffers in Tuner<a class="headerlink" href="#about-google-protocol-buffers-in-tuner" title="Permalink to this headline">¶</a></h3>
+<p>In versions of Vortex OpenSplice that support Google Protocol Buffers, Tuner is able to read from protocol buffer
+topics and display its samples as regular field name and value pairs, just as if it were from a regular IDL-defined
+topic.</p>
+<p>The Tuner feature for Google Protocol Buffer topic reading is enabled only on Vortex OpenSplice middleware
+installs where Google Protocol Buffer support is included. For installations where it is not included, the feature is
+disabled in Tuner.</p>
+<p>Tuner&#8217;s About dialog shows if the feature is available in the current build. It is accessible from the main window menu
+bar <em>File -&gt; About</em>.</p>
+<p class="centered" id="the-about-dialog">
+<strong><strong>About Dialog</strong></strong></p><a class="reference internal image-reference" href="_images/049_about.png"><img alt="About Dialog" class="align-center" src="_images/049_about.png" style="width: 70mm;" /></a>
+</div>
+<div class="section" id="viewing-type-evolutions">
+<h3>3.9.2. Viewing type evolutions<a class="headerlink" href="#viewing-type-evolutions" title="Permalink to this headline">¶</a></h3>
+<p>The main feature of using Google Protocol Buffers as the type definition for a topic is the ability to change, or
+‘evolve’, a topic’s type. Tuner can become aware of changes to a protocol buffer topic’s type, and can display the
+topic type definition for each type evolution that is registered.</p>
+<p>To view the type evolutions for a protocol buffer backed topic, right-click a topic, reader, or writer element in
+the entity tree, choose <em>Display Entity</em>, and navigate to the <em>Data Type</em> tab. For this case, the <em>Data Type</em> tab
+displays some additional information.</p>
+<ul class="simple">
+<li>The <em>Type Evolutions</em> for the type are displayed in a drop-down combo box.
+It lists the known evolutions for the type according to the time it was
+registered in the DDS system. The most recent evolution is at the top
+of the list and is selected by default.</li>
+<li>The <em>Type Hash</em> is a non-editable text field that displays the 128-bit hash that
+uniquely identifies the selected type evolution for the topic type.</li>
+<li>The main text area now displays a description for all fields and nested types defined
+in the protocol buffer message for the currently-selected evolution, in a text format
+emulating the original <tt class="docutils literal"><span class="pre">.proto</span></tt> file format. Message type fields found in the typedef
+that are not defined as nested messages inside the main DDS message type are defined
+under a separate section, <tt class="docutils literal"><span class="pre">External</span> <span class="pre">Definitions</span></tt>. These messages have their fully-
+qualified type name to indicate where they were defined. Please note that this
+typedef reconstruction is only meant to give the user an idea as to what type of
+data is found in the topic type. It is not guaranteed to be a 100% reconstruction
+of the original <tt class="docutils literal"><span class="pre">.proto</span></tt> file as it was written, or to be compilable by the <tt class="docutils literal"><span class="pre">protoc</span></tt>
+compiler.</li>
+</ul>
+<p class="centered" id="protocol-buffer-type-definition">
+<strong><strong>Protocol Buffer Type Definition</strong></strong></p><a class="reference internal image-reference" href="_images/050_topicdatatypeevo.png"><img alt="Protocol Buffer Type Definition" class="align-center" src="_images/050_topicdatatypeevo.png" style="width: 70mm;" /></a>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> HTML data type representation is not available for Protocol Buffer topics.</p>
+</div>
+<div class="section" id="reading-protocol-buffer-topics">
+<h3>3.9.3. Reading protocol buffer topics<a class="headerlink" href="#reading-protocol-buffer-topics" title="Permalink to this headline">¶</a></h3>
+<p>Tuner reads protocol buffer data by reading in the byte sequence data contained in the user data, and then replacing
+all fields with regular field name and value pairs just as if it were data from a regular topic. The process for creating
+readers for protocol buffer topics is almost identical to the process described in Section 3.5.5, Creating a ReaderWriter.</p>
+<p>If creating a reader-writer on a protocol buffer backed topic, the <em>Create Reader-Writer Dialog</em> will have an extra combo
+box input, allowing the user to select which type evolution to view the user data as. The default selection is the
+most recently registered version of the type in the DDS system.</p>
+<p class="centered" id="create-readerwriter-dialog-with-type-evolution-chooser">
+<strong><strong>Create ReaderWriter Dialog With Type Evolution Chooser</strong></strong></p><a class="reference internal image-reference" href="_images/051_createreaderwriterandtypeevo.png"><img alt="Create ReaderWriter Dialog With Type Evolution Chooser" class="align-center" src="_images/051_createreaderwriterandtypeevo.png" style="width: 70mm;" /></a>
+<p>If selecting to read or write data on an existing reader or writer by choosing <em>Read data</em> or <em>Make database
+snapshot</em> for a reader, or <em>Write data</em> or <em>Make history snapshot</em> for a writer, a choice must be made as to
+what type evolution to view the data as, if the associated topic type is a protocol buffer defined type.</p>
+<p class="centered" id="read-data-as-type-evolution-chooser">
+<strong><strong>Read Data As Type Evolution Chooser</strong></strong></p><a class="reference internal image-reference" href="_images/052_readdataas.png"><img alt="Read Data As Type Evolution Chooser" class="align-center" src="_images/052_readdataas.png" style="width: 70mm;" /></a>
+<p>There is also a <em>View Type Definition</em> button in both dialogs that when clicked, brings up a new window showing
+the type definition text for the currently selected type evolution, as well as the registration time and type hash
+in the status bar. The window remains if the dialog is closed, and is reused with the contents updated if a
+different topic or type evolution is chosen for view.</p>
+<p class="centered" id="view-type-evolution-type-definiton">
+<strong><strong>View Type Evolution Type Definiton</strong></strong></p><a class="reference internal image-reference" href="_images/053_viewtypeevolution.png"><img alt="View Type Evolution Type Definiton" class="align-center" src="_images/053_viewtypeevolution.png" style="width: 70mm;" /></a>
+<p>Once selections are complete and the reader or writer window appears, the user data model is populated with type fields
+and values that are decoded according to the type evolution that was chosen. An additional table highlight colour is shown
+in <em>cyan</em> where fields are defined as required in the protobuf type definiton. Topic key fields are still coloured <em>green</em>
+and are implied to be requried. All other unhighlighted fields are optional fields.</p>
+<p>Aside from the above table changes, all interaction with the user data is the same as if it were being read or
+written from a regular topic.</p>
+<p class="centered" id="a-reader-writer-window-for-a-protocol-buffer-backed-topic">
+<strong><strong>A Reader-Writer Window for a Protocol Buffer backed Topic</strong></strong></p><a class="reference internal image-reference" href="_images/054_readerwriterwindowwithtypeevo.png"><img alt="A Reader-Writer Window for a Protocol Buffer backed Topic" class="align-center" src="_images/054_readerwriterwindowwithtypeevo.png" style="width: 70mm;" /></a>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Using the Vortex OpenSplice Tuner</a><ul>
+<li><a class="reference internal" href="#starting-and-stopping-the-tuner">3.1. Starting and Stopping the Tuner</a><ul>
+<li><a class="reference internal" href="#starting">3.1.1. Starting</a><ul>
+<li><a class="reference internal" href="#solaris-and-linux">3.1.1.1. Solaris and Linux</a></li>
+<li><a class="reference internal" href="#windows">3.1.1.2. Windows</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#graphical-user-interface-conventions">3.1.2. Graphical User Interface Conventions</a></li>
+<li><a class="reference internal" href="#main-window">3.1.3. Main Window</a></li>
+<li><a class="reference internal" href="#shutdown">3.1.4. Shutdown</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#connection-management">3.2. Connection Management</a><ul>
+<li><a class="reference internal" href="#connection-types">3.2.1. Connection Types</a></li>
+<li><a class="reference internal" href="#open-a-connection">3.2.2. Open a Connection</a><ul>
+<li><a class="reference internal" href="#connection-history">3.2.2.1. Connection History</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#close-a-connection">3.2.3. Close a Connection</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#entity-information">3.3. Entity Information</a><ul>
+<li><a class="reference internal" href="#attributes">3.3.1. Attributes</a></li>
+<li><a class="reference internal" href="#status">3.3.2. Status</a></li>
+<li><a class="reference internal" href="#qos">3.3.3. QoS</a><ul>
+<li><a class="reference internal" href="#inspect-qos">3.3.3.1. Inspect QoS</a></li>
+<li><a class="reference internal" href="#modify-qos">3.3.3.2. Modify QoS</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data-type">3.3.4. Data Type</a></li>
+<li><a class="reference internal" href="#statistics">3.3.5. Statistics</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#entity-relationships">3.4. Entity Relationships</a><ul>
+<li><a class="reference internal" href="#enable-and-disable-displaying-relationships">3.4.1. Enable and Disable Displaying Relationships</a></li>
+<li><a class="reference internal" href="#refresh-relationships">3.4.2. Refresh Relationships</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data-injection-and-consumption">3.5. Data Injection and Consumption</a><ul>
+<li><a class="reference internal" href="#creating-a-publisher">3.5.1. Creating a Publisher</a></li>
+<li><a class="reference internal" href="#creating-a-writer">3.5.2. Creating a Writer</a></li>
+<li><a class="reference internal" href="#creating-a-subscriber">3.5.3. Creating a subscriber</a></li>
+<li><a class="reference internal" href="#creating-a-reader">3.5.4. Creating a Reader</a></li>
+<li><a class="reference internal" href="#creating-a-readerwriter">3.5.5. Creating a ReaderWriter</a><ul>
+<li><a class="reference internal" href="#partition-expression">3.5.5.1. Partition Expression</a></li>
+<li><a class="reference internal" href="#existing-partition">3.5.5.2. Existing Partition</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#creating-a-snapshot-of-a-reader-database">3.5.6. Creating a Snapshot of a Reader Database</a></li>
+<li><a class="reference internal" href="#creating-a-snapshot-of-writer-history-cache">3.5.7. Creating a Snapshot of Writer History Cache</a></li>
+<li><a class="reference internal" href="#delete-entity">3.5.8. Delete Entity</a></li>
+<li><a class="reference internal" href="#injecting-data">3.5.9. Injecting Data</a><ul>
+<li><a class="reference internal" href="#injecting-data-using-a-writer">3.5.9.1. Injecting Data Using a Writer</a></li>
+<li><a class="reference internal" href="#injecting-data-using-a-reader-writer">3.5.9.2. Injecting Data Using a Reader-Writer</a></li>
+<li><a class="reference internal" href="#detailed-reader-writer-window">3.5.9.3. Detailed Reader-Writer window</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#consuming-data">3.5.10. Consuming Data</a><ul>
+<li><a class="reference internal" href="#consuming-data-using-a-reader">3.5.10.1. Consuming Data Using a Reader</a><ul>
+<li><a class="reference internal" href="#sample-information-view">3.5.10.1.1. Sample Information View</a></li>
+<li><a class="reference internal" href="#user-data-view">3.5.10.1.2. User Data View</a></li>
+<li><a class="reference internal" href="#show-details-of-data-that-contains-a-collection-type">3.5.10.1.3. Show details of data that contains a collection type</a></li>
+<li><a class="reference internal" href="#sorting-data">3.5.10.1.4. Sorting Data</a></li>
+<li><a class="reference internal" href="#filters">3.5.10.1.5. Filters</a></li>
+<li><a class="reference internal" href="#reordering-columns">3.5.10.1.6. Reordering Columns</a></li>
+<li><a class="reference internal" href="#removing-columns">3.5.10.1.7. Removing Columns</a></li>
+<li><a class="reference internal" href="#consumption-mode">3.5.10.1.8. Consumption Mode</a></li>
+<li><a class="reference internal" href="#monitoring">3.5.10.1.9. Monitoring</a></li>
+<li><a class="reference internal" href="#clear-data">3.5.10.1.10. Clear Data</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#inspecting-data-in-a-reader-database-snapshot">3.5.10.2. Inspecting Data in a Reader Database Snapshot</a></li>
+<li><a class="reference internal" href="#inspecting-data-in-a-writer-history-snapshot">3.5.10.3. Inspecting Data in a Writer History Snapshot</a></li>
+<li><a class="reference internal" href="#consuming-data-using-a-reader-writer">3.5.10.4. Consuming Data Using a Reader-Writer</a></li>
+<li><a class="reference internal" href="#injecting-and-consuming-data-with-coherent-and-ordered-access">3.5.10.5. Injecting and Consuming Data With Coherent and Ordered Access</a><ul>
+<li><a class="reference internal" href="#publishing-coherent-sets">3.5.10.5.1. Publishing Coherent Sets</a></li>
+<li><a class="reference internal" href="#access-data-on-readers">3.5.10.5.2. Access Data On Readers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#exporting-and-importing">3.6. Exporting and Importing</a><ul>
+<li><a class="reference internal" href="#export-metadata">3.6.1. Export Metadata</a></li>
+<li><a class="reference internal" href="#export-data">3.6.2. Export Data</a><ul>
+<li><a class="reference internal" href="#id4">3.6.2.1. Existing Partition</a></li>
+<li><a class="reference internal" href="#id5">3.6.2.2. Partition Expression</a></li>
+<li><a class="reference internal" href="#from-existing-reader">3.6.2.3. From Existing Reader</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#import-metadata">3.6.3. Import Metadata</a></li>
+<li><a class="reference internal" href="#import-data">3.6.4. Import Data</a><ul>
+<li><a class="reference internal" href="#original-partition-s">3.6.4.1. Original Partition(s)</a></li>
+<li><a class="reference internal" href="#id6">3.6.4.2. Existing Partition</a></li>
+<li><a class="reference internal" href="#id7">3.6.4.3. Partition Expression</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#preferences">3.7. Preferences</a><ul>
+<li><a class="reference internal" href="#auto-update-entity-information">3.7.1. Auto Update Entity information</a></li>
+<li><a class="reference internal" href="#auto-update-entity-tree">3.7.2. Auto Update Entity Tree</a></li>
+<li><a class="reference internal" href="#default-entity-tree-type">3.7.3. Default Entity Tree Type</a></li>
+<li><a class="reference internal" href="#logging">3.7.4. Logging</a></li>
+<li><a class="reference internal" href="#datatype-content-type">3.7.5. Datatype Content Type</a></li>
+<li><a class="reference internal" href="#display-entity-relations">3.7.6. Display Entity Relations</a></li>
+<li><a class="reference internal" href="#display-internals">3.7.7. Display Internals</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#qos-profiles">3.8. QoS Profiles</a><ul>
+<li><a class="reference internal" href="#qos-profile-window">3.8.1. QoS Profile window</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#support-for-google-protocol-buffers">3.9. Support for Google Protocol Buffers</a><ul>
+<li><a class="reference internal" href="#about-google-protocol-buffers-in-tuner">3.9.1. About Google Protocol Buffers in Tuner</a></li>
+<li><a class="reference internal" href="#viewing-type-evolutions">3.9.2. Viewing type evolutions</a></li>
+<li><a class="reference internal" href="#reading-protocol-buffer-topics">3.9.3. Reading protocol buffer topics</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">2. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contacts.html"
+                        title="next chapter">4. Contacts &amp; Notices</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/using01.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="contacts.html" title="4. Contacts &amp; Notices"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">Tuner Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

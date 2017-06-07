@@ -12,7 +12,9 @@ sleep 5
 
 ./sacpp_listener_pub > pubResult.txt
 
-sleep 15
+echo "=== Waiting for processes to terminate"
+waitForProcessTermination sacpp_listener_pub 30
+waitForProcessTermination sacpp_listener_sub 30
 
 listenerCheckResult
 

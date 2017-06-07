@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.model.sample;
@@ -14,11 +22,15 @@ package org.opensplice.common.model.sample;
 import java.util.HashMap;
 
 import org.opensplice.cm.CMException;
-import org.opensplice.cm.DataTypeUnsupportedException;
+import org.opensplice.cm.Entity;
+import org.opensplice.cm.EntityFilter;
 import org.opensplice.cm.Reader;
+import org.opensplice.cm.Topic;
 import org.opensplice.cm.Writer;
 import org.opensplice.cm.data.Sample;
 import org.opensplice.cm.data.UserData;
+import org.opensplice.cmdataadapter.CmDataException;
+import org.opensplice.cmdataadapter.TypeInfo.TypeEvolution;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.model.table.UserDataEditTableModel;
 
@@ -44,17 +56,17 @@ public class ReaderWriterDetailSampleModel extends ReaderDetailSampleModel {
      *                         data type could not be resolved.
      */
     
-    public ReaderWriterDetailSampleModel(Reader _reader, Writer _writer, String structName, Sample sample) throws CommonException {
-        super(_reader, structName, sample);
+    public ReaderWriterDetailSampleModel(Reader _reader, Writer _writer, String structName,
+            Sample sample, TypeEvolution _typeEvolution) throws CommonException {
+        super(_reader, structName, sample, _typeEvolution);
         if(_writer == null){
             throw new CommonException("Supplied writer == null.");
         }
         writer = _writer;
         try {
-            writerModel = new UserDataEditTableModel(writer.getDataType(), structName);
-        } catch (CMException e) {
-            throw new CommonException("Writer data type could not be resolved.");
-        } catch (DataTypeUnsupportedException e) {
+            writerModel = new UserDataEditTableModel(typeInfo.getMetaType(typeEvolution), structName);
+            writerModel.setData(sample);
+        } catch (CmDataException e) {
             throw new CommonException("Writer data type could not be resolved.");
         }
     }
@@ -69,21 +81,32 @@ public class ReaderWriterDetailSampleModel extends ReaderDetailSampleModel {
      *                         data type could not be resolved.
      */
     
-    public ReaderWriterDetailSampleModel(Reader _reader, Writer _writer, String structName, UserData data) throws CommonException {
-        super(_reader, structName, data);
+    public ReaderWriterDetailSampleModel(Reader _reader, Writer _writer, String structName,
+            UserData data, TypeEvolution _typeEvolution) throws CommonException {
+        super(_reader, structName, data, _typeEvolution);
+        writer = _writer;
+        try {
+            writerModel = new UserDataEditTableModel(typeInfo.getMetaType(typeEvolution), structName);
+            writerModel.setData(data);
+        } catch (CmDataException e) {
+            throw new CommonException("Writer data type could not be resolved.");
+        }
+    }
+    
+    public ReaderWriterDetailSampleModel(Writer _writer, String structName,
+            UserData data, TypeEvolution _typeEvolution) throws CommonException {
+        super(_writer, structName, data, _typeEvolution);
         if(_writer == null){
             throw new CommonException("Supplied writer == null.");
         }
         writer = _writer;
         try {
-            writerModel = new UserDataEditTableModel(writer.getDataType(), structName);
-        } catch (CMException e) {
-            throw new CommonException("Writer data type could not be resolved.");
-        } catch (DataTypeUnsupportedException e) {
+            writerModel = new UserDataEditTableModel(typeInfo.getMetaType(typeEvolution), structName);
+            writerModel.setData(data);
+        } catch (CmDataException e) {
             throw new CommonException("Writer data type could not be resolved.");
         }
     }
-    
     
     public void setDataUpdated(boolean b) {
         dataUpdated = b;
@@ -192,7 +215,6 @@ public class ReaderWriterDetailSampleModel extends ReaderDetailSampleModel {
     public boolean setSelectedSample(int index, String struct){
         boolean result = super.setSelectedSample(index, struct);
         Sample s = null;
-    
         if(!result){
             return false;
         }
@@ -228,7 +250,24 @@ public class ReaderWriterDetailSampleModel extends ReaderDetailSampleModel {
     public void updateWriterData(HashMap<String,String> data) {
         getToBeWrittenUserData().getUserData().putAll(data);
     }
-    
+
+    /**
+     * Clears the existing sample in this model, and replaces it with
+     * the supplied Sample.
+     *
+     * @param s The Sample to add.
+     * @return true if it was added and is visible (not filtered out by a
+     *         UserDataFilter), false otherwise.
+     */
+    public boolean addSample(Sample s, String struct, int index) {
+        boolean added = super.addSample(s,struct);
+        if(added && writerModel != null){
+            writerModel.clear();
+            writerModel.setData(s,struct, index);
+        }
+        return added;
+    }
+
     /**
      * Provides access to the Writer of this model.
      * 
@@ -236,5 +275,25 @@ public class ReaderWriterDetailSampleModel extends ReaderDetailSampleModel {
      */
     public Writer getWriter(){
         return writer;
+    }
+
+    /**
+     * Retrieve the Topic Entity for the Writer or Reader. This reference must be freed by the caller.
+     * @return the Topic Entity associated with the Writer or Reader.
+     * @throws CommonException
+     */
+    protected Topic getTopic(Entity entity) throws CommonException{
+        if (entity instanceof Reader) {
+            return super.getTopic(entity);
+        }
+        Topic result = null;
+        Writer w = (Writer) entity;
+
+        try {
+            result = (Topic) w.getOwnedEntities(EntityFilter.TOPIC)[0];
+        } catch (CMException e) {
+            throw new CommonException(e.getMessage());
+        }
+        return result;
     }
 }

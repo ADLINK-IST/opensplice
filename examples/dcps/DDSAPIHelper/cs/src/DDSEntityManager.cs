@@ -59,7 +59,7 @@ namespace DDSAPIHelper
             dpf = DomainParticipantFactory.Instance;
             dpQos = new DomainParticipantQos();
             dpf.GetDefaultParticipantQos(ref dpQos);
-            
+
             ErrorHandler.checkHandle(dpf, "DomainParticipantFactory.Instance");
 
             participant = dpf.CreateParticipant(DDS.DomainId.Default,dpQos);
@@ -116,6 +116,8 @@ namespace DDSAPIHelper
         {
             status = participant.GetDefaultTopicQos(ref topicQos);
             ErrorHandler.checkStatus(status, "DomainParticipant.GetDefaultTopicQos");
+            topicQos.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;
+            topicQos.Reliability.Kind = ReliabilityQosPolicyKind.ReliableReliabilityQos;
 
             switch (exampleName)
             {
@@ -124,24 +126,17 @@ namespace DDSAPIHelper
                 case "HelloWorld":
                 case "WaitSet":
                 case "Lifecycle":
-                    topicQos.Reliability.Kind = ReliabilityQosPolicyKind.ReliableReliabilityQos;
-                    if (durabilityKind.Equals("transient"))
-                        topicQos.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;
-                    else
+                    if (!durabilityKind.Equals("transient"))
                         topicQos.Durability.Kind = DurabilityQosPolicyKind.PersistentDurabilityQos;
-                    break;                
+                    break;
                 case "Ownership":
-                    topicQos.Reliability.Kind = ReliabilityQosPolicyKind.ReliableReliabilityQos;
                     topicQos.Ownership.Kind = OwnershipQosPolicyKind.ExclusiveOwnershipQos;
-                    break;                
+                    break;
                 case "QueryCondition":
-                    topicQos.Reliability.Kind = ReliabilityQosPolicyKind.ReliableReliabilityQos;
                     break;
                 case "Listener":
-                    topicQos.Reliability.Kind = ReliabilityQosPolicyKind.ReliableReliabilityQos;
-                    topicQos.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;
                     // DeadlineQoSPolicy : period used to trigger the listener
-                    // (on_requested_deadline_missed) 
+                    // (on_requested_deadline_missed)
                     topicQos.Deadline.Period.NanoSec = 0;
                     topicQos.Deadline.Period.Sec = 1;
                     break;
@@ -149,38 +144,35 @@ namespace DDSAPIHelper
                     Console.WriteLine("Unidentified example to create topic for.");
                     break;
             }
-            
+
             status = participant.SetDefaultTopicQos(topicQos);
             ErrorHandler.checkStatus(status, "DomainParticipant.SetDefaultTopicQos");
             topic = participant.CreateTopic(
                     topicName,
                     typeName,
-                    topicQos,
-                    null,
-                    StatusKind.Any
-                    );
+                    topicQos);
             ErrorHandler.checkHandle(topic, "DomainParticipant.CreateTopic");
             return topic;
         }
-        
+
         /// <summary>
         /// Create a ContentFilteredTopic
         /// </summary>
         /// <param name="topicFName">The name of the topic.</param>
         /// <param name="topic">The topic to which the filter is applied.</param>
-        /// <param name="arg">The handle to a sequence of strings with the parameter 
+        /// <param name="arg">The handle to a sequence of strings with the parameter
         /// value used in the SQL expression.</param>
         public void createContentFilter(String topicName, ITopic topic, String arg)
         {
             String[] tab = new String[1];
             tab[0] = arg;
             String filter = "ticker = %0";
-            
+
             filteredTopic =
                 participant.CreateContentFilteredTopic(topicName, topic, filter, tab);
             ErrorHandler.checkHandle(filteredTopic, "DomainParticipant.CreateContentFilteredTopic");
         }
-        
+
         /// <summary>
         /// Delete a ContentFilteredTopic
         /// </summary>
@@ -217,8 +209,7 @@ namespace DDSAPIHelper
 
             pubQos.Partition.Name = new String[1];
             pubQos.Partition.Name[0] = partitionName;
-            publisher = participant.CreatePublisher(
-                    pubQos, null, StatusKind.Any);
+            publisher = participant.CreatePublisher(pubQos);
             ErrorHandler.checkHandle(publisher, "DomainParticipant.CreatePublisher");
         }
 
@@ -248,18 +239,14 @@ namespace DDSAPIHelper
             WQosH.WriterDataLifecycle.AutodisposeUnregisteredInstances = autoDisposeFlag;
             writer = publisher.CreateDataWriter(
                     topic,
-                    WQosH,
-                    null,
-                    StatusKind.Any);
+                    WQosH);
             ErrorHandler.checkHandle(writer, "Publisher.CreateDataWriter");
 
             if (exampleName.Equals("Lifecycle"))
             {
                 writerStopper = publisher.CreateDataWriter(
                     topic,
-                    WQosH,
-                    null,
-                    StatusKind.Any);
+                    WQosH);
                 ErrorHandler.checkHandle(writerStopper, "Publisher.CreateDataWriter");
             }
         }
@@ -279,18 +266,14 @@ namespace DDSAPIHelper
 			WQosH.OwnershipStrength.Value = strength;
             writer = publisher.CreateDataWriter(
                     topic,
-                    WQosH,
-                    null,
-                    StatusKind.Any);
+                    WQosH);
             ErrorHandler.checkHandle(writer, "Publisher.CreateDataWriter");
 
             if (exampleName.Equals("Lifecycle"))
             {
                 writerStopper = publisher.CreateDataWriter(
                     topic,
-                    WQosH,
-                    null,
-                    StatusKind.Any);
+                    WQosH);
                 ErrorHandler.checkHandle(writerStopper, "Publisher.CreateDataWriter");
             }
         }
@@ -316,7 +299,7 @@ namespace DDSAPIHelper
             subQos.Partition.Name = new String[1];
             subQos.Partition.Name[0] = partitionName;
             subscriber = participant.CreateSubscriber(
-                    subQos, null, StatusKind.Any);
+                    subQos);
             ErrorHandler.checkHandle(subscriber, "DomainParticipant.CreateSubscriber");
         }
 
@@ -333,7 +316,7 @@ namespace DDSAPIHelper
         /// Creates a DataReader
         /// </summary>
         /// <param name="exampleNameToCreateReaderFor">The example name to create the
-        /// DataReader for. This param is used to define any specific Qos values the 
+        /// DataReader for. This param is used to define any specific Qos values the
         /// example requires.</param>
         /// <param name="filtered">This param determines whether a reader will be created
         /// for a normal or filtered topic.</param>
@@ -345,10 +328,10 @@ namespace DDSAPIHelper
             ErrorHandler.checkStatus(status, "Subscriber.CopyFromTopicQoS");
 
             switch (exampleName)
-            {                
-                case "ContentFilteredTopic": 
+            {
+                case "ContentFilteredTopic":
                 case "Listener":
-                    RQosH.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;                    
+                    RQosH.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;
                     break;
                 case "Durability":
                     if (durabilityKind.Equals("transient"))
@@ -370,17 +353,13 @@ namespace DDSAPIHelper
             {
                 reader = subscriber.CreateDataReader(
                         filteredTopic,
-                        RQosH,
-                        null,
-                        StatusKind.Any);
+                        RQosH);
             }
             else
             {
                 reader = subscriber.CreateDataReader(
                         topic,
-                        RQosH,
-                        null,
-                        StatusKind.Any);
+                        RQosH);
             }
             ErrorHandler.checkHandle(reader, "Subscriber.CreateDataReader");
         }

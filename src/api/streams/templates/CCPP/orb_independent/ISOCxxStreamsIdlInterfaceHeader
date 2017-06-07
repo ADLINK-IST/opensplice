@@ -1,0 +1,14 @@
+#ifndef $upper($(basename))STREAMS_IDL_
+#define $upper($(basename))STREAMS_IDL_
+
+#include "dds_dcps.idl"
+
+#include "$(basename).idl"
+
+module DDS
+{
+    module Streams
+    {
+        typedef unsigned long StreamId;
+    };
+};

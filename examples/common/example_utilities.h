@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -15,7 +23,13 @@
 
 #include <stdlib.h>
 #include <time.h>
-#include "os.h"
+#ifdef __QNX__
+#include <sys/time.h>
+#endif
+#include "vortex_os.h"
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 /**
  * @file
@@ -47,7 +61,11 @@ void exampleSleepMilliseconds(unsigned long milliseconds)
     sleeptime.tv_nsec = (milliseconds % US_IN_ONE_MS) * US_IN_ONE_SEC;
     nanosleep(&sleeptime, &remtime);
 #else
-    usleep(milliseconds * US_IN_ONE_MS);
+ #if defined VXWORKS || defined VXWORKS_RTP
+   taskDelay(milliseconds * (sysClkRateGet() / 1000));
+ #else
+   usleep(milliseconds * 1000);
+ #endif
 #endif
 }
 
@@ -120,7 +138,7 @@ ExampleTimeStats* exampleAddMicrosecondsToTimeStats(ExampleTimeStats* stats, uns
 {
     if(stats->valuesSize > stats->valuesMax)
     {
-        unsigned long* temp = (unsigned long*)realloc(stats->values, stats->valuesMax + TIME_STATS_SIZE_INCREMENT);
+        unsigned long* temp = (unsigned long*)realloc(stats->values, (stats->valuesMax + TIME_STATS_SIZE_INCREMENT) * sizeof(unsigned long));
         if(temp)
         {
             stats->values = temp;
@@ -193,8 +211,8 @@ struct timeval exampleGetTime()
     struct timeval current_time;
     struct os_time os_current_time;
 
-    os_current_time = os_timeGet();
-    current_time.tv_sec = os_current_time.tv_sec;
+    os_current_time = os_timeGetElapsed();
+    current_time.tv_sec = (time_t)(os_current_time.tv_sec);
     current_time.tv_usec = os_current_time.tv_nsec / NS_IN_ONE_US;
 
     return current_time;

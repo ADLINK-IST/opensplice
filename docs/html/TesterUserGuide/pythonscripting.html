@@ -1,0 +1,912 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>9. Python Scripting Engine &mdash; Test Tool User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Test Tool User Guide" href="index.html" />
+    <link rel="next" title="10. Appendix A" href="appendixa.html" />
+    <link rel="prev" title="8. Google Protocol Buffers" href="gpbuffers.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="appendixa.html" title="10. Appendix A"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gpbuffers.html" title="8. Google Protocol Buffers"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="python-scripting-engine">
+<span id="id1"></span><h1>9. Python Scripting Engine<a class="headerlink" href="#python-scripting-engine" title="Permalink to this headline">¶</a></h1>
+<p><em>This section describes writing Python scripts to test OSPL applications.</em></p>
+<div class="section" id="about-python-scripting">
+<h2>9.1. About Python Scripting<a class="headerlink" href="#about-python-scripting" title="Permalink to this headline">¶</a></h2>
+<p>Python Scripting is a scripting environment for running unit tests and adhoc scripts against a Vortex OpenSplice environment.
+Python Scripting connects to the OpenSplice environment through the Configuration and Management API.
+It is based on the Python scripting language, and requires Jython 2.7.0 or later, the Java-based implementation of Python.</p>
+<div class="section" id="design-goals">
+<h3>9.1.1. Design Goals<a class="headerlink" href="#design-goals" title="Permalink to this headline">¶</a></h3>
+<p>Python Scripting is an alternative to the product specific Scenario language found in Vortex Tester.
+Python Scripting design goals were:</p>
+<ul class="simple">
+<li>use a standard scripting language (Python)</li>
+<li>allow users to leverage the tooling environment build around this standard language</li>
+<li>allow users to leverage the testing infrastructure and libraries</li>
+<li>expose DDS semantics, particularly on reading and writing topic data in an easy-to-use API for Python.</li>
+<li>run independently of Vortex Tester</li>
+<li>allow execution of scripts and unit tests both directly from the command line and from an Integrated Development Environment (IDE)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="configuration">
+<h2>9.2. Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<p>This section explains how to download and configure a Jython scripting engine with the Tester Scripting package.
+Jython is an Java-based implementation of the Python scripting language.</p>
+<div class="section" id="prerequisites">
+<h3>9.2.1. Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h3>
+<p>A Java 7 or later runtime (JRE) is required. The JAVA_HOME environment variable must be set to the JRE installation directory.</p>
+<p>Check that the following command yields a Java version of 1.7 or later. On Linux systems, use:</p>
+<div class="highlight-python"><div class="highlight"><pre>$JAVA_HOME/bin/java -version
+</pre></div>
+</div>
+<p>On Windows systems, use:</p>
+<div class="highlight-python"><div class="highlight"><pre>%JAVA_HOME%\bin\java -version
+</pre></div>
+</div>
+<p>Note that during the installation, it is assumed the the environment variable OSPL_HOME refers the the fully qualified
+path of the Vortex OpenSplice installation.</p>
+</div>
+<div class="section" id="download-and-install-jython">
+<h3>9.2.2. Download and install Jython<a class="headerlink" href="#download-and-install-jython" title="Permalink to this headline">¶</a></h3>
+<p>The Tester Scripting package does not include the Jython scripting engine - it must be downloaded.
+Jython is an open source project licensed under the Python Software Foundation License Version 2 (<a class="reference external" href="http://www.jython.org/license.html">http://www.jython.org/license.html</a>).
+The license is OSI Approved (<a class="reference external" href="https://opensource.org/licenses/alphabetical">https://opensource.org/licenses/alphabetical</a>).</p>
+<p>Tester Scripting requires Jython 2.7.0 or later. Follow the following steps to download and install Jython:</p>
+<ol class="arabic">
+<li><p class="first">Download the Jython 2.7.0 Installer from the Jython Download page (<a class="reference external" href="http://www.jython.org/downloads.html">http://www.jython.org/downloads.html</a>).</p>
+</li>
+<li><p class="first">Install Jython. It is recommended, but not necessary that Jython be installed in the $OSPL_HOME/jython directory (linux) or the %OSPL_HOME%jython directory (Windows). The following command line will install the standard Jython distribution:</p>
+<div class="highlight-python"><div class="highlight"><pre># for Linux systems
+$JAVA_HOME/bin/java -jar jython-installer-2.7.0.jar -s -d $OSPL_HOME/jython -t standard
+
+# For Windows Systems
+&quot;%JAVA_HOME%\bin\java&quot; -jar jython-installer.2.7.0.jar -s -d &quot;%OSPL_HOME%\jython&quot; -t standard
+</pre></div>
+</div>
+</li>
+<li><p class="first">Change to the OSPL_HOME directory.</p>
+</li>
+<li><p class="first">Install the Tester Scripting python package. Use the following command:</p>
+<div class="highlight-python"><div class="highlight"><pre># for Linux systems
+jython/bin/easy_install tools/scripting/OSPLScript-1.0.0.tar.gz
+
+# for Windows systems
+jython\bin\easy_install tools\scripting\OSPLScript-1.0.0.tar.gz
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="verifying-the-installation">
+<h3>9.2.3. Verifying the installation<a class="headerlink" href="#verifying-the-installation" title="Permalink to this headline">¶</a></h3>
+<p>The following steps will verify that the Jython installation is correctly configured.</p>
+<ol class="arabic">
+<li><p class="first">Ensure OpenSplice is running by issuing the following command:</p>
+<div class="highlight-python"><div class="highlight"><pre>ospl start
+</pre></div>
+</div>
+</li>
+<li><p class="first">Start OpenSplice Tester to create some test topics used below:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ospltest</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Start the Jython interpreter:</p>
+<div class="highlight-python"><div class="highlight"><pre># for Linux systems
+jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar
+
+# for Windows systems
+jython\bin\jython -Djava.ext.dirs=%OSPL_HOME%\jar
+</pre></div>
+</div>
+</li>
+<li><p class="first">Enter the following commands at the interpreter command prompt:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">topic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">findTopic</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">OsplTestTopic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">classForTopic</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">OsplTestTopic</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Smoke test&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">writer</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Writer</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">reader</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sample</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">take</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">readData</span> <span class="o">=</span> <span class="n">sample</span><span class="o">.</span><span class="n">getData</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">data</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">readData</span><span class="o">.</span><span class="n">id</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">data</span><span class="o">.</span><span class="n">description</span> <span class="o">==</span> <span class="n">readData</span><span class="o">.</span><span class="n">description</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="section" id="a-quick-tour-of-ospl-scripting">
+<h2>9.3. A Quick Tour of OSPL Scripting<a class="headerlink" href="#a-quick-tour-of-ospl-scripting" title="Permalink to this headline">¶</a></h2>
+<p>The following is a brief tour of the scripting engine&#8217;s capabilities.</p>
+<div class="section" id="id2">
+<h3>9.3.1. Prerequisites<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>This demo assumes a shell instance that has been initialized with the release.com script found in the OSPL installation directory.
+In particular, the quick tour relies on the $OSPL_HOME, $OSPL_URI and $LD_LIBRARY_PATH variables being appropriately set.
+To run the script, do the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>cd OSPL-install-directory
+. release.com
+</pre></div>
+</div>
+</div>
+<div class="section" id="preliminaries">
+<h3>9.3.2. Preliminaries<a class="headerlink" href="#preliminaries" title="Permalink to this headline">¶</a></h3>
+<p>Start OSPL, typically with:</p>
+<div class="highlight-python"><div class="highlight"><pre>ospl start
+</pre></div>
+</div>
+<p>Then, start Vortex OpenSplice Tester:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ospltest</span>
+</pre></div>
+</div>
+<p>Tester is used to define topics used in the scripting engine, and to observe samples. From within Tester, create a default Reader on the following topics: OsplTestTopic.</p>
+</div>
+<div class="section" id="writing-and-reading-samples">
+<h3>9.3.3. Writing and Reading samples<a class="headerlink" href="#writing-and-reading-samples" title="Permalink to this headline">¶</a></h3>
+<p>The instructions below assume that you have installed and configured Jython in $OSPL_HOME/jython.
+Start the OSPL Scripting engine:</p>
+<div class="highlight-python"><div class="highlight"><pre>$OSPL_HOME/jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar
+</pre></div>
+</div>
+<p>You will see a standard start up banner from the Jython engine similar to the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>Jython 2.7.0 (default:9987c746f838, Apr 29 2015, 02:25:11)
+[Java HotSpot(TM) Server VM (Oracle Corporation)] on java1.7.0_80
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+
+&gt;&gt;&gt;
+</pre></div>
+</div>
+<p>The text &#8216;&gt;&gt;&gt;&#8217; is the interpreter prompt.</p>
+<p>To start our script, import the DDS module from OSPL Script. Enter the following at the prompt:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span>
+</pre></div>
+</div>
+<p>As part of the import, a connection is made to OSPL. If OSPL is not running, or if the environment variables are not correctly set, you may receive an error at this point.</p>
+<p>The dds module provides allows you to find topics, and create readers and writers. We will start with find the OsplTestTopic created when we started Tester. Enter the following at the prompt:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">findTopic</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># The next statement create a Python type from the topic</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">OsplTestTopic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">classForTopic</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># You can then instantiated instances of this class</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span> <span class="o">=</span> <span class="n">OsplTestTopic</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># You can then set fields in the data</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="s">&#39;Hello from osplscript&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s">&#39;boost&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mf">1.1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="mf">2.2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="mf">3.3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">d1</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="mf">4.4</span>
+</pre></div>
+</div>
+<p>Once some data is created, we can the create a writer for the topic, and write the data:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># create a Writer from the topic object we found previously</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">w</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Writer</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">w</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">d1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once the write has executed, example the Sample List in Tester. You should see a new sample in the list.</p>
+<p>Next, we can create a reader, and read the sample we have just written:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># create a Reader on the topic, and read a sample</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">r</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s1</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">take</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># s1 is a Sample, the user data is access via getData()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rd1</span> <span class="o">=</span> <span class="n">s1</span><span class="o">.</span><span class="n">getData</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We can check that the read data is what we expected:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">rd1</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">rd1</span><span class="o">.</span><span class="n">index</span> <span class="o">==</span> <span class="mi">100</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">rd1</span><span class="o">.</span><span class="n">description</span> <span class="o">==</span> <span class="s">&#39;Hello from osplscript&#39;</span>
+</pre></div>
+</div>
+<p>You can continue your exploration by writing a sample via Tester, and confirming that you can read it using OSPL Script. When you are done, exit the interpreter by typing:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">exit</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="working-with-qos-settings">
+<h3>9.3.4. Working with QoS settings<a class="headerlink" href="#working-with-qos-settings" title="Permalink to this headline">¶</a></h3>
+<p>By default, OSPL Scripting creates a publisher and a subscriber using the partition pattern &#8216;*&#8217;. All other publisher and subscriber QoS policies are DDS defaults.
+Similarly, data readers and data writers have, by default, QoS policies derived from topic to which they are bound. If default QoS policies do not statisfy your requirements,
+you can explicitly create publishers and subscribers, and assign them explicity QoS policies. Similarly, you can explicitly assign QoS policies to data readers and data writers
+that you create.</p>
+<p>The following example shows the explicit creation of a Subscriber:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span><span class="p">,</span> <span class="n">qos</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">topic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">findTopic</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># create an explicit subscriber on a partition &#39;test&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sub</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">qos</span><span class="o">.</span><span class="n">SubscriberQos</span><span class="p">()</span><span class="o">.</span><span class="n">withPolicy</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">qos</span><span class="o">.</span><span class="n">Partition</span><span class="p">()</span><span class="o">.</span><span class="n">withName</span><span class="p">(</span><span class="s">&#39;test&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a reader with topic-derived defaults</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">drDefault</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a reader with explicity reader QoS policies</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">drExplicit</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">topic</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">qos</span><span class="o">.</span><span class="n">DataReaderQos</span><span class="p">()</span><span class="o">.</span><span class="n">withPolicy</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">qos</span><span class="o">.</span><span class="n">Durability</span><span class="p">()</span><span class="o">.</span><span class="n">withVolatile</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="p">)</span>
+</pre></div>
+</div>
+<p>The following example shows adding explicit QoS policies to a data writer on the default publisher:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">dwExplicit</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Writer</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">topic</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">qos</span><span class="o">.</span><span class="n">DataWriterQos</span><span class="p">()</span><span class="o">.</span><span class="n">withPolicy</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">qos</span><span class="o">.</span><span class="n">Durability</span><span class="p">()</span><span class="o">.</span><span class="n">withVolatile</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="p">)</span>
+</pre></div>
+</div>
+<p>The QoS classes for publishers, subscribers, data readers and data writers are, respectively, PublisherQos, SubscriberQos, DataReaderQos and DataWriterQos.
+Although OSPL Scripting does not allow creating of topics, topics can return their QoS settings via a TopicQos instance.
+The help for each of these QoS classes describes the applicable policies.
+The help for policy classes describes all the methods available to configure the policy.
+You can view help on QoS classes and policies via the help function:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">qos</span><span class="o">.</span><span class="n">SubscriberQos</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">qos</span><span class="o">.</span><span class="n">Parition</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">qos</span><span class="o">.</span><span class="n">Durability</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="working-with-waitsets">
+<h3>9.3.5. Working with WaitSets<a class="headerlink" href="#working-with-waitsets" title="Permalink to this headline">¶</a></h3>
+<p>OSPL Scripting implements DDS wait sets with read conditions, query conditions and status conditions. This allows your code to block until data is
+available on a data reader. Here is a simple example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># find the topic, create a data reader and wait set</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">topic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">findTopic</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dr</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">WaitSet</span><span class="p">()</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a read condition of Alive, NotRead, New samples</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rc</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">readCondition</span><span class="p">(</span><span class="n">dds</span><span class="o">.</span><span class="n">DataState</span><span class="p">()</span><span class="o">.</span><span class="n">withAlive</span><span class="p">()</span><span class="o">.</span><span class="n">withNotRead</span><span class="p">()</span><span class="o">.</span><span class="n">withNew</span><span class="p">())</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># attach the read condition to the wait set</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">attachCondition</span><span class="p">(</span><span class="n">rc</span><span class="p">)</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># wait...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">waitForConditions</span><span class="p">()</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># waiting returned, we have a sample</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sample</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">take</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># do something with the sample</span>
+</pre></div>
+</div>
+<p>The waitForConditions() method can accept optional arguments, include a timeout. See the help for details:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">help</span><span class="p">(</span><span class="n">dds</span><span class="o">.</span><span class="n">WaitSet</span><span class="o">.</span><span class="n">waitForConditions</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="filtering-data">
+<h3>9.3.6. Filtering data<a class="headerlink" href="#filtering-data" title="Permalink to this headline">¶</a></h3>
+<p>OSPL Scripting allows you to filter data from a reader using a &#8216;selector&#8217;. The selector can also be used to create a condition for a wait set.</p>
+<p>A selector is created via a reader&#8217;s newSelectBuilder() method. A &#8216;select builder&#8217; allows you to specify state conditions as well as an optional query expression.
+The following example creates a selector:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># find the topic, create a data reader</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">topic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">findTopic</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dr</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a selector for Alive, NotRead, New samples with &#39;index = 100&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">selector</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">newSelectBuilder</span><span class="p">()</span><span class="o">.</span><span class="n">withAlive</span><span class="p">()</span><span class="o">.</span><span class="n">withNotRead</span><span class="p">()</span><span class="o">.</span><span class="n">withNew</span><span class="p">()</span> \
+<span class="gp">&gt;&gt;&gt; </span>    <span class="o">.</span><span class="n">content</span><span class="p">(</span><span class="s">&#39;index = 100&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Each of the &#8216;selector builder&#8217; methods returns the builder, so that calls can be chained as above.
+Apart from build(), none of the builder methods is required.
+A selector with no filters works identically to the data reader from which it was created.</p>
+<p>Once created, a selector can be used like a data reader, with take() or read() methods:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># use the selector like a reader</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sample</span> <span class="o">=</span> <span class="n">selector</span><span class="o">.</span><span class="n">take</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Alternatively, the selector can be used with a waitset, by calling the selector&#8217;s condition() method:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># Use the selector in conjuction with a waitset</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">WaitSet</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">attachCondition</span><span class="p">(</span><span class="n">selector</span><span class="o">.</span><span class="n">condition</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">waitForConditions</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># the selector now has data...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sample</span> <span class="o">=</span> <span class="n">selector</span><span class="o">.</span><span class="n">take</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>In the above example, the selector.condition() method returns a QueryCondition.
+If the content() method had not been called, a ReadCondition would have been returned.</p>
+<p>You can create a QueryCondition directly, and then use it with a wait set:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">queryCond</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">queryCondition</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="s">&#39;index = 100&#39;</span><span class="p">,</span> <span class="p">[],</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">dds</span><span class="o">.</span><span class="n">DataState</span><span class="p">()</span><span class="o">.</span><span class="n">withAlive</span><span class="p">()</span><span class="o">.</span><span class="n">withNotRead</span><span class="p">()</span><span class="o">.</span><span class="n">withNew</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">attachCondition</span><span class="p">(</span><span class="n">queryCond</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A selector, however, has the advantage of providing your with filtered access to the data that triggered the query condition.
+Creating a query or read condition explicitly does not provide such filtering; the data reader from which the condition
+was defined will still return all available samples, whether they satisfy the condition or not.
+For this reason, selectors are the preferred method for defining data filters, waiting for filtered data availability, and
+for accessing the filtered data.</p>
+</div>
+<div class="section" id="query-expressions-query-parameters-and-their-limitations">
+<h3>9.3.7. Query Expressions, Query Parameters and their Limitations<a class="headerlink" href="#query-expressions-query-parameters-and-their-limitations" title="Permalink to this headline">¶</a></h3>
+<p>Both the selector builder&#8217;s content() method and the QueryCondition() constructor allow the query expression to contain
+substitution parameters of the form {n}, where n is a zero-based index into an list of string parameter values.
+For example, we could filter OsplTestTopic&#8217;s index value to be between an upper and lower bound, and specify the query as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># find the topic, create a data reader</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">topic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">findTopic</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dr</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a selector for Alive, NotRead, New samples with &#39;index = 100&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">selector</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">newSelectBuilder</span><span class="p">()</span><span class="o">.</span><span class="n">withAlive</span><span class="p">()</span><span class="o">.</span><span class="n">withNotRead</span><span class="p">()</span><span class="o">.</span><span class="n">withNew</span><span class="p">()</span> \
+<span class="gp">&gt;&gt;&gt; </span>    <span class="o">.</span><span class="n">content</span><span class="p">(</span><span class="s">&#39;index &gt;= {0} and index &lt; {1}&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;100&#39;</span><span class="p">,</span> <span class="s">&#39;200&#39;</span><span class="p">])</span> \
+<span class="gp">&gt;&gt;&gt; </span>    <span class="o">.</span><span class="n">build</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We could use similar parameters in creating a QueryCondition directly:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">queryCond</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">queryCondition</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="s">&#39;index &gt;= {0} and index &lt; {1}&#39;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="p">[</span><span class="s">&#39;100&#39;</span><span class="p">,</span> <span class="s">&#39;200&#39;</span><span class="p">],</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">dds</span><span class="o">.</span><span class="n">DataState</span><span class="p">()</span><span class="o">.</span><span class="n">withAlive</span><span class="p">()</span><span class="o">.</span><span class="n">withNotRead</span><span class="p">()</span><span class="o">.</span><span class="n">withNew</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>OSPL Scripting attempts to replace the passed parameter values in the query expression, formatting the values as valid query expression constants.
+However, because of limitations in the APIs available to OSPL Scripting, this formatting is imperfect. In particular, the following values are likely
+to be formatted incorrectly:</p>
+<ul class="simple">
+<li>enumeration values will incorrectly be quoted</li>
+<li>boolean values will incorrectly be quoted</li>
+<li>string values that can be converted to numbers will incorrectly be unquoted.</li>
+</ul>
+<p>The work around for all these limitations is to avoid using parameter substitution.
+For example, instead of the following parameterized condition against the &#8216;state&#8217; enumeration field in OsplTestTopic:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># DON&#39;T DO THIS FOR AN ENUMERATED FIELD</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">selector</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">content</span><span class="p">(</span><span class="s">&#39;state = {0}&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;init&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Instead, write the condition without substitution:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">selector</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">content</span><span class="p">(</span><span class="s">&#39;state = init&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-coherent-access">
+<h3>9.3.8. Using Coherent access<a class="headerlink" href="#using-coherent-access" title="Permalink to this headline">¶</a></h3>
+<p>OSPL Scripting now supports Group and Topic coherence when reading and writing samples.</p>
+<p>Group coherence allows a publisher to release a group of samples, possibly spanning
+several topics to subscribers in a group.
+Subscribers will not see any samples in a coherent group until the publisher has completed group.
+A subscriber using Group coherence may, if desired, retrieve the samples, across all readers in the group, in the order
+that the publisher wrote them.</p>
+<p>Topic coherence allows a publisher to release changes across multiple instances of the sample topic
+as a coherent set. Subscribers will not see any samples in a coherent set util the publisher has
+completed the set.
+A subscriber using Topic coherence may, if desired, retrieve the samples with-in a specific topic, in the order
+that the publisher wrote them.</p>
+<p>To establish a publisher or subscriber with coherent access, use the Presentation Policy when creating the
+publisher or subscriber QoS:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span><span class="p">,</span> <span class="n">qos</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a presentation policy, enabling Group coherence and ordered access</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">groupPresentation</span> <span class="o">=</span> <span class="n">qos</span><span class="o">.</span><span class="n">Presentation</span><span class="p">()</span><span class="o">.</span><span class="n">withCoherentAccess</span><span class="p">()</span><span class="o">.</span><span class="n">withGroup</span><span class="p">()</span> \
+<span class="gp">&gt;&gt;&gt; </span>    <span class="o">.</span><span class="n">withOrderedAccess</span><span class="p">()</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a publisher with the policy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pub</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Publisher</span><span class="p">(</span><span class="n">qos</span><span class="o">.</span><span class="n">PublisherQos</span><span class="p">()</span><span class="o">.</span><span class="n">withPolicy</span><span class="p">(</span><span class="n">groupPresentation</span><span class="p">))</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># create a subscriber with the policy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sub</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Subscriber</span><span class="p">(</span><span class="n">qos</span><span class="o">.</span><span class="n">SubscriberQos</span><span class="p">()</span><span class="o">.</span><span class="n">withPolicy</span><span class="p">(</span><span class="n">groupPresentation</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>To create a presentation policy with Topic scope, use the withTopic() method.
+To create a presentation policy with Instance scope (the default), use the withInstance() method.</p>
+<p>To write samples using any coherent scope, the publisher object offers the methods beginCoherentChanges()
+and endCoherentChanges(). Each call beginCoherentChanges() should be matched with a call to endCoherentChanges().
+Calls may be nested, for programmer convenience, but only the outer most pair of calls have any impact.
+Within a coherent change, any of the publisher&#8217;s data writers may be used to write samples.
+When the coherent change is completed (via a call to endCoherentChanges()), the samples are released to subscribers.</p>
+<p>To enable subscribers to read coherent changes, the subscriber object offers two methods: beginAccess() and
+endAccess(). Their use is optional, but without them, the subscriber will not guarantee that samples will be returned
+according to the coherent groups in which they were created.</p>
+<p>The following code pattern my be used to access samples written with Group coherence, or with ordered access:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># sub is a subscriber with Group coherence presentation policy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># the subscriber must create data readers for all the topics</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># it wants to access</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sub</span><span class="o">.</span><span class="n">beginAccess</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># return the dataReaders, in the order their corresponding writers</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># wrote samples</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">drList</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">dataReaders</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">dr</span> <span class="ow">in</span> <span class="n">drList</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="c"># take (or read) ONLY ONE sample for each element of the list</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">sample</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">take</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="c"># using the reader&#39;s topicDescription() method to identify the topic</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">if</span> <span class="s">&#39;foo&#39;</span> <span class="o">==</span> <span class="n">dr</span><span class="o">.</span><span class="n">topicDescription</span><span class="p">()</span><span class="o">.</span><span class="n">getName</span><span class="p">():</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="c"># do something with a &#39;foo&#39; sample</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sub</span><span class="o">.</span><span class="n">endAccess</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>When not using Group access or ordered access, a subscriber may still use the dataReaders() method, however,
+in this case, dataReaders() will return a set of readers with available data.
+The subscribing application can then take or read as many samples as are available from each reader in the set.</p>
+<div class="section" id="note-using-waitsets-with-group-coherence">
+<h4>9.3.8.1. Note: Using waitsets with group coherence<a class="headerlink" href="#note-using-waitsets-with-group-coherence" title="Permalink to this headline">¶</a></h4>
+<p>The DDS specification indicates that subscribers will raise a &#8216;data available on readers&#8217; event when a new
+group is release.
+However, a defect in underlying APIs prevent OPSL Scripting from receiving this event.
+In other words, the following will not work:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># This will NOT WORK!!!</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">status</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">WaitSet</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sc</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">statusCondition</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sc</span><span class="o">.</span><span class="n">setEnabledStatuses</span><span class="p">([</span><span class="n">status</span><span class="o">.</span><span class="n">DataOnReadersStatus</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">attachCondition</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">waitForConditions</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># will NEVER get here</span>
+</pre></div>
+</div>
+<p>As a work around, attached status conditions from each of the subscriber&#8217;s readers to the wait set:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># This will work</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">WaitSet</span><span class="p">()</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># do this for each reader (dr) you care about</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sc</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">statusCondition</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sc</span><span class="o">.</span><span class="n">setEnabledStatuses</span><span class="p">([</span><span class="n">status</span><span class="o">.</span><span class="n">DataAvailableStatus</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">attachCondition</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span><span class="o">.</span><span class="n">waitForConditions</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="creating-a-unit-test-script">
+<h3>9.3.9. Creating a unit test script<a class="headerlink" href="#creating-a-unit-test-script" title="Permalink to this headline">¶</a></h3>
+<p>Although using an interactive interpreter provides instant feedback, it is more likely that you will create script files, and execute them.
+In this section, we will create and execute a script that performs a unit test using the stand python unittest module.
+Start by created a text file in your favourite editor. Call the file firstUnitTest.py. Copy and paste the text below:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">unittest</span>
+<span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span>
+
+<span class="k">class</span> <span class="nc">firstUnitTest</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+
+        <span class="k">def</span> <span class="nf">testReadOsplTestTopic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">findTopic</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
+            <span class="n">dw</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Writer</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">OsplTestTopic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">classForTopic</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">wdata</span> <span class="o">=</span> <span class="n">OsplTestTopic</span><span class="p">()</span>
+            <span class="n">wdata</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="n">wdata</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mf">5.1</span>
+            <span class="n">wdata</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="mf">5.2</span>
+            <span class="n">wdata</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="mf">5.3</span>
+            <span class="n">wdata</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="mf">5.4</span>
+            <span class="n">wdata</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s">&#39;hit&#39;</span>
+            <span class="n">wdata</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="n">wdata</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="s">&#39;test&#39;</span>
+            <span class="n">dw</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">wdata</span><span class="p">)</span>
+
+            <span class="n">dr</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">sample</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">take</span><span class="p">()</span>
+            <span class="n">rdata</span> <span class="o">=</span> <span class="n">sample</span><span class="o">.</span><span class="n">getData</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">wdata</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">rdata</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">wdata</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">rdata</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">wdata</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">rdata</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">wdata</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">rdata</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">wdata</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">rdata</span><span class="o">.</span><span class="n">t</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">wdata</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">rdata</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">wdata</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">rdata</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">wdata</span><span class="o">.</span><span class="n">description</span><span class="p">,</span> <span class="n">rdata</span><span class="o">.</span><span class="n">description</span><span class="p">)</span>
+
+<span class="c"># standard python to run the unit test from the command line</span>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+        <span class="c">#import sys;sys.argv = [&#39;&#39;, &#39;Test.testName&#39;]</span>
+        <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This test case essentially repeats the test we created in the interpreter. To run the test, enter the following command in your shell command prompt:</p>
+<div class="highlight-python"><div class="highlight"><pre>$OSPL_HOME/jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar firstUnitTest.py
+</pre></div>
+</div>
+<p>The script engine will respond with output like the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>.
+----------------------------------------------------------------------
+Ran 1 test in 0.107s
+
+OK
+</pre></div>
+</div>
+<p>The output is compact. Python&#8217;s unit test philosophy is to minimize output except in the case of test failures.
+Experiment with the test to introduce a failure, and see how the output changes.</p>
+</div>
+<div class="section" id="working-with-more-complex-topics">
+<h3>9.3.10. Working with more Complex topics<a class="headerlink" href="#working-with-more-complex-topics" title="Permalink to this headline">¶</a></h3>
+<p>The OsplTestTopic used above is simple. This section examines working with more complex topics – ones that include sequences, arrays, nested structures and unions.
+As with the preceding examples, Tester should be running, as it creates the samples that are used in this example.
+If OSPL Scripting is not running, start it:</p>
+<div class="highlight-python"><div class="highlight"><pre>$OSPL_HOME/jython/bin/jython -Djava.ext.dirs=$OSPL_HOME/jar
+</pre></div>
+</div>
+<p>The use the following Python to find the OsplSequenceTopic DDS topic and create a Python class from it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript</span> <span class="kn">import</span> <span class="n">dds</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">seqTopic</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">findTopic</span><span class="p">(</span><span class="s">&#39;OsplSequenceTopic&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">seqClass</span> <span class="o">=</span> <span class="n">dds</span><span class="o">.</span><span class="n">classForTopic</span><span class="p">(</span><span class="n">seqTopic</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">seqInstance</span> <span class="o">=</span> <span class="n">seqClass</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>From there, you can explore the instance data object. Fundamentally, it behaves pretty much like a C &#8216;struct&#8217; would:
+top level fields are accessed via the dot notation:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">seqInstance</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>Fields that are arrays or sequences may be indexed with zero-based value. Standard python sequence methods may be used to add and remove elements from the lists.
+(Fields declared as arrays are pre-allocated to the declared size. OsplSequenceTopic contains no array fields, but you can explore OsplArrayTopic, which does.)</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">seqInstance</span><span class="o">.</span><span class="n">iVector</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">seqInstance</span><span class="o">.</span><span class="n">iVector</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">seqInstance</span><span class="o">.</span><span class="n">iVector</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">seqInstance</span><span class="o">.</span><span class="n">iVector</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">seqInstance</span><span class="o">.</span><span class="n">iVector</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">assert</span> <span class="n">seqInstance</span><span class="o">.</span><span class="n">iVector</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<p>If a class includes a a sequence of structures, then a fieldName_new() method is created so you can instantiate instances of the class:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">seqInstance</span><span class="o">.</span><span class="n">pVector</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seqInstance</span><span class="o">.</span><span class="n">pVector_new</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">seqInstance</span><span class="o">.</span><span class="n">pVector</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="s">&#39;boost&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="creating-a-sample-time-line">
+<h3>9.3.11. Creating a sample time-line<a class="headerlink" href="#creating-a-sample-time-line" title="Permalink to this headline">¶</a></h3>
+<p>The OSPL Scripting engine includes module (osplscript.recorder) that can automatically read samples from one or more topics and return these in the order received.
+These sample sequence can then be queried using standard python mechanisms to create tests that consider multiple samples at once.
+To use the recorder module, do the following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">osplscript.recorder</span> <span class="kn">import</span> <span class="n">Recorder</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t1Recorder</span> <span class="o">=</span> <span class="n">Recorder</span><span class="p">(</span><span class="s">&#39;OsplTestTopic&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t2Recorder</span> <span class="o">=</span> <span class="n">Recorder</span><span class="p">(</span><span class="s">&#39;OsplSequenceTopic&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># … time passes …</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># get a snapshot of samples recorded</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t1Samples</span> <span class="o">=</span> <span class="n">t1Recorder</span><span class="o">.</span><span class="n">getSamples</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t2Samples</span> <span class="o">=</span> <span class="n">t2Recorder</span><span class="o">.</span><span class="n">getSamples</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># clear the recorded samples, but keep recording</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t1Recorder</span><span class="o">.</span><span class="n">clearSamples</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># stop recording, the sample list is still available, but no longer updated</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t1Recorder</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="using-eclipse-and-pydev-to-create-and-run-osplscript-files">
+<h2>9.4. Using Eclipse and PyDev to create and run OsplScript files<a class="headerlink" href="#using-eclipse-and-pydev-to-create-and-run-osplscript-files" title="Permalink to this headline">¶</a></h2>
+<p>Eclipse is a popular open source IDE. PyDev is a Python specific open source add-on for Eclipse.
+This chapter describes using Eclipse and PyDev.</p>
+<div class="section" id="download-and-installation">
+<h3>9.4.1. Download and Installation<a class="headerlink" href="#download-and-installation" title="Permalink to this headline">¶</a></h3>
+<p>Eclipse may be obtained from the <a class="reference external" href="http://www.eclipse.org/downloads/">Eclipse Download page</a>. Choose the <strong>IDE for Java Developers</strong> download.
+Installation Instructions are available on the <a class="reference external" href="http://wiki.eclipse.org/Eclipse/Installation">Eclipse Install Guide page</a>.</p>
+<p>Once Eclipse is installed, start it and choose or create a workspace. You are then ready to proceed with
+installing PyDev. See the <a class="reference external" href="http://www.pydev.org/download.html">PyDev Download page</a> for instructions - instructions appear on the
+right-hand side of the page under <strong>Quick Install</strong> &gt; <strong>Update Manager</strong>.</p>
+</div>
+<div class="section" id="id3">
+<h3>9.4.2. Configuration<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>Once PyDev is installed, you must configure it with the location of you Jython installation:</p>
+<ol class="arabic simple">
+<li>Start Eclipse, and choose a workspace if prompted.</li>
+<li>From the menu, choose <strong>Window</strong> -&gt; <strong>Preferences</strong>.</li>
+<li>In the left-hand tree, find  and click <strong>PyDev</strong> &gt; <strong>Interpreters</strong> &gt; <strong>Jython interpreters</strong>.</li>
+<li>Click the <strong>Add</strong> button.</li>
+<li>Enter a name for the Jython interpreter. Example: Tester Script</li>
+<li>Browser for the jython.jar file in the root directory of the Tester Script Jython installation.</li>
+<li>Click OK.</li>
+</ol>
+<p>8. Still in the Preferences dialog on the PyDev &gt; Interpreters &gt; Jython interpreters page, select your
+newly created interpreter entry in the upper list. Then click the <strong>Environment</strong> tab in the lower half
+of the dialog.
+9. Add the following environment variables: OSPL_HOME, OSPL_URI and LD_LIBRARY_PATH. Their values should
+be the same as those found in your command line environment.
+10. Click the <strong>Libraries</strong> tab in the lower half of the dialog.
+11. Click <strong>New Folder</strong> and browse for and select the <strong>jar</strong> directory under your Vortex OpenSplice installation directory.
+12. Click <strong>OK</strong> to complete the folder selection.
+13. Click <strong>OK</strong> to close the preferences dialog.</p>
+<p>You are new ready to create a new Jython project.</p>
+</div>
+<div class="section" id="creating-a-pydev-project">
+<h3>9.4.3. Creating a PyDev Project<a class="headerlink" href="#creating-a-pydev-project" title="Permalink to this headline">¶</a></h3>
+<p>This section describes creating a project for editing Python files.</p>
+<ol class="arabic simple">
+<li>Start Eclipse and choose a workspace, if it is not already running.</li>
+<li>From the menu, choose <strong>File</strong> -&gt; <strong>New</strong> -&gt; <strong>Project</strong>.</li>
+<li>In the new project wizard, select <strong>PyDev</strong> &gt; <strong>PyDev Project</strong>. Click <strong>Next</strong>.</li>
+<li>Enter a project name.</li>
+<li>Ensure the <strong>Project type</strong> is set to <strong>Jython</strong>.</li>
+<li>Ensure that the <strong>Interpreter</strong> is set to your Tester Script Jython interpreter configured above.</li>
+<li>Click <strong>Finish</strong>.</li>
+<li>In the Package Explorere, right click over the newly created project, and choose <strong>Properties</strong>.</li>
+<li>In the left-hand pane, click <strong>PyDev - PYTHONPATH</strong>.</li>
+<li>Click the <strong>External Libraries</strong> tab.</li>
+<li>Click <strong>Add zip/jar/egg</strong>, and choose cmapi.jar from the jar subdirectory of your Vortex OpenSplice installation. Click <strong>OK</strong>.</li>
+<li>Click <strong>Add zip/jar/egg</strong>, and choose osplscript.jar from the jar subdirectory of your Vortex OpenSplice installation. Click <strong>OK</strong>.</li>
+<li>Click <strong>OK</strong> to close the properties dialog.</li>
+</ol>
+<p>You may be prompted to switch to the PyDev perspective. This is optional. The PyDev perspective adapts
+the Eclipse display for editing python files with PyDev. If you are new to Eclipse, it is recommended that
+your switch to the PyDev perspective. The following instructions assume you are in this perspective.</p>
+</div>
+<div class="section" id="create-a-python-script">
+<h3>9.4.4. Create a Python script<a class="headerlink" href="#create-a-python-script" title="Permalink to this headline">¶</a></h3>
+<p>Python files may declare classes, define unit tests, or just provide instructions that
+are to be executed when the file is run. To create a Python file:</p>
+<ol class="arabic simple">
+<li>From the menu choose <strong>File</strong> -&gt; <strong>New PyDev Module</strong>.</li>
+<li>If not set, browser for a Source Folder, which must be a directory in your project.</li>
+<li>Optionally, enter a package name.</li>
+<li>Enter the name of the python file. PyDev will add a .py extension automatically.</li>
+<li>Click <strong>OK</strong></li>
+</ol>
+<p>An editor will open, and you will be prompted for a template for the newly created file. The most common choices are:
+* one of UnitTest variations,  if you want to write tests.
+* Main, if you want to write a python script to be executed directly by the interpreter
+* Class, if you want to define python classes to be consumed by other modules.</p>
+</div>
+<div class="section" id="running-a-python-script">
+<h3>9.4.5. Running a Python script<a class="headerlink" href="#running-a-python-script" title="Permalink to this headline">¶</a></h3>
+<p>To run a python script (or unit test), do the following:</p>
+<p>1. Right click anywhere in the editor and choose <strong>Run As</strong> -&gt; <strong>Jython Run</strong>.
+(For unit tests, choose <strong>Run As</strong> -&gt; <strong>Jython unit-test</strong>.)</p>
+</div>
+<div class="section" id="debugging-a-python-script">
+<h3>9.4.6. Debugging a Python script<a class="headerlink" href="#debugging-a-python-script" title="Permalink to this headline">¶</a></h3>
+<p>Launching a debugger is similar to running a script. Right click the script, and choose <strong>Debug As</strong> and then
+the appropriate sub-menu item. While debugging, note the following:</p>
+<ul class="simple">
+<li>You can set break points in a script by clicking in the left margin of the script editor.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="using-pycharm-to-create-and-run-tester-scripting">
+<h2>9.5. Using PyCharm to create and run Tester Scripting<a class="headerlink" href="#using-pycharm-to-create-and-run-tester-scripting" title="Permalink to this headline">¶</a></h2>
+<p>PyCharm is a Python specific IDE developed by Jet Brains, the makes of IntelliJ IDEA.
+PyCharm comes in several forms. This chapter describes using the free Community Edition.</p>
+<p>Note that similar instructions apply for using IntelliJ IDEA with the Python Plugin, as the Python Plugin
+adds very similar capabilities.</p>
+<div class="section" id="id4">
+<h3>9.5.1. Download and Installation<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<p>PyCharm may be obtained from the <a class="reference external" href="https://www.jetbrains.com/pycharm/download/">PyCharm Download page</a>. Choose the Community Edition download.
+The page includes a link to Installation Instructions appropriate to your platform.</p>
+</div>
+<div class="section" id="id5">
+<h3>9.5.2. Configuration<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<p>This subsection explains how to configure PyCharm so that is will work with the Jython
+installation you created and configured with Tester Script.</p>
+<ol class="arabic simple">
+<li>Start PyCharm. On the Welcome script.</li>
+<li>Click the <strong>Configure</strong> drop down near the bottom of the screen, and then choose <strong>Settings</strong>.</li>
+<li>In the left-hand tree, find <strong>Default Project</strong>, expand it and select <strong>Project Interpreter</strong>.</li>
+<li>On the right-hand side of the dialog, click the gear icon, and choose <strong>Add Local</strong>.</li>
+<li>In the file selection dialog, browse for the your Jython executable from your Jython installation. The Jython installation instructions used the following location: $OSPL_HOME/jython/bin/jython</li>
+<li>Click OK to close the selection dialog. Click OK again to close the Settings dialog.</li>
+</ol>
+<p>You are new ready to create a new Jython project.</p>
+</div>
+<div class="section" id="creating-a-pycharm-project">
+<h3>9.5.3. Creating a PyCharm Project<a class="headerlink" href="#creating-a-pycharm-project" title="Permalink to this headline">¶</a></h3>
+<p>This section describes creating Python projects in PyCharm.</p>
+<ol class="arabic simple">
+<li>Start PyCharm, if it is not already running.</li>
+<li>If the Welcome screen is showing, click <strong>Create New Project</strong>. Otherwise, select <strong>New Project</strong> from the <strong>File</strong> menu.</li>
+<li>Provide a project name and location. Verify that the Interpreter is the Tester Scripting Jython interpreter. Click <strong>Create</strong>.</li>
+</ol>
+</div>
+<div class="section" id="id6">
+<h3>9.5.4. Create a Python script<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<p>Python files may declare classes, define unit tests, or just provide instructions that
+are to be executed when the file is run. To create a Python file:</p>
+<ol class="arabic simple">
+<li>From the menu choose <strong>File</strong> -&gt; <strong>New...</strong>.</li>
+<li>In the pop-up that displays, click <strong>Python File</strong>.</li>
+<li>Provide a name. If you do not add it, PyCharm will add a .py extension.</li>
+<li>The <strong>Kind</strong> drop down allows you to choose between <strong>Python file</strong> or <strong>Python unit test</strong>.</li>
+<li>Click <strong>OK</strong> to create the file. The file will open in an editor.</li>
+</ol>
+</div>
+<div class="section" id="id7">
+<h3>9.5.5. Running a Python script<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<p>Running a script requires some the first time setup:</p>
+<ol class="arabic">
+<li><p class="first">From the menu, choose <strong>Run</strong> -&gt; <strong>Edit Configurations</strong>.</p>
+</li>
+<li><p class="first">In the left-hand tree, expand <strong>Defaults</strong> and click <strong>Python</strong></p>
+</li>
+<li><p class="first">Press the button containing ellipsis at the end of the <strong>Environment Variables</strong> line.</p>
+</li>
+<li><p class="first">Add the following environment variables (as defined in your environment): OSPL_HOME, OSPL_URI and LD_LIBRARY_PATH</p>
+</li>
+<li><p class="first">Click <strong>OK</strong> to close the Environment Variables dialog</p>
+</li>
+<li><dl class="first docutils">
+<dt>In the <strong>Interpreter Options</strong> edit box, enter:</dt>
+<dd><p class="first last">-Djava.ext.dirs=&lt;full-path-to-OSPL_HOME&gt;/jar</p>
+</dd>
+</dl>
+</li>
+<li><p class="first">Ensure <strong>Python intepreter</strong> is set to the Jython implementation you created earlier.</p>
+</li>
+</ol>
+<p>If you plan on running Python unit tests, you will have to repeat the above steps for the <strong>Python tests</strong> default.</p>
+<p>Once the default configurations are setup, you can run Python script as follows:</p>
+<ol class="arabic simple">
+<li>Right click anywhere in the editor and choose <strong>Run</strong></li>
+</ol>
+</div>
+<div class="section" id="id8">
+<h3>9.5.6. Debugging a Python script<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<p>Once run configurations are setup, debug is essentially another form of running. Note the following:</p>
+<ul class="simple">
+<li>You can launch a debug session by right clicking in a script editor, and choosing <strong>Debug</strong></li>
+<li>You can set break points in a script by clicking in the left margin of the script editor.</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">9. Python Scripting Engine</a><ul>
+<li><a class="reference internal" href="#about-python-scripting">9.1. About Python Scripting</a><ul>
+<li><a class="reference internal" href="#design-goals">9.1.1. Design Goals</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuration">9.2. Configuration</a><ul>
+<li><a class="reference internal" href="#prerequisites">9.2.1. Prerequisites</a></li>
+<li><a class="reference internal" href="#download-and-install-jython">9.2.2. Download and install Jython</a></li>
+<li><a class="reference internal" href="#verifying-the-installation">9.2.3. Verifying the installation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#a-quick-tour-of-ospl-scripting">9.3. A Quick Tour of OSPL Scripting</a><ul>
+<li><a class="reference internal" href="#id2">9.3.1. Prerequisites</a></li>
+<li><a class="reference internal" href="#preliminaries">9.3.2. Preliminaries</a></li>
+<li><a class="reference internal" href="#writing-and-reading-samples">9.3.3. Writing and Reading samples</a></li>
+<li><a class="reference internal" href="#working-with-qos-settings">9.3.4. Working with QoS settings</a></li>
+<li><a class="reference internal" href="#working-with-waitsets">9.3.5. Working with WaitSets</a></li>
+<li><a class="reference internal" href="#filtering-data">9.3.6. Filtering data</a></li>
+<li><a class="reference internal" href="#query-expressions-query-parameters-and-their-limitations">9.3.7. Query Expressions, Query Parameters and their Limitations</a></li>
+<li><a class="reference internal" href="#using-coherent-access">9.3.8. Using Coherent access</a><ul>
+<li><a class="reference internal" href="#note-using-waitsets-with-group-coherence">9.3.8.1. Note: Using waitsets with group coherence</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#creating-a-unit-test-script">9.3.9. Creating a unit test script</a></li>
+<li><a class="reference internal" href="#working-with-more-complex-topics">9.3.10. Working with more Complex topics</a></li>
+<li><a class="reference internal" href="#creating-a-sample-time-line">9.3.11. Creating a sample time-line</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-eclipse-and-pydev-to-create-and-run-osplscript-files">9.4. Using Eclipse and PyDev to create and run OsplScript files</a><ul>
+<li><a class="reference internal" href="#download-and-installation">9.4.1. Download and Installation</a></li>
+<li><a class="reference internal" href="#id3">9.4.2. Configuration</a></li>
+<li><a class="reference internal" href="#creating-a-pydev-project">9.4.3. Creating a PyDev Project</a></li>
+<li><a class="reference internal" href="#create-a-python-script">9.4.4. Create a Python script</a></li>
+<li><a class="reference internal" href="#running-a-python-script">9.4.5. Running a Python script</a></li>
+<li><a class="reference internal" href="#debugging-a-python-script">9.4.6. Debugging a Python script</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-pycharm-to-create-and-run-tester-scripting">9.5. Using PyCharm to create and run Tester Scripting</a><ul>
+<li><a class="reference internal" href="#id4">9.5.1. Download and Installation</a></li>
+<li><a class="reference internal" href="#id5">9.5.2. Configuration</a></li>
+<li><a class="reference internal" href="#creating-a-pycharm-project">9.5.3. Creating a PyCharm Project</a></li>
+<li><a class="reference internal" href="#id6">9.5.4. Create a Python script</a></li>
+<li><a class="reference internal" href="#id7">9.5.5. Running a Python script</a></li>
+<li><a class="reference internal" href="#id8">9.5.6. Debugging a Python script</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gpbuffers.html"
+                        title="previous chapter">8. Google Protocol Buffers</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="appendixa.html"
+                        title="next chapter">10. Appendix A</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/pythonscripting.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="appendixa.html" title="10. Appendix A"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gpbuffers.html" title="8. Google Protocol Buffers"
+             >previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

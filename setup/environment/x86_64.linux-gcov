@@ -18,6 +18,8 @@ tao_check || ERRS=1
 jacorb_check || ERRS=1
 gsoap_check || ERRS=1
 doxygen_check || ERRS=1
+protoc_check || ERRS=1
+c99_check || ERRS=1
 
 SPLICE_HOST_FULL=x86_64.linux-gcc${GCC_FULLVERSION}-glibc${GLIBC_VERSION}-gcov
 SPLICE_TARGET_FULL=$SPLICE_HOST_FULL

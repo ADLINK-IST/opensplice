@@ -12,7 +12,9 @@ sleep 2
 
 ./sac_contentfilteredtopic_pub > pubResult.txt
 
-sleep 15
+echo === Waiting for processes to terminate
+waitForProcessTermination sac_contentfilteredtopic_pub 40
+waitForProcessTermination sac_contentfilteredtopic_sub 40
 
 contentfilteredtopicCheckResult
 

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+                                Vortex Cafe
+
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+
+-->
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.collections.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane id="AnchorPane" fx:id="subscriberQoSPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="389.0" prefWidth="223.0" style="-fx-background-color:lightgrey" xmlns:fx="http://javafx.com/fxml" fx:controller="SubscriberQoSController">
+  <children>
+    <TitledPane animated="false" prefHeight="389.0" prefWidth="223.0" text="Subscriber QoS" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <content>
+        <GridPane prefHeight="351.0" prefWidth="209.0">
+          <children>
+            <Label text="Reliability QoS" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.halignment="LEFT" GridPane.rowIndex="0" GridPane.valignment="BOTTOM">
+              <font>
+                <Font name="System Bold" size="13.0" fx:id="x1" />
+              </font>
+              <GridPane.margin>
+                <Insets bottom="5.0" left="10.0" fx:id="x2" />
+              </GridPane.margin>
+            </Label>
+            <RadioButton fx:id="reliableButton" alignment="CENTER_LEFT" mnemonicParsing="false" selected="false" text="Reliable" GridPane.columnIndex="0" GridPane.halignment="RIGHT" GridPane.rowIndex="1" GridPane.valignment="TOP">
+              <toggleGroup>
+                <ToggleGroup fx:id="reliabilityGroup" />
+              </toggleGroup>
+              <GridPane.margin>
+                <Insets right="5.0" top="5.0" fx:id="x3" />
+              </GridPane.margin>
+            </RadioButton>
+            <RadioButton fx:id="bestEffortButton" mnemonicParsing="false" selected="true" text="Best Effort" toggleGroup="$reliabilityGroup" GridPane.columnIndex="1" GridPane.halignment="LEFT" GridPane.rowIndex="1" GridPane.valignment="TOP">
+              <GridPane.margin>
+                <Insets left="5.0" top="5.0" fx:id="x4" />
+              </GridPane.margin>
+            </RadioButton>
+            <Label font="$x1" text="Ownership QoS" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.halignment="LEFT" GridPane.margin="$x2" GridPane.rowIndex="2" GridPane.valignment="BOTTOM" />
+            <RadioButton fx:id="sharedButton" mnemonicParsing="false" selected="true" text="Shared" GridPane.columnIndex="0" GridPane.halignment="RIGHT" GridPane.margin="$x3" GridPane.rowIndex="3" GridPane.valignment="TOP">
+              <toggleGroup>
+                <ToggleGroup fx:id="ownershipGroup" />
+              </toggleGroup>
+            </RadioButton>
+            <RadioButton fx:id="exclusiveButton" mnemonicParsing="false" selected="false" text="Exclusive" toggleGroup="$ownershipGroup" GridPane.columnIndex="1" GridPane.halignment="LEFT" GridPane.margin="$x4" GridPane.rowIndex="3" GridPane.valignment="TOP" />
+            <Label font="$x1" text="History QoS" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.halignment="LEFT" GridPane.rowIndex="4" GridPane.valignment="BOTTOM">
+              <GridPane.margin>
+                <Insets bottom="5.0" left="10.0" fx:id="x2" />
+              </GridPane.margin>
+            </Label>
+            <RadioButton fx:id="keepAllButton" mnemonicParsing="false" onAction="#onKeepAllSelected" text="Keep All" GridPane.columnIndex="0" GridPane.halignment="RIGHT" GridPane.rowIndex="5" GridPane.valignment="TOP">
+              <toggleGroup>
+                <ToggleGroup fx:id="historyGroup" />
+              </toggleGroup>
+              <GridPane.margin>
+                <Insets right="5.0" top="5.0" fx:id="x3" />
+              </GridPane.margin>
+            </RadioButton>
+            <RadioButton fx:id="keepLastButton" mnemonicParsing="false" onAction="#onKeepLastSelected" selected="true" text="Keep Last" toggleGroup="$historyGroup" GridPane.columnIndex="1" GridPane.halignment="LEFT" GridPane.rowIndex="5" GridPane.valignment="TOP">
+              <GridPane.margin>
+                <Insets left="5.0" top="5.0" fx:id="x4" />
+              </GridPane.margin>
+            </RadioButton>
+            <Label fx:id="depthLabel" text="Depth:" GridPane.columnIndex="0" GridPane.halignment="RIGHT" GridPane.margin="$x5" GridPane.rowIndex="6" GridPane.valignment="TOP" />
+            <TextField id="depthField" fx:id="depthField" onAction="#onDepthChange" prefWidth="200.0" promptText="" text="1" GridPane.columnIndex="1" GridPane.halignment="LEFT" GridPane.rowIndex="6" GridPane.valignment="TOP">
+              <GridPane.margin>
+                <Insets left="5.0" right="20.0" top="5.0" />
+              </GridPane.margin>
+            </TextField>
+            <Label font="$x1" text="Durability QoS" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.halignment="LEFT" GridPane.rowIndex="7" GridPane.valignment="BOTTOM">
+              <GridPane.margin>
+                <Insets bottom="5.0" left="10.0" fx:id="x2" />
+              </GridPane.margin>
+            </Label>
+            <Label text="Durability:" GridPane.columnIndex="0" GridPane.halignment="RIGHT" GridPane.margin="$x3" GridPane.rowIndex="8" GridPane.valignment="TOP" />
+            <ChoiceBox fx:id="durabilityChoices" GridPane.columnIndex="1" GridPane.halignment="LEFT" GridPane.rowIndex="8" GridPane.valignment="TOP">
+              <items>
+                <FXCollections fx:factory="observableArrayList">
+                  <String fx:value="Item 1" />
+                  <String fx:value="Item 2" />
+                  <String fx:value="Item 3" />
+                </FXCollections>
+              </items>
+              <GridPane.margin>
+                <Insets left="5.0" top="5.0" fx:id="x4" />
+              </GridPane.margin>
+            </ChoiceBox>
+            <Label disable="true" font="$x1" text="Time-Based Filter" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.halignment="LEFT" GridPane.rowIndex="9" GridPane.valignment="BOTTOM">
+              <GridPane.margin>
+                <Insets bottom="5.0" left="10.0" fx:id="x2" />
+              </GridPane.margin>
+            </Label>
+            <Label fx:id="periodLablel" disable="true" text="Period (ms):" GridPane.columnIndex="0" GridPane.halignment="RIGHT" GridPane.rowIndex="10" GridPane.valignment="TOP">
+              <GridPane.margin>
+                <Insets right="5.0" top="8.0" fx:id="x5" />
+              </GridPane.margin>
+            </Label>
+            <TextField id="periodField" fx:id="periodField" disable="true" onAction="#onPeriodChange" prefWidth="200.0" promptText="" text="" GridPane.columnIndex="1" GridPane.halignment="LEFT" GridPane.rowIndex="10" GridPane.valignment="TOP">
+              <GridPane.margin>
+                <Insets left="5.0" right="55.0" top="5.0" />
+              </GridPane.margin>
+            </TextField>
+            <CheckBox fx:id="timeFilterOnBox" allowIndeterminate="false" disable="true" indeterminate="false" mnemonicParsing="false" onAction="#onTimeFilterAction" text="on" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="10" GridPane.valignment="TOP">
+              <GridPane.margin>
+                <Insets right="5.0" top="7.0" />
+              </GridPane.margin>
+            </CheckBox>
+            <Button mnemonicParsing="false" onAction="#onCancel" prefWidth="88.0" text="Cancel" GridPane.columnIndex="0" GridPane.halignment="CENTER" GridPane.rowIndex="11" GridPane.valignment="CENTER" />
+            <Button mnemonicParsing="false" onAction="#onOK" prefWidth="88.0" text="OK" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="11" GridPane.valignment="CENTER" />
+          </children>
+          <columnConstraints>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+          </columnConstraints>
+          <rowConstraints>
+            <RowConstraints maxHeight="52.0" minHeight="10.0" prefHeight="22.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="54.0" minHeight="10.0" prefHeight="25.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="61.0" minHeight="10.0" prefHeight="36.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="57.0" minHeight="10.0" prefHeight="21.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="79.0" minHeight="10.0" prefHeight="35.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="79.0" minHeight="10.0" prefHeight="25.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="79.0" minHeight="10.0" prefHeight="29.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="79.0" minHeight="10.0" prefHeight="35.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="77.0" minHeight="10.0" prefHeight="31.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="74.0" minHeight="10.0" prefHeight="36.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="66.0" minHeight="10.0" prefHeight="32.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="66.0" minHeight="10.0" prefHeight="36.0" vgrow="SOMETIMES" />
+          </rowConstraints>
+        </GridPane>
+      </content>
+    </TitledPane>
+  </children>
+</AnchorPane>

@@ -39,9 +39,9 @@ namespace ListenerDataSubscriber
                 Console.WriteLine("=== [ListenerDataListener::OnDataAvailable] - msgList.Length : {0}", msgList.Length);
                 foreach (Msg msg in msgList)
                 {
-                    Console.WriteLine("    --- Message Received ---");
-                    Console.WriteLine("    userId : {0}", msg.userID);
-                    Console.WriteLine("    message : \\ {0}",msg.message);
+                    Console.WriteLine("    --- message received ---");
+                    Console.WriteLine("    userID  : {0}", msg.userID);
+                    Console.WriteLine("    Message : \\ {0}",msg.message);
                 }
                 status = msgDR.ReturnLoan(ref msgList, ref infoSeq);
                 ErrorHandler.checkStatus(status, "DataReader.ReturnLoan");

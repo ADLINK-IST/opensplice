@@ -72,8 +72,8 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>151</width>
-      <height>181</height>
+      <width>157</width>
+      <height>183</height>
      </rect>
     </property>
     <property name="font">
@@ -420,7 +420,7 @@ p, li { white-space: pre-wrap; }
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>151</width>
+      <width>157</width>
       <height>137</height>
      </rect>
     </property>
@@ -431,6 +431,9 @@ p, li { white-space: pre-wrap; }
      </font>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_4">
+     <property name="spacing">
+      <number>10</number>
+     </property>      
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
@@ -442,6 +445,9 @@ p, li { white-space: pre-wrap; }
            <stylestrategy>PreferAntialias</stylestrategy>
            <kerning>false</kerning>
           </font>
+         </property>
+         <property name="layoutDirection">
+          <enum>Qt::LeftToRight</enum>
          </property>
          <property name="text">
           <string>Shape:</string>
@@ -655,6 +661,25 @@ p, li { white-space: pre-wrap; }
    <property name="frameShadow">
     <enum>QFrame::Raised</enum>
    </property>
+   <widget class="QLabel" name="PausedLabel">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>91</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Sans Serif</family>
+      <pointsize>20</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Paused</string>
+    </property>
+   </widget>
   </widget>
   <zorder>frame_2</zorder>
   <zorder>renderFrame</zorder>

@@ -333,6 +333,8 @@ public:
      *
      * @param sub the subscriber owning this DataReader
      * @param topic the topic associated with this DataReader.
+     *
+     * See \ref DCPS_Modules_Subscription_DataReader "DataReader" for more information
      */
     DataReader(const dds::sub::Subscriber& sub,
                const ::dds::topic::Topic<T>& topic);
@@ -349,7 +351,7 @@ public:
                const ::dds::topic::Topic<T>& topic,
                const dds::sub::qos::DataReaderQos& qos,
                dds::sub::DataReaderListener<T>* listener = NULL,
-               const dds::core::status::StatusMask& mask = ::dds::core::status::StatusMask::all());
+               const dds::core::status::StatusMask& mask = ::dds::core::status::StatusMask::none());
 
     #ifdef OMG_DDS_CONTENT_SUBSCRIPTION_SUPPORT
 
@@ -380,7 +382,7 @@ public:
                const ::dds::topic::ContentFilteredTopic<T>& topic,
                const dds::sub::qos::DataReaderQos& qos,
                dds::sub::DataReaderListener<T>* listener = NULL,
-               const dds::core::status::StatusMask& mask = ::dds::core::status::StatusMask::all());
+               const dds::core::status::StatusMask& mask = ::dds::core::status::StatusMask::none());
     #endif /* OMG_DDS_CONTENT_SUBSCRIPTION_SUPPORT */
 
     #ifdef OMG_DDS_MULTI_TOPIC_SUPPORT
@@ -413,7 +415,7 @@ public:
                const ::dds::topic::MultiTopic<T>& topic,
                const dds::sub::qos::DataReaderQos& qos,
                dds::sub::DataReaderListener<T>* listener = NULL,
-               const dds::core::status::StatusMask& mask = ::dds::core::status::StatusMask::all());
+               const dds::core::status::StatusMask& mask = ::dds::core::status::StatusMask::none());
 
     #endif /* OMG_DDS_MULTI_TOPIC_SUPPORT */
 public:

@@ -1,0 +1,512 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>10. VxWorks 5.5.1 &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="11. VxWorks 6.x RTP" href="vxworks-6-rtp.html" />
+    <link rel="prev" title="9. Platform-specific Information" href="platforms.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="vxworks-6-rtp.html" title="11. VxWorks 6.x RTP"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="platforms.html" title="9. Platform-specific Information"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="vxworks-5-5-1">
+<span id="id1"></span><h1>10. VxWorks 5.5.1<a class="headerlink" href="#vxworks-5-5-1" title="Permalink to this headline">¶</a></h1>
+<p><em>This chapter provides a brief description of how to deploy Vortex OpenSplice
+on VxWorks 5.5.1.</em></p>
+<div class="section" id="vxworks-and-tornado">
+<h2>10.1. VxWorks and Tornado<a class="headerlink" href="#vxworks-and-tornado" title="Permalink to this headline">¶</a></h2>
+<p>This chapter provides a brief description of how to build the kernel and
+the supplied examples, and how to run those examples, using VxWorks
+5.5.1 and the Tornado <em>&#8216;front end&#8217;</em>. For more information about VxWorks
+5.5.1 and Tornado, please refer to WindRiver&#8217;s documentation.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><strong>NOTE:</strong> The examples given here assume that a Solaris-hosted system is
+being used, and that Vortex OpenSplice is installed in
+<tt class="docutils literal"><span class="pre">/usr/local/vxworks5.5.1</span></tt>.</dd>
+</dl>
+</div>
+<div class="section" id="building-a-vxworks-kernel">
+<h2>10.2. Building a VxWorks Kernel<a class="headerlink" href="#building-a-vxworks-kernel" title="Permalink to this headline">¶</a></h2>
+<p><strong>Required modules</strong></p>
+<p>The following modules are the core system components needed to build the
+Vortex OpenSplice runtime. Please refer to WindRiver&#8217;s documentation for
+additional information describing how VxWorks kernels can be built.</p>
+<ul class="simple">
+<li>Operating system components<ul>
+<li>POSIX components<ul>
+<li>POSIX timers</li>
+<li>POSIX threads</li>
+</ul>
+</li>
+<li>File System and Disk Utilities<ul>
+<li>File System and Disk Utilities</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>Additional modules</strong></p>
+<p>The modules listed below are optional but are useful for HDE (Host
+Development Environment) development. These modules are required if
+deploying from the Tornado front end:</p>
+<ul class="simple">
+<li>Development tool components<ul>
+<li>WDB agent components<ul>
+<li>WDB agent services</li>
+</ul>
+</li>
+<li>WDB target server file system<ul>
+<li>symbol table components</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Platform-specific Information<ul>
+<li>synchronize host and target symbol tables</li>
+<li>target shell components<ul>
+<li>target shell</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="scenarios-for-building-the-opensplice-examples">
+<h2>10.3. Scenarios for Building the OpenSplice Examples<a class="headerlink" href="#scenarios-for-building-the-opensplice-examples" title="Permalink to this headline">¶</a></h2>
+<p>There are two scenarios included for building and deploying the
+OpenSplice examples.</p>
+<ul class="simple">
+<li>You can build one DKM (Downloadable Kernel Module) containing the example,
+OpenSplice, and all of its required services and support libraries, as well
+as a default configuration file. <em>(This is the recommended approach.)</em></li>
+<li>Alternatively, separate DKMs are supplied for each of the OpenSplice libraries and
+services, and each example can be built as a separate DKM (containing only the
+example), which we refer to as <em>‘AppOnly’</em> style.</li>
+</ul>
+</div>
+<div class="section" id="the-opensplice-examples-all-linked-in-one-complete-dkm-recommended">
+<h2>10.4. The OpenSplice Examples (All linked in one complete DKM - <em>recommended</em>)<a class="headerlink" href="#the-opensplice-examples-all-linked-in-one-complete-dkm-recommended" title="Permalink to this headline">¶</a></h2>
+<p><strong>To build the standalone C PingPong example</strong></p>
+<p><a class="reference internal" href="_images/icon-c.png"><img alt="c" src="_images/icon-c.png" style="height: 6mm;" /></a></p>
+<p>At the prompt, <tt class="docutils literal"><span class="pre">cd</span></tt> to <cite>examples/dcps/PingPong/c/standalone/`</cite>
+and run <tt class="docutils literal"><span class="pre">make</span></tt>.</p>
+<div class="section" id="note-about-the-example-projects">
+<h3>10.4.1. Note about the example projects<a class="headerlink" href="#note-about-the-example-projects" title="Permalink to this headline">¶</a></h3>
+<p>The example builds by linking the object produced by compiling the
+output of <tt class="docutils literal"><span class="pre">osplconf2c</span></tt> along with the example application, the <tt class="docutils literal"><span class="pre">splice</span></tt>
+deamon, and services enabled in the configuration XML, into one single
+downloadable kernel module.</p>
+<p>Users producing their own application could of course decide to link the
+object and library files into a monolithic kernel image instead.</p>
+</div>
+<div class="section" id="the-osplconf2c-tool">
+<h3>10.4.2. The osplconf2c tool<a class="headerlink" href="#the-osplconf2c-tool" title="Permalink to this headline">¶</a></h3>
+<p><tt class="docutils literal"><span class="pre">osplconf2c</span></tt> is required for example and user applications.</p>
+<p><tt class="docutils literal"><span class="pre">osplconf2c</span></tt> is a tool which processes the OpenSplice configuration
+XML, and produces a source file to be compiled and linked into the final
+image. It contains the data from the XML file, as well as any
+environment variables that you require to configure OpenSplice and
+references to the symbols for the entry points of the OpenSplice
+services.</p>
+<p>Environment variables can be added using the <tt class="docutils literal"><span class="pre">-e</span></tt> option. For example,
+you would use the option <tt class="docutils literal"><span class="pre">-e</span> <span class="pre">&quot;OSPL_LOGPATH=/xxx/yyy&quot;</span></tt> if you wanted the
+logs to be placed in <tt class="docutils literal"><span class="pre">/xxx/yyy</span></tt>.</p>
+<p>The example <tt class="docutils literal"><span class="pre">makefiles</span></tt> runs <tt class="docutils literal"><span class="pre">osplconf2c</span></tt> automatically.</p>
+</div>
+</div>
+<div class="section" id="overriding-opensplice-configuration-at-runtime">
+<span id="id2"></span><h2>10.5. Overriding OpenSplice configuration at runtime<a class="headerlink" href="#overriding-opensplice-configuration-at-runtime" title="Permalink to this headline">¶</a></h2>
+<p>You can override the OpenSplice configuration XML provided to
+<tt class="docutils literal"><span class="pre">osplconf2c</span></tt> at runtime by specifying the URI of a file when starting
+<tt class="docutils literal"><span class="pre">ospl_spliced</span></tt> on the target. For example:</p>
+<div class="highlight-bash"><div class="highlight"><pre>ospl_spliced <span class="s2">&quot;file:///tgtsvr/ospl.xml&quot;</span>
+</pre></div>
+</div>
+<p>It should be noted, however, that the <tt class="docutils literal"><span class="pre">osplconf2c</span></tt> will have generated
+references to the symbols for the services which are specified in the
+xml file when it started, and only those services may be used in the new
+configuration, as other services will not be included in the image. As
+an exception to this, if the <tt class="docutils literal"><span class="pre">-d</span></tt> option is specified then dynamic
+loading is supported, and DKMs for additional services will be
+automatically loaded; DKMs for any required &#8216;libraries&#8217; must be
+pre-loaded by the user.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><em>NOTE:</em> Symbol table support will be required in the kernel if the
+<tt class="docutils literal"><span class="pre">-d</span></tt> option is used. Without the <tt class="docutils literal"><span class="pre">-d</span></tt> option it should still be possible
+to statically link OpenSplice with a kernel even if symbol table support
+is not included, for example for final deployment.</dd>
+</dl>
+</div>
+<div class="section" id="running-the-examples">
+<h2>10.6. Running the Examples<a class="headerlink" href="#running-the-examples" title="Permalink to this headline">¶</a></h2>
+<p>If you included the additional modules listed above
+(see <a class="reference internal" href="#building-a-vxworks-kernel">Building a VxWorks Kernel</a>) in the kernel, deployment
+is done <em>via</em> the target server setup from the Tornado
+shell connection.</p>
+</div>
+<div class="section" id="background">
+<h2>10.7. Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>All Vortex OpenSplice tools or services have unique entry points. These
+entry points all take a string; the string is parsed into the necessary
+arguments and passed on.</p>
+<p>To start <tt class="docutils literal"><span class="pre">ospl</span></tt> on a Unix system, the command would be:</p>
+<div class="highlight-bash"><div class="highlight"><pre>ospl start file:///ospl.xml
+</pre></div>
+</div>
+<p>and on VxWorks:</p>
+<div class="highlight-bash"><div class="highlight"><pre>ospl <span class="s2">&quot;start file:///ospl.xml&quot;</span>
+</pre></div>
+</div>
+<p>Note that the arguments are separated by spaces.</p>
+<p>Other commands:</p>
+<div class="highlight-bash"><div class="highlight"><pre>ospl -&gt; ospl<span class="o">(</span>char *<span class="o">)</span>
+spliced -&gt; ospl_spliced<span class="o">(</span>char *<span class="o">)</span>
+networking -&gt; ospl_networking<span class="o">(</span>char *<span class="o">)</span>
+durability -&gt; ospl_durability<span class="o">(</span>char *<span class="o">)</span>
+cmsoap -&gt; ospl_cmsoap<span class="o">(</span>char *<span class="o">)</span>
+mmstat -&gt; ospl_mmstat<span class="o">(</span>char *<span class="o">)</span>
+shmdump -&gt; ospl_shmdump<span class="o">(</span>char *<span class="o">)</span>
+</pre></div>
+</div>
+<p>The standard &#8216;main&#8217; equivalent entry points are:</p>
+<div class="highlight-bash"><div class="highlight"><pre>ospl -&gt; ospl_unique_main<span class="o">(</span>int argc, char ** argv<span class="o">)</span>
+spliced -&gt; ospl_spliced_unique_main<span class="o">(</span>int argc, char ** argv<span class="o">)</span>
+networking -&gt; ospl_networking_unique_main<span class="o">(</span>int argc, char ** argv<span class="o">)</span>
+durability -&gt; ospl_durability_unique_main<span class="o">(</span>int argc, char ** argv<span class="o">)</span>
+cmsoap -&gt; ospl_cmsoap_unique_main<span class="o">(</span>int argc, char ** argv<span class="o">)</span>
+mmstat -&gt; ospl_mmstat_unique_main<span class="o">(</span>int argc, char ** argv<span class="o">)</span>
+shmdump -&gt; ospl_shmdump_unique_main<span class="o">(</span>int argc, char ** argv<span class="o">)</span>
+</pre></div>
+</div>
+<p>You can use the standard <tt class="docutils literal"><span class="pre">argv</span> <span class="pre">argc</span></tt> version entry when you need to use
+arguments with embedded spaces. For example, for <tt class="docutils literal"><span class="pre">ospl</span></tt> you would use:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">osplArgs</span> <span class="o">=</span> malloc<span class="o">(</span>12<span class="o">)</span>
+*osplArgs <span class="o">=</span> <span class="s2">&quot;ospl&quot;</span>
+*<span class="o">(</span>osplArgs+4<span class="o">)</span> <span class="o">=</span> <span class="s2">&quot;start&quot;</span>
+*<span class="o">(</span>osplArgs+8<span class="o">)</span> <span class="o">=</span> <span class="s2">&quot;file:///tgtsvr/etc/config/ospl.xml&quot;</span>
+ospl_unique_main <span class="o">(</span>2, osplArgs<span class="o">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="how-to-start-spliced-and-related-services">
+<h2>10.8. How to start spliced and related services<a class="headerlink" href="#how-to-start-spliced-and-related-services" title="Permalink to this headline">¶</a></h2>
+<p>For the example below the target server filesystem must be mounted as
+<tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> on the target.</p>
+<p>To start the <tt class="docutils literal"><span class="pre">spliced</span></tt> service and other additional OpenSplice services
+open a <em>windsh</em> and enter the following commands.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> <span class="s2">&quot;</span><span class="nv">$OSPL_HOME</span><span class="s2">/examples/dcps/PingPong/c/standalone&quot;</span>
+ld 1,0,<span class="s2">&quot;sac_pingpong_kernel.out&quot;</span>
+ospl_spliced
+</pre></div>
+</div>
+<p>Note that <tt class="docutils literal"><span class="pre">spliced</span></tt> will block when invoked by <tt class="docutils literal"><span class="pre">ospl_spliced</span></tt>
+so open a new <em>windsh</em> to run the following Pong command:</p>
+<div class="highlight-bash"><div class="highlight"><pre>pong <span class="o">(</span><span class="s2">&quot;PongRead PongWrite&quot;</span><span class="o">)</span>
+</pre></div>
+</div>
+<p>After the Pong application has started you can open another <em>windsh</em> and
+start Ping. However, if you are running the Ping application on another
+target board you must load and start <tt class="docutils literal"><span class="pre">spliced</span></tt> on that target also, as
+described above.</p>
+<div class="highlight-bash"><div class="highlight"><pre>ping<span class="o">(</span><span class="s2">&quot;100 100 m PongRead PongWrite&quot;</span><span class="o">)</span>
+ping<span class="o">(</span><span class="s2">&quot;100 100 q PongRead PongWrite&quot;</span><span class="o">)</span>
+ping<span class="o">(</span><span class="s2">&quot;100 100 s PongRead PongWrite&quot;</span><span class="o">)</span>
+ping<span class="o">(</span><span class="s2">&quot;100 100 b PongRead PongWrite&quot;</span><span class="o">)</span>
+ping<span class="o">(</span><span class="s2">&quot;100 100 f PongRead PongWrite&quot;</span><span class="o">)</span>
+ping<span class="o">(</span><span class="s2">&quot;1 10 t PongRead PongWrite&quot;</span><span class="o">)</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">ospl-info.log</span></tt> file can be inspected to check the deployment has
+been successful. By default, this is written to the <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> directory.</p>
+<p>The <tt class="docutils literal"><span class="pre">moduleShow</span></tt> command can be used within the VxWorks shell to see
+that the service modules have loaded, and the <tt class="docutils literal"><span class="pre">i</span></tt> command
+should show that tasks have started for these services.</p>
+</div>
+<div class="section" id="the-osplconf2c-command">
+<h2>10.9. The osplconf2c command<a class="headerlink" href="#the-osplconf2c-command" title="Permalink to this headline">¶</a></h2>
+<p><strong>Usage</strong></p>
+<div class="highlight-bash"><div class="highlight"><pre>osplconf2c -h
+
+osplconf2c <span class="o">[</span>-d <span class="o">[</span>-x<span class="o">]]</span> <span class="o">[</span>-u &lt;URI&gt;<span class="o">]</span> <span class="o">[</span>-e &lt;<span class="nv">env</span><span class="o">=</span>var&gt; <span class="o">]</span>... <span class="o">[</span>-o &lt;file&gt;<span class="o">]</span>
+</pre></div>
+</div>
+<p><strong>Options</strong></p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">-h,</span> <span class="pre">-?</span></tt></dt>
+<dd>List available command line arguments and give brief
+reminders of their functions.</dd>
+<dt><tt class="docutils literal"><span class="pre">-u</span> <span class="pre">&lt;URI&gt;</span></tt></dt>
+<dd>Specifies the configuration file to use
+(default: <tt class="docutils literal"><span class="pre">${OSPL_URI}</span></tt>).</dd>
+<dt><tt class="docutils literal"><span class="pre">-o</span> <span class="pre">&lt;file&gt;</span></tt></dt>
+<dd>Name of the generated file.</dd>
+<dt><tt class="docutils literal"><span class="pre">-e</span> <span class="pre">&lt;env=var&gt;</span></tt></dt>
+<dd>Environment setting for configuration of OpenSplice;
+<em>e.g.</em> <tt class="docutils literal"><span class="pre">-e</span> <span class="pre">&quot;OSPL_LOGPATH=/xxx/yyy&quot;</span></tt>.</dd>
+<dt><tt class="docutils literal"><span class="pre">-d</span></tt></dt>
+<dd>Enable dynamic loading.</dd>
+<dt><tt class="docutils literal"><span class="pre">-x</span></tt></dt>
+<dd>Exclude xml.</dd>
+</dl>
+</div>
+<div class="section" id="the-opensplice-examples-alternative-scenario-with-multiple-dkms">
+<h2>10.10. The OpenSplice Examples (Alternative scenario, with multiple DKMs)<a class="headerlink" href="#the-opensplice-examples-alternative-scenario-with-multiple-dkms" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Loading separate DKMs is not recommended by PrismTech.</dd>
+</dl>
+<p><strong>Note about the example projects</strong></p>
+<p>Please ensure that any services called by a configuration XML contain an
+explicit path reference within the command tag; for example:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">&lt;Command&gt;/tgtsvr/networking&lt;/Command&gt;</span></tt></div></blockquote>
+<div class="section" id="to-build-the-standalone-c-pingpong-example">
+<h3>10.10.1. To build the standalone C pingpong example<a class="headerlink" href="#to-build-the-standalone-c-pingpong-example" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference internal" href="_images/icon-c.png"><img alt="c" src="_images/icon-c.png" style="height: 6mm;" /></a></p>
+<p>At the prompt, <tt class="docutils literal"><span class="pre">cd</span></tt> to <tt class="docutils literal"><span class="pre">examples/dcps/PingPong/c/standalone/</span></tt>
+and run</p>
+<div class="highlight-bash"><div class="highlight"><pre>make -f Makefile<span class="se">\_</span>AppOnly
+</pre></div>
+</div>
+</div>
+<div class="section" id="id3">
+<h3>10.10.2. How to start spliced and related services<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>To start the <tt class="docutils literal"><span class="pre">spliced</span></tt> service and other additional OpenSplice services,
+load the core OpenSplice shared library that is needed by all Vortex OpenSplice
+applications, and then the <tt class="docutils literal"><span class="pre">ospl</span></tt> utility symbols. This can be done
+using a VxWorks shell on as many boards as needed. The <tt class="docutils literal"><span class="pre">ospl</span></tt> entry
+point can then be invoked to start OpenSplice.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> <span class="s2">&quot;</span><span class="nv">$OSPL_HOME</span><span class="s2">&quot;</span>
+ld 1,0,<span class="s2">&quot;lib/libddscore.so&quot;</span>
+ld 1,0,<span class="s2">&quot;bin/ospl&quot;</span>
+os_putenv<span class="o">(</span><span class="s2">&quot;OSPL_URI=file:///tgtsvr/etc/config/ospl.xml&quot;</span><span class="o">)</span>
+ospl<span class="o">(</span><span class="s2">&quot;start&quot;</span><span class="o">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Please note that in order to deploy the cmsoap service for use with the
+OpenSplice DDS Tuner, it must be configured in <tt class="docutils literal"><span class="pre">ospl.xml</span></tt> and the
+libraries named <tt class="docutils literal"><span class="pre">libcmxml.so</span></tt> and <tt class="docutils literal"><span class="pre">libddsrrstorage.so</span></tt> must be
+pre-loaded:</dd>
+</dl>
+<div class="highlight-bash"><div class="highlight"><pre>ld 1,0,<span class="s2">&quot;lib/libddscore.so&quot;</span>
+ld 1,0,<span class="s2">&quot;lib/libddsrrstorage.so&quot;</span>
+ld 1,0,<span class="s2">&quot;lib/libcmxml.so&quot;</span>
+ld 1,0,<span class="s2">&quot;bin/ospl&quot;</span>
+os_putenv<span class="o">(</span><span class="s2">&quot;OSPL_URI=file:///tgtsvr/etc/config/ospl.xml&quot;</span><span class="o">)</span>
+os_putenv<span class="o">(</span><span class="s2">&quot;PATH=/tgtsvr/bin&quot;</span><span class="o">)</span>
+ospl<span class="o">(</span><span class="s2">&quot;start&quot;</span><span class="o">)</span>
+</pre></div>
+</div>
+<div class="section" id="to-run-the-c-pingpong-example-from-winsh">
+<h4>10.10.2.1. To run the C PingPong example from winsh<a class="headerlink" href="#to-run-the-c-pingpong-example-from-winsh" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference internal" href="_images/icon-c.png"><img alt="c" src="_images/icon-c.png" style="height: 6mm;" /></a></p>
+<p>After the <tt class="docutils literal"><span class="pre">spliced</span></tt> and related services have started, you can start
+Pong:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> <span class="s2">&quot;</span><span class="nv">$OSPL_HOME</span><span class="s2">&quot;</span>
+ld 1,0,<span class="s2">&quot;lib/libdcpsgapi.so&quot;</span>
+ld 1,0,<span class="s2">&quot;lib/libdcpssac.so&quot;</span>
+<span class="nb">cd</span> <span class="s2">&quot;examples/dcps/PingPong/c/standalone&quot;</span>
+ld 1,0,<span class="s2">&quot;sac_pingpong_kernel_app_only.out&quot;</span>
+pong<span class="o">(</span><span class="s2">&quot;PongRead PongWrite&quot;</span><span class="o">)</span>
+</pre></div>
+</div>
+<p>After the Pong application has started you can open another <em>windsh</em> and
+start Ping. However, if you are running the Ping application on another
+target board you must load and start <tt class="docutils literal"><span class="pre">spliced</span></tt> on that target also, as
+described above.</p>
+<div class="highlight-bash"><div class="highlight"><pre>ping<span class="o">(</span><span class="s2">&quot;100 100 m PongRead PongWrite&quot;</span><span class="o">)</span>
+ping<span class="o">(</span><span class="s2">&quot;100 100 q PongRead PongWrite&quot;</span><span class="o">)</span>
+ping<span class="o">(</span><span class="s2">&quot;100 100 s PongRead PongWrite&quot;</span><span class="o">)</span>
+ping<span class="o">(</span><span class="s2">&quot;100 100 b PongRead PongWrite&quot;</span><span class="o">)</span>
+ping<span class="o">(</span><span class="s2">&quot;100 100 f PongRead PongWrite&quot;</span><span class="o">)</span>
+ping<span class="o">(</span><span class="s2">&quot;1 10 t PongRead PongWrite&quot;</span><span class="o">)</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">ospl-info.log</span></tt> file can be inspected to check the deployment has
+been successful. By default, this is written to the <tt class="docutils literal"><span class="pre">/tgtsvr</span></tt> directory.</p>
+<p>The <tt class="docutils literal"><span class="pre">moduleShow</span></tt> command can be used within the VxWorks shell to see
+that the service modules have loaded, and the <tt class="docutils literal"><span class="pre">i</span></tt> command
+should show that tasks have started for these services.</p>
+</div>
+</div>
+<div class="section" id="load-time-optimisation-pre-loading-opensplice-service-symbols">
+<h3>10.10.3. Load-time Optimisation: pre-loading OpenSplice Service Symbols<a class="headerlink" href="#load-time-optimisation-pre-loading-opensplice-service-symbols" title="Permalink to this headline">¶</a></h3>
+<p>Loading <tt class="docutils literal"><span class="pre">spliced</span></tt> and its services may take some time if done exactly as
+described above. This is because the service Downloadable Kernel Modules
+(DKM) and entry points are dynamically loaded as required by OpenSplice.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>It has been noted that the deployment may be slower when the symbols are
+dynamically loaded from the Target Server File System. However, it is
+possible to improve deployment times by optionally pre-loading service
+symbols that are known to be deployed by OpenSplice.</dd>
+</dl>
+<p>In this case OpenSplice will attempt to locate the entry point symbols
+for the services and invoke those that are already available. This
+removes the need for the dynamic loading of such symbols and can equate
+to a quicker deployment. When the entry point symbols are not yet
+available ( <em>i.e.</em> services have not been pre-loaded), OpenSplice will
+dynamically load the services as usual.</p>
+<p>For example, for an OpenSplice system that will deploy <tt class="docutils literal"><span class="pre">spliced</span></tt> with
+the networking and durability services, the following commands could be
+used:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> <span class="s2">&quot;</span><span class="nv">$OSPL_HOME</span><span class="s2">&quot;</span>
+ld 1,0,<span class="s2">&quot;lib/libddscore.so&quot;</span>
+ld 1,0,<span class="s2">&quot;bin/ospl&quot;</span>
+ld 1,0,<span class="s2">&quot;bin/spliced&quot;</span>
+ld 1,0,<span class="s2">&quot;bin/networking&quot;</span>
+ld 1,0,<span class="s2">&quot;bin/durability&quot;</span>
+os_putenv<span class="o">(</span><span class="s2">&quot;OSPL_URI=file:///tgtsvr/etc/config/ospl.xml&quot;</span><span class="o">)</span>
+os_putenv<span class="o">(</span><span class="s2">&quot;PATH=/tgtsvr/bin&quot;</span><span class="o">)</span>
+ospl<span class="o">(</span><span class="s2">&quot;start&quot;</span><span class="o">)</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">ospl-info.log</span></tt> file describes whether entry point symbols are
+resolved having been pre-loaded, or the usual dynamic symbol loading is
+required.</p>
+</div>
+<div class="section" id="notes">
+<h3>10.10.4. Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h3>
+<p>In this scenario <tt class="docutils literal"><span class="pre">osplcon2c</span></tt> has been used with the <tt class="docutils literal"><span class="pre">-x</span></tt> and <tt class="docutils literal"><span class="pre">-d</span></tt>
+options to create an empty configuraion which allows dynamic loading,
+and the resulting object has been included in the provided <tt class="docutils literal"><span class="pre">libddsos.so</span></tt>.</p>
+<p>If desired the end user could create a new <tt class="docutils literal"><span class="pre">libddsos.so</span></tt> based on
+<tt class="docutils literal"><span class="pre">libddsos.a</span></tt> and a generated file from <tt class="docutils literal"><span class="pre">osplconf2c</span></tt> without the <tt class="docutils literal"><span class="pre">-x</span></tt>
+option, in order to statically link some services but also allow dynamic
+loading of others if the built-in xml is later overridden with a file
+URI. (See <a class="reference internal" href="#overriding-opensplice-configuration-at-runtime">Overriding OpenSplice configuration at runtime</a>.)</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">10. VxWorks 5.5.1</a><ul>
+<li><a class="reference internal" href="#vxworks-and-tornado">10.1. VxWorks and Tornado</a></li>
+<li><a class="reference internal" href="#building-a-vxworks-kernel">10.2. Building a VxWorks Kernel</a></li>
+<li><a class="reference internal" href="#scenarios-for-building-the-opensplice-examples">10.3. Scenarios for Building the OpenSplice Examples</a></li>
+<li><a class="reference internal" href="#the-opensplice-examples-all-linked-in-one-complete-dkm-recommended">10.4. The OpenSplice Examples (All linked in one complete DKM - <em>recommended</em>)</a><ul>
+<li><a class="reference internal" href="#note-about-the-example-projects">10.4.1. Note about the example projects</a></li>
+<li><a class="reference internal" href="#the-osplconf2c-tool">10.4.2. The osplconf2c tool</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overriding-opensplice-configuration-at-runtime">10.5. Overriding OpenSplice configuration at runtime</a></li>
+<li><a class="reference internal" href="#running-the-examples">10.6. Running the Examples</a></li>
+<li><a class="reference internal" href="#background">10.7. Background</a></li>
+<li><a class="reference internal" href="#how-to-start-spliced-and-related-services">10.8. How to start spliced and related services</a></li>
+<li><a class="reference internal" href="#the-osplconf2c-command">10.9. The osplconf2c command</a></li>
+<li><a class="reference internal" href="#the-opensplice-examples-alternative-scenario-with-multiple-dkms">10.10. The OpenSplice Examples (Alternative scenario, with multiple DKMs)</a><ul>
+<li><a class="reference internal" href="#to-build-the-standalone-c-pingpong-example">10.10.1. To build the standalone C pingpong example</a></li>
+<li><a class="reference internal" href="#id3">10.10.2. How to start spliced and related services</a><ul>
+<li><a class="reference internal" href="#to-run-the-c-pingpong-example-from-winsh">10.10.2.1. To run the C PingPong example from winsh</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#load-time-optimisation-pre-loading-opensplice-service-symbols">10.10.3. Load-time Optimisation: pre-loading OpenSplice Service Symbols</a></li>
+<li><a class="reference internal" href="#notes">10.10.4. Notes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="platforms.html"
+                        title="previous chapter">9. Platform-specific Information</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="vxworks-6-rtp.html"
+                        title="next chapter">11. VxWorks 6.x RTP</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/vxworks-551.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="vxworks-6-rtp.html" title="11. VxWorks 6.x RTP"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="platforms.html" title="9. Platform-specific Information"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

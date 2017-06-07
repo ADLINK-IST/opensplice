@@ -1,8 +1,11 @@
- namespace test.sacs
+using System.Threading;
+using System.Collections.Generic;
+namespace test.sacs
 {
     /// <date>Jun 2, 2005</date>
     public class Listener9 : Test.Framework.TestCase
     {
+        Dictionary<DDS.StatusKind, Semaphore> semaphores = null;
         public Listener9()
             : base("sacs_listener_tc9", "sacs_listener", "listener", "Test if the initial events of a DataReaderListener are processed."
                 , "Test if the initial events of a DataReaderListener are processed.", null)
@@ -29,6 +32,10 @@
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
             string expResult = "DataReaderListener test succeeded.";
+            semaphores = new Dictionary<DDS.StatusKind, Semaphore>();
+            semaphores.Add(DDS.StatusKind.LivelinessChanged,new Semaphore(0, 1));
+            semaphores.Add(DDS.StatusKind.DataAvailable, new Semaphore(0, 1));
+
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
                 .Pass, Test.Framework.TestVerdict.Fail);
             factory = DDS.DomainParticipantFactory.Instance;
@@ -141,7 +148,7 @@
                 return result;
             }
             dqosHolder.Durability.Kind = DDS.DurabilityQosPolicyKind.TransientDurabilityQos;
-            listener = new test.sacs.MyDataReaderListener();
+            listener = new test.sacs.MyDataReaderListener(semaphores);
             datareader = (mod.tstDataReader)subscriber.CreateDataReader(topic, dqosHolder, listener, DDS.StatusKind.Any);
             if (datareader == null)
             {
@@ -149,27 +156,32 @@
                 this.Cleanup(factory, participant);
                 return result;
             }
-            try
-            {
-                System.Threading.Thread.Sleep(3000);
+            if(semaphores[DDS.StatusKind.LivelinessChanged].WaitOne(10000)) {
+	            if (!listener.onLivelinessChangedCalled)
+	            {
+	                result.Result = "on_liveliness_changed does not work properly.";
+	                this.Cleanup(factory, participant);
+	                return result;
+	            }
+            } else {
+                 result.Result = "on_liveliness_changed did not trigger";
+                 this.Cleanup(factory, participant);
+                 return result;
             }
-            catch (System.Exception e)
-            {
-                System.Console.WriteLine(e);
-            }
-            if (!listener.onLivelinessChangedCalled)
-            {
-                result.Result = "on_liveliness_changed does not work properly.";
+            if(semaphores[DDS.StatusKind.DataAvailable].WaitOne(10000)) {
+	            if (!listener.onDataAvailableCalled)
+	            {
+	                result.Result = "on_data_available does not work properly.";
+	                this.Cleanup(factory, participant);
+	                return result;
+	            }
+            } else {
+                result.Result = "on_data_available did not trigger";
                 this.Cleanup(factory, participant);
                 return result;
             }
 
-            if (!listener.onDataAvailableCalled)
-            {
-                result.Result = "on_data_available does not work properly.";
-                this.Cleanup(factory, participant);
-                return result;
-            }
+
             rc = participant.DeleteContainedEntities();
             if (rc != DDS.ReturnCode.Ok)
             {

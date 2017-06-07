@@ -80,8 +80,6 @@ integrity_examples()
    SPLICE_PLATFORM=$SETUP_TYPE
    export SPLICE_PLATFORM
    . ./configure -full
-   SPLICE_ORB=DDS_OpenFusion_1_6_1
-   export SPLICE_ORB
 
    if [ "$CONFIGURATION" != "OK" ]
    then
@@ -103,57 +101,101 @@ install_ospl()
     echo "Installing..."
 
 # What is our installer called?
-    INSTALLER_FILENAME=`echo $INSTALLERDIR/VC/P*OpenSplice*HDE*installer.*`
+# Due to problems with long file names there is a "TEST" installer now for windows
+# so we can install into a different location
+    INSTALLER_FILENAME=
+    if [ "$CURRENT_PL_CYGWIN" != "" ]
+    then
+        INSTALLER_FILENAME_TMP=`echo ${INSTALLERDIR}/VC/P*OpenSplice*TEST*installer.*`
+        if [ -f ${INSTALLER_FILENAME_TMP} ]
+        then
+            INSTALLER_FILENAME=${INSTALLER_FILENAME_TMP}
+            INSTTYPE=TEST
+        else
+            echo "Unable to find TEST installer defaulting to HDE"
+        fi
+    fi
+    if [ -z "${INSTALLER_FILENAME}" ]
+    then
+        INSTALLER_FILENAME=`echo ${INSTALLERDIR}/VC/P*OpenSplice*HDE*installer.*`
+        INSTTYPE=HDE
+    fi
 
+    EDITION=
+    RTE=`echo $INSTALLER_FILENAME | grep -n OpenSpliceRTE`
+    if [ "${RTE:0:1}" == "1" ]
+    then
+        EDITION=RTE
+    fi
+
+# Due to issues with long file names we will install in a shorter named directory if it's windows
+    if [ "$CURRENT_PL_CYGWIN" != "" ]
+    then
+        VORTEX_INSTALL_DIR=$PACKAGE_VERSION
+    else
+        VORTEX_INSTALL_DIR=Vortex$VORTEX_VERSION/Device/VortexOpenSplice$EDITION/$PACKAGE_VERSION
+    fi
+
+    export VORTEX_INSTALL_DIR
+
+    echo "Installing using: ${INSTALLER_FILENAME}"
     if [ -f ${INSTALLER_FILENAME} ]
     then
 # Could be .bin or .exe for executables, or .zip or .tgz for archives
         INSTALLER_EXTENSION=`echo $INSTALLER_FILENAME | sed -e 's/.*\.\(...\)$/\1/g'`
         case $INSTALLER_EXTENSION in
             bin)
-                echo "Installing ${INSTALLER_FILENAME} into $WORKDIR/$EXAMPLE_INSTALL_DIR/"
-                ${INSTALLER_FILENAME} --mode unattended --prefix "$WORKDIR/$EXAMPLE_INSTALL_DIR/"
+                echo "Installing ${INSTALLER_FILENAME} into $WORKDIR/$EXAMPLE_INSTALL_DIR"
+                ${INSTALLER_FILENAME} --mode unattended --prefix "$WORKDIR/$EXAMPLE_INSTALL_DIR"
+#--providedLicenseFile licfile
+                ;;
+
+            run)
+                echo "Installing ${INSTALLER_FILENAME} into $WORKDIR/$EXAMPLE_INSTALL_DIR"
+                ${INSTALLER_FILENAME} --mode unattended --prefix "$WORKDIR/$EXAMPLE_INSTALL_DIR"
 #--providedLicenseFile licfile
                 ;;
 
             tar)
                 echo "Untarring ${INSTALLER_FILENAME} ..."
-                mkdir "$WORKDIR/$EXAMPLE_INSTALL_DIR"
+                mkdir -p "${WORKDIR}/${EXAMPLE_INSTALL_DIR}/${VORTEX_INSTALL_DIR}"
                 (
-                  cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/" && \
+                  cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR" && \
                   tar -xf ${INSTALLER_FILENAME}
                   mv HDE/$SHORTSETUP/release.com \
                       HDE/$SHORTSETUP/release.com.orig
                   sed < HDE/$SHORTSETUP/release.com.orig \
                       > HDE/$SHORTSETUP/release.com \
-                      "s%@@INSTALLDIR@@%$WORKDIR/$EXAMPLE_INSTALL_DIR/%"
+                      "s%@@INSTALLDIR@@%$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR%"
                 )
                 ;;
 
             zip)
                 echo "Unzipping ${INSTALLER_FILENAME} ..."
-                mkdir "$WORKDIR/$EXAMPLE_INSTALL_DIR"
+                mkdir -p "${WORKDIR}/${EXAMPLE_INSTALL_DIR}/${VORTEX_INSTALL_DIR}"
                 (
-                  cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/" && \
+                  cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR" && \
                   unzip ${INSTALLER_FILENAME}
                 )
                 ;;
             exe)
                 IS_WINDOWS_EXE="true"
                 mkdir "$WORKDIR/$EXAMPLE_INSTALL_DIR"
-
                 PATH="$PATH:/cygdrive/c/WINDOWS/system32"
                 export PATH
 
                 XPATH_INSTALLFILE=`cygpath -w "$INSTALLER_FILENAME"`
                 XPATH_WORKDIR=`cygpath -w "$WORKDIR"`
 
-                echo "exe file exists installing to $WORKDIR/$EXAMPLE_INSTALL_DIR ...."
-                cmd.exe /C $XPATH_INSTALLFILE --mode unattended --prefix "$XPATH_WORKDIR/$EXAMPLE_INSTALL_DIR/"
+                echo "exe file exists installing to $WORKDIR/$EXAMPLE_INSTALL_DIR...."
+                cmd.exe /C $XPATH_INSTALLFILE --mode unattended --prefix "$XPATH_WORKDIR/$EXAMPLE_INSTALL_DIR"
                 ;;
         esac
     else
+        # If an installer is not found there is no point continuing with the rest of the script as there are
+        # no examples to build or run...
         echo "Unable to find an installer in $INSTALLERDIR/VC"
+        exit 1
     fi
 
     INSTALLER_RTS_FILENAME=`ls $INSTALLERDIR/VC/P*OpenSplice*RTS*installer.* | grep -v HDE`
@@ -161,25 +203,25 @@ install_ospl()
     then
         RTS_EXTENSION=`echo $INSTALLER_RTS_FILENAME | sed -e 's/.*\.\(...\)$/\1/g'`
         case $RTS_EXTENSION in
-            bin)
-                echo "Installing ${INSTALLER_RTS_FILENAME} (RTS) into $WORKDIR/$RTS_INSTALL_DIR/"
-                ${INSTALLER_RTS_FILENAME} --mode unattended --prefix "$WORKDIR/$RTS_INSTALL_DIR/"
+            run)
+                echo "Installing ${INSTALLER_RTS_FILENAME} (RTS) into $WORKDIR/$RTS_INSTALL_DIR"
+                ${INSTALLER_RTS_FILENAME} --mode unattended --prefix "$WORKDIR/$RTS_INSTALL_DIR"
                 ;;
 
             tar)
                 echo "Untarring ${INSTALLER_RTS_FILENAME} (RTS) ..."
-                mkdir "$WORKDIR/$RTS_INSTALL_DIR"
+                mkdir -p "${WORKDIR}/${RTS_INSTALL_DIR}/${VORTEX_INSTALL_DIR}"
                 (
-                  cd "$WORKDIR/$RTS_INSTALL_DIR/" && \
+                  cd "$WORKDIR/$RTS_INSTALL_DIR/$VORTEX_INSTALL_DIR" && \
                   tar -xf ${INSTALLER_RTS_FILENAME}
                 )
                 ;;
 
             zip)
-                echo "Unzipping ${INSTALLER_FILENAME} (RTS)..."
-                mkdir "$WORKDIR/$RTS_INSTALL_DIR"
+                echo "Unzipping ${INSTALLER_RTS_FILENAME} (RTS)..."
+                mkdir -p "${WORKDIR}/${RTS_INSTALL_DIR}/${VORTEX_INSTALL_DIR}"
                 (
-                  cd "$WORKDIR/$RTS_INSTALL_DIR/" && \
+                  cd "$WORKDIR/$RTS_INSTALL_DIR/$VORTEX_INSTALL_DIR" && \
                   unzip ${INSTALLER_RTS_FILENAME}
                 )
                 ;;
@@ -194,7 +236,7 @@ install_ospl()
                 XPATH_WORKDIR=`cygpath -w "$WORKDIR"`
 
                 echo "exe file exists installing (RTS) to $WORKDIR/$RTS_INSTALL_DIR ...."
-                cmd.exe /C $XPATH_INSTALLFILE --mode unattended --prefix "$XPATH_WORKDIR/$RTS_INSTALL_DIR/"
+                cmd.exe /C $XPATH_INSTALLFILE --mode unattended --prefix "$XPATH_WORKDIR/$RTS_INSTALL_DIR"
                 ;;
         esac
     else
@@ -203,13 +245,19 @@ install_ospl()
 
     if [ -n "$LICENSE_FILE" ]
     then
-        echo "Copying License into $WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/etc ...."
-        cp $LICENSE_FILE "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/etc/."
+        echo "Copying License into $WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/etc ...."
+        cp $LICENSE_FILE "$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/etc/."
+        if [ $? != 0 ]
+        then
+            echo "Error copying license file"
+        fi
     fi
 }
 
 unix_windows_examples()
 {
+    BUILD_ERROR=0
+
     # Install a copy
     if [ "$DEP" = "none" ]
     then
@@ -229,31 +277,46 @@ unix_windows_examples()
 
     install_ospl
 
-    echo "Copying (1) $BASE/example_automation_scripts/* $WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/ ...."
-    cp -rp $BASE/example_automation_scripts/* "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/"
+    echo "Copying (1) $BASE/example_automation_scripts/* $WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/ ...."
+    cp -rp $BASE/example_automation_scripts/* "$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/"
+
+    if [ $? != 0 ]
+    then
+        echo "Error copying run scripts (1)"
+        BUILD_ERROR=1
+    fi
 
     echo "DEP is $DEP....."
 
     if [ "$DEP" != "none" ]
     then
-        echo "Copying (2) $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/ ...."
-        cp -rp $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/"
+        echo "Copying (2) $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/ ...."
+        cp -rp $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* "$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/"
+
+        if [ $? != 0 ]
+        then
+            echo "Error copying run scripts (2)"
+	    BUILD_ERROR=1
+        fi
     fi
 
-    if [ $? = 0 ]
+    if [ "$BUILD_ERROR" = "0" ]
     then
         echo "Install completed"
     else
         echo "ERROR: Install failed"
-        exit 1
     fi
 
-    EXAMPLESDIR="$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/examples"
+    EXAMPLESDIR="$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/examples"
 
-    cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/"
+    cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/"
 
     if check_platform
     then
+        if [ -n "$PERC_HOME" ]
+        then
+           . $PERC_HOME/bin/percenv.sh
+        fi
         unset OSPL_HOME_NORMALIZED
         . ./release.com
     fi
@@ -261,7 +324,7 @@ unix_windows_examples()
     cd examples
     if [ $? != 0 ]
     then
-        echo "ERROR: Couldn't locate examples directory in installed HDE."
+        echo "ERROR: Couldn't locate examples directory in installed $INSTTYPE directory."
         exit 1
     fi
 
@@ -287,6 +350,62 @@ unix_windows_examples()
 	fi
     fi
 
+    if [ "$SETUP_TYPE" = "arm.elinos5.linux64-dev" -o "$SETUP_TYPE" = "arm.elinos5.linux64-release" ]
+    then
+       PROTOBUF_LIB_HOME="/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-arm.elinos5/src/.libs"
+       export PROTOBUF_LIB_HOME
+    fi
+    if [ "$SETUP_TYPE" = "x86_64.elinos6.1-dev" -o "$SETUP_TYPE" = "x86_64.elinos6.1-release" ]
+    then
+       PROTOBUF_LIB_HOME="/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0_elinos_6.1_x86_64/src/.libs"
+       export PROTOBUF_LIB_HOME
+    fi
+
+    if [ "$SETUP_TYPE" = "armv6l.linux-release" -o "$SETUP_TYPE" = "armv6l.linux-dev" -o "$SETUP_TYPE" = "armv6l.linux-debug" ]
+    then
+       PROTOBUF_LIB_HOME="/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-armv6l.linux/src/.libs"
+       export PROTOBUF_LIB_HOME
+    fi
+
+    if [ "$SETUP_TYPE" = "armv7l.linux-release" -o "$SETUP_TYPE" = "armv7l.linux-dev" -o "$SETUP_TYPE" = "armv7l.linux-debug" ]
+    then
+       PROTOBUF_LIB_HOME="/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-armv7l.linux/src/.libs"
+       export PROTOBUF_LIB_HOME
+    fi
+    if [ "$SETUP_TYPE" = "armv7l_marvell.linux-release" -o "$SETUP_TYPE" = "armv7l_marvell.linux-dev" -o "$SETUP_TYPE" = "armv7l_marvell.linux-debug" ]
+    then
+       PROTOBUF_LIB_HOME="/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-armv7l-linux-marvell/src/.libs"
+       export PROTOBUF_LIB_HOME
+    fi
+
+    if [ "$SETUP_TYPE" = "armv7a_vfp_neon.linux-release" -o "$SETUP_TYPE" = "armv7a_vfp_neon.linux-dev" -o "$SETUP_TYPE" = "armv7a_vfp_neon.linux-debug" ]
+    then
+       PROTOBUF_LIB_HOME="/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-poky-armv7l_vfp_neon/src/.libs"
+       export PROTOBUF_LIB_HOME
+    fi
+    if [ "$SETUP_TYPE" = "armv7at2_vfp_neon.WRlinux7_gcc-release" -o "$SETUP_TYPE" = "armv7at2_vfp_neon.WRlinux7_gcc-dev" -o "$SETUP_TYPE" = "armv7at2_vfp_neon.WRlinux7_gcc-debug" ]
+    then
+       PROTOBUF_LIB_HOME="/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-trixel-armv7at2-vfp-neon/src/.libs"
+       export PROTOBUF_LIB_HOME
+    fi
+    if [ "$SETUP_TYPE" = "E500mc.linux-release" -o "$SETUP_TYPE" = "E500mc.linux-dev" ]
+    then
+       PROTOBUF_LIB_HOME="/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-poky-e500mc/src/.libs"
+       export PROTOBUF_LIB_HOME
+    fi
+
+    if [ "$SETUP_TYPE" = "x86_64.WRlinux8_gcc-release" -o "$SETUP_TYPE" = "x86_64.WRlinux8_gcc-dev" -o "$SETUP_TYPE" = "x86_64.WRlinux8_gcc-debug" ]
+    then
+       PROTOBUF_LIB_HOME="/home/dds/INSTALLED_FOR_DDS_wr8/protobuf-2.6.0/src/.libs"
+       export PROTOBUF_LIB_HOME
+    fi
+
+    if [ -n "$PROTOBUF_LIB_HOME" ]
+    then
+        LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PROTOBUF_LIB_HOME"
+        export LD_LIBRARY_PATH
+    fi
+
     BUILD_ERROR=0
 
     echo "Build Examples - `date`"
@@ -303,20 +422,19 @@ unix_windows_examples()
            LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/gcc-3.4.6/lib"
         fi
 
-        SPLICE_ORB=DDS_OpenFusion_1_6_1
-
         CLASSPATH="$CLASSPATH:$JACORB_HOME/lib/endorsed/jacorb.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$JACORB_HOME/lib/idl.jar"
         ACE_ROOT=$TAO_ROOT
 
-        export PATH LD_LIBRARY_PATH SPLICE_ORB CLASSPATH ACE_ROOT
+        export PATH LD_LIBRARY_PATH CLASSPATH ACE_ROOT
 
         ODBCINI="$ODBCHOME/etc/odbc.ini"
         ODBCINST="$ODBCHOME/etc/odbcinst.ini"
         ODBC_MSSQL_SERVER="10.1.0.189"
         ODBC_MYSQL_SERVER="10.1.0.191"
         ODBCSYSINI="$ODBCHOME/etc"
+        ODBC_LIB_NAME="odbc"
 
-        export  ODBCINI ODBCINST ODBC_MSSQL_SERVER ODBC_MYSQL_SERVER ODBCSYSINI
+        export  ODBCINI ODBCINST ODBC_MSSQL_SERVER ODBC_MYSQL_SERVER ODBCSYSINI ODBC_LIB_NAME
 
         PROJECTS=`ls Makefile*`
 
@@ -325,6 +443,10 @@ unix_windows_examples()
             PATH=$OSPL_EXAMPLE_BUILD_PREFIX_PATH:$PATH
         fi
 
+	# Temporary debugging to try and see why corba builds fail - works OK building
+	# manually on ubunt1604 - REMOVE when done....
+	env | sort > env.log
+	
         echo " ####  Example Build Begin #### "
         for PROJECT in $PROJECTS
         do
@@ -341,11 +463,47 @@ unix_windows_examples()
                 echo "Not making make file $PROJECT as make file not found"
             fi
         done
+
+        #The protobuf example has it's own BUILD files and is not built using MPC
+        cd "$EXAMPLESDIR/protobuf/java5/standalone"
+        if [ $? != 0 ]
+        then
+            echo "INFO: Couldn't locate protobuf java5 example directory in installed HDE."
+        else
+            #Protocol buffers is not currently supported on all platforms so only build
+            #if a BUILD file exists
+            if [ -f "BUILD" ]
+            then
+                bash ./BUILD
+                if [ $? != 0 ]
+                then
+                    echo "Building java5 protobuf example failed"
+                    BUILD_ERROR=1
+                fi
+            fi
+        fi
+        cd "$EXAMPLESDIR/protobuf/isocpp2/standalone"
+        if [ $? != 0 ]
+        then
+            echo "INFO: Couldn't locate protobuf isocpp2 example directory in installed HDE."
+        else
+            #Protocol buffers is not currently supported on all platforms so only build
+            #if a BUILD file exists
+            if [ -f "BUILD" ]
+            then
+                bash ./BUILD
+                if [ $? != 0 ]
+                then
+                    echo "Building isocpp2 protobuf example failed"
+                    BUILD_ERROR=1
+                fi
+            fi
+        fi
     else
         PATH="$PATH:/cygdrive/c/WINDOWS/system32"
         export PATH
 
-        XPATH=`cygpath -w "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP"`
+        XPATH=`cygpath -w "$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP"`
 
         echo "set OSPL_HOME=$XPATH" > setenv.bat
 
@@ -353,6 +511,12 @@ unix_windows_examples()
         echo "set TAO_ROOT=$XPATH" >> setenv.bat
         echo "set ACE_ROOT=$XPATH" >> setenv.bat
         echo "set VS_VER=$VS_VER" >> setenv.bat
+
+        XPATH=`cygpath -d "$PROTOBUF_HOME"`
+        echo "set PROTOBUF_HOME=$XPATH" >> setenv.bat
+
+        XPATH=`cygpath -d "$PROTOBUF_LIB_HOME"`
+        echo "set PROTOBUF_LIB_HOME=$XPATH" >> setenv.bat
 
         BUILD_CONFIG="DEBUG"
 
@@ -375,11 +539,9 @@ unix_windows_examples()
         XPATH=`cygpath -w "$LOGDIR"`
         echo "set LOGDIR=$XPATH" >> setenv.bat
 
-        echo "set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> setenv.bat
-
         echo "set JAVA_HOME=$JAVA_HOME" >> setenv.bat
 
-        echo "set PATH=%JAVA_HOME%\bin;%TAO_ROOT%\bin;%TAO_ROOT%\lib;%PATH%;%JACORB_HOME%\bin" >> setenv.bat
+        echo "set PATH=%JAVA_HOME%\bin;%TAO_ROOT%\bin;%TAO_ROOT%\lib;%PATH%;%JACORB_HOME%\bin;%PROTOBUF_HOME%\bin;C:\Python27" >> setenv.bat
 
         echo "set CLASSPATH=%CLASSPATH%;%JACORB_HOME%\lib\endorsed\jacorb.jar;%JACORB_HOME%\lib\endorsed\logkit.jar;%JACORB_HOME%\lib\idl.jar" >> setenv.bat
 
@@ -388,6 +550,7 @@ unix_windows_examples()
         XPATH=`cygpath -w "$BASE"`
 
         echo "set OSPLI_BASE=$XPATH" >> setenv.bat
+        echo "set ODBC_LIB_NAME=odbc32" >> setenv.bat
 
         # For some reason dds3-win2k3 likes uppercase C - this works on
         # the other windows machines too
@@ -414,8 +577,8 @@ vxworks6x_examples()
 
    install_ospl
 
-   EXAMPLESDIR="$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/examples"
-   cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/"
+   EXAMPLESDIR="$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/examples"
+   cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/$INSTTYPE/$SHORTSETUP/"
 
 
    if [ "$CURRENT_PL_CYGWIN" == "" ]
@@ -436,22 +599,48 @@ vxworks6x_examples()
    echo " Begin building examples -  `date`"
 
    CURDIR=`pwd`
-   for WRSPROJECTLIST in wb30projects*.lst
+   for WRSPROJECTLIST in wb_*_projects.lst wb_*_projects_AppOnly.lst
    {
-     echo "Processing $WRSPROJECTLIST"
-     rm -f build.log
-     wrws_import.sh -data `pwd`/examplews -f `grep -v '^#' $WRSPROJECTLIST | sed "s@^@$CURDIR/@" | tr '\n' ',' | sed 's/,$/\n/'` > build.log 2>&1
-     # Fake status as wrws_import does not return correct status codes.
-     status=0
-     create_example_summary ${WRSPROJECTLIST}_IMPORT
-     for WRSPROJECT in `grep -v '#' $WRSPROJECTLIST | sed -e 's@\(.*/\)\(.*\)\(/[^/]*$\)@\2@'`
-     {
-       rm -f build.log
-       wrws_update.sh -data `pwd`/examplews -b -l $WRSPROJECT > build.log 2>&1
-       # Fake status as wrws_update does not return correct status codes.
-       status=0
-       create_example_summary $WRSPROJECT
-     }
+      if [ -f $WRSPROJECTLIST ]
+      then
+         echo "Processing $WRSPROJECTLIST"
+         rm -f build.log
+         wrws_import.sh -data `pwd`/examplews -f `grep -v '^#' $WRSPROJECTLIST | sed "s@^@$CURDIR/@" | tr '\n' ',' | sed 's/,$/\n/'` > build.log 2>&1
+         # Fake status as wrws_import does not return correct status codes.
+         status=0
+         create_example_summary ${WRSPROJECTLIST}_IMPORT
+         rm -f build.log
+         case $SETUP_TYPE in
+            *vxworks6.6*)
+               for WRSPROJECT in `grep -v '#' $WRSPROJECTLIST | sed -e 's@\(.*/\)\(.*\)\(/[^/]*$\)@\2@'`
+	       {
+                  # Build step. List the projects rather than using -a, this guarantees ordering
+                  wrws_update.sh -data `pwd`/examplews -b build -l $WRSPROJECT >> build.log 2>&1
+                  # Fake status as wrws_update does not return correct status codes.
+                  status=0
+                  create_example_summary $WRSPROJECT
+                  # Now clean up (except for rtp mode where we use the vxes later)
+                  rm -f build.log
+               }
+               ;;
+            *)
+               # Build step. List the projects rather than using -a, this guarantees ordering
+               wrws_update.sh -data `pwd`/examplews -b build -j `grep -v '#' $WRSPROJECTLIST | sed -e 's@\(.*/\)\(.*\)\(/[^/]*$\)@\2@' | tr '\n' ',' | sed 's/,$/\n/'` > build.log 2>&1
+               # Fake status as wrws_update does not return correct status codes.
+               status=0
+               create_example_summary $WRSPROJECT
+               # Now clean up (except for rtp mode where we use the vxes later)
+               rm -f build.log
+               ;;
+         esac
+         case $SETUP_TYPE in
+            *vxworks6*_km*)
+               wrws_update.sh -data `pwd`/examplews -a -b clean > build.log 2>&1
+               status=0
+               create_example_summary ${WRSPROJECTLIST}_CLEAN
+         esac
+         rm -rf examplews
+      fi
    }
    BUILD_RESULTS_LOG=$LOGDIR/examples/build/build_summary.txt
    BUILD_LOG=$LOGDIR/examples/build/build_results.txt

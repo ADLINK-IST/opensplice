@@ -1,35 +1,67 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 package org.opensplice.dds.dcps;
 
-public class WaitSetBase extends SajSuperClass {
-    
-    public class WaitSetBaseImpl extends DDS._WaitSetInterfaceLocalBase {
-    	/* waitsetinterface operations  */
-    	public int _wait(DDS.ConditionSeqHolder active_conditions, DDS.Duration_t timeout) { return 0; }
-    	public int attach_condition(DDS.Condition cond) { return 0; }
-    	public int detach_condition(DDS.Condition cond) { return 0; }
-    	public int get_conditions(DDS.ConditionSeqHolder attached_conditions) { return 0; }
+public class WaitSetBase extends ObjectImpl {
+
+    @Override
+    protected int deinit() {
+        return super.deinit();
     }
-    
+
+    public class WaitSetBaseImpl extends DDS._WaitSetInterfaceLocalBase {
+        private static final long serialVersionUID = 4781909398140097734L;
+
+        /* waitsetinterface operations */
+        @Override
+        public int _wait(DDS.ConditionSeqHolder active_conditions,
+                DDS.Duration_t timeout) {
+            return 0;
+        }
+
+        @Override
+        public int attach_condition(DDS.Condition cond) {
+            return 0;
+        }
+
+        @Override
+        public int detach_condition(DDS.Condition cond) {
+            return 0;
+        }
+
+        @Override
+        public int get_conditions(DDS.ConditionSeqHolder attached_conditions) {
+            return 0;
+        }
+    }
+
     private DDS._WaitSetInterfaceLocalBase base;
-    
+
     public WaitSetBase() {
         base = new WaitSetBaseImpl();
     }
-    
+
+    @Override
     public String[] _ids() {
         return base._ids();
     }
-    
+
 }

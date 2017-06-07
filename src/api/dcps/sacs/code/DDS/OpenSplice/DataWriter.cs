@@ -1,240 +1,478 @@
-﻿// The OpenSplice DDS Community Edition project.
-//
-// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
-// Copyright (C) 2009  L-3 Communications / IS
-// 
-//  This library is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License Version 3 dated 29 June 2007, as published by the
-//  Free Software Foundation.
-// 
-//  This library is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-// 
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
 using DDS;
 using DDS.OpenSplice.CustomMarshalers;
+using DDS.OpenSplice.Kernel;
+using DDS.OpenSplice.kernelModule;
+using DDS.OpenSplice.kernelModuleI;
 
 namespace DDS.OpenSplice
-{    
+{
     public class DataWriter : Entity, IDataWriter
     {
-        private PublisherDataWriterListenerHelper listenerHelper;
+        private Publisher publisher;
+        private Topic topic;
 
-        public DataWriter(IntPtr gapiPtr)
-            : base(gapiPtr)
+        internal ReturnCode init(Publisher publisher, DataWriterQos dwQos, Topic aTopic, string dwName)
         {
-            // Base class handles everything.
+            ReturnCode result = DDS.ReturnCode.Ok;
+
+            MyDomainId = publisher.MyDomainId;
+
+            using (OpenSplice.CustomMarshalers.DataWriterQosMarshaler marshaler =
+                    new OpenSplice.CustomMarshalers.DataWriterQosMarshaler())
+            {
+                result = marshaler.CopyIn(dwQos);
+                if (result == ReturnCode.Ok)
+                {
+                    IntPtr uWriter = User.Writer.New(publisher.rlReq_UserPeer, dwName, aTopic.rlReq_UserPeer, marshaler.UserPtr);
+                    if (uWriter != IntPtr.Zero)
+                    {
+                        result = base.init(uWriter);
+                    }
+                    else
+                    {
+                        ReportStack.Report(result, "Could not create DataWriter.");
+                        result = DDS.ReturnCode.OutOfResources;
+                    }
+                } else {
+                    ReportStack.Report(result, "Could not copy DataWriterQos.");
+                }
+
+            }
+            if (result == ReturnCode.Ok)
+            {
+                this.publisher = publisher;
+                this.topic = aTopic;
+                (aTopic as ITopicDescriptionImpl).wlReq_IncrNrUsers();
+            }
+
+            return result;
         }
 
-        internal void SetListener(PublisherDataWriterListenerHelper listenerHelper)
+        internal override ReturnCode wlReq_deinit()
         {
-            this.listenerHelper = listenerHelper;
+            ReturnCode result = DDS.ReturnCode.Ok;
+            IDataWriterListener dwListener = listener as IDataWriterListener;
+            if (dwListener != null)
+            {
+                this.SetListener(dwListener,(DDS.StatusKind)0);
+            }
+            this.DisableCallbacks();
+            result = base.wlReq_deinit();
+            if (result == DDS.ReturnCode.Ok)
+            {
+                if (this.topic != null) {
+                    result = (this.topic as ITopicDescriptionImpl).DecrNrUsers();
+                    if (result == DDS.ReturnCode.Ok)
+                    {
+                        this.topic = null;
+                    }
+                }
+                this.publisher = null;
+            }
+            return result;
         }
-        
+
+        internal override void NotifyListener(Entity source, V_EVENT triggerMask, DDS.OpenSplice.Common.EntityStatus status)
+        {
+            IDataWriterListener dwListener = listener as IDataWriterListener;
+            if(dwListener != null)
+            {
+                DDS.OpenSplice.Common.WriterStatus writerStatus = status as DDS.OpenSplice.Common.WriterStatus;
+
+	            if ((triggerMask & V_EVENT.LIVELINESS_LOST) == V_EVENT.LIVELINESS_LOST)
+	            {
+	                dwListener.OnLivelinessLost(source as IDataWriter, writerStatus.LivelinessLost);
+	            }
+
+	            if ((triggerMask & V_EVENT.OFFERED_DEADLINE_MISSED) == V_EVENT.OFFERED_DEADLINE_MISSED)
+	            {
+	                dwListener.OnOfferedDeadlineMissed(source as IDataWriter, writerStatus.DeadlineMissed);
+	            }
+
+	            if ((triggerMask & V_EVENT.OFFERED_INCOMPATIBLE_QOS) == V_EVENT.OFFERED_INCOMPATIBLE_QOS)
+	            {
+	                dwListener.OnOfferedIncompatibleQos(source as IDataWriter, writerStatus.IncompatibleQos);
+	            }
+
+	            if ((triggerMask & V_EVENT.PUBLICATION_MATCHED) == V_EVENT.PUBLICATION_MATCHED)
+	            {
+	                dwListener.OnPublicationMatched(source as IDataWriter, writerStatus.PublicationMatch);
+	            }
+            }
+        }
+
+        internal static V_RESULT CopyMatchedSubscription(IntPtr info, IntPtr arg)
+        {
+            v_subscriptionInfo subInfo = (v_subscriptionInfo) Marshal.PtrToStructure(info, typeof(v_subscriptionInfo));
+            GCHandle argGCHandle = GCHandle.FromIntPtr(arg);
+            List<InstanceHandle> handleList = argGCHandle.Target as List<InstanceHandle>;
+            InstanceHandle handle = User.InstanceHandle.FromGID(subInfo.key);
+            handleList.Add(handle);
+            argGCHandle.Target = handleList;
+            return V_RESULT.OK;
+        }
+
+        internal static V_RESULT CopyMatchedSubscriptionData(IntPtr info, IntPtr arg)
+        {
+            __SubscriptionBuiltinTopicData nativeImage =
+                    (__SubscriptionBuiltinTopicData) Marshal.PtrToStructure(info, typeof(__SubscriptionBuiltinTopicData));
+            GCHandle argGCHandle = GCHandle.FromIntPtr(arg);
+            SubscriptionBuiltinTopicData to = argGCHandle.Target as SubscriptionBuiltinTopicData;
+            SubscriptionBuiltinTopicDataMarshaler.CopyOut(ref nativeImage, ref to);
+            argGCHandle.Target = to;
+            return V_RESULT.OK;
+        }
+
+        public IDataWriterListener Listener
+        {
+            get
+            {
+                bool isAlive;
+                IDataWriterListener dwListener = null;
+
+                ReportStack.Start();
+                lock(this)
+                {
+                    isAlive = this.rlReq_isAlive;
+                    if (isAlive)
+                    {
+                        dwListener = rlReq_Listener as IDataWriterListener;
+                    }
+                }
+                ReportStack.Flush(this, !isAlive);
+
+                return dwListener;
+            }
+        }
+
         public ReturnCode SetListener(IDataWriterListener listener, StatusKind mask)
         {
-            ReturnCode result = ReturnCode.Error;
+            ReturnCode result = DDS.ReturnCode.AlreadyDeleted;
 
-            if (listener != null)
+            ReportStack.Start();
+            lock(this)
             {
-                Gapi.gapi_publisherDataWriterListener gapiListener;
-                if (listenerHelper == null)
+                if (this.rlReq_isAlive)
                 {
-                    // Since the real DataWriter is created from the TypeSupport,
-                    // the listenerHelper is not "readonly"
-                    listenerHelper = new PublisherDataWriterListenerHelper();
+                    result = wlReq_SetListener(listener, mask);
                 }
-                listenerHelper.Listener = listener;
-                listenerHelper.CreateListener(out gapiListener);
-                lock (listener)
+            }
+            ReportStack.Flush(this, result != ReturnCode.Ok);
+
+            return result;
+        }
+
+        public ReturnCode SetQos(DataWriterQos qos)
+        {
+            ReturnCode result = DDS.ReturnCode.AlreadyDeleted;
+
+            ReportStack.Start();
+            if (this.rlReq_isAlive)
+            {
+                result = QosManager.checkQos(qos);
+                if (result == DDS.ReturnCode.Ok)
                 {
-                    using (PublisherDataWriterListenerMarshaler marshaler = 
-                            new PublisherDataWriterListenerMarshaler(ref gapiListener))
+                    using (OpenSplice.CustomMarshalers.DataWriterQosMarshaler marshaler =
+                        new OpenSplice.CustomMarshalers.DataWriterQosMarshaler())
                     {
-                        result = Gapi.DataWriter.set_listener(
-                            GapiPeer,
-                            marshaler.GapiPtr,
-                            mask);
+                        result = marshaler.CopyIn(qos);
+                        if (result == ReturnCode.Ok)
+                        {
+                            result = uResultToReturnCode(
+                                    User.Writer.SetQos(rlReq_UserPeer, marshaler.UserPtr));
+                        }
+                        else
+                        {
+                            ReportStack.Report(result, "Could not apply DataWriterQos.");
+                        }
                     }
                 }
             }
-            else
-            {
-                result = Gapi.DataWriter.set_listener(
-                    GapiPeer,
-                    IntPtr.Zero,
-                    mask);
-            }
+
+            ReportStack.Flush(this, result != ReturnCode.Ok);
 
             return result;
         }
-        
-        public ReturnCode SetQos(DataWriterQos qos)
-        {
-            ReturnCode result;
 
-            using (OpenSplice.CustomMarshalers.DataWriterQosMarshaler marshaler = 
-                    new OpenSplice.CustomMarshalers.DataWriterQosMarshaler())
-            {
-                result = marshaler.CopyIn(qos);
-                if (result == ReturnCode.Ok)
-                {
-                    result = Gapi.DataWriter.set_qos(GapiPeer, marshaler.GapiPtr);
-                }
-            }
-
-            return result;
-        }
-        
         public ReturnCode GetQos(ref DataWriterQos qos)
         {
-            ReturnCode result;
-
-            using (OpenSplice.CustomMarshalers.DataWriterQosMarshaler marshaler = 
-                    new OpenSplice.CustomMarshalers.DataWriterQosMarshaler())
+            IntPtr userQos = IntPtr.Zero;
+            ReturnCode result = DDS.ReturnCode.AlreadyDeleted;
+            ReportStack.Start();
+            if (this.rlReq_isAlive)
             {
-                result = Gapi.DataWriter.get_qos(GapiPeer, marshaler.GapiPtr);
-
+                result = uResultToReturnCode(
+                    User.Writer.GetQos(rlReq_UserPeer, ref userQos));
                 if (result == ReturnCode.Ok)
                 {
-                    marshaler.CopyOut(ref qos);
+                    using (OpenSplice.CustomMarshalers.DataWriterQosMarshaler marshaler =
+                            new OpenSplice.CustomMarshalers.DataWriterQosMarshaler(userQos, true))
+                    {
+                        marshaler.CopyOut(ref qos);
+                    }
+                }
+                else
+                {
+                    ReportStack.Report(result, "Could not copy DataWriterQos.");
                 }
             }
-
+            ReportStack.Flush(this, result != ReturnCode.Ok);
             return result;
         }
-        
+
         public ITopic Topic
         {
             get
             {
-                IntPtr gapiPtr = Gapi.DataWriter.get_topic(GapiPeer);
+                bool isAlive;
+                Topic topicObj = null;
 
-                ITopic topic = SacsSuperClass.fromUserData(gapiPtr) as ITopic;
-                return topic;
+                ReportStack.Start();
+                lock(this)
+                {
+                    isAlive = this.rlReq_isAlive;
+                    if (isAlive)
+                    {
+                        topicObj = topic;
+                    }
+                }
+                ReportStack.Flush(this, !isAlive);
+
+                return topicObj;
             }
         }
-        
+
         public IPublisher Publisher
         {
             get
             {
-                IntPtr gapiPtr = Gapi.DataWriter.get_publisher(GapiPeer);
+                bool isAlive;
+                Publisher publisherObj = null;
 
-                IPublisher publisher = SacsSuperClass.fromUserData(gapiPtr) as IPublisher;
-                return publisher;
+                ReportStack.Start();
+                lock(this)
+                {
+                    isAlive = this.rlReq_isAlive;
+                    if (isAlive)
+                    {
+                        publisherObj = publisher;
+                    }
+                }
+                ReportStack.Flush(this, !isAlive);
+
+                return publisherObj;
             }
         }
-        
+
         public ReturnCode WaitForAcknowledgments(Duration maxWait)
         {
-            return Gapi.DataWriter.wait_for_acknowledgments(GapiPeer, ref maxWait);
+            ReturnCode result = DDS.ReturnCode.AlreadyDeleted;
+            ReportStack.Start();
+            if (QosManager.countErrors(maxWait) > 0)
+            {
+                result = DDS.ReturnCode.BadParameter;
+            }
+            else
+            {
+                if (this.rlReq_isAlive)
+                {
+                    result = uResultToReturnCode(
+                            User.Writer.WaitForAcknowledgments(rlReq_UserPeer, maxWait.OsDuration));
+                }
+            }
+            ReportStack.Flush(this, (result != ReturnCode.Ok) && (result != ReturnCode.Timeout));
+            return result;
         }
-        
+
         public ReturnCode GetLivelinessLostStatus(
                 ref LivelinessLostStatus status)
         {
+            ReturnCode result;
+            ReportStack.Start();
+            if (this.rlReq_isAlive)
+            {
             if (status == null) status = new LivelinessLostStatus();
-            return Gapi.DataWriter.get_liveliness_lost_status(GapiPeer, status);
+                GCHandle statusGCHandle = GCHandle.Alloc(status, GCHandleType.Normal);
+                result = uResultToReturnCode(
+                        User.Writer.GetLivelinessLostStatus(
+                                rlReq_UserPeer, 1, LivelinessLostStatusMarshaler.CopyOut, GCHandle.ToIntPtr(statusGCHandle)));
+                status = statusGCHandle.Target as LivelinessLostStatus;
+                statusGCHandle.Free();
+            }
+            else
+            {
+                result = DDS.ReturnCode.AlreadyDeleted;
+            }
+            ReportStack.Flush(this, result != ReturnCode.Ok);
+            return result;
         }
-        
+
         public ReturnCode GetOfferedDeadlineMissedStatus(
                 ref OfferedDeadlineMissedStatus status)
         {
-            if (status == null) status = new OfferedDeadlineMissedStatus();
-            return Gapi.DataWriter.get_offered_deadline_missed_status(GapiPeer, status);
+            ReturnCode result;
+            ReportStack.Start();
+            if (this.rlReq_isAlive)
+            {
+                if (status == null) status = new OfferedDeadlineMissedStatus();
+                GCHandle statusGCHandle = GCHandle.Alloc(status, GCHandleType.Normal);
+                result = uResultToReturnCode(
+                        User.Writer.GetDeadlineMissedStatus(
+                                rlReq_UserPeer, 1, OfferedDeadlineMissedStatusMarshaler.CopyOut, GCHandle.ToIntPtr(statusGCHandle)));
+                status = statusGCHandle.Target as OfferedDeadlineMissedStatus;
+                statusGCHandle.Free();
+            }
+            else
+            {
+                result = DDS.ReturnCode.AlreadyDeleted;
+            }
+            ReportStack.Flush(this, result != ReturnCode.Ok);
+            return result;
         }
-        
+
         public ReturnCode GetOfferedIncompatibleQosStatus(
                 ref OfferedIncompatibleQosStatus status)
         {
             ReturnCode result;
-
-            using (OfferedIncompatibleQosStatusMarshaler marshaler = 
-                    new OfferedIncompatibleQosStatusMarshaler())
+            ReportStack.Start();
+            if (this.rlReq_isAlive)
             {
                 if (status == null) status = new OfferedIncompatibleQosStatus();
-                if (status.Policies == null) status.Policies = new QosPolicyCount[28];
-                marshaler.CopyIn(status);
-                
-                result = Gapi.DataWriter.get_offered_incompatible_qos_status(
-                        GapiPeer, marshaler.GapiPtr);
-
-                if (result == ReturnCode.Ok)
-                {
-                    marshaler.CopyOut(ref status);
-                }
+                GCHandle statusGCHandle = GCHandle.Alloc(status, GCHandleType.Normal);
+                result = uResultToReturnCode(
+                        User.Writer.GetIncompatibleQosStatus(
+                                rlReq_UserPeer, 1, OfferedIncompatibleQosStatusMarshaler.CopyOut, GCHandle.ToIntPtr(statusGCHandle)));
+                status = statusGCHandle.Target as OfferedIncompatibleQosStatus;
+                statusGCHandle.Free();
             }
-
+            else
+            {
+                result = DDS.ReturnCode.AlreadyDeleted;
+            }
+            ReportStack.Flush(this, result != ReturnCode.Ok);
             return result;
         }
-        
+
         public ReturnCode GetPublicationMatchedStatus(
                 ref PublicationMatchedStatus status)
         {
-            if (status == null) status = new PublicationMatchedStatus();
-            return Gapi.DataWriter.get_publication_matched_status(GapiPeer, status);
+            ReturnCode result;
+            ReportStack.Start();
+            if (this.rlReq_isAlive)
+            {
+                if (status == null) status = new PublicationMatchedStatus();
+                GCHandle statusGCHandle = GCHandle.Alloc(status, GCHandleType.Normal);
+                result = uResultToReturnCode(
+                        User.Writer.GetPublicationMatchStatus(
+                                rlReq_UserPeer, 1, PublicationMatchedStatusMarshaler.CopyOut, GCHandle.ToIntPtr(statusGCHandle)));
+                status = statusGCHandle.Target as PublicationMatchedStatus;
+                statusGCHandle.Free();
+            }
+            else
+            {
+                result = DDS.ReturnCode.AlreadyDeleted;
+            }
+            ReportStack.Flush(this, result != ReturnCode.Ok);
+            return result;
         }
-        
+
         public ReturnCode AssertLiveliness()
         {
-            return Gapi.DataWriter.assert_liveliness(GapiPeer);
+            ReturnCode result;
+            ReportStack.Start();
+            if (this.rlReq_isAlive)
+            {
+                result = uResultToReturnCode(
+                        User.Writer.AssertLiveliness(rlReq_UserPeer));
+                ReportStack.Flush(this, result != ReturnCode.Ok);
+            }
+            else
+            {
+                result = DDS.ReturnCode.AlreadyDeleted;
+            }
+            return result;
         }
-        
+
         public ReturnCode GetMatchedSubscriptions(ref InstanceHandle[] subscriptionHandles)
         {
             ReturnCode result;
-
-            using (SequenceInstanceHandleMarshaler marshaler = 
-                    new SequenceInstanceHandleMarshaler())
+            ReportStack.Start();
+            if (this.rlReq_isAlive)
             {
-                result = Gapi.DataWriter.get_matched_subscriptions(
-                        GapiPeer,
-                        marshaler.GapiPtr);
-
-                if (result == ReturnCode.Ok)
-                {
-                    marshaler.CopyOut(ref subscriptionHandles);
-                }
+            List<InstanceHandle> handleList = new List<InstanceHandle>();
+            GCHandle listGCHandle = GCHandle.Alloc(handleList, GCHandleType.Normal);
+            result = uResultToReturnCode(
+                    User.Writer.GetMatchedSubscriptions(
+                            rlReq_UserPeer,
+                            CopyMatchedSubscription,
+                            GCHandle.ToIntPtr(listGCHandle)));
+            handleList = listGCHandle.Target as List<InstanceHandle>;
+            subscriptionHandles = handleList.ToArray();
+            listGCHandle.Free();
             }
-
+            else
+            {
+                result = DDS.ReturnCode.AlreadyDeleted;
+            }
+            ReportStack.Flush(this, result != ReturnCode.Ok);
             return result;
         }
-        
+
         public ReturnCode GetMatchedSubscriptionData(
-                ref SubscriptionBuiltinTopicData subscriptionData, 
+                ref SubscriptionBuiltinTopicData subscriptionData,
                 InstanceHandle subscriptionHandle)
         {
-            ReturnCode result;
-
-            using (OpenSplice.CustomMarshalers.SubscriptionBuiltinTopicDataMarshaler marshaler = 
-                    new OpenSplice.CustomMarshalers.SubscriptionBuiltinTopicDataMarshaler())
+            ReturnCode result = DDS.ReturnCode.BadParameter;
+            ReportStack.Start();
+            if (this.rlReq_isAlive)
             {
-                result = Gapi.DataWriter.get_matched_subscription_data(
-                        GapiPeer,
-                        marshaler.GapiPtr,
-                        subscriptionHandle);
-
-                if (result == ReturnCode.Ok)
+                if (subscriptionHandle != InstanceHandle.Nil)
                 {
-                    marshaler.CopyOut(ref subscriptionData);
+                    GCHandle dataGCHandle = GCHandle.Alloc(subscriptionData, GCHandleType.Normal);
+                    result = uResultToReturnCode(
+                            User.Writer.GetMatchedSubscriptionData(
+                                    rlReq_UserPeer,
+                                    subscriptionHandle,
+                                    CopyMatchedSubscriptionData,
+                                    GCHandle.ToIntPtr(dataGCHandle)));
+                    subscriptionData = dataGCHandle.Target as SubscriptionBuiltinTopicData;
+                    dataGCHandle.Free();
+                }
+                else
+                {
+                    result = ReturnCode.BadParameter;
+                    ReportStack.Report(result, "subscriptionHandle = DDS.InstanceHandle.Nil.");
                 }
             }
-
+            else
+            {
+                result = DDS.ReturnCode.AlreadyDeleted;
+            }
+            ReportStack.Flush(this, result != ReturnCode.Ok);
             return result;
         }
-
-        protected virtual void CopyIn() { }
-
-        protected virtual void Cleanup() { }
-
-        protected virtual void CopyOut() { }
     }
 }

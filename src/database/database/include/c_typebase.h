@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef C_TYPEBASE_H
@@ -14,6 +22,7 @@
 
 #include "os_defs.h"
 #include <limits.h>
+#include <stddef.h>
 
 #if defined (__cplusplus)
 extern "C" {
@@ -34,14 +43,8 @@ extern "C" {
 #define C_SIZEOF(name)  sizeof(C_STRUCT(name))
 #define C_ADDRESS(ptr)  ((c_address)(ptr))
 
-#define C_ALIGNMENT(t) \
-        ((c_ulong)(c_address)(&((struct {c_char d;t a;}*)(void *)0)->a))
-
-#define C_MAXALIGNMENT \
-        (C_ALIGNMENT(c_value))
-
 #define C_ALIGNSIZE(size,alignment) \
-        ((((size-1)/C_MAXALIGNMENT)+1)*C_MAXALIGNMENT)
+        (((((size)-1)/(alignment))+1)*(alignment))
 
 #define C_MAXALIGNSIZE(size) \
         C_ALIGNSIZE(size,C_MAXALIGNMENT)
@@ -58,8 +61,6 @@ extern "C" {
 C_CLASS(c_base);
 C_CLASS(c_type);
 
-#define OS_ALIGNMENT       (8)
-
 /** @def NULL
  * @bug OSPL-2272 */
 /* VERSION is the deprecated form of OSPL_VERSION
@@ -70,7 +71,7 @@ C_CLASS(c_type);
 #endif
 
 typedef os_address          c_address;
-typedef c_address           c_size;
+typedef os_size_t           c_size;
 typedef void               *c_object;
 typedef void               *c_voidp;
 typedef os_uchar            c_octet;
@@ -98,26 +99,28 @@ typedef c_object           *c_sequence;
  *     the correct value if written hexadecimal.
  *  2) we cannot assume each platform uses the Two's Complement notation.
  */
-#define C_MIN_CHAR             '\0'
-#define C_MAX_CHAR             '\0xff'
+#define C_MAX_SCHAR            INT8_MAX                         /* 0x7f                                 */
+#define C_MIN_SCHAR            INT8_MIN                         /* 0x80                                 */
+#define C_MAX_UCHAR            UINT8_MAX                        /* 0xff                                 */
+#define C_MIN_UCHAR            0                                /* 0x0                                  */
+#define C_MAX_OCTET            UINT8_MAX                        /* 0xFF                                 */
 #define C_MIN_OCTET            0                                /* 0x0                                  */
-#define C_MAX_OCTET            255                              /* 0xFF                                 */
-#define C_MIN_SHORT(sa)       -32768##sa                        /* 0x8000     Two's Complement          */
-#define C_MAX_SHORT(sa)        32767##sa                        /* 0x7FFF                               */
-#define C_MIN_USHORT(sa)       0U##sa                           /* 0x0                                  */
-#define C_MAX_USHORT(sa)       65535U##sa                       /* 0xFFFF                               */
-#define C_MIN_LONG(sa)        -2147483648##sa                   /* 0x80000000 Two's Complement          */
-#define C_MAX_LONG(sa)         2147483647U##sa                  /* 0x7FFFFFFF                           */
-#define C_MIN_ULONG(sa)        0U##sa                           /* 0x0                                  */
-#define C_MAX_ULONG(sa)        4294967295U##sa                  /* 0xFFFFFFFF                           */
-#define C_MIN_LONGLONG(sa)    -9223372036854775808##sa          /* 0x8000000000000000 Two's Complement  */
-#define C_MAX_LONGLONG(sa)     9223372036854775807##sa          /* 0x7FFFFFFFFFFFFFFF                   */
-#define C_MIN_ULONGLONG(sa)    0U##sa                           /* 0x0                                  */
-#define C_MAX_ULONGLONG(sa)    18446744073709551615U##sa        /* 0xFFFFFFFFFFFFFFFF                   */
-#define C_MIN_FLOAT            1.1754944909521339405E-38F
-#define C_MAX_FLOAT            3.4028234663852885981E+38F
-#define C_MIN_DOUBLE           1.1125369292536011856E-308
-#define C_MAX_DOUBLE           1.7976931348623157081E+308
+#define C_MAX_SHORT            INT16_MAX                        /* 0x7FFF                               */
+#define C_MIN_SHORT            INT16_MIN                        /* 0x8000     Two's Complement          */
+#define C_MAX_USHORT           UINT16_MAX                       /* 0xFFFF                               */
+#define C_MIN_USHORT           0                                /* 0x0                                  */
+#define C_MAX_LONG             INT32_MAX                        /* 0x7FFFFFFF                           */
+#define C_MIN_LONG             INT32_MIN                        /* 0x80000000 Two's Complement          */
+#define C_MAX_ULONG            UINT32_MAX                       /* 0xFFFFFFFF                           */
+#define C_MIN_ULONG            0U                               /* 0x0                                  */
+#define C_MAX_LONGLONG         INT64_MAX                        /* 0x7FFFFFFFFFFFFFFF                   */
+#define C_MIN_LONGLONG         INT64_MIN                        /* 0x8000000000000000 Two's Complement  */
+#define C_MIN_ULONGLONG        0ULL                             /* 0x0                                  */
+#define C_MAX_ULONGLONG        UINT64_MAX                       /* 0xFFFFFFFFFFFFFFFF                   */
+#define C_MIN_FLOAT            1.1754943508222875E-38
+#define C_MAX_FLOAT            3.4028234663852886E+38
+#define C_MIN_DOUBLE           2.2250738585072014E-308
+#define C_MAX_DOUBLE           1.7976931348623157E+308
 #define C_MIN_SIZE             0
 #define C_MAX_SIZE             OS_MAX_INTEGER(c_size)
 
@@ -206,6 +209,37 @@ typedef struct c_value {
 
 #define c_value(v) ((c_value)(v))
 
+#define C_ALIGNMENT_TYPE(t) struct c_alignment_type_##t { char c; t x; }
+C_ALIGNMENT_TYPE (c_address);
+C_ALIGNMENT_TYPE (c_size);
+C_ALIGNMENT_TYPE (c_voidp);
+C_ALIGNMENT_TYPE (c_octet);
+C_ALIGNMENT_TYPE (c_short);
+C_ALIGNMENT_TYPE (c_ushort);
+C_ALIGNMENT_TYPE (c_long);
+C_ALIGNMENT_TYPE (c_ulong);
+C_ALIGNMENT_TYPE (c_char);
+C_ALIGNMENT_TYPE (c_wchar);
+C_ALIGNMENT_TYPE (c_float);
+C_ALIGNMENT_TYPE (c_double);
+C_ALIGNMENT_TYPE (c_bool);
+C_ALIGNMENT_TYPE (c_longlong);
+C_ALIGNMENT_TYPE (c_ulonglong);
+C_ALIGNMENT_TYPE (c_string);
+C_ALIGNMENT_TYPE (c_wstring);
+C_ALIGNMENT_TYPE (c_array);
+C_ALIGNMENT_TYPE (c_sequence);
+C_ALIGNMENT_TYPE (pa_uint32_t);
+C_ALIGNMENT_TYPE (pa_uintptr_t);
+C_ALIGNMENT_TYPE (pa_voidp_t);
+C_ALIGNMENT_TYPE (c_value);
+
+#define C_ALIGNMENT(t) ((c_ulong) offsetof (struct c_alignment_type_##t, x))
+#define C_MAXALIGNMENT C_ALIGNMENT(c_value)
+
+#define C_ALIGNMENT_C_STRUCT_TYPE(t) struct c_alignment_type_struct_##t { char c; C_STRUCT(t) x; }
+#define C_ALIGNMENT_C_STRUCT(t) ((c_ulong) offsetof (struct c_alignment_type_struct_##t, x))
+
 OS_API c_value c_undefinedValue (void);
 OS_API c_value c_shortValue     (const c_short     value);
 OS_API c_value c_addressValue   (const c_address value);
@@ -224,6 +258,30 @@ OS_API c_value c_stringValue    (const c_string    value);
 OS_API c_value c_wstringValue   (const c_wstring   value);
 OS_API c_value c_objectValue    (const c_voidp     object);
 OS_API c_value c_voidpValue     (const c_voidp     object);
+
+OS_API c_value c_shortMinValue      (void);
+OS_API c_value c_longMinValue       (void);
+OS_API c_value c_longlongMinValue   (void);
+OS_API c_value c_ushortMinValue     (void);
+OS_API c_value c_ulongMinValue      (void);
+OS_API c_value c_ulonglongMinValue  (void);
+OS_API c_value c_boolMinValue       (void);
+OS_API c_value c_octetMinValue      (void);
+OS_API c_value c_charMinValue       (void);
+OS_API c_value c_floatMinValue      (void);
+OS_API c_value c_doubleMinValue     (void);
+
+OS_API c_value c_shortMaxValue      (void);
+OS_API c_value c_longMaxValue       (void);
+OS_API c_value c_longlongMaxValue   (void);
+OS_API c_value c_ushortMaxValue     (void);
+OS_API c_value c_ulongMaxValue      (void);
+OS_API c_value c_ulonglongMaxValue  (void);
+OS_API c_value c_boolMaxValue       (void);
+OS_API c_value c_octetMaxValue      (void);
+OS_API c_value c_charMaxValue       (void);
+OS_API c_value c_floatMaxValue      (void);
+OS_API c_value c_doubleMaxValue     (void);
 
 OS_API c_char *   c_valueImage       (const c_value v);
 OS_API c_bool     c_imageValue       (const char *image, c_value *imgValue, c_type imgType);

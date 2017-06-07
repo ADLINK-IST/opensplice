@@ -95,6 +95,7 @@ public:
       , PS_ModuleQsSeen  // '}' seen for module
       , PS_ModuleBodySeen  // Seen complete module body
       , PS_LocalSeen  // Seen an LOCAL keyword
+      , PS_AbstractSeen  // Seen an ABSTRACT keyword
       , PS_InterfaceSeen  // Seen an INTERFACE keyword
       , PS_InterfaceIDSeen // Seen the interface ID
       , PS_InheritSpecSeen // Seen a complete inheritance spec
@@ -237,8 +238,8 @@ public:
    virtual long err_count();  // How many errors?
    virtual void set_err_count(long); // Set it
 
-   virtual void set_warn(idl_bool); // Set it
-   virtual idl_bool warn();
+   virtual void set_warn(bool); // Set it
+   virtual bool warn();
 
    virtual long lineno();  // Where in file?
    virtual void set_lineno(long); // Set it
@@ -260,12 +261,12 @@ public:
    virtual void set_stripped_filename(UTL_String *);
    // Set it
 
-   virtual idl_bool imported();  // Are we imported?
-   virtual idl_bool import();  // Is import on?
-   virtual void set_import(idl_bool); // Set it
+   virtual bool imported();  // Are we imported?
+   virtual bool import();  // Is import on?
+   virtual void set_import(bool); // Set it
 
-   virtual idl_bool in_main_file();  // Are we?
-   virtual void set_in_main_file(idl_bool); // Set it
+   virtual bool in_main_file();  // Are we?
+   virtual void set_in_main_file(bool); // Set it
 
    virtual char *prog_name();  // Invoked as..
    virtual void set_prog_name(char *); // Set it
@@ -286,8 +287,8 @@ public:
    virtual void set_indent(UTL_Indenter *);
    // Set it
 
-   virtual idl_bool read_from_stdin(); // Reading from stdin?
-   virtual void set_read_from_stdin(idl_bool); // Set it
+   virtual bool read_from_stdin(); // Reading from stdin?
+   virtual void set_read_from_stdin(bool); // Set it
 
    virtual void store_include_file_name(UTL_String *);
 
@@ -303,14 +304,14 @@ public:
    virtual CompilationStage compilation_stage();
    virtual void set_compilation_stage(CompilationStage s);
 
-   virtual idl_bool case_sensitive();
-   virtual void set_case_sensitive(idl_bool);
+   virtual bool case_sensitive();
+   virtual void set_case_sensitive(bool);
 
-   virtual idl_bool ignore_interfaces();
-   virtual void set_ignore_interfaces(idl_bool);
+   virtual bool ignore_interfaces();
+   virtual void set_ignore_interfaces(bool);
 
-   idl_bool IncludeFileMerge();
-   void IncludeFileMerge(idl_bool yes_or_no);
+   bool IncludeFileMerge();
+   void IncludeFileMerge(bool yes_or_no);
 
    // Convert from a predefined type to an expression type
    virtual AST_Expression::ExprType
@@ -318,7 +319,7 @@ public:
       AST_PredefinedType::PredefinedType
    );
 
-   idl_bool valid_identifier (const char *id);
+   bool valid_identifier (const char *id);
 
 private:
    // Data
@@ -332,25 +333,25 @@ private:
    UTL_String * pd_main_filename; // What main filename
    UTL_String * pd_real_filename; // What real filename
    UTL_String * pd_stripped_filename; // Stripped filename
-   idl_bool pd_import;  // Is import on?
-   idl_bool pd_in_main_file; // Are we in it?
+   bool pd_import;  // Is import on?
+   bool pd_in_main_file; // Are we in it?
    char * pd_prog_name;  // Argv[0]
    char * pd_cpp_location; // Where to find CPP
    long pd_compile_flags; // Compile flags
    const char * pd_be;   // BE name to use
    char * pd_local_escapes; // Trapdoor argument
    UTL_Indenter * pd_indent;  // Indent object
-   idl_bool pd_read_from_stdin; // Reading from stdin?
-   idl_bool pd_warn; // Print out warnings?
+   bool pd_read_from_stdin; // Reading from stdin?
+   bool pd_warn; // Print out warnings?
    UTL_String ** pd_include_file_names; // Array of file names
    unsigned long pd_n_include_file_names; // How many
    unsigned long pd_n_alloced_file_names; // How many alloced
-   idl_bool pd_merge_includes;
+   bool pd_merge_includes;
 
    ParseState pd_parse_state;  // Parse state we're in
    CompilationStage pd_compilation_stage;
-   idl_bool pd_case_sensitive; // Is case sensitivity on?
-   idl_bool pd_ignore_interfaces; // Do not generate interface defs
+   bool pd_case_sensitive; // Is case sensitivity on?
+   bool pd_ignore_interfaces; // Do not generate interface defs
 
    // Operations
    long seen_include_file_before(UTL_String *);

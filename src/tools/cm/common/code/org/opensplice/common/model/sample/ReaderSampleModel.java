@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.model.sample;
@@ -26,13 +34,17 @@ import org.opensplice.cm.Reader;
 import org.opensplice.cm.Topic;
 import org.opensplice.cm.data.Sample;
 import org.opensplice.cm.data.UserData;
+import org.opensplice.cm.meta.MetaType;
 import org.opensplice.cm.qos.TopicQoS;
 import org.opensplice.cm.transform.DataTransformerFactory;
 import org.opensplice.cm.transform.QoSSerializer;
 import org.opensplice.cm.transform.SampleSerializer;
 import org.opensplice.cm.transform.TransformationException;
+import org.opensplice.cmdataadapter.CmDataException;
+import org.opensplice.cmdataadapter.TypeInfo.TypeEvolution;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.SampleModelSizeException;
+import org.opensplice.common.model.TypeHandler;
 import org.opensplice.common.model.table.UserDataSingleTableModel;
 import org.opensplice.common.model.table.UserDataTableModel;
 
@@ -56,25 +68,32 @@ public class ReaderSampleModel extends SampleModel{
      * @throws CMException Thrown when the reader is no longer available or the
      *                     data type of its contents cannot be found.
      */
-    public ReaderSampleModel(Reader _reader) throws CommonException{
+    public ReaderSampleModel(Reader _reader, TypeEvolution _typeEvolution) throws CommonException{
         super();
         
         if(_reader == null){
             throw new CommonException("Supplied reader == null.");
         }
         reader = _reader;
+        typeEvolution = _typeEvolution;
+        Topic topic = null;
         try {
-            userDataModel = new UserDataTableModel(reader.getDataType());
-            singleUserDataModel = new UserDataSingleTableModel(reader.getDataType(), false);
-            this.initiateToBeWrittenUserData(new UserData(reader.getDataType()));
-        } catch (CMException e) {
+            topic = getTopic();
+            typeInfo = TypeHandler.getTypeHandler().getTypeInfo(topic);
+            MetaType metaType = typeInfo.getMetaType(typeEvolution);
+            userDataModel = new UserDataTableModel(metaType);
+            singleUserDataModel = new UserDataSingleTableModel(metaType, false);
+            this.initiateToBeWrittenUserData(new UserData(metaType));
+        } catch (CmDataException e) {
             throw new CommonException(e.getMessage());
-        } catch (DataTypeUnsupportedException de) {
-            throw new CommonException(de.getMessage());
+        } finally {
+            if (topic != null) {
+                topic.free();
+            }
         }
     }
     
-    public ReaderSampleModel(Reader _reader, String struct) throws CommonException{
+    public ReaderSampleModel(Reader _reader, String struct, TypeEvolution _typeEvolution) throws CommonException{
         super();
         
         structDetail = struct;
@@ -82,13 +101,20 @@ public class ReaderSampleModel extends SampleModel{
             throw new CommonException("Supplied reader == null.");
         }
         reader = _reader;
+        typeEvolution = _typeEvolution;
+        Topic topic = null;
         try {
-            userDataModel = new UserDataTableModel(reader.getDataType(), struct);
-            singleUserDataModel = new UserDataSingleTableModel(reader.getDataType(), false, struct);
-        } catch (CMException e) {
+            topic = getTopic();
+            typeInfo = TypeHandler.getTypeHandler().getTypeInfo(topic);
+            MetaType metaType = typeInfo.getMetaType(typeEvolution);
+            userDataModel = new UserDataTableModel(metaType, struct);
+            singleUserDataModel = new UserDataSingleTableModel(metaType, false, struct);
+        } catch (CmDataException e) {
             throw new CommonException(e.getMessage());
-        } catch (DataTypeUnsupportedException de) {
-            throw new CommonException(de.getMessage());
+        } finally {
+            if (topic != null) {
+                topic.free();
+            }
         }
     }
     
@@ -105,14 +131,18 @@ public class ReaderSampleModel extends SampleModel{
             throw new CommonException(de.getMessage());
         }
         if(result != null){
+            try {
+                result = typeInfo.adaptDataForRead(typeEvolution, result);
+            } catch (CmDataException e) {
+                throw new CommonException(e.getMessage());
+            }
             boolean added;
             if (structDetail != null) {
                 added = this.addSample(result,structDetail);
             } else {
                 added = this.addSample(result);    
             }
-            
-            if(added && (result != null)){
+            if (added) {
                 this.notifyListeners("data_read");
             }
         } else {
@@ -134,6 +164,11 @@ public class ReaderSampleModel extends SampleModel{
             throw new CommonException(de.getMessage());
         }
         if(result != null){
+            try {
+                result = typeInfo.adaptDataForRead(typeEvolution, result);
+            } catch (CmDataException e) {
+                throw new CommonException(e.getMessage());
+            }
             boolean added;
             if (structDetail != null) {
                 added = this.addSample(result,structDetail);
@@ -187,15 +222,18 @@ public class ReaderSampleModel extends SampleModel{
                 throw new CommonException(de.getMessage());
             }
             if(result != null){
+                try {
+                    result = typeInfo.adaptDataForRead(typeEvolution, result);
+                } catch (CmDataException e) {
+                    throw new CommonException(e.getMessage());
+                }
                 boolean added;
                 if (structDetail != null) {
                     added = this.addSample(result,structDetail);
                 } else {
                     added = this.addSample(result);    
                 }
-                
-                
-                if(added && (result != null)){
+                if (added) {
                     this.notifyListeners("data_read");
                 }
             } else {
@@ -207,7 +245,7 @@ public class ReaderSampleModel extends SampleModel{
     
     @Override
     public synchronized int export(File file) throws CommonException{
-        Topic top;
+        Topic top = null;
         TopicQoS qos;
         QoSSerializer ser;
         OutputStreamWriter fw = null;
@@ -255,13 +293,17 @@ public class ReaderSampleModel extends SampleModel{
             fw.write("</keyList><qos>");
             fw.write(xmlQos);
             fw.write("</qos><metadata>");
-            fw.write(this.userDataModel.getUserDataType().toXML());
+            fw.write(this.typeInfo.getBareMetaType().toXML());
             fw.write("</metadata></topic><data>");
             
             do{
                 sample = userDataModel.getDataAt(i);
                 
                 if(sample != null){
+                    // Adapt the UserData if needed
+                    UserData exportData = sample.getMessage().getUserData();
+                    sample.getMessage().setUserData(
+                            typeInfo.adaptDataForWrite(typeEvolution, exportData));
                     fw.write(sampleSer.serializeSample(sample));
                 }
                 i++;
@@ -278,6 +320,8 @@ public class ReaderSampleModel extends SampleModel{
             throw new CommonException(ce.getMessage());
         } catch (TransformationException te) {
             throw new CommonException(te.getMessage());
+        } catch (CmDataException de) {
+            throw new CommonException(de.getMessage());
         } finally {
             if (fw != null) {
                 try {
@@ -286,10 +330,18 @@ public class ReaderSampleModel extends SampleModel{
                     throw new CommonException(ie.getMessage());
                 }
             }
+            if (top != null) {
+                top.free();
+            }
         }
         return i-1;
     }
   
+    /**
+     * Retrieve the Topic Entity for the Reader. This reference must be freed by the caller.
+     * @return the Topic Entity associated with the Reader.
+     * @throws CommonException
+     */
     protected Topic getTopic() throws CommonException{
         Topic result = null;
         Entity[] entities;
@@ -346,20 +398,6 @@ public class ReaderSampleModel extends SampleModel{
         return result;
     }
 
-    @Override
-    public String getDataTypeKeyList() throws CommonException {
-        String result = null;
-        Topic t = this.getTopic();
-        
-        if(t != null){
-            result = super.getKeyList(t);
-            t.free();
-        } else {
-            throw new CommonException("Data type could not be retrieved.");
-        }
-        return result;
-    }
-    
     /**
      * Provides access to the Reader.
      * 

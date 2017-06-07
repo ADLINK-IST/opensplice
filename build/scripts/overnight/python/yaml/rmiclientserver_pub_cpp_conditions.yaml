@@ -1,0 +1,22 @@
+parseconditions:
+    desc: RMI ClientServerLogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+
+        - name: string_message_sequence
+          type: line
+          inst: 1
+          required: yes
+          line: "[0]=first message / [1]=second message / [2]=third message"
+
+        - name: service_shutdown
+          type: line
+          inst: 1
+          required: yes
+          line: "=== Service shutdown"

@@ -1,0 +1,39 @@
+parseconditions:
+    desc: Throughput LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: tp_params
+          type: line
+          inst: 1
+          required: yes
+          line: "maxSamplesPerRead: 10 | maxCycles: 10 | pollingDelay: 0 | partitionName: Streams Throughput example"
+
+        - name: tp_results
+          type: line
+          inst: All
+          required: yes
+          line: "Payload size: * | Total received: * samples, * bytes | Out of order: * samples | Transfer rate: * samples/s, * Mbit/s"
+
+        - name: tp_total
+          type: line
+          inst: All
+          required: yes
+          line: "Total received: * samples, * bytes"
+
+        - name: tp_average
+          type: line
+          inst: 1
+          required: yes
+          line: "Average transfer rate: * samples/s, * Mbit/s"
+
+        - name: tp_outoforder
+          type: line
+          inst: All
+          required: yes
+          line: "Out of order: * samples"

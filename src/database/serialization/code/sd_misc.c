@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /** \file services/serialization/code/sd_misc.c
@@ -50,6 +58,7 @@ sd_unionDetermineSwitchValue(
 #undef __CASE__
         default:
             switchValue = c_undefinedValue();
+            (void)switchValue;
             SD_CONFIDENCE(FALSE);
         break;
         }
@@ -59,6 +68,7 @@ sd_unionDetermineSwitchValue(
     break;
     default:
         switchValue = c_undefinedValue();
+        (void)switchValue;
         SD_CONFIDENCE(FALSE);
     break;
     }
@@ -80,7 +90,7 @@ sd_unionDetermineLabel(
     c_unionCase deflt;
     c_unionCase currentCase;
     c_literal label;
-    int i,j, nLabels;
+    c_ulong i, j, nLabels;
 
     /* Determine corresponding label */
     result = NULL;
@@ -142,7 +152,7 @@ sd_getScopedTypeName(
     c_string typeName;
     c_metaObject module;
     c_string moduleName;
-    c_ulong nameLen;
+    os_size_t nameLen;
     c_char *result;
     c_type actualType;
 
@@ -156,7 +166,7 @@ sd_getScopedTypeName(
                       (moduleName ? strlen(moduleSep) : 0) +
                       strlen(typeName) +
                       1U /* '\0' */;
-            result = (c_char *)os_malloc(nameLen);
+            result = os_malloc(nameLen);
             snprintf(result, nameLen, "%s%s%s",
                     moduleName ? moduleName : "",
                     moduleName ? moduleSep : "",
@@ -183,16 +193,14 @@ char *
 sd_stringDup(
     const char *string)
 {
-    unsigned int size;
+    os_size_t size;
     char *result = NULL;
 
     if (string) {
         size = strlen(string);
         size++; /* '\0'*/
         result = os_malloc(size);
-        if (result) {
-             os_strncpy(result, string, size);
-        }
+        memcpy (result, string, size);
     }
 
     return result;
@@ -206,7 +214,7 @@ sd_stringToLong (
     c_bool result = FALSE;
     c_char *endp;
 
-    *retval = strtol(str, &endp, 10);
+    *retval = (c_long) strtol(str, &endp, 10);
     if ( endp != str ) {
         result = TRUE;
     }

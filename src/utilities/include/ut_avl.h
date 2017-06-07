@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef UT_AVL_H
@@ -190,10 +198,13 @@ typedef struct ut_avlNode {
 #define UT_AVL_TREEDEF_FLAG_ALLOWDUPS 4
 
 typedef struct ut_avlTreedef {
+#if LITE && defined (__cplusplus)
+    ut_avlTreedef() {}
+#endif
     os_size_t avlnodeoffset;
     os_size_t keyoffset;
     union {
-        int (*cmp) ();
+        int (*cmp) (void);
         ut_avlCompare_t comparekk;
         ut_avlCompare_r_t comparekk_r;
     } u;
@@ -242,59 +253,59 @@ typedef struct ut_avlCIter {
 } ut_avlCIter_t;
 
 /* avlnodeoffset and keyoffset must both be in [0,2**31-1] */
-#define UT_AVL_TREEDEF_INITIALIZER(avlnodeoffset, keyoffset, comparekk, augment) { (avlnodeoffset), (keyoffset), { (int (*) ()) (comparekk) }, (augment), 0, 0 }
-#define UT_AVL_TREEDEF_INITIALIZER_INDKEY(avlnodeoffset, keyoffset, comparekk, augment) { (avlnodeoffset), (keyoffset), { (int (*) ()) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_INDKEY, 0 }
-#define UT_AVL_TREEDEF_INITIALIZER_ALLOWDUPS(avlnodeoffset, keyoffset, comparekk, augment) { (avlnodeoffset), (keyoffset), { (int (*) ()) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_ALLOWDUPS, 0 }
-#define UT_AVL_TREEDEF_INITIALIZER_INDKEY_ALLOWDUPS(avlnodeoffset, keyoffset, comparekk, augment) { (avlnodeoffset), (keyoffset), { (int (*) ()) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_INDKEY|UT_AVL_TREEDEF_FLAG_ALLOWDUPS, 0 }
-#define UT_AVL_TREEDEF_INITIALIZER_R(avlnodeoffset, keyoffset, comparekk, cmparg, augment) { (avlnodeoffset), (keyoffset), { (int (*) ()) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_R, (cmparg) }
-#define UT_AVL_TREEDEF_INITIALIZER_INDKEY_R(avlnodeoffset, keyoffset, comparekk, cmparg, augment) { (avlnodeoffset), (keyoffset), { (int (*) ()) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_INDKEY|UT_AVL_TREEDEF_FLAG_R, (cmparg) }
-#define UT_AVL_TREEDEF_INITIALIZER_R_ALLOWDUPS(avlnodeoffset, keyoffset, comparekk, cmparg, augment) { (avlnodeoffset), (keyoffset), { (int (*) ()) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_R|UT_AVL_TREEDEF_FLAG_ALLOWDUPS, (cmparg) }
-#define UT_AVL_TREEDEF_INITIALIZER_INDKEY_R_ALLOWDUPS(avlnodeoffset, keyoffset, comparekk, cmparg, augment) { (avlnodeoffset), (keyoffset), { (int (*) ()) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_INDKEY|UT_AVL_TREEDEF_FLAG_R|UT_AVL_TREEDEF_FLAG_ALLOWDUPS, (cmparg) }
+#define UT_AVL_TREEDEF_INITIALIZER(avlnodeoffset, keyoffset, comparekk, augment) { (avlnodeoffset), (keyoffset), { (int (*) (void)) (comparekk) }, (augment), 0, 0 }
+#define UT_AVL_TREEDEF_INITIALIZER_INDKEY(avlnodeoffset, keyoffset, comparekk, augment) { (avlnodeoffset), (keyoffset), { (int (*) (void)) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_INDKEY, 0 }
+#define UT_AVL_TREEDEF_INITIALIZER_ALLOWDUPS(avlnodeoffset, keyoffset, comparekk, augment) { (avlnodeoffset), (keyoffset), { (int (*) (void)) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_ALLOWDUPS, 0 }
+#define UT_AVL_TREEDEF_INITIALIZER_INDKEY_ALLOWDUPS(avlnodeoffset, keyoffset, comparekk, augment) { (avlnodeoffset), (keyoffset), { (int (*) (void)) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_INDKEY|UT_AVL_TREEDEF_FLAG_ALLOWDUPS, 0 }
+#define UT_AVL_TREEDEF_INITIALIZER_R(avlnodeoffset, keyoffset, comparekk, cmparg, augment) { (avlnodeoffset), (keyoffset), { (int (*) (void)) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_R, (cmparg) }
+#define UT_AVL_TREEDEF_INITIALIZER_INDKEY_R(avlnodeoffset, keyoffset, comparekk, cmparg, augment) { (avlnodeoffset), (keyoffset), { (int (*) (void)) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_INDKEY|UT_AVL_TREEDEF_FLAG_R, (cmparg) }
+#define UT_AVL_TREEDEF_INITIALIZER_R_ALLOWDUPS(avlnodeoffset, keyoffset, comparekk, cmparg, augment) { (avlnodeoffset), (keyoffset), { (int (*) (void)) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_R|UT_AVL_TREEDEF_FLAG_ALLOWDUPS, (cmparg) }
+#define UT_AVL_TREEDEF_INITIALIZER_INDKEY_R_ALLOWDUPS(avlnodeoffset, keyoffset, comparekk, cmparg, augment) { (avlnodeoffset), (keyoffset), { (int (*) (void)) (comparekk) }, (augment), UT_AVL_TREEDEF_FLAG_INDKEY|UT_AVL_TREEDEF_FLAG_R|UT_AVL_TREEDEF_FLAG_ALLOWDUPS, (cmparg) }
 
 /* Not maintaining # nodes */
 
-OS_API void ut_avlTreedefInit (ut_avlTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_t comparekk, ut_avlAugment_t augment, os_uint32 flags);
-OS_API void ut_avlTreedefInit_r (ut_avlTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_r_t comparekk_r, void *cmparg, ut_avlAugment_t augment, os_uint32 flags);
+OS_API void ut_avlTreedefInit (ut_avlTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_t comparekk, ut_avlAugment_t augment, os_uint32 flags) __nonnull((1,4));
+OS_API void ut_avlTreedefInit_r (ut_avlTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_r_t comparekk_r, void *cmparg, ut_avlAugment_t augment, os_uint32 flags) __nonnull((1,4));
 
-OS_API void ut_avlInit (const ut_avlTreedef_t *td, ut_avlTree_t *tree);
-OS_API void ut_avlFree (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void (*freefun) (void *node));
-OS_API void ut_avlFreeArg (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void (*freefun) (void *node, void *arg), void *arg);
+OS_API void ut_avlInit (const ut_avlTreedef_t *td, ut_avlTree_t *tree) __nonnull_all__;
+OS_API void ut_avlFree (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void (*freefun) (void *node)) __nonnull((1,2));
+OS_API void ut_avlFreeArg (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void (*freefun) (void *node, void *arg), void *arg) __nonnull((1,2));
 
-OS_API void *ut_avlRoot (const ut_avlTreedef_t *td, const ut_avlTree_t *tree);
-OS_API void *ut_avlLookup (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key);
-OS_API void *ut_avlLookupIPath (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key, ut_avlIPath_t *path);
-OS_API void *ut_avlLookupDPath (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key, ut_avlDPath_t *path);
-OS_API void *ut_avlLookupPredEq (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key);
-OS_API void *ut_avlLookupSuccEq (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key);
-OS_API void *ut_avlLookupPred (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key);
-OS_API void *ut_avlLookupSucc (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key);
+OS_API void *ut_avlRoot (const ut_avlTreedef_t *td, const ut_avlTree_t *tree) __nonnull_all__;
+OS_API void *ut_avlLookup (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key) __nonnull_all__;
+OS_API void *ut_avlLookupIPath (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key, ut_avlIPath_t *path) __nonnull_all__;
+OS_API void *ut_avlLookupDPath (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key, ut_avlDPath_t *path) __nonnull_all__;
+OS_API void *ut_avlLookupPredEq (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key) __nonnull_all__;
+OS_API void *ut_avlLookupSuccEq (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key) __nonnull_all__;
+OS_API void *ut_avlLookupPred (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key) __nonnull_all__;
+OS_API void *ut_avlLookupSucc (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *key) __nonnull_all__;
 
-OS_API void ut_avlInsert (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *node);
-OS_API void ut_avlDelete (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *node);
-OS_API void ut_avlInsertIPath (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *node, ut_avlIPath_t *path);
-OS_API void ut_avlDeleteDPath (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *node, ut_avlDPath_t *path);
-OS_API void ut_avlSwapNode (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *oldn, void *newn);
-OS_API void ut_avlAugmentUpdate (const ut_avlTreedef_t *td, void *node);
+OS_API void ut_avlInsert (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *node) __nonnull_all__;
+OS_API void ut_avlDelete (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *node) __nonnull_all__;
+OS_API void ut_avlInsertIPath (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *node, ut_avlIPath_t *path) __nonnull_all__;
+OS_API void ut_avlDeleteDPath (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *node, ut_avlDPath_t *path) __nonnull_all__;
+OS_API void ut_avlSwapNode (const ut_avlTreedef_t *td, ut_avlTree_t *tree, void *oldn, void *newn) __nonnull_all__;
+OS_API void ut_avlAugmentUpdate (const ut_avlTreedef_t *td, void *node) __nonnull_all__;
 
-OS_API int ut_avlIsEmpty (const ut_avlTree_t *tree);
-OS_API int ut_avlIsSingleton (const ut_avlTree_t *tree);
+OS_API int ut_avlIsEmpty (const ut_avlTree_t *tree) __nonnull_all__;
+OS_API int ut_avlIsSingleton (const ut_avlTree_t *tree) __nonnull_all__;
 
-OS_API void *ut_avlFindMin (const ut_avlTreedef_t *td, const ut_avlTree_t *tree);
-OS_API void *ut_avlFindMax (const ut_avlTreedef_t *td, const ut_avlTree_t *tree);
-OS_API void *ut_avlFindPred (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *vnode);
-OS_API void *ut_avlFindSucc (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *vnode);
+OS_API void *ut_avlFindMin (const ut_avlTreedef_t *td, const ut_avlTree_t *tree) __nonnull_all__;
+OS_API void *ut_avlFindMax (const ut_avlTreedef_t *td, const ut_avlTree_t *tree) __nonnull_all__;
+OS_API void *ut_avlFindPred (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *vnode) __nonnull((1,2));
+OS_API void *ut_avlFindSucc (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *vnode) __nonnull((1,2));
 
-OS_API void ut_avlWalk (const ut_avlTreedef_t *td, ut_avlTree_t *tree, ut_avlWalk_t f, void *a);
-OS_API void ut_avlConstWalk (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, ut_avlConstWalk_t f, void *a);
-OS_API void ut_avlWalkRange (const ut_avlTreedef_t *td, ut_avlTree_t *tree, const void *min, const void *max, ut_avlWalk_t f, void *a);
-OS_API void ut_avlConstWalkRange (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *min, const void *max, ut_avlConstWalk_t f, void *a);
-OS_API void ut_avlWalkRangeReverse (const ut_avlTreedef_t *td, ut_avlTree_t *tree, const void *min, const void *max, ut_avlWalk_t f, void *a);
-OS_API void ut_avlConstWalkRangeReverse (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *min, const void *max, ut_avlConstWalk_t f, void *a);
+OS_API void ut_avlWalk (const ut_avlTreedef_t *td, ut_avlTree_t *tree, ut_avlWalk_t f, void *a) __nonnull((1,2,3));
+OS_API void ut_avlConstWalk (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, ut_avlConstWalk_t f, void *a) __nonnull((1,2,3));
+OS_API void ut_avlWalkRange (const ut_avlTreedef_t *td, ut_avlTree_t *tree, const void *min, const void *max, ut_avlWalk_t f, void *a)  __nonnull((1,2,3,4,5));
+OS_API void ut_avlConstWalkRange (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *min, const void *max, ut_avlConstWalk_t f, void *a) __nonnull((1,2,3,4,5));
+OS_API void ut_avlWalkRangeReverse (const ut_avlTreedef_t *td, ut_avlTree_t *tree, const void *min, const void *max, ut_avlWalk_t f, void *a) __nonnull((1,2,3));
+OS_API void ut_avlConstWalkRangeReverse (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, const void *min, const void *max, ut_avlConstWalk_t f, void *a) __nonnull((1,2,3));
 
-OS_API void *ut_avlIterFirst (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, ut_avlIter_t *iter);
-OS_API void *ut_avlIterSuccEq (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, ut_avlIter_t *iter, const void *key);
-OS_API void *ut_avlIterSucc (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, ut_avlIter_t *iter, const void *key);
-OS_API void *ut_avlIterNext (ut_avlIter_t *iter);
+OS_API void *ut_avlIterFirst (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, ut_avlIter_t *iter) __nonnull_all__;
+OS_API void *ut_avlIterSuccEq (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, ut_avlIter_t *iter, const void *key) __nonnull_all__;
+OS_API void *ut_avlIterSucc (const ut_avlTreedef_t *td, const ut_avlTree_t *tree, ut_avlIter_t *iter, const void *key) __nonnull_all__;
+OS_API void *ut_avlIterNext (ut_avlIter_t *iter) __nonnull_all__;
 
 /* Maintaining # nodes */
 
@@ -307,49 +318,49 @@ OS_API void *ut_avlIterNext (ut_avlIter_t *iter);
 #define UT_AVL_CTREEDEF_INITIALIZER_R_ALLOWDUPS(avlnodeoffset, keyoffset, comparekk, cmparg, augment) { UT_AVL_TREEDEF_INITIALIZER_R_ALLOWDUPS (avlnodeoffset, keyoffset, comparekk, cmparg, augment) }
 #define UT_AVL_CTREEDEF_INITIALIZER_INDKEY_R_ALLOWDUPS(avlnodeoffset, keyoffset, comparekk, cmparg, augment) { UT_AVL_TREEDEF_INITIALIZER_INDKEY_R_ALLOWDUPS (avlnodeoffset, keyoffset, comparekk, cmparg, augment) }
 
-OS_API void ut_avlCTreedefInit (ut_avlCTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_t comparekk, ut_avlAugment_t augment, os_uint32 flags);
-OS_API void ut_avlCTreedefInit_r (ut_avlCTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_r_t comparekk_r, void *cmp_arg, ut_avlAugment_t augment, os_uint32 flags);
+OS_API void ut_avlCTreedefInit (ut_avlCTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_t comparekk, ut_avlAugment_t augment, os_uint32 flags) __nonnull((1,4));
+OS_API void ut_avlCTreedefInit_r (ut_avlCTreedef_t *td, os_size_t avlnodeoffset, os_size_t keyoffset, ut_avlCompare_r_t comparekk_r, void *cmp_arg, ut_avlAugment_t augment, os_uint32 flags) __nonnull((1,4));
 
-OS_API void ut_avlCInit (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree);
-OS_API void ut_avlCFree (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void (*freefun) (void *node));
-OS_API void ut_avlCFreeArg (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void (*freefun) (void *node, void *arg), void *arg);
+OS_API void ut_avlCInit (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree) __nonnull_all__;
+OS_API void ut_avlCFree (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void (*freefun) (void *node)) __nonnull((1,2));
+OS_API void ut_avlCFreeArg (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void (*freefun) (void *node, void *arg), void *arg) __nonnull((1,2));
 
-OS_API void *ut_avlCRoot (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree);
-OS_API void *ut_avlCLookup (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key);
-OS_API void *ut_avlCLookupIPath (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key, ut_avlIPath_t *path);
-OS_API void *ut_avlCLookupDPath (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key, ut_avlDPath_t *path);
-OS_API void *ut_avlCLookupPredEq (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key);
-OS_API void *ut_avlCLookupSuccEq (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key);
-OS_API void *ut_avlCLookupPred (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key);
-OS_API void *ut_avlCLookupSucc (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key);
+OS_API void *ut_avlCRoot (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree) __nonnull_all__;
+OS_API void *ut_avlCLookup (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key) __nonnull_all__;
+OS_API void *ut_avlCLookupIPath (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key, ut_avlIPath_t *path) __nonnull_all__;
+OS_API void *ut_avlCLookupDPath (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key, ut_avlDPath_t *path) __nonnull_all__;
+OS_API void *ut_avlCLookupPredEq (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key) __nonnull_all__;
+OS_API void *ut_avlCLookupSuccEq (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key) __nonnull_all__;
+OS_API void *ut_avlCLookupPred (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key) __nonnull_all__;
+OS_API void *ut_avlCLookupSucc (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *key) __nonnull_all__;
 
-OS_API void ut_avlCInsert (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *node);
-OS_API void ut_avlCDelete (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *node);
-OS_API void ut_avlCInsertIPath (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *node, ut_avlIPath_t *path);
-OS_API void ut_avlCDeleteDPath (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *node, ut_avlDPath_t *path);
-OS_API void ut_avlCSwapNode (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *oldn, void *newn);
-OS_API void ut_avlCAugmentUpdate (const ut_avlCTreedef_t *td, void *node);
+OS_API void ut_avlCInsert (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *node) __nonnull_all__;
+OS_API void ut_avlCDelete (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *node) __nonnull_all__;
+OS_API void ut_avlCInsertIPath (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *node, ut_avlIPath_t *path) __nonnull_all__;
+OS_API void ut_avlCDeleteDPath (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *node, ut_avlDPath_t *path) __nonnull_all__;
+OS_API void ut_avlCSwapNode (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, void *oldn, void *newn) __nonnull_all__;
+OS_API void ut_avlCAugmentUpdate (const ut_avlCTreedef_t *td, void *node) __nonnull_all__;
 
-OS_API int ut_avlCIsEmpty (const ut_avlCTree_t *tree);
-OS_API int ut_avlCIsSingleton (const ut_avlCTree_t *tree);
-OS_API os_size_t ut_avlCCount (const ut_avlCTree_t *tree);
+OS_API int ut_avlCIsEmpty (const ut_avlCTree_t *tree) __nonnull_all__;
+OS_API int ut_avlCIsSingleton (const ut_avlCTree_t *tree) __nonnull_all__;
+OS_API os_size_t ut_avlCCount (const ut_avlCTree_t *tree) __nonnull_all__;
 
-OS_API void *ut_avlCFindMin (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree);
-OS_API void *ut_avlCFindMax (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree);
-OS_API void *ut_avlCFindPred (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *vnode);
-OS_API void *ut_avlCFindSucc (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *vnode);
+OS_API void *ut_avlCFindMin (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree) __nonnull_all__;
+OS_API void *ut_avlCFindMax (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree) __nonnull_all__;
+OS_API void *ut_avlCFindPred (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *vnode) __nonnull((1,2));
+OS_API void *ut_avlCFindSucc (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *vnode) __nonnull((1,2));
 
-OS_API void ut_avlCWalk (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, ut_avlWalk_t f, void *a);
-OS_API void ut_avlCConstWalk (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, ut_avlConstWalk_t f, void *a);
-OS_API void ut_avlCWalkRange (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, const void *min, const void *max, ut_avlWalk_t f, void *a);
-OS_API void ut_avlCConstWalkRange (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *min, const void *max, ut_avlConstWalk_t f, void *a);
-OS_API void ut_avlCWalkRangeReverse (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, const void *min, const void *max, ut_avlWalk_t f, void *a);
-OS_API void ut_avlCConstWalkRangeReverse (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *min, const void *max, ut_avlConstWalk_t f, void *a);
+OS_API void ut_avlCWalk (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, ut_avlWalk_t f, void *a) __nonnull((1,2,3));
+OS_API void ut_avlCConstWalk (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, ut_avlConstWalk_t f, void *a) __nonnull((1,2,3));
+OS_API void ut_avlCWalkRange (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, const void *min, const void *max, ut_avlWalk_t f, void *a) __nonnull((1,2,3,4,5));
+OS_API void ut_avlCConstWalkRange (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *min, const void *max, ut_avlConstWalk_t f, void *a) __nonnull((1,2,3,4,5));
+OS_API void ut_avlCWalkRangeReverse (const ut_avlCTreedef_t *td, ut_avlCTree_t *tree, const void *min, const void *max, ut_avlWalk_t f, void *a) __nonnull((1,2,3,4,5));
+OS_API void ut_avlCConstWalkRangeReverse (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, const void *min, const void *max, ut_avlConstWalk_t f, void *a) __nonnull((1,2,3,4,5));
 
-OS_API void *ut_avlCIterFirst (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, ut_avlCIter_t *iter);
-OS_API void *ut_avlCIterSuccEq (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, ut_avlCIter_t *iter, const void *key);
-OS_API void *ut_avlCIterSucc (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, ut_avlCIter_t *iter, const void *key);
-OS_API void *ut_avlCIterNext (ut_avlCIter_t *iter);
+OS_API void *ut_avlCIterFirst (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, ut_avlCIter_t *iter) __nonnull_all__;
+OS_API void *ut_avlCIterSuccEq (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, ut_avlCIter_t *iter, const void *key) __nonnull_all__;
+OS_API void *ut_avlCIterSucc (const ut_avlCTreedef_t *td, const ut_avlCTree_t *tree, ut_avlCIter_t *iter, const void *key) __nonnull_all__;
+OS_API void *ut_avlCIterNext (ut_avlCIter_t *iter) __nonnull_all__;
 
 #undef OS_API
 #if defined (__cplusplus)

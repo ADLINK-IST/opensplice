@@ -86,9 +86,11 @@ namespace test.sacs
             DDS.ReaderDataLifecycleQosPolicy rlp = new DDS.ReaderDataLifecycleQosPolicy();
             rlp.AutopurgeDisposedSamplesDelay = duration;
             rlp.AutopurgeNowriterSamplesDelay = duration;
+            rlp.AutopurgeDisposeAll = false;
             rlp.EnableInvalidSamples = true;
             qosHolder.ReaderDataLifecycle.AutopurgeDisposedSamplesDelay = duration;
             qosHolder.ReaderDataLifecycle.AutopurgeNowriterSamplesDelay = duration;
+            qosHolder.ReaderDataLifecycle.AutopurgeDisposeAll = false;
             qosHolder.ReaderDataLifecycle.EnableInvalidSamples = true;
 
             rc = subscriber.CopyFromTopicQos(ref qosHolder, topicQos);

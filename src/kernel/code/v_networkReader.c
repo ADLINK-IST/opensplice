@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -14,9 +22,10 @@
 #include "v__networkReader.h"
 
 /* Implementation */
+#include "vortex_os.h"
 #include "os_report.h"
 #include "c_base.h"
-#include "kernelModule.h"
+#include "kernelModuleI.h"
 #include "v__networkQueue.h"
 #include "v_networkReaderEntry.h"
 #include "v_networkReaderStatistics.h"
@@ -31,9 +40,8 @@
 #include "v_subscriber.h"
 #include "v_groupSet.h"
 #include "v_topic.h"
-#include "v_time.h"
+#include "v_messageQos.h"
 #include "v_statistics.h"
-#include "v__messageQos.h"
 #include "v__statCat.h"
 #include "v__kernel.h"
 #include "v_networking.h"
@@ -62,9 +70,9 @@ v_networkReaderNew(
      *       to the defaultQueue */
 
     v_kernel kernel;
-    v_networkReader reader;
+    v_networkReader reader = NULL;
+    v_result r;
     v_readerQos q;
-    v_statistics s;
     c_type queueType;
     c_long i;
 
@@ -72,40 +80,69 @@ v_networkReaderNew(
 
     /* Creation */
     kernel = v_objectKernel(subscriber);
-    q = v_readerQosNew(kernel,qos);
-    if (q != NULL) {
-        reader = v_networkReader(v_objectNew(kernel,K_NETWORKREADER));
-        s = v_statistics(v_networkReaderStatisticsNew(kernel));
+    if (v_readerQosCheck(qos) == V_RESULT_OK) {
+        q = v_readerQosNew(kernel,qos);
 
-        /* Initialization of parent */
-        v_readerInit(v_reader(reader), name, subscriber, q, s, TRUE);
-        c_free(q); /* ref now in v_reader(queue)->qos */
+        if (q != NULL) {
+            reader = v_networkReader(v_objectNew(kernel,K_NETWORKREADER));
+            reader->statistics = v_networkReaderStatisticsNew(kernel);
 
-        /* This function only ever called once per network instance so no
-         * need to store queueType as static variable.  Look up as needed (once)
-         */
-        queueType = c_resolve(c_getBase(subscriber),"kernelModule::v_networkQueue");
-        /* Initialization of self */
-        reader->queues = NULL;
-        reader->queues = c_arrayNew(queueType, NW_MAX_NOF_QUEUES);
-        reader->nofQueues = 0;
-        reader->defaultQueue = NULL;
-        reader->remoteActivity = FALSE;
-        reader->ignoreReliabilityQoS = ignoreReliabilityQoS;
-        reader->queueCache = c_arrayNew(queueType, 2*NW_MAX_QUEUE_CACHE_PRIO);
-        for( i= 0; i < 2*NW_MAX_QUEUE_CACHE_PRIO; i++) {
-            reader->queueCache[i] = NULL;
+            /* Initialization of parent */
+            v_readerInit(v_reader(reader), name, subscriber, q, TRUE);
+            c_free(q); /* ref now in v_reader(queue)->qos */
+
+            /* This function only ever called once per network instance so no
+             * need to store queueType as static variable.  Look up as needed (once)
+             */
+            queueType = c_resolve(c_getBase(subscriber),"kernelModuleI::v_networkQueue");
+            /* Initialization of self */
+            reader->queues = NULL;
+            reader->queues = c_arrayNew_s(queueType, NW_MAX_NOF_QUEUES);
+            if (!reader->queues) {
+                OS_REPORT(OS_ERROR, "v_networkReaderNew", V_RESULT_OUT_OF_MEMORY,
+                    "Creation of NetworkReader <%s> failed: cannot create queues",
+                    name);
+                goto err_alloc_queues;
+            }
+            reader->nofQueues = 0;
+            reader->defaultQueue = NULL;
+            reader->remoteActivity = FALSE;
+            reader->ignoreReliabilityQoS = ignoreReliabilityQoS;
+            reader->queueCache = c_arrayNew_s(queueType, 2*NW_MAX_QUEUE_CACHE_PRIO);
+            if (!reader->queueCache) {
+                OS_REPORT(OS_ERROR, "v_networkReaderNew", V_RESULT_OUT_OF_MEMORY,
+                     "Creation of NetworkReader <%s> failed: cannot create queue cache",
+                     name);
+                goto err_alloc_cache;
+            }
+            for( i= 0; i < 2*NW_MAX_QUEUE_CACHE_PRIO; i++) {
+                reader->queueCache[i] = NULL;
+            }
+            c_free(queueType);
+            /* Add to subscriber */
+            r = v_subscriberAddReader(subscriber,v_reader(reader));
+            if (r != V_RESULT_OK) {
+                OS_REPORT(OS_ERROR, "v_networkReaderNew", r,
+                          "Creation of NetworkReader <%s> failed: cannot add reader to subscriber",
+                          name);
+                goto err_add_reader;
+            }
+        } else {
+            OS_REPORT(OS_ERROR, "v_networkReaderNew", V_RESULT_OUT_OF_MEMORY,
+                "Creation of NetworkReader <%s> failed: cannot create reader QoS",
+                name);
+            reader = NULL;
         }
-        c_free(queueType);
-        /* Add to subscriber */
-        v_subscriberAddReader(subscriber,v_reader(reader));
-    } else {
-        OS_REPORT(OS_ERROR, "v_networkReaderNew", 0,
-            "NetworkReader not created: inconsistent qos");
-        reader = NULL;
     }
 
     return reader;
+
+err_add_reader:
+err_alloc_cache:
+err_alloc_queues:
+    c_free(queueType);
+    c_free(reader);
+    return NULL;
 }
 
 
@@ -125,7 +162,7 @@ v_networkReaderCreateQueue(
     c_ulong priority,
     c_bool reliable,
     c_bool P2P,
-    c_time resolution,
+    os_duration resolution,
     c_bool useAsDefault,
     const c_char *name)
 {
@@ -164,7 +201,7 @@ v_networkReaderCreateQueue(
             /* insert statistics
              */
             if (nqs != NULL) {
-                s = v_networkReaderStatistics(v_entityStatistics(v_entity(reader)));
+                s = reader->statistics;
                 if (s != NULL) {
                     s->queues[s->queuesCount]=nqs;
                     s->queuesCount++;
@@ -179,14 +216,14 @@ v_networkReaderCreateQueue(
             if (ncs != NULL) {
                 /* add channel to the networking statistics also */
                 n = v_networking(p);
-                nws = (v_networkingStatistics)v_entity(n)->statistics;
+                nws = n->statistics;
                 nws->channels[nws->channelsCount]=ncs;
                 nws->channelsCount++;
             }
         }
 
     } else {
-        OS_REPORT_1(OS_ERROR, "v_networkReaderCreateQueue", 0,
+        OS_REPORT(OS_ERROR, "v_networkReaderCreateQueue", V_RESULT_PRECONDITION_NOT_MET,
             "Maximum number of network queues (%d) exceeded, "
             "new queue not created",
             NW_MAX_NOF_QUEUES);
@@ -220,7 +257,11 @@ v_networkReaderSelectBestQueueByReliability(
     assert(topicName != NULL);
 
     /* Transform kernel prio to networking prio */
-    prio = v_messageQos_getTransportPriority(qos);
+    if (v_messageQos_getTransportPriority(qos) >= 0) {
+        prio = (c_ulong)v_messageQos_getTransportPriority(qos);
+    } else {
+        prio = 0;
+    }
     reliable = v_messageQos_isReliable(qos);
     /* First select the best queue */
     if (prio < NW_MAX_QUEUE_CACHE_PRIO) {
@@ -279,7 +320,7 @@ v_networkReaderSelectBestQueueByReliability(
             bestQueue = bestAlternativeQueue;
         }
         if (bestQueue == NULL) {
-            OS_REPORT_2(OS_WARNING, "v_networkReaderSelectBestQueue", 0,
+            OS_REPORT(OS_WARNING, "v_networkReaderSelectBestQueue", V_RESULT_OK,
                 "Unable to select best fitting queue for partition \"%s\", "
                 "topic \"%s\". Switching to default", partitionName, topicName);
             bestQueue = reader->defaultQueue;
@@ -373,7 +414,7 @@ v_networkReaderSelectBestQueueIgnoreReliability(
         bestQueue = bestAlternativeQueue;
     }
     if (bestQueue == NULL) {
-        OS_REPORT_2(OS_WARNING, "v_networkReaderSelectBestQueue", 0,
+        OS_REPORT(OS_WARNING, "v_networkReaderSelectBestQueue", V_RESULT_OK,
             "Unable to select best fitting queue for partition \"%s\", "
             "topic \"%s\". Switching to default", partitionName, topicName);
         bestQueue = reader->defaultQueue;
@@ -429,21 +470,23 @@ v_networkReaderWrite(
     assert(reader != NULL);
     assert(C_TYPECHECK(reader, v_networkReader));
 
-    assert(reader->remoteActivity == TRUE);
-
     /* First select the best queue */
-    if (message != NULL) {
-        bestQueue = v_networkReaderSelectBestQueue(
-                        reader,
-                        message->qos,
-                        sendTo,
-                        v_partitionName(v_group(entry->group)->partition),
-                        v_topicName(v_groupTopic(entry->group)));
+    if (reader->remoteActivity) {
+        if (message != NULL) {
+            bestQueue = v_networkReaderSelectBestQueue(
+                            reader,
+                            message->qos,
+                            sendTo,
+                            v_partitionName(v_group(entry->group)->partition),
+                            v_topicName(v_groupTopic(entry->group)));
+        } else {
+            bestQueue = reader->defaultQueue;
+        }
+        result = v_networkQueueWrite(bestQueue, message, entry,
+                                     sequenceNumber, sender, sendTo, receiver);
     } else {
-        bestQueue = reader->defaultQueue;
+        result = TRUE;
     }
-    result = v_networkQueueWrite(bestQueue, message, entry,
-                                 sequenceNumber, sender, sendTo, receiver);
 
     return result;
 }
@@ -481,11 +524,14 @@ v_networkReaderWaitDelayed(
     c_ulong queueId,
     v_networkQueue *queue)
 {
-    c_time sleep;
+    os_duration sleep;
+
     /* Simply sleeping here for resolution time, is not correct.
     We should wakeup on, or just after the next wakeuptime.*/
-    sleep = c_timeSub(v_networkQueue(reader->queues[queueId-1])->nextWakeup, v_timeGet());
-    c_timeNanoSleep(sleep);
+    sleep = os_timeEDiff(v_networkQueue(reader->queues[queueId-1])->nextWakeup, os_timeEGet());
+    v__kernelProtectWaitEnter(NULL, NULL);
+    os_sleep(sleep);
+    v__kernelProtectWaitExit();
 
     return V_WAITRESULT_TIMEOUT | v_networkReaderWait(reader, queueId, queue);
 }

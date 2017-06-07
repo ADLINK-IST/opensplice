@@ -60,6 +60,25 @@ FOR %%f IN (BUILD*.bat) DO (
 
 ECHO -----------------------------------------------------------------------
 
+cd "%OSPL_HOME%"/examples/protobuf/java5/standalone
+IF ERRORLEVEL 1 (
+    ECHO ***** java5 protobuf example not found. Return code %ERRORLEVEL%
+) else (
+   call BUILD.bat
+   IF ERRORLEVEL 1 ECHO ***** building java5 protobuf example failed. Return code %ERRORLEVEL%
+)
+
+ECHO Building Isocpp2 protobuf example....
+ECHO -----------------------------------------------------------------------
+
+cd "%OSPL_HOME%"/examples/protobuf/isocpp2/standalone
+IF ERRORLEVEL 1 (
+    ECHO ***** isocpp2 protobuf example not found. Return code %ERRORLEVEL%
+) else (
+   call BUILD.bat
+   IF ERRORLEVEL 1 ECHO ***** building isocpp2 protobuf example failed. Return code %ERRORLEVEL%
+)
+
 ECHO ON
 
 cd "%~dp0\..\..\..\testsuite\tests"

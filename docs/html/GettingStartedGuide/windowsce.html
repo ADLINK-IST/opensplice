@@ -1,0 +1,583 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>14. Windows CE &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="15. PikeOS POSIX" href="pikeos-posix.html" />
+    <link rel="prev" title="13. Integrity" href="integrity.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="pikeos-posix.html" title="15. PikeOS POSIX"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="integrity.html" title="13. Integrity"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="windows-ce">
+<span id="id1"></span><h1>14. Windows CE<a class="headerlink" href="#windows-ce" title="Permalink to this headline">¶</a></h1>
+<p><em>This chapter provides a brief description of how to deploy Vortex OpenSplice
+on Windows CE.</em></p>
+<div class="section" id="prerequisites">
+<h2>14.1. Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>Vortex OpenSplice requires certain environment variables to be present; as
+Windows CE does not support traditional environment variables, these are
+simulated by creating registry entries which contain the required data.
+References in this chapter to `environment variables&#8217; are therefore
+actually references to values in the Windows CE registry.</p>
+<p>The environment variables expected by Vortex OpenSplice are:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">PATH</span></tt></dt>
+<dd>The <em>PATH</em> variable must include the directory containing
+the Vortex OpenSplice executables that may be launched by
+the <em>ospl</em> utility.</dd>
+<dt><tt class="docutils literal"><span class="pre">OSPL_URI</span></tt></dt>
+<dd>This variable contains the location of the default
+<em>ospl.xml</em> configuration file which is used when not
+otherwise specified.</dd>
+</dl>
+<p>The descriptions in this chapter assume that the values shown in the
+table below have been added to the registry key</p>
+<p><tt class="docutils literal"><span class="pre">HKEY_LOCAL_MACHINE\Software\PrismTech\OpenSpliceDDS\&lt;OpenSpliceVersion&gt;</span></tt></p>
+<p><strong>Windows CE Registry keys</strong></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="23%" />
+<col width="54%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Name</th>
+<th class="head">Type</th>
+<th class="head">Data</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>PATH</td>
+<td>REG_SZ</td>
+<td>NAND FlashOpenSpliceDDS\&lt;OpenSpliceVersion&gt;\HDE\armv4i.wince</td>
+</tr>
+<tr class="row-odd"><td>OSPL_URI</td>
+<td>REG_SZ</td>
+<td><a class="reference external" href="file://NAND">file://NAND</a> Flash/OpenSpliceDDS/&lt;OpenSpliceVersion&gt;/HDE/armv4i.wince/etc/config/ospl.xml</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>All Vortex OpenSplice dynamic link library (<tt class="docutils literal"><span class="pre">dll</span></tt>) files must also be
+copied into the <tt class="docutils literal"><span class="pre">\Windows</span></tt> directory on the Windows CE device <em>prior to</em>
+deployment.</dd>
+</dl>
+</div>
+<div class="section" id="setting-registry-values-with-a-cab-file">
+<h2>14.2. Setting Registry Values with a CAB File<a class="headerlink" href="#setting-registry-values-with-a-cab-file" title="Permalink to this headline">¶</a></h2>
+<p>In development, a <tt class="docutils literal"><span class="pre">CAB</span></tt> file can be used to register the necessary
+variables in the registry. Place the <tt class="docutils literal"><span class="pre">CAB</span></tt> file in the Cold Boot
+directory on the target device (<em>i.e.</em> <tt class="docutils literal"><span class="pre">\NAND</span> <span class="pre">Flash\ColdBootInit</span></tt>)
+to make the registry settings available as soon as the device has
+booted.</p>
+<div class="section" id="alternatives-to-cab-file">
+<h3>14.2.1. Alternatives to CAB file<a class="headerlink" href="#alternatives-to-cab-file" title="Permalink to this headline">¶</a></h3>
+<p>Microsoft&#8217;s Windows CE Remote Registry Editor can be used instead of a
+<tt class="docutils literal"><span class="pre">CAB</span></tt> file to set the necessary registry values. Alternatively,
+PrismTech also provides a convenient method of editing the registry
+variables by way of the <tt class="docutils literal"><span class="pre">ospl</span></tt> utility using the <tt class="docutils literal"><span class="pre">getenv</span></tt> and
+<tt class="docutils literal"><span class="pre">putenv</span></tt> parameters (described below).</p>
+<p>Please refer to Microsoft&#8217;s Windows CE documentation for detailed
+information about <tt class="docutils literal"><span class="pre">CAB</span></tt> files and the Remote Registry Editor.</p>
+</div>
+</div>
+<div class="section" id="the-vortex-opensplice-environment">
+<h2>14.3. The Vortex OpenSplice Environment<a class="headerlink" href="#the-vortex-opensplice-environment" title="Permalink to this headline">¶</a></h2>
+<p>Vortex OpenSplice requires the contents of the <em>bin</em> , <em>lib</em> and <em>etc</em>
+directories from within the Vortex OpenSplice installation to be available
+on the Windows CE target hardware. For development purposes, Microsoft&#8217;s
+ActiveSync can be used to load these on to the target system. The
+following description assumes that the <tt class="docutils literal"><span class="pre">bin</span></tt>, <tt class="docutils literal"><span class="pre">lib</span></tt> and <tt class="docutils literal"><span class="pre">etc</span></tt>
+directories have been copied from the Vortex OpenSplice installation onto
+the target at the following location:</p>
+<p><tt class="docutils literal"><span class="pre">\NAND</span> <span class="pre">Flash\OpenSpliceDDS\&lt;OpenSpliceVersion&gt;\HDE\armv4i.wince</span></tt></p>
+<p>For simplicity the whole <tt class="docutils literal"><span class="pre">OpenSpliceDDS</span></tt> installation directory can be
+copied to the <tt class="docutils literal"><span class="pre">\Nand</span> <span class="pre">Flash</span></tt> directory.</p>
+<p>The following description explains deployment on Windows CE by using the
+Windows CE console. It is assumed that the console&#8217;s <tt class="docutils literal"><span class="pre">PATH</span></tt> variable has
+been set to point to the directory containing the Vortex OpenSplice
+executables. For example:</p>
+<div class="highlight-bat"><div class="highlight"><pre>PATH &quot;\NAND Flash\OpenSpliceDDS\<span class="p">&lt;</span><span class="n">OpenSpliceVersion</span>&gt;\
+HDE\armv<span class="m">4</span>i.wince\bin&quot;;<span class="nv">%PATH%</span>
+</pre></div>
+</div>
+<p>(All Vortex OpenSplice dynamic link library (<tt class="docutils literal"><span class="pre">dll</span></tt>) files must have been
+copied into the <tt class="docutils literal"><span class="pre">`\Windows</span></tt> directory on the Windows CE device prior to
+deployment.)</p>
+<p>When running OpenSplice executables on the command prompt, it is useful
+to redirect any output to text files by using the <tt class="docutils literal"><span class="pre">&gt;</span></tt> operator.</p>
+<p>If the <tt class="docutils literal"><span class="pre">PATH</span></tt> and <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variables have not already been set <em>via</em>
+a <tt class="docutils literal"><span class="pre">CAB</span></tt> file on device boot up, use the following commands to set those
+values manually:</p>
+<div class="highlight-bat"><div class="highlight"><pre>ospl putenv PATH &quot;\NAND Flash\OpenSpliceDDS\<span class="p">&lt;</span><span class="n">OpenSpliceVersion</span>&gt;\
+HDE\armv<span class="m">4</span>i.wince\bin&quot; <span class="p">&gt;</span> <span class="n">osplputenv</span>-path.txt
+
+ospl putenv OSPL_URI &quot;file:<span class="n">//NAND</span> Flash<span class="n">/OpenSpliceDDS/&lt;OpenSpliceVersion&gt;/</span>
+HDE<span class="n">/armv4i.wince/etc/config/ospl.xml&quot;</span> <span class="p">&gt;</span> <span class="n">osplputenv</span>-ospluri.txt
+</pre></div>
+</div>
+<p>The values can be checked if required by using Microsoft&#8217;s Windows CE
+Remote Registry Editor, or by running the <em>ospl getenv</em> command:</p>
+<p><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">getenv</span> <span class="pre">PATH</span> <span class="pre">&gt;</span> <span class="pre">osplgetenv-path.txt</span></tt></p>
+</div>
+<div class="section" id="secure-networking">
+<h2>14.4. Secure Networking<a class="headerlink" href="#secure-networking" title="Permalink to this headline">¶</a></h2>
+<p>The secure networking service uses OpenSSL for cryptography support. To
+use this feature, the library <tt class="docutils literal"><span class="pre">libeay32.dll</span></tt> is required; it must be
+copied to the <tt class="docutils literal"><span class="pre">\Windows</span></tt> directory on the Windows CE device.</p>
+<p>OpenSplice is tested against OpenSSL version 0.9.8i. This may be built
+as described below.</p>
+<div class="section" id="building-openssl-for-windows-ce-6-0">
+<h3>14.4.1. Building OpenSSL for Windows CE 6.0<a class="headerlink" href="#building-openssl-for-windows-ce-6-0" title="Permalink to this headline">¶</a></h3>
+<p>This section describes the steps required to get an OpenSSL build for
+Windows CE. The version of OpenSSL used is 0.9.8i. The third-party
+library <em>wcecompat</em> is used, which also has to be built manually for
+Windows CE 6.0.</p>
+<div class="line-block">
+<div class="line">(The description that follows is based on the one given at</div>
+<div class="line"><a class="reference external" href="http://blog.csdn.net/sooner01/archive/2009/06/22/4289147.aspx">http://blog.csdn.net/sooner01/archive/2009/06/22/4289147.aspx</a>.)</div>
+</div>
+<div class="section" id="id2">
+<h4>14.4.1.1. Prerequisites<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
+<p>The following are needed to make an OpenSSL build for Windows CE 6.0:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>Microsoft Visual Studio 2005</dt>
+<dd><p class="first last">(VS2008 might also work but it has not been
+tested)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>An installed WinCE 6.0 SDK to be targeted</dt>
+<dd><p class="first last">In this description the
+target SDK is <tt class="docutils literal"><span class="pre">'WinCE-GS3Target'</span></tt></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Perl</dt>
+<dd><p class="first last">You will need to install Active Perl, from
+<a class="reference external" href="http://www.activestate.com/ActivePerl">http://www.activestate.com/ActivePerl</a>.
+(Note that perl by MSYS does not create correct <tt class="docutils literal"><span class="pre">makefiles</span></tt>.)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>OpenSSL</dt>
+<dd><p class="first last">The OpenSSL sources can be downloaded from <a class="reference external" href="http://www.openssl.org/">http://www.openssl.org/</a>.
+In this description we use version 0.9.8i. Other versions might not work
+with the steps described here.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><em>wcecompat</em> compatibility library</dt>
+<dd><p class="first last">The <em>wcecompat</em> library adds the functionality to the C Runtime Library
+implementation of Windows CE which is needed in order to build OpenSSL
+for Windows CE. Obtain this from <a class="reference external" href="http://github.com/mauricek/wcecompat">http://github.com/mauricek/wcecompat</a>. Note
+that you should <em>not</em> download the latest version; browse the history
+and download the version committed on November 21, 2008 named
+<em>updates for OpenSSL 0.9.9</em> with commit number <em>f77225b...</em>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="build-wcecompat">
+<h4>14.4.1.2. Build <em>wcecompat</em><a class="headerlink" href="#build-wcecompat" title="Permalink to this headline">¶</a></h4>
+<p>Extract the <em>wcecompat</em> download to an appropriate location. In this
+description the location <tt class="docutils literal"><span class="pre">C:\wcecompat</span></tt> is used, but you can use
+any location you want.</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Start Visual Studio 2005 and open a Visual Studio 2005 command prompt.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Go to the <em>wcecompat</em> directory (<tt class="docutils literal"><span class="pre">C:\wcecompat</span></tt>).</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Set the building environment:</div></blockquote>
+<div class="highlight-make"><div class="highlight"><pre>set OSVERSION=WCE600
+
+set TARGETCPU=ARMV4I
+
+set PLATFORM=VC-CE
+
+set PATH=C:\Program Files\Microsoft Visual Studio 8\VC\ce\bin\x86_arm;
+C:\Program Files\Microsoft Visual Studio 8\Common7\IDE;%PATH%
+
+set INCLUDE=C:\Program Files\Windows CE Tools\wce600\WinCE-GS3Target\
+include\ARMV4I
+
+set LIB=C:\Program Files\Windows CE Tools\wce600\WinCE-GS3Target\lib\
+ARMV4I;C:\Program Files\\Microsoft Visual Studio 8\VC\ce\lib\armv4
+</pre></div>
+</div>
+<blockquote>
+<div>If you target a different SDK, replace the text <em>WinCE-GS3Target</em>
+in the lines above with your own SDK.</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div>Call <em>perl config.pl</em> to create the makefile configuration.</div></blockquote>
+<p><strong>Step 5</strong></p>
+<blockquote>
+<div>Call <em>nmake</em> to build the <em>wcecompat</em> library.</div></blockquote>
+<p><strong>Step 6</strong></p>
+<blockquote>
+<div>Exit the command prompt and exit Visual Studio to be sure of starting
+with a clean environment in the next stage.</div></blockquote>
+</div>
+<div class="section" id="build-openssl">
+<h4>14.4.1.3. Build OpenSSL<a class="headerlink" href="#build-openssl" title="Permalink to this headline">¶</a></h4>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Extract <em>OpenSSL</em> to any location you like.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Apply the OpenSSL WinCE patch which can be found at
+<a class="reference external" href="http://marc.info/?l=openssl-dev&amp;m=122595397822893&amp;w=2">http://marc.info/?l=openssl-dev&amp;m=122595397822893&amp;w=2</a>.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Start Visual Studio 2005 and open a command prompt.</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div>Go to your openSSL directory.</div></blockquote>
+<p><strong>Step 5</strong></p>
+<blockquote>
+<div>Set the building environment:</div></blockquote>
+<div class="highlight-make"><div class="highlight"><pre>set OSVERSION=WCE600
+
+set TARGETCPU=ARMV4I
+
+set PLATFORM=VC-CE
+
+set PATH=C:\Program Files\Microsoft Visual Studio
+8\VC\ce\bin\x86\_arm;C:\Program Files\Microsoft Visual Studio
+8\VC\bin;C:\Program Files\Microsoft Visual Studio
+8\VC\PlatformSDK\bin;C:\Program Files\Microsoft Visual Studio
+8\Common7\Tools;C:\Program Files\Microsoft Visual Studio
+8\Common7\IDE;C:\Program Files\Microsoft Visual Studio
+8\Common\Tools;C:\Program Files\Microsoft Visual Studio
+8\Common\IDE;C:\Program Files\Microsoft Visual Studio 8\;%PATH%
+
+set INCLUDE=C:\Program Files\Microsoft Visual Studio
+8\VC\ce\include;C:\Program Files\Windows CE
+Tools\wce600\WinCE-GS3Target\include\ARMV4I;C:\Program
+Files\Windows CE Tools\wce600\WinCE-GS3Target\include;C:\Program
+Files\Microsoft Visual Studio 8\VC\ce\atlmfc\include;C:\Program
+Files\Microsoft Visual Studio 8\SmartDevices\SDK\SQL
+Server\Mobile\v3.0;
+
+set LIB=C:\Program Files\Windows CE
+Tools\wce600\WinCE-GS3Target\lib\ARMV4I;C:\Program Files\Microsoft
+Visual Studio 8\VC\ce\atlmfc\lib\ARMV4I;C:\Program
+Files\Microsoft Visual Studio 8\VC\ce\lib\ARMV4I
+
+set WCECOMPAT=C:\wcecompat
+</pre></div>
+</div>
+<blockquote>
+<div>If you target a different SDK, replace the text <tt class="docutils literal"><span class="pre">WinCE-GS3Target</span></tt>
+in the lines above with your own SDK. Also, change the <em>wcecompat</em>
+directory to your own if you used a different location.</div></blockquote>
+<p><strong>Step 6</strong></p>
+<blockquote>
+<div>Type <tt class="docutils literal"><span class="pre">perl</span> <span class="pre">Configure</span> <span class="pre">VC-CE</span></tt> to set up the compiler and OS.</div></blockquote>
+<p><strong>Step 7</strong></p>
+<blockquote>
+<div>Type <tt class="docutils literal"><span class="pre">ms\do_ms</span></tt> to build the makefile configuration.</div></blockquote>
+<p><strong>Step 8</strong></p>
+<blockquote>
+<div>Type <tt class="docutils literal"><span class="pre">nmake</span> <span class="pre">-f</span> <span class="pre">ms\cedll.mak</span></tt> to build the dynamic version of
+the library.</div></blockquote>
+</div>
+<div class="section" id="troubleshooting">
+<h4>14.4.1.4. Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h4>
+<p>If you get the following error message:</p>
+<div class="highlight-make"><div class="highlight"><pre>PTO -c .\\crypto\\rsa\\rsa\_pss.c
+
+cl : Command line warning D9002 : ignoring unknown option &#39;/MC&#39;
+rsa\_pss.c
+
+f:\\openssl\\openssl98\\crypto\\rsa\\rsa\_pss.c(165) : error C2220:
+warning treated as error - no &#39;object&#39; file generated
+
+f:\\openssl\\openssl98\\crypto\\rsa\\rsa\_pss.c(165) : warning C4748:
+/GS can not protect parameters and local variables from local buffer
+overrun because optimizations are disabled in function
+
+NMAKE : fatal error U1077: &#39;&quot;F:\\Program Files\\Microsoft Visual Studio
+8\\VC\\ce\\bin\\x86\_arm\\cl.EXE&quot;&#39; : return code &#39;0x2&#39;
+
+Stop.
+</pre></div>
+</div>
+<p>Remove <tt class="docutils literal"><span class="pre">/WX</span></tt> in the makefile (<tt class="docutils literal"><span class="pre">ce.mak</span></tt>).</p>
+</div>
+</div>
+</div>
+<div class="section" id="deploying-opensplice-dds">
+<h2>14.5. Deploying OpenSplice DDS<a class="headerlink" href="#deploying-opensplice-dds" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">start</span></tt></dt>
+<dd><p class="first">This command will start the OpenSplice DDS <tt class="docutils literal"><span class="pre">splicedaemon</span></tt> and OpenSplice
+DDS services specified within the configuration referred to by the
+<tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable:</p>
+<p><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">start</span> <span class="pre">&gt;</span> <span class="pre">osplstart.txt</span></tt></p>
+<p>A different configuration file can be specified as an additional
+parameter; for example:</p>
+<div class="last line-block">
+<div class="line"><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">start</span> <span class="pre">&quot;file://NAND</span> <span class="pre">Flash/OpenSpliceDDS/&lt;OpenSpliceVersion&gt;/</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">HDE/armv4i.wince/etc/config/ospl.xml&quot;</span> <span class="pre">&gt;</span> <span class="pre">osplstart.txt</span></tt></div>
+</div>
+</dd>
+<dt><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">list</span></tt></dt>
+<dd><p class="first">This command will list all the OpenSplice DDS configurations that are
+currently running on the node.</p>
+<p class="last"><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">list</span> <span class="pre">&gt;</span> <span class="pre">ospllist.txt</span></tt></p>
+</dd>
+<dt><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">stop</span></tt></dt>
+<dd><p class="first">This command will stop the OpenSplice DDS <tt class="docutils literal"><span class="pre">splicedaemon</span></tt> and OpenSplice
+DDS services specified within the configuration referred to by the
+<tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable:</p>
+<p><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">stop</span> <span class="pre">&gt;</span> <span class="pre">osplstop.txt</span></tt></p>
+<p>A different configuration to be stopped can be specified as an
+additional parameter; for example:</p>
+<div class="last line-block">
+<div class="line"><tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">stop</span> <span class="pre">&quot;file://NAND</span> <span class="pre">Flash/OpenSpliceDDS/&lt;OpenSpliceVersion&gt;/</span></tt></div>
+<div class="line"><tt class="docutils literal"><span class="pre">HDE/armv4i.wince/etc/config/ospl.xml&quot;</span> <span class="pre">&gt;</span> <span class="pre">osplstop.txt</span></tt></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="using-the-mmstat-diagnostic-tool-on-windows-ce">
+<h2>14.6. Using the <em>mmstat</em> Diagnostic Tool on Windows CE<a class="headerlink" href="#using-the-mmstat-diagnostic-tool-on-windows-ce" title="Permalink to this headline">¶</a></h2>
+<p>To run <tt class="docutils literal"><span class="pre">mmstat</span></tt>, use this command:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">start</span> <span class="pre">mmstat</span> <span class="pre">&gt;</span> <span class="pre">mmstat.txt</span></tt></div></blockquote>
+<p>To see the full list of options, use this command:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">start</span> <span class="pre">mmstat</span> <span class="pre">-h</span> <span class="pre">&gt;</span> <span class="pre">mmstat-help.txt</span></tt></div></blockquote>
+<p>The mechanism for terminating <tt class="docutils literal"><span class="pre">mmstat</span></tt> on Windows CE is different from
+other operating systems. All running instances of <tt class="docutils literal"><span class="pre">mmstat</span></tt> can be
+terminated with this command:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">start</span> <span class="pre">mmstat</span> <span class="pre">-q</span> <span class="pre">&gt;</span> <span class="pre">mmstat-quit.txt</span></tt></div></blockquote>
+<p>If there are multiple instances of <tt class="docutils literal"><span class="pre">mmstat</span></tt> running, a particular
+instance can be terminated by specifying the process identifier:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">start</span> <span class="pre">mmstat</span> <span class="pre">-q</span> <span class="pre">-x</span> <span class="pre">&lt;process</span> <span class="pre">id&gt;</span> <span class="pre">&gt;</span> <span class="pre">mmstat-quit.txt</span></tt></div></blockquote>
+<p>where <em>&lt;process id&gt;</em> is displayed in the output for the particular
+instance of <tt class="docutils literal"><span class="pre">mmstat</span></tt>.</p>
+</div>
+<div class="section" id="opensplice-examples">
+<h2>14.7. OpenSplice Examples<a class="headerlink" href="#opensplice-examples" title="Permalink to this headline">¶</a></h2>
+<p>Please refer to the <a class="reference internal" href="install-configure.html#examples"><em>Examples</em></a> section for descriptions of the
+OpenSplice DDS examples.</p>
+<div class="section" id="building-the-examples">
+<h3>14.7.1. Building the examples<a class="headerlink" href="#building-the-examples" title="Permalink to this headline">¶</a></h3>
+<p>There is a shortcut to load the examples into Microsoft Visual Studio
+which can be accessed from <em>Start &gt; Programs &gt; OpenSpliceDDS
+&lt;OpenSpliceVersion&gt; armv4i.wince HDE &gt; Examples</em>.</p>
+<p>Once the projects are open in Microsoft Visual Studio, click
+<em>Build/Rebuild Solution</em> at the appropriate level to build the required
+examples.</p>
+<p>Copy the produced executable files to the OpenSplice DDS <tt class="docutils literal"><span class="pre">bin</span></tt> directory
+(<em>i.e.</em> <tt class="docutils literal"><span class="pre">\NAND</span>
+<span class="pre">Flash\OpenSpliceDDS\&lt;OpenSpliceVersion&gt;\HDE\armv4i.wince\bin</span></tt>) on
+the Windows CE device. For the PingPong example the executable files are
+<tt class="docutils literal"><span class="pre">Ping.exe</span></tt> and <tt class="docutils literal"><span class="pre">Pong.exe</span></tt>. For the Tutorial example the files are
+<tt class="docutils literal"><span class="pre">Chatter.exe</span></tt>, <tt class="docutils literal"><span class="pre">MessageBoard.exe</span></tt>, and <tt class="docutils literal"><span class="pre">UserLoad.exe</span></tt>.</p>
+<p>As an alternative to using the shortcut, to set up the environment
+for a new project perform the following steps:</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div><p>Run the OpenSplice command prompt from the <em>OpenSplice</em> entry under the
+Windows <em>Start</em> button:</p>
+<p><em>Start &gt; Programs &gt; OpenSpliceDDS &lt;OpenSpliceVersion&gt; armv4i.wince HDE
+&gt; OpenSpliceDDS command prompt</em></p>
+</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div><p>Copy the Windows Microsoft Visual Studio environment variables to the
+new command prompt. To obtain these, right-click on the <em>Properties</em> for
+the <em>Visual Studio 2005 Command Prompt</em> entry located at <em>Start &gt;
+Programs &gt; Microsoft Visual Studio 2005 &gt; Visual Studio Tools &gt; Visual
+Studio 2005 Command Prompt</em> , and paste the <em>Shortcut Target</em> entry into
+the OpenSplice command prompt. For example this could be</p>
+<p><tt class="docutils literal"><span class="pre">%comspec%</span> <span class="pre">/k</span> <span class="pre">&quot;&quot;C:\Program</span> <span class="pre">Files\Microsoft</span> <span class="pre">Visual</span> <span class="pre">Studio</span> <span class="pre">8\VC\vcvarsall.bat&quot;&quot;</span> <span class="pre">x86</span></tt></p>
+</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div><p>Start Microsoft Visual Studio in this prompt:</p>
+<p><tt class="docutils literal"><span class="pre">devenv</span></tt></p>
+</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div><p>Open the solution file at</p>
+<p><tt class="docutils literal"><span class="pre">&lt;OpenSpliceDDSInstallation&gt;/examples/examples.sln</span></tt></p>
+</div></blockquote>
+</div>
+<div class="section" id="deploying-the-pingpong-example">
+<h3>14.7.2. Deploying the PingPong example<a class="headerlink" href="#deploying-the-pingpong-example" title="Permalink to this headline">¶</a></h3>
+<p>Start Vortex OpenSplice as described above. The Ping and Pong executables
+can then be started as follows:</p>
+<blockquote>
+<div><p><tt class="docutils literal"><span class="pre">start</span> <span class="pre">pong</span> <span class="pre">PongRead</span> <span class="pre">PongWrite</span> <span class="pre">&gt;</span> <span class="pre">pong.txt</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">start</span> <span class="pre">ping</span> <span class="pre">100</span> <span class="pre">100</span> <span class="pre">m</span> <span class="pre">PongRead</span> <span class="pre">PongWrite</span> <span class="pre">&gt;</span> <span class="pre">ping.txt</span></tt></p>
+</div></blockquote>
+<p>The <tt class="docutils literal"><span class="pre">ping.txt</span></tt> file produced should contain the expected Ping Pong
+measurement statistics for 100 cycles. The <tt class="docutils literal"><span class="pre">Pong</span></tt> executable can be shut
+down by running the <tt class="docutils literal"><span class="pre">ping</span> <span class="pre">shutdown</span></tt> command:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">start</span> <span class="pre">ping</span> <span class="pre">1</span> <span class="pre">1</span> <span class="pre">t</span> <span class="pre">PongRead</span> <span class="pre">PongWrite</span> <span class="pre">&gt;</span> <span class="pre">ping-shutdown.txt</span></tt></div></blockquote>
+</div>
+<div class="section" id="deploying-the-tutorial-example">
+<h3>14.7.3. Deploying the Tutorial example<a class="headerlink" href="#deploying-the-tutorial-example" title="Permalink to this headline">¶</a></h3>
+<p>Start Vortex OpenSplice as described above. The Tutorial executables can
+then be started as follows:</p>
+<blockquote>
+<div><p><tt class="docutils literal"><span class="pre">start</span> <span class="pre">UserLoad</span> <span class="pre">&gt;</span> <span class="pre">userload.txt</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">start</span> <span class="pre">MessageBoard</span> <span class="pre">&gt;</span> <span class="pre">messageboard.txt</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">start</span> <span class="pre">Chatter</span> <span class="pre">1</span> <span class="pre">John</span> <span class="pre">&gt;</span> <span class="pre">chatter.txt</span></tt></p>
+</div></blockquote>
+<p>The <tt class="docutils literal"><span class="pre">messageboard.txt</span></tt> file produced should contain the messages
+received from the <tt class="docutils literal"><span class="pre">Chatter</span></tt> executable. The <tt class="docutils literal"><span class="pre">MessageBoard</span></tt> executable
+can be terminated by running <tt class="docutils literal"><span class="pre">Chatter</span></tt> again with the <tt class="docutils literal"><span class="pre">-1</span></tt> option:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">start</span> <span class="pre">Chatter</span> <span class="pre">-1</span> <span class="pre">&gt;</span> <span class="pre">chatter-shutdown.txt</span></tt></div></blockquote>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">14. Windows CE</a><ul>
+<li><a class="reference internal" href="#prerequisites">14.1. Prerequisites</a></li>
+<li><a class="reference internal" href="#setting-registry-values-with-a-cab-file">14.2. Setting Registry Values with a CAB File</a><ul>
+<li><a class="reference internal" href="#alternatives-to-cab-file">14.2.1. Alternatives to CAB file</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-vortex-opensplice-environment">14.3. The Vortex OpenSplice Environment</a></li>
+<li><a class="reference internal" href="#secure-networking">14.4. Secure Networking</a><ul>
+<li><a class="reference internal" href="#building-openssl-for-windows-ce-6-0">14.4.1. Building OpenSSL for Windows CE 6.0</a><ul>
+<li><a class="reference internal" href="#id2">14.4.1.1. Prerequisites</a></li>
+<li><a class="reference internal" href="#build-wcecompat">14.4.1.2. Build <em>wcecompat</em></a></li>
+<li><a class="reference internal" href="#build-openssl">14.4.1.3. Build OpenSSL</a></li>
+<li><a class="reference internal" href="#troubleshooting">14.4.1.4. Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#deploying-opensplice-dds">14.5. Deploying OpenSplice DDS</a></li>
+<li><a class="reference internal" href="#using-the-mmstat-diagnostic-tool-on-windows-ce">14.6. Using the <em>mmstat</em> Diagnostic Tool on Windows CE</a></li>
+<li><a class="reference internal" href="#opensplice-examples">14.7. OpenSplice Examples</a><ul>
+<li><a class="reference internal" href="#building-the-examples">14.7.1. Building the examples</a></li>
+<li><a class="reference internal" href="#deploying-the-pingpong-example">14.7.2. Deploying the PingPong example</a></li>
+<li><a class="reference internal" href="#deploying-the-tutorial-example">14.7.3. Deploying the Tutorial example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="integrity.html"
+                        title="previous chapter">13. Integrity</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pikeos-posix.html"
+                        title="next chapter">15. PikeOS POSIX</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/windowsce.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="pikeos-posix.html" title="15. PikeOS POSIX"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="integrity.html" title="13. Integrity"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

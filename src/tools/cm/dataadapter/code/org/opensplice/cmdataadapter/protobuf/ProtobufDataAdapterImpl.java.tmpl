@@ -1,0 +1,1027 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
+
+package org.opensplice.cmdataadapter.protobuf;
+
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.StringTokenizer;
+
+import org.opensplice.cm.data.UserData;
+import org.opensplice.cm.meta.MetaCollection;
+import org.opensplice.cm.meta.MetaEnum;
+import org.opensplice.cm.meta.MetaField;
+import org.opensplice.cm.meta.MetaPrimitive;
+import org.opensplice.cm.meta.MetaStruct;
+import org.opensplice.cm.meta.MetaType;
+import org.opensplice.cm.meta.MetaUnion;
+import org.opensplice.cm.meta.MetaUnionCase;
+import org.opensplice.cmdataadapter.CmDataException;
+import org.opensplice.cmdataadapter.CmDataUtil;
+import org.opensplice.cmdataadapter.TypeInfo;
+import org.opensplice.cmdataadapter.TypeInfo.TypeEvolution;
+
+import com.google.protobuf.ByteString;
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
+import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.DescriptorValidationException;
+import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.EnumValueDescriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor.Type;
+import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
+import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.ExtensionRegistry;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.UninitializedMessageException;
+import com.prismtech.dds.protobuf.backend.CodeGenerator;
+
+
+public class ProtobufDataAdapterImpl implements ProtobufDataAdapter {
+
+    private static final String PROTOBUF_DATA_FIELDNAME = CodeGenerator.IDL_PROTOBUF_FIELD_NAME;
+    // Values derived from definitions in ospli/src/tools/protobuf/protos/omg/dds/descriptor.proto
+    private static final int DDSOPTIONS_FIELD_NUMBER = 1016;
+    private static final int FIELDOPTIONS_KEY_TAG = 8;         // 000001 000 field number 1, wire type 0
+    private static final int FIELDOPTIONS_FILTERABLE_TAG = 16; // 000010 000 field number 2, wire type 0
+    private static final int FIELDOPTIONS_NAME_TAG = 26;       // 000011 010 field number 3, wire type 2
+    private static final int MESSAGEOPTIONS_NAME_TAG = 10;     // 000001 010 field number 1, wire type 2
+
+    /** The Map that stores the mapping between DCPSType type_hashes and Descriptors. */
+    private HashMap<String, Descriptor> descriptorCache = new HashMap<String, Descriptor>();
+    /** The Map that stores the mapping between DCPSType type_name and the collection of DDS specific field options. */
+    private HashMap<String, DDSFieldOption[]> optionsCache = new HashMap<String, DDSFieldOption[]>();
+    /** The Map that stores the mapping between a DDS message descriptor and all known extensions related to that type. */
+    private HashMap<Descriptor, HashSet<FieldDescriptor>> extensionsCache = new HashMap<Descriptor, HashSet<FieldDescriptor>>();
+    /** The ExtensionRegistry is used by the protobuf API to construct Message objects with known extension FieldDescriptors, instead of unknown fields. */
+    private ExtensionRegistry extensionRegistry = ExtensionRegistry.newInstance();
+
+    public UserData buildProtobufUserData (UserData userData, TypeEvolution typeEvolution, boolean validData) throws CmDataException {
+        Descriptor desc = getDescriptor(typeEvolution);
+        MetaType origDataType = typeEvolution.getTypeInfo().getBareMetaType();
+        UserData protobufData = new UserData(origDataType);
+
+        // Handle key and filterable fields first
+        for (DDSFieldOption option : getDdsFieldOptions(typeEvolution)) {
+            if (option.key || option.filterable) {
+                String originalFieldName;
+                String protobufFieldName = option.fieldName;
+                if (!option.name.isEmpty()) {
+                    originalFieldName = option.name;
+                } else {
+                    originalFieldName = protobufFieldName.replace('.', '_');
+                }
+                protobufData.setData(originalFieldName, userData.getFieldValue(protobufFieldName));
+            }
+        }
+
+        if (validData) {
+            // Build the protobuf message and convert to byte data
+            DynamicMessage.Builder builder = DynamicMessage.newBuilder(desc);
+            convertUserDataToProtobuf("", builder, userData, protobufData, extensionsCache.get(desc));
+
+            DynamicMessage m = null;
+            try {
+                m = builder.build();
+            } catch (UninitializedMessageException e) {
+                throw new CmDataException(e.getMessage());
+            }
+
+            CmDataUtil.setByteSequence (protobufData, PROTOBUF_DATA_FIELDNAME, m.toByteArray());
+        }
+        return protobufData;
+    }
+
+    private void convertUserDataToProtobuf (String scope, DynamicMessage.Builder builder, UserData userData, UserData protobufData, HashSet<FieldDescriptor> extensions) throws CmDataException {
+        List<FieldDescriptor> allFields = new ArrayList<FieldDescriptor>();
+        allFields.addAll(builder.getDescriptorForType().getFields());
+        allFields.addAll(findExtensionsForType(builder.getDescriptorForType(), extensions));
+
+        OneofDescriptor oneof = null;
+        int oneofNumber = -1;
+        for (FieldDescriptor fdesc : allFields) {
+            boolean isStruct = fdesc.getType().equals(Type.MESSAGE) || fdesc.getType().equals(Type.GROUP);
+            if (oneof != fdesc.getContainingOneof()) {
+                if (oneof != null) scope = scope.substring(0, scope.length() - (oneof.getName().length() + 1));
+                oneof = fdesc.getContainingOneof();
+                oneofNumber = -1;
+                if (oneof != null){
+                    scope = scope + oneof.getName() + ".";
+                    oneofNumber = Integer.parseInt((userData.getFieldValue(scope + "switch")));
+                }
+           }
+           if (oneof != null && fdesc.getNumber() != oneofNumber) {
+               continue;
+           }
+
+            if (fdesc.isRepeated()) {
+                int repeatedFieldSize = userData.getCollectionRealSize(scope + fdesc.getName());
+                if (isStruct) {
+                    DynamicMessage.Builder subMessageBuilder = DynamicMessage.newBuilder(fdesc.getMessageType());
+                    for (int i = 0; i < repeatedFieldSize; i++) {
+                        convertUserDataToProtobuf(scope + fdesc.getName() + "[" + i + "].", subMessageBuilder, userData, protobufData, extensions);
+                        builder.addRepeatedField(fdesc, subMessageBuilder.build());
+                        subMessageBuilder.clear();
+                    }
+                } else {
+                    for (int i = 0; i < repeatedFieldSize; i++) {
+                        Object value = getValue(scope + fdesc.getName() + "[" + i + "]", fdesc, userData);
+                        if (value != null) {
+                            builder.addRepeatedField(fdesc, value);
+                        }
+                    }
+                }
+            } else {
+                if (isStruct) {
+                    if (!scope.isEmpty()) {
+                        // Some logic to prevent stack overflow in the case of recursive message types
+                        StringTokenizer st = new StringTokenizer(scope, ".");
+                        boolean found = false;
+                        while (st.hasMoreTokens()) {
+                            if (fdesc.getName().equals(st.nextToken())) {
+                                for (String fieldName : userData.getFieldNames()) {
+                                    if (fieldName.startsWith(scope + fdesc.getName() + ".")) {
+                                        found = true; break;
+                                    }
+                                }
+                                if (!found) return;
+                                break;
+                            }
+                        }
+                    }
+
+                    DynamicMessage.Builder subMessageBuilder = DynamicMessage.newBuilder(fdesc.getMessageType());
+                    convertUserDataToProtobuf(scope + fdesc.getName() + ".", subMessageBuilder, userData, protobufData, extensions);
+                    if (!subMessageBuilder.getAllFields().isEmpty() || fdesc.isRequired()) {
+                        builder.setField(fdesc, subMessageBuilder.build());
+                    }
+                } else {
+                    Object value = getValue(scope + fdesc.getName(), fdesc, userData);
+                    if (value != null) {
+                        builder.setField(fdesc, value);
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("incomplete-switch")
+    private Object getValue (String fieldName, FieldDescriptor fdesc, UserData userData) throws CmDataException {
+        String value = null;
+
+        /*
+         * Check if UserData value exists before parsing. Empty string is taken
+         * as uninitialized value and null is returned, except in the case of
+         * required STRING type, where empty string is the valid default value.
+         */
+        if (fdesc.getType() != Type.BYTES) {
+            value = userData.getFieldValue(fieldName);
+            if (value != null && !"".equals(value)) {
+                if (fdesc.hasDefaultValue() && !fdesc.isRequired()) {
+                    if (value.equals(fdesc.getDefaultValue().toString())) {
+                        return null;
+                    }
+                }
+            } else {
+                if ("".equals(value) && fdesc.getType() == Type.STRING
+                        && fdesc.isRequired()) {
+                    return value;
+                }
+                return null;
+            }
+        }
+        try {
+            switch (fdesc.getType()) {
+            case BOOL:
+                return Boolean.parseBoolean(value);
+            case INT32:
+            case UINT32:
+            case SINT32:
+            case FIXED32:
+            case SFIXED32:
+                return Integer.parseInt(value);
+            case INT64:
+            case UINT64:
+            case SINT64:
+            case FIXED64:
+            case SFIXED64:
+                return Long.parseLong(value);
+            case FLOAT:
+                return Float.parseFloat(value);
+            case DOUBLE:
+                return Double.parseDouble(value);
+            case BYTES:
+                byte[] bytes = CmDataUtil.getByteSequence(userData, fieldName);
+                return bytes.length != 0 ? bytes : null;
+            case STRING:
+                return value;
+            case ENUM:
+                return fdesc.getEnumType().findValueByName(value);
+            }
+        } catch (NumberFormatException nfe) {
+            throw new CmDataException("Value \"" + userData.getFieldValue(fieldName)
+                    + "\" is invalid format for field \"" + fieldName
+                    + "\", which is of type " + fdesc.getType().toString());
+        }
+        return null;
+    }
+
+    public UserData convertUserData (UserData userData, TypeEvolution typeEvolution, boolean validData) throws CmDataException {
+        Descriptor desc = getDescriptor(typeEvolution);
+        MetaType metaType = typeEvolution.getMetaType();
+        UserData convertedData = new UserData(metaType);
+
+        if (validData) {
+            DynamicMessage message = null;
+            try {
+                message = DynamicMessage.parseFrom(desc, CmDataUtil.getByteSequence(userData, PROTOBUF_DATA_FIELDNAME), extensionRegistry);
+            } catch (InvalidProtocolBufferException e) {
+                throw new CmDataException(e.getMessage());
+            }
+            convertProtobufToUserData("", message, convertedData, extensionsCache.get(desc));
+        } else {
+            // If no protobuf data is contained in the data, get the keys and filterables
+            for (DDSFieldOption option : getDdsFieldOptions(typeEvolution)) {
+                if (option.key || option.filterable) {
+                    String originalFieldName;
+                    String protobufFieldName = option.fieldName;
+                    if (!option.name.isEmpty()) {
+                        originalFieldName = option.name;
+                    } else {
+                        originalFieldName = protobufFieldName.replace('.', '_');
+                    }
+                    convertedData.setData(protobufFieldName, userData.getFieldValue(originalFieldName));
+                }
+            }
+        }
+        return convertedData;
+    }
+
+    private void convertProtobufToUserData (String scope, DynamicMessage message, UserData userData, HashSet<FieldDescriptor> extensions) {
+        List<FieldDescriptor> allFields = new ArrayList<FieldDescriptor>();
+        Map<FieldDescriptor, Object> fieldValues = message.getAllFields();
+        allFields.addAll(message.getDescriptorForType().getFields());
+        allFields.addAll(findExtensionsForType(message.getDescriptorForType(), extensions));
+        OneofDescriptor oneof = null;
+        for (FieldDescriptor fdesc : allFields) {
+            boolean isStruct = fdesc.getType().equals(Type.MESSAGE) || fdesc.getType().equals(Type.GROUP);
+            boolean isOneofMember = fdesc.getContainingOneof() != null;
+            if (oneof != fdesc.getContainingOneof()) {
+                if (oneof != null) scope = scope.substring(0, scope.length() - (oneof.getName().length() + 1));
+                oneof = fdesc.getContainingOneof();
+                if (oneof != null) scope = scope + oneof.getName() + ".";
+            }
+            if (fdesc.isRepeated()) {
+                for (int i = 0; i < message.getRepeatedFieldCount(fdesc); i++) {
+                    if (isStruct) {
+                        convertProtobufToUserData(scope + fdesc.getName() + "[" + i + "].", (DynamicMessage) message.getRepeatedField(fdesc, i), userData, extensions);
+                    } else {
+                        setValue(scope + fdesc.getName() + "[" + i + "]", fdesc, userData, message.getRepeatedField(fdesc, i));
+                    }
+                }
+            } else {
+                Object value = fieldValues.get(fdesc);
+                if (value != null) {
+                    if (isOneofMember) {
+                        userData.setData(scope + "switch", Integer.toString(fdesc.getNumber()));
+                    }
+                    if (isStruct) {
+                        convertProtobufToUserData(scope + fdesc.getName() + ".", (DynamicMessage) value, userData, extensions);
+                    } else {
+                        setValue(scope + fdesc.getName(), fdesc, userData, value);
+                    }
+                } else {
+                    if (!isStruct && !isOneofMember) {
+                        setValue(scope + fdesc.getName(), fdesc, userData, fdesc.getDefaultValue());
+                    }
+                }
+            }
+        }
+    }
+
+    private void setValue (String fieldName, FieldDescriptor fdesc, UserData userData, Object value) {
+        if (fdesc.getType() == Type.BYTES) {
+            // Special handling for byte sequence type
+            CmDataUtil.setByteSequence(userData, fieldName,
+                    ((ByteString) value).toByteArray());
+        } else {
+            // All other types can be toString'd
+            userData.setData(fieldName, value.toString());
+        }
+    }
+
+    public String[] getKeys (TypeEvolution typeEvolution) throws CmDataException {
+        ArrayList<String> keyList = new ArrayList<String>();
+        for (DDSFieldOption option : getDdsFieldOptions(typeEvolution)) {
+            if (option.key) {
+                keyList.add(option.fieldName);
+            }
+        }
+        return keyList.toArray(new String[keyList.size()]);
+    }
+
+    private DDSFieldOption[] getDdsFieldOptions(TypeEvolution typeEvolution) throws CmDataException {
+        String typeName = typeEvolution.getTypeInfo().getTypeName();
+        DDSFieldOption[] options = optionsCache.get(typeName);
+        if (options == null) {
+            Descriptor desc = getDescriptor(typeEvolution);
+            ArrayList<DDSFieldOption> optionsList = new ArrayList<DDSFieldOption>();
+            for (FieldDescriptor fdesc : desc.getFields()) {
+                getDdsFieldOptions("", fdesc, optionsList);
+            }
+            options = optionsList.toArray(new DDSFieldOption[optionsList.size()]);
+            optionsCache.put(typeName, optionsList.toArray(options));
+        }
+        return options;
+    }
+
+    private void getDdsFieldOptions (String scope, FieldDescriptor fdesc, ArrayList<DDSFieldOption> options) throws CmDataException {
+        boolean isStruct = fdesc.getType().equals(Type.MESSAGE) || fdesc.getType().equals(Type.GROUP);
+        if (!isStruct && fdesc.isRequired()) {
+            DDSFieldOption parsedOption = parseDdsFieldOption(scope, fdesc);
+            if (parsedOption != null) {
+                options.add(parsedOption);
+            }
+        } else {
+            if (fdesc.isRequired()) {
+                for (FieldDescriptor fdescMember : fdesc.getMessageType().getFields()) {
+                    getDdsFieldOptions(scope + fdesc.getName() + ".", fdescMember, options);
+                }
+            }
+        }
+    }
+
+    private DDSFieldOption parseDdsFieldOption (String scope, FieldDescriptor fdesc) throws CmDataException {
+        DDSFieldOption ddsFieldOption = null;
+        List<ByteString> optionsList = fdesc.getOptions().getUnknownFields()
+                .getField(DDSOPTIONS_FIELD_NUMBER).getLengthDelimitedList();
+        if (!optionsList.isEmpty()) {
+            ByteString option = optionsList.get(0);
+            ddsFieldOption = new DDSFieldOption(scope + fdesc.getName());
+            try {
+                CodedInputStream cstream = option.newCodedInput();
+                while (!cstream.isAtEnd()) {
+                    switch (cstream.readTag()) {
+                    case FIELDOPTIONS_KEY_TAG:
+                        ddsFieldOption.key = cstream.readBool();
+                        break;
+                    case FIELDOPTIONS_FILTERABLE_TAG:
+                        ddsFieldOption.filterable = cstream.readBool();
+                        break;
+                    case FIELDOPTIONS_NAME_TAG:
+                        ddsFieldOption.name = cstream.readString();
+                        break;
+                    default:
+                        // Ignore
+                    }
+                }
+            } catch (IOException e) {
+                throw new CmDataException(
+                        "Exception occurred while decoding DDS protobuf FieldOptions.", e);
+            }
+        }
+        return ddsFieldOption;
+    }
+
+    private static class DDSFieldOption {
+        boolean key = false;
+        boolean filterable = false;
+        String name = "";
+        String fieldName = null;
+
+        DDSFieldOption (String fieldName) {
+            this.fieldName = fieldName;
+        }
+    }
+
+    public MetaType constructMetaType (TypeEvolution typeEvolution) throws CmDataException {
+        return constructMetaType(getDescriptor(typeEvolution));
+    }
+
+    private MetaType constructMetaType (Descriptor gpbDescriptor) throws CmDataException {
+        MetaType metaType = new MetaType("");
+        MetaField rootField = null;
+        ArrayList<MetaField> rootMembers = new ArrayList<MetaField>();
+        HashMap<Descriptor, ArrayList<MetaField>> breadcrumb = new HashMap<Descriptor, ArrayList<MetaField>>();
+        HashSet<FieldDescriptor> extensions = extensionsCache.get(gpbDescriptor);
+
+        breadcrumb.put(gpbDescriptor, rootMembers);
+        Iterator<FieldDescriptor> gpbFields = gpbDescriptor.getFields().iterator();
+        while (gpbFields.hasNext()) {
+            FieldDescriptor gpbField = gpbFields.next();
+            if (gpbField.getContainingOneof() != null) {
+                continue; // fields of a Oneof are handled later
+            }
+            if (isRecursiveType(gpbField, breadcrumb)) {
+                MetaStruct recursiveStruct = new MetaStruct(gpbField.getName(), gpbField.getMessageType().getName(), breadcrumb.get(gpbField.getMessageType()));
+                if (gpbField.isRepeated()) {
+                    rootMembers.add(new MetaCollection (gpbField.getName(), "C_SEQUENCE<" + gpbField.getMessageType().getName() + ">", 0, recursiveStruct));
+                } else {
+                    rootMembers.add(recursiveStruct);
+                }
+            } else {
+                rootMembers.add(convertType(gpbField, breadcrumb, extensions, false));
+            }
+        }
+        for (OneofDescriptor oneof : gpbDescriptor.getOneofs()) {
+            rootMembers.add(convertOneof(oneof, breadcrumb, extensions));
+        }
+        if (!rootMembers.isEmpty()) {
+            rootField = new MetaStruct(gpbDescriptor.getName(), gpbDescriptor.getName(), rootMembers);
+            metaType.setField(rootField);
+        }
+        return metaType;
+    }
+
+    private MetaField convertType (FieldDescriptor gpbField, HashMap<Descriptor, ArrayList<MetaField>> breadcrumb, HashSet<FieldDescriptor> extensions, boolean handleOneof) throws CmDataException {
+        MetaField result = null;
+        switch (gpbField.getType()) {
+        case BYTES:
+            result =  convertBytes(gpbField); break;
+        case STRING:
+            result =  convertString(gpbField); break;
+        case GROUP:
+        case MESSAGE:
+            result =  convertMessage(gpbField, breadcrumb, extensions, handleOneof); break;
+        case ENUM:
+            result =  convertEnum(gpbField); break;
+        default:
+            result =  convertPrimitive(gpbField); break;
+        }
+        if (gpbField.isRepeated()) {
+            result = new MetaCollection(gpbField.getName(), "C_SEQUENCE<" + result.getTypeName() + ">", 0, result);
+        }
+        return result;
+    }
+
+    private MetaStruct convertMessage (FieldDescriptor gpbField, HashMap<Descriptor, ArrayList<MetaField>> breadcrumb, HashSet<FieldDescriptor> extensions, boolean handleOneof) throws CmDataException {
+        Descriptor gpbDescriptor = gpbField.getMessageType();
+        ArrayList<MetaField> members = new ArrayList<MetaField>();
+
+        breadcrumb.put(gpbDescriptor, members);
+        List<FieldDescriptor> fields = new ArrayList<FieldDescriptor>();
+        fields.addAll(gpbDescriptor.getFields());
+        fields.addAll(findExtensionsForType(gpbDescriptor, extensions));
+        for (FieldDescriptor fdesc : fields) {
+            if (fdesc.getContainingOneof() != null) {
+                if (!handleOneof) continue;
+            }
+            if (isRecursiveType(fdesc, breadcrumb)) {
+                MetaStruct recursiveStruct = new MetaStruct(fdesc.getName(), fdesc.getMessageType().getName(), breadcrumb.get(fdesc.getMessageType()));
+                if (gpbField.isRepeated()) {
+                    members.add(new MetaCollection (fdesc.getName(), "C_SEQUENCE<" + fdesc.getMessageType().getName() + ">", 0, recursiveStruct));
+                } else {
+                    members.add(recursiveStruct);
+                }
+            } else {
+                members.add(convertType(fdesc, breadcrumb, extensions, false));
+            }
+        }
+        for (OneofDescriptor oneof : gpbDescriptor.getOneofs()) {
+            members.add(convertOneof(oneof, breadcrumb, extensions));
+        }
+        breadcrumb.remove(gpbDescriptor);
+        MetaStruct struct = new MetaStruct(gpbField.getName(), gpbDescriptor.getName(), members);
+
+        return struct;
+    }
+
+    @SuppressWarnings("incomplete-switch")
+    private MetaPrimitive convertPrimitive (FieldDescriptor gpbField) {
+        String fieldName = gpbField.getName();
+        String fieldTypeName = null;
+        switch (gpbField.getType()) {
+        case BOOL:
+            fieldTypeName = "c_bool";
+            break;
+        case DOUBLE:
+            fieldTypeName = "c_double";
+            break;
+        case FIXED32:
+            fieldTypeName = "c_ulong";
+            break;
+        case FIXED64:
+            fieldTypeName = "c_ulonglong";
+            break;
+        case FLOAT:
+            fieldTypeName = "c_float";
+            break;
+        case INT32:
+            fieldTypeName = "c_long";
+            break;
+        case INT64:
+            fieldTypeName = "c_longlong";
+            break;
+        case SFIXED32:
+            fieldTypeName = "c_long";
+            break;
+        case SFIXED64:
+            fieldTypeName = "c_longlong";
+            break;
+        case SINT32:
+            fieldTypeName = "c_long";
+            break;
+        case SINT64:
+            fieldTypeName = "c_longlong";
+            break;
+        case UINT32:
+            fieldTypeName = "c_ulong";
+            break;
+        case UINT64:
+            fieldTypeName = "c_ulonglong";
+            break;
+        }
+        return new MetaPrimitive(fieldName, fieldTypeName);
+    }
+
+    private MetaEnum convertEnum (FieldDescriptor gpbField) {
+        List<EnumValueDescriptor> gbpEnumValues = gpbField.getEnumType().getValues();
+        String[] enumValues = new String[gbpEnumValues.size()];
+        for (int i = 0; i < gbpEnumValues.size(); i++) {
+            enumValues[i] = gbpEnumValues.get(i).getName();
+        }
+        return new MetaEnum(gpbField.getName(), gpbField.getEnumType().getName(), enumValues);
+    }
+
+    private MetaCollection convertString (FieldDescriptor gpbField) {
+        MetaPrimitive subType = new MetaPrimitive("anonymous", "c_char");
+        return new MetaCollection(gpbField.getName(), "c_string", 0, subType);
+    }
+
+    private MetaCollection convertBytes (FieldDescriptor gpbField) {
+        MetaPrimitive subType = new MetaPrimitive("anonymous", "c_octet");
+        return new MetaCollection(gpbField.getName(), "C_SEQUENCE<c_octet>", 0, subType);
+    }
+
+    private MetaUnion convertOneof (OneofDescriptor oneof, HashMap<Descriptor, ArrayList<MetaField>> breadcrumb, HashSet<FieldDescriptor> extensions) throws CmDataException {
+        ArrayList<MetaUnionCase> cases = new ArrayList<MetaUnionCase>();
+        for (int i = 0; i < oneof.getFieldCount(); i++) {
+            FieldDescriptor fdesc = oneof.getField(i);
+            ArrayList<String> label = new ArrayList<String>();
+            label.add(Integer.toString(fdesc.getNumber()));
+            MetaUnionCase unionCase = new MetaUnionCase(fdesc.getName(), "case" , convertType(fdesc, breadcrumb, extensions, true), label);
+            cases.add(unionCase);
+        }
+        return new MetaUnion(oneof.getName(), oneof.getName(), new MetaPrimitive("switch", "c_long"), cases);
+    }
+
+    private boolean isRecursiveType (FieldDescriptor field, HashMap<Descriptor, ArrayList<MetaField>> breadcrumb) {
+        if (field.getType() == com.google.protobuf.Descriptors.FieldDescriptor.Type.MESSAGE) {
+            return breadcrumb.containsKey(field.getMessageType());
+        }
+        return false;
+    }
+
+    private Descriptor getDescriptor (TypeEvolution typeEvolution) throws CmDataException {
+        Descriptor descriptorForType = null;
+        if (typeEvolution.getTypeInfo().getDataRepresentationId() == TypeInfo.GPB_DATA_ID) {
+            Descriptor cachedDescriptor = descriptorCache.get(typeEvolution.getTypeHash());
+            if (cachedDescriptor != null) {
+                return cachedDescriptor;
+            }
+            final FileDescriptorSet fileSet;
+            try {
+                fileSet = FileDescriptorSet.parseFrom(typeEvolution.getMetaData());
+            } catch (InvalidProtocolBufferException e1) {
+                throw new CmDataException(e1.getMessage());
+            }
+            ArrayList<FileDescriptor> fdList = new ArrayList<FileDescriptor>();
+            for(FileDescriptorProto fileProto : fileSet.getFileList()) {
+                FileDescriptor fileDesc = null;
+                try {
+                    fileDesc = FileDescriptor.buildFrom(fileProto, fdList.toArray(new FileDescriptor[fdList.size()]));
+                } catch (DescriptorValidationException e) {
+                    throw new CmDataException(e.getMessage());
+                }
+                fdList.add(fileDesc);
+                descriptorForType = getDdsDescriptor(typeEvolution, fileDesc.getMessageTypes());
+            }
+        } else {
+            throw new CmDataException(
+                    "The passed TypeEvolution object does not contain Protobuf meta data.");
+        }
+        if (descriptorForType == null) {
+            throw new CmDataException(
+                    "Could not find Descriptor for type " + typeEvolution.getTypeInfo().getTypeName());
+        }
+        return descriptorForType;
+    }
+
+    // Level-order search
+    private Descriptor getDdsDescriptor (TypeEvolution typeEvolution, List<Descriptor> descList)  throws CmDataException {
+        LinkedList<Descriptor> nestedDescList = new LinkedList<Descriptor>();
+        for (Descriptor desc : descList) {
+            String ddsTypeName = parseDdsMessageOption(desc);
+            if (!ddsTypeName.isEmpty()) {
+                if (ddsTypeName.charAt(0) != '.') {
+                    ddsTypeName = desc.getFile().getPackage() + "." + ddsTypeName;
+                } else {
+                    ddsTypeName = ddsTypeName.substring(1);
+                }
+                if (ddsTypeName.equals(typeEvolution.getTypeInfo().getTypeName().replace("::", "."))) {
+                    descriptorCache.put(typeEvolution.getTypeHash(), desc);
+                    registerAllExtensions(desc);
+                    return desc;
+                }
+            }
+            nestedDescList.addAll(desc.getNestedTypes());
+        }
+        if (!nestedDescList.isEmpty()) {
+            return getDdsDescriptor(typeEvolution, nestedDescList);
+        }
+        return null;
+    }
+
+    private Set<FieldDescriptor> findExtensionsForType (Descriptor containingType, Set<FieldDescriptor> extensions) {
+        HashSet<FieldDescriptor> extensionsForMessage = new HashSet<FieldDescriptor>();
+        for (FieldDescriptor fdesc : extensions) {
+            if (containingType.equals(fdesc.getContainingType())) {
+                extensionsForMessage.add(fdesc);
+            }
+        }
+        return extensionsForMessage;
+    }
+
+    private void registerAllExtensions (Descriptor desc) {
+        HashSet<FieldDescriptor> extensionsList = new HashSet<FieldDescriptor>();
+        extensionsCache.put(desc, extensionsList);
+        addSubMessageExtensions(desc, extensionsList);
+        Descriptor parentDesc = desc;
+        while (parentDesc.getContainingType() != null) {
+            parentDesc = desc.getContainingType();
+            for (FieldDescriptor fdesc : parentDesc.getExtensions()) {
+                extensionsList.add(fdesc);
+            }
+        }
+        addFileLevelExtensions(desc.getFile(), extensionsList);
+        for (FieldDescriptor fdesc : extensionsList) {
+            if (fdesc.getType() == Type.MESSAGE || fdesc.getType() == Type.GROUP) {
+                extensionRegistry.add(fdesc, DynamicMessage.getDefaultInstance(fdesc.getMessageType()));
+            } else {
+                extensionRegistry.add(fdesc);
+            }
+        }
+    }
+
+    private void addFileLevelExtensions (FileDescriptor fileDesc, HashSet<FieldDescriptor> extensionsList) {
+        for (FieldDescriptor fdesc : fileDesc.getExtensions()) {
+            extensionsList.add(fdesc);
+        }
+        for (FileDescriptor fileDescDep : fileDesc.getDependencies()) {
+            addFileLevelExtensions(fileDescDep, extensionsList);
+        }
+    }
+
+    private void addSubMessageExtensions (Descriptor desc, HashSet<FieldDescriptor> extensionsList) {
+        for (FieldDescriptor fdesc : desc.getExtensions()) {
+            extensionsList.add(fdesc);
+        }
+        for (FieldDescriptor fdesc : desc.getFields()) {
+            if (fdesc.getType() == Type.MESSAGE || fdesc.getType() == Type.GROUP) {
+                addSubMessageExtensions(fdesc.getMessageType(), extensionsList);
+            }
+        }
+    }
+
+    private String parseDdsMessageOption (Descriptor desc) throws CmDataException {
+        String ddsTypeName = "";
+        List<ByteString> optionsList = desc.getOptions().getUnknownFields().getField(DDSOPTIONS_FIELD_NUMBER).getLengthDelimitedList();
+        if (!optionsList.isEmpty()) {
+            CodedInputStream cstream = optionsList.get(0).newCodedInput();
+            try {
+                if (!cstream.isAtEnd()) {
+                    if (cstream.readTag() == MESSAGEOPTIONS_NAME_TAG) {
+                        ddsTypeName = cstream.readString();
+                    }
+                }
+            } catch (IOException e) {
+                throw new CmDataException("Error while decoding DDS protobuf MessageOptions.", e);
+            }
+        }
+        return ddsTypeName;
+    }
+
+    public String getDescriptorProto (TypeEvolution typeEvolution) throws CmDataException {
+        return ProtobufProtoPrinter.printProtoTypeDef(getDescriptor(typeEvolution));
+    }
+
+    public ProtobufFieldProperties getFieldProperties (String fullFieldName, TypeEvolution typeEvolution) throws CmDataException{
+        StringTokenizer tok = new StringTokenizer(fullFieldName.replaceAll("\\[\\d*\\]", ""), ".");
+        Descriptor desc = getDescriptor(typeEvolution);
+        Set<FieldDescriptor> extensions = extensionsCache.get(desc);
+        while (tok.hasMoreTokens()) {
+            String fieldName = tok.nextToken();
+            ArrayList<FieldDescriptor> allFields = new ArrayList<FieldDescriptor>();
+            allFields.addAll(desc.getFields());
+            allFields.addAll(findExtensionsForType(desc, extensions));
+            FieldDescriptor fieldDesc = null;
+            for (FieldDescriptor searchFdesc : allFields) {
+                if (searchFdesc.getName().equals(fieldName)) {
+                    fieldDesc = searchFdesc;
+                    break;
+                }
+            }
+            if (fieldDesc == null) {
+                // Maybe its a Oneof, skip this token if so
+                boolean isOneof = false;
+                for (OneofDescriptor oneof : desc.getOneofs()) {
+                    if (fieldName.equals(oneof.getName())) {
+                        if (fullFieldName.endsWith(fieldName + ".switch")) {
+                            return new ProtobufFieldProperties(Integer.toString(oneof.getField(0).getNumber()), false);
+                        }
+                        isOneof = true;
+                        break;
+                    }
+                }
+                if (isOneof) continue;
+            }
+            if (fieldDesc != null) {
+                if (tok.hasMoreTokens()) {
+                    if (fieldDesc.getType().equals(Type.MESSAGE) || fieldDesc.getType().equals(Type.GROUP)) {
+                        desc = fieldDesc.getMessageType();
+                        continue;
+                    } else {
+                        throw new CmDataException("No Message descriptor exists for Field " + fieldName);
+                    }
+                } else {
+                    String defaultValue = "";
+                    if (!fieldDesc.isRepeated()) {
+                        if (fieldDesc.hasDefaultValue()) {
+                            defaultValue = fieldDesc.getDefaultValue().toString();
+                        } else {
+                            switch (fieldDesc.getType()) {
+                            case BOOL:
+                                defaultValue = "false"; break;
+                            case INT32:
+                            case UINT32:
+                            case SINT32:
+                            case FIXED32:
+                            case SFIXED32:
+                            case INT64:
+                            case UINT64:
+                            case SINT64:
+                            case FIXED64:
+                            case SFIXED64:
+                            case FLOAT:
+                            case DOUBLE:
+                                defaultValue = "0"; break;
+                            case ENUM:
+                                defaultValue = fieldDesc.getEnumType().getValues()
+                                        .get(0).toString(); break;
+                            case BYTES:
+                            case STRING:
+                            case GROUP:
+                            case MESSAGE:
+                            }
+                        }
+                    }
+                    return new ProtobufFieldProperties(defaultValue,
+                            fieldDesc.isRequired());
+                }
+            } else {
+                throw new CmDataException("No FieldDescriptor exists for Field " + fieldName);
+            }
+        }
+        return new ProtobufFieldProperties();
+    }
+
+    public boolean isEnabled () {
+        return true;
+    }
+
+    ProtobufDataAdapterImpl () {
+        ProtobufProtoPrinter.adapterInstance = this;
+    }
+
+    /*
+     * IMPLEMENTATION FOR .proto FORMAT TYPEDEF PRINTER
+     */
+    private static class ProtobufProtoPrinter {
+        private static ProtobufDataAdapterImpl adapterInstance;
+        private static final String TAB = "    ";
+
+        private static String printProtoTypeDef (Descriptor descriptor) throws CmDataException{
+            StringBuilder sb = new StringBuilder(200);
+            StringBuilder tabs = new StringBuilder(TAB);
+            Set<EnumDescriptor> enumTypesInType = new HashSet<EnumDescriptor>();
+            Set<Descriptor> messageTypesInType = new HashSet<Descriptor>();
+            Set<FieldDescriptor> extensions = new HashSet<FieldDescriptor>(adapterInstance.extensionsCache.get(descriptor));
+
+            // Print package name
+            sb.append("package ");
+            sb.append(descriptor.getFile().getPackage()).append(";\n\n");
+
+            // Print main message
+            sb.append("message ");
+            sb.append(descriptor.getName()).append(" {\n");
+            sb.append(tabs).append("option (.omg.dds.type) = {name: \"");
+            sb.append(adapterInstance.parseDdsMessageOption(descriptor)).append("\"}\n\n");
+            printMessageFields(sb, tabs, descriptor, descriptor.getFields(), enumTypesInType, messageTypesInType, extensions);
+            sb.append('}');
+
+            // Print message and enum definitions defined externally from the main type
+            messageTypesInType.remove(descriptor); // simple guard against reprinting a recursive type
+            if (!messageTypesInType.isEmpty() || !enumTypesInType.isEmpty() || !extensions.isEmpty()) {
+                sb.append("\n\n// External definitions\n");
+                tabs.setLength(0);
+                printNestedMessages(sb, tabs, messageTypesInType, new HashSet<Descriptor>(),
+                        new HashSet<EnumDescriptor>(), extensions, true);
+                ArrayList<FieldDescriptor> extensionsList = new ArrayList<FieldDescriptor>();
+                extensionsList.addAll(extensions);
+                printNestedExtensions(sb, tabs, extensionsList, new HashSet<Descriptor>(),
+                        new HashSet<EnumDescriptor>(), extensions, true);
+                printNestedEnums(sb, tabs, enumTypesInType, new HashSet<EnumDescriptor>());
+            }
+            return sb.toString();
+        }
+
+        private static void printMessageFields(StringBuilder sb, StringBuilder tabs, Descriptor desc, List<FieldDescriptor> fields,
+                Set<EnumDescriptor> enums, Set<Descriptor> messages, Set<FieldDescriptor> extensions) throws CmDataException {
+            ArrayList<Descriptor> groups = new ArrayList<Descriptor>();
+            OneofDescriptor oneof = null;
+            for (FieldDescriptor fdesc : fields) {
+                String modifier = "";
+                if (oneof != fdesc.getContainingOneof()) {
+                    oneof = fdesc.getContainingOneof();
+                    if (oneof != null) {
+                        sb.append(tabs).append("one of ").append(oneof.getName()).append(" {\n");
+                        tabs.append(TAB);
+                    }
+                }
+                if (fdesc.isOptional() && oneof == null) {
+                    modifier = "optional ";
+                } else if (fdesc.isRequired() && oneof == null) {
+                    modifier = "required ";
+                } else if (fdesc.isRepeated() && oneof == null) {
+                    modifier = "repeated ";
+                }
+                sb.append(tabs);
+                sb.append(modifier);
+                if (fdesc.getType() == Type.GROUP) {
+                    sb.append("group ");
+                    groups.add(fdesc.getMessageType());
+                } else if (fdesc.getType() == Type.MESSAGE) {
+                    if (fdesc.getMessageType().getFullName().startsWith(desc.getFile().getPackage())) {
+                        sb.append(fdesc.getMessageType().getName()).append(' ');
+                    } else {
+                        sb.append(fdesc.getMessageType().getFullName()).append(' ');
+                    }
+                    messages.add(fdesc.getMessageType());
+                } else if (fdesc.getType() == Type.ENUM) {
+                    sb.append(fdesc.getEnumType().getName()).append(' ');
+                    enums.add(fdesc.getEnumType());
+                } else {
+                    sb.append(fdesc.getType().toString().toLowerCase()).append(' ');
+                }
+                if (fdesc.getFullName().startsWith(fdesc.getFile().getPackage())) {
+                    sb.append(fdesc.getName());
+                } else {
+                    sb.append(fdesc.getFullName());
+                }
+                sb.append(" = ").append(fdesc.getNumber());
+
+                if (fdesc.getType() == Type.GROUP) {
+                    sb.append(" {\n");
+                    Descriptor groupDesc = fdesc.getMessageType();
+                    printMessageFields(sb, tabs.append(TAB), groupDesc, groupDesc.getFields(), enums, messages, extensions);
+                    tabs.setLength(tabs.length() - TAB.length());
+                    sb.append(tabs).append("};\n");
+                } else {
+                    // Print the default value, if it exists
+                    if (fdesc.hasDefaultValue()) {
+                        sb.append(" [default = ").append(fdesc.getDefaultValue()).append(']');
+                    }
+                    // Print the the DDS specific option, if one exists
+                    DDSFieldOption fieldOption = adapterInstance.parseDdsFieldOption("", fdesc);
+                    if (fieldOption != null) {
+                        sb.append(" [(.omg.dds.member) = {");
+                        if (fieldOption.key)
+                            sb.append("key: true, ");
+                        if (fieldOption.filterable)
+                            sb.append("filterable: true, ");
+                        if (!fieldOption.name.isEmpty())
+                            sb.append("name: ").append(fieldOption.name).append(", ");
+                        sb.delete(sb.length() - 2, sb.length());
+                        sb.append("}]");
+                    }
+                    sb.append(";\n");
+                    if (oneof != null && oneof.getField(oneof.getFieldCount() - 1).equals(fdesc)) {
+                        tabs.setLength(tabs.length() - TAB.length());
+                        sb.append(tabs).append("}\n");
+                    }
+                }
+            }
+
+            // Print nested message definitions
+            Set<Descriptor> nestedMessages = new HashSet<Descriptor>(desc.getNestedTypes());
+            nestedMessages.removeAll(groups); // Do not reprint group types
+            printNestedMessages(sb, tabs, nestedMessages, messages, enums, extensions, false);
+
+            // Print nested extension definitions
+            printNestedExtensions(sb, tabs, desc.getExtensions(), messages, enums, extensions, false);
+
+            // Print nested enum definitions
+            printNestedEnums(sb, tabs, new HashSet<EnumDescriptor>(desc.getEnumTypes()), enums);
+        }
+
+        private static void printNestedEnums (StringBuilder sb, StringBuilder tabs,
+                Set<EnumDescriptor> nestedEnums, Set<EnumDescriptor> knownEnums) {
+            for (EnumDescriptor enumDesc : nestedEnums) {
+                knownEnums.remove(enumDesc);
+                sb.append('\n');
+                sb.append(tabs).append("enum ");
+                sb.append(enumDesc.getName()).append(" {\n");
+                tabs.append(TAB);
+                for (EnumValueDescriptor enumValue : enumDesc.getValues()) {
+                    sb.append(tabs).append(enumValue);
+                    sb.append(" = ").append(enumValue.getNumber()).append(";\n");
+                }
+                tabs.setLength(tabs.length() - TAB.length());
+                sb.append(tabs).append("}\n");
+            }
+        }
+
+        private static void printNestedMessages (StringBuilder sb, StringBuilder tabs,
+                Set<Descriptor> nestedMessages, Set<Descriptor> knownMessages,
+                Set<EnumDescriptor> knownEnums, Set<FieldDescriptor> knownExtensions, boolean useFullName) throws CmDataException {
+            for (Descriptor nestedDesc : nestedMessages) {
+                knownMessages.remove(nestedDesc);
+                sb.append('\n');
+                sb.append(tabs).append("message ");
+                if (useFullName) {
+                    sb.append(nestedDesc.getFullName()).append(" {\n");
+                } else {
+                    sb.append(nestedDesc.getName()).append(" {\n");
+                }
+                printMessageFields(sb, tabs.append(TAB), nestedDesc, nestedDesc.getFields(), knownEnums, knownMessages, knownExtensions);
+                tabs.setLength(tabs.length() - TAB.length());
+                sb.append(tabs).append("}\n");
+            }
+        }
+
+        private static void printNestedExtensions (StringBuilder sb, StringBuilder tabs,
+                List<FieldDescriptor> nestedExtensions, Set<Descriptor> knownMessages,
+                Set<EnumDescriptor> knownEnums, Set<FieldDescriptor> knownExtensions, boolean useFullName) throws CmDataException {
+
+            Map<Descriptor, List<FieldDescriptor>> extensionFieldsMapToContainers
+                    = new HashMap<Descriptor, List<FieldDescriptor>>();
+            Descriptor containingType = null;
+            List<FieldDescriptor> extensionsForType = null;
+            for (FieldDescriptor nestedext : nestedExtensions) {
+                if (containingType != nestedext.getContainingType()) {
+                    extensionsForType = new ArrayList<FieldDescriptor>();
+                    containingType = nestedext.getContainingType();
+                    extensionFieldsMapToContainers.put(containingType, extensionsForType);
+                }
+                if (extensionsForType != null) {
+                    extensionsForType.add(nestedext);
+                }
+                knownExtensions.remove(nestedext);
+            }
+            for (Entry<Descriptor,List<FieldDescriptor>> entry : extensionFieldsMapToContainers.entrySet()) {
+                Descriptor extendTypeContainer = entry.getKey();
+                sb.append('\n');
+                sb.append(tabs).append("extend ");
+                if (useFullName) {
+                    sb.append(extendTypeContainer.getFullName()).append(" {\n");
+                } else {
+                    sb.append(extendTypeContainer.getName()).append(" {\n");
+                }
+
+                printMessageFields(sb, tabs.append(TAB), extendTypeContainer,
+                        entry.getValue(), knownEnums, knownMessages, knownExtensions);
+                tabs.setLength(tabs.length() - TAB.length());
+                sb.append(tabs).append("}\n");
+            }
+        }
+    }
+}

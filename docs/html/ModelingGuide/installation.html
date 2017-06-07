@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Installation &mdash; Modeling Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.5.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Modeling Guide" href="index.html" />
+    <link rel="next" title="4. Modeler Described" href="described.html" />
+    <link rel="prev" title="2. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="described.html" title="4. Modeler Described"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation">
+<span id="id1"></span><h1>3. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="general-installation-instructions">
+<h2>3.1. General Installation Instructions<a class="headerlink" href="#general-installation-instructions" title="Permalink to this headline">¶</a></h2>
+<p>Follow the steps shown below to install the Vortex OpenSplice
+Modeler.</p>
+<p><strong>Step 1:</strong>  Prerequisites</p>
+<blockquote>
+<div><p>Ensure that Java Version 6 (<em>required</em>) and the OpenSplice Host
+Development Environment <a class="footnote-reference" href="#id3" id="id2">[1]</a> (<em>recommended</em>), plus any other supporting
+software (such as native compilers, for example), are installed
+and working.</p>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a>
+The prerequisites for C++ Code Generation are given in the
+<em>Release Notes</em> included with your Modeler product distribution.</p>
+<p>The Release Notes can be viewed by opening <tt class="docutils literal"><span class="pre">index.html</span></tt> located in
+the root (or base) directory of your OpenSplice installation and
+following the <em>Release Notes</em> link.</p>
+</div></blockquote>
+<p><strong>Step 2:</strong>  Run the Vortex OpenSplice Modeler installer</p>
+<blockquote>
+<div><p><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<p>On <strong>Unix-based platforms</strong> (including Linux), run from the command
+line:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">VortexOpenSpliceModeler-&lt;version&gt;-&lt;platform&gt;-installer.bin</span></tt></div></blockquote>
+<p>where <tt class="docutils literal"><span class="pre">&lt;version&gt;</span></tt> is the release version number and <tt class="docutils literal"><span class="pre">&lt;platform&gt;</span></tt>
+is the build for your platform. Ensure that the <em>execute</em>
+permission is enabled first, then follow the on-screen
+instructions. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>%  chmod u+x VortexOpenSpliceModeler-2.5.12-linux-installer.bin
+%  ./VortexOpenSpliceModeler-2.5.12-linux-installer.bin
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<p>On <strong>Windows-based platforms</strong>, run by double-clicking on the filename
+in Windows Explorer:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">VortexOpenSpliceModeler-&lt;version&gt;-windows-installer.exe</span></tt></div></blockquote>
+<p>where <tt class="docutils literal"><span class="pre">&lt;version&gt;</span></tt> is the release version number, then follow the
+on-screen instructions. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>&gt;  VortexOpenSpliceModeler-2.5.12-windows-installer.exe
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>Step 3:</strong>  Install the license file</p>
+<blockquote>
+<div><p>A license file must be obtained from PrismTech, then copied to
+the <tt class="docutils literal"><span class="pre">eclipse</span></tt> or <tt class="docutils literal"><span class="pre">eclipse/etc</span></tt> subdirectories where
+the Vortex OpenSplice Modeler has been installed, or copied to
+the <tt class="docutils literal"><span class="pre">PrismTech/Vortex_v2/license</span></tt> directory, or have the
+<tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt> environment variable defined with the file
+path to the license file.</p>
+<p>For example:</p>
+<p><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">/home/myHomeDir/PrismTech/Vortex_v2/Tools/VortexModeler/2.5.12/eclipse/etc</span></tt></div></blockquote>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">\PrismTech\Vortex_v2\Tools\VortexModeler\2.5.12\eclipse</span></tt></div></blockquote>
+<p>For more information about licensing, please refer to the
+<em>Getting Started Guide</em>.</p>
+</div></blockquote>
+</div>
+<div class="section" id="setting-opensplice-preferences">
+<h2>3.2. Setting OpenSplice Preferences<a class="headerlink" href="#setting-opensplice-preferences" title="Permalink to this headline">¶</a></h2>
+<p>After installing the Vortex OpenSplice Modeler it is necessary
+to specify the location of the OpenSplice DDS installation to be
+used.</p>
+<p><strong>Step 1:</strong>  Start the Vortex OpenSplice Modeler.</p>
+<p><strong>Step 2:</strong>  Choose <em>Window &gt; Preferences</em>.</p>
+<p><strong>Step 3:</strong>  Select <em>OpenSplice</em>.</p>
+<p><strong>Step 4:</strong>  Add the location of the OpenSplice DDS installation
+to <tt class="docutils literal"><span class="pre">OSPL_HOME</span></tt>.</p>
+<blockquote>
+<div><p>In the <tt class="docutils literal"><span class="pre">OSPL_HOME</span></tt> path field enter (for example)</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">/home/apps/PrismTech/Vortex_v2/Device/VortexOpenSplice/6.6.0p1/HDE/x86_64.linux</span></tt></div></blockquote>
+<p>The <em>Browse</em> button can be used to navigate through your file
+system to point to the installation.</p>
+<p>You can also set the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> path if this is different from the
+default location.</p>
+</div></blockquote>
+<p><strong>Step 5:</strong>  If you are modelling DDS applications for Vortex Lite:</p>
+<blockquote>
+<div><p>Set the <tt class="docutils literal"><span class="pre">LITE_HOME</span></tt> path field, <em>e.g.</em></p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">/home/apps/PrismTech/Device/VortexLite/2.0.0</span></tt></div></blockquote>
+<p>As before, you can set the <tt class="docutils literal"><span class="pre">LITE_URI</span></tt> path to a Vortex Lite
+configuration file if required.</p>
+<p class="centered" id="the-opensplice-preferences">
+<strong><strong>The OpenSplice Preferences</strong></strong></p><a class="reference internal image-reference" href="_images/001_OpenSplicePreferences.png"><img alt="The OpenSplice Preferences" class="align-center" src="_images/001_OpenSplicePreferences.png" style="width: 120mm;" /></a>
+<p>The license location can also be specified using the <em>Licensing
+Preferences</em> page, which is below the <em>OpenSplice Preferences</em>
+page described above.</p>
+</div></blockquote>
+<p class="centered" id="opensplice-licensing">
+<strong><strong>OpenSplice licensing</strong></strong></p><a class="reference internal image-reference" href="_images/002_OpenSpliceLicensing.png"><img alt="OpenSplice licensing" class="align-center" src="_images/002_OpenSpliceLicensing.png" style="width: 120mm;" /></a>
+</div>
+<div class="section" id="uninstallation-instructions">
+<h2>3.3. Uninstallation Instructions<a class="headerlink" href="#uninstallation-instructions" title="Permalink to this headline">¶</a></h2>
+<p>The uninstaller cleans the Vortex OpenSplice Modeler install
+directory by removing any file created during the installation
+process.</p>
+<p>Files created by users (such as project files in the workspace
+directory) are <em>not</em> removed by the uninstaller so that
+users do not lose their work.</p>
+<p>A normal uninstallation typically removes all folders except for
+the <tt class="docutils literal"><span class="pre">eclipse</span></tt> folder (with the <tt class="docutils literal"><span class="pre">workspace</span></tt>, <tt class="docutils literal"><span class="pre">p2</span></tt>, <tt class="docutils literal"><span class="pre">plugins</span></tt>
+and <tt class="docutils literal"><span class="pre">configuration</span></tt> sub-folders).</p>
+<p>Follow the steps below to uninstall the Vortex OpenSplice Modeler.</p>
+<p><strong>Step 1:</strong>  Navigate to the uninstall folder of your Vortex
+OpenSplice Modeler installation.</p>
+<blockquote>
+<div><p><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<p>On <strong>Unix-based platforms</strong> (including Linux), the default path will
+be:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">/home/myHomeDir/PrismTech/Vortex_v2/Tools/VortexModeler/&lt;version&gt;/uninstall</span></tt></div></blockquote>
+<p>where <tt class="docutils literal"><span class="pre">&lt;version&gt;</span></tt> is the release version number.</p>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<p>On <strong>Windows-based platforms</strong>, the default path will be:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">\PrismTech\Vortex_v2\Tools\VortexModeler\&lt;version&gt;\uninstall</span></tt></div></blockquote>
+<p>where <tt class="docutils literal"><span class="pre">&lt;version&gt;</span></tt> is the release version number.</p>
+</div></blockquote>
+<p><strong>Step 2:</strong>  Run the Vortex OpenSplice Modeler uninstaller.</p>
+<blockquote>
+<div><p><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<p>On <strong>Unix-based platforms</strong> (including Linux), run from the command
+line:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">uninstall-Vortex</span> <span class="pre">OpenSplice</span> <span class="pre">Modeler</span> <span class="pre">&lt;version&gt;</span></tt></div></blockquote>
+<p>where <tt class="docutils literal"><span class="pre">&lt;version&gt;</span></tt> is the release version number, then follow the
+on-screen instructions. For example:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">%</span>&nbsp; <span class="pre">./uninstall-Vortex\</span> <span class="pre">OpenSplice\</span> <span class="pre">Modeler\</span> <span class="pre">V2.5.12</span></tt></div></blockquote>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<p>On <strong>Windows-based platforms</strong>, run by double-clicking on the
+filename in Windows Explorer:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">uninstall-Vortex</span> <span class="pre">OpenSplice</span> <span class="pre">Modeler</span> <span class="pre">&lt;version&gt;.exe</span></tt></div></blockquote>
+<p>where <tt class="docutils literal"><span class="pre">&lt;version&gt;</span></tt> is the release version number, then follow the
+on-screen instructions. For example:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">&gt;</span>&nbsp; <span class="pre">uninstall-Vortex</span> <span class="pre">OpenSplice</span> <span class="pre">Modeler</span> <span class="pre">V2.5.12.exe</span></tt></div></blockquote>
+<p>On Windows, if certain files are still in use by a process (or
+by the operating system), the uninstaller will skip them but
+prompt you to restart your machine. Restarting the machine
+removes locks on the files and ensures that the uninstaller
+processes them.</p>
+</div></blockquote>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div><strong>Note:</strong>
+To install a new version of Vortex OpenSplice Modeler on
+top of an existing one, it is recommended that you uninstall the
+current version first. Because the uninstaller leaves the
+workspace folder untouched, installing a new version of Modeler
+should be seamless and you should be able to continue working
+with your existing projects.</div></blockquote>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>The <em>Host Development Environment</em> (HDE) generates DCPS
+typed interfaces: generated application code will not compile
+without the HDE.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Installation</a><ul>
+<li><a class="reference internal" href="#general-installation-instructions">3.1. General Installation Instructions</a></li>
+<li><a class="reference internal" href="#setting-opensplice-preferences">3.2. Setting OpenSplice Preferences</a></li>
+<li><a class="reference internal" href="#uninstallation-instructions">3.3. Uninstallation Instructions</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">2. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="described.html"
+                        title="next chapter">4. Modeler Described</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/installation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="described.html" title="4. Modeler Described"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

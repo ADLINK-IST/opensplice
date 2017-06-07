@@ -1,0 +1,258 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The Vortex OpenSplice Tuner Guide &mdash; Tuner Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Tuner Guide" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">Tuner Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-vortex-opensplice-tuner-guide">
+<h1>The Vortex OpenSplice Tuner Guide<a class="headerlink" href="#the-vortex-opensplice-tuner-guide" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-vortex-opensplice-tuner-guide">1.1. About The Vortex OpenSplice Tuner Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#intended-audience">1.2. Intended Audience</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#organisation">1.3. Organisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#conventions">1.4. Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">2. Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#general-description">2.1. General Description</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="using01.html">3. Using the Vortex OpenSplice Tuner</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#starting-and-stopping-the-tuner">3.1. Starting and Stopping the Tuner</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#starting">3.1.1. Starting</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#solaris-and-linux">3.1.1.1. Solaris and Linux</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#windows">3.1.1.2. Windows</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#graphical-user-interface-conventions">3.1.2. Graphical User Interface Conventions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#main-window">3.1.3. Main Window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#shutdown">3.1.4. Shutdown</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#connection-management">3.2. Connection Management</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#connection-types">3.2.1. Connection Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#open-a-connection">3.2.2. Open a Connection</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#connection-history">3.2.2.1. Connection History</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#close-a-connection">3.2.3. Close a Connection</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#entity-information">3.3. Entity Information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#attributes">3.3.1. Attributes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#status">3.3.2. Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#qos">3.3.3. QoS</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#inspect-qos">3.3.3.1. Inspect QoS</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#modify-qos">3.3.3.2. Modify QoS</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#data-type">3.3.4. Data Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#statistics">3.3.5. Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#entity-relationships">3.4. Entity Relationships</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#enable-and-disable-displaying-relationships">3.4.1. Enable and Disable Displaying Relationships</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#refresh-relationships">3.4.2. Refresh Relationships</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#data-injection-and-consumption">3.5. Data Injection and Consumption</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#creating-a-publisher">3.5.1. Creating a Publisher</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#creating-a-writer">3.5.2. Creating a Writer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#creating-a-subscriber">3.5.3. Creating a subscriber</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#creating-a-reader">3.5.4. Creating a Reader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#creating-a-readerwriter">3.5.5. Creating a ReaderWriter</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#partition-expression">3.5.5.1. Partition Expression</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#existing-partition">3.5.5.2. Existing Partition</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#creating-a-snapshot-of-a-reader-database">3.5.6. Creating a Snapshot of a Reader Database</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#creating-a-snapshot-of-writer-history-cache">3.5.7. Creating a Snapshot of Writer History Cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#delete-entity">3.5.8. Delete Entity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#injecting-data">3.5.9. Injecting Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#injecting-data-using-a-writer">3.5.9.1. Injecting Data Using a Writer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#injecting-data-using-a-reader-writer">3.5.9.2. Injecting Data Using a Reader-Writer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#detailed-reader-writer-window">3.5.9.3. Detailed Reader-Writer window</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#consuming-data">3.5.10. Consuming Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#consuming-data-using-a-reader">3.5.10.1. Consuming Data Using a Reader</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#sample-information-view">3.5.10.1.1. Sample Information View</a></li>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#user-data-view">3.5.10.1.2. User Data View</a></li>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#show-details-of-data-that-contains-a-collection-type">3.5.10.1.3. Show details of data that contains a collection type</a></li>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#sorting-data">3.5.10.1.4. Sorting Data</a></li>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#filters">3.5.10.1.5. Filters</a></li>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#reordering-columns">3.5.10.1.6. Reordering Columns</a></li>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#removing-columns">3.5.10.1.7. Removing Columns</a></li>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#consumption-mode">3.5.10.1.8. Consumption Mode</a></li>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#monitoring">3.5.10.1.9. Monitoring</a></li>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#clear-data">3.5.10.1.10. Clear Data</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#inspecting-data-in-a-reader-database-snapshot">3.5.10.2. Inspecting Data in a Reader Database Snapshot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#inspecting-data-in-a-writer-history-snapshot">3.5.10.3. Inspecting Data in a Writer History Snapshot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#consuming-data-using-a-reader-writer">3.5.10.4. Consuming Data Using a Reader-Writer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#injecting-and-consuming-data-with-coherent-and-ordered-access">3.5.10.5. Injecting and Consuming Data With Coherent and Ordered Access</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#publishing-coherent-sets">3.5.10.5.1. Publishing Coherent Sets</a></li>
+<li class="toctree-l5"><a class="reference internal" href="using01.html#access-data-on-readers">3.5.10.5.2. Access Data On Readers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#exporting-and-importing">3.6. Exporting and Importing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#export-metadata">3.6.1. Export Metadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#export-data">3.6.2. Export Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#id4">3.6.2.1. Existing Partition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#id5">3.6.2.2. Partition Expression</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#from-existing-reader">3.6.2.3. From Existing Reader</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#import-metadata">3.6.3. Import Metadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#import-data">3.6.4. Import Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#original-partition-s">3.6.4.1. Original Partition(s)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#id6">3.6.4.2. Existing Partition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="using01.html#id7">3.6.4.3. Partition Expression</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#preferences">3.7. Preferences</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#auto-update-entity-information">3.7.1. Auto Update Entity information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#auto-update-entity-tree">3.7.2. Auto Update Entity Tree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#default-entity-tree-type">3.7.3. Default Entity Tree Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#logging">3.7.4. Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#datatype-content-type">3.7.5. Datatype Content Type</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#display-entity-relations">3.7.6. Display Entity Relations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#display-internals">3.7.7. Display Internals</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#qos-profiles">3.8. QoS Profiles</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#qos-profile-window">3.8.1. QoS Profile window</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="using01.html#support-for-google-protocol-buffers">3.9. Support for Google Protocol Buffers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#about-google-protocol-buffers-in-tuner">3.9.1. About Google Protocol Buffers in Tuner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#viewing-type-evolutions">3.9.2. Viewing type evolutions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="using01.html#reading-protocol-buffer-topics">3.9.3. Reading protocol buffer topics</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">4. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">4.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">4.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The Vortex OpenSplice Tuner Guide</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">Tuner Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

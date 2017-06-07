@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -15,19 +23,19 @@ package DDS;
 
 public final class TopicQos 
 {
-  public DDS.TopicDataQosPolicy topic_data = null;
-  public DDS.DurabilityQosPolicy durability = null;
-  public DDS.DurabilityServiceQosPolicy durability_service = null;
-  public DDS.DeadlineQosPolicy deadline = null;
-  public DDS.LatencyBudgetQosPolicy latency_budget = null;
-  public DDS.LivelinessQosPolicy liveliness = null;
-  public DDS.ReliabilityQosPolicy reliability = null;
-  public DDS.DestinationOrderQosPolicy destination_order = null;
-  public DDS.HistoryQosPolicy history = null;
-  public DDS.ResourceLimitsQosPolicy resource_limits = null;
-  public DDS.TransportPriorityQosPolicy transport_priority = null;
-  public DDS.LifespanQosPolicy lifespan = null;
-  public DDS.OwnershipQosPolicy ownership = null;
+  public DDS.TopicDataQosPolicy topic_data = new DDS.TopicDataQosPolicy();
+  public DDS.DurabilityQosPolicy durability = new DDS.DurabilityQosPolicy();
+  public DDS.DurabilityServiceQosPolicy durability_service = new DDS.DurabilityServiceQosPolicy();
+  public DDS.DeadlineQosPolicy deadline = new DDS.DeadlineQosPolicy();
+  public DDS.LatencyBudgetQosPolicy latency_budget = new DDS.LatencyBudgetQosPolicy();
+  public DDS.LivelinessQosPolicy liveliness = new DDS.LivelinessQosPolicy();
+  public DDS.ReliabilityQosPolicy reliability = new DDS.ReliabilityQosPolicy();
+  public DDS.DestinationOrderQosPolicy destination_order = new DDS.DestinationOrderQosPolicy();
+  public DDS.HistoryQosPolicy history = new DDS.HistoryQosPolicy();
+  public DDS.ResourceLimitsQosPolicy resource_limits = new DDS.ResourceLimitsQosPolicy();
+  public DDS.TransportPriorityQosPolicy transport_priority = new DDS.TransportPriorityQosPolicy();
+  public DDS.LifespanQosPolicy lifespan = new DDS.LifespanQosPolicy();
+  public DDS.OwnershipQosPolicy ownership = new DDS.OwnershipQosPolicy();
 
   public TopicQos ()
   {

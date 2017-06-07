@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifdef SCCSID
@@ -37,7 +45,7 @@ be_string::be_string (AST_Expression *v)
    AST_Decl
    (
       AST_Decl::NT_string,
-      new UTL_ScopedName (new Identifier("string", 1, 0, I_FALSE), NULL)
+      new UTL_ScopedName (new Identifier("string"), NULL)
    ),
    AST_String (v),
    m_wide(0)
@@ -55,8 +63,8 @@ be_string::be_string (AST_Expression *v, long wide)
    (
       AST_Decl::NT_string,
       (wide == 1)
-         ? new UTL_ScopedName (new Identifier ("string", 1, 0, I_FALSE), NULL)
-         : new UTL_ScopedName (new Identifier("wstring", 1, 0, I_FALSE), NULL)
+         ? new UTL_ScopedName (new Identifier ("string"), NULL)
+         : new UTL_ScopedName (new Identifier ("wstring"), NULL)
    ),
    AST_String (v, wide),
    m_wide(wide)
@@ -104,7 +112,7 @@ void be_string::InitializeTypeMap (be_Type* t)
       structStringVar = BE_Globals::CorbaScope ("WString_var");
    }
 
-   char size[10];
+   char size[12];
    os_sprintf (size, "%d", (int) ExprToULong(maxsize));
 
    t_typedef = (be_typedef*)t->narrow((long) & be_typedef::type_id);

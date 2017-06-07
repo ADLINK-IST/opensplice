@@ -1,4 +1,4 @@
-TARGET_CSEXEC  = SACSTesterDomainParticipantFactory
+TARGET_CSEXEC  = domainParticipantFactory
 CS_NAMESPCS    = test test/sacs
 DATA_MODEL     = test_type
 TEST_FRAMEWORK = cstestframe

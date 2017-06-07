@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_registerType.h"
@@ -14,19 +22,11 @@
 
 #include "os_heap.h"
 #include "os_stdlib.h"
-#include <errno.h>
+#include "os_errno.h"
 #include "c_iterator.h"
 #include "sd_serializerXMLTypeinfo.h"
 
 #include <ctype.h>
-
-static void
-idl_reportOpenError(
-    char *fname)
-{
-    printf ("Error opening file %s for writing. Reason: %s (%d)\n", fname, strerror( errno ), errno);
-    exit (-1);
-}
 
 /** @brief generate name which will be used as a macro to prevent multiple inclusions
  *
@@ -45,10 +45,10 @@ idl_macroFromBasename(
     c_long i;
 
     for (i = 0; i < (c_long)strlen(basename); i++) {
-        macro[i] = toupper (basename[i]);
+        macro[i] = (c_char) toupper (basename[i]);
         macro[i+1] = '\0';
     }
-    os_strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
+    os_strncat(macro, append, sizeof(macro)-strlen(append));
 
     return macro;
 }
@@ -66,19 +66,19 @@ idl_cScopedTypeName (
     dst = os_malloc (strlen(src)+1);
     cTypeName = dst;
     while (*src != '\0') {
-	if (*src != ':') {
-	    *dst = *src;
-	    dst++;
-	} else {
-	    src++;
-	    if (*src == ':') {
-		*dst = '_';
-	    } else {
-		*dst = *src;
-	    }
-	    dst++;
-	}
-	src++;
+        if (*src != ':') {
+            *dst = *src;
+            dst++;
+        } else {
+            src++;
+            if (*src == ':') {
+                *dst = '_';
+            } else {
+                *dst = *src;
+            }
+            dst++;
+        }
+        src++;
     }
     *dst = *src;
 
@@ -116,7 +116,7 @@ idl_registerBody (
     idl_fileOutPrintf (idl_fileCur(), "\n");
     idl_fileOutPrintf (idl_fileCur(), "    serializer = sd_serializerXMLTypeinfoNew(base, TRUE);\n");
     idl_fileOutPrintf (idl_fileCur(), "    serData    = sd_serializerFromString(serializer, metaDescriptor);\n");
-    idl_fileOutPrintf (idl_fileCur(), "    typeSpec   = c_metaObject(sd_serializerDeserializeValidated(serializer, serData));\n");
+    idl_fileOutPrintf (idl_fileCur(), "    typeSpec   = c_metaObject(sd_serializerDeserialize(serializer, serData));\n");
     idl_fileOutPrintf (idl_fileCur(), "    sd_serializedDataFree(serData);\n");
     idl_fileOutPrintf (idl_fileCur(), "    sd_serializerFree(serializer);\n");
     idl_fileOutPrintf (idl_fileCur(), "\n");
@@ -152,26 +152,26 @@ idl_registerType (
     char *typeName;
     c_char *fname;
     c_metaObject type;
-    int i;
+    c_ulong i;
 
-    fname = os_malloc((size_t)((int)strlen(basename)+20));
-    snprintf (fname, (size_t)((int)strlen(basename)+20), "%s_register.h", basename);
+    fname = os_malloc(strlen(basename)+20);
+    snprintf (fname, strlen(basename)+20, "%s_register.h", basename);
     idl_fileSetCur (idl_fileOutNew (fname, "w"));
     if (idl_fileCur () == NULL) {
-        idl_reportOpenError (fname);
+        idl_fileOpenError (fname);
     }
     idl_registerHeaderFile (basename);
     idl_fileOutFree (idl_fileCur());
 
 
-    snprintf (fname, (size_t)((int)strlen(basename)+20), "%s_register.c", basename);
+    snprintf (fname, strlen(basename)+20, "%s_register.c", basename);
     idl_fileSetCur (idl_fileOutNew (fname, "w"));
     if (idl_fileCur () == NULL) {
-        idl_reportOpenError (fname);
+        idl_fileOpenError (fname);
     }
     idl_registerBodyHeader (basename);
     for (i = 0; i < c_iterLength(typeNames); i++) {
-	typeName = c_iterObject(typeNames, i);
+        typeName = c_iterObject(typeNames, i);
         type = c_metaResolve ((c_metaObject)base, (const char *)typeName);
         if (type) {
             metaSer = sd_serializerXMLTypeinfoNew (base, TRUE);
@@ -187,7 +187,7 @@ idl_registerType (
                 sd_serializerFree (metaSer);
             }
         } else {
-	    printf ("Specified type %s not found\n", typeName);
+            printf ("Specified type %s not found\n", typeName);
         }
     }
     idl_fileOutPrintf (idl_fileCur(), "\n");
@@ -195,8 +195,8 @@ idl_registerType (
     idl_fileOutPrintf (idl_fileCur(), "%s__register_types (c_base base)\n", basename);
     idl_fileOutPrintf (idl_fileCur(), "{\n");
     for (i = 0; i < c_iterLength(typeNames); i++) {
-	typeName = c_iterObject(typeNames, i);
-	idl_fileOutPrintf (idl_fileCur(), "    %s__register_type (base);\n", idl_cScopedTypeName(typeName));
+        typeName = c_iterObject(typeNames, i);
+        idl_fileOutPrintf (idl_fileCur(), "    %s__register_type (base);\n", idl_cScopedTypeName(typeName));
     }
     idl_fileOutPrintf (idl_fileCur(), "}\n");
     idl_fileOutFree (idl_fileCur());

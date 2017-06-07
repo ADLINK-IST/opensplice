@@ -1,0 +1,31 @@
+// -*- MPC -*-
+// $Id:$
+
+project : ospl_base {
+    requires += ospl_ddsface
+    specific (prop:java) {
+        lit_libs += ddsface
+    }
+    specific (prop:cplusplus) {
+        lit_libs += facecpp
+        splice_ts_flags += -F
+    }
+}
+
+feature(!src_co) {
+    specific (prop:java) {
+        compile_flags += -cp .<%pathsep%>$(OSPL_HOME)<%slash%>jar<%slash%>ddsface.jar
+    }
+    specific (prop:cplusplus) {
+        includes += $(OSPL_HOME)/include/face/cpp
+    }
+}
+
+feature(src_co) {
+    specific (prop:java) {
+        compile_flags += -cp .<%pathsep%>$(OSPL_HOME)<%slash%>jar<%slash%>$(SPLICE_TARGET)<%slash%>ddsface.jar
+    }
+    specific (prop:cplusplus) {
+        includes += $(OSPL_HOME_NORMALIZED)/src/api/face/cpp/include
+    }
+}

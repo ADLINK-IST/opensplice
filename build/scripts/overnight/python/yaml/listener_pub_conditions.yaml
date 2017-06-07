@@ -1,0 +1,11 @@
+parseconditions:
+    desc: Listener LogParser Conditions
+
+    file: run.log
+    parsecontents: no
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+

@@ -195,8 +195,7 @@ UTL_ScopeStack::next_to_top()
 }
 
 // Return topmost non-NULL element
-UTL_Scope *
-UTL_ScopeStack::top_non_null()
+UTL_Scope * UTL_ScopeStack::top_non_null ()
 {
    long i;
 
@@ -252,9 +251,9 @@ long
 UTL_ScopeStackActiveIterator::is_done()
 {
    if (il >= 0)
-      return I_FALSE;
+      return false;
 
-   return I_TRUE;
+   return true;
 }
 
 /*

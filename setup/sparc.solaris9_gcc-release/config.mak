@@ -13,5 +13,5 @@ endif
 
 # Compiler flags
 CFLAGS_DEBUG     =
-JCFLAGS		 = -g:none -nowarn
+JCFLAGS		 = -g -nowarn
 

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /**
@@ -15,6 +23,7 @@
  * related to an IDL input file.
  */
 #include "os_stdlib.h"
+#include "os_abstract.h"
 
 #include "idl_program.h"
 #include "idl_scope.h"
@@ -41,10 +50,10 @@
  *  unsigned long long		c_ulonglong	c_primitive->kind P_ULONGLONG
  *  float			c_float		c_primitive->kind P_FLOAT
  *  double			c_double	c_primitive->kind P_DOUBLE
- *  string			c_string	c_collectionType->kind C_STRING, ->maxSize 0, ->subType "c_char"
- *  string<len>			c_string	c_collectionType->kind C_STRING, ->maxSize len, ->subType "c_char"
- *  sequence<type>		c_sequence	c_collectionType->kind C_SEQUENCE, ->maxSize 0, ->subType <type>
- *  sequence<type,len>		c_sequence		c_collectionType->kind C_SEQUENCE, ->maxSize len, ->subType <type>
+ *  string			c_string	c_collectionType->kind OSPL_C_STRING, ->maxSize 0, ->subType "c_char"
+ *  string<len>			c_string	c_collectionType->kind OSPL_C_STRING, ->maxSize len, ->subType "c_char"
+ *  sequence<type>		c_sequence	c_collectionType->kind OSPL_C_SEQUENCE, ->maxSize 0, ->subType <type>
+ *  sequence<type,len>		c_sequence		c_collectionType->kind OSPL_C_SEQUENCE, ->maxSize len, ->subType <type>
  *  typedef <type-name> <name>	-		c_typeDef->alias <type-name>
  *  enum <name> {				c_enumeration->elements
  *	<element-name>				    elements[0..n] c_constant
@@ -59,7 +68,7 @@
  *	default:
  *          <case-type> <case-name>;		// 0 labels
  *  };
- *  <name>[<size-0>]..[<size-n>];		c_collectionType->kind C_ARRAY, ->maxSize <size-i>,
+ *  <name>[<size-0>]..[<size-n>];		c_collectionType->kind OSPL_C_ARRAY, ->maxSize <size-i>,
  *                                                      ->subType <element-type>
  *
  *  For modules, type definitions, structures, unions, enumerations and bounded strings,
@@ -161,43 +170,43 @@ idl_valueFromLabelVal(
     /* QAC EXPECT 3416; No side effect here */
     if (idl_labelValType(idl_labelVal(labelVal)) == idl_lenum) {
         /* For an enumeration use the c_longValue of the enum value */
-        snprintf(labelName, (size_t)sizeof(labelName), "c_longValue(_%s)",
+        snprintf(labelName, sizeof(labelName), "c_longValue(_%s)",
 	       idl_labelEnumVal(idl_labelEnum(labelVal)));
     } else {
         switch (idl_labelValueVal(idl_labelValue(labelVal)).kind) {
 	    case V_CHAR:
-		snprintf (labelName, (size_t)sizeof(labelName), "c_charValue (%u)",
+		snprintf (labelName, sizeof(labelName), "c_charValue (%u)",
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.Char);
 		break;
 	    case V_SHORT:
-		snprintf (labelName, (size_t)sizeof(labelName), "c_shortValue (%d)", 
+		snprintf (labelName, sizeof(labelName), "c_shortValue (%d)", 
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.Short);
 		break;
 	    case V_USHORT:
-		snprintf (labelName, (size_t)sizeof(labelName), "c_ushortValue (%u)", 
+		snprintf (labelName, sizeof(labelName), "c_ushortValue (%u)", 
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.UShort);
 		break;
 	    case V_LONG:
-		snprintf (labelName, (size_t)sizeof(labelName), "c_longValue (%d)", 
+		snprintf (labelName, sizeof(labelName), "c_longValue (%d)", 
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.Long);
 		break;
 	    case V_ULONG:
-		snprintf (labelName, (size_t)sizeof(labelName), "c_ulongValue (%u)", 
+		snprintf (labelName, sizeof(labelName), "c_ulongValue (%u)", 
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.ULong);
 		break;
 	    case V_LONGLONG:
-		snprintf (labelName, (size_t)sizeof(labelName), "c_longlongValue (%lld)", 
+		snprintf (labelName, sizeof(labelName), "c_longlongValue (%"PA_PRId64")",
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.LongLong);
 		break;
 	    case V_ULONGLONG:
-		snprintf (labelName, (size_t)sizeof(labelName), "c_ulonglongValue (%llu)", 
+		snprintf (labelName, sizeof(labelName), "c_ulonglongValue (%"PA_PRIu64")",
 		    idl_labelValueVal(idl_labelValue(labelVal)).is.ULongLong);
 		break;
 	    case V_BOOLEAN:
 		if ((int)idl_labelValueVal(idl_labelValue(labelVal)).is.Boolean == TRUE) {
-		    snprintf (labelName, (size_t)sizeof(labelName), "c_boolValue (TRUE)");
+		    snprintf (labelName, sizeof(labelName), "c_boolValue (TRUE)");
 		} else {
-		    snprintf (labelName, (size_t)sizeof(labelName), "c_boolValue (FALSE)");
+		    snprintf (labelName, sizeof(labelName), "c_boolValue (FALSE)");
 		}
 		break;
 	    default:
@@ -248,10 +257,13 @@ idl_fileOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(name);
+    OS_UNUSED_ARG(userData);
+
     idl_fileOutPrintf(idl_fileCur(), "#define Resolve(s,o) c_metaResolve(c_metaObject(s),o)\n");
     idl_fileOutPrintf(idl_fileCur(), "#define ResolveType(s,t) c_type(c_metaResolve(c_metaObject(s),t))\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
-
     return idl_explore;
 }
 
@@ -291,6 +303,8 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     idl_fileOutPrintf(idl_fileCur(), "c_metaObject\n");
     idl_fileOutPrintf(
         idl_fileCur(),
@@ -359,6 +373,8 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     /* QAC EXPECT 3416; No side effect here */
     if ((idl_scopeStackSize(scope) == 0) || (idl_scopeElementType (idl_scopeCur(scope)) == idl_tModule)) {
         idl_fileOutPrintf(idl_fileCur(), "c_metaObject\n");
@@ -431,6 +447,8 @@ idl_structureClose (
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     idl_fileOutPrintf(idl_fileCur(), "    c_structure(o)->members = members;\n");
     idl_fileOutPrintf(idl_fileCur(), "    c_metaFinalize(o);\n");
     idl_fileOutPrintf(idl_fileCur(), "    found = c_metaBind(scope,\"%s\",o);\n",name);
@@ -481,6 +499,8 @@ idl_structureMemberOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     /* Define an M_MEMBER meta object ans assign it to members[member_index] */
     idl_fileOutPrintf(
         idl_fileCur(),
@@ -502,7 +522,7 @@ idl_structureMemberOpenClose(
 	    */
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "    tscope = __%s_%d__load (o)->definedIn;\n",
+                "    tscope = __%s_%u__load (o)->definedIn;\n",
                 idl_scopeStack (scope, "_", NULL),
                 idl_typeBasicMaxlen(idl_typeBasic(typeSpec)));
         } else {
@@ -603,6 +623,8 @@ idl_unionOpen(
     idl_typeUnion unionSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     /* QAC EXPECT 3416; No side effect here */
     if ((idl_scopeStackSize(scope) == 0) || (idl_scopeElementType (idl_scopeCur(scope)) == idl_tModule)) {
 	/* Union is defined within the global scope or a module */
@@ -710,6 +732,8 @@ idl_unionClose(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     /* Assign the union cases to the unions cases attribute */
     idl_fileOutPrintf(idl_fileCur(), "    c_union(o)->cases = cases;\n");
     /* Finalize the meta object (union) */
@@ -767,6 +791,8 @@ idl_unionCaseOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     /* Define an M_UNIONCASE meta object and assign it to cases[case_index] */
     idl_fileOutPrintf(
         idl_fileCur(),
@@ -788,7 +814,7 @@ idl_unionCaseOpenClose(
 	    */
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "    tscope = __%s_%d__load (o)->definedIn;\n",
+                "    tscope = __%s_%u__load (o)->definedIn;\n",
                 idl_scopeStack(scope, "_", NULL),
                 idl_typeBasicMaxlen(idl_typeBasic(typeSpec)));
         } else {
@@ -875,6 +901,9 @@ idl_unionLabelsOpenClose(
     idl_labelSpec labelSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
+
     /* QAC EXPECT 3416; No side effect here */
     if (idl_labelSpecNoLabels(labelSpec)) {
         /* If more than 0 labels, the create labels array */
@@ -924,6 +953,9 @@ idl_unionLabelOpenClose(
     idl_labelVal labelVal,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
+
     if (idl_labelValType(labelVal) != idl_ldefault) {
         /* For the label create an M_LITERAL meta object and assign it to labels[label_index] */
         idl_fileOutPrintf(idl_fileCur(), "    labels[%d] = (c_voidp)c_metaDefine(scope,M_LITERAL);\n",
@@ -968,6 +1000,8 @@ idl_enumerationOpen(
     idl_typeEnum enumSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     /* QAC EXPECT 3416; No side effect here */
     if ((idl_scopeStackSize(scope) == 0) || (idl_scopeElementType (idl_scopeCur(scope)) == idl_tModule)) {
 	/* Enumeration is defined within the global scope or a module */
@@ -1036,6 +1070,8 @@ idl_enumerationClose(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     /* Assign the enumeration elements to the enumerations elements attribute */
     idl_fileOutPrintf(idl_fileCur(), "    c_enumeration(o)->elements = elements;\n");
     /* Finalize the meta object (enumeration) */
@@ -1077,8 +1113,11 @@ idl_enumerationElementOpenClose(
     const char *name,
     void *userData)
 {
+    OS_UNUSED_ARG(scope);
+    OS_UNUSED_ARG(userData);
+
     /* Define an M_CONSTANT meta object and assign its reference to elements[element_index] */
-    idl_fileOutPrintf(idl_fileCur(), "    elements[%d] = (c_voidp)c_metaDeclare(scope,\"%s\",M_CONSTANT);\n",
+    idl_fileOutPrintf(idl_fileCur(), "    elements[%d] = (c_voidp)c_metaDeclareEnumElement(scope,\"%s\");\n",
         element_index, idl_languageId(name));
     /* Next enumeration element maps on the next elements array element */
     element_index++;
@@ -1130,8 +1169,8 @@ idl_arrayLoad(
         idl_fileOutPrintf(idl_fileCur(), "    c_metaObject(%c)->definedIn = scope;\n",
             IDL_INDEX_VAR+indent);
         idl_printIndent(indent);
-	/* Set the collection kind attribute to C_ARRAY */
-        idl_fileOutPrintf(idl_fileCur(), "    c_collectionType(%c)->kind = C_ARRAY;\n",
+	/* Set the collection kind attribute to OSPL_C_ARRAY */
+        idl_fileOutPrintf(idl_fileCur(), "    c_collectionType(%c)->kind = OSPL_C_ARRAY;\n",
             IDL_INDEX_VAR+indent);
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeSpecType(idl_typeSpec(arrayType)) == idl_tarray) {
@@ -1151,7 +1190,7 @@ idl_arrayLoad(
                     /* If the bounded string is defined on global scope then set tscope scope */
                     idl_fileOutPrintf(idl_fileCur(), "    tscope = scope;\n");
 #else
-    	            idl_fileOutPrintf(idl_fileCur(), "    tscope = __%s_%d__load (o)->definedIn;\n",
+    	            idl_fileOutPrintf(idl_fileCur(), "    tscope = __%s_%u__load (o)->definedIn;\n",
 	       	        idl_scopeStack(scope, "_", NULL),
                     idl_typeBasicMaxlen(idl_typeBasic(arrayType)));
 #endif
@@ -1164,7 +1203,7 @@ idl_arrayLoad(
 			   the bounded string */
                         idl_fileOutPrintf(
                             idl_fileCur(),
-                            "    tscope = __%s_%d__load (o)->definedIn;\n",
+                            "    tscope = __%s_%u__load (o)->definedIn;\n",
                             idl_scopeStack(scope, "_", NULL),
                             idl_typeBasicMaxlen(idl_typeBasic(idl_typeArrayType(idl_typeArray(typeSpec)))));
           		    } else {
@@ -1172,7 +1211,7 @@ idl_arrayLoad(
 			   the user type metadata. The user type scope is the scope of the bounded string */
                         idl_fileOutPrintf(
                             idl_fileCur(),
-                            "    tscope = __%s_%d__load (scope)->definedIn;\n",
+                            "    tscope = __%s_%u__load (scope)->definedIn;\n",
                             idl_scopeStack (scope, "_", NULL),
                             idl_typeBasicMaxlen(idl_typeBasic(idl_typeArrayType(idl_typeArray(typeSpec)))));
                     }
@@ -1324,8 +1363,8 @@ idl_seqLoad(
     	    IDL_INDEX_VAR+indent,
     	    scopeName[scoping]);
         idl_printIndent(indent);
-	/* Set the collection kind attribute to C_SEQUENCE */
-        idl_fileOutPrintf (idl_fileCur(), "    c_collectionType(%c)->kind = C_SEQUENCE;\n",
+	/* Set the collection kind attribute to OSPL_C_SEQUENCE */
+        idl_fileOutPrintf (idl_fileCur(), "    c_collectionType(%c)->kind = OSPL_C_SEQUENCE;\n",
     	    IDL_INDEX_VAR+indent);
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeSpecType(idl_typeSpec(seqType)) == idl_tseq) {
@@ -1347,7 +1386,7 @@ idl_seqLoad(
             /* The subtype is a bounded sequence which is loaded to determine its scope */
                 idl_fileOutPrintf(
                     idl_fileCur(),
-                    "    tscope = __%s_%d__load (%s)->definedIn;\n",
+                    "    tscope = __%s_%u__load (%s)->definedIn;\n",
                     idl_scopeStack(scope, "_", NULL),
                     idl_typeBasicMaxlen(idl_typeBasic(idl_typeSpec(seqType))),
                     scopeName[scoping]);
@@ -1477,6 +1516,8 @@ idl_typedefOpenClose(
     idl_typeDef defSpec,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     /* QAC EXPECT 3416; No side effect here */
     if ((idl_scopeStackSize(scope) == 0) || (idl_scopeElementType(idl_scopeCur(scope)) == idl_tModule)) {
 	/* The type is defined within the global scope or within a module,
@@ -1549,7 +1590,7 @@ idl_typedefOpenClose(
                 /* This is a bounded string which must be loaded in order to determine its scope */
     	        idl_fileOutPrintf(
                     idl_fileCur(),
-                    "    tscope = __%s_%d__load (scope)->definedIn;\n",
+                    "    tscope = __%s_%u__load (scope)->definedIn;\n",
                     idl_scopeStack(scope, "_", NULL),
                     idl_typeBasicMaxlen(idl_typeBasic(idl_typeDefRefered(defSpec))));
             } else {
@@ -1600,8 +1641,10 @@ idl_boundedStringOpenClose(
     idl_typeBasic typeBasic,
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
+
     idl_fileOutPrintf(idl_fileCur(), "static c_metaObject\n");
-    idl_fileOutPrintf(idl_fileCur(), "__%s_%d__load (\n",
+    idl_fileOutPrintf(idl_fileCur(), "__%s_%u__load (\n",
 	idl_scopeStack(scope, "_", NULL),
 	idl_typeBasicMaxlen(typeBasic));
     idl_fileOutPrintf(idl_fileCur(), "    c_metaObject scope)\n");
@@ -1611,18 +1654,18 @@ idl_boundedStringOpenClose(
     idl_fileOutPrintf(idl_fileCur(), "\n");
     /* Define an M_COLLECTION meta object */
     idl_fileOutPrintf(idl_fileCur(), "    o = c_metaObject(c_metaDefine(scope,M_COLLECTION));\n");
-    /* Set the collection kind attribute to C_STRING */
-    idl_fileOutPrintf(idl_fileCur(), "    c_collectionType(o)->kind = C_STRING;\n");
+    /* Set the collection kind attribute to OSPL_C_STRING */
+    idl_fileOutPrintf(idl_fileCur(), "    c_collectionType(o)->kind = OSPL_C_STRING;\n");
     /* Resolve the "c_char" type as being the subtype of the collection */
     idl_fileOutPrintf(idl_fileCur(), "    c_collectionType(o)->subType = ResolveType(scope,\"c_char\");\n");
     /* Set the size of the collection based on the bound of the string */
-    idl_fileOutPrintf(idl_fileCur(), "    c_collectionType(o)->maxSize = %d;\n",
+    idl_fileOutPrintf(idl_fileCur(), "    c_collectionType(o)->maxSize = %u;\n",
 	idl_typeBasicMaxlen(typeBasic));
     /* Set the scope of the bounded string */
     idl_fileOutPrintf(idl_fileCur(), "    c_metaObject(o)->definedIn = scope;\n");
     /* Finalize the bounded string */
     idl_fileOutPrintf(idl_fileCur(), "    c_metaFinalize(o);\n");
-    idl_fileOutPrintf(idl_fileCur(), "    found = c_metaBind(scope,\"C_STRING<%d>\",o);\n",
+    idl_fileOutPrintf(idl_fileCur(), "    found = c_metaBind(scope,\"C_STRING<%u>\",o);\n",
 	idl_typeBasicMaxlen(typeBasic));
     idl_fileOutPrintf(idl_fileCur(), "    c_free(o);\n\n");
     idl_fileOutPrintf(idl_fileCur(), "    return found;\n");
@@ -1645,6 +1688,7 @@ static idl_programControl *
 idl_getControl(
     void *userData)
 {
+    OS_UNUSED_ARG(userData);
     return &idl_genSpliceLoadControl;
 }
 

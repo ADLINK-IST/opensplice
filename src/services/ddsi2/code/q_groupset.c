@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <ctype.h>
 #include <stddef.h>
 #include <assert.h>
@@ -7,8 +26,8 @@
 #include "os_mutex.h"
 #include "os_if.h"
 
+#include "kernelModuleI.h"
 #include "v_groupSet.h"
-#include "kernelModule.h"
 
 #include "ut_avl.h"
 #include "q_log.h"
@@ -45,45 +64,37 @@ static int compare_group_ptr (const void *va, const void *vb)
   return (*a == *b) ? 0 : (*a < *b) ? -1 : 1;
 }
 
-static int add_group (struct nn_groupset *gs, v_group g)
+static void add_group (struct nn_groupset *gs, v_group g)
 {
   ut_avlIPath_t path;
   if (ut_avlLookupIPath (&grouptree_treedef, &gs->grouptree, &g, &path) == NULL)
   {
     struct nn_groupset_entry *e;
-    if ((e = os_malloc (sizeof (*e))) == NULL)
-      return ERR_OUT_OF_MEMORY;
+    e = os_malloc (sizeof (*e));
     e->group = g;
     ut_avlInsertIPath (&grouptree_treedef, &gs->grouptree, e, &path);
   }
-  return 0;
 }
 
 static int add_group_by_name (struct nn_groupset *gs, v_kernel kernel, const char *topic_name, const char *partition)
 {
   v_group g;
-  if (strchr (partition, '?') || strchr (partition, '*'))
-    return 0;
-  else if ((g = v_groupSetGet (kernel->groupSet, partition, topic_name)) != NULL)
+  c_iter it;
+  it = v_groupSetLookup (kernel->groupSet, partition, topic_name);
+  while ((g = c_iterTakeFirst (it)) != NULL)
   {
-    int res;
-    res = add_group (gs, g);
-    c_free (g);
-    return res;
+      add_group (gs, g);
+      c_free (g);
   }
-  else
-  {
-    TRACE (("add_group_by_name: no kernel group for %s.%s?\n", partition, topic_name));
-    return 0;
-  }
+  c_iterFree (it);
+  return 0;
 }
 
 struct nn_groupset *nn_groupset_new (void)
 {
   struct nn_groupset *gs;
-  if ((gs = os_malloc (sizeof (*gs))) == NULL)
-    return NULL;
-  os_mutexInit (&gs->lock, &gv.mattr);
+  gs = os_malloc (sizeof (*gs));
+  os_mutexInit (&gs->lock, NULL);
   ut_avlInit (&grouptree_treedef, &gs->grouptree);
   return gs;
 }
@@ -100,7 +111,7 @@ int nn_groupset_fromqos (struct nn_groupset *gs, v_kernel kernel, const nn_xqos_
   }
   else
   {
-    int i;
+    unsigned i;
     for (i = 0; i < qos->partition.n; i++)
     {
       if ((res = add_group_by_name (gs, kernel, qos->topic_name, qos->partition.strs[i])) < 0)
@@ -139,11 +150,10 @@ int nn_groupset_foreach (const struct nn_groupset *gs, nn_groupset_foreach_t f, 
 static int nn_groupset_add_helper (v_group g, void *varg)
 {
   struct nn_groupset *gs = varg;
-  int res;
   LOCK (gs);
-  res = add_group (gs, g);
+  add_group (gs, g);
   UNLOCK (gs);
-  return res;
+  return 0;
 }
 
 int nn_groupset_add (struct nn_groupset *gs, const struct nn_groupset *add)
@@ -153,11 +163,10 @@ int nn_groupset_add (struct nn_groupset *gs, const struct nn_groupset *add)
 
 int nn_groupset_add_group (struct nn_groupset *gs, v_group g)
 {
-  int res;
   LOCK (gs);
-  res = add_group (gs, g);
+  add_group (gs, g);
   UNLOCK (gs);
-  return res;
+  return 0;
 }
 
 int nn_groupset_empty (const struct nn_groupset *gs)

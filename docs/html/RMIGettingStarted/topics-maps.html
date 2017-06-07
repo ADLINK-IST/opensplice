@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. RMI Interface to DDS topics mapping rules &mdash; RMI User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RMI User Guide" href="index.html" />
+    <link rel="next" title="7. RMI Runtime Configuration Options" href="runtime-config.html" />
+    <link rel="prev" title="5. Language mapping for Vortex OpenSplice RMI" href="language-map.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="runtime-config.html" title="7. RMI Runtime Configuration Options"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="language-map.html" title="5. Language mapping for Vortex OpenSplice RMI"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="rmi-interface-to-dds-topics-mapping-rules">
+<span id="id1"></span><h1>6. RMI Interface to DDS topics mapping rules<a class="headerlink" href="#rmi-interface-to-dds-topics-mapping-rules" title="Permalink to this headline">¶</a></h1>
+<p><em>This chapter demonstrates the mapping rules driving the transformation
+of the IDL declarations of the RMI interfaces into the IDL declarations
+of the implied DDS topics</em>.</p>
+<ul class="simple">
+<li>For each <tt class="docutils literal"><span class="pre">&lt;InterfaceName&gt;</span></tt>, a new module is created with the same name
+and scope in the module <tt class="docutils literal"><span class="pre">DDS_RMI</span></tt>, where all the topics associated with
+the interface operations will be made.</li>
+<li>Each <tt class="docutils literal"><span class="pre">&lt;InterfaceName&gt;.&lt;operation</span> <span class="pre">name&gt;</span></tt> creates two data structures,
+suffixed respectively with <tt class="docutils literal"><span class="pre">_request</span></tt> for the data structure that handles
+the request, and <tt class="docutils literal"><span class="pre">_reply</span></tt> for the data structure that handles the reply.</li>
+<li>The <tt class="docutils literal"><span class="pre">&lt;operation</span> <span class="pre">name&gt;_request</span></tt> data struct will gather all <tt class="docutils literal"><span class="pre">[in]</span></tt> or
+<tt class="docutils literal"><span class="pre">[inout]</span></tt> parameters.</li>
+<li>The <tt class="docutils literal"><span class="pre">&lt;operation</span> <span class="pre">name&gt;_reply</span></tt> data struct will gather the return value
+and all <tt class="docutils literal"><span class="pre">[inout]</span></tt> or <tt class="docutils literal"><span class="pre">[out]</span></tt> parameters.</li>
+<li><tt class="docutils literal"><span class="pre">req_info</span></tt> is used to enable the client service handler to pick the
+reply it is waiting for.</li>
+</ul>
+<div class="highlight-Java"><div class="highlight"><pre><span class="n">module</span> <span class="n">HelloWorld</span> <span class="o">{</span>
+   <span class="n">local</span> <span class="kd">interface</span> <span class="nc">HelloService</span> <span class="o">:</span> <span class="o">::</span><span class="n">DDS_RMI</span><span class="o">::</span><span class="n">Services</span>
+   <span class="o">{</span>
+      <span class="kt">void</span> <span class="nf">op1</span> <span class="o">(</span><span class="n">in</span> <span class="n">string</span> <span class="n">p1</span><span class="o">,</span> <span class="n">inout</span> <span class="kt">short</span> <span class="n">p2</span><span class="o">,</span> <span class="n">out</span> <span class="kt">long</span> <span class="n">p3</span><span class="o">);</span>
+   <span class="o">};</span>
+<span class="o">};</span>
+</pre></div>
+</div>
+<div class="figure">
+<a class="reference internal image-reference" href="_images/RMI-diag-04.png"><img alt="rmipp" src="_images/RMI-diag-04.png" style="height: 20mm;" /></a>
+</div>
+<div class="highlight-Java"><div class="highlight"><pre>module DDS_RMI {
+  module HelloWorld {
+    module HelloService {
+
+   struct op1_request {
+           DDS_RMI::Request_Header req_info;
+           string p1;
+           short p2;
+        };
+   #pragma keylist op1_request req_info.client_id.client_impl
+                   req_info.client_id.client_instance
+
+       struct op1_reply {
+           DDS_RMI::Request_Header req_info;
+           short p2;
+           long p3;
+       };
+   #pragma keylist op1_reply req_info.client_id.client_impl
+                   req_info.client_id.client_instance
+
+    };
+  };
+};
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="language-map.html"
+                        title="previous chapter">5. Language mapping for Vortex OpenSplice RMI</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="runtime-config.html"
+                        title="next chapter">7. RMI Runtime Configuration Options</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/topics-maps.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="runtime-config.html" title="7. RMI Runtime Configuration Options"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="language-map.html" title="5. Language mapping for Vortex OpenSplice RMI"
+             >previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

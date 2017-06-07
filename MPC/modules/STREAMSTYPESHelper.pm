@@ -103,6 +103,14 @@ sub get_output {
     # This is in the post for when we process the Streams.idl under the covers
     # push @filenames, @{$self->get_output($streams_idl_file, "-l $language $psm_arg -d $output_dir")};
   }
+  elsif($language eq 'isocpp')
+  {
+    push @filenames, "$output_dir$base" . 'StreamsApi.h';
+    my $streams_idl_file = "$output_dir$base" . 'Streams.idl';
+    push @filenames, $streams_idl_file;
+    # This is in the post for when we process the Streams.idl under the covers
+    # push @filenames, @{$self->get_output($streams_idl_file, "-l $language $psm_arg -d $output_dir")};
+  }
   else
   {
     if ($language eq 'c')
@@ -129,6 +137,7 @@ sub get_outputexts {
   my $self = shift;
   my @exts = ($self->Parser::escape_regex_special(".cpp"),
            $self->Parser::escape_regex_special(".h"),
+           $self->Parser::escape_regex_special(".hpp"),
            #$self->Parser::escape_regex_special(".cs"),
             $self->Parser::escape_regex_special(".idl"));
   return \@exts;

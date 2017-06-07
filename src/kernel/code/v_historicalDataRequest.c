@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v_historicalDataRequest.h"
@@ -16,31 +24,38 @@
 v_historicalDataRequest
 v_historicalDataRequestNew(
     v_kernel kernel,
-    c_char* filter,
-    c_char* params[],
+    const c_char* filter,
+    const c_char* params[],
     c_ulong nofParams,
-    c_time minSourceTime,
-    c_time maxSourceTime,
-    struct v_resourcePolicy *resourceLimits)
+    os_timeW minSourceTime,
+    os_timeW maxSourceTime,
+    v_resourcePolicyI *resourceLimits,
+    os_duration timeout)
 {
     v_historicalDataRequest request;
     c_ulong i;
-    c_type type;
     c_base base;
 
-    request = c_new(v_kernelType(kernel,K_HISTORICALDATAREQUEST));
-
+    request = v_historicalDataRequest(v_objectNew_s(kernel,K_HISTORICALDATAREQUEST));
     if (request) {
         if(filter){
-            base            = c_getBase(kernel);
-            request->filter = c_stringNew(base, filter);
+            base = c_getBase(kernel);
+            request->filter = c_stringNew_s(base, filter);
+            if (!request->filter){
+                goto err_alloc_filter;
+            }
 
             if(params){
-                type                  = c_string_t(base);
-                request->filterParams = c_arrayNew(type, nofParams);
+                request->filterParams = c_arrayNew_s(c_string_t(base), nofParams);
+                if ((nofParams > 0) && (!request->filterParams)) {
+                    goto err_alloc_params;
+                }
 
                 for(i=0; i<nofParams; i++){
-                    request->filterParams[i] = c_stringNew(base, params[i]);
+                    request->filterParams[i] = c_stringNew_s(base, params[i]);
+                    if (!request->filterParams[i]) {
+                        goto err_alloc_param;
+                    }
                 }
             } else {
                 request->filterParams = NULL;
@@ -49,58 +64,85 @@ v_historicalDataRequestNew(
             request->filter       = NULL;
             request->filterParams = NULL;
         }
-        if ((minSourceTime.seconds     == C_TIME_INVALID.seconds) &&
-            (minSourceTime.nanoseconds == C_TIME_INVALID.nanoseconds)) {
-            request->minSourceTimestamp = C_TIME_ZERO;
+        if (OS_TIMEW_ISINVALID(minSourceTime)) {
+            request->minSourceTimestamp = OS_TIMEW_ZERO;
         } else {
-            request->minSourceTimestamp  = minSourceTime;
+            request->minSourceTimestamp = minSourceTime;
         }
-        if ((maxSourceTime.seconds     == C_TIME_INVALID.seconds) &&
-            (maxSourceTime.nanoseconds == C_TIME_INVALID.nanoseconds)) {
-            request->maxSourceTimestamp = C_TIME_INFINITE;
+        if (OS_TIMEW_ISINVALID(maxSourceTime)) {
+            request->maxSourceTimestamp = OS_TIMEW_INFINITE;
         } else {
-            request->maxSourceTimestamp  = maxSourceTime;
+            request->maxSourceTimestamp = maxSourceTime;
         }
-        request->resourceLimits.max_samples              = resourceLimits->max_samples;
-        request->resourceLimits.max_instances            = resourceLimits->max_instances;
-        request->resourceLimits.max_samples_per_instance = resourceLimits->max_samples_per_instance;
+
+        request->resourceLimits.v.max_samples              = resourceLimits->v.max_samples;
+        request->resourceLimits.v.max_instances            = resourceLimits->v.max_instances;
+        request->resourceLimits.v.max_samples_per_instance = resourceLimits->v.max_samples_per_instance;
+        request->timeout = timeout;
     } else {
-        OS_REPORT(OS_ERROR,
-                  "v_historicalDataRequestNew",0,
+        OS_REPORT(OS_FATAL,
+                  "v_historicalDataRequestNew",V_RESULT_OUT_OF_MEMORY,
                   "Failed to allocate request.");
         assert(FALSE);
     }
 
     return request;
+
+err_alloc_param:
+err_alloc_params:
+err_alloc_filter:
+    OS_REPORT(OS_FATAL,
+          "v_historicalDataRequestNew",V_RESULT_OUT_OF_MEMORY,
+          "Failed to allocate request.");
+    c_free(request);
+    return NULL;
 }
+
+
+static c_bool
+sourceTimestampIsEqual(
+    os_timeW t1,
+    os_timeW t2)
+{
+    c_bool result = TRUE;
+
+    /* The sourceTimestamps can be OS_TIMEW_INVALID */
+    if (!OS_TIMEW_ISINVALID(t1) && OS_TIMEW_ISINVALID(t2)) {
+        result = FALSE;
+    } else if (OS_TIMEW_ISINVALID(t1) && !OS_TIMEW_ISINVALID(t2)) {
+        result = FALSE;
+    } else if (!OS_TIMEW_ISINVALID(t1) && !OS_TIMEW_ISINVALID(t2)) {
+        result = (os_timeWCompare(t1, t2) == OS_EQUAL);
+    }
+    return result;
+}
+
 
 c_bool
 v_historicalDataRequestEquals(
     v_historicalDataRequest req1,
     v_historicalDataRequest req2)
 {
-    c_bool result;
-    c_long i, size1, size2;
+    c_bool result = TRUE;
+    c_ulong i, size1, size2;
 
     if(req1 && req2){
-        if(c_timeCompare(
-                req1->minSourceTimestamp, req2->minSourceTimestamp) != C_EQ)
+        if (!sourceTimestampIsEqual(req1->minSourceTimestamp, req2->minSourceTimestamp))
         {
             result = FALSE;
-        } else if(c_timeCompare(
-                req1->maxSourceTimestamp, req2->maxSourceTimestamp) != C_EQ)
+        } else if (!sourceTimestampIsEqual(req1->maxSourceTimestamp, req2->maxSourceTimestamp))
         {
             result = FALSE;
-        } else if(req1->resourceLimits.max_samples !=
-                  req2->resourceLimits.max_samples)
+        } else if(req1->resourceLimits.v.max_samples !=
+                  req2->resourceLimits.v.max_samples)
         {
             result = FALSE;
-        } else if(req1->resourceLimits.max_instances !=
-                  req2->resourceLimits.max_instances)
+        } else if(req1->resourceLimits.v.max_instances !=
+                  req2->resourceLimits.v.max_instances)
         {
             result = FALSE;
-        } else if(req1->resourceLimits.max_samples_per_instance !=
-                  req2->resourceLimits.max_samples_per_instance)
+        } else if(req1->resourceLimits.v.max_samples_per_instance !=
+                  req2->resourceLimits.v.max_samples_per_instance)
         {
             result = FALSE;
         } else if((req1->filter && req2->filter)){
@@ -152,30 +194,25 @@ v_historicalDataRequestIsValid(
     assert(C_TYPECHECK(reader,v_reader));
 
     if(request && reader){
-        if(!v_resourcePolicyValid(request->resourceLimits)){
+        if(!v_resourcePolicyIValid(request->resourceLimits)) {
             result = FALSE;
-        } else if((reader->qos->resource.max_samples != -1) &&
-                  (reader->qos->resource.max_samples <
-                   request->resourceLimits.max_samples))
-        {
+        } else if((reader->qos->resource.v.max_samples != -1) &&
+                  (reader->qos->resource.v.max_samples <
+                   request->resourceLimits.v.max_samples)) {
             result = FALSE;
-        } else if((reader->qos->resource.max_instances != -1) &&
-                  (reader->qos->resource.max_instances <
-                   request->resourceLimits.max_instances))
-        {
+        } else if((reader->qos->resource.v.max_instances != -1) &&
+                  (reader->qos->resource.v.max_instances <
+                   request->resourceLimits.v.max_instances)) {
             result = FALSE;
-        } else if((reader->qos->resource.max_samples_per_instance != -1) &&
-                  (reader->qos->resource.max_samples_per_instance <
-                   request->resourceLimits.max_samples_per_instance))
-        {
+        } else if((reader->qos->resource.v.max_samples_per_instance != -1) &&
+                  (reader->qos->resource.v.max_samples_per_instance <
+                   request->resourceLimits.v.max_samples_per_instance)) {
             result = FALSE;
-        } else if(!c_timeValid(request->minSourceTimestamp)){
+        } else if(OS_TIMEW_ISINVALID(request->minSourceTimestamp)) {
             result = FALSE;
-        } else if(!c_timeValid(request->maxSourceTimestamp)){
+        } else if(OS_TIMEW_ISINVALID(request->maxSourceTimestamp)) {
             result = FALSE;
-        } else if(c_timeCompare(request->minSourceTimestamp,
-                request->maxSourceTimestamp) == C_GT)
-        {
+        } else if(os_timeWCompare(request->minSourceTimestamp,request->maxSourceTimestamp) == OS_MORE) {
             result = FALSE;
         } else if(request->filter){
             expr = q_parse(request->filter);

@@ -1,0 +1,40 @@
+$sp($(spaces))typedef sequence<$(typename)> $(typename)StreamBuf;
+
+$sp($(spaces))struct $(typename)StreamSample {
+$sp($(spaces))      ::DDS::Streams::StreamId id;
+$sp($(spaces))      $(typename)StreamBuf buffer;
+$sp($(spaces))};
+$sp($(spaces))#pragma keylist $(typename)StreamSample id
+
+$sp($(spaces))local interface $(typename)StreamFilterCallback {
+$sp($(spaces))    boolean match_data(
+$sp($(spaces))      in $(typename) data);
+$sp($(spaces))};
+
+$sp($(spaces))local interface $(typename)StreamDataWriterInterface : ::DDS::Streams::StreamDataWriter {
+$sp($(spaces))    ::DDS::ReturnCode_t append(
+$sp($(spaces))      in ::DDS::Streams::StreamId streamId,
+$sp($(spaces))      in $(typename) data);
+
+$sp($(spaces))};
+
+$sp($(spaces))local interface $(typename)StreamDataReaderInterface : ::DDS::Streams::StreamDataReader {
+$sp($(spaces))    ::DDS::ReturnCode_t get(
+$sp($(spaces))      in ::DDS::Streams::StreamId streamId,
+$sp($(spaces))      inout $(typename)StreamBuf received_data,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::Duration_t timeout);
+
+$sp($(spaces))    ::DDS::ReturnCode_t get_w_filter(
+$sp($(spaces))      in ::DDS::Streams::StreamId streamId,
+$sp($(spaces))      inout $(typename)StreamBuf received_data,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::Duration_t timeout,
+$sp($(spaces))      in $(typename)StreamFilterCallback a_filter);
+
+$sp($(spaces))    ::DDS::ReturnCode_t return_loan(
+$sp($(spaces))      inout $(typename)StreamBuf received_data);
+
+$sp($(spaces))    ::DDS::ReturnCode_t interrupt();
+
+$sp($(spaces))};

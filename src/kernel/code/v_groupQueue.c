@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -15,7 +23,6 @@
 #include "v_groupStream.h"
 #include "v__groupStream.h"
 #include "v_groupQueueStatistics.h"
-#include "v__statisticsInterface.h"
 #include "v_reader.h"
 #include "v_readerQos.h"
 #include "v_observer.h"
@@ -26,6 +33,7 @@
 #include "os_report.h"
 #include "v_message.h"
 #include "v_statistics.h"
+#include "v_fullCounter.h"
 #include "v__statCat.h"
 
 v_groupQueue
@@ -45,12 +53,16 @@ v_groupQueueNew(
 
     kernel = v_objectKernel(subscriber);
 
+    if (v_readerQosCheck(qos) != V_RESULT_OK) {
+        return NULL;
+    }
+
     if (v_isEnabledStatistics(kernel, V_STATCAT_READER) ||
         v_isEnabledStatistics(kernel, V_STATCAT_DURABILITY)) {
         gqs = v_groupQueueStatisticsNew(kernel);
         if (gqs == NULL) {
-            OS_REPORT_1(OS_ERROR,
-                        "kernel::v_groupQueue::v_groupQueueNew", 0,
+            OS_REPORT(OS_ERROR,
+                        "kernel::v_groupQueue::v_groupQueueNew", V_RESULT_INTERNAL_ERROR,
                         "Failed to create Statistics for GroupQueue (name=\"%s\").",
                         name);
             assert(FALSE);
@@ -68,8 +80,9 @@ v_groupQueueNew(
         c_free(q); /* ref now in v_reader(queue)->qos */
     } else {
         OS_REPORT(OS_ERROR,
-                  "v_groupQueueNew", 0,
-                  "v_groupQueue not created: inconsistent qos");
+                  "kernel::v_groupQueue::v_groupQueueNew", V_RESULT_OUT_OF_MEMORY,
+                  "Failed to create qos for GroupQueue (name=\"%s\").",
+                  name);
         queue = NULL;
         v_groupQueueStatisticsFree(gqs);
     }
@@ -87,6 +100,10 @@ v_groupQueueInit(
     v_statistics gqs,
     c_iter expr)
 {
+    v_kernel kernel;
+
+    OS_UNUSED_ARG(gqs);
+
     assert(C_TYPECHECK(queue, v_groupQueue));
     assert(C_TYPECHECK(subscriber, v_subscriber));
 
@@ -97,7 +114,22 @@ v_groupQueueInit(
     queue->size    = 0;
     queue->markerReached = FALSE;
 
-    v_groupStreamInit(v_groupStream(queue), name, subscriber, qos, gqs, expr);
+    kernel = v_objectKernel(queue);
+    if (v_isEnabledStatistics(kernel, V_STATCAT_READER) ||
+        v_isEnabledStatistics(kernel, V_STATCAT_DURABILITY)) {
+        queue->statistics = v_groupQueueStatisticsNew(kernel);
+        if (queue->statistics == NULL) {
+            OS_REPORT(OS_ERROR,
+                        "kernel::v_groupQueue::v_groupQueueInit", V_RESULT_INTERNAL_ERROR,
+                        "Failed to create Statistics for GroupQueue (name=\"%s\").",
+                        name);
+            assert(FALSE);
+        }
+    } else {
+        queue->statistics = NULL;
+    }
+
+    v_groupStreamInit(v_groupStream(queue), name, subscriber, qos, expr);
 }
 
 void
@@ -160,79 +192,83 @@ v_groupQueueResetMarker(
 
 v_groupAction
 v_groupQueueRead(
-    v_groupQueue queue)
+    v_groupQueue _this)
 {
     v_groupAction action;
 
-    assert(C_TYPECHECK(queue,v_groupQueue));
+    assert(C_TYPECHECK(_this,v_groupQueue));
 
-    v_observerLock(v_observer(queue));
+    v_observerLock(v_observer(_this));
 
-    if (queue->head) {
-        action = c_keep(queue->head->action);
-        v_statisticsULongValueInc(v_groupQueue, numberOfReads, queue);
+    if (_this->head) {
+        action = c_keep(_this->head->action);
+        if (_this->statistics) {
+            _this->statistics->numberOfReads++;
+        }
     } else {
         action = NULL;
     }
-    v_observerUnlock(v_observer(queue));
+    v_observerUnlock(v_observer(_this));
 
     return action;
 }
 
 v_groupAction
 v_groupQueueTake(
-    v_groupQueue queue)
+    v_groupQueue _this)
 {
     v_groupQueueSample sample;
     v_groupAction action;
 
-    assert(C_TYPECHECK(queue,v_groupQueue));
+    assert(C_TYPECHECK(_this,v_groupQueue));
 
     action = NULL;
 
-    v_observerLock(v_observer(queue));
+    v_observerLock(v_observer(_this));
 
-    if(queue->head){
-    	if (!queue->markerReached) {
-			sample = queue->head;
-			action = c_keep(sample->action);
+    if(_this->head){
+        if (!_this->markerReached) {
+            sample = _this->head;
+            action = c_keep(sample->action);
 
-			if (queue->marker && (queue->marker == sample)) {
-				queue->markerReached = TRUE;
-			}
+            if (_this->marker && (_this->marker == sample)) {
+                _this->markerReached = TRUE;
+            }
 
-			queue->head = sample->next;
-			sample->next = NULL;
-			queue->size--;
-			c_free(sample);
+            _this->head = sample->next;
+            sample->next = NULL;
+            _this->size--;
+            c_free(sample);
 
-			if(queue->size == 0){
-				queue->tail = NULL;
-				v_statusReset(v_entity(queue)->status,V_EVENT_DATA_AVAILABLE);
-			}
-	        v_statisticsULongValueInc(v_groupQueue, numberOfTakes, queue);
-	        v_statisticsFullCounterValueMin(v_groupQueue, numberOfSamples, queue);
-    	}
+            if(_this->size == 0){
+                _this->tail = NULL;
+                v_statusReset(v_entity(_this)->status,V_EVENT_DATA_AVAILABLE);
+            }
+            if (_this->statistics) {
+                _this->statistics->numberOfTakes++;
+                v_fullCounterValueDec(&_this->statistics->numberOfSamples);
+            }
+        }
     }
 
-    v_observerUnlock(v_observer(queue));
+    v_observerUnlock(v_observer(_this));
 
     return action;
 }
 
 v_writeResult
 v_groupQueueWrite(
-    v_groupQueue queue,
+    v_groupQueue _this,
     v_groupAction action)
 {
     v_writeResult result;
     v_kernel kernel;
     v_groupQueueSample sample;
 
-    assert(C_TYPECHECK(queue,v_groupQueue));
+    assert(C_TYPECHECK(_this,v_groupQueue));
     assert(C_TYPECHECK(action,v_groupAction));
 
-    v_observerLock(v_observer(queue));
+    v_observerLock(v_observer(_this));
 
     result = V_WRITE_SUCCESS;
 
@@ -245,54 +281,50 @@ v_groupQueueWrite(
     case V_GROUP_ACTION_DISPOSE:              /*fallthrough on purpose.*/
     case V_GROUP_ACTION_LIFESPAN_EXPIRE:      /*fallthrough on purpose.*/
     case V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE: /*fallthrough on purpose.*/
-    case V_GROUP_ACTION_DELETE_DATA:
-        if((queue->size == queue->maxSize) && (queue->maxSize != 0)){
+    case V_GROUP_ACTION_DELETE_DATA:          /*fallthrough on purpose.*/
+    case V_GROUP_ACTION_TRANSACTION_COMPLETE:
+        if((_this->size == _this->maxSize) && (_this->maxSize != 0)){
             result = V_WRITE_REJECTED;
             OS_REPORT(OS_WARNING,
-                      "v_groupQueue", 0,
+                      "v_groupQueue", V_RESULT_PRECONDITION_NOT_MET,
                       "The v_groupQueue is full, message rejected.");
         } else {
-            kernel = v_objectKernel(queue);
+            kernel = v_objectKernel(_this);
             sample = c_new(v_kernelType(kernel, K_GROUPQUEUESAMPLE));
-            if (sample) {
-                sample->action = c_keep(action);
-                sample->next   = NULL;
+            sample->action = c_keep(action);
+            sample->next   = NULL;
 
-                if(queue->tail){
-                    queue->tail->next = sample;
-                    queue->tail = sample;
-                } else {
-                    queue->head = sample;
-                    queue->tail = sample;
-                }
-
-                /* Floating marker, only set if marker is enabled. */
-                if (queue->marker) {
-                    queue->marker = sample;
-                }
-
-                queue->size++;
-                v_groupStreamNotifyDataAvailable(v_groupStream(queue));
-
-                v_statisticsULongValueInc(v_groupQueue, numberOfWrites, queue);
-                v_statisticsFullCounterValuePlus(v_groupQueue, numberOfSamples, queue);
+            if(_this->tail){
+                _this->tail->next = sample;
+                _this->tail = sample;
             } else {
-                OS_REPORT(OS_ERROR,
-                          "v_groupQueueWrite",0,
-                          "Failed to allocate v_groupQueueSample object.");
-                assert(FALSE);
+                _this->head = sample;
+                _this->tail = sample;
+            }
+
+            /* Floating marker, only set if marker is enabled. */
+            if (_this->marker) {
+                _this->marker = sample;
+            }
+
+            _this->size++;
+            v_groupStreamNotifyDataAvailable(v_groupStream(_this));
+
+            if (_this->statistics) {
+                _this->statistics->numberOfTakes++;
+                v_fullCounterValueDec(&_this->statistics->numberOfSamples);
             }
         }
     break;
     default:
         assert(FALSE);
-        OS_REPORT_1(OS_ERROR,
-                    "v_groupQueueWrite", 0,
+        OS_REPORT(OS_CRITICAL,
+                    "v_groupQueueWrite", V_RESULT_ILL_PARAM,
                     "Cannot handle unknown write action: '%d'",
                     action->kind);
     break;
     }
-    v_observerUnlock(v_observer(queue));
+    v_observerUnlock(v_observer(_this));
 
     return result;
 }

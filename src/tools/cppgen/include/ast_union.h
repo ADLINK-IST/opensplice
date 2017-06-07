@@ -85,53 +85,56 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 class AST_Union : public virtual AST_Structure
 {
-
 public:
-   // Operations
 
-   // Constructor(s)
-   AST_Union();
-   AST_Union(AST_ConcreteType *disc_type, UTL_ScopedName *n, const UTL_Pragmas &p);
-   virtual ~AST_Union()
-   {}
+   AST_Union ();
+   AST_Union 
+   (
+      UTL_ScopedName * n,
+      const UTL_Pragmas & p
+   );
+   virtual ~AST_Union () {}
 
-   // Data Accessors
-   AST_ConcreteType *disc_type();
-   AST_Expression::ExprType udisc_type();
+   AST_ConcreteType * disc_type ();
+   void set_disc_type (AST_ConcreteType * dt);
+   AST_Expression::ExprType udisc_type ();
 
-   // Narrowing
-   DEF_NARROW_METHODS1(AST_Union, AST_Structure);
-   DEF_NARROW_FROM_DECL(AST_Union);
-   DEF_NARROW_FROM_SCOPE(AST_Union);
+   DEF_NARROW_METHODS1 (AST_Union, AST_Structure);
+   DEF_NARROW_FROM_DECL (AST_Union);
+   DEF_NARROW_FROM_SCOPE (AST_Union);
 
-   // AST Dumping
-   virtual void dump(ostream &);
+   bool is_defined () { return pd_defined; };
+   void set_defined (bool def) { pd_defined = def; };
+
+   virtual void update_type ();
+   virtual void dump (ostream &);
 
 private:
+
    // Data
+
    AST_ConcreteType *pd_disc_type; // Discriminator type
    AST_Expression::ExprType pd_udisc_type; // Its expression type
-   /* Convention: udisc_type == EV_any denotes an enum value */
-
-   // Operations
 
    // Look up a branch by node pointer
+
    AST_UnionBranch *lookup_branch(AST_UnionBranch *branch);
 
    // Look up the branch with the "default" label
+
    AST_UnionBranch *lookup_default();
 
    // Look up a branch given a branch with a label. This is used to
    // check for duplicate labels
+
    AST_UnionBranch *lookup_label(AST_UnionBranch *b);
 
    // Look up a union branch given an enumerator. This is used to
    // check for duplicate enum labels
+
    AST_UnionBranch *lookup_enum(AST_UnionBranch *b);
 
-private:
    friend int yyparse();
-   // Scope Management Protocol
 
    virtual AST_Union *fe_add_union(AST_Union *u);
    virtual AST_UnionBranch *fe_add_union_branch(AST_UnionBranch *b);
@@ -140,6 +143,7 @@ private:
    virtual AST_EnumVal *fe_add_enum_val(AST_EnumVal *v);
    virtual AST_Typedef *fe_add_typedef(AST_Typedef *t);
 
+   bool pd_defined;
 };
 
-#endif           // _AST_UNION_AST_UNION_HH
+#endif

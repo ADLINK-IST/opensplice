@@ -1,0 +1,21 @@
+parseconditions:
+    desc: Throughput LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: tp_results
+          type: line
+          inst: All
+          required: yes
+          line: "Payload size: * | Total received: * samples, * bytes | Out of order: * samples | Transfer rate: * samples/s, * Mbit/s"
+
+        - name: tp_samples_written
+          type: line
+          inst: All
+          required: yes
+          line: " * samples"

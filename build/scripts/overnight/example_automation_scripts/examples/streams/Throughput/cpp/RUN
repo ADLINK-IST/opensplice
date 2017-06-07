@@ -1,0 +1,23 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+NAME=StreamsThroughput
+
+startOSPL
+
+runZeroStreamsThroughput
+
+echo "=== Checking $NAME results"
+
+NUMLINES=`grep Payload subResult.txt | wc -l`; echo NUMLINES=$NUMLINES
+
+if [ $NUMLINES -ne 10 ]
+then
+    echo NOK
+    echo "*** ERROR : example $NAME failed "
+else
+    echo OK
+fi
+
+stopOSPL

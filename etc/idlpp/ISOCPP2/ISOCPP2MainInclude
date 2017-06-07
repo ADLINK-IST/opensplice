@@ -1,0 +1,11 @@
+#ifndef ISOCPP2_$(basename_upper)_H
+#define ISOCPP2_$(basename_upper)_H
+
+#include "dds/dds.hpp"
+
+#include "$(basename).h"
+#include "$(basename)SplDcps.h"
+
+#include "org/opensplice/topic/TopicTraits.hpp"
+#include "org/opensplice/topic/DataRepresentation.hpp"
+

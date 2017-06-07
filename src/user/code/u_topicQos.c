@@ -1,119 +1,80 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "u_topicQos.h"
 
-/**************************************************************
- * Private functions
- **************************************************************/
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
-v_topicQos
+u_topicQos
 u_topicQosNew(
-    v_topicQos tmpl)
+    u_topicQos _template)
 {
-    v_topicQos q;
-    u_result result;
+    u_topicQos _this;
 
-    q = os_malloc(sizeof(C_STRUCT(v_topicQos)));
-    if (q != NULL) {
-        if (tmpl != NULL) {
-            *q = *tmpl;
-            q->topicData.size = tmpl->topicData.size;
-            if (tmpl->topicData.size > 0) {
-                q->topicData.value = os_malloc(tmpl->topicData.size);
-                memcpy(q->topicData.value,tmpl->topicData.value,tmpl->topicData.size);                
-            } else {
-                q->topicData.value = NULL;
-            }
-        } else {
-            result = u_topicQosInit(q);
-            if (result != U_RESULT_OK) {
-                u_topicQosFree(q);
-                q = NULL;
-            }
+    assert(!_template || ((v_qos)_template)->kind == V_TOPIC_QOS);
+
+    _this = os_malloc(sizeof(C_STRUCT(v_topicQos)));
+    if (_template != NULL) {
+        *_this = *_template;
+
+        _this->topicData.v.value = NULL;
+        if (_template->topicData.v.size > 0) {
+            assert(_template->topicData.v.value);
+            _this->topicData.v.value = os_malloc((c_ulong) _template->topicData.v.size);
+            _this->topicData.v.size = _template->topicData.v.size;
+            memcpy(_this->topicData.v.value, _template->topicData.v.value, (c_ulong) _template->topicData.v.size);
         }
-    }
-
-    return q;
-}
-
-u_result
-u_topicQosInit(
-    v_topicQos q)
-{
-    u_result result;
-
-    if (q != NULL) {
-        ((v_qos)q)->kind                              = V_TOPIC_QOS;
-        q->topicData.size                             = 0;
-        q->topicData.value                            = NULL;
-        q->durability.kind                            = V_DURABILITY_VOLATILE;
-        q->durabilityService.service_cleanup_delay    = C_TIME_ZERO;
-        q->durabilityService.history_kind             = V_HISTORY_KEEPLAST;
-        q->durabilityService.history_depth            = 1;
-        q->durabilityService.max_samples              = V_LENGTH_UNLIMITED;
-        q->durabilityService.max_instances            = V_LENGTH_UNLIMITED;
-        q->durabilityService.max_samples_per_instance = V_LENGTH_UNLIMITED;
-        q->deadline.period                            = C_TIME_INFINITE;
-        q->latency.duration                           = C_TIME_ZERO;
-        q->liveliness.kind                            = V_LIVELINESS_AUTOMATIC;
-        q->liveliness.lease_duration                  = C_TIME_ZERO;
-        q->reliability.kind                           = V_RELIABILITY_BESTEFFORT;
-        q->reliability.max_blocking_time              = C_TIME_ZERO;
-        q->reliability.synchronous                    = FALSE;
-        q->orderby.kind                               = V_ORDERBY_RECEPTIONTIME;
-        q->history.kind                               = V_HISTORY_KEEPLAST;
-        q->history.depth                              = 1;
-        q->resource.max_samples                       = V_LENGTH_UNLIMITED;
-        q->resource.max_instances                     = V_LENGTH_UNLIMITED;
-        q->resource.max_samples_per_instance          = V_LENGTH_UNLIMITED;
-        q->transport.value                            = 0;
-        q->lifespan.duration                          = C_TIME_INFINITE;
-        q->ownership.kind                             = V_OWNERSHIP_SHARED;
-        result = U_RESULT_OK;
     } else {
-        result = U_RESULT_ILL_PARAM;
+        ((v_qos)_this)->kind                                = V_TOPIC_QOS;
+        _this->topicData.v.size                             = 0;
+        _this->topicData.v.value                            = NULL;
+        _this->durability.v.kind                            = V_DURABILITY_VOLATILE;
+        _this->durabilityService.v.history_kind             = V_HISTORY_KEEPLAST;
+        _this->durabilityService.v.history_depth            = 1;
+        _this->durabilityService.v.max_samples              = V_LENGTH_UNLIMITED;
+        _this->durabilityService.v.max_instances            = V_LENGTH_UNLIMITED;
+        _this->durabilityService.v.max_samples_per_instance = V_LENGTH_UNLIMITED;
+        _this->durabilityService.v.service_cleanup_delay    = OS_DURATION_ZERO;
+        _this->deadline.v.period                            = OS_DURATION_INFINITE;
+        _this->latency.v.duration                           = OS_DURATION_ZERO;
+        _this->liveliness.v.kind                            = V_LIVELINESS_AUTOMATIC;
+        _this->liveliness.v.lease_duration                  = OS_DURATION_ZERO;
+        _this->reliability.v.kind                           = V_RELIABILITY_BESTEFFORT;
+        _this->reliability.v.max_blocking_time              = OS_DURATION_ZERO;
+        _this->reliability.v.synchronous                    = FALSE;
+        _this->orderby.v.kind                               = V_ORDERBY_RECEPTIONTIME;
+        _this->history.v.kind                               = V_HISTORY_KEEPLAST;
+        _this->history.v.depth                              = 1;
+        _this->resource.v.max_samples                       = V_LENGTH_UNLIMITED;
+        _this->resource.v.max_instances                     = V_LENGTH_UNLIMITED;
+        _this->resource.v.max_samples_per_instance          = V_LENGTH_UNLIMITED;
+        _this->transport.v.value                            = 0;
+        _this->lifespan.v.duration                          = OS_DURATION_INFINITE;
+        _this->ownership.v.kind                             = V_OWNERSHIP_SHARED;
     }
-
-    return result;
-}
-
-void
-u_topicQosDeinit(
-    v_topicQos q)
-{
-    if (q != NULL) {
-        os_free(q->topicData.value);
-        q->topicData.value = NULL;
-    }
+    return _this;
 }
 
 void
 u_topicQosFree(
-    v_topicQos q)
+    u_topicQos _this)
 {
-    if (q != NULL) {
-        u_topicQosDeinit(q);
-        os_free(q);
-    }
+    assert(_this && ((v_qos)_this)->kind == V_TOPIC_QOS);
+    os_free(_this->topicData.v.value);
+    os_free(_this);
 }
-
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/

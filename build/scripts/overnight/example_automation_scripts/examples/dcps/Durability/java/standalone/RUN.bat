@@ -1,5 +1,6 @@
 @echo OFF
-rmdir /S /Q C:\tmp\pstore
+IF EXIST C:\tmp\pstore rmdir /S /Q C:\tmp\pstore
+IF EXIST .\tmp\pstore rmdir /S /Q .\tmp\pstore
 
 call %FUNCTIONS% :runDurabilityInit
 
@@ -26,13 +27,15 @@ echo "=== Scenario 3.2"
 echo "=== running a first Subscriber"
 start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar;classes" DurabilityDataSubscriber transient > subResult_3_2_1.txt
 
-echo "=== running a second Subscriber"
-start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar;classes" DurabilityDataSubscriber transient > subResult_3_2_2.txt
-
 %SLEEP2% >NUL
 
 echo "=== running the Publisher"
 start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar;classes" DurabilityDataPublisher transient false true > pubResult_3_2.txt
+
+%SLEEP5% >NUL
+
+echo "=== running a second Subscriber"
+start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar;classes" DurabilityDataSubscriber transient > subResult_3_2_2.txt
 
 REM Wait 30s to allow the publisher to complete and terminate rather than kill it
 %SLEEP30% >NUL

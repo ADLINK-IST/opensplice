@@ -1,166 +1,135 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "saj_DataReader.h"
-#include "saj_dataReaderListener.h"
 #include "saj_utilities.h"
 #include "saj_qosUtils.h"
-#include "saj_status.h"
-
 #include "saj__fooDataReader.h"
+#include "saj_dataReaderParDem.h"
+#include "u_observable.h"
+#include "saj__report.h"
 
 #define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_DataReaderImpl_##name
 
-/**
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniCreateReadcondition
- * Signature: (III)LDDS/ReadCondition;
+/*
+ * Method: jniDataReaderNew
+ * Param : domain participant
+ * Param : reader name
+ * Param : readerQos qos
+ * Return: u_reader
  */
-JNIEXPORT jobject JNICALL
-SAJ_FUNCTION(jniCreateReadcondition)(
-    JNIEnv *env,
-    jobject jdataReader,
-    jint jsampleStates,
-    jint jviewStates,
-    jint jinstanceStates)
-{
-    jobject jcondition;
-    gapi_dataReader dataReader;
-    gapi_readCondition condition;
-
-    jcondition = NULL;
-    condition = GAPI_OBJECT_NIL;
-
-    dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
-    condition = gapi_dataReader_create_readcondition(
-                                dataReader,
-                                (const gapi_sampleStateMask)jsampleStates,
-                                (const gapi_viewStateMask)jviewStates,
-                                (const gapi_instanceStateMask)jinstanceStates);
-
-    if (condition != GAPI_OBJECT_NIL){
-        saj_construct_java_object(env,  PACKAGENAME "ReadConditionImpl",
-                                        (PA_ADDRCAST)condition, &jcondition);
-    }
-    return jcondition;
-}
-
-/**
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniCreateQuerycondition
- * Signature: (IIILjava/lang/String;[Ljava/lang/String;)LDDS/QueryCondition;
- */
-JNIEXPORT jobject JNICALL
-SAJ_FUNCTION(jniCreateQuerycondition)(
-    JNIEnv *env,
-    jobject jdataReader,
-    jint jsampleStates,
-    jint jviewStates,
-    jint jinstanceStates,
+JNIEXPORT jlong JNICALL
+SAJ_FUNCTION(jniDataReaderNew) (
+    JNIEnv  *env,
+    jobject this,
+    jlong uSubscriber,
+    jstring jname,
     jstring jexpression,
-    jobjectArray jparams)
+    jobjectArray jparameters,
+    jobject qos)
 {
-    jobject jcondition;
-    gapi_dataReader dataReader;
-    gapi_queryCondition condition;
-    gapi_stringSeq* params;
-    saj_returnCode rc;
-    gapi_char* expression;
+    u_dataReader uReader = NULL;
+    u_readerQos uQos;
+    saj_returnCode retcode;
+    const os_char *name;
+    const os_char *expression;
+    c_value *params = NULL;
+    jobject userData;
+    int nrOfParams = 0;
+    int i;
+    jobject jParam;
 
-    jcondition = NULL;
-    condition = GAPI_OBJECT_NIL;
-    expression = NULL;
+    name = GET_STRING_UTFCHAR(env, jname, 0);
+    if (name != NULL){
+        uQos = u_readerQosNew(NULL);
+        if (uQos != NULL) {
+            retcode = saj_dataReaderQosCopyIn(env, qos, uQos);
+            if (retcode == SAJ_RETCODE_OK) {
+                expression = GET_STRING_UTFCHAR(env, jexpression, 0);
+                if (expression != NULL) {
+                    jParam = NULL;
+                    if (jparameters){
+                        nrOfParams = GET_ARRAY_LENGTH(env, jparameters);
+                        if(nrOfParams > 0) {
+                            params = os_malloc(nrOfParams * sizeof(c_value));
+                            for (i =0; i<nrOfParams; i++) {
+                                jParam = GET_OBJECTARRAY_ELEMENT(env, jparameters, i);
+                                params[i].is.String = (os_char *)GET_STRING_UTFCHAR(env, jParam, 0);
+                                params[i].kind = V_STRING;
+                            }
+                        }
+                    }
+                    uReader = u_dataReaderNew(SAJ_VOIDP(uSubscriber), name,
+                                                   expression, params, uQos, FALSE);
+                    RELEASE_STRING_UTFCHAR(env, jexpression, expression);
+                    if (params != NULL) {
+                        for (i =0; i<nrOfParams; i++) {
+                            RELEASE_STRING_UTFCHAR(env, jParam, params[i].is.String);
+                        }
+                        os_free(params);
+                    }
 
-    dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
-    rc = SAJ_RETCODE_OK;
-    params = gapi_stringSeq__alloc();
+                    if (uReader != NULL) {
+                        userData = NEW_GLOBAL_REF(env, this);
+                        u_observableSetUserData(SAJ_VOIDP(uReader), userData);
+                    } else {
+                        retcode = SAJ_RETCODE_ERROR;
+                    }
+                } else {
+                    retcode = SAJ_RETCODE_ERROR;
+                    SAJ_REPORT(retcode, "query_expression 'null' is invalid.");
+                }
+            }
 
-    if(jparams != NULL){
-        rc = saj_stringSequenceCopyIn(env, jparams, params);
+            u_readerQosFree(uQos);
+        }
+        RELEASE_STRING_UTFCHAR(env, jname, name);
     }
 
-    if(rc == SAJ_RETCODE_OK){
-        if(jexpression != NULL){
-            expression = (gapi_char*)(*env)->GetStringUTFChars(env, jexpression, 0);
-        }
-        condition = gapi_dataReader_create_querycondition(
-                                dataReader,
-                                (const gapi_sampleStateMask)jsampleStates,
-                                (const gapi_viewStateMask)jviewStates,
-                                (const gapi_instanceStateMask)jinstanceStates,
-                                expression,
-                                params);
+    return SAJ_JLONG(uReader);
 
-        if(jexpression != NULL){
-            (*env)->ReleaseStringUTFChars(env, jexpression, expression);
-        }
-        if (condition != GAPI_OBJECT_NIL){
-            rc = saj_construct_java_object(env,
-                                        PACKAGENAME "QueryConditionImpl",
-                                        (PA_ADDRCAST)condition, &jcondition);
-        }
+    CATCH_EXCEPTION:
+    return 0;
+}
+
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniDataReaderFree) (
+    JNIEnv  *env,
+    jobject this,
+    jlong uReader)
+{
+    saj_returnCode result = SAJ_RETCODE_OK;
+    u_result uResult;
+    jobject userData;
+
+    if (uReader) {
+        userData = u_observableSetUserData(u_observable(SAJ_VOIDP(uReader)), NULL);
+        DELETE_GLOBAL_REF(env, userData);
     }
-    gapi_free(params);
-
-    return jcondition;
-}
-
-/**
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniDeleteReadcondition
- * Signature: (LDDS/ReadCondition;)I
- */
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniDeleteReadcondition)(
-    JNIEnv *env,
-    jobject jdataReader,
-    jobject jcondition)
-{
-    gapi_readCondition condition;
-    gapi_dataReader dataReader;
-    gapi_returnCode_t grc;
-    c_bool must_free;
-
-    condition = (gapi_readCondition) saj_read_gapi_address(env, jcondition);
-    dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
-
-    must_free = saj_setThreadEnv(env);
-    grc = gapi_dataReader_delete_readcondition(dataReader, condition);
-    saj_delThreadEnv(must_free);
-
-    return (jint)grc;
-}
-
-/**
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniDeleteContainedEntities
- * Signature: ()I
- */
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniDeleteContainedEntities)(
-    JNIEnv *env,
-    jobject jdataReader)
-{
-    gapi_dataReader dataReader;
-    jint result;
-    c_bool must_free;
-
-    dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
-
-    must_free = saj_setThreadEnv(env);
-    result = (jint)gapi_dataReader_delete_contained_entities(dataReader);
-    saj_delThreadEnv(must_free);
+    /* set thread count back to 0, so threads are deleted if they are present. */
+    (void) saj_fooDataReaderSetParallelReadThreadCount(env, this, 0);
+    uResult = u_objectClose(SAJ_VOIDP(uReader));
+    result = saj_retcode_from_user_result(uResult);
 
     return result;
 }
+
 
 /**
  * Class:     org_opensplice_dds_dcps_DataReaderImpl
@@ -171,25 +140,29 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniSetQos)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jobject jqos)
 {
-    gapi_dataReaderQos* qos;
-    gapi_dataReader dataReader;
-    saj_returnCode rc;
-    jint result;
+    u_readerQos uQos;
+    u_result uResult;
+    saj_returnCode retcode = SAJ_RETCODE_OK;
 
-    dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
+    assert(jqos);
+    OS_UNUSED_ARG(jdataReader);
 
-    qos = gapi_dataReaderQos__alloc();
-    rc = saj_DataReaderQosCopyIn(env, jqos, qos);
-    result = (jint)GAPI_RETCODE_ERROR;
-
-    if(rc == SAJ_RETCODE_OK){
-        result = (jint)gapi_dataReader_set_qos(dataReader, qos);
+    uQos = u_readerQosNew(NULL);
+    if (uQos != NULL) {
+        retcode = saj_dataReaderQosCopyIn(env, jqos, uQos);
+        if (retcode == SAJ_RETCODE_OK) {
+            uResult = u_dataReaderSetQos(SAJ_VOIDP(uReader), uQos);
+            retcode = saj_retcode_from_user_result(uResult);
+        }
+        u_readerQosFree(uQos);
+    } else {
+        retcode = SAJ_RETCODE_ERROR;
     }
-    gapi_free(qos);
 
-    return result;
+    return (jint)retcode;
 }
 
 /**
@@ -201,142 +174,60 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetQos)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jobject jqosHolder)
 {
-    gapi_dataReaderQos* qos;
-    gapi_returnCode_t result;
-    saj_returnCode rc;
-    jobject jqos;
-    gapi_dataReader dataReader;
+    u_readerQos uQos;
+    u_result uResult;
+    jobject jqos = NULL;
+    saj_returnCode retcode = SAJ_RETCODE_OK;
 
-    if(jqosHolder != NULL){
-        dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
-        jqos = NULL;
-        qos = gapi_dataReaderQos__alloc();
-        result = gapi_dataReader_get_qos(dataReader, qos);
+    assert(jqosHolder != NULL);
+    OS_UNUSED_ARG(jdataReader);
 
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_DataReaderQosCopyOut(env, qos, &jqos);
-            gapi_free(qos);
-
-            if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jqosHolder,
-                        GET_CACHED(dataReaderQosHolder_value_fid), jqos);
-                (*env)->DeleteLocalRef(env, jqos);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
+    uResult = u_dataReaderGetQos(SAJ_VOIDP(uReader), &uQos);
+    retcode = saj_retcode_from_user_result(uResult);
+    if (retcode == SAJ_RETCODE_OK){
+        retcode = saj_dataReaderQosCopyOut(env, uQos, &jqos);
+        u_readerQosFree(uQos);
+        if (retcode == SAJ_RETCODE_OK){
+            SET_OBJECT_FIELD(env, jqosHolder, dataReaderQosHolder_value, jqos);
+            DELETE_LOCAL_REF(env, jqos);
         }
+    }
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+/****************************************************************************************/
+
+struct copyArg {
+    JNIEnv *env;
+    jobject object;
+};
+
+static v_result
+copy_sample_rejected_status (
+    c_voidp info,
+    c_voidp arg)
+{
+    v_result result;
+    struct v_sampleRejectedInfo *from;
+    struct copyArg *copyArg;
+
+    from = (struct v_sampleRejectedInfo *)info;
+    copyArg = (struct copyArg *)arg;
+
+    copyArg->object = saj_sampleRejectedStatus_new(copyArg->env, from);
+    if (copyArg->object != NULL) {
+        result = V_RESULT_OK;
     } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
+        result = V_RESULT_INTERNAL_ERROR;
     }
-    return (jint)result;
-}
-
-/**
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniSetListener
- * Signature: (LDDS/DataReaderListener;I)I
- */
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniSetListener)(
-    JNIEnv *env,
-    jobject jdataReader,
-    jobject jlistener,
-    jint jmask)
-{
-    struct gapi_dataReaderListener *listener;
-    gapi_dataReader dataReader;
-    gapi_returnCode_t grc;
-
-    dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
-
-    listener = saj_dataReaderListenerNew(env, jlistener);
-    if(listener != NULL){
-        saj_write_java_listener_address(env, dataReader, listener->listener_data);
-    }
-    grc = gapi_dataReader_set_listener(dataReader, listener,
-                                                    (unsigned long int)jmask);
-
-    if((grc != GAPI_RETCODE_OK) && (listener != NULL)){
-        saj_listenerDataFree(env, saj_listenerData(listener->listener_data));
-    }
-    return (jint)grc;
-}
-
-/**
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniGetListener
- * Signature: ()LDDS/DataReaderListener;
- */
-JNIEXPORT jobject JNICALL
-SAJ_FUNCTION(jniGetListener)(
-    JNIEnv *env,
-    jobject jdataReader)
-{
-    jobject jlistener;
-    struct gapi_dataReaderListener listener;
-    gapi_dataReader dataReader;
-
-    jlistener = NULL;
-    dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
-    listener = gapi_dataReader_get_listener(dataReader);
-
-    jlistener = saj_read_java_listener_address(listener.listener_data);
-
-    return jlistener;
-}
-
-/**
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniGetTopicdescription
- * Signature: ()LDDS/TopicDescription;
- */
-JNIEXPORT jobject JNICALL
-SAJ_FUNCTION(jniGetTopicdescription)(
-    JNIEnv *env,
-    jobject jdataReader)
-{
-    jobject jdescription;
-    gapi_topicDescription description;
-    gapi_dataReader dataReader;
-
-    jdescription = NULL;
-    description = GAPI_OBJECT_NIL;
-
-    dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
-    description = gapi_dataReader_get_topicdescription(dataReader);
-
-    if (description != GAPI_OBJECT_NIL){
-        jdescription = saj_read_java_address(description);
-    }
-    return jdescription;
-}
-
-/**
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniGetSubscriber
- * Signature: ()LDDS/Subscriber;
- */
-JNIEXPORT jobject JNICALL
-SAJ_FUNCTION(jniGetSubscriber)(
-    JNIEnv *env,
-    jobject jdataReader)
-{
-    jobject jsubscriber;
-    gapi_subscriber subscriber;
-    gapi_dataReader dataReader;
-
-    jsubscriber = NULL;
-    subscriber = GAPI_OBJECT_NIL;
-
-    dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
-    subscriber = gapi_dataReader_get_subscriber(dataReader);
-
-    if (subscriber != GAPI_OBJECT_NIL){
-        jsubscriber = saj_read_java_address(subscriber);
-    }
-    return jsubscriber;
+    return result;
 }
 
 /**
@@ -348,33 +239,51 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetSampleRejectedStatus)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jobject jstatusHolder)
 {
-    gapi_dataReader dataReader;
-    jobject jstatus;
-    gapi_sampleRejectedStatus status;
-    saj_returnCode rc;
-    gapi_returnCode_t result;
+    u_result uResult;
+    saj_returnCode retcode = SAJ_RETCODE_OK;
+    struct copyArg copyArg;
+    u_statusAction copyAction = copy_sample_rejected_status;
 
-    if(jstatusHolder){
-        dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
-        result = gapi_dataReader_get_sample_rejected_status(dataReader, &status);
+    assert(jstatusHolder);
+    OS_UNUSED_ARG(jdataReader);
 
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_statusCopyOutSampleRejectedStatus(env, &status, &jstatus);
+    copyArg.env = env;
+    copyArg.object = NULL;
 
-            if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder,
-                            GET_CACHED(sampleRejectedStatusHolder_value_fid), jstatus);
-                (*env)->DeleteLocalRef(env, jstatus);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
-        }
-    } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
+    uResult = u_readerGetSampleRejectedStatus(SAJ_VOIDP(uReader), TRUE, copyAction, &copyArg);
+    retcode = saj_retcode_from_user_result(uResult);
+    if (retcode == SAJ_RETCODE_OK){
+        SET_OBJECT_FIELD(env, jstatusHolder, sampleRejectedStatusHolder_value, copyArg.object);
+        DELETE_LOCAL_REF(env, copyArg.object);
     }
-    return (jint)result;
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+/****************************************************************************************/
+
+static v_result
+copy_liveliness_changed_status(
+    c_voidp info,
+    c_voidp arg)
+{
+    v_result result;
+    struct v_livelinessChangedInfo *from = (struct v_livelinessChangedInfo *)info;
+    struct copyArg *copyArg = (struct copyArg *)arg;
+
+    copyArg->object = saj_livelinessChangedStatus_new(copyArg->env, from);
+    if (copyArg->object != NULL) {
+        result = V_RESULT_OK;
+    } else {
+        result = V_RESULT_INTERNAL_ERROR;
+    }
+    return result;
 }
 
 /**
@@ -386,33 +295,51 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetLivelinessChangedStatus)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jobject jstatusHolder)
 {
-    gapi_dataReader dataReader;
-    jobject jstatus;
-    gapi_returnCode_t result;
-    gapi_livelinessChangedStatus status;
-    saj_returnCode rc;
+    u_result uResult;
+    saj_returnCode retcode;
+    struct copyArg copyArg;
+    u_statusAction copyAction = copy_liveliness_changed_status;
 
-    if(jstatusHolder){
-        dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
-        result = gapi_dataReader_get_liveliness_changed_status(dataReader, &status);
+    assert(jstatusHolder);
+    OS_UNUSED_ARG(jdataReader);
 
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_statusCopyOutLivelinessChangedStatus(env, &status, &jstatus);
+    copyArg.env = env;
+    copyArg.object = NULL;
 
-            if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder,
-                            GET_CACHED(livelinessChangedStatusHolder_value_fid), jstatus);
-                (*env)->DeleteLocalRef(env, jstatus);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
-        }
-    } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
+    uResult = u_readerGetLivelinessChangedStatus(SAJ_VOIDP(uReader), TRUE, copyAction, &copyArg);
+    retcode = saj_retcode_from_user_result(uResult);
+    if (retcode == SAJ_RETCODE_OK){
+        SET_OBJECT_FIELD(env, jstatusHolder, livelinessChangedStatusHolder_value, copyArg.object);
+        DELETE_LOCAL_REF(env, copyArg.object);
     }
-    return (jint)result;
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+/****************************************************************************************/
+
+static v_result
+copy_deadline_missed_status(
+    c_voidp info,
+    c_voidp arg)
+{
+    v_result result;
+    struct v_deadlineMissedInfo *from = (struct v_deadlineMissedInfo *)info;
+    struct copyArg *copyArg = (struct copyArg *)arg;
+
+    copyArg->object = saj_requestedDeadlineMissedStatus_new(copyArg->env, from);
+    if (copyArg->object != NULL) {
+        result = V_RESULT_OK;
+    } else {
+        result = V_RESULT_INTERNAL_ERROR;
+    }
+    return result;
 }
 
 /**
@@ -424,33 +351,50 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetRequestedDeadlineMissedStatus)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jobject jstatusHolder)
 {
-    gapi_dataReader dataReader;
-    jobject jstatus;
-    gapi_requestedDeadlineMissedStatus status;
-    saj_returnCode rc;
-    gapi_returnCode_t result;
+    u_result uResult;
+    saj_returnCode retcode;
+    struct copyArg copyArg;
+    u_statusAction copyAction = copy_deadline_missed_status;
 
-    if(jstatusHolder){
-        dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
-        result = gapi_dataReader_get_requested_deadline_missed_status(dataReader, &status);
+    assert(jstatusHolder);
+    OS_UNUSED_ARG(jdataReader);
 
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_statusCopyOutRequestedDeadlineMissedStatus(env, &status, &jstatus);
+    copyArg.env = env;
+    copyArg.object = NULL;
 
-            if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder,
-                            GET_CACHED(requestedDeadlineMissedStatusHolder_value_fid), jstatus);
-                (*env)->DeleteLocalRef(env, jstatus);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
-        }
-    } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
+    uResult = u_readerGetDeadlineMissedStatus(SAJ_VOIDP(uReader), TRUE, copyAction, &copyArg);
+    retcode = saj_retcode_from_user_result(uResult);
+    if (retcode == SAJ_RETCODE_OK){
+        SET_OBJECT_FIELD(env, jstatusHolder, requestedDeadlineMissedStatusHolder_value, copyArg.object);
+        DELETE_LOCAL_REF(env, copyArg.object);
     }
-    return (jint)result;
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+/****************************************************************************************/
+
+static v_result
+copy_incompatible_qos_status (
+    c_voidp info,
+    c_voidp arg)
+{
+    v_result result;
+    struct v_incompatibleQosInfo *from = (struct v_incompatibleQosInfo *)info;
+    struct copyArg *copyArg = (struct copyArg *)arg;
+    copyArg->object = saj_requestedIncompatibleQosStatus_new(copyArg->env, from);
+    if (copyArg->object != NULL) {
+        result = V_RESULT_OK;
+    } else {
+        result = V_RESULT_INTERNAL_ERROR;
+    }
+    return result;
 }
 
 /**
@@ -462,35 +406,51 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetRequestedIncompatibleQosStatus)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jobject jstatusHolder)
 {
-    gapi_dataReader dataReader;
-    jobject jstatus;
-    gapi_requestedIncompatibleQosStatus* status;
-    saj_returnCode rc;
-    gapi_returnCode_t result;
+    u_result uResult;
+    saj_returnCode retcode;
+    struct copyArg copyArg;
+    u_statusAction copyAction = copy_incompatible_qos_status;
 
-    if(jstatusHolder){
-        dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
-        status = gapi_requestedIncompatibleQosStatus_alloc();
-        result = gapi_dataReader_get_requested_incompatible_qos_status(dataReader, status);
+    assert(jstatusHolder);
+    OS_UNUSED_ARG(jdataReader);
 
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_statusCopyOutRequestedIncompatibleQosStatus(env, status, &jstatus);
+    copyArg.env = env;
+    copyArg.object = NULL;
 
-            if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder,
-                            GET_CACHED(requestedIncompatibleQosStatusHolder_value_fid), jstatus);
-                (*env)->DeleteLocalRef(env, jstatus);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
-        }
-        gapi_free(status);
-    } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
+    uResult = u_readerGetIncompatibleQosStatus(SAJ_VOIDP(uReader), TRUE, copyAction, &copyArg);
+    retcode = saj_retcode_from_user_result(uResult);
+    if (retcode == SAJ_RETCODE_OK){
+        SET_OBJECT_FIELD(env, jstatusHolder, requestedIncompatibleQosStatusHolder_value, copyArg.object);
+        DELETE_LOCAL_REF(env, copyArg.object);
     }
-    return (jint)result;
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+/****************************************************************************************/
+
+static v_result
+copy_subscription_matched_status(
+    c_voidp info,
+    c_voidp arg)
+{
+    v_result result;
+    struct v_topicMatchInfo *from = (struct v_topicMatchInfo *)info;
+    struct copyArg *copyArg = (struct copyArg *)arg;
+
+    copyArg->object = saj_subscriptionMatchStatus_new(copyArg->env, from);
+    if (copyArg->object != NULL) {
+        result = V_RESULT_OK;
+    } else {
+        result = V_RESULT_INTERNAL_ERROR;
+    }
+    return result;
 }
 
 /**
@@ -502,33 +462,51 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetSubscriptionMatchedStatus)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jobject jstatusHolder)
 {
-    gapi_dataReader dataReader;
-    jobject jstatus;
-    gapi_subscriptionMatchedStatus status;
-    saj_returnCode rc;
-    gapi_returnCode_t result;
+    u_result uResult;
+    saj_returnCode retcode;
+    struct copyArg copyArg;
+    u_statusAction copyAction = copy_subscription_matched_status;
 
-    if(jstatusHolder){
-        dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
-        result = gapi_dataReader_get_subscription_matched_status(dataReader, &status);
+    assert(jstatusHolder);
+    OS_UNUSED_ARG(jdataReader);
 
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_statusCopyOutSubscriptionMatchStatus(env, &status, &jstatus);
+    copyArg.env = env;
+    copyArg.object = NULL;
 
-            if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder,
-                            GET_CACHED(subscriptionMatchedStatusHolder_value_fid), jstatus);
-                (*env)->DeleteLocalRef(env, jstatus);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
-        }
-    } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
+    uResult = u_readerGetSubscriptionMatchStatus(SAJ_VOIDP(uReader), TRUE, copyAction, &copyArg);
+    retcode = saj_retcode_from_user_result(uResult);
+    if (retcode == SAJ_RETCODE_OK){
+        SET_OBJECT_FIELD(env, jstatusHolder, subscriptionMatchedStatusHolder_value, copyArg.object);
+        DELETE_LOCAL_REF(env, copyArg.object);
     }
-    return (jint)result;
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+/****************************************************************************************/
+
+static v_result
+copy_sample_lost_status (
+    c_voidp info,
+    c_voidp arg)
+{
+    v_result result;
+    struct v_sampleLostInfo *from = (struct v_sampleLostInfo *)info;
+    struct copyArg *copyArg = (struct copyArg *)arg;
+
+    copyArg->object = saj_sampleLostStatus_new(copyArg->env, from);
+    if (copyArg->object != NULL) {
+        result = V_RESULT_OK;
+    } else {
+        result = V_RESULT_INTERNAL_ERROR;
+    }
+    return result;
 }
 
 /**
@@ -540,34 +518,34 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetSampleLostStatus)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jobject jstatusHolder)
 {
-    gapi_dataReader dataReader;
-    jobject jstatus;
-    gapi_sampleLostStatus status;
-    saj_returnCode rc;
-    gapi_returnCode_t result;
+    u_result uResult;
+    saj_returnCode retcode;
+    struct copyArg copyArg;
+    u_statusAction copyAction = copy_sample_lost_status;
 
-    if(jstatusHolder){
-        dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
-        result = gapi_dataReader_get_sample_lost_status(dataReader, &status);
+    assert(jstatusHolder);
+    OS_UNUSED_ARG(jdataReader);
 
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_statusCopyOutSampleLostStatus(env, &status, &jstatus);
+    copyArg.env = env;
+    copyArg.object = NULL;
 
-            if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder,
-                            GET_CACHED(sampleLostStatusHolder_value_fid), jstatus);
-                (*env)->DeleteLocalRef(env, jstatus);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
-        }
-    } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
+    uResult = u_readerGetSampleLostStatus(SAJ_VOIDP(uReader), TRUE, copyAction, &copyArg);
+    retcode = saj_retcode_from_user_result(uResult);
+    if (retcode == SAJ_RETCODE_OK){
+        SET_OBJECT_FIELD(env, jstatusHolder, sampleLostStatusHolder_value, copyArg.object);
+        DELETE_LOCAL_REF(env, copyArg.object);
     }
-    return (jint)result;
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
 }
+
+/****************************************************************************************/
 
 /**
  * Class:     org_opensplice_dds_dcps_DataReaderImpl
@@ -578,34 +556,30 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniWaitForHistoricalData)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jobject jduration)
 {
-    gapi_dataReader dataReader;
-    gapi_duration_t* duration;
-    saj_returnCode rc;
-    jint jresult;
+    os_duration timeout;
+    u_result uResult;
+    saj_returnCode retcode;
 
-    jresult = (jint)GAPI_RETCODE_BAD_PARAMETER;
-    dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
+    assert(jduration != NULL);
+    OS_UNUSED_ARG(jdataReader);
 
-    if(jduration != NULL){
-        rc = SAJ_RETCODE_ERROR;
-        duration = gapi_duration_t__alloc();
-        rc = saj_durationCopyIn(env, jduration, duration);
-
-        if(rc == SAJ_RETCODE_OK){
-            jresult = (jint)gapi_dataReader_wait_for_historical_data(
-                                                            dataReader, duration);
-        }
-        gapi_free(duration);
+    retcode = saj_durationCopyIn(env, jduration, &timeout);
+    if (retcode == SAJ_RETCODE_OK){
+        uResult = u_dataReaderWaitForHistoricalData(SAJ_VOIDP(uReader), timeout);
+        retcode = saj_retcode_from_user_result(uResult);
     }
-    return jresult;
+
+    return (jint)retcode;
 }
 
 JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniWaitForHistoricalDataWCondition)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jstring jfilterExpression,
     jobjectArray jfilterParameters,
     jobject jminSourceTimestamp,
@@ -613,59 +587,114 @@ SAJ_FUNCTION(jniWaitForHistoricalDataWCondition)(
     jobject jresourceLimits,
     jobject jduration)
 {
-    gapi_dataReader dataReader;
-    gapi_duration_t duration;
-    saj_returnCode rc;
-    gapi_char* filterExpression;
-    gapi_stringSeq* filterParameters;
-    jint jresult = (jint)GAPI_RETCODE_ERROR;
-    gapi_time_t minSourceTimestamp, maxSourceTimestamp;
-    gapi_resourceLimitsQosPolicy resourceLimits;
+    os_duration duration;
+    u_result uResult;
+    saj_returnCode retcode;
+    os_timeW minSourceTimestamp, maxSourceTimestamp;
+    os_char* filterExpression;
+    const os_char* filterParameter;
+    os_char** filterParameters;
+    os_int32 length, i;
+    os_int32 maxSamples, maxInstances, maxSamplesPerInstance;
+    jstring jParam;
 
-    if(jduration && jminSourceTimestamp && jmaxSourceTimestamp && jresourceLimits){
-        dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
-        saj_timeCopyIn(env, jminSourceTimestamp, &minSourceTimestamp);
-        saj_timeCopyIn(env, jmaxSourceTimestamp, &maxSourceTimestamp);
-        saj_ResourceLimitsQosPolicyCopyIn(env, jresourceLimits, &resourceLimits);
-        saj_durationCopyIn(env, jduration, &duration);
+    length = 0;
+    filterParameters = NULL;
 
-        if(jfilterParameters){
-            filterParameters = gapi_stringSeq__alloc();
+    assert(jduration && jminSourceTimestamp && jmaxSourceTimestamp && jresourceLimits);
+    OS_UNUSED_ARG(jdataReader);
 
-            if(filterParameters){
-                rc = saj_stringSequenceCopyIn(env, jfilterParameters, filterParameters);
-            } else {
-                rc = SAJ_RETCODE_ERROR;
-                jresult = (jint)GAPI_RETCODE_OUT_OF_RESOURCES;
-            }
-        } else {
-            filterParameters = NULL;
-            rc = SAJ_RETCODE_OK;
-        }
-
-        if(rc == SAJ_RETCODE_OK){
-            if(jfilterExpression != NULL){
-                filterExpression = (gapi_char*)
-                    (*env)->GetStringUTFChars(env, jfilterExpression, 0);
-            } else {
-                filterExpression = NULL;
-            }
-            jresult = (jint)gapi_dataReader_wait_for_historical_data_w_condition(
-                    dataReader, filterExpression, filterParameters,
-                    &minSourceTimestamp, &maxSourceTimestamp,
-                    &resourceLimits, &duration);
-
-            if(jfilterExpression){
-                (*env)->ReleaseStringUTFChars(env, jfilterExpression, filterExpression);
-            }
-            if(filterParameters){
-                gapi_free(filterParameters);
-            }
-        }
-    } else {
-        jresult = (jint)GAPI_RETCODE_BAD_PARAMETER;
+    retcode = saj_timeCopyInAcceptInvalidTime(env, jminSourceTimestamp, &minSourceTimestamp);
+    if (retcode == SAJ_RETCODE_OK) {
+        retcode = saj_timeCopyInAcceptInvalidTime(env, jmaxSourceTimestamp, &maxSourceTimestamp);
     }
-    return jresult;
+    if (retcode == SAJ_RETCODE_OK) {
+        retcode = saj_durationCopyIn(env, jduration, &duration);
+    }
+    if (retcode == SAJ_RETCODE_OK) {
+        if (jfilterParameters){
+            length = GET_ARRAY_LENGTH(env, jfilterParameters);
+            if(length > 0) {
+                filterParameters = os_malloc(length * sizeof(os_char *));
+                for (i =0; i<length; i++) {
+                    jParam = GET_OBJECTARRAY_ELEMENT(env, jfilterParameters, i);
+                    filterParameter = GET_STRING_UTFCHAR(env, jParam, 0);
+                    filterParameters[i] = os_strdup(filterParameter);
+                    RELEASE_STRING_UTFCHAR(env, jParam, filterParameter);
+                }
+            }
+        }
+        if (jfilterExpression != NULL){
+            filterExpression = (os_char*)GET_STRING_UTFCHAR(env, jfilterExpression, 0);
+        } else {
+            filterExpression = NULL;
+        }
+
+        maxSamples = GET_INT_FIELD(env, jresourceLimits,
+                                   resourceLimitsQosPolicy_maxSamples);
+        maxInstances = GET_INT_FIELD(env, jresourceLimits,
+                                   resourceLimitsQosPolicy_maxInstances);
+        maxSamplesPerInstance = GET_INT_FIELD(env, jresourceLimits,
+                                   resourceLimitsQosPolicy_maxSamplesPerInstance);
+
+        uResult = u_dataReaderWaitForHistoricalDataWithCondition(
+                        SAJ_VOIDP(uReader),
+                        filterExpression, (const os_char**)filterParameters, length,
+                        minSourceTimestamp, maxSourceTimestamp,
+                        maxSamples, maxInstances, maxSamplesPerInstance,
+                        duration);
+        retcode = saj_retcode_from_user_result(uResult);
+
+        if (jfilterExpression){
+            RELEASE_STRING_UTFCHAR(env, jfilterExpression, filterExpression);
+        }
+        if (filterParameters){
+            for (i =0; i<length; i++) {
+                os_free(filterParameters[i]);
+            }
+            os_free(filterParameters);
+        }
+    }
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+#define handleBufferSize (32)
+
+C_CLASS(handleBuffer);
+C_STRUCT(handleBuffer)
+{
+    u_instanceHandle buf[handleBufferSize];
+    handleBuffer next;
+};
+
+C_CLASS(copy_matched_publications_arg);
+C_STRUCT(copy_matched_publications_arg)
+{
+    os_uint32 length;
+    C_STRUCT(handleBuffer) first;
+    handleBuffer handles;
+};
+
+static v_result
+copy_matched_publication(
+    u_publicationInfo *info,
+    c_voidp arg)
+{
+    copy_matched_publications_arg a = (copy_matched_publications_arg)arg;
+    os_uint32 bufpos = a->length % handleBufferSize;
+
+    if ((bufpos == 0) && (a->length > 0)) {
+        a->handles->next = os_malloc(sizeof(C_STRUCT(handleBuffer)));
+        a->handles = a->handles->next;
+    }
+    a->handles->buf[bufpos] = u_instanceHandleFromGID(info->key);
+    a->length++;
+
+    return V_RESULT_OK;
 }
 
 /**
@@ -677,34 +706,69 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetMatchedPublications)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jobject jseqHolder)
 {
-    gapi_dataReader dataReader;
-    gapi_instanceHandleSeq *publication_handles;
-    saj_returnCode rc;
-    jint jresult;
-    jintArray jarray;
+    u_result uResult;
+    saj_returnCode retcode;
+    jlongArray jarray;
+    C_STRUCT(copy_matched_publications_arg) arg;
 
-    if(jseqHolder != NULL){
-        dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
-        publication_handles = gapi_instanceHandleSeq__alloc();
+    assert(jseqHolder);
+    OS_UNUSED_ARG(jdataReader);
 
-        jresult = (jint)gapi_dataReader_get_matched_publications(
-                                                dataReader, publication_handles);
-        rc = saj_instanceHandleSequenceCopyOut(env, publication_handles, &jarray);
-        gapi_free(publication_handles);
+    arg.length = 0;
+    arg.handles = &arg.first;
 
-        if(rc == SAJ_RETCODE_OK){
-            (*env)->SetObjectField(env, jseqHolder,
-                    GET_CACHED(instanceHandleSeqHolder_value_fid), jarray);
-            (*env)->DeleteLocalRef(env, jarray);
-        } else {
-            jresult = (jint)GAPI_RETCODE_ERROR;
+    uResult = u_readerGetMatchedPublications(SAJ_VOIDP(uReader), copy_matched_publication, &arg);
+    retcode = saj_retcode_from_user_result(uResult);
+    if (retcode == SAJ_RETCODE_OK){
+        jarray = NEW_LONGARRAY(env, arg.length);
+        if (arg.length > 0) {
+            jlong *jhandles;
+            os_uint32 i, bufpos;
+            handleBuffer prevbuf;
+
+            jhandles = GET_LONG_ARRAY_ELEMENTS(env, jarray, NULL);
+            prevbuf = NULL;
+            for (i=0; i<arg.length; i++) {
+                bufpos = i % handleBufferSize;
+                if ((bufpos == 0) && (i > 0)) {
+                    if (prevbuf != NULL) {
+                        os_free(prevbuf);
+                    }
+                    prevbuf = arg.handles;
+                    arg.handles = arg.handles->next;
+                };
+                jhandles[i] = (jlong)arg.handles->buf[bufpos];
+            }
+            RELEASE_LONG_ARRAY_ELEMENTS(env, jarray, jhandles, 0);
         }
-    } else {
-        jresult = (jint)GAPI_RETCODE_BAD_PARAMETER;
+        SET_OBJECT_FIELD(env, jseqHolder, instanceHandleSeqHolder_value, jarray);
+        DELETE_LOCAL_REF(env, jarray);
     }
-    return jresult;
+
+    return (jint)retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
+}
+
+static v_result
+copyPublicationMatchedData(
+    u_publicationInfo *info,
+    void *arg)
+{
+    struct copyArg *copyArg = (struct copyArg *)arg;
+    v_result rc = V_RESULT_OK;
+    saj_returnCode retcode;
+
+    retcode = saj_publicationBuiltinTopicDataCopyOut(copyArg->env, info, &copyArg->object);
+    if (retcode != SAJ_RETCODE_OK) {
+        rc = V_RESULT_INTERNAL_ERROR;
+    }
+
+    return rc;
 }
 
 /**
@@ -716,210 +780,31 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetMatchedPublicationData)(
     JNIEnv *env,
     jobject jdataReader,
+    jlong uReader,
     jobject jdataHolder,
     jlong jhandle)
 {
-    gapi_dataReader dataReader;
-    gapi_publicationBuiltinTopicData *publication_data;
-    saj_returnCode rc;
-    gapi_returnCode_t result;
-    jobject jdata;
+    u_result uResult;
+    saj_returnCode retcode;
+    struct copyArg copyArg;
 
-    if(jdataHolder != NULL){
-        jdata = NULL;
-        dataReader = (gapi_dataReader)saj_read_gapi_address(env, jdataReader);
-        publication_data = gapi_publicationBuiltinTopicData__alloc();
+    assert(jdataHolder != NULL);
+    OS_UNUSED_ARG(jdataReader);
 
-        result = gapi_dataReader_get_matched_publication_data(
-                                        dataReader, publication_data,
-                                        (const gapi_instanceHandle_t)jhandle);
+    copyArg.env = env;
+    copyArg.object = NULL;
 
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_publicationBuiltinTopicDataCopyOut(env, publication_data, &jdata);
-            gapi_free(publication_data);
-
-            if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jdataHolder,
-                        GET_CACHED(publicationBuiltinTopicDataHolder_value_fid), jdata);
-                (*env)->DeleteLocalRef(env, jdata);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
-        }
-    } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
-    }
-    return (jint)result;
-}
-
-/*
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniCreateView
- * Signature: (LDDS/DataReaderViewQos;)LDDS/DataReaderView;
- */
-JNIEXPORT jobject JNICALL
-SAJ_FUNCTION(jniCreateView)(
-    JNIEnv * env,
-    jobject jdatareader,
-    jobject jqos)
-{
-    jobject jreaderview = NULL;
-    jobject jtypeSupport;
-    gapi_subscriber subscriber;
-    gapi_dataReader datareader;
-    gapi_dataReaderView readerview;
-    gapi_dataReaderViewQos* readerviewQos;
-    gapi_domainParticipant participant;
-    gapi_typeSupport typeSupport;
-    gapi_string typeName;
-    gapi_topicDescription description;
-    gapi_char* dataReaderViewClassName;
-    gapi_char* signature;
-    saj_returnCode rc;
-
-    readerview = GAPI_OBJECT_NIL;
-
-    datareader = (gapi_dataReader) saj_read_gapi_address(env, jdatareader);
-    subscriber = gapi_dataReader_get_subscriber(datareader);
-    participant = gapi_subscriber_get_participant(subscriber);
-    description = gapi_dataReader_get_topicdescription(datareader);
-
-    typeName = gapi_topicDescription_get_type_name(description);
-    typeSupport = gapi_domainParticipant_get_typesupport(participant, (const gapi_char*) typeName);
-    gapi_free(typeName);
-
-    jtypeSupport = saj_read_java_address((gapi_object)typeSupport);
-    rc = saj_LookupTypeSupportDataReaderView(env, jtypeSupport, &dataReaderViewClassName);
-
-    if(rc == SAJ_RETCODE_OK){
-        if ((*env)->IsSameObject (env, jqos, GET_CACHED(DATAREADERVIEW_QOS_DEFAULT)) == JNI_TRUE) {
-            readerviewQos = (gapi_dataReaderViewQos *)GAPI_DATAVIEW_QOS_DEFAULT;
-            rc = SAJ_RETCODE_OK;
-        } else {
-            readerviewQos = gapi_dataReaderViewQos__alloc();
-            rc = saj_DataReaderViewQosCopyIn(env, jqos, readerviewQos);
-        }
-
-        if(rc == SAJ_RETCODE_OK){
-            readerview = gapi_dataReader_create_view(datareader, readerviewQos);
-
-            if (readerview != GAPI_OBJECT_NIL){
-                rc = saj_LookupTypeSupportConstructorSignature(env, jtypeSupport, &signature);
-
-                if(rc == SAJ_RETCODE_OK){
-                    rc = saj_construct_typed_java_object(env, dataReaderViewClassName,
-                                                        (PA_ADDRCAST)readerview,
-                                                        &jreaderview, signature,
-                                                        jtypeSupport);
-                    gapi_free(signature);
-               }
-            }
-        }
-        if ((readerviewQos != (gapi_dataReaderViewQos *)GAPI_DATAVIEW_QOS_DEFAULT)) {
-            gapi_free(readerviewQos);
-        }
-
-        gapi_free(dataReaderViewClassName);
+    uResult = u_readerGetMatchedPublicationData(SAJ_VOIDP(uReader), jhandle, copyPublicationMatchedData, &copyArg);
+    retcode = saj_retcode_from_user_result(uResult);
+    if (retcode == SAJ_RETCODE_OK){
+        SET_OBJECT_FIELD(env, jdataHolder, publicationBuiltinTopicDataHolder_value, copyArg.object);
+        DELETE_LOCAL_REF(env, copyArg.object);
     }
 
-    return jreaderview;
-}
+    return (jint)retcode;
 
-/*
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniDeleteView
- * Signature: (LDDS/DataReaderView;)I
- */
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniDeleteView)(
-        JNIEnv *env,
-        jobject jdatareader,
-        jobject jdatareaderview)
-{
-    gapi_dataReader dataReader;
-    gapi_dataReaderView dataReaderView;
-    gapi_returnCode_t grc;
-
-    dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdatareader);
-    dataReaderView = (gapi_dataReaderView) saj_read_gapi_address(env, jdatareaderview);
-
-    grc = gapi_dataReader_delete_view(dataReader, dataReaderView);
-
-    return (jint)grc;
-}
-
-
-/*
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniGetDefaultDataReaderViewQos
- * Signature: (LDDS/DataReaderViewQosHolder;)I
- */
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniGetDefaultDataReaderViewQos)(
-    JNIEnv *env,
-    jobject jdatareader,
-    jobject jqosHolder)
-{
-    saj_returnCode rc;
-    jobject jqos;
-    gapi_dataReader datareader;
-    gapi_returnCode_t result;
-    gapi_dataReaderViewQos *qos;
-
-    jqos = NULL;
-    rc = SAJ_RETCODE_ERROR;
-
-    if(jqosHolder != NULL){
-        qos = gapi_dataReaderViewQos__alloc();
-
-        datareader = (gapi_dataReader)saj_read_gapi_address(env, jdatareader);
-        result = gapi_dataReader_get_default_datareaderview_qos(datareader, qos);
-
-        if(result == GAPI_RETCODE_OK){
-            rc = saj_DataReaderViewQosCopyOut(env, qos, &jqos);
-            gapi_free(qos);
-
-            if (rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jqosHolder,
-                                       GET_CACHED(dataReaderViewQosHolder_value_fid), jqos);
-            } else {
-                result = GAPI_RETCODE_ERROR;
-            }
-        }
-    } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
-    }
-    return (jint)result;
-}
-
-
-/*
- * Class:     org_opensplice_dds_dcps_DataReaderImpl
- * Method:    jniSetDefaultDataReaderViewQos
- * Signature: (LDDS/DataReaderViewQos;)I
- */
-JNIEXPORT jint JNICALL
-SAJ_FUNCTION(jniSetDefaultDataReaderViewQos)(
-    JNIEnv *env,
-    jobject jdatareader,
-    jobject jqos)
-{
-    gapi_dataReaderViewQos* qos;
-    gapi_dataReader datareader;
-    saj_returnCode rc;
-    jint result;
-
-    result = (jint)GAPI_RETCODE_ERROR;
-    qos = gapi_dataReaderViewQos__alloc();
-    rc = saj_DataReaderViewQosCopyIn(env, jqos, qos);
-
-    if (rc == SAJ_RETCODE_OK){
-        datareader = (gapi_dataReader)saj_read_gapi_address(env, jdatareader);
-        result = (jint)gapi_dataReader_set_default_datareaderview_qos(datareader, qos);
-    }
-    gapi_free(qos);
-
-    return result;
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
 }
 
 /*
@@ -946,69 +831,94 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniSetProperty) (
     JNIEnv * env,
     jobject jdatareader,
+    jlong uReader,
     jobject jprop)
 {
-    jint result = GAPI_RETCODE_OK;
+    saj_returnCode retcode = SAJ_RETCODE_OK;
     jstring jname, jvalue;
-    char *name, *value;
+    const char *name, *value;
 
-    if(jprop == NULL){
-        return GAPI_RETCODE_BAD_PARAMETER;
-    }
+    assert(jprop != NULL);
+    OS_UNUSED_ARG(uReader);
 
-    if((jname = (*env)->GetObjectField(env, jprop, GET_CACHED(property_name_fid))) != NULL){
-        name = (char*)(*env)->GetStringUTFChars(env, jname, 0);
-        if(strcmp("parallelReadThreadCount", name) == 0){
+    jname = GET_OBJECT_FIELD(env, jprop, property_name);
+    if (jname != NULL) {
+        name = GET_STRING_UTFCHAR(env, jname, 0);
+        if (strcmp("parallelReadThreadCount", name) == 0) {
             int ival;
-
-            if((jvalue = (*env)->GetObjectField(env, jprop, GET_CACHED(property_value_fid))) != NULL){
+            jvalue = GET_OBJECT_FIELD(env, jprop, property_value);
+            if (jvalue != NULL) {
                 char * end;
-
-                value = (char*)(*env)->GetStringUTFChars(env, jvalue, 0);
+                value = GET_STRING_UTFCHAR(env, jvalue, 0);
                 ival = strtol(value, &end, 10);
-                if(*end == '\0' && ival >= 0){
+                if (*end == '\0' && ival >= 0) {
                     /* The entire string was valid and contains a valid value */
-                    if(saj_fooDataReaderSetParallelReadThreadCount(env, jdatareader, ival) < 0){
-                        result = GAPI_RETCODE_ERROR;
-                    }
+                    retcode = saj_fooDataReaderSetParallelReadThreadCount(env, jdatareader, ival);
                 } else {
-                    result = GAPI_RETCODE_BAD_PARAMETER;
+                    retcode = SAJ_RETCODE_BAD_PARAMETER;
                 }
-                (*env)->ReleaseStringUTFChars(env, jvalue, value);
-                (*env)->DeleteLocalRef(env, jvalue);
+                RELEASE_STRING_UTFCHAR(env, jvalue, value);
+                DELETE_LOCAL_REF(env, jvalue);
             } else {
-                result = GAPI_RETCODE_BAD_PARAMETER;
+                retcode = SAJ_RETCODE_BAD_PARAMETER;
             }
-        } else if(strcmp("CDRCopy", name) == 0){
-
-            if((jvalue = (*env)->GetObjectField(env, jprop, GET_CACHED(property_value_fid))) != NULL){
-                value = (char*)(*env)->GetStringUTFChars(env, jvalue, 0);
+        } else if (strcmp("CDRCopy", name) == 0) {
+            jvalue = GET_OBJECT_FIELD(env, jprop, property_value);
+            if (jvalue != NULL) {
+                value = GET_STRING_UTFCHAR(env, jvalue, 0);
                 if(strcmp("true", value) == 0){
-                    if(saj_fooDataReaderSetCDRCopy(env, jdatareader, 1) < 0){
-                        result = GAPI_RETCODE_ERROR;
+                    if (saj_fooDataReaderSetCDRCopy(env, jdatareader, 1) < 0) {
+                        retcode = SAJ_RETCODE_ERROR;
                     }
-                } else if (strcmp("false", value) == 0){
-                    if(saj_fooDataReaderSetCDRCopy(env, jdatareader, 0) < 0){
-                        result = GAPI_RETCODE_ERROR;
+                } else if (strcmp("false", value) == 0) {
+                    if (saj_fooDataReaderSetCDRCopy(env, jdatareader, 0) < 0) {
+                        retcode = SAJ_RETCODE_ERROR;
                     }
                 } else {
-                    result = GAPI_RETCODE_BAD_PARAMETER;
+                    retcode = SAJ_RETCODE_BAD_PARAMETER;
                 }
-                (*env)->ReleaseStringUTFChars(env, jvalue, value);
-                (*env)->DeleteLocalRef(env, jvalue);
+                RELEASE_STRING_UTFCHAR(env, jvalue, value);
+                DELETE_LOCAL_REF(env, jvalue);
             } else {
-                result = GAPI_RETCODE_BAD_PARAMETER;
+                retcode = SAJ_RETCODE_BAD_PARAMETER;
             }
+        } else if (strcmp("ignoreLoansOnDeletion", name) == 0) {
+            jvalue = GET_OBJECT_FIELD(env, jprop, property_value);
+            if (jvalue != NULL) {
+                value = GET_STRING_UTFCHAR(env, jvalue, 0);
+                if(strcmp("true", value) == 0){
+                    /* delete datareader is currently not checking for outstanding
+                     * loans. If it is doing it in the future, the value set here must
+                     * be cached in the datareader and used if the datareader is deleted.
+                     */
+                } else if (strcmp("false", value) == 0) {
+                    /* delete datareader is currently not checking for outstanding
+                     * loans. If it is doing it in the future, the value set here must
+                     * be cached in the datareader and used if the datareader is deleted.
+                     */
+                } else {
+                    retcode = SAJ_RETCODE_BAD_PARAMETER;
+                }
+                RELEASE_STRING_UTFCHAR(env, jvalue, value);
+                DELETE_LOCAL_REF(env, jvalue);
+             } else {
+                retcode = SAJ_RETCODE_BAD_PARAMETER;
+             }
         } else {
-            result = GAPI_RETCODE_UNSUPPORTED;
+            /* Properties not parsed at this level may be passed on to below API's */
+            retcode = SAJ_RETCODE_UNSUPPORTED;
+            SAJ_REPORT(retcode, "Set Property %s not supported",name);
         }
-        (*env)->ReleaseStringUTFChars(env, jname, name);
-        (*env)->DeleteLocalRef(env, jname);
+        RELEASE_STRING_UTFCHAR(env, jname, name);
+        DELETE_LOCAL_REF(env, jname);
     } else {
-        result = GAPI_RETCODE_BAD_PARAMETER;
+        retcode = SAJ_RETCODE_BAD_PARAMETER;
     }
 
-    return result;
+    return retcode;
+
+    CATCH_EXCEPTION:
+    return SAJ_RETCODE_ERROR;
 }
 
 /*
@@ -1020,12 +930,66 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetProperty) (
     JNIEnv * env,
     jobject jdatareader,
+    jlong uReader,
     jobject jpropHolder)
 {
     OS_UNUSED_ARG(env);
     OS_UNUSED_ARG(jdatareader);
+    OS_UNUSED_ARG(uReader);
     OS_UNUSED_ARG(jpropHolder);
-    return (jint)GAPI_RETCODE_UNSUPPORTED;
+    SAJ_REPORT(SAJ_RETCODE_UNSUPPORTED, "Get Property not supported");
+    return (jint)SAJ_RETCODE_UNSUPPORTED;
+}
+
+struct copyInstanceHandle {
+    JNIEnv *env;
+    jobject holder;
+};
+
+static u_result
+copyInstanceHandles(
+    u_instanceHandle *list,
+    os_uint32 length,
+    c_voidp arg)
+{
+    u_result result = U_RESULT_OK;
+    struct copyInstanceHandle *a = (struct copyInstanceHandle *)arg;
+    jlongArray buffer;
+
+    if (a != NULL) {
+        buffer = NEW_LONGARRAY(a->env, length);
+        if (buffer != NULL) {
+            assert (sizeof (jlong) == sizeof (u_instanceHandle));
+            SET_LONG_ARRAY_REGION(a->env, buffer, 0, length, (jlong *) list);
+        } else {
+            result = U_RESULT_OUT_OF_MEMORY;
+        }
+        SET_OBJECT_FIELD(a->env, a->holder, instanceHandleSeqHolder_value, buffer);
+    }
+    return result;
+    CATCH_EXCEPTION: return U_RESULT_INTERNAL_ERROR;
+}
+
+JNIEXPORT jint JNICALL
+SAJ_FUNCTION(jniReadInstanceHandles) (
+    JNIEnv * env,
+    jobject jdatareader,
+    jlong uReader,
+    jobject jhandles)
+{
+    struct copyInstanceHandle copyArg;
+    saj_returnCode retcode;
+    u_result uResult;
+
+    assert(uReader != 0);
+    OS_UNUSED_ARG(jdatareader);
+
+    copyArg.env = env;
+    copyArg.holder = jhandles;
+    uResult = u_dataReaderGetInstanceHandles(SAJ_VOIDP(uReader), copyInstanceHandles, &copyArg);
+    retcode = saj_retcode_from_user_result(uResult);
+
+    return (jint)retcode;
 }
 
 #undef SAJ_FUNCTION

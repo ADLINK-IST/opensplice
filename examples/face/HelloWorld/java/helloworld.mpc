@@ -1,0 +1,30 @@
+
+project (face*types) : face_typesupport, java_only, java_example, java_ospl_dcpssaj5, java_ospl_ddsface {
+    TypeSupport_Files {
+        ../idl/HelloWorldData.idl >> HelloWorldData/*.java
+    }
+}
+
+project (face*sub) : java_only, java_example, java_ospl_dcpssaj5, java_ospl_ddsface {
+    after += face*types
+    libs += face*types.jar
+
+    specific {
+        obj_dir_flat = 1
+    }
+    Source_Files {
+       HelloWorldDataSubscriber.java
+    }
+}
+
+project (face*pub) : java_only, java_example, java_ospl_dcpssaj5, java_ospl_ddsface {
+    after += face*types
+    libs += face*types.jar
+
+    specific {
+        obj_dir_flat = 1
+    }
+    Source_Files {
+        HelloWorldDataPublisher.java
+    }
+}

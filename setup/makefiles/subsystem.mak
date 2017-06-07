@@ -1,24 +1,105 @@
 all:		link
-compile:	$(addsuffix .ss_compile,	$(SUBSYSTEMS))
-link:		$(addsuffix .ss_link,		$(SUBSYSTEMS))
-clean:		$(addsuffix .ss_clean,		$(SUBSYSTEMS))
-qac:		$(addsuffix .ss_qac,		$(SUBSYSTEMS))
-analyse:	$(addsuffix .ss_analyse,	$(SUBSYSTEMS))
-gcov:		$(addsuffix .ss_gcov,		$(SUBSYSTEMS))
-test:   	$(addsuffix .ss_test,   	$(SUBSYSTEMS))
+link:		$(addsuffix .ss_link,  $(SUBSYSTEMS) $(PSUBSYSTEMS))
+clean:		$(addsuffix .ss_clean, $(SUBSYSTEMS) $(PSUBSYSTEMS))
 
-%.ss_compile:	; @$(MAKE) -C $* compile
 %.ss_link:	; @$(MAKE) -C $* link
 %.ss_clean:	; @$(MAKE) -C $* clean
-%.ss_qac:	; @$(MAKE) -C $* qac
-%.ss_analyse:	; @$(MAKE) -C $* analyse
-%.ss_gcov:	; @$(MAKE) -C $* gcov
-%.ss_test:      ; @$(MAKE) -C $* test
+
+.PHONY: %.ss_link %.ss_clean
+.PHONY: PRESUBSYSTEMS
+
+PRESUBSYSTEMS::
+
+SUBSYSTEM_FAKEDEP1.ss_link SUBSYSTEM_FAKEDEP1.ss_clean: | PRESUBSYSTEMS ;
+
+SUBSYSTEM_AUTODEP = \
+	$(word 2, $(wordlist $1, 100, $(SUBSYSTEMS:%=%.ss_link) SUBSYSTEM_FAKEDEP1.ss_link SUBSYSTEM_FAKEDEP2.ss_link)): | \
+		$(word 1, $(wordlist $1, 100, $(SUBSYSTEMS:%=%.ss_link)))
+
+$(call SUBSYSTEM_AUTODEP, 1)
+$(call SUBSYSTEM_AUTODEP, 2)
+$(call SUBSYSTEM_AUTODEP, 3)
+$(call SUBSYSTEM_AUTODEP, 4)
+$(call SUBSYSTEM_AUTODEP, 5)
+$(call SUBSYSTEM_AUTODEP, 6)
+$(call SUBSYSTEM_AUTODEP, 7)
+$(call SUBSYSTEM_AUTODEP, 8)
+$(call SUBSYSTEM_AUTODEP, 9)
+$(call SUBSYSTEM_AUTODEP, 10)
+$(call SUBSYSTEM_AUTODEP, 11)
+$(call SUBSYSTEM_AUTODEP, 12)
+$(call SUBSYSTEM_AUTODEP, 13)
+$(call SUBSYSTEM_AUTODEP, 14)
+$(call SUBSYSTEM_AUTODEP, 15)
+$(call SUBSYSTEM_AUTODEP, 16)
+$(call SUBSYSTEM_AUTODEP, 17)
+$(call SUBSYSTEM_AUTODEP, 18)
+$(call SUBSYSTEM_AUTODEP, 19)
+$(call SUBSYSTEM_AUTODEP, 20)
+$(call SUBSYSTEM_AUTODEP, 21)
+$(call SUBSYSTEM_AUTODEP, 22)
+$(call SUBSYSTEM_AUTODEP, 23)
+$(call SUBSYSTEM_AUTODEP, 24)
+$(call SUBSYSTEM_AUTODEP, 25)
+$(call SUBSYSTEM_AUTODEP, 26)
+$(call SUBSYSTEM_AUTODEP, 27)
+$(call SUBSYSTEM_AUTODEP, 28)
+$(call SUBSYSTEM_AUTODEP, 29)
+$(call SUBSYSTEM_AUTODEP, 30)
+$(call SUBSYSTEM_AUTODEP, 31)
+$(call SUBSYSTEM_AUTODEP, 32)
+$(call SUBSYSTEM_AUTODEP, 33)
+$(call SUBSYSTEM_AUTODEP, 34)
+$(call SUBSYSTEM_AUTODEP, 35)
+$(call SUBSYSTEM_AUTODEP, 36)
+$(call SUBSYSTEM_AUTODEP, 37)
+$(call SUBSYSTEM_AUTODEP, 38)
+$(call SUBSYSTEM_AUTODEP, 39)
+$(call SUBSYSTEM_AUTODEP, 40)
+$(call SUBSYSTEM_AUTODEP, 41)
+$(call SUBSYSTEM_AUTODEP, 42)
+$(call SUBSYSTEM_AUTODEP, 43)
+$(call SUBSYSTEM_AUTODEP, 44)
+$(call SUBSYSTEM_AUTODEP, 45)
+$(call SUBSYSTEM_AUTODEP, 46)
+$(call SUBSYSTEM_AUTODEP, 47)
+$(call SUBSYSTEM_AUTODEP, 48)
+$(call SUBSYSTEM_AUTODEP, 49)
+$(call SUBSYSTEM_AUTODEP, 50)
+$(call SUBSYSTEM_AUTODEP, 51)
+$(call SUBSYSTEM_AUTODEP, 52)
+$(call SUBSYSTEM_AUTODEP, 53)
+$(call SUBSYSTEM_AUTODEP, 54)
+$(call SUBSYSTEM_AUTODEP, 55)
+$(call SUBSYSTEM_AUTODEP, 56)
+$(call SUBSYSTEM_AUTODEP, 57)
+$(call SUBSYSTEM_AUTODEP, 58)
+$(call SUBSYSTEM_AUTODEP, 59)
+$(call SUBSYSTEM_AUTODEP, 60)
+$(call SUBSYSTEM_AUTODEP, 61)
+$(call SUBSYSTEM_AUTODEP, 62)
+$(call SUBSYSTEM_AUTODEP, 63)
+$(call SUBSYSTEM_AUTODEP, 64)
+$(call SUBSYSTEM_AUTODEP, 65)
+$(call SUBSYSTEM_AUTODEP, 66)
+$(call SUBSYSTEM_AUTODEP, 67)
+$(call SUBSYSTEM_AUTODEP, 68)
+$(call SUBSYSTEM_AUTODEP, 69)
+$(call SUBSYSTEM_AUTODEP, 70)
+
+$(PSUBSYSTEMS:%=%.ss_link): | SUBSYSTEM_FAKEDEP1.ss_link
 
 ifneq (,$(wildcard $(OSPL_HOME)/setup/$(SPLICE_TARGET)))
 include $(OSPL_HOME)/setup/$(SPLICE_TARGET)/config.mak
 else
 include $(OSPL_OUTER_HOME)/setup/$(SPLICE_TARGET)/config.mak
+endif
+
+ifeq (solaris,$(OS))
+   OSREV_FLAGS += -DOS_SOLARIS_VER=$(OS_REV)
+   OS_REV_SUFFIX=
+else
+   OS_REV_SUFFIX=$(OS_REV)
 endif
 
 MPC_CISH_TYPE_TO_GEN = "make"
@@ -46,6 +127,11 @@ else
 ifneq ("$(VCPP12)", "")
 MPC_CISH_TYPE_TO_GEN = "vc12"
 MPC_JISH_TYPE_TO_GEN = "javabat"
+else
+ifneq ("$(VCPP14)", "")
+MPC_CISH_TYPE_TO_GEN = "vc14"
+MPC_JISH_TYPE_TO_GEN = "javabat"
+endif
 endif
 endif
 endif

@@ -17,7 +17,9 @@ sleep 2
 echo === starting publisher "pub2" with ownership strength 10
 ./sacpp_ownership_pub pub2 10 5 0 > pubResult_2.txt &
 
-sleep 15
+echo === Waiting for processes to terminate
+waitForProcessTermination sacpp_ownership_pub 30
+waitForProcessTermination sacpp_ownership_sub 30
 
 ownershipCheckResult
 

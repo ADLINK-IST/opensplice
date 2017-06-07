@@ -1,0 +1,345 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. The Networking Service &mdash; The OpenSplice Deployment Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The OpenSplice Deployment Guide" href="index.html" />
+    <link rel="next" title="7. The DDSI2 and DDSI2E Networking Services" href="ddsi2-networking-service.html" />
+    <link rel="prev" title="5. The Durability Service" href="durability-service.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ddsi2-networking-service.html" title="7. The DDSI2 and DDSI2E Networking Services"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="durability-service.html" title="5. The Durability Service"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-networking-service">
+<span id="id1"></span><h1>6. The Networking Service<a class="headerlink" href="#the-networking-service" title="Permalink to this headline">¶</a></h1>
+<p><em>When communication endpoints are located on different computing nodes or on
+different single processes, the data produced using the local Domain Service must
+be communicated to the remote Domain Services and the other way around. The
+Networking Service provides a bridge between the local Domain Service and a
+network interface. Multiple Networking Services can exist next to each other; each
+serving one or more physical network interfaces. The Networking Service is
+responsible for forwarding data to the network and for receiving data from the
+network.</em></p>
+<p>There are two implementations of the networking service:
+<a class="reference internal" href="#the-native-networking-service">The Native Networking Service</a> and <a class="reference internal" href="#the-secure-native-networking-service">The Secure Native Networking Service</a>.</p>
+<p>There are detailed descriptions of all of the available configuration
+parameters and their purpose in the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a>
+section.</p>
+<div class="section" id="the-native-networking-service">
+<span id="id2"></span><h2>6.1. The Native Networking Service<a class="headerlink" href="#the-native-networking-service" title="Permalink to this headline">¶</a></h2>
+<p>For large-scale LAN-based systems that demand maximum throughput, the native
+RTNetworking service is the optimal implementation of DDS networking for
+Vortex OpenSplice and is both highly scalable and configurable.</p>
+<p><em>The Native Networking Service</em> can be configured to distinguish multiple
+communication channels with different QoS policies. These policies will be used to
+schedule individual messages to specific channels, which may be configured to
+provide optimal performance for a specific application domain.</p>
+<p>The exact fulfilment of these responsibilities is determined by the configuration of
+the Networking Service.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+fully-detailed descriptions of how to configure:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/NetworkService</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/SNetworkService</span></tt></li>
+</ul>
+</div>
+<div class="section" id="the-secure-native-networking-service">
+<span id="id3"></span><h2>6.2. The Secure Native Networking Service<a class="headerlink" href="#the-secure-native-networking-service" title="Permalink to this headline">¶</a></h2>
+<p>There is a secure version of the native networking service available.</p>
+<p>Please refer to the <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a>
+section for details.</p>
+<div class="section" id="compression">
+<span id="id4"></span><h3>6.2.1. Compression<a class="headerlink" href="#compression" title="Permalink to this headline">¶</a></h3>
+<p>This section describes the options available for configuring compression of the data
+packets sent by the Networking Service.</p>
+<p>In early OpenSplice 6.x releases, the <em>zlib</em> library was used at its default setting
+whenever the compression option on a network partition was enabled. Now
+it is possible to configure <em>zlib</em> for less cpu usage or for more compression effort, or
+to select a compressor written specifically for high speed, or to plug in an alternative
+algorithm.</p>
+<p>The configuration for compression in a Networking Service instance is contained in
+the optional top-level Element Compression.
+These settings apply to all partitions in which compression is enabled.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+a detailed description of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/NetworkService/Compression</span></tt></li>
+</ul>
+<div class="section" id="availability">
+<span id="id5"></span><h4>6.2.1.1. Availability<a class="headerlink" href="#availability" title="Permalink to this headline">¶</a></h4>
+<p>The compression functionality is available on enterprise platforms (<em>i.e.</em> Linux,
+Windows and Solaris). On embedded platforms there are no built-in compressors
+included, but plugins may be used.</p>
+</div>
+<div class="section" id="how-to-set-the-level-parameter-in-zlib">
+<span id="id6"></span><h4>6.2.1.2. How to set the level parameter in zlib<a class="headerlink" href="#how-to-set-the-level-parameter-in-zlib" title="Permalink to this headline">¶</a></h4>
+<p>Set the Attribute <tt class="docutils literal"><span class="pre">PluginParameter</span></tt> to a single digit between <tt class="docutils literal"><span class="pre">0</span></tt> (no compression)
+and <tt class="docutils literal"><span class="pre">9</span></tt> (maximum compression, more CPU usage). Leave the Attribute <tt class="docutils literal"><span class="pre">PluginLibrary</span></tt>
+and Attribute <tt class="docutils literal"><span class="pre">PluginInitFunction</span></tt> blank.</p>
+</div>
+<div class="section" id="how-to-switch-to-other-built-in-compressors">
+<span id="id7"></span><h4>6.2.1.3. How to switch to other built-in compressors<a class="headerlink" href="#how-to-switch-to-other-built-in-compressors" title="Permalink to this headline">¶</a></h4>
+<p>Set the Attribute <tt class="docutils literal"><span class="pre">PluginInitFunction</span></tt> to the name of the initialisation
+function of one of the built-in compressors. These are <tt class="docutils literal"><span class="pre">/ospl_comp_zlib_init/</span></tt>,
+<tt class="docutils literal"><span class="pre">/ospl_comp_lzf_init/</span></tt> and <tt class="docutils literal"><span class="pre">/ospl_comp_snappy_init/</span></tt> for <em>zlib</em>, <em>lzf</em> and
+<em>snappy</em> respectively. As a convenience, the short names <tt class="docutils literal"><span class="pre">zlib</span></tt>, <tt class="docutils literal"><span class="pre">lzf</span></tt> and
+<tt class="docutils literal"><span class="pre">snappy</span></tt> are also recognized.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div>Please note that not all compressors are available on all platforms.
+In this release <em>zlib</em> is available on Linux, Windows and Solaris;
+<em>lzf</em> and <em>snappy</em> are available only on RedHat Linux.</div></blockquote>
+</div>
+<div class="section" id="how-to-write-a-plugin-for-another-compression-library">
+<span id="id8"></span><h4>6.2.1.4. How to write a plugin for another compression library<a class="headerlink" href="#how-to-write-a-plugin-for-another-compression-library" title="Permalink to this headline">¶</a></h4>
+<p>Other compression algorithms may be used by the Networking Service. In order to
+do this it is necessary to build a library which maps the OpenSplice compression
+API onto the algorithm in question. This library may contain the actual compressor
+code or be dynamically linked to it.</p>
+<p>Definitions for the compression API are provided in the include file
+<tt class="docutils literal"><span class="pre">plugin/nw_compPlugin.h</span></tt>.</p>
+<p>Five functions must be implemented.</p>
+<dl class="docutils">
+<dt>The <tt class="docutils literal"><span class="pre">maxsize</span></tt> function.</dt>
+<dd>This function is called when sizing a buffer into which to compress a network
+packet. It should therefore return the worst-case (largest) possible size of
+compressed data for a given uncompressed size. In most cases it is acceptable to
+return the uncompressed size, as the compress operation is allowed to fail if the
+resulting data is larger than the original (in which case the data is sent
+uncompressed). However, <em>snappy</em> for example will not attempt compression
+unless the destination buffer is large enough to take the worst possible result.</dd>
+<dt>The <tt class="docutils literal"><span class="pre">compress</span></tt> function.</dt>
+<dd>This function takes a block of data of a given size and compresses it into a
+buffer of a given size. It returns the actual size of the compressed data, or zero
+if an error ocurred (<em>e.g.</em> the destination buffer was not large enough).</dd>
+<dt>The <tt class="docutils literal"><span class="pre">uncompress</span></tt> function.</dt>
+<dd>This function takes a block of compressed data of given size and uncompresses
+it into a buffer also of given size. It returns the actual size of the uncompressed
+data, or zero if an error ocurred (<em>e.g.</em> the data was not in a valid compressed
+format).</dd>
+<dt>The <tt class="docutils literal"><span class="pre">exit</span></tt> function.</dt>
+<dd>This function is called at service shutdown and frees any resources used
+by the plugin.</dd>
+<dt>The <tt class="docutils literal"><span class="pre">init</span></tt> function.</dt>
+<dd>This function is called at service startup. It sets up the plugin by filling in a
+structure containing pointers to the four functions listed above. It also is passed
+the value of the Attribute <tt class="docutils literal"><span class="pre">PluginParameter</span></tt>. The plugin configuration structure
+includes a pointer to some unspecified state data which may be used to hold this
+parameter and/or any storage required by the compressor. This pointer is passed
+into the <tt class="docutils literal"><span class="pre">compress</span></tt> and <tt class="docutils literal"><span class="pre">exit</span></tt> functions.</dd>
+</dl>
+<p>By way of illustration, here is a simplified version of the code for <em>zlib</em>. The
+implementation is merely a veneer on the <em>zlib</em> library to present the required API.</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="cp">#include &quot;nw_compPlugin.h&quot;</span>
+<span class="cp">#include &quot;os_heap.h&quot;</span>
+<span class="cp">#include</span>
+<span class="kt">unsigned</span> <span class="kt">long</span> <span class="nf">ospl_comp_zlib_maxsize</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">srcsize</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="cm">/* if the data can&#39;t be compressed into the same size buffer we&#39;ll send</span>
+<span class="cm">uncompressed instead */</span>
+<span class="k">return</span> <span class="n">srcsize</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">unsigned</span> <span class="kt">long</span> <span class="nf">ospl_comp_zlib_compress</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">dest</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">destlen</span><span class="p">,</span>
+<span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">source</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">srclen</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">param</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">compdsize</span> <span class="o">=</span> <span class="n">destlen</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">compress2</span> <span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">compdsize</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">srclen</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">param</span><span class="p">)</span> <span class="o">==</span> <span class="n">Z_OK</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="k">return</span> <span class="n">compdsize</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">else</span>
+  <span class="p">{</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">unsigned</span> <span class="kt">long</span> <span class="nf">ospl_comp_zlib_uncompress</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">dest</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span>
+<span class="n">destlen</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">source</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">srclen</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">uncompdsize</span> <span class="o">=</span> <span class="n">destlen</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">uncompress</span> <span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">uncompdsize</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">srclen</span><span class="p">)</span> <span class="o">==</span> <span class="n">Z_OK</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="k">return</span> <span class="n">uncompdsize</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">else</span>
+  <span class="p">{</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">ospl_comp_zlib_exit</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">param</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">os_free</span> <span class="p">(</span><span class="n">param</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">ospl_comp_zlib_init</span> <span class="p">(</span><span class="n">nw_compressor</span> <span class="o">*</span><span class="n">config</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">param</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="cm">/* param should contain an integer from 0 to 9 */</span>
+  <span class="kt">int</span> <span class="o">*</span><span class="n">iparam</span> <span class="o">=</span> <span class="n">os_malloc</span> <span class="p">(</span><span class="k">sizeof</span> <span class="p">(</span><span class="kt">int</span><span class="p">));</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">strlen</span> <span class="p">(</span><span class="n">param</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+  <span class="p">{</span>
+    <span class="o">*</span><span class="n">iparam</span> <span class="o">=</span> <span class="n">atoi</span> <span class="p">(</span><span class="n">param</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">else</span>
+  <span class="p">{</span>
+    <span class="o">*</span><span class="n">iparam</span> <span class="o">=</span> <span class="n">Z_DEFAULT_COMPRESSION</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">config</span><span class="o">-&gt;</span><span class="n">maxfn</span> <span class="o">=</span> <span class="n">ospl_comp_zlib_maxsize</span><span class="p">;</span>
+  <span class="n">config</span><span class="o">-&gt;</span><span class="n">compfn</span> <span class="o">=</span> <span class="n">ospl_comp_zlib_compress</span><span class="p">;</span>
+  <span class="n">config</span><span class="o">-&gt;</span><span class="n">uncompfn</span> <span class="o">=</span> <span class="n">ospl_comp_zlib_uncompress</span><span class="p">;</span>
+  <span class="n">config</span><span class="o">-&gt;</span><span class="n">exitfn</span> <span class="o">=</span> <span class="n">ospl_comp_zlib_exit</span><span class="p">;</span>
+  <span class="n">config</span><span class="o">-&gt;</span><span class="n">parameter</span> <span class="o">=</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">iparam</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="how-to-configure-for-a-plugin">
+<span id="id9"></span><h3>6.2.2. How to configure for a plugin<a class="headerlink" href="#how-to-configure-for-a-plugin" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt><strong>Step 1</strong>:</dt>
+<dd>Set Attribute <tt class="docutils literal"><span class="pre">PluginLibrary</span></tt> to the name of the library containing
+the plugin implementation.</dd>
+<dt><strong>Step 2</strong>:</dt>
+<dd>Set Attribute <tt class="docutils literal"><span class="pre">PluginInitFunction</span></tt> to the name of the initialisation
+function within that library.</dd>
+<dt><strong>Step 3</strong>:</dt>
+<dd>If the compression method is controlled by a parameter, set
+Attribute <tt class="docutils literal"><span class="pre">PluginParameter</span></tt> to configure it.</dd>
+</dl>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+fully-detailed descriptions of how to configure:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/NetworkService/Compression[&#64;PluginLibrary]</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/NetworkService/Compression[&#64;PluginInitFunction]</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/NetworkService/Compression[&#64;PluginParameter]</span></tt></li>
+</ul>
+</div>
+<div class="section" id="constraints">
+<span id="id10"></span><h3>6.2.3. Constraints<a class="headerlink" href="#constraints" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div>The Networking Service packet format does <em>not</em> include identification of
+which compressor is in use.
+<em>It is therefore necessary to use the</em> <strong>same</strong>
+<em>configuration on all nodes.</em></div></blockquote>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">6. The Networking Service</a><ul>
+<li><a class="reference internal" href="#the-native-networking-service">6.1. The Native Networking Service</a></li>
+<li><a class="reference internal" href="#the-secure-native-networking-service">6.2. The Secure Native Networking Service</a><ul>
+<li><a class="reference internal" href="#compression">6.2.1. Compression</a><ul>
+<li><a class="reference internal" href="#availability">6.2.1.1. Availability</a></li>
+<li><a class="reference internal" href="#how-to-set-the-level-parameter-in-zlib">6.2.1.2. How to set the level parameter in zlib</a></li>
+<li><a class="reference internal" href="#how-to-switch-to-other-built-in-compressors">6.2.1.3. How to switch to other built-in compressors</a></li>
+<li><a class="reference internal" href="#how-to-write-a-plugin-for-another-compression-library">6.2.1.4. How to write a plugin for another compression library</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-to-configure-for-a-plugin">6.2.2. How to configure for a plugin</a></li>
+<li><a class="reference internal" href="#constraints">6.2.3. Constraints</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="durability-service.html"
+                        title="previous chapter">5. The Durability Service</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="ddsi2-networking-service.html"
+                        title="next chapter">7. The DDSI2 and DDSI2E Networking Services</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/networking-service.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ddsi2-networking-service.html" title="7. The DDSI2 and DDSI2E Networking Services"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="durability-service.html" title="5. The Durability Service"
+             >previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

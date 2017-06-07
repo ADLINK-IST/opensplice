@@ -21,3 +21,5 @@ Release
 *Dcps_impl.*
 *SplDcps.*
 ccpp_*.h
+*_FACE.*pp
+*_DCPS.hpp

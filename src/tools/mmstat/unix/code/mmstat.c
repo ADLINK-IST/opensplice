@@ -1,15 +1,23 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#include "os.h"
+#include "vortex_os.h"
 
 #include <assert.h>
 #include <unistd.h>
@@ -17,7 +25,6 @@
 #include <termios.h>
 #include <time.h>
 #include <string.h>
-#include <errno.h>
 #include <signal.h>
 #include <limits.h>
 #include <sys/ioctl.h>
@@ -25,6 +32,7 @@
 #include <sys/filio.h>
 #endif
 
+#include "os_errno.h"
 #include "c__base.h"
 #include "u_user.h"
 #include "u__user.h"
@@ -135,12 +143,13 @@ OPENSPLICE_MAIN ("")
     orderKind selectedOrdering  = NO_ORDERING;
     int orderCount = INT_MAX;
 
-    while (((opt = getopt (argc, argv, optflags)) != -1) && !errno)
+    os_setErrno (0);
+    while (((opt = getopt (argc, argv, optflags)) != -1) && !os_getErrno())
     {
         switch (opt)
         {
             case 'i':
-                if (!(sscanf (optarg, "%d", &interval)) > 0)
+                if (sscanf (optarg, "%d", &interval) != 1)
                 {
                     fprintf(stderr, "mmstat: Not a valid interval.\n");
                     print_usage();
@@ -148,7 +157,7 @@ OPENSPLICE_MAIN ("")
                 }
                 break;
             case 's':
-                if (!(sscanf (optarg, "%d", &sample_count)) > 0)
+                if (sscanf (optarg, "%d", &sample_count) != 1)
                 {
                     fprintf(stderr, "mmstat: Not a valid sample count.\n");
                     print_usage();
@@ -156,7 +165,7 @@ OPENSPLICE_MAIN ("")
                 }
                 break;
             case 'l':
-                if (!(sscanf (optarg, "%d", &obj_cnt_limit)) > 0)
+                if (sscanf (optarg, "%d", &obj_cnt_limit) != 1)
                 {
                     fprintf(stderr, "mmstat: Not a valid limit.\n");
                     print_usage();
@@ -217,7 +226,7 @@ OPENSPLICE_MAIN ("")
                 }
                 break;
             case 'n':
-                if (!(sscanf (optarg, "%d", &orderCount)) > 0)
+                if (sscanf (optarg, "%d", &orderCount) != 1)
                 {
                     fprintf(stderr, "mmstat: Not a valid ordering nrEntries.\n");
                     print_usage();
@@ -252,9 +261,9 @@ OPENSPLICE_MAIN ("")
         }
     }
 
-    if (errno)
+    if (os_getErrno ())
     {
-        fprintf(stderr, "%s", strerror(errno));
+        fprintf(stderr, "%s", os_strError (os_getErrno ()));
         fprintf(stderr, "\n");
         print_usage();
         exit (-1);
@@ -312,12 +321,7 @@ OPENSPLICE_MAIN ("")
         {
             sdds_uri = os_getenv("OSPL_URI");
 
-            if(!sdds_uri)
-            {
-                sdds_uri = (c_char*)os_malloc(19);
-                sprintf(sdds_uri, "%s", "The default Domain");
-            }
-            else
+            if(sdds_uri)
             {
                 sdds_uri = os_strdup(sdds_uri);
             }
@@ -336,7 +340,7 @@ OPENSPLICE_MAIN ("")
     if (ur == U_RESULT_OK)
     {
         pqos = u_participantQosNew(NULL);
-        participant = u_participantNew(sdds_uri, 30, "mmstat", (v_qos)pqos, TRUE);
+        participant = u_participantNew(sdds_uri, U_DOMAIN_ID_ANY, 30, "mmstat", (u_participantQos)pqos, TRUE);
         u_participantQosFree(pqos);
 
         if(participant)
@@ -413,13 +417,13 @@ OPENSPLICE_MAIN ("")
                     switch (selected_action)
                     {
                         case memoryStats:
-                            ur = u_entityAction(u_entity(participant), monitor_msAction, ms_data);
+                            ur = u_observableAction(u_observable(participant), monitor_msAction, ms_data);
                             break;
                         case typeRefCount:
-                            ur = u_entityAction(u_entity(participant), monitor_trcAction, trc_data);
+                            ur = u_observableAction(u_observable(participant), monitor_trcAction, trc_data);
                             break;
                         case objectRefCount:
-                            ur = u_entityAction(u_entity(participant), monitor_orcAction, orc_data);
+                            ur = u_observableAction(u_observable(participant), monitor_orcAction, orc_data);
                             break;
                     }
 
@@ -462,11 +466,11 @@ OPENSPLICE_MAIN ("")
 #endif
 #ifdef INTEGRITY
                         count = read (connection, &c, 1);
-                        if( count != -1 || errno == EAGAIN  )
+                        if( count != -1 || os_getErrno() == EAGAIN  )
 #else
-                           if ( isatty (fileno(stdin)) 
-                                && isatty(fileno(stdout)) 
-                                && (ioctl (fileno(stdin), FIONREAD, &count) == 0) 
+                           if ( isatty (fileno(stdin))
+                                && isatty(fileno(stdout))
+                                && (ioctl (fileno(stdin), FIONREAD, &count) == 0)
                                 && count != 0 )
 #endif
                         {
@@ -514,7 +518,7 @@ OPENSPLICE_MAIN ("")
             }
 
 #ifndef INTEGRITY
-            if (isatty (fileno(stdin)) && isatty(fileno(stdout)) ) 
+            if (isatty (fileno(stdin)) && isatty(fileno(stdout)) )
             {
                 count = read (fileno(stdin), &c, 1);
                 if(count != -1)
@@ -528,7 +532,7 @@ OPENSPLICE_MAIN ("")
                 printf("\nConnection with domain lost. The OpenSplice system has\n" \
                        "probably been shut down.\n");
             }
-            u_participantFree(participant);
+            u_objectFree (u_object (participant));
         }
         else
         {
@@ -536,8 +540,6 @@ OPENSPLICE_MAIN ("")
             printf("Is the OpenSplice system running?\n");
             OS_REPORT(OS_ERROR,"mmstat", 0, "Creation of participant failed.");
         }
-
-        u_userDetach();
 
         switch (selected_action)
         {

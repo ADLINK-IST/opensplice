@@ -1,0 +1,494 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Vortex OpenSplice - documentation index</title>
+    <style type="text/css" media="all">
+      @import url("../css/maven-base.css");
+      @import url("../css/maven-theme.css");
+      @import url("../css/site.css");
+    </style>
+    <link rel="stylesheet" href="./docs/css/print.css" type="text/css" media="print" />
+    <meta name="Date-Revision-yyyymmdd" content="20141002" />
+    <meta http-equiv="Content-Language" content="en" />
+
+  </head>
+  <body class="composite">
+    <div id="banner">
+       <a href="http://www.prismtech.com" id="bannerLeft">
+          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       </a>
+       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       </a>
+       <div class="clear">
+          <hr/>
+       </div>
+    </div>
+    <div id="breadcrumbs">
+       <div class="xright">
+          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
+          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+       </div>
+       <div class="clear">
+         <hr/>
+       </div>
+    </div>
+    <div id="leftColumn">
+      <div id="navcolumn">
+         <h5>Vortex OpenSplice</h5>
+         <ul>
+            <li class="none">
+            <a href="../../index.html" title = "Intro">Introduction</a>
+            </li>
+            <li class="none">
+              <a href="guides.html" title="APIs"><strong>User Guides</strong></a>
+            </li>
+            <li class="none">
+              <a href="changedV6.html" title="Changes">Changes</a><br>
+            </li>
+            <li class="none">
+              <a href="platforms.html" title="Supported Platforms">Supported Platforms</a><br>
+            </li>
+            <li class="none">
+              <a href="known_issues.html" title="Changes">Known Issues</a><br>
+            </li>
+            <li class="none">
+              <a href="ddsi2_release_notes.html" title="Changes">DDSI Release Notes</a><br>
+            </li>
+            <li class="none">
+               <a href="rebuilding_APIs.html" title = "User Guide">Rebuilding the C++ APIs</a><br>
+            </li>
+            <li class="none">
+               <a href="upgrading.html" title = "Upgrading">Upgrading OpenSplice</a><br>
+            </li>
+            <li class="none">
+               <a href="../../examples/dcps/README.html" title = "Examples">Examples</a><br>
+            </li>
+            <li class="none">
+               <a href="third_party_licenses.html" title = "Third Party Licenses">Third party licenses</a><br>
+            </li>
+            <li class="none">
+              <a href="./../../LICENSE" title="License">License</a>
+            </li>
+          </ul>
+      </a>
+      </div>
+    </div>
+    <div id="bodyColumn">
+      <div id="contentBox">
+        <h2>Migration Guide IsoC++ V2</h2>
+          A second version of the IsoC++ has been implemented.<br>
+          <br>
+          While the API hasn't changed much between V1 and V2, there are still some differences
+          that should be considered when migrating from V1 to V2. These  differences are addressed
+          in this Migration Guide.
+      </div>
+      <div id="contentBox">
+        <h2>Rationale</h2>
+          While most things haven't changed between IsoC++ V1 and V2 regarding the API, there
+          were a few issues with IsoC++ V1 that needed to be addressed. Mainly for backwards
+          compatibility reasons, it was decided to not change the IsoC++ V1 but to add a
+          second API version beside it.
+          <ul>
+          <li>
+            The first iteration of the IsoC++ Specification contains a few issues.
+            <ul>
+              <li>
+                IsoC++ V2 has  been created to address these issues and as an advance of the new
+                IsoC++ Specification that will be released.
+              </li>
+              <li>
+                <b><i>An application that uses IsoC++ V2 will be more future proof.</i></b>
+              </li>
+            </ul>
+          </li>
+          <li>
+            The IsoC++ V1 API is build on top of the Classic C++ API.
+            <ul>
+              <li>
+                To improve performance and reduce  maintenance costs, it was decided to remove the
+                dependency of the Classic C++ API and thus remove an extra layer within the implementation.
+              </li>
+              <li>
+                <b><i>An application that uses IsoC++ V2 will have increased performance and a lower footprint.</i></b>
+              </li>
+            </ul>
+          </li>
+          <li>
+            The IsoC++ V1 API is missing a few features.
+            <ul>
+              <li>
+                The features that are present in V2 but not in V1 are mainly (but not limited to):
+                <ul>
+                  <li>Most listeners, like PublisherListener and DomainParticipantListener.</li>
+                  <li>Proprietary features, like 'dispose all data' and various QoS Policy settings.</li>
+                  <li>Builtin-Topics and DataReaders.</li>
+                  <li>Google protocol buffers support.</li>
+                </ul>
+              <li>
+                <b><i>An application that uses IsoC++ V2 will have a more complete feature set.</i></b>
+              </li>
+            </ul>
+          </li>
+          </ul>
+          The IsoC++ V1 API is deprecated now and will be removed in a future release.
+      </div>
+      <div id="contentBox">
+        <h2>API Changes</h2>
+        <ul>
+          <li class="doc" data-doctype="guide">
+            Down-casting within an entity class hierarchy has improved.
+            <ul>
+              <li>
+                Up and down-casting can be done by constructors and assignment operators.
+              </li>
+              <li>
+                An invalid cast will trigger the dds::core::IllegalOperationError exception.
+                <table>
+                  <tbody border="0">
+                    <tr border="0">
+                      <td border="0">
+                        <pre>
+dds::domain::DomainParticipant dp(0);
+dds::pub::Publisher pub(dp);
+dds::core::Entity en(pub);       /* Up-cast */
+
+dds::pub::Publisher pub1(en);    /* Down-cast by constructor. */
+dds::pub::Publisher pub2(dds::core::null);
+pub2 = en;                       /* Down-cast by assignment.  */
+
+dds::sub::Subscriber sub1(en);   /* This throws an exception (can not cast pub to sub). */
+dds::sub::Subscriber sub2(dds::core::null);
+sub2 = en;                       /* This throws an exception (can not cast pub to sub).*/
+                        </pre>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </li>
+              <li>
+                During the conversions, new temporary objects (aka rvalues) are created. This has some restrictions because you can't assign
+                a rvalue to an non-const reference:
+                <table
+                  <tbody>
+                    <tr>
+                      <td>
+                        <pre>
+using dds::core::cond;
+
+void func(GuardCondition  gc) { }
+void func_ref(GuardCondition&amp; gc) { }
+void func_cref(const GuardCondition&amp; gc) { }
+
+/* GuardCondition &lt;-&gt; Condition conversion is used to illustrate the restriction,
+ * but this principle is applicable for all conversions. */
+GuardCondition gc1;
+
+Condition cond(gc1);                 /* rvalue assigned to lvalue immediately:  OK            */
+GuardCondition gc2(cond);            /* rvalue assigned to lvalue immediately:  OK            */
+const GuardCondition &amp;gc3(cond);     /* rvalue assigned to const reference:     OK            */
+GuardCondition &amp;gc4(cond);           /* rvalue assigned to non-const reference: Compile Error */
+
+func(cond);        /* rvalue assigned to lvalue function argument immediately:  OK            */
+func_cref(cond);   /* rvalue assigned to const reference function argument:     OK            */
+func_ref(cond);    /* rvalue assigned to non-const reference function argument: Compile Error */
+func_ref(gc1);                       /* no conversion, no rvalue to assign:     OK            */
+                        </pre>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </li>
+            </ul>
+          </li>
+          <li>
+            Some class hierarchies have changed.
+            <ul>
+              <li>
+                The AnyDataReader is now a parent class of DataReader&lt;T&gt;.
+              </li>
+              <li>
+                The AnyDataWriter is now a parent class of DataWriter&lt;T&gt;.
+              </li>
+              <li>
+                The AnyTopic is now a parent class of Topic&lt;T&gt;.
+                <ul>
+                  <li>
+                    The function get() was used to convert an Any* entity into a typed entity. Now the conversion can be done
+                    by the new casting system.
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td>
+                            <pre>
+dds::sub::DataReader&lt;Foo::Bar&gt; reader(subscriber);
+dds::sub::AnyDataReader any(reader);        /* Up-cast   */
+dds::sub::DataReader&lt;Foo::Bar&gt; rdr1(any);   /* Down-cast */
+dds::sub::DataReader&lt;Foo::Qux&gt; rdr2(any);   /* Exception */
+                            </pre>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>
+            The TopicDescription class is now typeless.
+            <ul>
+              <li>
+                Because the TopicDescription is typeless, it replaces the AnyTopicDescription functionality.
+                AnyTopicDescription is therefore deleted.
+              </li>
+            </ul>
+          </li>
+          <li>
+            The Query and QueryCondition classes have some changes.
+            <ul>
+              <li>
+                The QueryCondition now inherits from Query.
+                <ul>
+                  <li>
+                    This enables the use of the QueryCondition as a content filter which can be applied to a Selector
+                    associated with a DataReader.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                The Query inherits from Reference instead of Value.
+                <ul>
+                  <li>
+                    This implies that the copy semantics have changed (shallow copy instead of deep copy).
+                  </li>
+                  <li>
+                    This affects the behavior of the Query when used as content filter of a DataReader::Selector: When a
+                    query is applied to a Selector and for example the Query parameters are changed then these changes
+                    will also be applied to the associated Selector.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                Currently the state of the Query may change when the Query is used with a Selector and on this Selector
+                a state filter is applied. In that case the state filter applied on the Selector will also be applied
+                to the associated Query.
+                <ul>
+                  <li>
+                    This does not apply when a QueryCondition is used as a content filter of a Selector. Thus the setting
+                    of the Selector's state filter will not affect the state of the QueryCondition associated with that
+                    Selector.
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>
+            The Functors that you may apply to the Condition class no longer expect typeless operations.
+            <ul>
+              <li>
+                Each functor operation now expects 1 parameter of type dds:core::cond::Condition&amp;.
+              </li>
+              <li>
+                You can also specify functor operations that expect a parameter of a subclass of Condition
+                (e.g. const dds::sub::cond::ReadCondition&amp;).
+                <ul>
+                  <li>
+                    In that case one of the above-mentioned implicit upcast constructors will be invoked.
+                  </li>
+                  <li>
+                    If the functor operation that you specify expects a certain subclass of Condition that does not
+                    match the type of Condition that is passed, an IllegalOperationError will be thrown.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                When using a subclass as functor parameter, an implicit conversion needs to happen. This means that
+                the parameter of the functor has the same restrictions as mentioned in the Conversions paragraph: a
+                functor with a non-const subclass reference will not compile. The GuardCondition subclass is used as
+                example, but the restriction is applicable for all Condition subclasses.
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <pre>
+/*
+ * Compilable GuardCondition functors
+ */
+class FunctorGuardConditionConst {
+public:
+    void operator ()(const dds::core::cond::GuardCondition&amp; condition) {
+        /* condition not modifiable */
+    }
+};
+class FunctorGuardConditionNonConst {
+public:
+    void operator ()(dds::core::cond::GuardCondition condition) {
+        /* condition modifiable (not a reference) */
+    }
+};
+class FunctorCondition {
+public:
+    void operator ()(dds::core::cond::Condition&amp; condition) {
+        /* Notice the non-const Condition reference.
+         * This doesn't need a conversion, so no rvalue is created.
+         * The cast has to be done explicitly, when needed. */
+    }
+};
+
+/*
+ * NOT Compilable GuardCondition functor
+ */
+class FunctorGuardConditionFail {
+public:
+    void operator ()(dds::core::cond::GuardCondition&amp; condition) {
+        /* Notice the non-const GuardCondition reference... */
+    }
+};
+                        </pre>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </li>
+            </ul>
+          </li>
+          <li>
+            The StatusCondition is now a singleton.
+            <ul>
+              <li>
+                That means that if I instantiate multiple StatusConditions for the same Entity, they will all
+                refer to the same StatusCondition.
+              </li>
+              <li>
+                This allows for patterns where I can create a StatusCondition, pass a functor to it, and then create another
+                reference to the StatusCondition based on an AnyReader that is typeless. Since both StatusConditions originate
+                from the same Entity, they will both share the same functor.
+                <ul>
+                  <li>
+                    This, and the fact that functors now always receive the Condition that has triggered, allows for a nice way
+                    to dispatch to the functors you prepared for your typed Readers: see the code block below.
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td>
+                            <pre>
+// Create participant and coherent Subscriber.
+dds::domain::DomainParticipant dp(0);
+dds::sub::qos::SubscriberQos subQos = dp.default_subscriber_qos();
+subQos &lt;&lt; dds::core::policy::Presentation::GroupAccessScope(true, false); // coherent = true, ordered = false.
+dds::sub::Subscriber mySub(dp, subQos);
+dds::core::cond::WaitSet myWS();
+
+// Create the topics
+dds::topic::Topic&lt;Space::Type1&gt; myTopic1(dp, "Topic1");
+dds::topic::Topic&lt;Space::Type2&gt; myTopic2(dp, "Topic2");
+....
+
+
+// Create unique functors for each topic.
+class Reader1SCFunctor {
+public:
+    void operator ()(const dds::core::cond::StatusCondition &amp;cond) {
+        dds::sub::DataReader&lt;Space::Type1&gt; dr(cond.entity());
+        dds::sub::LoanedSamples&lt;Space::Type1&gt; samples = dr.take();
+    }
+}
+....
+
+// Create the Readers and pass a unique Functor to their StatusConditions.
+dds::sub::DataReader&lt;Space::Type1&gt; reader1(sub, myTopic1);
+dds::core::cond::StatusCondition statusCond1(reader1, myReader1SCFunctor);
+myWS.attach_condition(statusCond1);
+dds::sub::DataReader&lt;Space::Type1&gt; reader2(sub, myTopic2);
+dds::core::cond::StatusCondition statusCond2(reader2, myReaderSC2Functor);
+myWS.attach_condition(statusCond2);
+...
+
+
+while (true)
+{
+    std::vector&lt;dds::sub::AnyDataReader&gt; readerList;
+    dds::sub::status::DataState notReadState(dds::sub::status::SampleState::not_read());
+
+
+    myWS.wait(dds::core::Duration::infinite());
+
+
+    dds::sub::CoherentAccess coherentScope(mySub);
+    uint32_t nrReaders = dds::sub::find&lt;dds::sub::AnyDataReader&gt;(
+                    mySub, notReadState, std::back_inserter&lt;std::vector&lt;dds::sub::AnyDataReader&gt; &gt;(readerList), MAX_READERS);
+    for (uint32_t i = 0; i &lt; nrReaders; i++) {
+        dds::core::cond::StatusCondition sc(readerList[i]);
+        sc.dispatch();
+    }
+    coherentScope.end(); // Moved into the while loop. Can be removed too, since the destructor will otherwise end the set.
+}
+                            </pre>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>
+            The following function:
+            <table>
+              <tbody>
+                <tr>
+                  <td>
+                    <pre>
+template &lt;typename ANYTOPIC, typename BinIterator&gt;
+uint32_t dds::topic::discover(const dds::domain::DomainParticipant&amp; dp, BinIterator begin);
+                    </pre>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <br>has been renamed to
+            <table>
+              <tbody>
+                <tr>
+                  <td>
+                    <pre>
+template &lt;typename ANYTOPIC, typename BinIterator&gt;
+uint32_t dds::topic::discover_all(const dds::domain::DomainParticipant&amp; dp, BinIterator begin);
+                    </pre>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <br>Reason for this is that the old name clashed with
+            <table>
+              <tbody>
+                <tr>
+                  <td>
+                    <pre>
+template &lt;typename TOPIC&gt;
+TOPIC discover(const dds::domain::DomainParticipant&amp; dp,
+               const std::string&amp; name,
+               const dds::core::Duration&amp; timeout = dds::core::Duration::infinite());
+                    </pre>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <br>when invoked with just 2 parameters. Instead of substituting the 3rd parameter, the compiler would in that
+            case interpret the std::string as the BinIterator and invoke that function instead.
+            <ul>
+              <li>
+                This is because overloaded functions are first matched on the amount of parameters, and only when there is
+                no match it will look for possibilities to add default parameters. In this particular case a match with 2
+                parameters is possible by using std::string as the template parameter for the BinIterator.
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.meta;
@@ -14,6 +22,7 @@ package org.opensplice.cm.meta;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Map.Entry;
 import java.util.StringTokenizer;
 
 /**
@@ -195,11 +204,12 @@ public class MetaType {
                 }
                 if (!tokenizer.hasMoreTokens()) {
                     return temp;
-                } else {
-                    if (temp != null) {
-                        current = temp;
-                    }
                 }
+
+                if (temp != null) {
+                    current = temp;
+                }
+
             }
         }
         return null;
@@ -307,7 +317,7 @@ public class MetaType {
 
         for (int i = 0; i < fields.length; i++) {
             field = fields[i];
-            this.walkOverNames(field.getName(), field, result, -1, null, init);
+            this.walkOverNames(field.getName(), field, result, -1, null, init, false);
         }
         return result;
     }
@@ -319,22 +329,50 @@ public class MetaType {
 
         for (int i = 0; i < fields.length; i++) {
             field = fields[i];
-            this.walkOverNames(field.getName(), field, result, limit, null, init);
+            this.walkOverNames(field.getName(), field, result, limit, null, init, false);
         }
         return result;
     }
 
+    /**
+     * Collect all field names for this type, starting from the field specified by startStruct.
+     * @param limit
+     * @param startStruct
+     * @param init
+     * @return A Map of field names and their default values.
+     */
     public LinkedHashMap<String, String> collectAllFieldNames(int limit, String startStruct, boolean init) {
+        LinkedHashMap<String, String> tmp = new LinkedHashMap<String, String>();
         LinkedHashMap<String, String> result = new LinkedHashMap<String, String>();
-        MetaField[] fields = this.getFields();
-        MetaField field;
+
+        String startStructStripped = null;
         if (startStruct != null) {
-            startStruct = removeIndices(startStruct, null);
+            // Check if the struct we're interested in is not a collection of or part of a collection
+            // of primitives, and thus, no need to walk over the type.
+            MetaField testField = getField(startStruct);
+            while (testField instanceof MetaCollection) {
+                testField = ((MetaCollection) testField).getSubType();
+            }
+            if (testField instanceof MetaPrimitive) {
+                addPrimitive(startStruct, result, limit, startStruct, (MetaPrimitive) testField, init, true);
+                return result;
+            }
+            if (testField instanceof MetaEnum) {
+                addEnum(startStruct, result, limit, startStruct, (MetaEnum) testField, init, true);
+                return result;
+            }
+            startStructStripped = removeIndices(startStruct, null);
         }
 
-        for (int i = 0; i < fields.length; i++) {
-            field = fields[i];
-            this.walkOverNames(field.getName(), field, result, limit, startStruct, init);
+        for (MetaField field : this.getFields()) {
+            this.walkOverNames(field.getName(), field, tmp, limit, startStructStripped, init, false);
+        }
+
+        // Replace the stripped struct names back with the original name and return the result.
+        if (startStruct != null && startStructStripped != null) {
+            for (Entry<String, String> e : tmp.entrySet()) {
+                result.put(e.getKey().replace(startStructStripped, startStruct), e.getValue());
+            }
         }
         return result;
     }
@@ -342,18 +380,23 @@ public class MetaType {
     private void addFieldName(LinkedHashMap<String, String> result, String fieldName, String startStruct, String value) {
         if (startStruct == null) {
             result.put(fieldName, value);
-        } else if (startStruct != null && fieldName.startsWith(startStruct)) {
-            result.put(fieldName, value);
+        } else if (fieldName.startsWith(startStruct)) {
+            // Ensure that the fieldName is actually a member of the startStruct, instead of a separate field
+            // with the same starting characters.
+            if (fieldName.equals(startStruct) ||
+                    (fieldName.length() > startStruct.length() && fieldName.charAt(startStruct.length()) == '.')) {
+                result.put(fieldName, value);
+            }
         }
     }
 
     private void walkOverNames(String nestedFieldName, MetaField field, LinkedHashMap<String, String> result,
-            int limit, String startStruct, boolean init) {
+            int limit, String startStruct, boolean init, boolean isCollectionPart) {
 
         if (field instanceof MetaPrimitive) { // Primitive
-            this.addPrimitive(nestedFieldName, result, limit, startStruct, (MetaPrimitive) field, init);
+            this.addPrimitive(nestedFieldName, result, limit, startStruct, (MetaPrimitive) field, init, isCollectionPart);
         } else if (field instanceof MetaEnum) { // Enumeration
-            this.addEnum(nestedFieldName, result, limit, startStruct, (MetaEnum) field, init);
+            this.addEnum(nestedFieldName, result, limit, startStruct, (MetaEnum) field, init, isCollectionPart);
         } else if (field instanceof MetaUnion) { // Union
             this.addUnion(nestedFieldName, (MetaUnion) field, result, limit, startStruct, init);
         } else if (field instanceof MetaStruct) { // Structure
@@ -376,6 +419,9 @@ public class MetaType {
             value = "N/A";
         }
 
+        while (field.getSubType() instanceof MetaCollection) {
+            field = (MetaCollection) field.getSubType();
+        }
         if ((typeName.equals("c_string")) || (typeName.equals("c_wstring")) || (typeName.startsWith("C_STRING<"))
                 || (typeName.startsWith("C_WSTRING<"))) {
             addFieldName(result, nestedFieldName, startStruct, value);
@@ -385,57 +431,68 @@ public class MetaType {
                 addFieldName(result, nestedFieldName, startStruct, "RECURSIVE TYPE NOT SUPPORTED");
             } else {
                 if ((limit < 0 && startStruct == null) || (limit > 0 && startStruct == null)) {
-                    this.walkOverNames(nestedFieldName, field.getSubType(), result, limit - 1, startStruct, init);
+                    this.walkOverNames(nestedFieldName, field.getSubType(), result, limit - 1, startStruct, init, true);
                 } else if (nestedFieldName.startsWith(startStruct + ".") && limit > 0) {
-                    this.walkOverNames(nestedFieldName, field.getSubType(), result, limit - 1, startStruct, init);
+                    this.walkOverNames(nestedFieldName, field.getSubType(), result, limit - 1, startStruct, init, true);
                 } else if (limit > 0 && startStruct != null) {
-                    this.walkOverNames(nestedFieldName, field.getSubType(), result, limit, startStruct, init);
+                    this.walkOverNames(nestedFieldName, field.getSubType(), result, limit, startStruct, init, true);
                 }
             }
         }
     }
 
+    /**
+     * @param isCollectionPart Is this primitive part of a collection. If so, don't init to the default value.
+     */
     private void addPrimitive(String nestedFieldName, LinkedHashMap<String, String> result, int limit,
-            String startStruct, MetaPrimitive primType, boolean init) {
+            String startStruct, MetaPrimitive primType, boolean init, boolean isCollectionPart) {
         String typeName = primType.getTypeName();
 
         String value = null;
 
-        if ("c_bool".equals(typeName)) {
-            if (init) {
-                value = "TRUE";
+        if (!isCollectionPart) {
+            if ("c_bool".equals(typeName)) {
+                if (init) {
+                    value = "TRUE";
+                } else {
+                    value = "N/A";
+                }
+            } else if ("c_char".equals(typeName)) {
+                if (init) {
+                    value = "a";
+                } else {
+                    value = "N/A";
+                }
+            } else if ("c_voidp".equals(typeName)) {
+                if (init) {
+                    value = "NULL";
+                } else {
+                    value = "N/A";
+                }
             } else {
-                value = "N/A";
-            }
-        } else if ("c_char".equals(typeName)) {
-            if (init) {
-                value = "a";
-            } else {
-                value = "N/A";
-            }
-        } else if ("c_voidp".equals(typeName)) {
-            if (init) {
-                value = "NULL";
-            } else {
-                value = "N/A";
+                if (init) {
+                    value = "0";
+                } else {
+                    value = "N/A";
+                }
             }
         } else {
-            if (init) {
-                value = "0";
-            } else {
-                value = "N/A";
-            }
+            value = "";
         }
         addFieldName(result, nestedFieldName, startStruct, value);
     }
 
     private void addEnum(String nestedFieldName, LinkedHashMap<String, String> result, int limit, String startStruct,
-            MetaEnum enumType, boolean init) {
+            MetaEnum enumType, boolean init, boolean isCollectionPart) {
         String value = null;
-        if (init) {
-            value = enumType.getPosValues()[0];
+        if (!isCollectionPart) {
+            if (init) {
+                value = enumType.getPosValues()[0];
+            } else {
+                value = "N/A";
+            }
         } else {
-            value = "N/A";
+            value = "";
         }
 
         addFieldName(result, nestedFieldName, startStruct, value);
@@ -446,11 +503,12 @@ public class MetaType {
         String value = "N/A";
         MetaUnionCase cases[] = field.getCases();
         if (limit < 0 || limit > 0) {
-            addFieldName(result, nestedFieldName + ".switch", startStruct, (String) field.getCases()[0].getLabels()
+            addFieldName(result, nestedFieldName + ".switch", startStruct,
+                    field.getCases()[0].getLabels()
                     .get(0));
             for (int i = 0; i < cases.length; i++) {
                 this.walkOverNames(nestedFieldName + "." + cases[i].getField().getName(), cases[i].getField(), result,
-                        limit, startStruct, init);
+                        limit, startStruct, init, false);
             }
         } else {
             if (startStruct == null) {
@@ -473,7 +531,7 @@ public class MetaType {
         if (limit < 0 || limit > 0) {
             for (int i = 0; i < fields.length; i++) {
                 this.walkOverNames(nestedFieldName + "." + fields[i].getName(), fields[i], result, limit, startStruct,
-                        init);
+                        init, false);
             }
         } else {
             addFieldName(result, nestedFieldName, startStruct, value);
@@ -493,7 +551,7 @@ public class MetaType {
         if (limit < 0 || limit > 0) {
             for (int i = 0; i < fields.length; i++) {
                 this.walkOverNames(nestedFieldName + "." + fields[i].getName(), fields[i], result, limit, startStruct,
-                        init);
+                        init, false);
             }
         } else {
             addFieldName(result, nestedFieldName, startStruct, value);

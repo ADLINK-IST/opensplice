@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "idl_genSACSHelper.h"
@@ -61,9 +69,15 @@ idl_metaCsharpSerialize2XML(
         void *args)
 {
     idl_metaCsharp  *metaElmnt = _metaElmnt;
-    c_ulong nrElements;
+
+    OS_UNUSED_ARG(args);
     if (!metaElmnt->descriptor)
-        metaElmnt->descriptor = idl_cutXMLmeta(idl_genXMLmeta(metaElmnt->type), &nrElements);
+    {
+        c_ulong nrElements;
+        size_t descrLength;
+
+        metaElmnt->descriptor = idl_cutXMLmeta(idl_genXMLmeta(metaElmnt->type), &nrElements, &descrLength);
+    }
 }
 
 void
@@ -71,7 +85,8 @@ idl_CsharpRemovePrefix (
     const c_char *prefix,
     c_char *name)
 {
-    unsigned int i, prefixMatch;
+    int prefixMatch;
+    os_size_t i;
 
     /* if the name is not prefixed, do nothing */
     prefixMatch = TRUE;
@@ -83,7 +98,7 @@ idl_CsharpRemovePrefix (
 
     if (prefixMatch) {
         c_char *p;
-        unsigned int j = 0, newLength = 0;
+        os_size_t j = 0, newLength = 0;
 
         p = name + strlen(prefix);
         newLength = strlen(name) - strlen(prefix);
@@ -117,10 +132,10 @@ toPascalCase(c_char *name)
     for (i = 0, j = 0; i <= strlen(name); i++, j++) {
         /* Start out with capital. */
         if (i == 0) {
-            name[j] = toupper(name[i]);
+            name[j] = (c_char) toupper(name[i]);
         } else if (name[i] == '_') {
             /* On underscore, start new capital. */
-            name[j] = toupper(name[++i]);
+            name[j] = (c_char) toupper(name[++i]);
         } else {
             /* If underscores mark the occurrence of new words, then go to
              * lower-case for all the other characters.
@@ -128,7 +143,7 @@ toPascalCase(c_char *name)
              * so copy the character as is.
              */
             if (nrUnderScores > 0) {
-                name[j] = tolower(name[i]);
+                name[j] = (c_char) tolower(name[i]);
             } else {
                 name[j] = name[i];
             }
@@ -170,7 +185,7 @@ idl_CsharpId(
     c_bool customPSM,
     c_bool isCType)
 {
-    c_ulong i, j, nrScopes, scopeNr, totalLength;
+    size_t i, j, nrScopes, scopeNr, totalLength;
     c_char *cSharpId;
     c_char **scopeList;
 
@@ -222,10 +237,10 @@ idl_CsharpId(
 
                 /* If a keyword matches the specified identifier, prepend _ */
                 /* QAC EXPECT 5007; will not use wrapper */
-                c_char *EscCsharpId = os_malloc((size_t)((int)strlen(scopeList[scopeNr])+1+1));
+                c_char *EscCsharpId = os_malloc(strlen(scopeList[scopeNr])+1+1);
                 snprintf(
                         EscCsharpId,
-                        (size_t)((int)strlen(scopeList[scopeNr])+1+1),
+                        strlen(scopeList[scopeNr])+1+1,
                         "%c%s",
                         escChar,
                         scopeList[scopeNr]);
@@ -318,10 +333,7 @@ idl_scopeStackCsharp (
                and the next scope name
              */
             /* QAC EXPECT 5007; will not use wrapper */
-            scopeStack = os_realloc(scopeStack, (size_t)(
-                             (int)strlen(scopeStack)+
-                             (int)strlen(scopeSepp)+
-                             (int)strlen(Id)+1));
+            scopeStack = os_realloc(scopeStack, strlen(scopeStack)+strlen(scopeSepp)+strlen(Id)+1);
            /* Concatenate the separator */
            /* QAC EXPECT 5007; will not use wrapper */
            os_strcat(scopeStack, scopeSepp);
@@ -338,10 +350,7 @@ idl_scopeStackCsharp (
                and the user identifier
              */
             /* QAC EXPECT 5007; will not use wrapper */
-            scopeStack = os_realloc(scopeStack, (size_t)(
-                             (int)strlen(scopeStack)+
-                             (int)strlen(scopeSepp)+
-                             (int)strlen(Id)+1));
+            scopeStack = os_realloc(scopeStack, strlen(scopeStack)+strlen(scopeSepp)+strlen(Id)+1);
            /* Concatenate the separator */
            /* QAC EXPECT 5007; will not use wrapper */
            os_strcat(scopeStack, scopeSepp);
@@ -531,6 +540,12 @@ idl_CsharpTypeFromTypeSpec (
 }
 
 c_char *
+idl_genCsharpConstantGetter(void)
+{
+    return os_strdup(".value");
+}
+
+c_char *
 idl_sequenceCsharpIndexString (
     idl_typeSpec typeSpec,
     SACS_INDEX_POLICY policy,
@@ -538,7 +553,7 @@ idl_sequenceCsharpIndexString (
 {
     c_char *str, *postfix;
     const c_char *indexStr;
-    int len;
+    os_size_t len;
 
     /* Determine the index-size of the current sequence. */
     if (policy == SACS_INCLUDE_INDEXES) {
@@ -591,7 +606,7 @@ idl_indexStr(
 {
     c_char *indexStr = os_malloc(12); /* > MAX_INT_SIZE. */
     if (policy == SACS_INCLUDE_INDEXES) {
-        c_long size = idl_typeArraySize (typeArray);
+        c_ulong size = idl_typeArraySize (typeArray);
         snprintf(indexStr, 12, "%d", size);
     } else {
         indexStr[0] = '\0';
@@ -605,7 +620,7 @@ idl_arrayCsharpIndexString (
     SACS_INDEX_POLICY policy)
 {
     c_char *postfix, *str, *indexStr;
-    int len;
+    os_size_t len;
 
     /* Determine the index-size of the current array. */
     indexStr = idl_indexStr(idl_typeArray(typeSpec), policy);

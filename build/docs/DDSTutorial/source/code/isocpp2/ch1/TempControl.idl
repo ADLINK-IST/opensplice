@@ -1,0 +1,18 @@
+module tutorial {
+/*segment1-start*/
+// TempControl.idl  
+  enum TemperatureScale {
+    CELSIUS, 
+    FAHRENHEIT,
+    KELVIN
+  };
+    
+  struct TempSensorType {
+    short id;
+    float temp;
+    float hum;
+    TemperatureScale scale;
+  };
+#pragma keylist TempSensorType id
+/*segment1-end*/
+};

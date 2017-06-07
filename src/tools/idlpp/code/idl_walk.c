@@ -1,15 +1,24 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
-#include "os.h"
+#include "vortex_os.h"
+#include "os_abstract.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -76,7 +85,6 @@ static idl_operand idl_makeConstLiteral (c_literal operand, c_type type);
 static idl_constSpec idl_makeConstSpec (c_constant o);
 static idl_operand idl_makeConstOperand (c_constant operand);
 static idl_typeSpec idl_makeTypeSpec (c_type type);
-static c_value idl_scaledLiteral ( c_primitive prim, c_value value);
 
 static c_iter presetModules = NULL;
 static c_char *presetFilename = NULL;
@@ -349,8 +357,7 @@ idl_basename(
 {
     const char *fname_start;
     const char *fname_end;
-    c_long len;
-    c_long i;
+    os_size_t len, i;
     static c_char basename[200];
 
     fname_start = os_rindex(filename, OS_FILESEPCHAR);
@@ -359,14 +366,14 @@ idl_basename(
     } else {
         fname_start++;
     }
-    fname_end = os_rindex (filename, '.');
+    fname_end = os_rindex (fname_start, '.');
     if (fname_end == NULL) {
         /* implicit defined meta objects will have no filename attached */
         /* e.g. "C_ARRAY<c_long>,10" or "C_SEQUENCE<c_char>"            */
         basename[0] = '\0';
         return basename;
     }
-    len = (fname_end - fname_start);
+    len = (os_size_t) (fname_end - fname_start);
     for (i = 0; i < len; i++) {
         basename[i] = *fname_start;
         fname_start++;
@@ -513,13 +520,13 @@ idl_labelImage(
                 snprintf(val, 40, "%uUL", (c_ulong)value.is.LongLong);
             break;
             case P_LONGLONG:
-                snprintf(val, 40, "%lldLL", (c_longlong)value.is.LongLong);
+                snprintf(val, 40, "%"PA_PRId64"LL", (c_longlong)value.is.LongLong);
             break;
             case P_ULONGLONG:
-                snprintf(val, 40, "%lluULL", (c_ulonglong)value.is.LongLong);
+                snprintf(val, 40, "%"PA_PRIu64"ULL", (c_ulonglong)value.is.LongLong);
             break;
             case P_CHAR:
-                snprintf(val, 40, "%hu", (unsigned char)value.is.LongLong);
+                snprintf(val, 40, "%u", (unsigned char)value.is.LongLong);
             break;
             case P_ADDRESS:
                 snprintf(val, 40, PA_ADDRFMT, (PA_ADDRCAST)value.is.LongLong);
@@ -535,6 +542,9 @@ idl_labelImage(
             case P_LOCK:
             case P_COND:
             case P_COUNT:
+            case P_PA_UINT32:
+            case P_PA_UINTPTR:
+            case P_PA_VOIDP:
                 /* Do nothing */
             break;
             }
@@ -549,10 +559,10 @@ idl_labelImage(
             snprintf(val, sizeof(val), "%uUL", value.is.ULong);
             break;
         case V_ULONGLONG:
-            snprintf(val, sizeof(val), "%lluULL", value.is.ULongLong);
+            snprintf(val, sizeof(val), "%"PA_PRIu64"ULL", value.is.ULongLong);
             break;
         case V_CHAR:
-            snprintf(val, sizeof(val), "%hu", (unsigned char)value.is.Char);
+            snprintf(val, sizeof(val), "%u", (unsigned char)value.is.Char);
             break;
         }
     } else {
@@ -622,7 +632,7 @@ idl_makeTypeBasic(
         }
     } else {
         if ((c_baseObject(type)->kind == M_COLLECTION) &&
-            (c_collectionType(type)->kind == C_STRING)) {
+            (c_collectionType(type)->kind == OSPL_C_STRING)) {
                 typeBasic = idl_typeBasicNew(idl_string);
                 idl_typeBasicSetMaxlen(typeBasic, c_collectionType(type)->maxSize);
                 idl_typeSpecSetName(idl_typeSpec(typeBasic), c_metaObject(type)->name);
@@ -657,13 +667,13 @@ idl_makeTypeCollection(
     c_char typeName[1024];
 
     switch (c_collectionType(type)->kind) {
-    case C_STRING:
+    case OSPL_C_STRING:
         typeSpec = idl_typeSpec(idl_makeTypeBasic(c_type(type)));
         if (idl_typeBasicMaxlen(idl_typeBasic(typeSpec)) > 0) {
             idl_setUserType(idl_typeUser(typeSpec), c_type(type));
         }
         break;
-    case C_ARRAY:
+    case OSPL_C_ARRAY:
         subType = idl_makeTypeSpec(type->subType);
         typeSpec = idl_typeSpec(idl_typeArrayNew (subType, type->maxSize));
         snprintf(typeName, sizeof(typeName), "C_ARRAY<%s,%d>",
@@ -671,7 +681,7 @@ idl_makeTypeCollection(
         idl_typeSpecSetName(typeSpec, typeName);
         idl_setUserType(idl_typeUser(typeSpec), c_type(type));
         break;
-    case C_SEQUENCE:
+    case OSPL_C_SEQUENCE:
         subType = idl_makeTypeSpec(type->subType);
         typeSpec = idl_typeSpec(idl_typeSeqNew(subType, type->maxSize));
         idl_setUserType(idl_typeUser(typeSpec), c_type(type));
@@ -820,58 +830,6 @@ idl_freeTypeSpec(
     }
 }
 
-static c_value
-idl_scaledLiteral(
-    c_primitive prim,
-    c_value value)
-{
-    c_value new_value;
-
-    if (value.kind == V_LONGLONG) {
-        switch (prim->kind) {
-        case P_BOOLEAN:
-            new_value.kind = V_BOOLEAN;
-            new_value.is.Boolean = (c_bool)value.is.LongLong;
-            break;
-        case P_CHAR:
-            new_value.kind = V_CHAR;
-            new_value.is.Char = (c_char)value.is.LongLong;
-            break;
-        case P_SHORT:
-            new_value.kind = V_SHORT;
-            new_value.is.Short = (c_short)value.is.LongLong;
-            break;
-        case P_USHORT:
-            new_value.kind = V_USHORT;
-            new_value.is.UShort = (c_ushort)value.is.LongLong;
-            break;
-        case P_LONG:
-            new_value.kind = V_LONG;
-            new_value.is.Long = (c_long)value.is.LongLong;
-            break;
-        case P_ULONG:
-            new_value.kind = V_ULONG;
-            new_value.is.ULong = (c_ulong)value.is.LongLong;
-            break;
-        case P_LONGLONG:
-            new_value.kind = V_LONGLONG;
-            new_value.is.LongLong = value.is.LongLong;
-            break;
-        case P_ULONGLONG:
-            new_value.kind = V_ULONGLONG;
-            new_value.is.ULongLong = value.is.LongLong;
-            break;
-        default:
-            new_value.kind = V_UNDEFINED;
-            new_value.is.LongLong = value.is.LongLong;
-            break;
-        }
-    } else {
-        new_value = value;
-    }
-    return new_value;
-}
-
 long
 idl_enumElementValue(
     c_literal o)
@@ -889,6 +847,9 @@ idl_iterTrace(
     const char *scopeName;
     c_char *name;
     const char *metaKind = NULL;
+    OS_UNUSED_ARG(udata);
+
+    OS_UNUSED_ARG(udata);
 
     assert(o);
 
@@ -970,6 +931,9 @@ idl_iterTrace(
     break;
     case M_COUNT:
         metaKind = "M_COUNT";
+    break;
+    default:
+        metaKind = "";
     break;
     }
 
@@ -1076,6 +1040,9 @@ idl_metaObjectTrace(
     case M_COUNT:
         metaKind = "M_COUNT";
         break;
+    default:
+        metaKind = "";
+        break;
     }
     if (strlen (scopeName)) {
         printf("%s: %s (%s in %s)\n", proc, metaKind, name, scopeName);
@@ -1125,6 +1092,10 @@ idl_expressionKind (
         kind = idl_not;
         break;
     default:
+        /* set kind to fix warning. undefined behavior
+         * warning: ‘kind’ may be used uninitialized in this function [-Wuninitialized]
+         */
+        kind = idl_not;
         printf("idl_expressionKind: Unknown expression kind %d\n", expr->kind);
     }
     return kind;
@@ -1136,7 +1107,7 @@ idl_makeConstExpression(
     c_type type)
 {
     idl_constExpression constExpr;
-    int i;
+    c_ulong i;
     c_operand exprOper;
     idl_operand operand = NULL;
 
@@ -1177,15 +1148,6 @@ idl_makeConstLiteral(
 
     if (c_baseObject(type)->kind != M_ENUMERATION) {
         switch (operand->value.kind) {
-        case V_UNDEFINED:
-        case V_WCHAR:
-        case V_WSTRING:
-        case V_FIXED:
-        case V_VOIDP:
-        case V_OBJECT:
-        case V_COUNT:
-            /* Invalid types for literal constants*/
-            break;
         case V_OCTET:
             val = os_malloc (40);
             if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
@@ -1203,7 +1165,7 @@ idl_makeConstLiteral(
             while (val2[i] == ' ') {
                 i++;
             }
-           os_strncpy(val, &val2[i], 40);
+            os_strncpy(val, &val2[i], 40);
             os_free(val2);
             if ((strchr(val, '.') == NULL) && (strchr(val, 'E') == NULL)) {
                 strcat(val, ".0");
@@ -1246,16 +1208,16 @@ idl_makeConstLiteral(
                     snprintf(val, 40, "%d", (c_long)operand->value.is.LongLong);
                     break;
                 case P_LONGLONG:
-                    snprintf(val, 40, "%lld", (c_longlong)operand->value.is.LongLong);
+                    snprintf(val, 40, "%"PA_PRId64"", (c_longlong)operand->value.is.LongLong);
                     break;
                 case P_ULONGLONG:
-                    snprintf(val, 40, "%lld", (c_longlong)operand->value.is.LongLong);
+                    snprintf(val, 40, "%"PA_PRId64"", (c_longlong)operand->value.is.LongLong);
                     break;
                 case P_CHAR:
-                    snprintf(val, 40, "%hd", (unsigned char)operand->value.is.LongLong);
+                    snprintf(val, 40, "%d", (unsigned char)operand->value.is.LongLong);
                     break;
                 case P_OCTET:
-                    snprintf(val, 40, "%hd", (unsigned char)operand->value.is.LongLong);
+                    snprintf(val, 40, "%d", (unsigned char)operand->value.is.LongLong);
                     break;
                 case P_ADDRESS:
                     snprintf(val, 40, PA_ADDRFMT, (PA_ADDRCAST)operand->value.is.LongLong);
@@ -1270,6 +1232,9 @@ idl_makeConstLiteral(
                 case P_LOCK:
                 case P_COND:
                 case P_COUNT:
+                case P_PA_UINT32:
+                case P_PA_UINTPTR:
+                case P_PA_VOIDP:
                     /* Do nothing */
                 break;
                 }
@@ -1288,16 +1253,16 @@ idl_makeConstLiteral(
                     snprintf(val, 40, "%uUL", (c_ulong)operand->value.is.LongLong);
                 break;
                 case P_LONGLONG:
-                    snprintf(val, 40, "%lluLL", (c_longlong)operand->value.is.LongLong);
+                    snprintf(val, 40, "%"PA_PRIu64"LL", (c_longlong)operand->value.is.LongLong);
                     break;
                 case P_ULONGLONG:
-                    snprintf(val, 40, "%lluULL", (c_ulonglong)operand->value.is.LongLong);
+                    snprintf(val, 40, "%"PA_PRIu64"ULL", (c_ulonglong)operand->value.is.LongLong);
                 break;
                 case P_CHAR:
-                    snprintf(val, 40, "%hu", (unsigned char)operand->value.is.LongLong);
+                    snprintf(val, 40, "%u", (unsigned char)operand->value.is.LongLong);
                     break;
                 case P_OCTET:
-                    snprintf(val, 40, "%hu", (unsigned char)operand->value.is.LongLong);
+                    snprintf(val, 40, "%u", (unsigned char)operand->value.is.LongLong);
                 break;
                 case P_ADDRESS:
                     snprintf(val, 40, PA_ADDRFMT, (PA_ADDRCAST)operand->value.is.LongLong);
@@ -1312,6 +1277,9 @@ idl_makeConstLiteral(
                 case P_LOCK:
                 case P_COND:
                 case P_COUNT:
+                case P_PA_UINT32:
+                case P_PA_UINTPTR:
+                case P_PA_VOIDP:
                     /* Do nothing */
                     break;
                 }
@@ -1319,55 +1287,63 @@ idl_makeConstLiteral(
             break;
         case V_SHORT:
             val = os_malloc(40);
-            snprintf(val, sizeof(val), "%hd", operand->value.is.Short);
+            snprintf(val, 40, "%hd", operand->value.is.Short);
             break;
         case V_LONG:
             val = os_malloc(40);
             if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
-                snprintf(val, sizeof(val), "%d", (c_long)operand->value.is.Long);
+                snprintf(val, 40, "%d", (c_long)operand->value.is.Long);
             } else {
-                snprintf(val, sizeof(val), "%dL", operand->value.is.Long);
+                snprintf(val, 40, "%dL", operand->value.is.Long);
             }
             break;
         case V_USHORT:
             val = os_malloc(40);
             if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
-                snprintf(val, sizeof(val), "%hd", (c_short)operand->value.is.UShort);
+                snprintf(val, 40, "%hd", (c_short)operand->value.is.UShort);
             } else {
-                snprintf(val, sizeof(val), "%huU", operand->value.is.UShort);
+                snprintf(val, 40, "%huU", operand->value.is.UShort);
             }
             break;
         case V_ULONG:
             val = os_malloc(40);
             if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
-                snprintf(val, sizeof(val), "%d", (c_long)operand->value.is.ULong);
+                snprintf(val, 40, "%d", (c_long)operand->value.is.ULong);
             } else {
-                snprintf(val, sizeof(val), "%uUL", operand->value.is.ULong);
+                snprintf(val, 40, "%uUL", operand->value.is.ULong);
             }
             break;
         case V_ULONGLONG:
             val = os_malloc(40);
             if (idl_getLanguage() == IDL_LANG_JAVA || idl_getLanguage() == IDL_LANG_CS) {
-                snprintf(val, sizeof(val), "%lld", (c_longlong)operand->value.is.ULongLong);
+                snprintf(val, 40, "%" PA_PRId64, (c_longlong)operand->value.is.ULongLong);
             } else {
-                snprintf(val, sizeof(val), "%lluULL", operand->value.is.ULongLong);
+                snprintf(val, 40, "%" PA_PRIu64 "ULL", operand->value.is.ULongLong);
             }
             break;
         case V_ADDRESS:
             val = os_malloc(40);
-            snprintf(val, sizeof(val), PA_ADDRFMT, (PA_ADDRCAST)operand->value.is.Address);
+            snprintf(val, 40, PA_ADDRFMT, (PA_ADDRCAST)operand->value.is.Address);
             break;
         case V_CHAR:
             val = os_malloc(40);
-            snprintf(val, 40, "%hu", (unsigned char)operand->value.is.Char);
+            snprintf(val, 40, "%u", (unsigned char)operand->value.is.Char);
+            break;
+        case V_UNDEFINED:
+        case V_WCHAR:
+        case V_WSTRING:
+        case V_FIXED:
+        case V_VOIDP:
+        case V_OBJECT:
+        case V_COUNT:
+            /* Invalid types for literal constants*/
+            /* FALL THROUGH */
+        default:
+            val = NULL;
             break;
         }
     } else {
-        char *name;
-
-        name = os_strdup(c_metaObject(c_constant(c_enumeration(type)->elements[operand->value.is.Long]))->name);
-        val = os_malloc(strlen(name) + 1);
-        snprintf(val, strlen(name) + 1, "%s", name);
+        val = os_strdup(c_metaObject(c_constant(c_enumeration(type)->elements[operand->value.is.Long]))->name);
     }
     constLit = idl_constLiteralNew(val);
     return (idl_operand)constLit;
@@ -1433,12 +1409,12 @@ idl_unsupportedType(
         (strncmp(c_metaObject(type)->name, IDL_UNSUP_PREFIX, strlen(IDL_UNSUP_PREFIX)) != 0)) {
         switch (c_baseObject(type)->kind) {
         case M_COLLECTION:
-                if (c_collectionType(type)->kind == C_SEQUENCE) {
+                if (c_collectionType(type)->kind == OSPL_C_SEQUENCE) {
                     retval = idl_unsupportedType(c_collectionType(type)->subType);
-            } else if (c_collectionType(type)->kind == C_ARRAY) {
+            } else if (c_collectionType(type)->kind == OSPL_C_ARRAY) {
                 retval = idl_unsupportedType(c_collectionType(type)->subType);
-            } else if (!(c_collectionType(type)->kind == C_STRING) &&
-                       !(c_collectionType(type)->kind == C_WSTRING)) {
+            } else if (!(c_collectionType(type)->kind == OSPL_C_STRING) &&
+                       !(c_collectionType(type)->kind == OSPL_C_WSTRING)) {
                 retval = 1;
             }
             break;
@@ -1526,11 +1502,11 @@ idl_metaobject(
         idl_constant (c_constant(o), context);
         break;
     case M_COLLECTION:
-        if (c_collectionType(o)->kind == C_STRING &&
+        if (c_collectionType(o)->kind == OSPL_C_STRING &&
             c_collectionType(o)->maxSize > 0) {
             idl_boundedString (c_collectionType(o), context);
         }
-        if (c_collectionType(o)->kind == C_SEQUENCE) {
+        if (c_collectionType(o)->kind == OSPL_C_SEQUENCE) {
             if (idl_unsupportedType (c_type(o)) == 0) {
                 idl_sequence (c_collectionType(o), context);
             }
@@ -1574,6 +1550,8 @@ idl_moduleClose(
     idl_context context,
     c_module o)
 {
+    OS_UNUSED_ARG(o);
+
     if (context->program->moduleClose) {
         context->program->moduleClose(context->program->userData);
     }
@@ -1657,7 +1635,7 @@ idl_union(
     c_union o,
     idl_context context)
 {
-    int ci;
+    c_ulong ci;
     idl_switchVal sv;
     idl_action next = idl_abort;
     idl_typeSpec labelType;
@@ -1759,8 +1737,8 @@ idl_unionCase(
     idl_switchVal defaultLabelVal,
     idl_context context)
 {
-    int li;
-    int labelCount;
+    c_ulong li;
+    c_ulong labelCount;
     idl_typeSpec labelType;
     c_type switchType;
     c_enumeration e;
@@ -1826,6 +1804,8 @@ idl_primitive(
     c_primitive o,
     idl_context context)
 {
+    OS_UNUSED_ARG(o);
+    OS_UNUSED_ARG(context);
 }
 
 void
@@ -1875,7 +1855,7 @@ idl_structure(
     c_structure o,
     idl_context context)
 {
-    int mi;
+    c_ulong mi;
     idl_action next;
 
     if (idl_contextTrace(context)) {
@@ -1914,6 +1894,8 @@ idl_enumerationElementOpenClose (
     c_enumeration e,
     c_constant o)
 {
+    OS_UNUSED_ARG(e);
+
     if (context->program->enumerationElementOpenClose) {
         context->program->enumerationElementOpenClose(context->ownScope, c_metaObject(o)->name, context->program->userData);
     }
@@ -1937,9 +1919,12 @@ idl_action
 idl_enumerationOpen(
     idl_context context,
     c_enumeration o,
-    c_long noElements)
+    c_ulong noElements)
 {
     idl_action next = idl_abort;
+    OS_UNUSED_ARG(noElements);
+
+    OS_UNUSED_ARG(noElements);
 
     if (context->program->enumerationOpen) {
         idl_typeEnum enumSpec = idl_makeTypeEnum(o);
@@ -2086,13 +2071,18 @@ idl_emulateScopes(
     return walkData.objects;
 }
 
-void showObjects(c_metaObject o, void* udata) {
-    if(o == SCOPE_OPEN) {
+void
+showObjects(
+    c_metaObject o,
+    void* udata)
+{
+    OS_UNUSED_ARG(udata);
+
+    if (o == SCOPE_OPEN) {
         printf(" > <scope open>\n");
-    }else
-    if(o != SCOPE_CLOSE) {
+    } else if (o != SCOPE_CLOSE) {
         printf(" > %s.\n", c_metaScopedName(o));
-    }else {
+    } else {
         printf(" > <scope close>\n");
     }
 }
@@ -2102,7 +2092,7 @@ idl_enumeration(
     c_enumeration o,
     idl_context context)
 {
-    int ei;
+    c_ulong ei;
     idl_action next;
 
     if (idl_contextTrace(context)) {
@@ -2205,7 +2195,7 @@ idl_walk(
         if (action == idl_explore) {
             c_walkIterScope(&iterator, (c_iterWalkAction)idl_metaobject, &context);
             if (context.program->fileClose) {
-               context.program->fileClose(context.program->userData);
+                context.program->fileClose(context.program->userData);
             }
         }
     }

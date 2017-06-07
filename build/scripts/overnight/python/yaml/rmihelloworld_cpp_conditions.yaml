@@ -1,0 +1,25 @@
+parseconditions:
+    desc: RMI HelloWorld LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    conditions: 
+        - name: server_proxy
+          type: line
+          inst: 2
+          required: yes
+          line: "=== Succeeded in getting the server proxy named HelloWorldServer :"
+
+        - name: greet_return
+          type: line
+          inst: 1
+          required: yes
+          line: "=== greet returns : Hello World *"
+
+        - name: async_greet
+          type: line
+          inst: 1
+          required: yes
+          line: "async_greet returns: Hello World *"

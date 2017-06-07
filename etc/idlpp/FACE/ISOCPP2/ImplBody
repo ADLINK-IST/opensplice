@@ -1,0 +1,64 @@
+/********** $(scopedtypename) ***********/
+
+void FACE::TS::Receive_Message(
+        /* in    */ const FACE::CONNECTION_ID_TYPE &connection_id,
+        /* in    */ const FACE::TIMEOUT_TYPE &timeout,
+        /* inout */       FACE::TRANSACTION_ID_TYPE &transaction_id,
+        /* inout */       $(scopedtypename) &message,
+        /* inout */       FACE::MESSAGE_TYPE_GUID &message_type_id,
+        /* inout */       FACE::MESSAGE_SIZE_TYPE &message_size,
+        /* out   */       FACE::RETURN_CODE_TYPE &return_code)
+{
+    FACE_REPORT_STACK_BEGIN();
+    Vortex::FACE::Connection<$(scopedtypename)>::shared_ptr connection =
+            Vortex::FACE::Connection<$(scopedtypename)>::get(connection_id, return_code);
+    if (connection.get() != NULL) {
+        return_code = connection->receive(message, timeout);
+    }
+    FACE_REPORT_STACK_CID_END(connection_id, return_code != ::FACE::NO_ERROR);
+}
+
+void FACE::TS::Send_Message(
+        /* in    */ const FACE::CONNECTION_ID_TYPE &connection_id,
+        /* in    */ const FACE::TIMEOUT_TYPE &timeout,
+        /* inout */       FACE::TRANSACTION_ID_TYPE &transaction_id,
+        /* inout */       $(scopedtypename) &message,
+        /* in    */ const FACE::MESSAGE_TYPE_GUID &message_type_id,
+        /* in    */ const FACE::MESSAGE_SIZE_TYPE &message_size,
+        /* out   */       FACE::RETURN_CODE_TYPE &return_code)
+{
+    FACE_REPORT_STACK_BEGIN();
+    Vortex::FACE::Connection<$(scopedtypename)>::shared_ptr connection =
+            Vortex::FACE::Connection<$(scopedtypename)>::get(connection_id, return_code);
+    if (connection.get() != NULL) {
+        return_code = connection->send(message, timeout);
+    }
+    FACE_REPORT_STACK_CID_END(connection_id, return_code != ::FACE::NO_ERROR);
+}
+
+void FACE::TS::Register_Callback(
+        /* in    */ const    FACE::CONNECTION_ID_TYPE &connection_id,
+        /* in    */ const    FACE::WAITSET_TYPE &waitset,
+        /* inout */          FACE::Read_Callback<$(scopedtypename)>::send_event data_callback,
+        /* in    */ const    FACE::MESSAGE_SIZE_TYPE &max_message_size,
+        /* out   */          FACE::RETURN_CODE_TYPE &return_code)
+{
+    FACE_REPORT_STACK_BEGIN();
+    Vortex::FACE::Connection<$(scopedtypename)>::shared_ptr connection =
+            Vortex::FACE::Connection<$(scopedtypename)>::get(connection_id, return_code);
+    if (connection.get() != NULL) {
+        return_code = connection->registerCallback(data_callback, waitset);
+    }
+    FACE_REPORT_STACK_CID_END(connection_id, return_code != ::FACE::NO_ERROR);
+}
+
+/*
+ * This makes sure that the ConnectionFactory knows about the typed
+ * Connection<$(scopedtypename)> at startup.
+ * This is needed because the ConnectionFactory has to be able to
+ * create that typed Connection without having knowledge about any
+ * data type whatsoever.
+ * This static object is applicable at startup and is never used again.
+ */
+static Vortex::FACE::ConnectionFactoryTypeRegister< Vortex::FACE::Connection<$(scopedtypename)> >
+              $(uniquetypename)TypeRegistration("$(scopedtypename)");

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -71,18 +79,16 @@ typedef struct
     DDS_DomainParticipantFactory factory;
     /** The DomainParticipant used by ping and pong */
     DDS_DomainParticipant participant;
-    /** The TypeSupport for the sample */
-    RoundTripModule_SampleTypeSupport typeSupport;
     /** The Topic used by ping and pong */
     DDS_Topic topic;
     /** The Publisher used by ping and pong */
     DDS_Publisher publisher;
     /** The DataWriter used by ping and pong */
-    RoundTripModule_SampleDataWriter writer;
+    RoundTripModule_DataTypeDataWriter writer;
     /** The Subscriber used by ping and pong */
     DDS_Subscriber subscriber;
     /** The DataReader used by ping and pong */
-    RoundTripModule_SampleDataReader reader;
+    RoundTripModule_DataTypeDataReader reader;
     /** The WaitSet used by ping and pong */
     DDS_WaitSet waitSet;
     /** The StatusCondition used by ping and pong,
@@ -90,15 +96,15 @@ typedef struct
     DDS_StatusCondition dataAvailable;
 
     /** The sample used to send data */
-    RoundTripModule_Sample *data;
+    RoundTripModule_DataType *data;
     /** The condition sequence used to store conditions returned by the WaitSet */
     DDS_ConditionSeq *conditions;
     /** The sequence used to hold samples received by the DataReader */
-    DDS_sequence_RoundTripModule_Sample *samples;
+    DDS_sequence_RoundTripModule_DataType *samples;
     /** The sequence used to hold information about the samples received by the DataReader */
     DDS_SampleInfoSeq *info;
-    /** A sequence used to store instance handles */
-    DDS_InstanceHandleSeq *ihs;
+    /** The PublicationMatcheStatus */
+    DDS_PublicationMatchedStatus *pms;
 
     ExampleTimeStats roundTrip;
     ExampleTimeStats writeAccess;
@@ -118,6 +124,8 @@ void initialise(Entities *e, const char *pubPartition, const char *subPartition)
     DDS_DataWriterQos *dwQos;
     DDS_DataReaderQos *drQos;
     DDS_SubscriberQos *subQos;
+    RoundTripModule_DataTypeTypeSupport typeSupport;
+    DDS_string typeSupportName;
 
     /* Register handler for Ctrl-C */
 #ifdef _WIN32
@@ -139,17 +147,21 @@ void initialise(Entities *e, const char *pubPartition, const char *subPartition)
     CHECK_HANDLE_MACRO(e->participant);
 
     /** The sample type is created and registered */
-    e->typeSupport = RoundTripModule_SampleTypeSupport__alloc();
-    CHECK_HANDLE_MACRO(e->typeSupport);
-    status = RoundTripModule_SampleTypeSupport_register_type(
-        e->typeSupport, e->participant, RoundTripModule_SampleTypeSupport_get_type_name(e->typeSupport));
+    typeSupport = RoundTripModule_DataTypeTypeSupport__alloc();
+    CHECK_HANDLE_MACRO(typeSupport);
+    typeSupportName = RoundTripModule_DataTypeTypeSupport_get_type_name(typeSupport);
+    CHECK_HANDLE_MACRO(typeSupportName);
+    status = RoundTripModule_DataTypeTypeSupport_register_type(
+        typeSupport, e->participant, typeSupportName);
     CHECK_STATUS_MACRO(status);
 
     /** A DDS_Topic is created for our sample type on the domain participant. */
     e->topic = DDS_DomainParticipant_create_topic(
-        e->participant, "RoundTrip", RoundTripModule_SampleTypeSupport_get_type_name(e->typeSupport),
-                                                  DDS_TOPIC_QOS_DEFAULT, 0, DDS_STATUS_MASK_NONE);
+        e->participant, "RoundTrip", typeSupportName,
+        DDS_TOPIC_QOS_DEFAULT, 0, DDS_STATUS_MASK_NONE);
     CHECK_HANDLE_MACRO(e->topic);
+    DDS_free(typeSupport);
+    DDS_free(typeSupportName);
 
     /** A DDS_Publisher is created on the domain participant. */
     pubQos = DDS_PublisherQos__alloc();
@@ -158,6 +170,7 @@ void initialise(Entities *e, const char *pubPartition, const char *subPartition)
     CHECK_STATUS_MACRO(status);
     pubQos->partition.name._length = 1;
     pubQos->partition.name._maximum = 1;
+    pubQos->partition.name._release = TRUE;
     pubQos->partition.name._buffer = DDS_StringSeq_allocbuf(1);
     pubQos->partition.name._buffer[0] = DDS_string_alloc((DDS_unsigned_long)strlen(pubPartition) + 1);
     strcpy(pubQos->partition.name._buffer[0], pubPartition);
@@ -172,7 +185,6 @@ void initialise(Entities *e, const char *pubPartition, const char *subPartition)
     CHECK_STATUS_MACRO(status);
     dwQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
     dwQos->reliability.max_blocking_time.sec = 10;
-    dwQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
     dwQos->writer_data_lifecycle.autodispose_unregistered_instances = FALSE;
     e->writer = DDS_Publisher_create_datawriter(e->publisher, e->topic, dwQos, 0, DDS_STATUS_MASK_NONE);
     CHECK_HANDLE_MACRO(e->writer);
@@ -185,11 +197,13 @@ void initialise(Entities *e, const char *pubPartition, const char *subPartition)
     CHECK_STATUS_MACRO(status);
     subQos->partition.name._length = 1;
     subQos->partition.name._maximum = 1;
+    subQos->partition.name._release = TRUE;
     subQos->partition.name._buffer = DDS_StringSeq_allocbuf(1);
     subQos->partition.name._buffer[0] = DDS_string_alloc((DDS_unsigned_long)strlen(subPartition) + 1);
     strcpy(subQos->partition.name._buffer[0], subPartition);
     e->subscriber = DDS_DomainParticipant_create_subscriber(e->participant, subQos, 0, DDS_STATUS_MASK_NONE);
     CHECK_HANDLE_MACRO(e->subscriber);
+    DDS_free(subQos);
 
     /** A DDS_DataReader is created on the Subscriber & Topic with a modified QoS. */
     drQos = DDS_DataReaderQos__alloc();
@@ -198,10 +212,10 @@ void initialise(Entities *e, const char *pubPartition, const char *subPartition)
     CHECK_STATUS_MACRO(status);
     drQos->reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
     drQos->reliability.max_blocking_time.sec = 10;
-    drQos->history.kind = DDS_KEEP_ALL_HISTORY_QOS;
     e->reader = DDS_Subscriber_create_datareader(
         e->subscriber, e->topic, drQos, 0, DDS_STATUS_MASK_NONE);
     CHECK_HANDLE_MACRO(e->reader);
+    DDS_free(drQos);
 
     /** A DDS_StatusCondition is created which is triggered when data is available to read */
     e->dataAvailable = DDS_DataReader_get_statuscondition(e->reader);
@@ -219,20 +233,20 @@ void initialise(Entities *e, const char *pubPartition, const char *subPartition)
     CHECK_STATUS_MACRO(status);
 
     /** Initialise data structures */
-    e->data = RoundTripModule_Sample__alloc();
+    e->data = RoundTripModule_DataType__alloc();
     CHECK_HANDLE_MACRO(e->data);
 
     e->conditions = DDS_ConditionSeq__alloc();
     CHECK_HANDLE_MACRO(e->conditions);
 
-    e->samples = DDS_sequence_RoundTripModule_Sample__alloc();
+    e->samples = DDS_sequence_RoundTripModule_DataType__alloc();
     CHECK_HANDLE_MACRO(e->samples);
 
     e->info = DDS_SampleInfoSeq__alloc();
     CHECK_HANDLE_MACRO(e->info);
 
-    e->ihs = DDS_InstanceHandleSeq__alloc();
-    CHECK_HANDLE_MACRO(e->ihs);
+    e->pms = (DDS_PublicationMatchedStatus*)malloc(sizeof(DDS_PublicationMatchedStatus));
+    CHECK_HANDLE_MACRO(e->pms);
 
     /** Initialise ExampleTimeStats used to track timing */
     e->roundTrip = exampleInitTimeStats();
@@ -251,14 +265,17 @@ void cleanup(Entities *e)
     DDS_free(e->data->payload._buffer);
     DDS_free(e->data);
     DDS_free(e->conditions);
-    status = RoundTripModule_SampleDataReader_return_loan(e->reader, e->samples, e->info);
+    status = RoundTripModule_DataTypeDataReader_return_loan(e->reader, e->samples, e->info);
     CHECK_STATUS_MACRO(status);
     DDS_free(e->samples);
     DDS_free(e->info);
-    DDS_free(e->ihs);
+    free(e->pms);
     status = DDS_WaitSet_detach_condition(e->waitSet, e->dataAvailable);
     CHECK_STATUS_MACRO(status);
+    status = DDS_WaitSet_detach_condition(e->waitSet, terminated);
+    CHECK_STATUS_MACRO(status);
     DDS_free(e->waitSet);
+    DDS_free(terminated);
     status = DDS_DomainParticipant_delete_contained_entities(e->participant);
     CHECK_STATUS_MACRO(status);
     status = DDS_DomainParticipantFactory_delete_participant(e->factory, e->participant);
@@ -277,6 +294,7 @@ void cleanup(Entities *e)
     sigaction(SIGINT,&oldAction, 0);
 #endif
 
+    exampleSleepMilliseconds(1000);
 }
 
 /**
@@ -316,15 +334,20 @@ int ping(int argc, char *argv[])
         pongRunning = FALSE;
         while(!DDS_GuardCondition_get_trigger_value(terminated) && !pongRunning)
         {
-            RoundTripModule_SampleDataWriter_get_matched_subscriptions(e.writer, e.ihs);
-            if(e.ihs->_length != 0)
+            status = DDS_DataWriter_get_publication_matched_status(e.writer, e.pms);
+            CHECK_STATUS_MACRO(status);
+            if(e.pms->current_count != 0)
             {
                 pongRunning = TRUE;
             }
+            else
+            {
+                exampleSleepMilliseconds(500);
+            }
         };
         printf("Sending termination request.\n");
-        /** Send quit signal to pong if "quit" is supplied as an argument to ping */
-        RoundTripModule_SampleDataWriter_dispose(e.writer, e.data, DDS_HANDLE_NIL);
+        /** Dispose an instance to signify that pong should quit if "quit" is supplied as an argument to ping */
+        RoundTripModule_DataTypeDataWriter_dispose(e.writer, e.data, DDS_HANDLE_NIL);
         exampleSleepMilliseconds(1000);
 
         cleanup(&e);
@@ -334,7 +357,7 @@ int ping(int argc, char *argv[])
     {
         payloadSize = atoi(argv[1]);
 
-        if(payloadSize > 655536)
+        if(payloadSize > 65536)
         {
             invalid = TRUE;
         }
@@ -350,7 +373,7 @@ int ping(int argc, char *argv[])
     if(invalid || (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)))
     {
         printf("Usage (parameters must be supplied in order):\n"
-                "./ping [payloadSize (bytes, 0 - 655536)] [numSamples (0 = infinite)] [timeOut (seconds, 0 = infinite)]\n"
+                "./ping [payloadSize (bytes, 0 - 65536)] [numSamples (0 = infinite)] [timeOut (seconds, 0 = infinite)]\n"
                 "./ping quit - ping sends a quit signal to pong.\n"
                 "Defaults:\n"
                 "./ping 0 0 0\n");
@@ -362,26 +385,26 @@ int ping(int argc, char *argv[])
 
     e.data->payload._length = payloadSize;
     e.data->payload._maximum = payloadSize;
-    e.data->payload._buffer = DDS_sequence_char_allocbuf(payloadSize);
+    e.data->payload._buffer = DDS_sequence_octet_allocbuf(payloadSize);
     for(i = 0; i < payloadSize; i++)
     {
         e.data->payload._buffer[i] = 'a';
     }
 
     startTime = exampleGetTime();
-    printf("# Warming up...\n");
+    printf("# Warming up to stabilise performance...\n");
     while(!DDS_GuardCondition_get_trigger_value(terminated) && exampleTimevalToMicroseconds(&difference) / US_IN_ONE_SEC < 5)
     {
-        status = RoundTripModule_SampleDataWriter_write(e.writer, e.data, DDS_HANDLE_NIL);
+        status = RoundTripModule_DataTypeDataWriter_write(e.writer, e.data, DDS_HANDLE_NIL);
         CHECK_STATUS_MACRO(status);
         status = DDS_WaitSet_wait(e.waitSet, e.conditions, &waitTimeout);
         if(status != DDS_RETCODE_TIMEOUT)
         {
             CHECK_STATUS_MACRO(status);
-            status = RoundTripModule_SampleDataReader_take(e.reader, e.samples, e.info, DDS_LENGTH_UNLIMITED,
+            status = RoundTripModule_DataTypeDataReader_take(e.reader, e.samples, e.info, DDS_LENGTH_UNLIMITED,
                                         DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
             CHECK_STATUS_MACRO(status);
-            status = RoundTripModule_SampleDataReader_return_loan(e.reader, e.samples, e.info);
+            status = RoundTripModule_DataTypeDataReader_return_loan(e.reader, e.samples, e.info);
             CHECK_STATUS_MACRO(status);
         }
 
@@ -403,7 +426,7 @@ int ping(int argc, char *argv[])
     {
         /** Write a sample that pong can send back */
         preWriteTime = exampleGetTime();
-        status = RoundTripModule_SampleDataWriter_write(e.writer, e.data, DDS_HANDLE_NIL);
+        status = RoundTripModule_DataTypeDataWriter_write(e.writer, e.data, DDS_HANDLE_NIL);
         postWriteTime = exampleGetTime();
         CHECK_STATUS_MACRO(status);
 
@@ -415,7 +438,7 @@ int ping(int argc, char *argv[])
 
             /** Take sample and check that it is valid */
             preTakeTime = exampleGetTime();
-            status = RoundTripModule_SampleDataReader_take(e.reader, e.samples, e.info, DDS_LENGTH_UNLIMITED,
+            status = RoundTripModule_DataTypeDataReader_take(e.reader, e.samples, e.info, DDS_LENGTH_UNLIMITED,
                                         DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
             postTakeTime = exampleGetTime();
             CHECK_STATUS_MACRO(status);
@@ -438,7 +461,7 @@ int ping(int argc, char *argv[])
                     exit(0);
                 }
             }
-            status = RoundTripModule_SampleDataReader_return_loan(e.reader, e.samples, e.info);
+            status = RoundTripModule_DataTypeDataReader_return_loan(e.reader, e.samples, e.info);
             CHECK_STATUS_MACRO(status);
 
             /** Update stats */
@@ -470,7 +493,6 @@ int ping(int argc, char *argv[])
             difference = exampleSubtractTimevalFromTimeval(&postTakeTime, &startTime);
             if(exampleTimevalToMicroseconds(&difference) > US_IN_ONE_SEC || (i && i == numSamples))
             {
-                /* Print stats */
                 printf ("%9lu %9lu %8.0f %8lu %10lu %8.0f %8lu %10lu %8.0f %8lu\n",
                     elapsed + 1,
                     e.roundTrip.count,
@@ -483,7 +505,7 @@ int ping(int argc, char *argv[])
                     exampleGetMedianFromTimeStats(&e.readAccess),
                     e.readAccess.min);
 
-                /* Reset stats for next run */
+                /** Reset stats for next run */
                 exampleResetTimeStats(&e.roundTrip);
                 exampleResetTimeStats(&e.writeAccess);
                 exampleResetTimeStats(&e.readAccess);
@@ -549,7 +571,7 @@ int pong(int argc, char *argv[])
             CHECK_STATUS_MACRO(status);
 
             /** Take samples */
-            status = RoundTripModule_SampleDataReader_take(
+            status = RoundTripModule_DataTypeDataReader_take(
                 e.reader, e.samples, e.info, DDS_LENGTH_UNLIMITED, DDS_ANY_SAMPLE_STATE,
                 DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
             CHECK_STATUS_MACRO(status);
@@ -566,12 +588,12 @@ int pong(int argc, char *argv[])
                 /** If sample is valid, send it back to ping */
                 else if(e.info->_buffer[i].valid_data)
                 {
-                    status = RoundTripModule_SampleDataWriter_write(e.writer, &e.samples->_buffer[i],
+                    status = RoundTripModule_DataTypeDataWriter_write(e.writer, &e.samples->_buffer[i],
                                                                     DDS_HANDLE_NIL);
                     CHECK_STATUS_MACRO(status);
                 }
             }
-            status = RoundTripModule_SampleDataReader_return_loan(e.reader, e.samples, e.info);
+            status = RoundTripModule_DataTypeDataReader_return_loan(e.reader, e.samples, e.info);
             CHECK_STATUS_MACRO(status);
         }
     }

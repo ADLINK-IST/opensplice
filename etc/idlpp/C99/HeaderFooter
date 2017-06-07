@@ -1,0 +1,5 @@
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* VORTEX_C99_$(basename_upper)_H_ */

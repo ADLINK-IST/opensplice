@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef V_DATAREADERSAMPLE_H
@@ -42,21 +50,25 @@
 
 #define  v_dataReaderSampleTemplate(o) ((v_dataReaderSampleTemplate)(o))
 
+#define  v_dataReaderSampleState(o)    (v_readerSampleState (o))
+
 #define v_dataReaderSample_t(scope) \
         c_class(c_resolve(c_getBase(scope), \
-                          "kernelModule::v_dataReaderSample"))
+                          "kernelModuleI::v_dataReaderSample"))
 
 #define v_dataReaderSampleStateTest(_this, mask) v_readerSampleTestState(_this, mask)
 
-#define  v_dataReaderSampleInstance(o) \
-         ((v_dataReaderInstance)c_typeActualType(v_readerSampleInstance(v_dataReaderSample(o))))
+#define v_dataReaderSampleStateTestNot(_this, mask) v_readerSampleTestStateNot(_this, mask)
 
-#define  v_dataReaderSampleIndex(o) \
-         ((v_index)v_dataReaderSampleInstance(o)->index)
+#define v_dataReaderSampleInstance(o) \
+        ((v_dataReaderInstance)c_typeActualType(v_readerSampleInstance(v_dataReaderSample(o))))
 
-#define  v_dataReaderSampleTopic(o) \
-         (v_dataReaderSampleIndex(o)->entry ? \
-          v_dataReaderEntryTopic(v_dataReaderSampleIndex(o)->entry) : NULL )
+#define v_dataReaderSampleIndex(o) \
+        ((v_index)v_dataReaderSampleInstance(o)->index)
+
+#define v_dataReaderSampleTopic(o) \
+        (v_dataReaderSampleIndex(o)->entry ? \
+         v_dataReaderEntryTopic(v_dataReaderSampleIndex(o)->entry) : NULL )
 
 #define v_dataReaderSampleMessage(_this) \
         v_message(v_dataReaderSampleTemplate(_this)->message)

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -87,31 +95,31 @@ class pinger {
     private time                               postTakeTime  = new time();
 
     private static void print_formatted (
-	int width,
-	int value
-	)
+    int width,
+    int value
+    )
     {
-	String val = java.lang.Integer.toString (value);
-	int i;
+    String val = java.lang.Integer.toString (value);
+    int i;
 
-	for (i = 0; i < (width - val.length()); i++) {
-	    System.out.print (" ");
-	}
-	System.out.print (val);
+    for (i = 0; i < (width - val.length()); i++) {
+        System.out.print (" ");
+    }
+    System.out.print (val);
     }
 
     private static void print_formatted (
-	int width,
-	long value
-	)
+    int width,
+    long value
+    )
     {
-	String val = java.lang.Long.toString (value);
-	int i;
+    String val = java.lang.Long.toString (value);
+    int i;
 
-	for (i = 0; i < (width - val.length()); i++) {
-	    System.out.print (" ");
-	}
-	System.out.print (val);
+    for (i = 0; i < (width - val.length()); i++) {
+        System.out.print (" ");
+    }
+    System.out.print (val);
     }
 
     private boolean
@@ -120,7 +128,7 @@ class pinger {
         )
     {
         DDS.SampleInfoSeqHolder infoList = new DDS.SampleInfoSeqHolder();
-        int	                amount;
+        int                    amount;
         boolean                 result = false;
         int                     dds_result;
 
@@ -394,7 +402,7 @@ class pinger {
          * Evaluate cmdline arguments
          */
         if (args.length != 0) {
-	    if (args.length != 5) {
+        if (args.length != 5) {
                 System.out.println ("Invalid.....");
                 System.out.println ("Usage: java ping [blocks blocksize topic_id WRITE_PARTITION READ_PARTITION]");
                 return;
@@ -405,6 +413,8 @@ class pinger {
             write_partition = args[3];
             read_partition  = args[4];
         }
+
+        System.out.println ("Starting ping example");
 
         /*
          * Create WaitSet
@@ -424,20 +434,20 @@ class pinger {
          * Create participant
          */
         dpf = DDS.DomainParticipantFactory.get_instance ();
-	    dpf.get_default_participant_qos (dpQos);
+        dpf.get_default_participant_qos (dpQos);
         dp = dpf.create_participant (myDomain, dpQos.value, null, DDS.STATUS_MASK_NONE.value);
         if (dp == null) {
             System.out.println ("PING: ERROR - Splice Daemon not running");
             return;
         }
-	    dpQos = null;
+        dpQos = null;
 
         /*
          * Create PING publisher
          */
         dp.get_default_publisher_qos (pQos);
-	    pQos.value.partition.name = new String [1];
-	    pQos.value.partition.name[0] = write_partition;
+        pQos.value.partition.name = new String [1];
+        pQos.value.partition.name[0] = write_partition;
         p = dp.create_publisher (pQos.value, null, DDS.STATUS_MASK_NONE.value);
         pQos = null;
 
@@ -445,8 +455,8 @@ class pinger {
          * Create PONG subscriber
          */
         dp.get_default_subscriber_qos (sQos);
-	    sQos.value.partition.name = new String [1];
-	    sQos.value.partition.name[0] = read_partition;
+        sQos.value.partition.name = new String [1];
+        sQos.value.partition.name[0] = read_partition;
         s = dp.create_subscriber (sQos.value, null, DDS.STATUS_MASK_NONE.value);
         sQos = null;
 
@@ -456,7 +466,7 @@ class pinger {
         p.get_default_datawriter_qos (dwQos);
         dwQos.value.reliability.kind = DDS.ReliabilityQosPolicyKind.BEST_EFFORT_RELIABILITY_QOS;
         dwQos.value.history.kind = DDS.HistoryQosPolicyKind.KEEP_ALL_HISTORY_QOS;
-        
+
         s.get_default_datareader_qos (drQos);
 
         /*
@@ -481,7 +491,7 @@ class pinger {
 
         /* Add datareader statuscondition to waitset */
         PP_min_sc = PP_min_reader.get_statuscondition ();
-	    PP_min_sc.set_enabled_statuses (DDS.DATA_AVAILABLE_STATUS.value);
+        PP_min_sc.set_enabled_statuses (DDS.DATA_AVAILABLE_STATUS.value);
         result = w.attach_condition (PP_min_sc);
         assert(result == RETCODE_OK.value);
 
@@ -502,7 +512,7 @@ class pinger {
 
         /* Add datareader statuscondition to waitset */
         PP_seq_sc = PP_seq_reader.get_statuscondition ();
-	    PP_seq_sc.set_enabled_statuses (DDS.DATA_AVAILABLE_STATUS.value);
+        PP_seq_sc.set_enabled_statuses (DDS.DATA_AVAILABLE_STATUS.value);
         result = w.attach_condition (PP_seq_sc);
         assert(result == RETCODE_OK.value);
 
@@ -523,7 +533,7 @@ class pinger {
 
         /* Add datareader statuscondition to waitset */
         PP_string_sc = PP_string_reader.get_statuscondition ();
-	    PP_string_sc.set_enabled_statuses (DDS.DATA_AVAILABLE_STATUS.value);
+        PP_string_sc.set_enabled_statuses (DDS.DATA_AVAILABLE_STATUS.value);
         result = w.attach_condition (PP_string_sc);
         assert(result == RETCODE_OK.value);
 
@@ -544,7 +554,7 @@ class pinger {
 
         /* Add datareader statuscondition to waitset */
         PP_fixed_sc = PP_fixed_reader.get_statuscondition ();
-	    PP_fixed_sc.set_enabled_statuses (DDS.DATA_AVAILABLE_STATUS.value);
+        PP_fixed_sc.set_enabled_statuses (DDS.DATA_AVAILABLE_STATUS.value);
         result = w.attach_condition (PP_fixed_sc);
         assert(result == RETCODE_OK.value);
 
@@ -565,7 +575,7 @@ class pinger {
 
         /* Add datareader statuscondition to waitset */
         PP_array_sc = PP_array_reader.get_statuscondition ();
-	    PP_array_sc.set_enabled_statuses (DDS.DATA_AVAILABLE_STATUS.value);
+        PP_array_sc.set_enabled_statuses (DDS.DATA_AVAILABLE_STATUS.value);
         result = w.attach_condition (PP_array_sc);
         assert(result == RETCODE_OK.value);
 
@@ -617,7 +627,7 @@ class pinger {
                             pingpong.PP_string_msg PPdata = new pingpong.PP_string_msg ();
                             PPdata.count = 0;
                             PPdata.block = block;
-    			            PPdata.a_string = "a_string";
+                            PPdata.a_string = "a_string";
                             preWriteTime.timeGet ();
                             result = PP_string_writer.write (PPdata, DDS.HANDLE_NIL.value);
                             postWriteTime.timeGet ();
@@ -629,7 +639,7 @@ class pinger {
                             pingpong.PP_fixed_msg PPdata = new pingpong.PP_fixed_msg ();
                             PPdata.count = 0;
                             PPdata.block = block;
-    			            PPdata.a_bstring = "a_bstring";
+                            PPdata.a_bstring = "a_bstring";
                             preWriteTime.timeGet ();
                             result = PP_fixed_writer.write (PPdata, DDS.HANDLE_NIL.value);
                             postWriteTime.timeGet ();
@@ -684,7 +694,7 @@ class pinger {
                         return;
                 }
 
-    	        if (!terminate) {
+                if (!terminate) {
                     roundTripTime.set(preWriteTime.get());
                     write_access.add_stats (postWriteTime.sub(preWriteTime));
 
@@ -711,7 +721,9 @@ class pinger {
                                             finish_flag = PP_array_handler (nof_cycles);
                                         } else {
                                             System.out.println ("PING: unexpected condition triggered: " +
-                                                conditionList.value[i]);
+                                                conditionList.value[i] + ", terminating.");
+                                            finish_flag = true;
+                                            terminate = true;
                                         }
                                     }
                                 } else {
@@ -731,15 +743,15 @@ class pinger {
                     }
                 }
             }
-    	    if (!terminate) {
+            if (!terminate) {
                 finish_flag = false;
-    	        if (block == 0) {
-    	            System.out.println ("# PING PONG measurements (in us)");
-    	            System.out.print ("# Executed at: ");
-		            System.out.println (DateFormat.getDateTimeInstance().format(new java.util.Date()));
-    	            System.out.println ("#           Roundtrip time [us]             Write-access time [us]          Read-access time [us]");
-    	            System.out.println ("# Block     Count   mean    min    max      Count   mean    min    max      Count   mean    min    max");
-    	        }
+                if (block == 0) {
+                    System.out.println ("# PING PONG measurements (in us)");
+                    //System.out.print ("# Executed at: ");
+                    //System.out.println (DateFormat.getDateTimeInstance().format(new java.util.Date()));
+                    System.out.println ("#           Roundtrip time [us]             Write-access time [us]          Read-access time [us]");
+                    System.out.println ("# Block     Count   mean    min    max      Count   mean    min    max      Count   mean    min    max");
+                }
 
                 print_formatted ( 6, block);                 System.out.print (" ");
                 print_formatted (10, roundtrip.count);       System.out.print (" ");
@@ -754,11 +766,11 @@ class pinger {
                 print_formatted ( 6, read_access.average);   System.out.print (" ");
                 print_formatted ( 6, read_access.min);       System.out.print (" ");
                 print_formatted ( 6, read_access.max);
-		        System.out.println ();
+                System.out.println ();
                 write_access.init_stats ();
                 read_access.init_stats ();
                 roundtrip.init_stats ();
-    	    }
+            }
         }
         result = s.delete_datareader (PP_min_reader);
         result = p.delete_datawriter (PP_min_writer);
@@ -791,6 +803,8 @@ class pinger {
         tQos = null;
         dwQos = null;
         drQos = null;
+
+        System.out.println ("Completed ping example");
 
         return;
     }

@@ -18,15 +18,15 @@ echo " ===== Launching durability subscriber"
 
 ./subscriber transient > subResult_3_1.txt &
 
-sleep 5
+sleep 8
 
 echo " ===== Launching durability publisher"
 
 ./publisher transient true true > pubResult_3_1.txt &
 
 #Rather than kill the publisher just wait till it completes.
-echo "===== Sleep 30s to let the publisher complete "
-sleep 30
+echo "===== Wait to let the publisher complete "
+waitForProcessTermination publisher 40
 
 echo "=== Scenario 3.1 done"
 
@@ -42,19 +42,21 @@ echo === running a first Subscriber
 ./subscriber transient > subResult_3_2_1.txt &
 echo "=== End of first DurabilityDataSubscriber  (Scenario 3.2)"
 
-echo === running a second Subscriber
-./subscriber transient > subResult_3_2_2.txt &
-echo "=== End of second DurabilityDataSubscriber  (Scenario 3.2)"
-
-sleep 5
+sleep 8
 
 echo " ===== Launching durability publisher"
 
 ./publisher transient false true > pubResult_3_2.txt &
 
+sleep 8
+
+echo === running a second Subscriber
+./subscriber transient > subResult_3_2_2.txt &
+echo "=== End of second DurabilityDataSubscriber  (Scenario 3.2)"
+
 #Rather than kill the publisher just wait till it completes.
-echo "===== Sleep 30s to let the publisher complete "
-sleep 30
+echo "===== Wait to let the publisher complete "
+waitForProcessTermination publisher 40
 
 echo "============================="
 echo "==== Scenario 3.3      ======"
@@ -68,27 +70,27 @@ echo === running a first Subscriber
 ./subscriber persistent > subResult_3_3_1.txt &
 echo "=== End of first DurabilityDataSubscriber  (Scenario 3.3)"
 
-sleep 5
+sleep 8
 
 echo " ===== Launching durability publisher"
 
 ./publisher persistent false true > pubResult_3_3.txt &
 
 #Rather than kill the publisher just wait till it completes.
-echo "===== Sleep 30s to let the publisher complete "
-sleep 30
+echo "===== Wait to let the publisher complete "
+waitForProcessTermination publisher 40
 
 stopOSPL
 
 startOSPL
 
-sleep 15
+sleep 20
 
 echo === running a second Subscriber
 ./subscriber persistent > subResult_3_3_2.txt &
 echo "=== End of second DurabilityDataSubscriber  (Scenario 3.3)"
 
-sleep 20
+sleep 25
 
 durabilityCheckResultISOCPP
 

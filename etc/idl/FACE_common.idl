@@ -1,0 +1,47 @@
+module FACE {
+
+  //! This type is used to represent 64-bit signed integer with a
+  //! 1 nanosecond resolution.
+  typedef long long SYSTEM_TIME_TYPE;
+
+  //! This type is used to represent an infinitely long time value.
+  //! It is often used to specify that the caller is willing to wait
+  //! forever for an operation to complete and does not wish to timeout.
+  const SYSTEM_TIME_TYPE INF_TIME_VALUE = -1;
+
+  //! This string is used to specify the location of the configuration
+  //! resource in both the IOS and TSS initialize functions. This may be local,
+  //! a file name reference, or a reference to a configuration service.
+  typedef string<256> CONFIGURATION_RESOURCE;
+
+  //! This enumeration defines the possible set of status codes which may be
+  //! returned by a method defined in the FACE API.
+  enum RETURN_CODE_TYPE {
+    NO_ERROR,         //! request valid and operation performed
+    NO_ACTION,        //! status of system unaffected by request
+    NOT_AVAILABLE,    //! no message was available
+    ADDR_IN_USE,      //! address currently in use
+    INVALID_PARAM,    //! invalid parameter specified in request
+    INVALID_CONFIG,   //! parameter incompatible with configuration
+    PERMISSION_DENIED,//! no permission to send or connecting to wrong
+                      //! partition
+    INVALID_MODE,     //! request incompatible with current mode
+    TIMED_OUT,        //! the time expired before the request could be filled
+    MESSAGE_STALE,    //! current time - timestamp exceeds configured limits
+    CONNECTION_IN_PROGRESS, //! asynchronous connection in progress
+    CONNECTION_CLOSED, //! connection was closed
+    DATA_BUFFER_TOO_SMALL //! Data Buffer was too small for message
+  };
+
+  //! This type is used to represent a system address.
+  //!
+  //! @note This is expected to be a pointer type such as (void *) in C.
+  typedef string SYSTEM_ADDRESS_TYPE;
+
+  //! This type has a one nanosecond resolution.
+  typedef SYSTEM_TIME_TYPE TIMEOUT_TYPE;
+
+  //! This type is used to represent the message range, number of messages,
+  //! and message type in the I/O and Transport APIs.
+  typedef long MESSAGE_RANGE_TYPE;
+};

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.transform.xml;
@@ -71,18 +79,20 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
                     xmlStatistics);
 
             try {
-                document = builder.parse(new InputSource(new StringReader(xmlStatistics)));
+                synchronized(builder){
+                    document = builder.parse(new InputSource(new StringReader(xmlStatistics)));
+                }
             }
             catch (SAXException se) {
                 logger.logp(Level.SEVERE,  "StatisticsDeserializerXML",
-                                           "deserializeStatistics",
-                                           "SAXException occurred, Statistics could not be deserialized");
+                        "deserializeStatistics",
+                        "SAXException occurred, Statistics could not be deserialized");
                 throw new TransformationException(se.getMessage());
             }
             catch (IOException ie) {
                 logger.logp(Level.SEVERE,  "StatisticsDeserializerXML",
-                                           "deserializeStatistics",
-                                           "IOException occurred, Statistics could not be deserialized");
+                        "deserializeStatistics",
+                        "IOException occurred, Statistics could not be deserialized");
                 throw new TransformationException(ie.getMessage());
             }
             if(document == null){
@@ -94,55 +104,56 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
         }
         return statistics;
     }
-    
-    
-	@Override
-	public Statistics[] deserializeStatistics(Object serialized, Entity[] entities) throws TransformationException {
-	    Document document;
-	    Statistics[] statistics = null;
-	
-	    if(serialized == null){
-	        throw new TransformationException("No statistics supplied.");
-	    }
-	
-	    if(serialized instanceof String){
-	        String xmlStatistics = (String)serialized;
-	        logger.logp(Level.FINEST,  "StatisticsDeserializerXML",
-	                "deserializeStatistics",
-	                xmlStatistics);
-	
-	        try {
-	            document = builder.parse(new InputSource(new StringReader(xmlStatistics)));
-	        }
-	        catch (SAXException se) {
-	            logger.logp(Level.SEVERE,  "StatisticsDeserializerXML",
-	                                       "deserializeStatistics",
-	                                       "SAXException occurred, Statistics could not be deserialized");
-	            throw new TransformationException(se.getMessage());
-	        }
-	        catch (IOException ie) {
-	            logger.logp(Level.SEVERE,  "StatisticsDeserializerXML",
-	                                       "deserializeStatistics",
-	                                       "IOException occurred, Statistics could not be deserialized");
-	            throw new TransformationException(ie.getMessage());
-	        }
-	        if(document == null){
-	            throw new TransformationException("Supplied Statistics is not valid.");
-	        }
-	
-	        Element rootElement = document.getDocumentElement();	        
-	        NodeList statsXML = rootElement.getElementsByTagName("object");
-	               	        		
-	        statistics = new Statistics[entities.length]; 
-	        for(int i = 0 ; i < entities.length ; i++){
-	        	if(entities[i] == null){
-	        		throw new TransformationException("Supplied entities not valid");
-	        	}
-				statistics[i] = this.buildStatistics((Element) statsXML.item(i), entities[i]);
-	        }
-	    }
-	    return statistics;
-	}
+
+    @Override
+    public Statistics[] deserializeStatistics(Object serialized, Entity[] entities) throws TransformationException {
+        Document document;
+        Statistics[] statistics = null;
+
+        if(serialized == null){
+            throw new TransformationException("No statistics supplied.");
+        }
+
+        if(serialized instanceof String){
+            String xmlStatistics = (String)serialized;
+            logger.logp(Level.FINEST,  "StatisticsDeserializerXML",
+                    "deserializeStatistics",
+                    xmlStatistics);
+
+            try {
+                synchronized(builder){
+                    document = builder.parse(new InputSource(new StringReader(xmlStatistics)));
+                }
+            }
+            catch (SAXException se) {
+                logger.logp(Level.SEVERE,  "StatisticsDeserializerXML",
+                        "deserializeStatistics",
+                        "SAXException occurred, Statistics could not be deserialized");
+                throw new TransformationException(se.getMessage());
+            }
+            catch (IOException ie) {
+                logger.logp(Level.SEVERE,  "StatisticsDeserializerXML",
+                        "deserializeStatistics",
+                        "IOException occurred, Statistics could not be deserialized");
+                throw new TransformationException(ie.getMessage());
+            }
+            if(document == null){
+                throw new TransformationException("Supplied Statistics is not valid.");
+            }
+
+            Element rootElement = document.getDocumentElement();
+            NodeList statsXML = rootElement.getElementsByTagName("object");
+
+            statistics = new Statistics[entities.length];
+            for(int i = 0 ; i < entities.length ; i++){
+                if(entities[i] == null){
+                    throw new TransformationException("Supplied entities not valid");
+                }
+                statistics[i] = this.buildStatistics((Element) statsXML.item(i), entities[i]);
+            }
+        }
+        return statistics;
+    }
 
     private Statistics buildStatistics(Element el, Entity entity) throws TransformationException{
         Statistics statistics;
@@ -170,8 +181,8 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
     }
 
     private Statistics buildStatisticsTree(Element el, Entity entity, Statistics statistics, String pref) throws TransformationException{
-    	Statistics stat = statistics;
-    	NodeList list = el.getChildNodes();
+        Statistics stat = statistics;
+        NodeList list = el.getChildNodes();
         Node child;
         String prefix = "";
         String name ="";
@@ -218,15 +229,15 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
         if(children.getLength() == 4){
             result = this.buildFullCounter(el);
         } else {
-        	child = children.item(0);
+            child = children.item(0);
             childName = child.getNodeName();
 
             if("count".equals(childName)){
-               result = this.buildAvgValue(el);
+                result = this.buildAvgValue(el);
             } else if("lastUpdate".equals(childName)){
-               result = this.buildTimedValue(el);
+                result = this.buildTimedValue(el);
             } else {
-        	   result = this.buildValue(el);
+                result = this.buildValue(el);
             }
         }
         return result;
@@ -261,7 +272,7 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
 
         if(value != null){
             try{
-            	stringValue = value.getNodeValue();
+                stringValue = value.getNodeValue();
             } catch(NumberFormatException nfe){
                 logger.logp(Level.SEVERE,  "StatisticsDeserializerXML",
                         "buildValue",
@@ -351,7 +362,7 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
             }
         }
         //name = name + countelement;
-       return new AvgValue(name, count, floatValue);
+        return new AvgValue(name, count, floatValue);
     }
 
     private FullCounter buildFullCounter(Element el) throws TransformationException{
@@ -476,14 +487,12 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
         }
         return result;
     }
-    */
+     */
     private Time parseTime(Element el){
-        int sec;
-        int nsec;
+        long t;
 
-        sec = Integer.parseInt(el.getFirstChild().getFirstChild().getNodeValue());
-        nsec = Integer.parseInt(el.getFirstChild().getNextSibling().getFirstChild().getNodeValue());
+        t = Long.parseLong(el.getFirstChild().getNodeValue());
 
-        return new Time(sec, nsec);
+        return new Time(t);
     }
 }

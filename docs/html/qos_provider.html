@@ -1,0 +1,804 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Vortex OpenSplice - documentation index</title>
+    <style type="text/css" media="all">
+      @import url("../css/maven-base.css");
+      @import url("../css/maven-theme.css");
+      @import url("../css/site.css");
+    </style>
+    <link rel="stylesheet" href="./docs/css/print.css" type="text/css" media="print" />
+    <meta name="Date-Revision-yyyymmdd" content="20141002" />
+    <meta http-equiv="Content-Language" content="en" />
+
+ </head>
+ <body class="composite">
+    <div id="banner">
+       <a href="http://www.prismtech.com" id="bannerLeft">
+          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       </a>
+       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       </a>
+       <div class="clear">
+          <hr/>
+       </div>
+    </div>
+    <div id="breadcrumbs">
+       <div class="xright">
+          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
+          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+       </div>
+       <div class="clear">
+         <hr/>
+       </div>
+    </div>
+    <div id="leftColumn">
+      <div id="navcolumn">
+         <h5>QoS Provider</h5>
+        <ul>
+          <li><a href="qos_provider.html#Introduction">Introduction</a></li>
+          <li><a href="qos_provider.html#APIIntroduction">API reference</a></li>
+          <li>
+            <ul>
+              <li><a href="qos_provider.html#APIIntroduction">Introduction</a></li>
+              <li><a href="qos_provider.html#APIconstructor">constructor</a></li>
+              <li><a href="qos_provider.html#APIget_participant_qos">get_participant_qos</a></li>
+              <li><a href="qos_provider.html#APIget_topic_qos">get_topic_qos</a></li>
+              <li><a href="qos_provider.html#APIget_subscriber_qos">get_subscriber_qos</a></li>
+              <li><a href="qos_provider.html#APIget_datareader_qos">get_datareader_qos</a></li>
+              <li><a href="qos_provider.html#APIget_publisher_qos">get_publisher_qos</a></li>
+              <li><a href="qos_provider.html#APIget_datawriter_qos">get_datawriter_qos</a></li>
+            </ul>
+          </li>
+          <li><a href="qos_provider.html#XMLFileSyntax">XML file syntax</a></li>
+          <li><a href="qos_provider.html#Example">Example</a></li>
+          <li><a href="qos_provider.html#KnownLimitations">Known limitations</a></li>
+        </ul>
+      </a>
+      </div>
+    </div>
+    <div id="bodyColumn">
+      <div id="contentBox">
+
+<h2> <a name="Introduction">Introduction</a> </h2>
+
+<p> This note provides information on using the QoS provider API of OpenSpliceDDS.
+The QoS provider API allows users to specify the QoS settings of their DCPS
+entities outside of application code in XML. The following sections explain
+the API in a language independent manner and explain how to build QoS Profiles
+in XML.</p>
+
+<h2><a name="APIIntroduction">API reference - Introduction</a></h2>
+The <b>QosProvider</b> is delivered as part of the DCPS API of OpenSpliceDDS and
+has no factory. It is created as an object directly by the natural means in each
+language binding (e.g., using "new" in C#, C++ or Java and
+"DDS_QosProvider__alloc" in C). This is because it is not necessarily associated
+with a single DomainParticipant. Below you'll find an overview of the available
+operations, which are explained in detail in the following subsections.
+<pre>module DDS {
+    local interface QosProviderInterface {
+        //constructor (
+        //   in string uri,
+        //   in string profile);
+
+        ReturnCode_t
+        get_participant_qos (
+            inout DomainParticipantQos a_participant_qos,
+            in string id);
+
+        ReturnCode_t
+        get_topic_qos (
+            inout TopicQos a_topic_qos,
+            in string id);
+
+        ReturnCode_t
+        get_subscriber_qos (
+            inout SubscriberQos a_subscriber_qos,
+            in string id);
+
+        ReturnCode_t
+        get_datareader_qos (
+            inout DataReaderQos a_datareader_qos,
+            in string id);
+
+        ReturnCode_t
+        get_publisher_qos (
+            inout PublisherQos a_publisher_qos,
+            in string id);
+
+        ReturnCode_t
+        get_datawriter_qos (
+            inout DataWriterQos a_datawriter_qos,
+            in string id);
+    };
+};
+</pre>
+<h2><a name="APIconstructor">API reference - constructor</a></h2>
+<pre>    /** 
+      * Constructs a new QosProvider based on the provided uri and profile.
+      *
+      * The QosProvider is delivered as part of the DCPS API of
+      * OpenSpliceDDS and has no factory. It is created as an object
+      * directly by the natural means in each language binding (e.g., using
+      * "new" in C#, C++ or Java and "DDS_QosProvider__alloc" in C)
+      *
+      * @param uri     A Uniform Resource Identifier (URI that points to the
+      *                location where the QoS profile needs to be loaded
+      *                from. Currently only URI's with a "file" scheme that
+      *                point to an XML file are supported. If profiles
+      *                and/or QoS settings are not uniquely identifiable by
+      *                name within the resource pointed to by the uri, a random
+      *                one of them will be stored. 
+      *
+      * @param profile The name of the QoS profile that serves as the default
+      *                QoS profile for the get_*_qos operations. 
+      *
+      * @return        A QosProvider instance that is instantiated with all 
+      *                profiles and/or QoS-ses loaded from the location
+      *                specified by the provided uri. Construction of the 
+      *                QosProvider will fail under the following conditions:
+      *                - No uri is provided.
+      *                - The resource pointed to by uri cannot be found.
+      *                - The content of the resource pointed to by uri is
+      *                  malformed (e.g. malformed XML).
+      */
+    constructor (
+       in string uri,
+       in string profile);
+</pre>
+
+<h2><a name="APIget_participant_qos">API reference - get_participant_qos</a></h2>
+<pre>    /** 
+      * Resolves the DomainParticipantQos identified by the id from the
+      * uri the QosProvider is associated with.
+      * 
+      * @param a_qos The DomainParticipantQos which is initialized by the
+      *              operation if the DomainParticipantQos identified by the id
+      *              parameter can be found and no other errors have occurred.
+      *              If and only if the operation returns OK, this parameter
+      *              will be initialized properly after the operation.
+      *
+      * @param id    The fully-qualified name that identifies a QoS within the
+      *              uri associated with the QosProvider or a name that
+      *              identifies a QoS within the uri associated with the
+      *              QosProvider instance relative to its default QoS profile.
+      *              Id's starting with "::" are interpreted as fully-qualified
+      *              names and all others are interpreted as names relative to
+      *              the default QoS profile of the QosProvider instance. A
+      *              nil id is interpreted as a non-named QoS within the
+      *              default QoS profile associated with the QosProvider.
+      *
+      * @return      OK                    - if a_qos has been initialized
+      *                                      successfully.
+      *
+      *              NO_DATA               - if no DomainParticipantQos that
+      *                                      matches the provided id can be
+      *                                      found within the uri associated
+      *                                      with the QosProvider.            
+      * 
+      *              BAD_PARAMETER         - if a_qos is nil.
+      * 
+      *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
+      *                                      properly initialized.
+      *
+      *              OUT_OF_RESOURCES      - if not enough memory is available
+      *                                      to perform the operation.
+      *
+      *              ERROR                 - if an internal error occurred.
+      */
+      ReturnCode_t
+      get_participant_qos (
+          inout DomainParticipantQos a_qos,
+          in string id);
+</pre>
+
+<h2><a name="APIget_topic_qos">API reference - get_topic_qos</a></h2>
+<pre>    /** 
+      * Resolves the TopicQos identified by the id from the
+      * uri the QosProvider is associated with.
+      * 
+      * @param a_qos The TopicQos which is initialized by the
+      *              operation if the TopicQos identified by the id
+      *              parameter can be found and no other errors have occurred.
+      *              If and only if the operation returns OK, this parameter
+      *              will be initialized properly after the operation.
+      *
+      * @param id    The fully-qualified name that identifies a QoS within the
+      *              uri associated with the QosProvider or a name that
+      *              identifies a QoS within the uri associated with the
+      *              QosProvider instance relative to its default QoS profile.
+      *              Id's starting with "::" are interpreted as fully-qualified
+      *              names and all others are interpreted as names relative to
+      *              the default QoS profile of the QosProvider instance. A
+      *              nil id is interpreted as a non-named QoS within the
+      *              default QoS profile associated with the QosProvider.
+      *
+      * @return      OK                    - if a_qos has been initialized
+      *                                      successfully.
+      *
+      *              NO_DATA               - if no TopicQos that
+      *                                      matches the provided id can be
+      *                                      found within the uri associated
+      *                                      with the QosProvider.            
+      * 
+      *              BAD_PARAMETER         - if a_qos is nil.
+      * 
+      *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
+      *                                      properly initialized.
+      *
+      *              OUT_OF_RESOURCES      - if not enough memory is available
+      *                                      to perform the operation.
+      *
+      *              ERROR                 - if an internal error occurred.
+      */
+      ReturnCode_t
+      get_topic_qos (
+          inout TopicQos a_qos,
+          in string id);
+</pre>
+
+<h2><a name="APIget_subscriber_qos">API reference - get_subscriber_qos</a></h2>
+<pre>    /** 
+      * Resolves the SubscriberQos identified by the id from the
+      * uri the QosProvider is associated with.
+      * 
+      * @param a_qos The SubscriberQos which is initialized by the
+      *              operation if the DomainParticipantQos identified by the id
+      *              parameter can be found and no other errors have occurred.
+      *              If and only if the operation returns OK, this parameter
+      *              will be initialized properly after the operation.
+      *
+      * @param id    The fully-qualified name that identifies a QoS within the
+      *              uri associated with the QosProvider or a name that
+      *              identifies a QoS within the uri associated with the
+      *              QosProvider instance relative to its default QoS profile.
+      *              Id's starting with "::" are interpreted as fully-qualified
+      *              names and all others are interpreted as names relative to
+      *              the default QoS profile of the QosProvider instance. A
+      *              nil id is interpreted as a non-named QoS within the
+      *              default QoS profile associated with the QosProvider.
+      *
+      * @return      OK                    - if a_qos has been initialized
+      *                                      successfully.
+      *
+      *              NO_DATA               - if no SubscriberQos that
+      *                                      matches the provided id can be
+      *                                      found within the uri associated
+      *                                      with the QosProvider.            
+      * 
+      *              BAD_PARAMETER         - if a_qos is nil.
+      * 
+      *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
+      *                                      properly initialized.
+      *
+      *              OUT_OF_RESOURCES      - if not enough memory is available
+      *                                      to perform the operation.
+      *
+      *              ERROR                 - if an internal error occurred.
+      */
+      ReturnCode_t
+      get_subscriber_qos (
+          inout SubscriberQos a_qos,
+          in string id);
+</pre>
+
+<h2><a name="APIget_datareader_qos">API reference - get_datareader_qos</a></h2>
+<pre>    /** 
+      * Resolves the DataReaderQos identified by the id from the
+      * uri the QosProvider is associated with.
+      * 
+      * @param a_qos The DataReaderQos which is initialized by the
+      *              operation if the DataReaderQos identified by the id
+      *              parameter can be found and no other errors have occurred.
+      *              If and only if the operation returns OK, this parameter
+      *              will be initialized properly after the operation.
+      *
+      * @param id    The fully-qualified name that identifies a QoS within the
+      *              uri associated with the QosProvider or a name that
+      *              identifies a QoS within the uri associated with the
+      *              QosProvider instance relative to its default QoS profile.
+      *              Id's starting with "::" are interpreted as fully-qualified
+      *              names and all others are interpreted as names relative to
+      *              the default QoS profile of the QosProvider instance. A
+      *              nil id is interpreted as a non-named QoS within the
+      *              default QoS profile associated with the QosProvider.
+      *
+      * @return      OK                    - if a_qos has been initialized
+      *                                      successfully.
+      *
+      *              NO_DATA               - if no DataReaderQos that
+      *                                      matches the provided id can be
+      *                                      found within the uri associated
+      *                                      with the QosProvider.            
+      * 
+      *              BAD_PARAMETER         - if a_qos is nil.
+      * 
+      *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
+      *                                      properly initialized.
+      *
+      *              OUT_OF_RESOURCES      - if not enough memory is available
+      *                                      to perform the operation.
+      *
+      *              ERROR                 - if an internal error occurred.
+      */
+      ReturnCode_t
+      get_datareader_qos (
+          inout DataReaderQos a_qos,
+          in string id);
+</pre>
+
+<h2><a name="APIget_publisher_qos">API reference - get_publisher_qos</a></h2>
+<pre>    /** 
+      * Resolves the PublisherQos identified by the id from the
+      * uri the QosProvider is associated with.
+      * 
+      * @param a_qos The PublisherQos which is initialized by the
+      *              operation if the PublisherQos identified by the id
+      *              parameter can be found and no other errors have occurred.
+      *              If and only if the operation returns OK, this parameter
+      *              will be initialized properly after the operation.
+      *
+      * @param id    The fully-qualified name that identifies a QoS within the
+      *              uri associated with the QosProvider or a name that
+      *              identifies a QoS within the uri associated with the
+      *              QosProvider instance relative to its default QoS profile.
+      *              Id's starting with "::" are interpreted as fully-qualified
+      *              names and all others are interpreted as names relative to
+      *              the default QoS profile of the QosProvider instance. A
+      *              nil id is interpreted as a non-named QoS within the
+      *              default QoS profile associated with the QosProvider.
+      *
+      * @return      OK                    - if a_qos has been initialized
+      *                                      successfully.
+      *
+      *              NO_DATA               - if no PublisherQos that
+      *                                      matches the provided id can be
+      *                                      found within the uri associated
+      *                                      with the QosProvider.            
+      * 
+      *              BAD_PARAMETER         - if a_qos is nil.
+      * 
+      *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
+      *                                      properly initialized.
+      *
+      *              OUT_OF_RESOURCES      - if not enough memory is available
+      *                                      to perform the operation.
+      *
+      *              ERROR                 - if an internal error occurred.
+      */
+      ReturnCode_t
+      get_publisher_qos (
+          inout PublisherQos a_qos,
+          in string id);
+</pre>
+
+<h2><a name="APIget_datawriter_qos">API reference - get_datawriter_qos</a></h2>
+<pre>    /** 
+      * Resolves the DataWriterQos identified by the id from the
+      * uri the QosProvider is associated with.
+      * 
+      * @param a_qos The DataWriterQos which is initialized by the
+      *              operation if the DataWriterQos identified by the id
+      *              parameter can be found and no other errors have occurred.
+      *              If and only if the operation returns OK, this parameter
+      *              will be initialized properly after the operation.
+      *
+      * @param id    The fully-qualified name that identifies a QoS within the
+      *              uri associated with the QosProvider or a name that
+      *              identifies a QoS within the uri associated with the
+      *              QosProvider instance relative to its default QoS profile.
+      *              Id's starting with "::" are interpreted as fully-qualified
+      *              names and all others are interpreted as names relative to
+      *              the default QoS profile of the QosProvider instance. A
+      *              nil id is interpreted as a non-named QoS within the
+      *              default QoS profile associated with the QosProvider.
+      *
+      * @return      OK                    - if a_qos has been initialized
+      *                                      successfully.
+      *
+      *              NO_DATA               - if no DataWriterQos that
+      *                                      matches the provided id can be
+      *                                      found within the uri associated
+      *                                      with the QosProvider.            
+      * 
+      *              BAD_PARAMETER         - if a_qos is nil.
+      * 
+      *              PRE_CONDITION_NOT_MET - if the QosProvider instance is not
+      *                                      properly initialized.
+      *
+      *              OUT_OF_RESOURCES      - if not enough memory is available
+      *                                      to perform the operation.
+      *
+      *              ERROR                 - if an internal error occurred.
+      */
+      ReturnCode_t
+      get_datawriter_qos (
+          inout DataWriterQos a_qos,
+          in string id);
+</pre>
+
+<h2> <a name="XMLFileSyntax">XML file syntax</a></h2>
+<p> The XML configuration file must follow these syntax rules:
+</p><ul>
+ <li>The syntax is XML and the character encoding is UTF-8.</li>
+ <li>Opening tags are enclosed in &lt;&gt;; closing tags are enclosed in &lt;/&gt;.</li>
+ <li>A value is a UTF-8 encoded string. Legal values are alphanumeric characters.</li>
+ <li>All values are case-sensitive unless otherwise stated.</li>
+ <li>Comments are enclosed as follows: &lt;!-- comment --&gt;.</li>
+ <li>The root tag of the configuration file must be <dds> and end with </dds>.</li>
+</ul>
+
+<p>Please also see:
+<a href="http://www.omg.org/spec/dds4ccm/1.1/">OMG DDS4CCM specification</a>
+ for more details on the exact notation.</p>
+
+<p>The primitive types for tag values are specified in the following table:
+  </p><table width="90%">
+    <tbody><tr>
+      <th width="10%">
+        <b>Type</b>
+      </th>
+      <th width="50%">
+        <b>Format</b>
+      </th>
+      <th width="40%">
+        <b>Notes</b>
+      </th>
+    </tr>  
+    <tr>
+      <td>
+        Boolean
+      </td>
+      <td>
+        <b>yes</b>, <b>1</b>, <b>true</b> or <b>BOOLEAN_TRUE</b>
+      </td>
+      <td>
+        Not case-sensitive
+      </td>
+    </tr>
+    <tr>
+      <td>
+      </td>
+      <td>
+        <b>no</b>, <b>0</b>, <b>false</b> or <b>BOOLEAN_FALSE</b>
+      </td>
+      <td>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Enum
+      </td>
+      <td>
+        A string. Legal values are the ones defined for QoS
+        Policies in the DCPS IDL of DDS specification.
+      </td>
+      <td>
+        Must be specified as a string. (Do not use
+        numeric values.)
+      </td>
+    </tr>
+    <tr>
+      <td>
+        Long
+      </td>
+      <td>
+        <b>-2147483648</b> to <b>2147483647</b> or <b>0x80000000</b> to
+        <b>0x7fffffff</b> or <b>LENGTH_UNLIMITED</b>
+      </td>
+      <td>
+        A 32-bit signed integer
+      </td>
+    </tr>
+    <tr>
+      <td>
+        UnsignedLong
+      </td>
+      <td>
+        <b>0</b> to <b>4294967296</b> or <b>0</b> to <b>0xffffffff</b>
+      </td>
+      <td>
+        A 32-bit unsigned integer
+      </td>
+    </tr>
+   </tbody></table>
+<p></p>
+<p>
+</p><h2>XML file syntax - Entity QoS</h2>
+To configure the QoS for a DDS Entity using XML, the following tags have to be used:
+<ul>
+    <li>&lt;domainparticipant_qos&gt;</li>
+    <li>&lt;publisher_qos&gt;</li>
+    <li>&lt;subscriber_qos&gt;</li>
+    <li>&lt;topic_qos&gt;</li>
+    <li>&lt;datawriter_qos&gt;</li>
+    <li>&lt;datareader_qos&gt;</li>
+</ul>
+Each XML tag with an associated name can be uniquely identified by its fully qualified name in C++ style.
+
+<h2>XML file syntax - Entity QoS - QoS Policies</h2>
+<p>
+The fields in a QosPolicy are described in XML using a 1-to-1 mapping with the
+equivalent IDL representation in the DDS specification. For example, the
+Reliability QosPolicy is represented with the following structures:
+</p><pre>struct Duration_t {
+    long sec;
+    unsigned long nanosec;
+};
+
+struct ReliabilityQosPolicy {
+    ReliabilityQosPolicyKind kind;
+    Duration_t max_blocking_time;
+};
+</pre>
+The equivalent representation in XML is as follows:
+<pre>&lt;reliability&gt;
+    &lt;kind&gt;&lt;/kind&gt;
+    &lt;max_blocking_time&gt;
+        &lt;sec&gt;&lt;/sec&gt;
+        &lt;nanosec&gt;&lt;/nanosec&gt;
+    &lt;/max_blocking_time&gt;
+&lt;/reliability&gt;
+</pre>
+<p></p>
+<h2>XML file syntax - Entity QoS - Sequences</h2>
+In general, the sequences contained in the QoS policies are described with the
+following XML format:
+<pre>&lt;a_sequence_member_name&gt;
+    &lt;element&gt;...&lt;/element&gt;
+    &lt;element&gt;...&lt;/element&gt;
+    ...
+&lt;/a_sequence_member_name&gt;
+</pre>
+Each element of the sequence is enclosed in an &lt;element&gt; tag., as shown in
+the following example:
+<pre>&lt;property&gt;
+    &lt;value&gt;
+        &lt;element&gt;
+            &lt;name&gt;my name&lt;/name&gt;
+            &lt;value&gt;my value&lt;/value&gt;
+        &lt;/element&gt;
+        &lt;element&gt;
+            &lt;name&gt;my name2&lt;/name&gt;
+            &lt;value&gt;my value2&lt;/value&gt;
+        &lt;/element&gt;
+    &lt;/value&gt;
+&lt;/property&gt;
+</pre>
+A sequence without elements represents a sequence of length 0. For example:
+&lt;a_sequence_member_name/&gt;
+As a special case, sequences of octets are represented with a single XML tag
+enclosing a sequence of decimal/hexadecimal values between 0..255 separated
+with commas. For example:
+<pre>&lt;user_data&gt;
+    &lt;value&gt;100,200,0,0,0,223&lt;/value&gt;
+&lt;/user_data&gt;
+&lt;topic_data&gt;
+    &lt;value&gt;0xff,0x00,0x8e,0xEE,0x78&lt;/value&gt;
+&lt;/topic_data&gt;
+</pre>
+
+<h2>XML file syntax - Entity QoS - Arrays</h2>
+In general, the arrays contained in the QoS policies are described with the following XML format:
+<pre>&lt;an_array_member_name&gt;
+    &lt;element&gt;...&lt;/element&gt;
+    &lt;element&gt;...&lt;/element&gt;
+    ...
+&lt;/an_array_member_name&gt;
+</pre>
+Each element of the array is enclosed in an &lt;element&gt; tag.
+As a special case, arrays of octets are represented with a single XML tag
+enclosing an array of decimal/hexadecimal values between 0..255 separated with
+commas. For example:
+<pre>&lt;datareader_qos&gt;
+    ...
+    &lt;user_data&gt;
+        &lt;value&gt;100,200,0,0,0,223&lt;/value&gt;
+    &lt;/user_data&gt;
+&lt;/datareader_qos&gt;
+</pre>
+
+<h2>XML file syntax - Entity QoS - Enumerations</h2>
+Enumeration values are represented using their IDL string representation. For
+example:
+<pre>&lt;history&gt;
+    &lt;kind&gt;KEEP_ALL_HISTORY_QOS&lt;/kind&gt;
+&lt;/history&gt;
+</pre>
+
+<h2>XML file syntax - Entity QoS - Time values (Durations)</h2>
+Following values can be used for fields that require seconds or nanoseconds:
+<ul>
+    <li>DURATION_INFINITE_SEC</li>
+    <li>DURATION_ZERO_SEC</li>
+    <li>DURATION_INFINITE_NSEC</li>
+    <li>DURATION_ZERO_NSEC</li>
+</ul>
+The following example shows the use of time values:
+<pre>&lt;deadline&gt;
+    &lt;period&gt;
+        &lt;sec&gt;DURATION_INFINITE_SEC&lt;/sec&gt;
+        &lt;nanosec&gt;DURATION_INFINITE_NSEC&lt;/nanosec&gt;
+    &lt;/period&gt;
+&lt;/deadline&gt;
+</pre>
+
+<h2>XML file syntax - QoS profiles</h2>
+A QoS profile groups a set of related QoS, usually one per entity. For example:
+<pre>&lt;qos_profile name="StrictReliableCommunicationProfile"&gt;
+    &lt;datawriter_qos&gt;
+        &lt;history&gt;
+            &lt;kind&gt;KEEP_ALL_HISTORY_QOS&lt;/kind&gt;
+        &lt;/history&gt;
+        &lt;reliability&gt;
+            &lt;kind&gt;RELIABLE_RELIABILITY_QOS&lt;/kind&gt;
+        &lt;/reliability&gt;
+    &lt;/datawriter_qos&gt;
+    &lt;datareader_qos&gt;
+        &lt;history&gt;
+            &lt;kind&gt;KEEP_ALL_HISTORY_QOS&lt;/kind&gt;
+        &lt;/history&gt;
+        &lt;reliability&gt;
+            &lt;kind&gt;RELIABLE_RELIABILITY_QOS&lt;/kind&gt;
+        &lt;/reliability&gt;
+    &lt;/datareader_qos&gt;
+&lt;/qos_profile&gt;
+</pre>
+
+<h2>XML file syntax - QoS profiles - QoS Profiles with a Single QoS</h2>
+The definition of an individual QoS is a shortcut for defining a QoS profile
+with a single QoS. For example:
+<pre>&lt;datawriter_qos name="KeepAllWriter"&gt;
+    &lt;history&gt;
+        &lt;kind&gt;KEEP_ALL_HISTORY_QOS&lt;/kind&gt;
+    &lt;/history&gt;
+&lt;/datawriter_qos&gt;
+</pre>
+is equivalent to the following:
+<pre>&lt;qos_profile name="KeepAllWriter"&gt;
+    &lt;writer_qos&gt;
+        &lt;history&gt;
+            &lt;kind&gt;KEEP_ALL_HISTORY_QOS&lt;/kind&gt;
+        &lt;/history&gt;
+    &lt;/writer_qos&gt;
+&lt;/qos_profile&gt;
+</pre>
+
+<h2> <a name="Example">Example</a></h2>
+consider the following XML file that describes two QoS profiles; 
+<ul>
+  <li>FooQosProfile<ul>
+    <li>DataReaderQos - TransientKeepLast</li>
+    <li>DataWriterQos - Transient</li>
+  </ul></li>
+  <li>BarQosProfile<ul>
+    <li>DataWriterQos - Persistent</li>
+  </ul></li>
+</ul>
+  
+<pre>&lt;dds xmlns="http://www.omg.org/dds/"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="file://DDS_QoSProfile.xsd"&gt;
+    &lt;qos_profile name="FooQosProfile"&gt;
+        &lt;datareader_qos name="TransientKeepLast"&gt;
+            &lt;durability&gt;
+                &lt;kind&gt;TRANSIENT_DURABILITY_QOS&lt;/kind&gt;
+            &lt;/durability&gt;
+            &lt;history&gt;
+               &lt;kind&gt;KEEP_LAST_HISTORY_QOS&lt;/kind&gt;
+               &lt;depth&gt;5&lt;/depth&gt;
+            &lt;/history&gt;
+        &lt;/datareader_qos&gt;
+        &lt;datawriter_qos name="Transient"&gt;
+            &lt;durability&gt;
+                &lt;kind&gt;TRANSIENT_DURABILITY_QOS&lt;/kind&gt;
+            &lt;/durability&gt;
+        &lt;/datawriter_qos&gt;
+    &lt;/qos_profile&gt;
+    &lt;qos_profile name="BarQosProfile"&gt;
+        &lt;datawriter_qos name="Persistent"&gt;
+            &lt;durability&gt;
+                &lt;kind&gt;PERSISTENT_DURABILITY_QOS&lt;/kind&gt;
+            &lt;/durability&gt;
+        &lt;/datawriter_qos&gt;
+    &lt;/qos_profile&gt;
+&lt;/dds&gt;
+</pre>
+
+The following Java application is an example to illustrate how the QoS settings
+from the above XML could be accessed.
+<pre>package org.opensplice.example;
+
+import DDS.*;
+
+public class QosProviderExample {
+
+    public static void main(String[] args) {
+        QosProvider provider = null;
+        DataReaderQosHolder drQosHolder = new DataReaderQosHolder();
+        DataWriterQosHolder dwQosHolder = new DataWriterQosHolder();
+        DataWriterQosHolder dwBarQosHolder = new DataWriterQosHolder();
+        int result;
+        
+        try{
+            provider = new QosProvider(
+                    "file://path/to/file.xml", 
+                    "FooQosProfile");
+            
+             /* As default QoS profile is "FooQosProfile", requesting 
+              * "TransientKeepLast" in this case is equivalent to requesting 
+              * "::FooQosProfile::TransientKeepLast".
+              */
+             result = provider.get_datareader_qos(drQosHolder, "TransientKeepLast");
+             
+             if(result != RETCODE_OK.value){
+                 System.err.println("Unable to resolve ReaderQos.");
+                 System.exit(1);
+             }
+             /* As default QoS profile is "FooQosProfile", requesting 
+              * "Transient" would have been equivalent to requesting 
+              * "::FooQosProfile::Transient".
+              */
+             result = provider.get_datawriter_qos(dwQosHolder, "::FooQosProfile::Transient");
+             
+             if(result != RETCODE_OK.value){
+                 System.err.println("Unable to resolve WriterQos.");
+                 System.exit(1);
+             }
+             /* As default QoS profile is "FooQosProfile" it is necessary
+              * to use the fully-qualified name to get access to QoS-ses from
+              * the "BarQosProfile".
+              */
+             result = provider.get_datawriter_qos(dwBarQosHolder, "::BarQosProfile::Persistent");
+             
+             if(result != RETCODE_OK.value){
+                 System.err.println("Unable to resolve WriterQos.");
+                 System.exit(1);
+             }
+             
+             /* Create DDS DataReader with drQosHolder.value DataReaderQos,
+              * DDS DataWriter with dwQosHolder.value DataWriterQos and 
+              * DDS DataWriter with dwBarQosHolder.value DataWriterQos
+              */
+             
+        } catch(NullPointerException npe){
+            System.err.println("Initialization of QosProvider failed.");
+        }
+        return;
+    }
+}
+
+</pre>
+
+<h2> <a name="KnownLimitations">Known limitations</a> </h2>
+<p>
+</p><ul>
+  <li>Inheritance of QoS policies and QoS profiles in XML using the "base_name"
+  attribute is not supported yet.</li>
+  <li>The "topic_filter" attribute for writer,reader, and topic QoSs to
+  associate a set of topics to a specific QoS when that QoS is part of a DDS
+  profile, is not supported yet.</li>
+  <li>All leading and trailing spaces should be removed from the string before
+  it is processed. For example, "&lt;tag&gt; value &lt;/tag&gt;" should be the
+  same as "&lt;tag&gt;value&lt;/tag&gt;"</li>
+  <li>The QosProvider API has been implemented within the DCPS API's for C,
+  (CORBA) C++, (CORBA), ISO C++, Java and C# languages.</li>
+  <li>Currently parsing of sequences and arrays only supports sequence of 
+  strings</li> 
+</ul>
+<p></p>
+  <div class="clear">
+    <hr/>
+    </div>
+    <div id="footer">
+      <div class="xright">
+       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.
+      </div>
+     <div class="clear">
+     <hr/>
+     </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>8. Launcher &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="9. Platform-specific Information" href="platforms.html" />
+    <link rel="prev" title="7. Licensing OpenSplice" href="licensing.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="platforms.html" title="9. Platform-specific Information"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="licensing.html" title="7. Licensing OpenSplice"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="launcher">
+<span id="id1"></span><h1>8. Launcher<a class="headerlink" href="#launcher" title="Permalink to this headline">¶</a></h1>
+<p><em>The Launcher application provides easy access to all of the tools,
+documentation, configurations, and examples bundled with Vortex OpenSplice.</em></p>
+<div class="section" id="the-launcher-utility">
+<h2>8.1. The Launcher utility<a class="headerlink" href="#the-launcher-utility" title="Permalink to this headline">¶</a></h2>
+<div class="figure">
+<a class="reference internal image-reference" href="_images/Launcher-utility.png"><img alt="The Launcher utility" src="_images/Launcher-utility.png" style="height: 70mm;" /></a>
+<p class="caption"><strong>The Launcher utility</strong></p>
+</div>
+</div>
+<div class="section" id="starting-the-launcher">
+<h2>8.2. Starting the Launcher<a class="headerlink" href="#starting-the-launcher" title="Permalink to this headline">¶</a></h2>
+<p>The Launcher&#8217;s content is populated based on the environment variables
+available at the time it is started. If the command line is used then
+the correct release script must be sourced from the Vortex OpenSplice home
+directory before starting the Launcher.</p>
+<p><strong>Unix and Linux</strong></p>
+<p><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<p>Source the <tt class="docutils literal"><span class="pre">release.com</span></tt> file from the shell command line to set up the
+Vortex OpenSplice environment.</p>
+<p>To start Launcher, enter the following command in the shell:</p>
+<div class="highlight-bash"><div class="highlight"><pre>ospllauncher
+</pre></div>
+</div>
+<p><strong>Windows</strong></p>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<p>Open an <em>Vortex OpenSplice Command Prompt</em> and enter the following command:</p>
+<div class="highlight-bash"><div class="highlight"><pre>ospllauncher.bat
+</pre></div>
+</div>
+<p>You can also start Launcher from the Windows <em>Start</em> Menu, which will
+set the environment variables of the Vortex OpenSplice instance
+appropriately.</p>
+<div class="figure" id="starting-the-launcher-from-windows-start-menu">
+<img alt="Starting the Launcher from Windows Start menu" src="_images/Launcher-starting.png" />
+<p class="caption"><strong>Starting the Launcher from Windows Start menu</strong></p>
+</div>
+</div>
+<div class="section" id="stopping-the-launcher">
+<h2>8.3. Stopping the Launcher<a class="headerlink" href="#stopping-the-launcher" title="Permalink to this headline">¶</a></h2>
+<p><strong>Unix and Linux</strong></p>
+<p><a class="reference internal" href="_images/icon-unix.png"><img alt="unix" src="_images/icon-unix.png" style="height: 6mm;" /></a> <a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<p>In the terminal where the <tt class="docutils literal"><span class="pre">ospllauncher</span></tt> file was executed,
+enter <em>CTRL+C</em>, or close the Launcher application windows using
+the <em>X</em> button.</p>
+<p><strong>Windows</strong></p>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<p>Close the Launcher application windows using the <em>X</em> button.</p>
+</div>
+<div class="section" id="troubleshooting-improper-startup">
+<h2>8.4. Troubleshooting Improper Startup<a class="headerlink" href="#troubleshooting-improper-startup" title="Permalink to this headline">¶</a></h2>
+<p><strong>Launcher starts up with incorrect, missing, or no content at all</strong></p>
+<p>Check the following:</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></dt>
+<dd>On Linux, ensure that the <em>release.com</em> was called prior to starting
+the Launcher.</dd>
+<dt><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></dt>
+<dd>On Windows, ensure you use the <em>Vortex OpenSplice Command Prompt</em> , or you
+can use the Windows command prompt if you call the <em>release.bat</em> script
+prior to starting the Launcher.</dd>
+</dl>
+<p>If previous versions of Vortex OpenSplice were used with
+Launcher, verify that <tt class="docutils literal"><span class="pre">USER_HOME.olauncherprefs</span></tt> does not contain any
+overridden values pointing to non-existent directories or files.</p>
+<p><strong>Launcher starts up but cannot compile or clean example code</strong></p>
+<p>Ensure that you have permissions to modify the permissions of
+<tt class="docutils literal"><span class="pre">OSPL_HOME/examples</span></tt> and any user-specified configuration directories,
+or start Launcher with elevated privileges.</p>
+<p><strong>Launcher starts up but cannot save edited configuration files opened
+in Configurator that has been started from Launcher</strong></p>
+<p>Ensure taht you have modify permissions in the <tt class="docutils literal"><span class="pre">OSPL_HOME/etc/config/</span></tt>
+directory, or start Launcher with elevated privileges.</p>
+<p><strong>Launcher starts up but cannot write log files</strong></p>
+<p>Ensure that you have modify permissions in the <tt class="docutils literal"><span class="pre">OSPL_HOME/</span></tt> and its
+subdirectories, start Launcher with elevated privileges, or start
+<tt class="docutils literal"><span class="pre">ospllauncher</span></tt> from a non-write-protected directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">8. Launcher</a><ul>
+<li><a class="reference internal" href="#the-launcher-utility">8.1. The Launcher utility</a></li>
+<li><a class="reference internal" href="#starting-the-launcher">8.2. Starting the Launcher</a></li>
+<li><a class="reference internal" href="#stopping-the-launcher">8.3. Stopping the Launcher</a></li>
+<li><a class="reference internal" href="#troubleshooting-improper-startup">8.4. Troubleshooting Improper Startup</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="licensing.html"
+                        title="previous chapter">7. Licensing OpenSplice</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="platforms.html"
+                        title="next chapter">9. Platform-specific Information</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/launcher.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="platforms.html" title="9. Platform-specific Information"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="licensing.html" title="7. Licensing OpenSplice"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

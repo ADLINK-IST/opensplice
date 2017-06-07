@@ -1,0 +1,10 @@
+#ifndef CCPP_$upper($(basename))STREAMS_H
+#define CCPP_$upper($(basename))STREAMS_H
+
+#include "streams_ccpp.h"
+#include "$(basename)Streams.h"
+#include "$(basename)StreamsDcps.h"
+#include <orb_abstraction.h>
+#include "$(basename)Streams_impl.h"
+
+#endif /* CCPP_$upper($(basename))STREAMS_H */

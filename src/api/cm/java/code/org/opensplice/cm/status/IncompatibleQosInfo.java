@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.status;
@@ -16,40 +24,40 @@ import java.util.ArrayList;
 /**
  * This class is applicable for two kinds of statusses and therefore has two
  * meanings:
- * 
- * 1. WriterStatus: A QosPolicy value was incompatible with what was 
+ *
+ * 1. WriterStatus: A QosPolicy value was incompatible with what was
  *    requested. (OFFEREED_INCOMPATBIBLE_QOS)
  * 2. ReaderStatus: A QosPolicy value was incompatible with what is offered.
  *    (REQUESTED_INCOMPATBIBLE_QOS)
- * 
- * @date Oct 12, 2004 
+ *
+ * @date Oct 12, 2004
  */
 public class IncompatibleQosInfo{
     private final long total_count;
     private final long total_count_change;
     private long last_policy_id;
-    private ArrayList policies;
+    private ArrayList<Long> policies;
     private final String[] policyNames = {
         "INVALID_QOS_POLICY_ID", "USERDATA_QOS_POLICY_ID",
         "DURABILITY_QOS_POLICY_ID", "PRESENTATION_QOS_POLICY_ID",
-        "DEADLINE_QOS_POLICY_ID", "LATENCYBUDGET_QOS_POLICY_ID", 
-        "OWNERSHIP_QOS_POLICY_ID", "OWNERSHIPSTRENGTH_QOS_POLICY_ID", 
-        "LIVELINESS_QOS_POLICY_ID", "TIMEBASEDFILTER_QOS_POLICY_ID", 
-        "PARTITION_QOS_POLICY_ID", "RELIABILITY_QOS_POLICY_ID", 
-        "DESTINATIONORDER_QOS_POLICY_ID", "HISTORY_QOS_POLICY_ID", 
-        "RESOURCELIMITS_QOS_POLICY_ID", "ENTITYFACTORY_QOS_POLICY_ID", 
-        "WRITERDATALIFECYCLE_QOS_POLICY_ID", "READERDATALIFECYCLE_QOS_POLICY_ID", 
-        "TOPICDATA_QOS_POLICY_ID", "GROUPDATA__QOS_POLICY_ID", 
-        "TRANSPORTPRIORITY_QOS_POLICY_ID", "LIFESPAN_QOS_POLICY_ID", 
-        "DURABILITYSERVICE_QOS_POLICY_ID", "USERKEY_QOS_POLICY_ID", 
-        "VIEWKEY_QOS_POLICY_ID", "READERLIFESPAN_QOS_POLICY_ID", 
+        "DEADLINE_QOS_POLICY_ID", "LATENCYBUDGET_QOS_POLICY_ID",
+        "OWNERSHIP_QOS_POLICY_ID", "OWNERSHIPSTRENGTH_QOS_POLICY_ID",
+        "LIVELINESS_QOS_POLICY_ID", "TIMEBASEDFILTER_QOS_POLICY_ID",
+        "PARTITION_QOS_POLICY_ID", "RELIABILITY_QOS_POLICY_ID",
+        "DESTINATIONORDER_QOS_POLICY_ID", "HISTORY_QOS_POLICY_ID",
+        "RESOURCELIMITS_QOS_POLICY_ID", "ENTITYFACTORY_QOS_POLICY_ID",
+        "WRITERDATALIFECYCLE_QOS_POLICY_ID", "READERDATALIFECYCLE_QOS_POLICY_ID",
+        "TOPICDATA_QOS_POLICY_ID", "GROUPDATA__QOS_POLICY_ID",
+        "TRANSPORTPRIORITY_QOS_POLICY_ID", "LIFESPAN_QOS_POLICY_ID",
+        "DURABILITYSERVICE_QOS_POLICY_ID", "USERKEY_QOS_POLICY_ID",
+        "VIEWKEY_QOS_POLICY_ID", "READERLIFESPAN_QOS_POLICY_ID",
         "SHAREPOLICY_QOS_POLICY_ID", "SCHEDULINGPOLICY_QOS_POLICY_ID"};
-    
+
     /**
      * Constructs a new IncompatibleQosInfo according to the supplied arguments.
      *
-     * @param _total_count Total cumulative count the concerned DataReader 
-     *                     discovered a DataWriter for the same Topic with an 
+     * @param _total_count Total cumulative count the concerned DataReader
+     *                     discovered a DataWriter for the same Topic with an
      *                     offered QoS that was incompatible with that requested
      *                     by the DataReade or total cumulative number of times
      *                     the concerned DataWriter discovered a DataReader for
@@ -64,19 +72,19 @@ public class IncompatibleQosInfo{
         total_count_change = _total_count_change;
         policies = null;
     }
-    
+
     /**
      * Provides access to total_count.
-     * 
+     *
      * @return Returns the total_count.
      */
     public long getTotalCount() {
         return total_count;
     }
-    
+
     /**
      * Provides access to total_count_change.
-     * 
+     *
      * @return Returns the total_count_change.
      */
     public long getTotalCountChange() {
@@ -84,53 +92,52 @@ public class IncompatibleQosInfo{
     }
     /**
      * Provides access to last_policy_id.
-     * 
+     *
      * @return Returns the last_policy_id.
      */
     public long getLastPolicyId() {
         return last_policy_id;
     }
-    
+
     public String getLastPolicyIdName(){
         String result;
-        
+
         if(this.policyNames.length >= this.last_policy_id+1){
             result = policyNames[(int) (this.last_policy_id)];
         } else {
-            result = "!CM API MISMATCH!"; 
+            result = "!CM API MISMATCH!";
         }
         return result;
     }
-    
+
     /**
      * Provides access to policies.
-     * 
+     *
      * @todo TODO: change return type from Long[] to long[].
      * @return Returns the policies.
      */
     public Long[] getPolicies() {
         Long[] result = null;
-        
+
         if(policies != null){
-            result = (Long[])
-                    (policies.toArray(new Long[policies.size()]));
+            result = policies.toArray(new Long[policies.size()]);
         }
         return result;
     }
-    
+
     /**
      * Adds the supplied policy to the list of policies.
-     * 
+     *
      * @param policy
      */
     public void addPolicy(long policy){
         if(policies == null){
-            policies = new ArrayList();
+            policies = new ArrayList<Long>();
         }
         policies.add(new Long(policy));
         this.last_policy_id = policy;
     }
-    
+
     /**
      * Sets the last_policy_id to the supplied value.
      *

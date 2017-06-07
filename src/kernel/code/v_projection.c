@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -14,14 +22,14 @@
 #include "v__dataReader.h"
 #include "os_heap.h"
 #include "os_report.h"
-#include "os.h"
+#include "vortex_os.h"
 
 static c_char *
 getFieldName(
     q_expr fieldExpr)
 {
     c_char *name, *str;
-    c_long len;
+    os_size_t len;
 
     if (q_isId(fieldExpr)) {
         str = q_getId(fieldExpr);
@@ -97,15 +105,8 @@ v_mappingNew(
     os_free(resultFieldName);
 
     rule = c_new(v_kernelType(kernel, K_MAPPING));
-    if (rule) {
-        rule->source = sourceField;
-        rule->destination = resultField;
-    } else {
-        OS_REPORT(OS_ERROR,
-                  "v_mappingNew",0,
-                  "Failed to allocate mapping rule.");
-        assert(FALSE);
-    }
+    rule->source = sourceField;
+    rule->destination = resultField;
     return rule;
 }
 
@@ -189,7 +190,7 @@ v_projectionNew(
                 /* object constructor */
                 nrOfRules = q_getLen(par)-1;
                 resultType = getProjectionType(kernel,par);
-                rules = v_mappingArrayNew(kernel,nrOfRules);
+                rules = v_mappingArrayNew(kernel,(c_ulong)nrOfRules);
                 for (i=0;i<nrOfRules;i++) {
                     rule = q_getPar(par,i+1);
                     rules[i] = v_mappingNew(reader,resultType,rule);
@@ -202,12 +203,12 @@ v_projectionNew(
                 field = v_dataReaderIndexField(reader,fieldName);
                 resultType = c_fieldType(field);
                 c_free(field);
-                rules = v_mappingArrayNew(kernel,nrOfRules);
+                rules = v_mappingArrayNew(kernel,(c_ulong)nrOfRules);
                 rules[0] = v_mappingNew(reader,NULL,par);
                 os_free(fieldName);
             break;
             default:
-                OS_REPORT_1(OS_ERROR,"v_projectionNew failed",0,
+                OS_REPORT(OS_CRITICAL,"v_projectionNew failed",V_RESULT_ILL_PARAM,
                             "illegal mapping kind (%d) specified",
                             q_getTag(par));
                 assert(FALSE);
@@ -220,11 +221,11 @@ v_projectionNew(
             field = v_dataReaderIndexField(reader,q_getId(par));
             resultType = c_fieldType(field);
             c_free(field);
-            rules = v_mappingArrayNew(kernel,nrOfRules);
+            rules = v_mappingArrayNew(kernel,(c_ulong)nrOfRules);
             rules[0] = v_mappingNew(reader,NULL,par);
         break;
         default:
-            OS_REPORT_1(OS_ERROR,"v_projectionNew failed",0,
+            OS_REPORT(OS_CRITICAL,"v_projectionNew failed",V_RESULT_ILL_PARAM,
                         "illegal mapping kind (%d) specified",
                         q_getKind(par));
             assert(FALSE);
@@ -237,16 +238,8 @@ v_projectionNew(
     p = v_projection(v_objectNew(kernel,K_PROJECTION));
     */
     p = c_new(v_kernelType(kernel, K_PROJECTION));
-    if (p) {
-        p->rules = (c_array)rules;
-        p->resultType = resultType; /* transfer refcount */
-    } else {
-        OS_REPORT(OS_ERROR,
-                  "v_projectionNew",0,
-                  "Failed to allocate projection.");
-        assert(FALSE);
-    }
-
+    p->rules = (c_array)rules;
+    p->resultType = resultType; /* transfer refcount */
     return p;
 }
 
@@ -276,7 +269,7 @@ v_projectionSource (
     const c_char *fieldName)
 {
     v_mapping mapping;
-    c_long i, length;
+    c_ulong i, length;
 
     assert(C_TYPECHECK(p,v_projection));
     assert(fieldName != NULL);

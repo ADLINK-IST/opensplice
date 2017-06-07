@@ -25,8 +25,25 @@ fi
 
 if [ "${TEST_GCOV}" = "yes" ]
 then
+   IGNORED_FILES="${OSPL_HOME}/src/tools/idlpp/bld/${SPLICE_HOST}/idl_base \
+                  ${OSPL_HOME}/src/tools/cppgen/bld/${SPLICE_HOST}/y_tab \
+                  ${OSPL_HOME}/src/tools/cppgen/bld/${SPLICE_HOST}/lex_yy \
+                  ${OSPL_HOME}/src/osplcore/bld/${SPLICE_HOST}/q_parser \
+                  ${OSPL_HOME}/src/osplcore/bld/${SPLICE_HOST}/c_odlbase \
+                  ${OSPL_HOME}/src/osplcore/bld/${SPLICE_HOST}/cfg_parser \
+                  ${OSPL_HOME}/src/osplcore/bld/${SPLICE_HOST}/v_parser \
+                  ${OSPL_HOME}/src/services/cmsoap/bld/${SPLICE_HOST}/soapC \
+                  ${OSPL_HOME}/src/services/cmsoap/bld/${SPLICE_HOST}/stdsoap2 \
+                  ${OSPL_HOME}/src/services/cmsoap/bld/${SPLICE_HOST}/soapServer"
+
+    for ifile in ${IGNORED_FILES}
+    do
+        rm ${ifile}.gcda
+        rm ${ifile}.gcno
+    done
+
    lcov -d $OSPL_HOME_NORMALIZED/src -d $OSPL_OUTER_HOME/src -d $OSPL_OUTER_HOME/testsuite/dbt/api/dcps -d $OSPL_OUTER_HOME/testsuite/rbt/services/rmi -c -o $LOGDIR/lcov-raw.info
-   lcov -r $LOGDIR/lcov-raw.info "*.ll" "*.yy" "*.yy.c" "lex_yy.cpp"  yaccpar "*stdout*" "*/INSTALLED*" "/usr/include/*" "*/services/rmi/cpp/bld/*" "*/testsuite/*" -o $LOGDIR/lcov.info
+   lcov -r $LOGDIR/lcov-raw.info "*/INSTALLED*" "/usr/include/*" "*/services/rmi/cpp/bld/*" "*/testsuite/*" -o $LOGDIR/lcov.info
    genhtml -o $LOGDIR/coverage --no-prefix $LOGDIR/lcov.info
 
    for i in index.html index-sort-b.html index-sort-f.html index-sort-l.html
@@ -69,7 +86,6 @@ fi
 
 if [ "${TEST_JACOCO}" = "yes" ]
 then
-   java -jar ${JACOCO_HOME}/lib/org.jacoco.operator.jar report --input-srcs ${OSPL_OUTER_HOME}/src/api/dcps/java/code --input-builds ${OSPL_HOME}/jar/${SPLICE_HOST}/dcpsapi.jar --html-output ${LOGDIR}/jcoverage/dcpsapi --input-file ${OSPL_OUTER_HOME}/Results/jacoco.exec.java
    java -jar ${JACOCO_HOME}/lib/org.jacoco.operator.jar report --input-srcs ${OSPL_HOME}/src/api/dcps/java/cj/code ${OSPL_HOME}/src/api/dcps/java/cj/bld/code/${SPLICE_HOST} ${OSPL_HOME}/src/api/dcps/java/common/java/code --input-builds ${OSPL_HOME}/jar/${SPLICE_HOST}/dcpscj.jar --html-output ${LOGDIR}/jcoverage/dcpscj --input-file ${OSPL_OUTER_HOME}/Results/jacoco.exec.corba
    java -jar ${JACOCO_HOME}/lib/org.jacoco.operator.jar report --input-srcs ${OSPL_HOME}/src/api/dcps/java/saj/code ${OSPL_HOME}/src/api/dcps/java/saj/bld/code/${SPLICE_HOST} ${OSPL_HOME}/src/api/dcps/java/common/java/code --input-builds ${OSPL_HOME}/jar/${SPLICE_HOST}/dcpssaj.jar --html-output ${LOGDIR}/jcoverage/dcpssaj --input-file ${OSPL_OUTER_HOME}/Results/jacoco.exec.standalone
 #   java -jar ${JACOCO_HOME}/lib/org.jacoco.operator.jar report --input-srcs ${OSPL_OUTER_HOME}/src/tools/cm/tuner/code --input-builds ${OSPL_HOME}/jar/${SPLICE_HOST}/ospltun.jar --html-output ${LOGDIR}/jcoverage/ospltun --input-file ${OSPL_OUTER_HOME}/Results/jacoco.exec.tuner
@@ -82,6 +98,7 @@ then
    echo '<head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><title>Coverage summary</title></head><body>' > ${INDEX}
    echo '<h2>Java coverage summary</h2>' >> ${INDEX}
    echo '<table border=1><tr><th>JAR</th><th>Instructions</th></tr>' >> ${INDEX}
+   mv ${LOGDIR}/DBT-Results/jcoverage-java5/ ${LOGDIR}/jcoverage/java5/
 
    for i in `find ${LOGDIR}/jcoverage/* -maxdepth 0 -type d -printf '%f '`
    do
@@ -90,12 +107,16 @@ then
       then
          CJRES=${INSTS}
       fi
+      if [ ${i} = java5 ]
+      then
+         JAVA5RES=${INSTS}
+      fi
       echo "<tr><td><a href=${i}/index.html>${i}</a></td><td>${INSTS}%</td></tr>" >> ${INDEX}
    done
    echo '</table>' >> ${INDEX}
    echo '</body>' >> ${INDEX}
 
-   echo "COVERAGE/JACOCO=CJ:${CJRES}%" >> ${RESFILE}
+   echo "COVERAGE/JACOCO=CJ:${CJRES}%_JAVA5:${JAVA5RES}%" >> ${RESFILE}
 else
    echo "COVERAGE/JACOCO=SKIPPED" >> $RESFILE
 fi

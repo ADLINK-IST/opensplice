@@ -1,22 +1,32 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include <sys/types.h>
+#include <sys/cygwin.h>
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
-#define MAX_ARGS 512
+#define MAX_ARGS 1024
 #define VSB_CONFIG_FILE_STRING "-D_VSB_CONFIG_FILE=\""
 
 extern char **environ;
@@ -24,58 +34,90 @@ typedef char *cptr;
 static cptr newargs[MAX_ARGS];
 static int argNum = 0;
 
+/* We still have some ancient Cygwin installations around that do not
+   support the new interfaces, but the old ones are absent on
+   64-bit. */
+#ifdef __x86_64__
+static char *convpath (const char *pp)
+{
+    return cygwin_create_path (CCP_POSIX_TO_WIN_A | CCP_RELATIVE, pp);
+}
+
+static char *convpathlist (const char *ppl)
+{
+  ssize_t newlen = cygwin_conv_path_list (CCP_POSIX_TO_WIN_A | CCP_RELATIVE, ppl, NULL, 0);
+  if (newlen < 0) {
+      perror ("cygwin_conv_path_list(1)");
+      exit (127);
+  } else if (newlen == 0) {
+      return strdup ("");
+  } else {
+      char *wpl = malloc (newlen);
+      if (cygwin_conv_path_list (CCP_POSIX_TO_WIN_A | CCP_RELATIVE, ppl, wpl, newlen) < 0) {
+          perror ("cygwin_conv_path_list(2)");
+          exit (127);
+      }
+      return wpl;
+  }
+}
+#else
+static char *convpath (const char *pp)
+{
+   int len = cygwin32_posix_to_win32_path_list_buf_size (pp);
+   char *wp = malloc (len);
+   (void) cygwin32_conv_to_win32_path (pp, wp);
+   return wp;
+}
+
+static char *convpathlist (const char *ppl)
+{
+    char *ppl_copy, *nextpath;
+    int winlen = 0;
+
+    ppl_copy = strdup (ppl); /* strtok is destructive */
+    nextpath = strtok (ppl_copy, ":");
+    while (nextpath) {
+        winlen += cygwin32_posix_to_win32_path_list_buf_size (nextpath) + 1;
+        nextpath = strtok (NULL, ":");
+    }
+    free (ppl_copy);
+
+    if (winlen == 0) {
+        return strdup ("");
+    } else {
+        char *wpl = malloc (winlen);
+        ppl_copy = strdup (ppl);
+        nextpath = strtok (ppl_copy, ":");
+        cygwin32_conv_to_win32_path (nextpath, wpl);
+        while ((nextpath = strtok (NULL, ":")) != NULL) {
+            strcat (wpl, ";");
+            cygwin32_conv_to_win32_path (nextpath, wpl + strlen (wpl));
+        }
+        free (ppl_copy);
+        return wpl;
+    }
+}
+#endif
+
 void addarg( const char *pattern, const char *val )
 {
-   char *winval;
-   int newlen;
-   int len = cygwin32_posix_to_win32_path_list_buf_size (val);
-   winval = malloc(len);
-   cygwin32_conv_to_win32_path(val, winval );
-   newlen=strlen(pattern) + strlen(winval) -1;
-   char *newarg = malloc( newlen );
-   snprintf( newarg, newlen, pattern, winval );
-   free(winval);
-   newargs[argNum++] = newarg;
-   if (argNum+1 >= MAX_ARGS)
-   {
+    char *winval = convpath (val);
+    int newlen = strlen(pattern) + strlen(winval) -1;
+    char *newarg = malloc (newlen);
+    snprintf (newarg, newlen, pattern, winval);
+    free(winval);
+    newargs[argNum++] = newarg;
+    if (argNum+1 >= MAX_ARGS)
+    {
       fprintf(stderr, "Error: ospl_wincmd Max number args exceeded\n");
       fflush(stderr);
       exit (1);
-   }
+    }
 }
 
 void addjavapaths (char *val)
 {
-   char *winval = NULL;
-   char *nextpath;
-   char *val1;
-   int newlen = 0;
-
-   val1 = strdup (val); /* strtok is destructive */
-   nextpath = strtok (val1, ":");
-   while (nextpath)
-   {
-      newlen += cygwin32_posix_to_win32_path_list_buf_size (nextpath) + 1;
-      nextpath = strtok (NULL, ":");
-   }
-   free (val1);
-
-   if (newlen)
-   {
-      winval = malloc (newlen);
-      nextpath = strtok (val, ":");
-      cygwin32_conv_to_win32_path (nextpath, winval);
-      while (nextpath = strtok (NULL, ":"))
-      {
-         strcat (winval, ";");
-         cygwin32_conv_to_win32_path (nextpath, winval + strlen (winval));
-      }
-   }
-   else
-   {
-      winval = "";
-   }
-   newargs [argNum++] = winval;
+   newargs [argNum++] = convpathlist (val);
    if (argNum+1 >= MAX_ARGS)
    {
       fprintf(stderr, "Error: ospl_wincmd Max number args exceeded\n");
@@ -86,15 +128,11 @@ void addjavapaths (char *val)
 
 void fixenv( const char *envname )
 {
-   char *winval;
-   int newlen;
    char *env;
    env = getenv(envname);
    if ( env && env[0] != '\0' )
    {
-     int len = cygwin32_posix_to_win32_path_list_buf_size (env);
-     winval = malloc(len);
-     cygwin32_conv_to_win32_path(env, winval );
+     char *winval = convpath (env);
      setenv( envname, winval, 1 );
      free(winval);
    }
@@ -103,7 +141,6 @@ void fixenv( const char *envname )
 int main( int argc, char ** argv)
 {
    int count;
-   int i;
 
 /* Executable name - strip off path if it was specified */
 
@@ -124,9 +161,9 @@ int main( int argc, char ** argv)
       char *arg = argv[count];
       if ( arg[0] == '-' )
       {
-	 if ( !strcmp( exe, "arpentium" )
-	      || !strcmp( exe, "arppc" ) )
-	 {
+         if ( !strcmp( exe, "arpentium" )
+              || !strcmp( exe, "arppc" ) )
+         {
             addarg( "%s", argv[count] );
             fixenv( "WIND_HOME");
          }
@@ -137,7 +174,14 @@ int main( int argc, char ** argv)
               || !strcmp( exe, "c++ppc" )
               || !strcmp( exe, "cppppc" )
               || !strcmp( exe, "ccppc" )
-              || !strcmp( exe, "ldppc" ))
+              || !strcmp( exe, "ldppc" )
+              || !strcmp( exe, "qcc" )
+              || !strcmp( exe, "ntoarm-gcc" )
+              || !strcmp( exe, "ntoarm-g++" )
+              || !strcmp( exe, "ccint86")
+              || !strcmp( exe, "cxint86")
+              || !strcmp( exe, "ccintppc")
+              || !strcmp( exe, "cxintppc"))
          {
             fixenv( "WIND_HOME");
             switch ( arg[1] )
@@ -157,7 +201,6 @@ int main( int argc, char ** argv)
                   if ( arg[2] == '\0' )
                   {
                      char *narg=argv[count+1];
-                     int arglen = strlen( narg );
                      addarg( "%s", "-o" );
                      addarg( "%s", narg );
                      count++;
@@ -192,6 +235,7 @@ int main( int argc, char ** argv)
          }
          else if ( !strcmp( exe, "idlpp" )
               || !strcmp( exe, "tao_idl" )
+              || !strcmp( exe, "idl" )
               || !strcmp( exe, "rmipp" )
               || !strcmp( exe, "odlpp" )
          )
@@ -208,7 +252,6 @@ int main( int argc, char ** argv)
                   if ( arg[2] == '\0' )
                   {
                      char *narg=argv[count+1];
-                     int arglen = strlen( narg );
                      addarg( "%s", "-o" );
                      addarg( "%s", narg );
                      count++;
@@ -230,7 +273,6 @@ int main( int argc, char ** argv)
             if (!strcmp( arg, "-manifest" ))
             {
                char *narg=argv[count+1];
-               int arglen = strlen( narg );
                addarg( "%s", arg );
                addarg( "%s", narg );
                count++;
@@ -360,9 +402,10 @@ int main( int argc, char ** argv)
    printf("\n");
    fflush(stdout);*/
 
-   if ( execvp( argv[1], newargs, environ ) == -1 )
+   if ( execvp( argv[1], newargs ) == -1 )
    {
       fprintf(stderr, "ERROR: exec failed %d\n", errno);
       fflush(stderr);
    }
+   return 127;
 }

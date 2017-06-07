@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "os_heap.h"
@@ -32,14 +40,14 @@ os_iterNew(
 {
     os_iter l;
 
-    l = (os_iter)os_malloc(OS_SIZEOF(os_iter));
+    l = os_malloc(sizeof *l);
     if (object == NULL) {
         l->length = 0;
         l->head = NULL;
         l->tail = NULL;
     } else {
         l->length = 1;
-        l->head = (os_iterNode)os_malloc(OS_SIZEOF(os_iterNode));
+        l->head = os_malloc(sizeof *l->head);
         l->head->next = NULL;
         l->head->object = object;
         l->tail = l->head;
@@ -81,12 +89,12 @@ os_iterInsert(
     n->object = object;
     n->next = iter->head;
     iter->head = n;
-    
+
     if(iter->tail == NULL){
         iter->tail = n;
     }
     iter->length++;
-    
+
     return iter;
 }
 
@@ -104,7 +112,7 @@ os_iterAppend(
     n = (os_iterNode)os_malloc(OS_SIZEOF(os_iterNode));
     n->object = object;
     n->next = NULL;
-        
+
     if(iter->tail){
         iter->tail->next = n;
         iter->tail = n;
@@ -113,7 +121,7 @@ os_iterAppend(
         iter->tail = n;
     }
     iter->length++;
-    
+
     return iter;
 }
 
@@ -132,13 +140,55 @@ os_iterTakeFirst(
     o = n->object;
     iter->head = n->next;
     iter->length--;
-    
+
     if(iter->length == 0){
         assert(n->next == NULL);
         iter->tail = NULL;
     }
     os_free(n);
-    
+
+    return o;
+}
+
+void *
+os_iterTakeLast(
+    os_iter iter)
+{
+    os_iterNode n, prev;
+    void *o;
+
+    if (iter == NULL) {
+        return NULL;
+    }
+    if (iter->tail == NULL) {
+        return NULL;
+    }
+
+    n = iter->tail;
+    o = n->object;
+
+    if (iter->head == iter->tail) {
+        prev = NULL;
+    } else {
+        prev = iter->head;
+        while (prev->next != iter->tail) {
+            prev = prev->next;
+        }
+    }
+
+    if (prev) {
+        prev->next = NULL;
+    }
+    iter->tail = prev;
+    iter->length--;
+
+    if (iter->length == 0) {
+        iter->head = NULL;
+        assert(iter->tail == NULL);
+    }
+
+    os_free(n);
+
     return o;
 }
 
@@ -148,7 +198,7 @@ os_iterTake(
     void *object)
 {
     os_iterNode current, previous;
-    
+
     if (iter == NULL) {
         return NULL;
     }
@@ -157,7 +207,7 @@ os_iterTake(
     }
     previous = NULL;
     current  = iter->head;
-    
+
     while(current){
         if(current->object == object){
             if(previous){ /* current is not head */
@@ -173,10 +223,10 @@ os_iterTake(
                 assert(iter->length == 1); /* will be 0 after this */
             }
             os_free(current);
-            
+
             assert(iter->length >= 1);
             iter->length--;
-            
+
             return object;
         } else {
             previous = current;
@@ -273,7 +323,7 @@ os_iterConcat(
     (*l)->next = tail->head;
     head->length += tail->length;
     head->tail = tail->tail;
-    
+
     os_free(tail);
     return head;
 }
@@ -299,7 +349,7 @@ os_iterCopy(
     return l;
 }
 
-os_int32
+os_uint32
 os_iterLength(
     os_iter iter)
 {
@@ -391,9 +441,9 @@ os_iterContains(
 
     if (iter == NULL) return 0;
     if (object == NULL) return 0;
-     
+
     p = &iter->head;
-     
+
     while (*p != NULL) {
         if ((*p)->object == object) {
             return 1;
@@ -401,4 +451,32 @@ os_iterContains(
         p = &((*p)->next);
     }
     return 0;
+}
+
+void
+os_iterSort (
+    os_iter iter,
+    os_iterSortAction action,
+    os_boolean ascending)
+{
+    os_equality eq;
+    os_iterNode k, l;
+    void *o;
+
+    assert (action != NULL);
+
+    if (iter != NULL) {
+        for (k = iter->head; k->next != NULL; k = k->next) {
+            for (l = k->next; l != NULL; l = l->next) {
+                eq = action (k->object, l->object);
+                if ((eq > OS_EQ && ascending == OS_TRUE) ||
+                    (eq < OS_EQ && ascending == OS_FALSE))
+                {
+                    o = k->object;
+                    k->object = l->object;
+                    l->object = o;
+                }
+            }
+        }
+    }
 }

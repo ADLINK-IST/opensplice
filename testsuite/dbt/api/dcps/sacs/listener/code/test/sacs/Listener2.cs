@@ -1,8 +1,13 @@
+using System.Threading;
+using System.Collections.Generic;
+
 namespace test.sacs
 {
     /// <date>Jun 2, 2005</date>
     public class Listener2 : Test.Framework.TestCase
     {
+
+        Dictionary<DDS.StatusKind, Semaphore> semaphores = null;
         public Listener2()
             : base("sacs_listener_tc2", "sacs_listener", "listener", "Test if a SubscriberListener works."
                 , "Test if a SubscriberListener works.", null)
@@ -19,13 +24,17 @@ namespace test.sacs
             mod.tstDataReader datareader;
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
+            semaphores = new Dictionary<DDS.StatusKind, Semaphore>();
+            semaphores.Add(DDS.StatusKind.DataOnReaders,new Semaphore(0, 1));
+
             string expResult = "SubscriberListener test succeeded.";
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
                 .Pass, Test.Framework.TestVerdict.Fail);
             subscriber = (DDS.ISubscriber)this.ResolveObject("subscriber");
             datawriter = (mod.tstDataWriter)this.ResolveObject("datawriter");
-            listener = new test.sacs.MySubscriberListener();
+            listener = new test.sacs.MySubscriberListener(semaphores);
             rc = subscriber.SetListener(listener, DDS.StatusKind.DataOnReaders);
+
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Listener could not be attached.";
@@ -41,17 +50,14 @@ namespace test.sacs
                 result.Result = "Data could not be written.";
                 return result;
             }
-            try
-            {
-                System.Threading.Thread.Sleep(5000);
-            }
-            catch (System.Exception e)
-            {
-                System.Console.WriteLine(e);
-            }
-            if (!listener.onDataOnReadersCalled)
-            {
-                result.Result = "on_data_on_readers does not work properly.";
+            if(semaphores[DDS.StatusKind.DataOnReaders].WaitOne(10000)) {
+	            if (!listener.onDataOnReadersCalled)
+	            {
+	                result.Result = "on_data_on_readers does not work properly.";
+	                return result;
+	            }
+	        } else {
+                result.Result = "on_data_on_readers did not trigger";
                 return result;
             }
             listener.Reset();
@@ -82,16 +88,7 @@ namespace test.sacs
                 result.Result = "Listener could not be attached (3).";
                 return result;
             }
-            try
-            {
-                System.Threading.Thread.Sleep(5000);
-            }
-            catch (System.Exception e)
-            {
-                System.Console.WriteLine(e);
-            }
-            if (listener.onDataOnReadersCalled)
-            {
+            if(semaphores[DDS.StatusKind.DataOnReaders].WaitOne(1000)) {
                 result.Result = "on_data_on_readers does not work properly (2).";
                 return result;
             }

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef U_PARTICIPANT_H
@@ -27,46 +35,25 @@
 /** Supported methods:
  *
  *  u_participantNew();
- *  u_participantFree();
  *
  *  u_participantDomain();
  *  u_participantAssertLiveliness();
- *  u_participantDisable();
  *  u_participantGetConfiguration();
  *  u_participantFindTopic();
- *  u_participantGetBuiltinSubscriber();
  *  u_participantDeleteHistoricalData ();
  *
- *  u_participantCreatePublisher();
- *  u_participantContainsPublisher();
- *  u_participantLookupPublishers();
- *  u_participantPublisherCount();
- *  u_participantWalkPublishers();
- *
- *  u_participantCreateSubscriber();
- *  u_participantContainsSubscriber();
- *  u_participantLookupSubscribers();
- *  u_participantSubscriberCount();
- *  u_participantWalkSubscribers();
- *
- *  u_participantCreateTopic();
- *  u_participantContainsTopic();
- *  u_participantLookupTopics();
- *  u_participantTopicCount();
- *  u_participantWalkTopics();
  */
+
+#include "u_cfElement.h"
+#include "u_types.h"
+#include "u_object.h"
+#include "u_topic.h"
+#include "u_publisher.h"
+#include "u_subscriber.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
-
-#include "u_types.h"
-#include "u_topic.h"
-#include "u_publisher.h"
-#include "u_subscriber.h"
-#include "u_cfElement.h"
-#include "v_statistics.h"
-#include "os_if.h"
 
 #ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
@@ -81,12 +68,7 @@ extern "C" {
  * runtime type checking due to the lack of type information.
  */
 #define u_participant(p) \
-        ((u_participant)u_entityCheckType(u_entity(p), U_PARTICIPANT))
-
-typedef c_bool
-(*u_participantAction)(
-    u_participant p,
-    c_voidp arg);
+        ((u_participant)u_objectCheckType(u_object(p), U_PARTICIPANT))
 
 /** \brief The class constructor.
  *
@@ -108,39 +90,22 @@ typedef c_bool
  */
 OS_API u_participant
 u_participantNew(
-    const c_char *uri,
-    c_long        timeout,
-    const c_char *name,
-    v_qos         qos,
-    c_bool        enable);
+    const os_char *uri,
+    const u_domainId_t id,
+          os_uint32 timeout,
+    const os_char *name,
+    const u_participantQos qos,
+          u_bool enable);
 
-/** \brief The class destructor.
- *
- * The destructor notifies the kernel to destruct the kernel participant
- * associated to this proxy. Also all kernel object owned by the deleted kernel
- * participant are deleted.
- *
- * \param _this The participant to operate on.
- *
- * \return U_RESULT_OK on a succesful operation or<br>
- *         U_RESULT_ILL_PARAM if the specified participant is incorrect.
- */
 OS_API u_result
-u_participantFree(
-    u_participant _this);
+u_participantGetQos (
+    const u_participant _this,
+          u_participantQos *qos);
 
-/** \brief Disables the specified participant.
- *
- * When a participant is disabled, all its entities are also disabled.
- *
- * \param _this The participant to operate on
- *
- * \return U_RESULT_OK the participant is disabled.<br>
- *         U_RESULT_ILL_PARAM if the specified participant is incorrect.
- */
 OS_API u_result
-u_participantDisable(
-    u_participant _this);
+u_participantSetQos (
+    const u_participant _this,
+    const u_participantQos qos);
 
 /**
  * \brief Returns the nodal Domain configuration.
@@ -153,7 +118,7 @@ u_participantDisable(
  */
 OS_API u_cfElement
 u_participantGetConfiguration(
-    u_participant _this);
+    const u_participant _this);
 
 /**
  * \brief asks the system to find the topic specified by a given name.
@@ -174,24 +139,9 @@ u_participantGetConfiguration(
  */
 OS_API c_iter
 u_participantFindTopic(
-    u_participant _this,
-    const c_char *name,
-    v_duration timeout);
-
-/**
- * \brief returns the built-in subscriber.
- *
- * This method returns the built-in subscriber, which holds built-in datareader's for every
- * built-in topic. These datareader's can be obtained using the method
- * <code>u_subscriberLookupDatareader</code>.
- *
- * \param _this         The participant proxy to operate on.
- *
- * \return              The built-in subscriber.
- */
-OS_API u_subscriber
-u_participantGetBuiltinSubscriber(
-    u_participant _this);
+    const u_participant _this,
+    const os_char *name,
+    const os_duration timeout);
 
 /**
  * \brief Asserts the liveliness of the Participant
@@ -205,7 +155,7 @@ u_participantGetBuiltinSubscriber(
  */
 OS_API u_result
 u_participantAssertLiveliness(
-    u_participant _this);
+    const u_participant _this);
 
 /**
  * \brief Delete historical data from the nodal domain.
@@ -222,283 +172,29 @@ u_participantAssertLiveliness(
  */
 OS_API u_result
 u_participantDeleteHistoricalData (
-    u_participant _this,
-    const c_char* partitionExpr,
-    const c_char* topicExpr);
+    const u_participant _this,
+    const os_char *partitionExpr,
+    const os_char *topicExpr);
 
 /** \brief Retrieves the Domain associated to the given Participant.
  *
  * \param _this The participant to operate on.
  *
- * \return U_RESULT_OK on a succesful operation or
- *         U_RESULT_ILL_PARAM if the specified participant is incorrect.
- *         U_RESULT_ALREADY_DELETED if the specified participant is deleted.
+ * \return The associated Domain.
  */
 OS_API u_domain
 u_participantDomain(
-    u_participant _this);
+    const u_participant _this);
 
-/**
- * \brief Check if the given Publisher is associated to this Participant.
+/** \brief Retrieves the Id of the Domain associated to the given Participant.
  *
- * This method checks if the given Publisher is contained by this Participant.
- * A Publisher is contained by the Participant if the Publisher is created by
- * the Participant.
+ * \param _this The participant to operate on.
  *
- * \param _this          The Participant.
- * \param publisher      The Publisher.
- *
- * \return               TRUE if the publisher is associated to0 the Participant.
+ * \return The associated Domain Id.
  */
-OS_API c_bool
-u_participantContainsPublisher(
-    u_participant _this,
-    u_publisher publisher);
-
-/**
- * \brief Returns a list of all associated Publishers.
- *
- * This method returns a list of all Publishers created by this Participant.
- * This method doesn't increase the ref count of a Publisher so returned
- * Publishers are not kept alive by this operation and don't need to be freed.
- *
- * \param _this          The Participant.
- *
- * \return               A list of all contained Publishers.
- */
-OS_API c_iter
-u_participantLookupPublishers(
-    u_participant _this);
-
-/**
- * \brief Returns the number of contained Publishers.
- *
- * This method will return the number of Publishers contained by this Participant.
- *
- * \param _this          The Participant.
- *
- * \return               The number of Publishers.
- */
-OS_API c_long
-u_participantPublisherCount(
-    u_participant _this);
-
-/**
- * \brief Execute an action operation on all contained Publishers.
- *
- * This method will visit all contained Publishers of this Participant and
- * execute the specified action operation on each Publisher.
- * The action operation expects two parameters, the Publisher and the
- * given actionArg, the actionArg parameter is passed to action operation
- * on each invocation.
- *
- * The signature of the action operation is defined in u_publisher.h by the
- * following definition:
- *
- * c_bool u_publisherAction(u_publisher publisher, c_voidp arg);
- *
- * Note that this method will abort the walk when all publishers are visited or
- * when the action operation returns FALSE.
- *
- * \param _this          The Participant.
- * \param action         The action operation.
- * \param arctionArg     The action argument that is passed to all invocations
- *                       of the action operation.
- *
- * \return               U_RESULT_OK on a succesfull walk.
- *                       U_RESULT_ALREADY_DELETED if the specified participant is deleted.
- */
-OS_API u_result
-u_participantWalkPublishers(
-    u_participant _this,
-    u_publisherAction action,
-    c_voidp actionArg);
-
-/**
- * \brief Check if the given Subscriber is associated to this Participant.
- *
- * This method checks if the given Subscriber is contained by this Participant.
- * A Subscriber is contained by the Participant if the Subscriber is created by
- * the Participant.
- *
- * \param _this          The Participant.
- * \param subscriber     The Subscriber.
- *
- * \return               TRUE if the subscriber is associated to the Participant.
- */
-OS_API c_bool
-u_participantContainsSubscriber(
-    u_participant _this,
-    u_subscriber subscriber);
-
-/**
- * \brief Returns a list of all associated Subscribers.
- *
- * This method returns a list of all Subscribers created by this Participant.
- * This method doesn't increase the ref count of a Subscriber so returned
- * Subscribers are not kept alive by this operation and don't need to be freed.
- *
- * \param _this          The Participant.
- *
- * \return               A list of all contained Subscribers.
- */
-OS_API c_iter
-u_participantLookupSubscribers(
-    u_participant _this);
-
-/**
- * \brief Returns the number of contained Subscribers.
- *
- * This method will return the number of Subscribers contained by this Participant.
- *
- * \param _this          The Participant.
- *
- * \return               The number of Subscribers.
- */
-OS_API c_long
-u_participantSubscriberCount(
-    u_participant _this);
-
-/**
- * \brief Execute an action operation on all contained Subscribers.
- *
- * This method will visit all contained Subscribers of this Participant and
- * execute the specified action operation on each Subscriber.
- * The action operation expects two parameters, the Subscriber and the
- * given actionArg, the actionArg parameter is passed to action operation
- * on each invocation.
- *
- * The signature of the action operation is defined in u_subscriber.h by the
- * following definition:
- *
- * c_bool u_subscriberAction(u_subscriber subscriber, c_voidp arg);
- *
- * Note that this method will abort the walk when all Subscribers are visited or
- * when the action operation returns FALSE.
- *
- * \param _this          The Participant.
- * \param action         The action operation.
- * \param arctionArg     The action argument that is passed to all invocations
- *                       of the action operation.
- *
- * \return               U_RESULT_OK on a succesfull walk.
- */
-OS_API u_result
-u_participantWalkSubscribers(
-    u_participant _this,
-    u_subscriberAction action,
-    c_voidp actionArg);
-
-/**
- * \brief Check if the given Topic is associated to this Participant.
- *
- * This method checks if the given Topic is contained by this Participant.
- * A Topic is contained by the Participant if the Topic is created by
- * the Participant.
- *
- * \param _this          The Participant.
- * \param topic          The Topic.
- *
- * \return               TRUE if the Topic is associated to the Participant.
- */
-OS_API c_bool
-u_participantContainsTopic(
-    u_participant _this,
-    u_topic topic);
-
-/**
- * \brief returns all topics matching the topic name expression.
- *
- * This method provides the list of all local created topics which are
- * associated to this participant by creation and match the value of
- * topic_name. Wildcard characters are not (yet) supported, however
- * not specifying a name (NULL) implies '*' meaning all topics.
- * Multiple Topics for one name is supported.
- *
- * \param _this          The Participant.
- * \param topic_name     The name of the topic.
- *
- * \return               the list of matching topics
- */
-OS_API c_iter
-u_participantLookupTopics(
-    u_participant _this,
-    const c_char *topic_name);
-
-/**
- * \brief returns the number of topics associated to this participant.
- *
- * This method provides the number of all local created topics which are
- * associated to this participant by creation.
- *
- * \param _this          The Participant.
- *
- * \return               the number of topics.
- */
-OS_API c_long
-u_participantTopicCount(
-    u_participant _this);
-
-/**
- * \brief Execute an action operation on all contained Topic.
- *
- * This method will visit all contained Topics of this Participant and
- * execute the specified action operation on each Topic.
- * The action operation expects two parameters, the Topic and the
- * given actionArg, the actionArg parameter is passed to action operation
- * on each invocation.
- *
- * The signature of the action operation is defined in u_topic.h by the
- * following definition:
- *
- * c_bool u_topicAction(u_topic topic, c_voidp arg);
- *
- * Note that this method will abort the walk when all Topic are visited or
- * when the action operation returns FALSE.
- *
- * \param _this          The Participant.
- * \param action         The action operation.
- * \param arctionArg     The action argument that is passed to all invocations
- *                       of the action operation.
- *
- * \return               U_RESULT_OK on a succesfull walk.
- */
-OS_API u_result
-u_participantWalkTopics(
-    u_participant _this,
-    u_topicAction action,
-    c_voidp actionArg);
-
-/**
- * \brief Delete all contained Entities.
- *
- * This method will delete all Entities contained by this Participant.
- * Entities contained by the Participant are all Topics, Publishers and
- * Subscribers created by this Participant.
- *
- * \param _this          The Participant.
- *
- * \return               U_RESULT_OK on successful operation.
- */
-OS_API u_result
-u_participantDeleteContainedEntities(
-    u_participant _this);
-
-/**
- * \brief Verifies if the given Subscriber is the builtin Subscriber.
- *
- * This method will verify if the given Subscriber is the buitin Subscriber
- * associated to this Participant.
- *
- * \param _this          The Participant.
- * \param subscriber     The Subscriber.
- *
- * \return               TRUE if the Subscriber is the builtin Subscriber.
- */
-OS_API c_bool
-u_participantIsBuiltinSubscriber(
-    u_participant _this,
-    u_subscriber subscriber);
+OS_API u_domainId_t
+u_participantGetDomainId(
+    const u_participant _this);
 
 /** \brief See u_domainFederationSpecificPartitionName. */
 OS_API u_result
@@ -506,6 +202,37 @@ u_participantFederationSpecificPartitionName (
     u_participant _this,
     c_char *buf,
     os_size_t bufsize);
+
+/** \brief Register a TypeRepresentation with the given Participant.
+ *
+ * \param _this The participant to operate on.
+ * \param tr    TypeRepresentation to register.
+ *
+ * \return U_RESULT_OK on a successful operation.
+ *         U_RESULT_* on failure.
+ */
+OS_API u_result
+u_participantRegisterTypeRepresentation (
+    u_participant _this,
+    const u_typeRepresentation tr);
+
+/**
+ * \brief Locks the given participant and performs the action function to create a copy cache in the locked situation.
+ *
+ * This method locks the given participant and performs the action function to create a copy cache
+ * in the locked situation.
+ *
+ * \param _this          The Participant.
+ * \param action         The action function to create the copy cache.
+ * \param arg            The pointer to the arguments needed by the action function.
+ * \return               Void pointer to the created copy cache
+ */
+void*
+u_domainParticipant_create_copy_cache(
+    u_participant _this,
+    void* (action)(void* arg),
+    void* arg
+    );
 
 #undef OS_API
 

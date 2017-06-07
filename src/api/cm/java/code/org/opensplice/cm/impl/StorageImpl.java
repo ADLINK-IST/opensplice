@@ -1,18 +1,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.impl;
 
 import org.opensplice.cm.CMException;
-import org.opensplice.cm.CMFactory;
 import org.opensplice.cm.Storage;
 import org.opensplice.cm.com.CommunicationException;
 import org.opensplice.cm.com.Communicator;
@@ -45,6 +52,7 @@ public class StorageImpl implements Storage {
     /* (non-Javadoc)
      * @see org.opensplice.cm.Storage#open()
      */
+    @Override
     public Result open(String attrs) throws CMException {
         Result result = Result.SUCCESS;
 
@@ -67,6 +75,7 @@ public class StorageImpl implements Storage {
     /* (non-Javadoc)
      * @see org.opensplice.cm.Storage#close()
      */
+    @Override
     public Result close() throws CMException {
         Result result = Result.ERROR;
         try {
@@ -81,6 +90,7 @@ public class StorageImpl implements Storage {
     /* (non-Javadoc)
      * @see org.opensplice.cm.Storage#append(org.opensplice.cm.data.UserData)
      */
+    @Override
     public Result append(UserData data) throws CMException {
         Result result = Result.ERROR;
 
@@ -96,6 +106,7 @@ public class StorageImpl implements Storage {
     /* (non-Javadoc)
      * @see org.opensplice.cm.Storage#read()
      */
+    @Override
     public UserData read() throws CMException {
         UserData data = null;
 

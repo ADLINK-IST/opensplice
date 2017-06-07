@@ -1,0 +1,47 @@
+#ifndef OSPL_STREAMS_DCPS_IDL
+#define OSPL_STREAMS_DCPS_IDL
+
+#include "dds_dcps.idl"
+
+module DDS {
+    module Streams {
+        typedef unsigned long StreamId;
+
+	    struct StreamFlushQosPolicy {
+	        Duration_t  max_delay;
+	        unsigned long max_samples;
+	    };
+	
+	    struct StreamDataWriterQos {    
+	        StreamFlushQosPolicy flush;
+	    };
+	    
+	    struct StreamDataReaderQos {
+            octSeq value;
+	    };
+	    
+	    local interface StreamDataWriter {
+	        ReturnCode_t
+	        set_qos(in StreamDataWriterQos qos);
+	
+	        ReturnCode_t
+	        get_qos(inout StreamDataWriterQos qos);
+	        
+	        ReturnCode_t
+	        flush(in StreamId id);
+	    };
+	    
+	    local interface StreamDataReader {
+	        ReturnCode_t
+	        set_qos(in StreamDataReaderQos qos);
+	
+	        ReturnCode_t
+	        get_qos(inout StreamDataReaderQos qos);
+	    };
+	    
+	    exception StreamsException { string message; ReturnCode_t id; };
+
+    };  
+};
+
+#endif /* OSPL_STREAMS_DCPS_IDL */

@@ -17,6 +17,8 @@ tao_check || ERRS=1
 jacorb_check || ERRS=1
 gsoap_check || ERRS=1
 doxygen_check || ERRS=1
+protoc_check || ERRS=1
+c99_check || ERRS=1
 
 SPLICE_HOST_FULL=$1.darwin10$2-$3
 SPLICE_TARGET_FULL=$SPLICE_HOST_FULL

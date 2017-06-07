@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. RMI Runtime Configuration Options &mdash; RMI User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="RMI User Guide" href="index.html" />
+    <link rel="next" title="8. QoS policies XML schema" href="qos-policies.html" />
+    <link rel="prev" title="6. RMI Interface to DDS topics mapping rules" href="topics-maps.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="qos-policies.html" title="8. QoS policies XML schema"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="topics-maps.html" title="6. RMI Interface to DDS topics mapping rules"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="rmi-runtime-configuration-options">
+<span id="id1"></span><h1>7. RMI Runtime Configuration Options<a class="headerlink" href="#rmi-runtime-configuration-options" title="Permalink to this headline">¶</a></h1>
+<p>The RMI runtime can be configured by a set of command line options.
+These options are passed directly to the runtime start operation as
+described in the section <a class="reference internal" href="build-rmi-apps.html#runtime-starting-and-stopping"><em>Runtime starting and stopping</em></a>.</p>
+<p>This chapter describes the set of supported options.</p>
+<div class="section" id="rmiclientthreadingmodel-option">
+<h2>7.1. RMIClientThreadingModel option<a class="headerlink" href="#rmiclientthreadingmodel-option" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">--RMIClientThreadingModel</span> <span class="pre">=</span> <span class="pre">[ST</span> <span class="pre">|</span> <span class="pre">MT]</span></tt></p>
+<p>This option specifies the threading model of a given client.
+The <tt class="docutils literal"><span class="pre">ST</span></tt> and <tt class="docutils literal"><span class="pre">MT</span></tt> option values set respectively the Single-Threaded
+and Multi-Threaded models.</p>
+</div>
+<div class="section" id="rmiservicediscoverytimeout-option">
+<h2>7.2. RMIServiceDiscoveryTimeout option<a class="headerlink" href="#rmiservicediscoverytimeout-option" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">--RMIServiceDiscoveryTimeout</span> <span class="pre">=</span> <span class="pre">&lt;seconds&gt;</span></tt></p>
+<p>This is a client-side option that specifies the maximum duration
+(in seconds) that a client application can wait to find services.
+It influences the execution time of the DDS_Service.getServerProxy
+operation that is used to find a given service. The default value
+is set to 10 seconds. The need to set this value may come from some
+specific deployment environements with bad communication conditions.</p>
+</div>
+<div class="section" id="rmiserverthreadingmodel-option">
+<h2>7.3. RMIServerThreadingModel option<a class="headerlink" href="#rmiserverthreadingmodel-option" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">--RMIServerThreadingModel=ST</span> <span class="pre">|</span> <span class="pre">MT</span> <span class="pre">|</span> <span class="pre">TPS</span> <span class="pre">[,&lt;thread-pool-size&gt;]</span></tt></p>
+<p>This is a server-side option that specifies the threading policy of
+the server runtime including the threading policy name and the thread pool size.</p>
+<blockquote>
+<div><p><strong>ST</strong>  selects <em>Single Threaded</em> policy.</p>
+<p><strong>MT</strong>  selects <em>Multi Thread</em> policy.</p>
+<p><strong>TPS</strong> selects <em>Thread Per Service</em> policy.</p>
+</div></blockquote>
+<p>These policies are described in detail in the section
+<a class="reference internal" href="build-rmi-apps.html#server-threading-and-scheduling-policies"><em>Server Threading and Scheduling policies</em></a>.</p>
+</div>
+<div class="section" id="rmiserverschedulingmodel-option">
+<h2>7.4. RMIServerSchedulingModel option<a class="headerlink" href="#rmiserverschedulingmodel-option" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">--RMIServerSchedulingModel=&lt;priority&gt;</span></tt></p>
+<p>This is a server-side option that specifies the scheduling
+policy of a Java server RMI runtime.</p>
+</div>
+<div class="section" id="rmidurability-option">
+<h2>7.5. RMIDurability option<a class="headerlink" href="#rmidurability-option" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><strong>Note</strong>: The <tt class="docutils literal"><span class="pre">RMIDurability</span></tt> option is
+currently <em>only</em> implemented for <em>C++</em>.</dd>
+</dl>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p><tt class="docutils literal"><span class="pre">--RMIDurability</span> <span class="pre">=</span> <span class="pre">yes</span> <span class="pre">|</span> <span class="pre">no</span></tt></p>
+<p>This is a client-side and server-side option that indicates whether the
+underlying DDS middleware support the non-default durability Qos policies
+(TRANSIENT_LOCAL and above) or not.</p>
+<p>By default, this option value is <tt class="docutils literal"><span class="pre">yes</span></tt>.</p>
+<p>RMI servers uses non-volatile topics for services advertising to allow
+late-joining clients to discover them. This option is useful for adapting
+services registration and discovery mechanisms when the durability support
+is missing in the underlying DDS middleware.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Note that this feature must be <em>either</em> enabled <em>or</em> disabled for <em>all</em> of
+the RMI applications in a given DDS domain. It means that durability-<a href="#id2"><span class="problematic" id="id3">*</span></a>en*abled
+(option value is <tt class="docutils literal"><span class="pre">yes</span></tt>) RMI applications cannot be deployed with
+durability-<a href="#id4"><span class="problematic" id="id5">*</span></a>dis*abled (option value is <tt class="docutils literal"><span class="pre">no</span></tt>) RMI applications in
+the same DDS domain.</dd>
+</dl>
+</div>
+<div class="section" id="rmiclientschedulingmodel-option">
+<h2>7.6. RMIClientSchedulingModel option<a class="headerlink" href="#rmiclientschedulingmodel-option" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd><strong>Note</strong>: The <tt class="docutils literal"><span class="pre">RMIClientSchedulingModel</span></tt> option is
+currently <em>only</em> implemented for <em>Java</em>.</dd>
+</dl>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p><tt class="docutils literal"><span class="pre">--RMIClientSchedulingModel=&lt;priority&gt;</span></tt></p>
+<p>This is a client-side option that specifies the priority of all the threads created
+by OpenSplice RMI at the client side, including the AsyncWaiter thread, which is the
+one that waits for asynchronous replies.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">7. RMI Runtime Configuration Options</a><ul>
+<li><a class="reference internal" href="#rmiclientthreadingmodel-option">7.1. RMIClientThreadingModel option</a></li>
+<li><a class="reference internal" href="#rmiservicediscoverytimeout-option">7.2. RMIServiceDiscoveryTimeout option</a></li>
+<li><a class="reference internal" href="#rmiserverthreadingmodel-option">7.3. RMIServerThreadingModel option</a></li>
+<li><a class="reference internal" href="#rmiserverschedulingmodel-option">7.4. RMIServerSchedulingModel option</a></li>
+<li><a class="reference internal" href="#rmidurability-option">7.5. RMIDurability option</a></li>
+<li><a class="reference internal" href="#rmiclientschedulingmodel-option">7.6. RMIClientSchedulingModel option</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="topics-maps.html"
+                        title="previous chapter">6. RMI Interface to DDS topics mapping rules</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="qos-policies.html"
+                        title="next chapter">8. QoS policies XML schema</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/runtime-config.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="qos-policies.html" title="8. QoS policies XML schema"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="topics-maps.html" title="6. RMI Interface to DDS topics mapping rules"
+             >previous</a> |</li>
+        <li><a href="index.html">RMI User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

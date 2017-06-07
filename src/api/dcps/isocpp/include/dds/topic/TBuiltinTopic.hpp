@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2012 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef OSPL_DDS_TOPIC_TBUILTINTOPIC_HPP_
@@ -367,6 +375,209 @@ const ::dds::core::policy::GroupData& TSubscriptionBuiltinTopicData<D>::group_da
 {
     return ((D)this->delegate()).group_data();
 }
+
+//TCMParticipantBuiltinTopicData
+
+template <typename D>
+const dds::topic::BuiltinTopicKey& TCMParticipantBuiltinTopicData<D>::key() const
+{
+    return ((D)this->delegate()).key();
+}
+
+template <typename D>
+const ::dds::core::policy::ProductData& TCMParticipantBuiltinTopicData<D>::product() const
+{
+    return ((D)this->delegate()).product();
+}
+
+//TCMPublisherBuiltinTopicData
+
+template <typename D>
+const dds::topic::BuiltinTopicKey& TCMPublisherBuiltinTopicData<D>::key() const
+{
+    return ((D)this->delegate()).key();
+}
+
+template <typename D>
+const ::dds::core::policy::ProductData& TCMPublisherBuiltinTopicData<D>::product() const
+{
+    return ((D)this->delegate()).product();
+}
+
+template <typename D>
+const dds::topic::BuiltinTopicKey& TCMPublisherBuiltinTopicData<D>::participant_key() const
+{
+    return ((D)this->delegate()).participant_key();
+}
+
+template <typename D>
+const std::string& TCMPublisherBuiltinTopicData<D>::name() const
+{
+    return ((D)this->delegate()).name();
+}
+
+template <typename D>
+const ::dds::core::policy::EntityFactory& TCMPublisherBuiltinTopicData<D>::entity_factory() const
+{
+    return ((D)this->delegate()).entity_factory();
+}
+
+template <typename D>
+const ::dds::core::policy::Partition& TCMPublisherBuiltinTopicData<D>::partition() const
+{
+    return ((D)this->delegate()).partition();
+}
+
+//TCMSubscriberBuiltinTopicData
+
+template <typename D>
+const dds::topic::BuiltinTopicKey& TCMSubscriberBuiltinTopicData<D>::key() const
+{
+    return ((D)this->delegate()).key();
+}
+
+template <typename D>
+const ::dds::core::policy::ProductData& TCMSubscriberBuiltinTopicData<D>::product() const
+{
+    return ((D)this->delegate()).product();
+}
+
+template <typename D>
+const dds::topic::BuiltinTopicKey& TCMSubscriberBuiltinTopicData<D>::participant_key() const
+{
+    return ((D)this->delegate()).participant_key();
+}
+
+template <typename D>
+const std::string& TCMSubscriberBuiltinTopicData<D>::name() const
+{
+    return ((D)this->delegate()).name();
+}
+
+template <typename D>
+const ::dds::core::policy::EntityFactory& TCMSubscriberBuiltinTopicData<D>::entity_factory() const
+{
+    return ((D)this->delegate()).entity_factory();
+}
+
+template <typename D>
+const ::dds::core::policy::Partition& TCMSubscriberBuiltinTopicData<D>::partition() const
+{
+    return ((D)this->delegate()).partition();
+}
+
+template <typename D>
+const ::dds::core::policy::Share& TCMSubscriberBuiltinTopicData<D>::share() const
+{
+    return ((D)this->delegate()).share();
+}
+
+//TCMDataWriterBuiltinTopicData
+
+template <typename D>
+const dds::topic::BuiltinTopicKey& TCMDataWriterBuiltinTopicData<D>::key() const
+{
+    return ((D)this->delegate()).key();
+}
+
+template <typename D>
+const ::dds::core::policy::ProductData& TCMDataWriterBuiltinTopicData<D>::product() const
+{
+    return ((D)this->delegate()).product();
+}
+
+template <typename D>
+const dds::topic::BuiltinTopicKey& TCMDataWriterBuiltinTopicData<D>::publisher_key() const
+{
+    return ((D)this->delegate()).publisher_key();
+}
+
+template <typename D>
+const std::string& TCMDataWriterBuiltinTopicData<D>::name() const
+{
+    return ((D)this->delegate()).name();
+}
+
+template <typename D>
+const ::dds::core::policy::History& TCMDataWriterBuiltinTopicData<D>::history() const
+{
+    return ((D)this->delegate()).history();
+}
+
+template <typename D>
+const ::dds::core::policy::ResourceLimits& TCMDataWriterBuiltinTopicData<D>::resource_limits() const
+{
+    return ((D)this->delegate()).resource_limits();
+}
+
+template <typename D>
+const ::dds::core::policy::WriterDataLifecycle& TCMDataWriterBuiltinTopicData<D>::writer_data_lifecycle() const
+{
+    return ((D)this->delegate()).writer_data_lifecycle();
+}
+
+//TCMDataReaderBuiltinTopicData
+
+template <typename D>
+const dds::topic::BuiltinTopicKey& TCMDataReaderBuiltinTopicData<D>::key() const
+{
+    return ((D)this->delegate()).key();
+}
+
+template <typename D>
+const ::dds::core::policy::ProductData& TCMDataReaderBuiltinTopicData<D>::product() const
+{
+    return ((D)this->delegate()).product();
+}
+
+template <typename D>
+const dds::topic::BuiltinTopicKey& TCMDataReaderBuiltinTopicData<D>::subscriber_key() const
+{
+    return ((D)this->delegate()).subscriber_key();
+}
+
+template <typename D>
+const std::string& TCMDataReaderBuiltinTopicData<D>::name() const
+{
+    return ((D)this->delegate()).name();
+}
+
+template <typename D>
+const ::dds::core::policy::History& TCMDataReaderBuiltinTopicData<D>::history() const
+{
+    return ((D)this->delegate()).history();
+}
+
+template <typename D>
+const ::dds::core::policy::ResourceLimits& TCMDataReaderBuiltinTopicData<D>::resource_limits() const
+{
+    return ((D)this->delegate()).resource_limits();
+}
+
+template <typename D>
+const ::dds::core::policy::ReaderDataLifecycle& TCMDataReaderBuiltinTopicData<D>::reader_data_lifecycle() const
+{
+    return ((D)this->delegate()).reader_data_lifecycle();
+}
+
+template <typename D>
+const ::dds::core::policy::SubscriptionKey& TCMDataReaderBuiltinTopicData<D>::subscription_keys() const
+{
+    return ((D)this->delegate()).subscription_keys();
+}
+
+template <typename D>
+const ::dds::core::policy::Lifespan& TCMDataReaderBuiltinTopicData<D>::reader_lifespan() const
+{
+    return ((D)this->delegate()).reader_lifespan();
+}
+
+template <typename D>
+const ::dds::core::policy::Share& TCMDataReaderBuiltinTopicData<D>::share() const
+{
+    return ((D)this->delegate()).share();
+}
+
 
 }
 }

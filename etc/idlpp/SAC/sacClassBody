@@ -1,37 +1,25 @@
-extern c_bool __$(type_name)__copyIn(c_base base, void *from, void *to);
-extern void __$(type_name)__copyOut(void *from, void *to);
-extern const char *$(type_name)_metaDescriptor[];
-extern const c_ulong $(type_name)_metaDescriptorArrLength;
+extern v_copyin_result __$(type_name)__copyIn(c_base base, const void *from, void *to);
+extern void __$(type_name)__copyOut(const void *from, void *to);
+
 
 $(type_name)TypeSupport
 $(type_name)TypeSupport__alloc (
     void
     )
 {
-    c_ulong i;
-    os_size_t strlength =0;
-    char * metaDescriptor;
     $(type_name)TypeSupport result;
-    for (i = 0; i < $(type_name)_metaDescriptorArrLength; i++) {
-        strlength +=strlen($(type_name)_metaDescriptor[i]);
-    }
-
-    metaDescriptor = (char*)malloc(strlength+1);
-    metaDescriptor[0] = '\0';
-    for (i = 0; i < $(type_name)_metaDescriptorArrLength; i++) {
-        strcat(metaDescriptor,$(type_name)_metaDescriptor[i]);
-    }
-	result = DDS__FooTypeSupport__alloc (
-	    __$(type_name)__name(),
-            __$(type_name)__keys(),
-            metaDescriptor,
-            NULL,
+    result = DDS_TypeSupportNew (
+            "$(scopedtypename)",
+            "$(internaltypename)",
+            "$(keyList)",
+            $(type_name)_metaDescriptor,
+            $(type_name)_metaDescriptorArrLength,
+            $(type_name)_metaDescriptorLength,
             (DDS_copyIn)__$(type_name)__copyIn,
             (DDS_copyOut)__$(type_name)__copyOut,
             (DDS_unsigned_long)(sizeof($(type_name))),
-            (DDS_typeSupportAllocBuffer)DDS_sequence_$(type_name)_allocbuf
+            (DDS_allocBuffer)DDS_sequence_$(type_name)_allocbuf
         );
-    free(metaDescriptor);
     return result;
 }
 
@@ -43,7 +31,7 @@ $(type_name)TypeSupport_register_type (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooTypeSupport_register_type (
+        DDS_TypeSupport_register_type (
 	    (DDS_TypeSupport)_this,
 	    domain,
 	    name
@@ -57,7 +45,7 @@ $(type_name)TypeSupport_get_type_name (
     )
 {
     DDS_string result = (DDS_string)
-        DDS__FooTypeSupport_get_type_name (
+        DDS_TypeSupport_get_type_name (
 	    (DDS_TypeSupport)_this
 	);
     return result;
@@ -70,9 +58,9 @@ $(type_name)DataWriter_register_instance (
     )
 {
     DDS_InstanceHandle_t result = (DDS_InstanceHandle_t)
-        DDS__FooDataWriter_register_instance (
+        DDS_DataWriter_register_instance (
 	    (DDS_DataWriter)_this,
-	    (const DDS_sample)instance_data
+	    (const DDS_Sample)instance_data
 	);
     return result;
 }
@@ -85,9 +73,9 @@ $(type_name)DataWriter_register_instance_w_timestamp (
     )
 {
     DDS_InstanceHandle_t result = (DDS_InstanceHandle_t)
-        DDS__FooDataWriter_register_instance_w_timestamp (
+        DDS_DataWriter_register_instance_w_timestamp (
 	    (DDS_DataWriter)_this,
-	    (const DDS_sample)instance_data,
+	    (const DDS_Sample)instance_data,
 	    source_timestamp
 	);
     return result;
@@ -101,9 +89,9 @@ $(type_name)DataWriter_unregister_instance (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataWriter_unregister_instance (
+        DDS_DataWriter_unregister_instance (
 	    (const DDS_DataWriter)_this,
-	    (DDS_sample)instance_data,
+	    (DDS_Sample)instance_data,
 	    handle
 	);
     return result;
@@ -118,9 +106,9 @@ $(type_name)DataWriter_unregister_instance_w_timestamp (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataWriter_unregister_instance_w_timestamp (
+        DDS_DataWriter_unregister_instance_w_timestamp (
 	    (DDS_DataWriter)_this,
-	    (const DDS_sample)instance_data,
+	    (const DDS_Sample)instance_data,
 	    handle,
 	    source_timestamp
 	);
@@ -135,9 +123,9 @@ $(type_name)DataWriter_write (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataWriter_write (
+        DDS_DataWriter_write (
 	    (DDS_DataWriter)_this,
-	    (const DDS_sample)instance_data,
+	    (const DDS_Sample)instance_data,
 	    handle
 	);
     return result;
@@ -152,9 +140,9 @@ $(type_name)DataWriter_write_w_timestamp (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataWriter_write_w_timestamp (
+        DDS_DataWriter_write_w_timestamp (
 	    (DDS_DataWriter)_this,
-	    (const DDS_sample)instance_data,
+	    (const DDS_Sample)instance_data,
 	    handle,
 	    source_timestamp
 	);
@@ -169,9 +157,9 @@ $(type_name)DataWriter_dispose (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataWriter_dispose (
+        DDS_DataWriter_dispose (
 	    (DDS_DataWriter)_this,
-	    (const DDS_sample)instance_data,
+	    (const DDS_Sample)instance_data,
 	    instance_handle
 	);
     return result;
@@ -186,9 +174,9 @@ $(type_name)DataWriter_dispose_w_timestamp (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataWriter_dispose_w_timestamp (
+        DDS_DataWriter_dispose_w_timestamp (
 	    (DDS_DataWriter)_this,
-	    (const DDS_sample)instance_data,
+	    (const DDS_Sample)instance_data,
 	    instance_handle,
 	    source_timestamp
 	);
@@ -203,9 +191,9 @@ $(type_name)DataWriter_writedispose (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataWriter_writedispose (
+        DDS_DataWriter_writedispose (
 	    (DDS_DataWriter)_this,
-	    (const DDS_sample)instance_data,
+	    (const DDS_Sample)instance_data,
 	    instance_handle
 	);
     return result;
@@ -220,9 +208,9 @@ $(type_name)DataWriter_writedispose_w_timestamp (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataWriter_writedispose_w_timestamp (
+        DDS_DataWriter_writedispose_w_timestamp (
 	    (DDS_DataWriter)_this,
-	    (const DDS_sample)instance_data,
+	    (const DDS_Sample)instance_data,
 	    instance_handle,
 	    source_timestamp
 	);
@@ -237,9 +225,9 @@ $(type_name)DataWriter_get_key_value (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataWriter_get_key_value (
+        DDS_DataWriter_get_key_value (
 	    (DDS_DataWriter)_this,
-	    (DDS_sample)key_holder,
+	    (DDS_Sample)key_holder,
 	    handle
 	);
     return result;
@@ -252,9 +240,9 @@ $(type_name)DataWriter_lookup_instance (
     )
 {
     DDS_InstanceHandle_t result = (DDS_InstanceHandle_t)
-        DDS__FooDataWriter_lookup_instance (
+        DDS_DataWriter_lookup_instance (
         (DDS_DataWriter)_this,
-        (DDS_sample)key_holder
+        (DDS_Sample)key_holder
     );
     return result;
 }
@@ -271,9 +259,9 @@ $(type_name)DataReader_read (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_read (
+        DDS_DataReader_read (
 	    (DDS_DataReader)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    sample_states,
@@ -295,9 +283,9 @@ $(type_name)DataReader_take (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_take (
+        DDS_DataReader_take (
 	    (DDS_DataReader)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    sample_states,
@@ -317,9 +305,9 @@ $(type_name)DataReader_read_w_condition (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_read_w_condition (
+        DDS_DataReader_read_w_condition (
 	    (DDS_DataReader)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_condition
@@ -337,9 +325,9 @@ $(type_name)DataReader_take_w_condition (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_take_w_condition (
+        DDS_DataReader_take_w_condition (
 	    (DDS_DataReader)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_condition
@@ -355,9 +343,9 @@ $(type_name)DataReader_read_next_sample (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_read_next_sample (
+        DDS_DataReader_read_next_sample (
 	    (DDS_DataReader)_this,
-	    (DDS_sample)received_data,
+	    (DDS_Sample)received_data,
 	    sample_info
 	);
     return result;
@@ -371,9 +359,9 @@ $(type_name)DataReader_take_next_sample (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_take_next_sample (
+        DDS_DataReader_take_next_sample (
 	    (DDS_DataReader)_this,
-	    (DDS_sample)received_data,
+	    (DDS_Sample)received_data,
 	    sample_info
 	);
     return result;
@@ -392,9 +380,9 @@ $(type_name)DataReader_read_instance (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_read_instance (
+        DDS_DataReader_read_instance (
 	    (DDS_DataReader)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -418,9 +406,9 @@ $(type_name)DataReader_take_instance (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_take_instance (
+        DDS_DataReader_take_instance (
 	    (DDS_DataReader)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -444,9 +432,9 @@ $(type_name)DataReader_read_next_instance (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_read_next_instance (
+        DDS_DataReader_read_next_instance (
 	    (DDS_DataReader)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -470,9 +458,9 @@ $(type_name)DataReader_take_next_instance (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_take_next_instance (
+        DDS_DataReader_take_next_instance (
 	    (DDS_DataReader)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -494,9 +482,9 @@ $(type_name)DataReader_read_next_instance_w_condition (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_read_next_instance_w_condition (
+        DDS_DataReader_read_next_instance_w_condition (
 	    (DDS_DataReader)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -516,9 +504,9 @@ $(type_name)DataReader_take_next_instance_w_condition (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_take_next_instance_w_condition (
+        DDS_DataReader_take_next_instance_w_condition (
 	    (DDS_DataReader)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -535,9 +523,9 @@ $(type_name)DataReader_return_loan (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_return_loan (
+        DDS_DataReader_return_loan (
             (DDS_DataReader)_this,
-            (DDS_sequence)received_data,
+            (_DDS_sequence)received_data,
             info_seq
     );
     return result;
@@ -551,9 +539,9 @@ $(type_name)DataReader_get_key_value (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReader_get_key_value (
+        DDS_DataReader_get_key_value (
 	    (DDS_DataReader)_this,
-	    (DDS_sample)key_holder,
+	    (DDS_Sample)key_holder,
 	    handle
 	);
     return result;
@@ -566,9 +554,9 @@ $(type_name)DataReader_lookup_instance (
     )
 {
     DDS_InstanceHandle_t result = (DDS_InstanceHandle_t)
-        DDS__FooDataReader_lookup_instance (
+        DDS_DataReader_lookup_instance (
 	    (DDS_DataReader)_this,
-	    (DDS_sample)key_holder
+	    (DDS_Sample)key_holder
 	);
     return result;
 }
@@ -585,9 +573,9 @@ $(type_name)DataReaderView_read (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_read (
+        DDS_DataReaderView_read (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    sample_states,
@@ -609,9 +597,9 @@ $(type_name)DataReaderView_take (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_take (
+        DDS_DataReaderView_take (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    sample_states,
@@ -629,9 +617,9 @@ $(type_name)DataReaderView_read_next_sample (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_read_next_sample (
+        DDS_DataReaderView_read_next_sample (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sample)received_data,
+	    (DDS_Sample)received_data,
 	    sample_info
 	);
     return result;
@@ -645,9 +633,9 @@ $(type_name)DataReaderView_take_next_sample (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_take_next_sample (
+        DDS_DataReaderView_take_next_sample (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sample)received_data,
+	    (DDS_Sample)received_data,
 	    sample_info
 	);
     return result;
@@ -666,9 +654,9 @@ $(type_name)DataReaderView_read_instance (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_read_instance (
+        DDS_DataReaderView_read_instance (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -692,9 +680,9 @@ $(type_name)DataReaderView_take_instance (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_take_instance (
+        DDS_DataReaderView_take_instance (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -718,9 +706,9 @@ $(type_name)DataReaderView_read_next_instance (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_read_next_instance (
+        DDS_DataReaderView_read_next_instance (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -744,9 +732,9 @@ $(type_name)DataReaderView_take_next_instance (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_take_next_instance (
+        DDS_DataReaderView_take_next_instance (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -765,19 +753,19 @@ $(type_name)DataReaderView_return_loan (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_return_loan (
+        DDS_DataReaderView_return_loan (
             (DDS_DataReaderView)_this,
-            (DDS_sequence)received_data,
+            (_DDS_sequence)received_data,
             info_seq
     );
 
     if ( result == DDS_RETCODE_OK ) {
-        DDS__free(received_data->_buffer);
+        DDS_free(received_data->_buffer);
         received_data->_length  = 0;
         received_data->_maximum = 0;
         received_data->_buffer  = NULL;
-
-        DDS__free(info_seq->_buffer);
+        
+        DDS_free(info_seq->_buffer);
         info_seq->_length  = 0;
         info_seq->_maximum = 0;
         info_seq->_buffer  = NULL;
@@ -797,9 +785,9 @@ $(type_name)DataReaderView_read_w_condition (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_read_w_condition (
+        DDS_DataReaderView_read_w_condition (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
             a_condition
@@ -818,9 +806,9 @@ $(type_name)DataReaderView_take_w_condition (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_take_w_condition (
+        DDS_DataReaderView_take_w_condition (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
             a_condition
@@ -840,9 +828,9 @@ $(type_name)DataReaderView_read_next_instance_w_condition (
    )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_read_next_instance_w_condition (
+        DDS_DataReaderView_read_next_instance_w_condition (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -863,9 +851,9 @@ $(type_name)DataReaderView_take_next_instance_w_condition (
    )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_take_next_instance_w_condition (
+        DDS_DataReaderView_take_next_instance_w_condition (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sequence)received_data,
+	    (_DDS_sequence)received_data,
 	    info_seq,
 	    max_samples,
 	    a_handle,
@@ -883,9 +871,9 @@ $(type_name)DataReaderView_get_key_value (
     )
 {
     DDS_ReturnCode_t result = (DDS_ReturnCode_t)
-        DDS__FooDataReaderView_get_key_value (
+        DDS_DataReaderView_get_key_value (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sample)key_holder,
+	    (DDS_Sample)key_holder,
 	    handle
 	);
     return result;
@@ -899,9 +887,9 @@ $(type_name)DataReaderView_lookup_instance (
     )
 {
     DDS_InstanceHandle_t result = (DDS_InstanceHandle_t)
-        DDS__FooDataReaderView_lookup_instance (
+        DDS_DataReaderView_lookup_instance (
 	    (DDS_DataReaderView)_this,
-	    (DDS_sample)key_holder
+	    (DDS_Sample)key_holder
 	);
     return result;
 }

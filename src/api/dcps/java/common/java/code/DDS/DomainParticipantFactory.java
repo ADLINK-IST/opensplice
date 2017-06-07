@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package DDS;
@@ -46,7 +54,7 @@ public class DomainParticipantFactory
     	}
     	return theParticipantFactory;
     }
-    
+
     public DDS.DomainParticipant create_participant (int domainId, DDS.DomainParticipantQos qos, DDS.DomainParticipantListener a_listener, int mask) {
         return dpfImpl.create_participant (domainId, qos, a_listener, mask);
     }
@@ -54,7 +62,7 @@ public class DomainParticipantFactory
     public int delete_participant (DDS.DomainParticipant a_participant) {
         return dpfImpl.delete_participant(a_participant);
     }
-    
+
     public DDS.DomainParticipant lookup_participant (int domainId) {
         return dpfImpl.lookup_participant(domainId);
     }
@@ -73,7 +81,7 @@ public class DomainParticipantFactory
     public int get_qos (DDS.DomainParticipantFactoryQosHolder qos){
 		return dpfImpl.get_qos(qos);
     	}
-    
+
     public DDS.Domain lookup_domain (int domain_id) {
         return dpfImpl.lookup_domain(domain_id);
     }
@@ -84,5 +92,9 @@ public class DomainParticipantFactory
 
     public int delete_contained_entities () {
         return dpfImpl.delete_contained_entities();
+    }
+
+    public int detach_all_domains (boolean block_operations, boolean delete_entities) {
+        return dpfImpl.detach_all_domains(block_operations, delete_entities);
     }
 } // DomainParticipantFactory

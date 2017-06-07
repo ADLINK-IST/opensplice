@@ -1,0 +1,620 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Vortex OpenSplice - documentation index</title>
+    <style type="text/css" media="all">
+      @import url("../css/maven-base.css");
+      @import url("../css/maven-theme.css");
+      @import url("../css/site.css");
+    </style>
+    <link rel="stylesheet" href="./docs/css/print.css" type="text/css" media="print" />
+    <meta name="Date-Revision-yyyymmdd" content="20141002" />
+    <meta http-equiv="Content-Language" content="en" />
+
+ </head>
+ <body class="composite">
+    <div id="banner">
+       <a href="http://www.prismtech.com" id="bannerLeft">
+          <img src="../images/Prismtech_Logo.png" alt="Prismtech" />
+       </a>
+       <a href="http://www.prismtech.com/vortex/vortex-opensplice" id="bannerRight">
+          <img src="../images/Wide_OpenSplice.png" alt="Vortex Lite" />
+       </a>
+       <div class="clear">
+          <hr/>
+       </div>
+    </div>
+    <div id="breadcrumbs">
+       <div class="xright">
+          <a href="http://www.prismtech.com" class="externalLink" title="Prismtech on the Web: www.prismtech.com">Prismtech on the Web: www.prismtech.com</a>
+          | <a href="http://www.prismtech.com/vortex/vortex-opensplice" title="OpenSplice">Vortex OpenSplice</a>
+       </div>
+       <div class="clear">
+         <hr/>
+       </div>
+    </div>
+    <div id="leftColumn">
+      <div id="navcolumn">
+         <h5>Dynamic Network Partitions for RTNetworking</h5>
+         <ul>
+            <li><a href="#Introduction">Introduction</a></li>
+            <li><a href="#APIIntroduction">API reference</a></li>
+            <li><ul>
+              <li><a href="#APItopics">Topics</a></li>
+              <li><a href="#APIentities">Entities</a></li>
+              <li><a href="#APIpreconditions">Preconditions</a></li>
+            </ul></li>
+            <li><a href="#IDLDataModel">IDL data model</a></li>
+            <li><a href="#Example">Example</a></li>
+            <li><a href="#KnownLimitations">Known limitations</a></li>
+          </ul>
+      </a>
+      </div>
+    </div>
+    <div id="bodyColumn">
+      <div id="contentBox">
+<h2> <a name="Introduction">Introduction</a> </h2>
+<p> This note provides information on using the Dynamic Network Partitions
+feature for RTNetworking. The feature allows users to amend the configuration of
+the RTNetworking service at runtime by means of a Topic-API. The following sections
+explain the interface and restrictions on using the feature.</p>
+
+<h2><a name="APIIntroduction">API reference - Introduction</a></h2>
+<p> The API for retrieving and changing supported configuration for RTNetworking at
+runtime consists of a data-model, RTNetworking DDS entities and some preconditions
+for changing the configuration. </p>
+<p> Interaction with the RTNetworking service happens by means of three topics
+in the <tt>__BUILT-IN PARTITION__</tt>. The <tt>ospl_rtn_ConfigRequest</tt>- and
+<tt>ospl_rtn_ConfigResponse</tt>-topic implement a one-to-many request-reply
+pattern. The <tt>ospl_rtn_ConfigState</tt>-topic implements a state-based pattern. </p>
+<h2><a name="APItopics">API reference - Topics</a></h2>
+<p> The RTNetworking service will create the following three topics with the
+listed QoS (only non-default QoS are listed):
+<ol>
+  <li><tt>ospl_rtn_ConfigRequest</tt>
+  <ul>
+    <li><tt>DURABILITY.kind = PERSISTENT</tt></li>
+    <li><tt>HISTORY.kind = KEEPALL</tt></li>
+    <li><tt>RELIABILITY.kind = RELIABLE</tt></li>
+    <li><tt>DESTINATION_ORDER.kind = BY_SOURCE_TIMESTAMP</tt></li>
+  </ul>
+  </li>
+  <li><tt>ospl_rtn_ConfigResponse</tt>
+  <ul>
+    <li><tt>HISTORY.kind = KEEPALL</tt></li>
+    <li><tt>RELIABILITY.kind = RELIABLE</tt></li>
+    <li><tt>DESTINATION_ORDER.kind = BY_SOURCE_TIMESTAMP</tt></li>
+  </ul>
+  </li>
+  <li><tt>ospl_rtn_ConfigState</tt>
+  <ul>
+    <li><tt>DURABILITY.kind = TRANSIENT</tt></li>
+    <li><tt>RELIABILITY.kind = RELIABLE</tt></li>
+    <li><tt>DESTINATION_ORDER.kind = BY_SOURCE_TIMESTAMP</tt></li>
+  </ul>
+  </li>
+</ol>
+For a description of the types used for the topics, please refer to XXX.
+</p>
+<h2><a name="APIentities">API reference - Entities</a></h2>
+<p> The RTNetworking service will create the following three entities with the
+listed QoS (only non-default QoS are listed). RTNetworking publishes and subscribes
+in the <tt>__BUILT-IN PARTITION__</tt>.
+<ol>
+  <li><tt>ospl_rtn_ConfigRequest-reader</tt>
+  <ul>
+    <li><tt>HISTORY.kind = KEEPALL</tt></li>
+    <li><tt>RELIABILITY.kind = RELIABLE</tt></li>
+    <li><tt>DESTINATION_ORDER.kind = BY_SOURCE_TIMESTAMP</tt></li>
+  </ul>
+  </li>
+  <li><tt>ospl_rtn_ConfigResponse-writer</tt>
+  <ul>
+    <li><tt>HISTORY.kind = KEEPALL</tt></li>
+    <li><tt>RELIABILITY.kind = RELIABLE</tt></li>
+    <li><tt>DESTINATION_ORDER.kind = BY_SOURCE_TIMESTAMP</tt></li>
+  </ul>
+  </li>
+  <li><tt>ospl_rtn_ConfigState-writer</tt>
+  <ul>
+    <li><tt>DURABILITY.kind = TRANSIENT</tt></li>
+    <li><tt>HISTORY.kind = KEEPALL</tt></li>
+    <li><tt>DESTINATION_ORDER.kind = BY_SOURCE_TIMESTAMP</tt></li>
+  </ul>
+  </li>
+</ol>
+</p>
+<h2><a name="APIpreconditions">API reference - Preconditions</a></h2>
+<p>
+There are a couple of preconditions to be fulfilled in order to get proper
+behaviour on dynamically added configuration.
+<ol>
+  <li>
+      Newly introduced <tt>NetworkPartitions</tt> and <tt>PartitionMappings</tt>
+      only apply to new Topics and Partitions, created after the new mappings
+      are in effect. In other words remapping of an existing Topic or Partition
+      is not supported. If a Topic/Partition doesn&rsquo;t match any of the
+      <tt>PartitionMappings</tt>, it will be communicated over the
+      <tt>GlobalPartition</tt>, so a new <tt>PartitionMapping</tt> has to be
+      effectuated before a new Topic/Partition is used on a node. This also means
+      that a newly added node should either have all <tt>NetworkPartitions</tt>
+      and <tt>PartitionMappings</tt> pre-configured or not use the related Topics
+      (until dynamically configured and effectuated).<br/>
+      <i>Rationale</i>: When a Topic would be allowed to switch
+      <tt>NetworkPartitions</tt>, the communication scope can change or
+      communication can temporarily drop if one of the nodes doesn&rsquo;t have
+      the new <tt>NetworkPartition</tt> yet. This could cause loss of reliable
+      communication which is obviously unwanted.
+  </li>
+  <li>
+      Inbound traffic destined for an unknown <tt>NetworkPartition</tt> is dropped. <br />
+      <i>Rationale</i>: When traffic arriving on a node destined for an unknown
+      <tt>NetworkPartition</tt> would delivered anyway (as if from the
+      <tt>GlobalPartition</tt>), the above restriction (1) would be impossible
+      to maintain during a gradual roll-out of new configuration settings.
+  </li>
+  <li>
+      Topics with <tt>TRANSIENT</tt> or <tt>PERSISTENT</tt> Durability-QoS will
+      not be aligned when a new <tt>PartitionMapping</tt> is effectuated. <br />
+      <i>Rationale</i>: The Durability service ensures that historical data
+      published before a connection is established gets aligned. After that,
+      the reliable connection ensures the state remains aligned. Establishing a
+      partial) connection after initial alignment occurred will not trigger a
+      new alignment action. If historical data needs to be consistent across
+      nodes it will have to be ensured that all nodes have the new
+      <tt>NetworkPartitions</tt> and <tt>PartitionMappings</tt> effectuated
+      before publication of the related Topic is started on any of the involved
+      nodes.
+  </li>
+</ol>
+</p>
+<h2> <a name="IDLDataModel">IDL data model</a> </h2>
+<p>
+For a description on the members of types used in the API, below the IDL for the
+API is included. The IDL contains annotations on members to clarify their use.
+<pre>
+module org {
+  module opensplice {
+    module dds {
+      module rtnetworking {
+        /* A name-string-value pair */
+        struct NameStringValue_t {
+          /* The name of the attribute */
+          string name;
+
+          /* The value of the attribute */
+          string value;
+        };
+
+        /* A name-octet-value pair */
+        struct NameOctetValue_t {
+          /* The name of the attribute */
+          string name;
+
+          /* The corresponding value of the attribute */
+          sequence&lt;octet&gt; value;
+        };
+
+        /* Unique id for networking services and/or clients.
+         * This structure is 16-bytes, allowing a GUID_t to
+         * be used.
+         * The networking service will fill the fields with
+         * the BuiltinTopicKey_t of its participant, allowing
+         * the information available in the
+         * __BUILT-IN PARTITION__ to be used. */
+        struct Gid_t {
+          unsigned long long prefix; /* Most significant 32 bits of 96-bit BuiltinTopicKey_t (systemId) */
+          unsigned long long suffix; /* Least significant 64 bits of 96-bit BuiltinTopicKey_t (localId and serial) */
+        };
+
+        /* Unique identification of a client request */
+        struct RequestId_t {
+          /* Identifies the the entity that is issueing the request. */
+          Gid_t requestorId;
+
+          /* Identifies the request within an entity. */
+          unsigned long requestId;
+        };
+
+        struct ConfigRequest_t {
+          /* Uniquely identifies the request. */
+          RequestId_t requestId;
+
+          /* The scope of the request. All servers with a matching role
+           * will process the request.
+           * If both scope and serverIds are set, only servers in the
+           * intersection of both sets process the request. */
+          string scope;
+
+          /* Optional list of unique ids of the servers that are addressed
+           * with this request if applicable. If an empty sequence is
+           * provided, all servers that receive the request will process
+           * the request (see note on scope). */
+          sequence&lt;Gid_t&gt; serverIds;
+
+          /* The revision of the configuration the request should be
+           * applied to. Default is don't care (0).*/
+          unsigned long configRevision;
+
+          /* The revision the configuration request should lead to
+           * after the request is applied. Default is don't care (0).*/
+          unsigned long resultConfigRevision;
+
+          /* Sequence of configuration elements */
+          sequence&lt;NameStringValue_t&gt; config;
+
+          /* Potential (product/vendor-specific) extensions */
+          sequence&lt;NameOctetValue_t&gt; extensions;
+        }; //@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+        #pragma keylist ConfigRequest_t requestId.requestorId.prefix requestId.requestorId.suffix
+
+        typedef unsigned short ConfigResult_t;
+
+        const ConfigResult_t RESULT_OK                          = 0;
+        const ConfigResult_t RESULT_ERROR                       = 1;
+        const ConfigResult_t RESULT_PARSE_ERROR                 = 2;
+        const ConfigResult_t RESULT_IMMUTABLE                   = 3;
+        const ConfigResult_t RESULT_NOT_ALLOWED                 = 4;
+        const ConfigResult_t RESULT_UNMATCHING_CONFIG_REVISION  = 5;
+        const ConfigResult_t RESULT_NOT_SUPPORTED               = 6;
+
+        struct ConfigResponse_t {
+          /* Uniquely identifies the request this is a response to. */
+          RequestId_t requestId;
+
+          /* Uniquely identifies the responder. */
+          Gid_t serverId;
+
+          /* The result of processing the related ConfigRequest_t */
+          ConfigResult_t result;
+
+          /* The revision of the configuration the requested config
+           * was (tried to be) applied to. */
+          unsigned long configRevision;
+
+          /* The revision the configuration request lead to after
+           * the request was applied. */
+          unsigned long resultConfigRevision;
+
+          /* Optional description on the result of processing the related ConfigRequest_t. */
+          string description;
+
+          /* Potential (product/vendor-specific) extensions */
+          sequence&lt;NameOctetValue_t&gt; extensions;
+        }; //@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+        #pragma keylist ConfigResponse_t serverId.prefix serverId.suffix
+
+        struct ConfigState_t {
+          /* Uniquely identifies the server. */
+          Gid_t serverId;
+
+          /* Role of the server */
+          string role;
+
+          /* Revision of the configuration currently in use by the service */
+          unsigned long configRevision;
+
+          /* Sequence of current configuration elements */
+          sequence&lt;NameStringValue_t&gt; currentConfig;
+
+          /* Potential (product/vendor-specific) extensions */
+          sequence&lt;NameOctetValue_t&gt; extensions;
+        }; //@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+        #pragma keylist ConfigState_t serverId.prefix serverId.suffix
+      };
+    };
+  };
+};
+</pre>
+</p>
+<h2> <a name="Example">Example</a> </h2>
+<p>
+Below is a (pseudo-)code example of topic-API interactions with RTNetworking
+services. Free's, checks of return-codes and allocations are left out in the
+example.
+<pre>
+/* Obtain DP-factory     */
+dpf = DDS_DomainParticipantFactory_get_instance();
+/* Create DP */
+dp = DDS_DomainParticipantFactory_create_participant(dpf, DDS_DOMAIN_ID_DEFAULT, DDS_PARTICIPANT_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
+/* Register Types */
+/* ospl_rtn_ConfigResponse */
+cRes_TS = org_opensplice_dds_rtnetworking_ConfigResponse_tTypeSupport__alloc();
+cRes_TN = org_opensplice_dds_rtnetworking_ConfigResponse_tTypeSupport_get_type_name(cRes_TS);
+org_opensplice_dds_rtnetworking_ConfigResponse_tTypeSupport_register_type(cRes_TS, dp, cRes_TN);
+
+/* ospl_rtn_ConfigRequest */
+cReq_TS = org_opensplice_dds_rtnetworking_ConfigRequest_tTypeSupport__alloc();
+cReq_TN = org_opensplice_dds_rtnetworking_ConfigRequest_tTypeSupport_get_type_name(cReq_TS);
+org_opensplice_dds_rtnetworking_ConfigRequest_tTypeSupport_register_type(cReq_TS, dp, cReq_TN);
+
+/* ospl_rtn_ConfigState */
+cs_TS = org_opensplice_dds_rtnetworking_ConfigState_tTypeSupport__alloc();
+cs_TN = org_opensplice_dds_rtnetworking_ConfigState_tTypeSupport_get_type_name(cs_TS);
+org_opensplice_dds_rtnetworking_ConfigState_tTypeSupport_register_type(cs_TS, dp, cs_TN);
+
+/* Create Topics */
+/* ospl_rtn_ConfigResponse */
+cRes_TQ = DDS_TopicQos__alloc();
+DDS_DomainParticipant_get_default_topic_qos(dp, cRes_TQ);
+cRes_TQ-&gt;history.kind = DDS_KEEP_ALL_HISTORY_QOS;
+cRes_TQ-&gt;reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
+cRes_TQ-&gt;destination_order.kind = DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
+cRes_T = DDS_DomainParticipant_create_topic(dp, &quot;ospl_rtn_ConfigResponse&quot;, cRes_TN, cRes_TQ, NULL, DDS_STATUS_MASK_NONE);
+
+/* ospl_rtn_ConfigRequest */
+cReq_TQ = DDS_TopicQos__alloc();
+DDS_DomainParticipant_get_default_topic_qos(dp, cReq_TQ);
+cReq_TQ-&gt;durability.kind = DDS_PERSISTENT_DURABILITY_QOS;
+cReq_TQ-&gt;history.kind = DDS_KEEP_ALL_HISTORY_QOS;
+cReq_TQ-&gt;reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
+cReq_TQ-&gt;destination_order.kind = DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
+cReq_T = DDS_DomainParticipant_create_topic(dp, &quot;ospl_rtn_ConfigRequest&quot;, cReq_TN, cReq_TQ, NULL, DDS_STATUS_MASK_NONE);
+
+/* ospl_rtn_ConfigState */
+cs_TQ = DDS_TopicQos__alloc();
+DDS_DomainParticipant_get_default_topic_qos(dp, cs_TQ);
+cs_TQ-&gt;durability.kind = DDS_TRANSIENT_DURABILITY_QOS;
+cs_TQ-&gt;history.kind = DDS_KEEP_LAST_HISTORY_QOS;
+cs_TQ-&gt;history.depth = 1;
+cs_TQ-&gt;reliability.kind = DDS_RELIABLE_RELIABILITY_QOS;
+cs_TQ-&gt;destination_order.kind = DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
+cs_T = DDS_DomainParticipant_create_topic(dp, &quot;ospl_rtn_ConfigState&quot;, cs_TN, cs_TQ, NULL, DDS_STATUS_MASK_NONE);
+
+/* Create Subscriber */
+sQ = DDS_SubscriberQos__alloc(); /* __alloc()'s are assumed to succeed */
+DDS_DomainParticipant_get_default_subscriber_qos(dp, sQ);
+DDS_free(sQ-&gt;partition.name._buffer);
+sQ-&gt;partition.name._length = sQ-&gt;partition.name._maximum = 1;
+sQ-&gt;partition.name._release = TRUE;
+sQ-&gt;partition.name._buffer = DDS_StringSeq_allocbuf (sQ-&gt;partition.name._maximum);
+sQ-&gt;partition.name._buffer[0] = DDS_string_dup(&quot;__BUILT-IN PARTITION__&quot;);
+s = DDS_DomainParticipant_create_subscriber(dp, sQ, NULL, DDS_STATUS_MASK_NONE);
+
+/* Create DataReaders */
+/* ospl_rtn_ConfigResponse */
+cRes_DRQ = DDS_DataReaderQos__alloc();
+DDS_Subscriber_get_default_datareader_qos(s, cRes_DRQ);
+DDS_Subscriber_copy_from_topic_qos(s, cRes_DRQ, cRes_TQ);
+cRes_DR = DDS_Subscriber_create_datareader(s, cRes_T, cRes_DRQ, NULL, DDS_STATUS_MASK_NONE);
+
+/* ospl_rtn_ConfigState */
+cs_DRQ = DDS_DataReaderQos__alloc(); /* __alloc()'s are assumed to succeed */
+DDS_Subscriber_get_default_datareader_qos(s, cs_DRQ);
+DDS_Subscriber_copy_from_topic_qos(s, cs_DRQ, cs_TQ);
+cs_DR = DDS_Subscriber_create_datareader(s, cs_T, cs_DRQ, NULL, DDS_STATUS_MASK_NONE);
+
+/* Create Publisher */
+pQ = DDS_PublisherQos__alloc(); /* __alloc()'s are assumed to succeed */
+DDS_DomainParticipant_get_default_publisher_qos(dp, pQ);
+DDS_free(pQ-&gt;partition.name._buffer);
+pQ-&gt;partition.name._length = pQ-&gt;partition.name._maximum = 1;
+pQ-&gt;partition.name._release = TRUE;
+pQ-&gt;partition.name._buffer = DDS_StringSeq_allocbuf (pQ-&gt;partition.name._maximum);
+pQ-&gt;partition.name._buffer[0] = DDS_string_dup(&quot;__BUILT-IN PARTITION__&quot;);
+p = DDS_DomainParticipant_create_publisher(dp, pQ, NULL, DDS_STATUS_MASK_NONE);
+
+/* Create DataWriter */
+cReq_DWQ = DDS_DataWriterQos__alloc();
+DDS_Publisher_get_default_datawriter_qos(p, cReq_DWQ);
+DDS_Publisher_copy_from_topic_qos(p, cReq_DWQ, cReq_TQ);
+cReq_DW = DDS_Publisher_create_datawriter(p, cReq_T, cReq_DWQ, NULL, DDS_STATUS_MASK_NONE);
+
+/* Retrieve TRANSIENT ospl_rtn_ConfigState instances; alternatively an empty ospl_rtn_ConfigRequest can be
+ * written, as will be done a bit later as well. */
+org_opensplice_dds_rtnetworking_ConfigState_tDataReader_wait_for_historical_data(cs_DR, &amp;myTimeout);
+
+/* Create WaitSet and Conditions for readers */
+/* ospl_rtn_ConfigResponse */
+cRes_C = org_opensplice_dds_rtnetworking_ConfigResponse_tDataReader_get_statuscondition(cRes_DR);
+DDS_StatusCondition_set_enabled_statuses(cRes_C, DDS_DATA_AVAILABLE_STATUS);
+
+/* ospl_rtn_ConfigState */
+cs_C = org_opensplice_dds_rtnetworking_ConfigState_tDataReader_get_statuscondition(cs_DR);
+DDS_StatusCondition_set_enabled_statuses(cs_C, DDS_DATA_AVAILABLE_STATUS);
+
+ws = DDS_WaitSet__alloc();
+DDS_WaitSet_attach_condition(ws, cRes_C);
+DDS_WaitSet_attach_condition(ws, cs_C);
+conds = DDS_ConditionSeq__alloc();
+
+/* Now wait for data; for now ospl_rtn_ConfigStates are expected for all live RTNetworking services
+ * if Durability is properly configured. */
+while((result = DDS_WaitSet_wait(ws, conds, &amp;myTimeout)) == DDS_RETCODE_OK){
+    DDS_Condition c;
+    unsigned i;
+    for(i = 0; i &lt; conds-&gt;_length; i++){
+        c = conds-&gt;_buffer[i];
+        if(c == cs_C) {
+            /* cs_DR has data available */
+            configStateTakeAllAndPrint(cs_DR); /* Implementation is left as an exercise for the reader */
+        } else if (c == cRes_C) {
+            /* cRes_DR has data available */
+            configResponseTakeAllAndPrint(cRes_DR); /* Implementation is left as an exercise for the reader */
+        }
+    }
+}
+
+/* The output of the above would be something like (depending on the implementation of configStateTakeAllAndPrint
+ * and configResponseTakeAllAndPrint):
+ *
+ * ConfigState from server [1091538F.9800000001]
+ * {
+ *   role='myRole',
+ *   configRevision=0,
+ *   currentConfig[1] {
+ *     currentConfig[0] -&gt; {name='Partitioning/NetworkPartitions', value='&lt;!-- id: 1, hash: B8C3B880 --&gt;&lt;NetworkPartition Address=&quot;225.0.0.1&quot; Name=&quot;MyPart&quot; Connected=&quot;true&quot; Compression=&quot;false&quot; MulticastTimeToLive=&quot;32&quot; /&gt;'}
+ *   }
+ * }
+ *
+ *
+ * NOTE: The output contains a comment which can be used for consistency checking. These are implementation specific
+ * and can't be guaranteed to be always available. The formatting of the XML in the ospl_rtn_ConfigState may be
+ * different than in the configuration-file or ospl_rtn_configRequest. */
+
+{
+    /* Now write three ospl_rtn_ConfigRequests to show API behaviour. Results are printed afterwards. */
+    org_opensplice_dds_rtnetworking_ConfigRequest_t data;
+
+    /* Write an empty (no configs) request. This should cause all available RTNetworking
+     * services to send an ospl_rtn_ConfigResponse and an update on ospl_rtn_ConfigState. This
+     * can be used to discover all currently available RTNetworking services. */
+    memset(&amp;data, 0, sizeof(data));
+    /* Unique ID for this requestor */
+    data.requestId.requestorId.prefix = 0x8badf00ddeadbeef;
+    data.requestId.requestorId.suffix = 0xdefec8edbadbeef0;
+    /* Unique ID for this request */
+    data.requestId.requestId = 1;
+    data.scope = DDS_string_dup(&quot;*&quot;); /* Not supported yet; leave at &quot;*&quot; or &quot;&quot; */
+    /* data.serverIds -&gt; Not supported yet; leave zeroed out */
+    data.configRevision = 0; /* Not supported yet; leave at 0 (don't care) */
+    data.resultConfigRevision = 0; /* Not supported yet; leave at 0 (don't care) */
+    /* data.config -&gt; Empty config means: request update on ospl_rtn_ConfigState topic */
+    /* data.extensions -&gt; Not needed; leave zeroed out */
+    org_opensplice_dds_rtnetworking_ConfigRequest_tDataWriter_write(cReq_DW, &amp;data, DDS_HANDLE_NIL);
+
+    /* The next request will try modification of an existing and currently &quot;connected&quot; NetworkPartition
+     * &quot;MyPart&quot;. All attributes of existing NetworkPartitions are currently immutable, so this should
+     * cause services to respond with an error (RESULT_IMMUTABLE) and possibly a description.
+     * If errors can be detected, the entire request will be ignored. First all supplied NetworkPartitions
+     * will be checked for consistency. */
+    data.requestId.requestId++;
+    data.config._length = data.config._maximum = 2;
+    data.config._buffer = DDS_sequence_org_opensplice_dds_rtnetworking_NameStringValue_t_allocbuf(data.config._maximum);
+    /* The name-field contains an XPATH expression relative to the NetworkService element. */
+    data.config._buffer[0].name = DDS_string_dup(&quot;Partitioning/NetworkPartitions&quot;);
+    /* The value-field contains a valid XML-snippet with a single root element. */
+    data.config._buffer[0].value = DDS_string_dup(&quot;&lt;NetworkPartition Address=\&quot;225.0.0.1\&quot; Connected=\&quot;false\&quot; Name=\&quot;MyPart\&quot; /&gt;&quot;);
+    data.config._buffer[1].name = DDS_string_dup(&quot;Partitioning/PartitionMappings&quot;);
+    data.config._buffer[1].value = DDS_string_dup(&quot;&lt;PartitionMapping DCPSPartitionTopic=\&quot;MyPart.*\&quot; NetworkPartition=\&quot;MyPart\&quot; /&gt;&quot;);
+    org_opensplice_dds_rtnetworking_ConfigRequest_tDataWriter_write(cReq_DW, &amp;data, DDS_HANDLE_NIL);
+
+    /* The next request will add a new NetworkPartition &quot;MyPart2&quot; and a related PartitionMapping.
+     * This time the root XPATH will be used, containing multiple config-changes in a single XML-
+     * snippet. */
+    data.requestId.requestId++;
+    data.config._length = 1;
+    /* The name-field contains an XPATH expression relative to the NetworkService element. By using an
+     * empty XPATH, the root is used (directly under the NetworkService-element). */
+    data.config._buffer[0].name = DDS_string_dup(&quot;&quot;);
+    data.config._buffer[0].value = DDS_string_dup(
+                 &quot;&lt;Partitioning&gt;&quot;
+                   &quot;&lt;NetworkPartitions&gt;&quot;
+                     &quot;&lt;NetworkPartition Address=\&quot;225.0.0.2\&quot; Connected=\&quot;true\&quot; Name=\&quot;MyPart2\&quot; /&gt;&quot;
+                   &quot;&lt;/NetworkPartitions&gt;&quot;
+                   &quot;&lt;PartitionMappings&gt;&quot;
+                     &quot;&lt;PartitionMapping DCPSPartitionTopic=\&quot;MyPart2.*\&quot; NetworkPartition=\&quot;MyPart2\&quot; /&gt;&quot;
+                   &quot;&lt;/PartitionMappings&gt;&quot;
+                 &quot;&lt;/Partitioning&gt;&quot;);
+    org_opensplice_dds_rtnetworking_ConfigRequest_tDataWriter_write(cReq_DW, &amp;data, DDS_HANDLE_NIL);
+}
+
+/* Take all data and print the results */
+while((result = DDS_WaitSet_wait(ws, conds, &amp;myTimeout)) == DDS_RETCODE_OK){
+    DDS_Condition c;
+    unsigned i;
+    for(i = 0; i &lt; conds-&gt;_length; i++){
+        c = conds-&gt;_buffer[i];
+        if(c == cs_C) {
+            /* cs_DR has data available */
+            configStateTakeAllAndPrint(cs_DR); /* Implementation is left as an exercise for the reader */
+        } else if (c == cRes_C) {
+            /* cRes_DR has data available */
+            configResponseTakeAllAndPrint(cRes_DR); /* Implementation is left as an exercise for the reader */
+        }
+    }
+}
+
+/* The output of the above would be something like (depending on the implementation of configStateTakeAllAndPrint
+ * and configResponseTakeAllAndPrint):
+ *
+ * ConfigState from server [1091538F.9800000001]
+ * {
+ *   role='myRole',
+ *   configRevision=0,
+ *   currentConfig[1] {
+ *     currentConfig[0] -&gt; {name='Partitioning/NetworkPartitions', value='&lt;!-- id: 1, hash: B8C3B880 --&gt;&lt;NetworkPartition Address=&quot;225.0.0.1&quot; Name=&quot;MyPart&quot; Connected=&quot;true&quot; Compression=&quot;false&quot; MulticastTimeToLive=&quot;32&quot; /&gt;'}
+ *   }
+ * }
+ *
+ * ConfigResponse from server [1091538F.9800000001] for request [8BADF00DDEADBEEF.DEFEC8EDBADBEEF0]:1
+ * {
+ *    result=0 (RESULT_OK),
+ *    configRevision=0,
+ *    resultConfigRevision=0,
+ *    description=''
+ * }
+ *
+ * ConfigResponse from server [1091538F.9800000001] for request [8BADF00DDEADBEEF.DEFEC8EDBADBEEF0]:2
+ * {
+ *    result=3 (RESULT_IMMUTABLE),
+ *    configRevision=0,
+ *    resultConfigRevision=0,
+ *    description='NetworkPartition 'MyPart' already exists with a different configuration.'
+ * }
+ *
+ * ConfigState from server [1091538F.9800000001]
+ * {
+ *   role='myRole',
+ *   configRevision=0,
+ *   currentConfig[3] {
+ *     currentConfig[0] -&gt; {name='Partitioning/NetworkPartitions', value='&lt;!-- id: 1, hash: B8C3B880 --&gt;&lt;NetworkPartition Address=&quot;225.0.0.1&quot; Name=&quot;MyPart&quot; Connected=&quot;true&quot; Compression=&quot;false&quot; MulticastTimeToLive=&quot;32&quot; /&gt;'}
+ *     currentConfig[1] -&gt; {name='Partitioning/NetworkPartitions', value='&lt;!-- id: 2, hash: 853EB638 --&gt;&lt;NetworkPartition Address=&quot;225.0.0.2&quot; Name=&quot;MyPart2&quot; Connected=&quot;true&quot; Compression=&quot;false&quot; MulticastTimeToLive=&quot;32&quot; /&gt;'}
+ *     currentConfig[2] -&gt; {name='Partitioning/PartitionMappings', value='&lt;!-- id: 2 --&gt;&lt;PartitionMapping DCPSPartitionTopic=&quot;MyPart2.*&quot; NetworkPartition=&quot;MyPart2&quot; /&gt;'}
+ *   }
+ * }
+ *
+ * ConfigResponse from server [1091538F.9800000001] for request [8BADF00DDEADBEEF.DEFEC8EDBADBEEF0]:3
+ * {
+ *    result=0 (RESULT_OK),
+ *    configRevision=0,
+ *    resultConfigRevision=0,
+ *    description=''
+ * }
+ */
+</pre>
+</p>
+<h2> <a name="KnownLimitations">Known limitations</a> </h2>
+<p>
+<ul>
+  <li>
+      Targeting a subset of RTNetworking services by means of the <tt>scope</tt>
+      member of the <tt>ospl_rtn_ConfigRequest</tt>-topic is not yet supported.
+      The scope should be either &quot;*&quot; or &quot;&quot; for the request
+      to be processed.
+  </li>
+  <li>
+      Targeting a subset of RTNetworking services by means of the <tt>serverIds</tt>
+      member of the <tt>ospl_rtn_ConfigRequest</tt>-topic is not yet supported.
+      The sequence should be empty for the request to be processed.
+  </li>
+  <li>
+      Requesting a specific configRevision or resultConfigRevision by means of the
+      <tt>configRevision</tt> or <tt>resultConfigRevision</tt> is not supported yet.
+      These members should be left at <tt>0</tt>, which means &quot;don&rsquo;t care&quot;.
+      RTNetworking services will respond <tt>RESULT_NOT_SUPPORTED</tt> if these
+      are set to a non-zero value. Services will for now always report
+      <tt>configRevision = 0</tt> in the <tt>ospl_rtn_ConfigResponse</tt> and
+      <tt>ospl_rtn_ConfigState</tt> topics.
+  </li>
+  <li>
+      Not all errors (e.g., parse errors) are properly described in the
+      <tt>ospl_rtn_ConfigResponse</tt> and may turn up in the <tt>ospl-error.log</tt>
+      instead.
+  </li>
+</ul>
+</p>
+  <div class="clear">
+    <hr/>
+    </div>
+    <div id="footer">
+      <div class="xright">
+       Copyright &#169; 2015 <a href="http://www.prismtech.com">PrismTech</a>. All Rights Reserved.
+      </div>
+     <div class="clear">
+     <hr/>
+     </div>
+    </div>
+  </body>
+</html>

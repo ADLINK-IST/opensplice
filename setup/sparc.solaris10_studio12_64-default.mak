@@ -4,7 +4,6 @@
 CC		 = cc
 CXX		 = CC
 
-#FILTER           = filter_gcc
 # Binary used for linking
 #LD_SO            = $(CC) -G
 LD_SO            = $(CXX) -G
@@ -72,9 +71,9 @@ CFLAGS_OPT       = -O -xarch=v8 -DNDEBUG
 CFLAGS_DEBUG     = -g -DDEBUG -D_TYPECHECK_
 CFLAGS_STRICT	 = -DSPARC -D_REENTRANT
 
-# Set compiler options for single threaded process
-CFLAGS		 = -m64 $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -m64 $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) -features=extensions
+# Set compiler options
+CFLAGS		 = -m64 $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(MTCFLAGS)
+CXXFLAGS	 = -m64 $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(MTCFLAGS) -features=extensions
 
 # Set CPP flags
 #CPPFLAGS	 = -D__GNUC__   # defined because CPP on SPARC solaris
@@ -86,7 +85,7 @@ CPPFLAGS	= -DOSPL_ENV_$(SPECIAL)
 
 # Set compiler options for multi threaded process
 	# notify usage of posix threads
-MTCFLAGS	+= -mt -D_POSIX_PTHREAD_SEMANTICS
+MTCFLAGS	= -mt -D_POSIX_PTHREAD_SEMANTICS
 
 # Set linker options
 LDFLAGS		 = -64 -L$(SPLICE_LIBRARY_PATH)
@@ -102,11 +101,8 @@ SHLDLIBS	 = -lsocket -lnsl -Bdynamic -ldl -lintl -lpthread -lrt
 # Set component specific libraries that are platform dependent
 LDLIBS_CXX =
 LDLIBS_NW = -lsocket -lnsl
-LDLIBS_OS = -lrt -lpthread -ldl
+LDLIBS_OS = -lm -lrt -lpthread -ldl
 LDLIBS_CMS = -lxnet -lnsl -lsocket
-LDLIBS_ZLIB = -lz
-LDFLAGS_ZLIB =
-CINCS_ZLIB =
 
 #enable XPG5 plus extensions
 CFLAGS		+= -D_XOPEN_SOURCE=500 -D__EXTENSIONS__

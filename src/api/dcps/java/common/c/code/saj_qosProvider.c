@@ -1,63 +1,40 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "saj_QosProvider.h" /* JNI generated headers */
 #include "saj_utilities.h"
 #include "saj_copyOut.h"
 
-#include "qp_qosProvider.h"
+#include "cmn_qosProvider.h"
 
-#include "os.h"
-#include "os_report.h"
+#include "vortex_os.h"
+#include "saj__report.h"
 
 #define SAJ_FUNCTION(name) Java_DDS_QosProvider_##name
-#define SAJ_FUNCTION_STR(name) #name
 
-#define jniQosProviderCheckError(env, jump) do { if((*(env))->ExceptionCheck(env)) goto jump; } while(0)
+#define jniQosProviderCheckError(env, jump) do { if((*(env))->ExceptionOccurred(env)) goto jump; } while(0)
 
-static void
-jniQosProviderHandleException(
-        JNIEnv *env,
-        const c_char * location)
-{
-    jclass eCls;
-    jthrowable e;
-    jmethodID eToStr;
-    jstring eMsg;
-    const c_char *eMsgStr;
-
-    e = (*env)->ExceptionOccurred(env);
-    assert(e); /* Should only be called with a pending exception */ \
-
-    /* Catch actual exception */
-    (*env)->ExceptionClear(env);
-
-    eCls = (*env)->GetObjectClass(env, e);
-    assert(eCls);
-    eToStr = (*env)->GetMethodID(env, eCls, "toString", "()Ljava/lang/String;");
-    assert(eToStr);
-    (*env)->DeleteLocalRef(env, eCls);
-
-    eMsg = (jstring)(*env)->CallObjectMethod(env, e, eToStr);
-    eMsgStr = (*env)->GetStringUTFChars (env, eMsg, NULL);
-
-    OS_REPORT_1(OS_API_INFO, location, 0, "Exception occurred:\n%s", eMsgStr);
-
-    (*env)->ReleaseStringUTFChars (env, eMsg, eMsgStr);
-    (*env)->DeleteLocalRef(env, eMsg);
-}
+#define saj_qosProvider(o) ((saj_qosProvider)SAJ_VOIDP(o))
 
 C_CLASS(saj_qosProvider);
 C_STRUCT(saj_qosProvider){
-    qp_qosProvider qp;
+    cmn_qosProvider qp;
     saj_copyCache dCache;
     saj_copyCache tCache;
     saj_copyCache pCache;
@@ -69,7 +46,7 @@ C_STRUCT(saj_qosProvider){
 static saj_qosProvider
 saj_qosProviderNew (
         JNIEnv *env,
-        qp_qosProvider qp)
+        cmn_qosProvider qp)
 {
     saj_qosProvider _this;
     c_type meta;
@@ -77,62 +54,58 @@ saj_qosProviderNew (
     assert(env);
     assert(qp);
 
-    if((_this = os_malloc(sizeof(*_this))) == NULL){
-        /* TODO: Report error */
-        goto err_malloc;
-    }
-
+    _this = os_malloc(sizeof(*_this));
     _this->qp = qp;
 
-    if(qp_qosProviderGetParticipantQosType(_this->qp, &meta) != QP_RESULT_OK){
+    if(cmn_qosProviderGetParticipantQosType(_this->qp, &meta) != QP_RESULT_OK){
         goto err_dQos;
     }
-    _this->dCache = saj_copyCacheNew(env, c_metaObject(meta), NULL, NULL);
+    _this->dCache = saj_copyCacheNew(env, c_metaObject(meta), NULL);
     c_free(meta);
     if(_this->dCache == NULL){
         goto err_dQos;
     }
 
-    if(qp_qosProviderGetTopicQosType(_this->qp, &meta) != QP_RESULT_OK){
+    if(cmn_qosProviderGetTopicQosType(_this->qp, &meta) != QP_RESULT_OK){
         goto err_tQos;
     }
-    _this->tCache = saj_copyCacheNew(env, c_metaObject(meta), NULL, NULL);
+    _this->tCache = saj_copyCacheNew(env, c_metaObject(meta), NULL);
     c_free(meta);
     if(_this->tCache == NULL){
         goto err_tQos;
     }
 
-    if(qp_qosProviderGetPublisherQosType(_this->qp, &meta) != QP_RESULT_OK){
+    if(cmn_qosProviderGetPublisherQosType(_this->qp, &meta) != QP_RESULT_OK){
         goto err_pQos;
     }
-    _this->pCache = saj_copyCacheNew(env, c_metaObject(meta), NULL, NULL);
+    _this->pCache = saj_copyCacheNew(env, c_metaObject(meta), NULL);
     c_free(meta);
     if(_this->pCache == NULL){
         goto err_pQos;
     }
 
-    if(qp_qosProviderGetDataWriterQosType(_this->qp, &meta) != QP_RESULT_OK){
+    if(cmn_qosProviderGetDataWriterQosType(_this->qp, &meta) != QP_RESULT_OK){
         goto err_wQos;
     }
-    _this->wCache = saj_copyCacheNew(env, c_metaObject(meta), NULL, NULL);
+    _this->wCache = saj_copyCacheNew(env, c_metaObject(meta), NULL);
     c_free(meta);
     if(_this->wCache == NULL){
         goto err_wQos;
     }
 
-    if(qp_qosProviderGetSubscriberQosType(_this->qp, &meta) != QP_RESULT_OK){
+    if(cmn_qosProviderGetSubscriberQosType(_this->qp, &meta) != QP_RESULT_OK){
         goto err_sQos;
     }
-    _this->sCache = saj_copyCacheNew(env, c_metaObject(meta), NULL, NULL);
+    _this->sCache = saj_copyCacheNew(env, c_metaObject(meta), NULL);
     c_free(meta);
     if(_this->sCache == NULL){
         goto err_sQos;
     }
 
-    if(qp_qosProviderGetDataReaderQosType(_this->qp, &meta) != QP_RESULT_OK){
+    if(cmn_qosProviderGetDataReaderQosType(_this->qp, &meta) != QP_RESULT_OK){
         goto err_rQos;
     }
-    _this->rCache = saj_copyCacheNew(env, c_metaObject(meta), NULL, NULL);
+    _this->rCache = saj_copyCacheNew(env, c_metaObject(meta), NULL);
     c_free(meta);
     if(_this->rCache == NULL){
         goto err_rQos;
@@ -153,9 +126,7 @@ err_tQos:
     saj_copyCacheFree(_this->dCache);
 err_dQos:
     os_free(_this);
-err_malloc:
     return NULL;
-
 }
 
 static void
@@ -175,7 +146,7 @@ saj_qosProviderDeinitCopyCaches (
  * Method:    jniQosProviderNew
  * Signature: (Ljava/lang/String;Ljava/lang/String;)Z
  */
-JNIEXPORT jboolean JNICALL
+JNIEXPORT jlong JNICALL
 SAJ_FUNCTION(jniQosProviderNew)(
         JNIEnv *env,
         jobject jqosProvider,
@@ -183,15 +154,24 @@ SAJ_FUNCTION(jniQosProviderNew)(
         jstring jprofile)
 {
     saj_qosProvider _this;
-    qp_qosProvider qp;
+    cmn_qosProvider qp;
     const char *strUri;
     const char *strProfile;
-    C_STRUCT(qp_qosProviderInputAttr) qpAttr;
+    C_STRUCT(cmn_qosProviderInputAttr) qpAttr;
+    OS_UNUSED_ARG(jqosProvider);
 
-    strUri = juri ? (*env)->GetStringUTFChars (env, juri, NULL) : NULL;
+    if(juri){
+        strUri = (*env)->GetStringUTFChars (env, juri, NULL);
+    } else {
+        strUri = NULL;
+    }
     jniQosProviderCheckError(env, err_strUri);
 
-    strProfile = jprofile ? (*env)->GetStringUTFChars (env, jprofile, NULL) : NULL;
+    if(jprofile){
+        strProfile = (*env)->GetStringUTFChars (env, jprofile, NULL);
+    } else {
+        strProfile = NULL;
+    }
     jniQosProviderCheckError(env, err_strProfile);
 
     qpAttr.participantQos.copyOut = saj_copyOutStruct;
@@ -201,16 +181,14 @@ SAJ_FUNCTION(jniQosProviderNew)(
     qpAttr.publisherQos.copyOut = saj_copyOutStruct;
     qpAttr.dataWriterQos.copyOut = saj_copyOutStruct;
 
-    if((qp = qp_qosProviderNew(strUri, strProfile, &qpAttr)) == NULL){
-        /* Error reported by qp_qosProviderNew(...) */
+    if((qp = cmn_qosProviderNew(strUri, strProfile, &qpAttr)) == NULL){
+        /* Error reported by cmn_qosProviderNew(...) */
         goto err_qosProviderNew;
     }
 
     if((_this = saj_qosProviderNew(env, qp)) == NULL){
         goto err_sajQosProviderNew;
     }
-
-    saj_write_gapi_address(env, jqosProvider, (PA_ADDRCAST)_this);
 
     if(strProfile){
         (*env)->ReleaseStringUTFChars (env, jprofile, strProfile);
@@ -220,11 +198,11 @@ SAJ_FUNCTION(jniQosProviderNew)(
         (*env)->ReleaseStringUTFChars (env, juri, strUri);
     }
 
-    return JNI_TRUE;
+    return (jlong)(PA_ADDRCAST)_this;
 
 /* Error handling */
 err_sajQosProviderNew:
-    qp_qosProviderFree(qp);
+    cmn_qosProviderFree(qp);
 err_qosProviderNew:
     if(strProfile){
         (*env)->ReleaseStringUTFChars (env, jprofile, strProfile);
@@ -234,7 +212,7 @@ err_strProfile:
         (*env)->ReleaseStringUTFChars (env, juri, strUri);
     }
 err_strUri:
-    return JNI_FALSE;
+    return 0;
 }
 
 /*
@@ -245,16 +223,16 @@ err_strUri:
 JNIEXPORT void JNICALL
 SAJ_FUNCTION(jniQosProviderFree)(
         JNIEnv *env,
-        jobject jqosProvider)
+        jobject jqosProvider,
+        jlong qosProvider)
 {
-    saj_qosProvider qosProvider;
+    OS_UNUSED_ARG(env);
+    OS_UNUSED_ARG(jqosProvider);
+    assert(qosProvider);
 
-    qosProvider = (saj_qosProvider)saj_read_gapi_address(env, jqosProvider);
-    if(qosProvider){
-        qp_qosProviderFree(qosProvider->qp);
-        saj_qosProviderDeinitCopyCaches(qosProvider);
-        os_free(qosProvider);
-    }
+    cmn_qosProviderFree(saj_qosProvider(qosProvider)->qp);
+    saj_qosProviderDeinitCopyCaches(SAJ_VOIDP(qosProvider));
+    os_free(SAJ_VOIDP(qosProvider));
 }
 
 /*
@@ -266,63 +244,51 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetParticipantQos)(
         JNIEnv *env,
         jobject jqosProvider,
+        jlong qosProvider,
         jobject jqosHolder,
         jstring jid)
 {
-    saj_qosProvider qosProvider;
-    gapi_returnCode_t result;
-    qp_result qpr;
+    saj_returnCode result;
+    cmn_qpResult qpr;
     const char * strId;
     C_STRUCT(saj_dstInfo) dst;
+    OS_UNUSED_ARG(jqosProvider);
 
-    /* Parameter checking */
-    if(jqosHolder == NULL){
-        result = GAPI_RETCODE_BAD_PARAMETER;
-        OS_REPORT(OS_API_INFO, SAJ_FUNCTION_STR(jniGetParticipantQos), result, "Bad parameter. NamedDomainParticipantQosHolder may not be null.");
-        goto bad_param;
-    }
-    if((qosProvider = (saj_qosProvider)saj_read_gapi_address(env, jqosProvider)) == NULL){
-        /* Don't set API_INFO; this is collateral damage detected, not a new error. */
-        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-        goto bad_param;
-    }
+    if(jqosHolder != NULL){
+        assert(qosProvider != 0);
 
-    strId = jid ? (*env)->GetStringUTFChars (env, NULL, NULL) : NULL;
-    jniQosProviderCheckError(env, exception);
+        if(jid){
+            strId = (*env)->GetStringUTFChars (env, jid, NULL);
+        } else {
+            strId = NULL;
+        }
 
-    dst.copyProgram = qosProvider->dCache;
-    dst.javaObject = NULL;
-    dst.javaEnv = env;
+        dst.copyProgram = saj_qosProvider(qosProvider)->dCache;
+        dst.javaObject = NULL;
+        dst.javaEnv = env;
 
-    qpr = qp_qosProviderGetParticipantQos(qosProvider->qp, strId, &dst);
+        qpr = cmn_qosProviderGetParticipantQos(saj_qosProvider(qosProvider)->qp, strId, &dst);
 
-    if(qpr == QP_RESULT_OK){
-        /* store the NamedDomainParticipantQos object in the Holder object */
-        (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedDomainParticipantQosHolder_value_fid), dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+        if(qpr == QP_RESULT_OK){
+            /* store the NamedDomainParticipantQos object in the Holder object */
+            (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedDomainParticipantQosHolder_value_fid), dst.javaObject);
 
-        /* delete the local reference to the NamedDomainParticipantQos object */
-        (*env)->DeleteLocalRef(env, dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+            /* delete the local reference to the NamedDomainParticipantQos object */
+            (*env)->DeleteLocalRef(env, dst.javaObject);
+            result = SAJ_RETCODE_OK;
+        } else if (qpr == QP_RESULT_NO_DATA){
+            result = SAJ_RETCODE_NO_DATA;
+        } else {
+            result = SAJ_RETCODE_ERROR;
+        }
 
-        result = GAPI_RETCODE_OK;
-    } else if (qpr == QP_RESULT_NO_DATA){
-        result = GAPI_RETCODE_NO_DATA;
+        if(strId){
+            (*env)->ReleaseStringUTFChars(env, jid, strId);
+        }
     } else {
-        result = GAPI_RETCODE_ERROR;
+        result = SAJ_RETCODE_BAD_PARAMETER;
     }
 
-    if(strId){
-        (*env)->ReleaseStringUTFChars(env, jid, strId);
-        jniQosProviderCheckError(env, exception);
-    }
-    return (jint)result;
-
-/* Error handling */
-exception:
-    jniQosProviderHandleException(env, SAJ_FUNCTION_STR(jniGetParticipantQos));
-    result = GAPI_RETCODE_ERROR;
-bad_param:
     return (jint)result;
 }
 
@@ -335,63 +301,51 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetTopicQos)(
         JNIEnv *env,
         jobject jqosProvider,
+        jlong qosProvider,
         jobject jqosHolder,
         jstring jid)
 {
-    saj_qosProvider qosProvider;
-    gapi_returnCode_t result;
-    qp_result qpr;
+    saj_returnCode result;
+    cmn_qpResult qpr;
     const char * strId;
     C_STRUCT(saj_dstInfo) dst;
+    OS_UNUSED_ARG(jqosProvider);
 
-    /* Parameter checking */
-    if(jqosHolder == NULL){
-        result = GAPI_RETCODE_BAD_PARAMETER;
-        OS_REPORT(OS_API_INFO, SAJ_FUNCTION_STR(jniGetTopicQos), result, "Bad parameter. NamedTopicQosHolder may not be null.");
-        goto bad_param;
-    }
-    if((qosProvider = (saj_qosProvider)saj_read_gapi_address(env, jqosProvider)) == NULL){
-        /* Don't set API_INFO; this is collateral damage detected, not a new error. */
-        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-        goto bad_param;
-    }
+    if(jqosHolder != NULL){
+        assert(qosProvider != 0);
 
-    strId = jid ? (*env)->GetStringUTFChars (env, jid, NULL) : NULL;
-    jniQosProviderCheckError(env, exception);
+        if(jid){
+            strId = (*env)->GetStringUTFChars (env, jid, NULL);
+        } else {
+            strId = NULL;
+        }
 
-    dst.copyProgram = qosProvider->tCache;
-    dst.javaObject = NULL;
-    dst.javaEnv = env;
+        dst.copyProgram = saj_qosProvider(qosProvider)->tCache;
+        dst.javaObject = NULL;
+        dst.javaEnv = env;
 
-    qpr = qp_qosProviderGetTopicQos(qosProvider->qp, strId, &dst);
+        qpr = cmn_qosProviderGetTopicQos(saj_qosProvider(qosProvider)->qp, strId, &dst);
 
-    if(qpr == QP_RESULT_OK){
-        /* store the NamedTopicQos object in the Holder object */
-        (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedTopicQosHolder_value_fid), dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+        if(qpr == QP_RESULT_OK){
+            /* store the NamedTopicQos object in the Holder object */
+            (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedTopicQosHolder_value_fid), dst.javaObject);
 
-        /* delete the local reference to the NamedTopicQos object */
-        (*env)->DeleteLocalRef(env, dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+            /* delete the local reference to the NamedTopicQos object */
+            (*env)->DeleteLocalRef(env, dst.javaObject);
+            result = SAJ_RETCODE_OK;
+        } else if (qpr == QP_RESULT_NO_DATA){
+            result = SAJ_RETCODE_NO_DATA;
+        } else {
+            result = SAJ_RETCODE_ERROR;
+        }
 
-        result = GAPI_RETCODE_OK;
-    } else if (qpr == QP_RESULT_NO_DATA){
-        result = GAPI_RETCODE_NO_DATA;
+        if(strId){
+            (*env)->ReleaseStringUTFChars(env, jid, strId);
+        }
     } else {
-        result = GAPI_RETCODE_ERROR;
+        result = SAJ_RETCODE_BAD_PARAMETER;
     }
 
-    if(strId){
-        (*env)->ReleaseStringUTFChars(env, jid, strId);
-        jniQosProviderCheckError(env, exception);
-    }
-    return (jint)result;
-
-/* Error handling */
-exception:
-    jniQosProviderHandleException(env, SAJ_FUNCTION_STR(jniGetTopicQos));
-    result = GAPI_RETCODE_ERROR;
-bad_param:
     return (jint)result;
 }
 
@@ -404,63 +358,51 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetSubscriberQos)(
         JNIEnv *env,
         jobject jqosProvider,
+        jlong qosProvider,
         jobject jqosHolder,
         jstring jid)
 {
-    saj_qosProvider qosProvider;
-    gapi_returnCode_t result;
-    qp_result qpr;
+    saj_returnCode result;
+    cmn_qpResult qpr;
     const char * strId;
     C_STRUCT(saj_dstInfo) dst;
+    OS_UNUSED_ARG(jqosProvider);
 
-    /* Parameter checking */
-    if(jqosHolder == NULL){
-        result = GAPI_RETCODE_BAD_PARAMETER;
-        OS_REPORT(OS_API_INFO, SAJ_FUNCTION_STR(jniGetSubscriberQos), result, "Bad parameter. NamedSubscriberQosHolder may not be null.");
-        goto bad_param;
-    }
-    if((qosProvider = (saj_qosProvider)saj_read_gapi_address(env, jqosProvider)) == NULL){
-        /* Don't set API_INFO; this is collateral damage detected, not a new error. */
-        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-        goto bad_param;
-    }
+    if(jqosHolder != NULL){
+        assert(qosProvider != 0);
 
-    strId = jid ? (*env)->GetStringUTFChars (env, jid, NULL) : NULL;
-    jniQosProviderCheckError(env, exception);
+        if(jid){
+            strId = (*env)->GetStringUTFChars (env, jid, NULL);
+        } else {
+            strId = NULL;
+        }
 
-    dst.copyProgram = qosProvider->sCache;
-    dst.javaObject = NULL;
-    dst.javaEnv = env;
+        dst.copyProgram = saj_qosProvider(qosProvider)->sCache;
+        dst.javaObject = NULL;
+        dst.javaEnv = env;
 
-    qpr = qp_qosProviderGetSubscriberQos(qosProvider->qp, strId, &dst);
+        qpr = cmn_qosProviderGetSubscriberQos(saj_qosProvider(qosProvider)->qp, strId, &dst);
 
-    if(qpr == QP_RESULT_OK){
-        /* store the Named-Qos object in the Holder object */
-        (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedSubscriberQosHolder_value_fid), dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+        if(qpr == QP_RESULT_OK){
+            /* store the Named-Qos object in the Holder object */
+            (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedSubscriberQosHolder_value_fid), dst.javaObject);
 
-        /* delete the local reference to the Named-Qos object */
-        (*env)->DeleteLocalRef(env, dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+            /* delete the local reference to the Named-Qos object */
+            (*env)->DeleteLocalRef(env, dst.javaObject);
+            result = SAJ_RETCODE_OK;
+        } else if (qpr == QP_RESULT_NO_DATA){
+            result = SAJ_RETCODE_NO_DATA;
+        } else {
+            result = SAJ_RETCODE_ERROR;
+        }
 
-        result = GAPI_RETCODE_OK;
-    } else if (qpr == QP_RESULT_NO_DATA){
-        result = GAPI_RETCODE_NO_DATA;
+        if(strId){
+            (*env)->ReleaseStringUTFChars (env, jid, strId);
+        }
     } else {
-        result = GAPI_RETCODE_ERROR;
+        result = SAJ_RETCODE_BAD_PARAMETER;
     }
 
-    if(strId){
-        (*env)->ReleaseStringUTFChars (env, jid, strId);
-        jniQosProviderCheckError(env, exception);
-    }
-    return (jint)result;
-
-/* Error handling */
-exception:
-    jniQosProviderHandleException(env, SAJ_FUNCTION_STR(jniGetSubscriberQos));
-    result = GAPI_RETCODE_ERROR;
-bad_param:
     return (jint)result;
 }
 
@@ -473,63 +415,51 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetDatareaderQos)(
         JNIEnv *env,
         jobject jqosProvider,
+        jlong qosProvider,
         jobject jqosHolder,
         jstring jid)
 {
-    saj_qosProvider qosProvider;
-    gapi_returnCode_t result;
-    qp_result qpr;
+    saj_returnCode result;
+    cmn_qpResult qpr;
     const char * strId;
     C_STRUCT(saj_dstInfo) dst;
+    OS_UNUSED_ARG(jqosProvider);
 
-    /* Parameter checking */
-    if(jqosHolder == NULL){
-        result = GAPI_RETCODE_BAD_PARAMETER;
-        OS_REPORT(OS_API_INFO, SAJ_FUNCTION_STR(jniGetDatareaderQos), result, "Bad parameter. NamedDataReaderQosHolder may not be null.");
-        goto bad_param;
-    }
-    if((qosProvider = (saj_qosProvider)saj_read_gapi_address(env, jqosProvider)) == NULL){
-        /* Don't set API_INFO; this is collateral damage detected, not a new error. */
-        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-        goto bad_param;
-    }
+    if(jqosHolder != NULL){
+        assert(qosProvider != 0);
 
-    strId = jid ? (*env)->GetStringUTFChars (env, jid, NULL) : NULL;
-    jniQosProviderCheckError(env, exception);
+        if(jid){
+            strId = (*env)->GetStringUTFChars (env, jid, NULL);
+        } else {
+            strId = NULL;
+        }
 
-    dst.copyProgram = qosProvider->rCache;
-    dst.javaObject = NULL;
-    dst.javaEnv = env;
+        dst.copyProgram = saj_qosProvider(qosProvider)->rCache;
+        dst.javaObject = NULL;
+        dst.javaEnv = env;
 
-    qpr = qp_qosProviderGetDataReaderQos(qosProvider->qp, strId, &dst);
+        qpr = cmn_qosProviderGetDataReaderQos(saj_qosProvider(qosProvider)->qp, strId, &dst);
 
-    if(qpr == QP_RESULT_OK){
-        /* store the Named-Qos object in the Holder object */
-        (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedDataReaderQosHolder_value_fid), dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+        if(qpr == QP_RESULT_OK){
+            /* store the Named-Qos object in the Holder object */
+            (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedDataReaderQosHolder_value_fid), dst.javaObject);
 
-        /* delete the local reference to the Named-Qos object */
-        (*env)->DeleteLocalRef(env, dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+            /* delete the local reference to the Named-Qos object */
+            (*env)->DeleteLocalRef(env, dst.javaObject);
+            result = SAJ_RETCODE_OK;
+        } else if (qpr == QP_RESULT_NO_DATA){
+            result = SAJ_RETCODE_NO_DATA;
+        } else {
+            result = SAJ_RETCODE_ERROR;
+        }
 
-        result = GAPI_RETCODE_OK;
-    } else if (qpr == QP_RESULT_NO_DATA){
-        result = GAPI_RETCODE_NO_DATA;
+        if(strId){
+            (*env)->ReleaseStringUTFChars (env, jid, strId);
+        }
     } else {
-        result = GAPI_RETCODE_ERROR;
+        result = SAJ_RETCODE_BAD_PARAMETER;
     }
 
-    if(strId){
-        (*env)->ReleaseStringUTFChars (env, jid, strId);
-        jniQosProviderCheckError(env, exception);
-    }
-    return (jint)result;
-
-/* Error handling */
-exception:
-    jniQosProviderHandleException(env, SAJ_FUNCTION_STR(jniGetDataReaderQos));
-    result = GAPI_RETCODE_ERROR;
-bad_param:
     return (jint)result;
 }
 
@@ -542,63 +472,55 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetPublisherQos)(
         JNIEnv *env,
         jobject jqosProvider,
+        jlong qosProvider,
         jobject jqosHolder,
         jstring jid)
 {
-    saj_qosProvider qosProvider;
-    gapi_returnCode_t result;
-    qp_result qpr;
+    saj_returnCode result;
+    cmn_qpResult qpr;
     const char * strId;
     C_STRUCT(saj_dstInfo) dst;
+    OS_UNUSED_ARG(jqosProvider);
 
-    /* Parameter checking */
-    if(jqosHolder == NULL){
-        result = GAPI_RETCODE_BAD_PARAMETER;
-        OS_REPORT(OS_API_INFO, SAJ_FUNCTION_STR(jniGetPublisherQos), result, "Bad parameter. NamedPublisherQosHolder may not be null.");
-        goto bad_param;
-    }
-    if((qosProvider = (saj_qosProvider)saj_read_gapi_address(env, jqosProvider)) == NULL){
-        /* Don't set API_INFO; this is collateral damage detected, not a new error. */
-        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-        goto bad_param;
-    }
+    if(jqosHolder != NULL){
+        assert(qosProvider != 0);
 
-    strId = jid ? (*env)->GetStringUTFChars (env, jid, NULL) : NULL;
-    jniQosProviderCheckError(env, exception);
+        if(jid){
+            strId = (*env)->GetStringUTFChars (env, jid, NULL);
+        } else {
+            strId = NULL;
+        }
 
-    dst.copyProgram = qosProvider->pCache;
-    dst.javaObject = NULL;
-    dst.javaEnv = env;
+        dst.copyProgram = saj_qosProvider(qosProvider)->pCache;
+        dst.javaObject = NULL;
+        dst.javaEnv = env;
 
-    qpr = qp_qosProviderGetPublisherQos(qosProvider->qp, strId, &dst);
+        qpr = cmn_qosProviderGetPublisherQos(saj_qosProvider(qosProvider)->qp, strId, &dst);
 
-    if(qpr == QP_RESULT_OK){
-        /* store the Named-Qos object in the Holder object */
-        (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedPublisherQosHolder_value_fid), dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+        if(qpr == QP_RESULT_OK){
+            /* store the Named-Qos object in the Holder object */
+            (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedPublisherQosHolder_value_fid), dst.javaObject);
+            saj_exceptionCheck(env);
 
-        /* delete the local reference to the Named-Qos object */
-        (*env)->DeleteLocalRef(env, dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+            /* delete the local reference to the Named-Qos object */
+            (*env)->DeleteLocalRef(env, dst.javaObject);
+            saj_exceptionCheck(env);
 
-        result = GAPI_RETCODE_OK;
-    } else if (qpr == QP_RESULT_NO_DATA){
-        result = GAPI_RETCODE_NO_DATA;
+            result = SAJ_RETCODE_OK;
+        } else if (qpr == QP_RESULT_NO_DATA){
+            result = SAJ_RETCODE_NO_DATA;
+        } else {
+            result = SAJ_RETCODE_ERROR;
+        }
+
+        if(strId){
+            (*env)->ReleaseStringUTFChars (env, jid, strId);
+            saj_exceptionCheck(env);
+        }
     } else {
-        result = GAPI_RETCODE_ERROR;
+        result = SAJ_RETCODE_BAD_PARAMETER;
     }
 
-    if(strId){
-        (*env)->ReleaseStringUTFChars (env, jid, strId);
-        jniQosProviderCheckError(env, exception);
-    }
-    return (jint)result;
-
-/* Error handling */
-exception:
-    jniQosProviderHandleException(env, SAJ_FUNCTION_STR(jniGetPublisherQos));
-    result = GAPI_RETCODE_ERROR;
-bad_param:
     return (jint)result;
 }
 
@@ -611,65 +533,52 @@ JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniGetDatawriterQos)(
         JNIEnv *env,
         jobject jqosProvider,
+        jlong qosProvider,
         jobject jqosHolder,
         jstring jid)
 {
-    saj_qosProvider qosProvider;
-    gapi_returnCode_t result;
-    qp_result qpr;
+    saj_returnCode result;
+    cmn_qpResult qpr;
     const char * strId;
     C_STRUCT(saj_dstInfo) dst;
+    OS_UNUSED_ARG(jqosProvider);
 
-    /* Parameter checking */
-    if(jqosHolder == NULL){
-        result = GAPI_RETCODE_BAD_PARAMETER;
-        OS_REPORT(OS_API_INFO, SAJ_FUNCTION_STR(jniGetDatawriterQos), result, "Bad parameter. NamedDataWriterQosHolder may not be null.");
-        goto bad_param;
-    }
-    if((qosProvider = (saj_qosProvider)saj_read_gapi_address(env, jqosProvider)) == NULL){
-        /* Don't set API_INFO; this is collateral damage detected, not a new error. */
-        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
-        goto bad_param;
-    }
+    if(jqosHolder != NULL){
+        assert(qosProvider != 0);
 
-    strId = jid ? (*env)->GetStringUTFChars (env, jid, NULL) : NULL;
-    jniQosProviderCheckError(env, exception);
+        if(jid){
+            strId = (*env)->GetStringUTFChars (env, jid, NULL);
+        } else {
+            strId = NULL;
+        }
 
-    dst.copyProgram = qosProvider->wCache;
-    dst.javaObject = NULL;
-    dst.javaEnv = env;
+        dst.copyProgram = saj_qosProvider(qosProvider)->wCache;
+        dst.javaObject = NULL;
+        dst.javaEnv = env;
 
-    qpr = qp_qosProviderGetDataWriterQos(qosProvider->qp, strId, &dst);
+        qpr = cmn_qosProviderGetDataWriterQos(saj_qosProvider(qosProvider)->qp, strId, &dst);
 
-    if(qpr == QP_RESULT_OK){
-        /* store the Named-Qos object in the Holder object */
-        (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedDataWriterQosHolder_value_fid), dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+        if(qpr == QP_RESULT_OK){
+            /* store the Named-Qos object in the Holder object */
+            (*env)->SetObjectField(env, jqosHolder, GET_CACHED(namedDataWriterQosHolder_value_fid), dst.javaObject);
 
-        /* delete the local reference to the Named-Qos object */
-        (*env)->DeleteLocalRef(env, dst.javaObject);
-        jniQosProviderCheckError(env, exception);
+            /* delete the local reference to the Named-Qos object */
+            (*env)->DeleteLocalRef(env, dst.javaObject);
+            result = SAJ_RETCODE_OK;
+        } else if (qpr == QP_RESULT_NO_DATA){
+            result = SAJ_RETCODE_NO_DATA;
+        } else {
+            result = SAJ_RETCODE_ERROR;
+        }
 
-        result = GAPI_RETCODE_OK;
-    } else if (qpr == QP_RESULT_NO_DATA){
-        result = GAPI_RETCODE_NO_DATA;
+        if(strId){
+            (*env)->ReleaseStringUTFChars (env, jid, strId);
+        }
     } else {
-        result = GAPI_RETCODE_ERROR;
+        result = SAJ_RETCODE_BAD_PARAMETER;
     }
 
-    if(strId){
-        (*env)->ReleaseStringUTFChars (env, jid, strId);
-        jniQosProviderCheckError(env, exception);
-    }
-    return (jint)result;
-
-/* Error handling */
-exception:
-    jniQosProviderHandleException(env, SAJ_FUNCTION_STR(jniGetDataWriterQos));
-    result = GAPI_RETCODE_ERROR;
-bad_param:
     return (jint)result;
 }
 
-#undef SAJ_FUNCTION_STR
 #undef SAJ_FUNCTION

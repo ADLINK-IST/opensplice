@@ -1,0 +1,33 @@
+parseconditions:
+    desc: HelloWorld LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: sub_waiting
+          type: line
+          inst: 1
+          required: yes
+          line: "=== [BuiltInTopicsDataSubscriber] * Waiting for historical data ..."
+
+        - name: sub_ready
+          type: line
+          inst: 1
+          required: yes
+          line: "=== [BuiltInTopicsDataSubscriber] Ready ..."
+
+        - name: subnode_started
+          type: line
+          inst: 1
+          required: yes
+          line: "=== [BuiltInTopicsDataSubscriber] Node * started (Total nodes running: 1*"
+
+        - name: subnode_hostname
+          type: line
+          inst: 1
+          required: yes
+          line: "=== [BuiltInTopicsDataSubscriber] Hostname for node * is *."

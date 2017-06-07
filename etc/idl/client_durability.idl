@@ -1,0 +1,447 @@
+#include "dds_dcps_builtintopics.idl"
+
+module DDS {
+
+  /* Indicator of the vendor using the
+   * client-durability protocol */
+  struct VendorId_t {
+    octet vendorId[2];
+  };
+
+  /* Client-side durability protocol versioning */
+  struct DurabilityVersion_t {
+
+    /* Major version */
+    unsigned short major;
+
+    /* Minor version */
+    unsigned short minor;
+
+    /* VendorId */
+    VendorId_t vendorId;
+  };
+
+  /* A name-value pair to be included in types that
+   * are exchanged between client and server to allow
+   * product/vendor-specific extensions.
+   */
+  struct NameValue_t {
+
+    /* The name of the attribute */
+    string name;
+
+    /* The corresponding value of the attribute */
+    sequence<octet> value;
+  };
+
+  /* Unique id for durability clients and servers
+   * in a DDS Domain. The definition does not
+   * match the GUID_t in DDSi because, collection
+   * types cannot be a key in DDS. This structure
+   * is 16-bytes though, so should be able
+   * to map this to GUID_t.
+   */
+  struct Gid_t {
+    long long prefix;
+    long long suffix;
+  };
+
+  /* Unique identification of a client request */
+  struct RequestId_t {
+
+    /* Identifies the client who is issueing the request. */
+    Gid_t clientId;
+
+    /* Identifies the request within a specific client. */
+    unsigned long requestId;
+  };
+
+
+  /* A request to learn about the state of the set of durable
+   * data at the various durability servers in the domain.
+   *
+   * Typically this request will be constructed after a DataReader
+   * is created and a source to obtain historical data needs to be
+   * determined.
+   */
+  struct DurabilityStateRequest {
+
+    /* Protocol version */
+    DurabilityVersion_t version;
+
+    /* Uniquely identifies the request. */
+    RequestId_t requestId;
+
+    /* The name of the involved Topic. */
+    string topic;
+
+    /* The partition expression to be matched. It's the
+     * responsibility of the servers answering this request
+     * to provide information about any partition that matches
+     * this partition expression.
+     */
+    sequence<string> partitions;
+
+    /* Optional list of unique ids of the server that is addressed
+     * with this request if applicable. If an empty sequence is
+     * provided, all servers that receive the request will answer.
+     */
+    sequence<Gid_t> serverIds;
+
+    /* Maximum duration in which the client issuing the request expects to
+     * start receiving an answer.
+     *
+     * This mechanism is meant to allow servers to optimise their DurabilityState
+     * responses by combining requests from multiple clients and send a
+     * combined response.
+     */
+    Duration_t timeout;
+
+    /* Potential (product/vendor-specific) extensions */
+    sequence<NameValue_t> extensions;
+  };//@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+
+/* With KEEP_ALL history, there is no need for a key,
+ * but This key-list allows a server to find out whether a
+ * client is still alive.
+ */
+#pragma keylist DurabilityStateRequest requestId.clientId.prefix requestId.clientId.suffix
+
+  /* The completeness of a given data-set */
+  typedef unsigned short Completeness_t;
+
+  /* The data-set is unknown */
+  const unsigned short COMPLETENESS_UNKNOWN    = 0;
+
+  /* The data-set is not complete */
+  const unsigned short COMPLETENESS_INCOMPLETE = 1;
+
+  /* The data-set is complete */
+  const unsigned short COMPLETENESS_COMPLETE   = 2;
+
+  /* Represents the completeness of a dataset for a
+   * specific partition-topic combination
+   */
+  struct PartitionTopicState_t {
+
+    /* Partition this historical state is about. This is
+     * always an actual partition (never any wildcards)
+     */
+    string partition;
+
+    /* Name of the Topic this historical state is about */
+    string topic;
+
+    /* Completeness of data-set at the server for
+     * the involved partition-topic combination.
+     */
+    Completeness_t completeness;
+
+    /* Potential (product/vendor-specific) extensions */
+    sequence<NameValue_t> extensions;
+  };
+
+  /* Information about the state of the durable  data for
+   * a set of partition-topic combinations at a specific
+   * durability server.
+   *
+   * A durability server is responsible for issuing this
+   * whenever a DurabilityStateRequest is received that
+   * matches the server. Additionally, this information is
+   * published whenever the completeness of the dataset for
+   * any involved partition-topic combination changes. Only
+   * the dataState that changed is published in that case.
+   */
+  struct DurabilityState {
+
+    /* Protocol version */
+    DurabilityVersion_t version;
+
+    /* Id to uniquely identify a durability server. This is
+     * also the key, allowing subscribers to see if server
+     * has disappeared.
+     */
+    Gid_t serverId;
+
+    /* Uniquely identifies the associated request if
+     * there is any.
+     */
+    sequence<RequestId_t> requestIds;
+
+    /* Describes the completeness of (a subset of) the
+     * dataset of a durability server. This does not
+     * necessarily contain information about all
+     * data that is available at the server, just the
+     * information that is required based on the request
+     * or alternatively only the change in the set in case
+     * this information is not issued based on a request.
+     */
+    sequence<PartitionTopicState_t> dataState;
+
+    /* Potential (product/vendor-specific) extensions */
+    sequence<NameValue_t> extensions;
+  };//@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+/* This key-list allows a client to find out whether a
+ * server is still alive.
+ */
+#pragma keylist DurabilityState serverId.prefix serverId.suffix
+
+  typedef unsigned short PayloadSerializationFormat_t;
+
+  /* Encapsulated CDR serialization format */
+  const unsigned short PAYLOAD_SERIALIZATION_FORMAT_CDR_ANY  = 0;  /* Native server format (either big endian or little endian) */
+  const unsigned short PAYLOAD_SERIALIZATION_FORMAT_CDR_BE   = 1;  /* Big endian */
+  const unsigned short PAYLOAD_SERIALIZATION_FORMAT_CDR_LE   = 2;  /* Little endian */
+
+  /* Request for providing historical data for a specific topic,
+   * partition expression and potential other set of
+   * conditions. The request can be addressed to a specific
+   * server or alternatively to any server, allowing servers
+   * among each other to decide on who will serve the request.
+   */
+  struct HistoricalDataRequest {
+
+    /* Protocol version */
+    DurabilityVersion_t version;
+
+    /* Uniquely identifies the request. */
+    RequestId_t requestId;
+
+    /* The name of the involved Topic */
+    string topic;
+
+    /* The partition expression to be matched. It's the
+     * responsibility of the servers answering this request
+     * to provide information about any partition that matches
+     * this partition expression.
+     */
+    sequence<string> partitions;
+
+    /* The serialization format to be used to serialize
+     * payload in HistoricalData.
+     */
+    PayloadSerializationFormat_t serializationFormat;
+
+    /* The QoS of the DataReader that requests historical data. */
+    DataReaderQos dataReaderQos;
+
+    /* Optional indicator to allow asking for data published with a
+     * timestamp that is larger than a given time.
+     * TIME_INVALID must be set in case not applicable.
+     */
+    Time_t startTime;
+
+    /* Optional indicator to allow asking for data published with a
+     * timestamp that is smaller than a given time.
+     * TIME_INVALID must be set in case not applicable. If the
+     * endTime is used and no time alignment is available in the
+     * system, durability servers will use the reception time
+     * of the request as endTime instead.
+     */
+    Time_t endTime;
+
+    /* SQL filter expression to allow providing only historical data
+     * matching the content filter. If an empty string is set, no
+     * filter is applied.
+     */
+    string sqlFilter;
+
+    /* SQL filter expression parameters. This is only applicable if
+     * the sqlFilter attribute is set.
+     */
+    sequence<string> sqlFilterParams;
+
+    /* Parameter to limit the amount of samples to be aligned.
+     * If LENGTH_UNLIMITED is set, no limit is set.
+     */
+    long maxSamples;
+
+    /* Parameter to limit the amount of instances to be aligned.
+     * If LENGTH_UNLIMITED is set, no limit is set.
+     */
+    long maxInstances;
+
+    /* Parameter to limit the amount of samples per instance to be aligned.
+     * If LENGTH_UNLIMITED is set, no limit is set.
+     */
+    long maxSamplesPerInstance;
+
+    /* Potential partitions the client wants to receive historical data,
+     * ordered by preference. If the sequence is empty, historical data
+     * will be provided in the default partition.
+     */
+    sequence<string> alignmentPartition;
+
+    /* Indication which servers need to serve the request.
+     * If no servers are specified, only one server must respond. This can be
+     * used if the client doesn’t care who aligns him or has no knowledge
+     * on which aligners exist. This allows the set of servers to decide
+     * which one(s) of them will take responsibility for (shared) alignment.
+     * In case no server identification is provided, the server(s) that
+     * answer(s) will wait with alignment until the data set is complete.
+     */
+    sequence<Gid_t> serverIds;
+
+    /* Maximum duration in which the client issuing the request expects to
+     * start receiving an answer. In case the addressed server(s) is/are
+     * not able to answer before the reception timestamp plus the specified
+     * time-out, it shall respond with a HistoricalData link message containing
+     * a time-out error only and not send any data.
+     *
+     * This mechanism is meant to ensure that clients are able
+     * to choose a different server or set of servers in case a request has not
+     * been answered within the time-out period, without having to fear that
+     * a timed out request is being answered while another request has already
+     * been sent out.
+     */
+    Duration_t timeout;
+
+    /* Potential (product/vendor-specific) extensions */
+    sequence<NameValue_t> extensions;
+  };//@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+/* This key-list allows a server to find out whether a
+ * client is still alive.
+ */
+#pragma keylist HistoricalDataRequest requestId.clientId.prefix requestId.clientId.suffix
+
+  /* All relevant QoS settings associated with a given Sample.
+   * These need to be stored with the sample as the originating
+   * DataWriter may change its QoS for each sample.
+   */
+  struct MessageQos {
+    ReliabilityQosPolicyKind reliabilityKind;
+    OwnershipQosPolicy ownership;
+    DestinationOrderQosPolicyKind destinationOrderKind;
+    boolean writerLifecycleAutoDisposeUnregisteredInstances;
+    DurabilityQosPolicyKind durabilityKind;
+    PresentationQosPolicy presentation;
+    LatencyBudgetQosPolicy latencyBudget;
+    DeadlineQosPolicy deadline;
+    LivelinessQosPolicy liveliness;
+    LifespanQosPolicy lifespan;
+    TransportPriorityQosPolicy transportPriority;
+  };//@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+
+  /* The type of a historical sample */
+  typedef unsigned short MessageFlag_t;
+
+  /* A regular sample */
+  const unsigned short MESSAGE_FLAG_WRITE         = 0;
+
+  /* A dispose message */
+  const unsigned short  MESSAGE_FLAG_DISPOSE      = 1;
+
+  /* An unregister message */
+  const unsigned short MESSAGE_FLAG_UNREGISTER    = 2;
+
+  /* A write-dispose message */
+  const unsigned short MESSAGE_FLAG_WRITE_DISPOSE = 3;
+
+ /* A registration message */
+  const unsigned short MESSAGE_FLAG_REGISTER      = 4;
+
+  /* One specific historical sample including meta-data */
+  struct HistoricalDataBead_t {
+
+    /* The original DataWriter identification.
+     *
+     * Note:  DDSI specifies a 16-bits GUID, DDS using
+     * a 12-byte BuiltinTopicKey_t. For future compatibility
+     * reasons the writerId is modelled as 16 octets.
+     * In the first version of the client durability protocol
+     * the first 12 bytes correspond to the BuiltinTopicKey_t,
+     * the last 4 bytes are 0.
+     */
+    octet writerId[16];
+
+    /* The original source timestamp. */
+    Time_t sourceTimestamp;
+
+    /* The original sequence number */
+    unsigned long sequenceNumber;
+
+    /* The original QoS. */
+    MessageQos qos;
+
+    /* The original partition expression the sample was published in */
+    sequence<string> partitions;
+
+    /* The type of the sample */
+    MessageFlag_t kind;
+
+    /* The key hash associated with the sample */
+    octet keyHash[16];
+
+    /* The serialization format that is used to serialize
+     * the payload.
+     */
+    PayloadSerializationFormat_t serializationFormat;
+
+    /* The actual data, which may be empty in
+     * case the kind indicates this involves a
+     * dispose or unregister message
+     */
+    sequence<octet> payload;
+  };//@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+
+  /* End-marker for a given set of historical data. */
+  struct HistoricalDataLink_t {
+    /* The number of samples that have been provided. */
+    unsigned long sampleCount;
+
+    /* The completeness of the set that was provided. */
+    Completeness_t completeness;
+
+    /* Optional error code to be set if something went wrong
+     * during the alignment. Is set to 0 in case nothing went
+     * wrong.
+     */
+    unsigned long errorCode;
+  };//@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+
+  /* Discriminator for union to indicate a historical
+   * sample or end marker is set.
+   */
+  typedef unsigned short HistoricalDataKind_t;
+
+  /* Indicates a sample is set */
+  const unsigned short HISTORICAL_DATA_KIND_BEAD = 0;
+
+  /* Indicates an end marker is set */
+  const unsigned short HISTORICAL_DATA_KIND_LINK = 1;
+
+  /* Contains either a historical sample or and end marker */
+  union HistoricalDataContent_t switch (HistoricalDataKind_t) {
+  case HISTORICAL_DATA_KIND_BEAD:
+    HistoricalDataBead_t bead;
+  case HISTORICAL_DATA_KIND_LINK:
+    HistoricalDataLink_t link;
+  };
+
+  /* Represents a historical sample or end marker originating
+   * from a given server.
+   */
+  struct HistoricalData {
+
+    /* Protocol version */
+    DurabilityVersion_t version;
+
+    /* Unique identification of the originating server */
+    Gid_t serverId;
+
+    /* Identifies the requests that are being answered. */
+    sequence<RequestId_t> requestIds;
+
+    /* The content that is aligned; either a sample or
+     * an end marker.
+     */
+    HistoricalDataContent_t content;
+
+    /* Potential (product/vendor-specific) extensions */
+    sequence<NameValue_t> extensions;
+  };//@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+/* This key-list allows a client to find out whether a
+ * server is still alive.
+ */
+#pragma keylist HistoricalData serverId.prefix serverId.suffix
+};

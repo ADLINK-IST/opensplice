@@ -1,0 +1,11 @@
+// -*- MPC -*-
+// $Id:$
+
+project (Build*lib) : build_ospl_dcpsisocpp2 {
+    expand(VERSION) {
+      $PACKAGE_VERSION
+      "Unknown version"
+    }
+
+    macros += OSPL_VERSION=$(VERSION)
+}

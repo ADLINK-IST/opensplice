@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -40,7 +48,7 @@ char* sInstanceState[] =
 
 int getIndex(int i)
 {
-   int j = (int) (log10((float) i) / log10((float) 2));
+   int j = (int)floor((log10((float) i) / log10(2.0)));
    return j;
 }
 
@@ -82,6 +90,7 @@ int OSPL_MAIN (int argc, char *argv[])
    //End initialization.
 
    printf("\n=== [Subscriber] Ready...");
+   fflush(stdout);
 
    msgInfoSeq->_length = 0;
    while ((closed == FALSE) && (nbIter < nbIterMax))
@@ -97,23 +106,26 @@ int OSPL_MAIN (int argc, char *argv[])
             printf("\n WriterStates : %s", msgSeq->_buffer[0].writerStates);
             printf("\n valid_data     : %d", msgInfoSeq->_buffer[0].valid_data);
             printf("\n sample_state:%s-view_state:%s-instance_state:%s\n",
-                               sSampleState[getIndex(msgInfoSeq->_buffer[0].sample_state)],
-                               sViewState[getIndex(msgInfoSeq->_buffer[0].view_state)],
-                               sInstanceState[getIndex(msgInfoSeq->_buffer[0].instance_state)]);
+                sSampleState[getIndex(msgInfoSeq->_buffer[0].sample_state)],
+                sViewState[getIndex(msgInfoSeq->_buffer[0].view_state)],
+                sInstanceState[getIndex(msgInfoSeq->_buffer[0].instance_state)]);
+            fflush(stdout);
          }
-         fflush(stdout);
          closed = strcmp(msgSeq->_buffer[0].writerStates, "STOPPING_SUBSCRIBER") == 0 ? TRUE : FALSE;
          printf("=== closed=%d - nbIter %d\n", closed, nbIter);
          g_status = LifecycleData_MsgDataReader_return_loan(msgDataReader, msgSeq, msgInfoSeq);
          checkStatus(g_status, "LifecycleData_MsgDataReader_return_loan");
-         // Useless to harass the system, so we wait before to retry.
-         os_nanoSleep(os_delay200ms);
-         msgInfoSeq->_length = 0;
          nbIter++;
       }
+      // Useless to stress the system, so we wait before next read
+      os_nanoSleep(os_delay200ms);
    }
    printf("\n=== [Subscriber] stopping after %d iterations ..\n", nbIter);
-   if (nbIter == nbIterMax) printf ("*** Error : max %d iterations reached", nbIterMax);
+   if (nbIter == nbIterMax)
+   {
+       printf ("*** Error : max %d iterations reached", nbIterMax);
+   }
+
    // Cleanup DDS from the created Entities.
    deleteDataReader(msgSubscriber, msgDataReader);
    deleteSubscriber(msgSubscriber);

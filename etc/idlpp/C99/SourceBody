@@ -1,0 +1,32 @@
+DDS_ReturnCode_t
+$(uniquetypename)_type_registration(
+    dds_entity_t pp,
+    void *arg);
+DDS_ReturnCode_t
+$(uniquetypename)_type_registration(
+    dds_entity_t pp,
+    void *arg)
+{
+    DDS_ReturnCode_t result = DDS_RETCODE_OUT_OF_RESOURCES;
+    $(uniquetypename)TypeSupport ts;
+
+    (void)arg;
+
+    ts = $(uniquetypename)TypeSupport__alloc();
+    if (ts) {
+        result = $(uniquetypename)TypeSupport_register_type(ts, pp, "$(scopedtypename)");
+        DDS_free(ts);
+    }
+
+    return result;
+}
+
+int $(uniquetypename)__free(void*);
+
+const dds_topic_descriptor_t $(uniquetypename)_desc = {
+    $(uniquetypename)_type_registration,
+    "$(scopedtypename)",
+    sizeof($(uniquetypename)),
+    $(cleanfunction),
+    NULL
+};

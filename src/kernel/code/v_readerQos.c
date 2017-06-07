@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -17,8 +25,9 @@
 #include "v_policy.h"
 
 #include "os_report.h"
+#include "os_abstract.h"
 
-static const v_qosChangeMask immutableMask = 
+static const v_qosChangeMask immutableMask =
     V_POLICY_BIT_DURABILITY  |
     V_POLICY_BIT_LIVELINESS  |
     V_POLICY_BIT_RELIABILITY |
@@ -36,29 +45,33 @@ static c_bool
 v_readerQosValidValues(
     v_readerQos qos)
 {
-    int valuesOk;
+    c_ulong valuesNok = 0;
 
     /* no typechecking, since qos might be allocated on heap! */
-    valuesOk = 1; 
     if (qos != NULL) {
         /* value checking */
-        valuesOk &= v_durabilityPolicyValid(qos->durability);
-        valuesOk &= v_deadlinePolicyValid(qos->deadline);
-        valuesOk &= v_latencyPolicyValid(qos->latency);
-        valuesOk &= v_livelinessPolicyValid(qos->liveliness);
-        valuesOk &= v_reliabilityPolicyValid(qos->reliability);
-        valuesOk &= v_orderbyPolicyValid(qos->orderby);
-        valuesOk &= v_historyPolicyValid(qos->history);
-        valuesOk &= v_resourcePolicyValid(qos->resource);
-        valuesOk &= v_ownershipPolicyValid(qos->ownership);
-        valuesOk &= v_pacingPolicyValid(qos->pacing);
-        valuesOk &= v_readerLifecyclePolicyValid(qos->lifecycle);
-        valuesOk &= v_readerLifespanPolicyValid(qos->lifespan);
-        valuesOk &= v_userDataPolicyValid(qos->userData);
-        valuesOk &= v_userKeyPolicyValid(qos->userKey);
-        valuesOk &= v_sharePolicyValid(qos->share);
+        valuesNok |= (c_ulong) (!v_durabilityPolicyIValid(qos->durability)) << V_DURABILITYPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_deadlinePolicyIValid(qos->deadline)) << V_DEADLINEPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_latencyPolicyIValid(qos->latency)) << V_LATENCYPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_livelinessPolicyIValid(qos->liveliness)) << V_LIVELINESSPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_reliabilityPolicyIValid(qos->reliability)) << V_RELIABILITYPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_orderbyPolicyIValid(qos->orderby)) << V_ORDERBYPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_historyPolicyIValid(qos->history)) << V_HISTORYPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_resourcePolicyIValid(qos->resource)) << V_RESOURCEPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_ownershipPolicyIValid(qos->ownership)) << V_OWNERSHIPPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_pacingPolicyIValid(qos->pacing)) << V_PACINGPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_readerLifecyclePolicyIValid(qos->lifecycle)) << V_READERLIFECYCLEPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_readerLifespanPolicyIValid(qos->lifespan)) << V_READERLIFESPANPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_userDataPolicyIValid(qos->userData)) << V_USERDATAPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_userKeyPolicyIValid(qos->userKey)) << V_USERKEYPOLICY_ID;
+        valuesNok |= (c_ulong) (!v_sharePolicyIValid(qos->share)) << V_SHAREPOLICY_ID;
     }
-    return (valuesOk?TRUE:FALSE);
+
+    if (valuesNok) {
+        v_policyReportInvalid(valuesNok);
+    }
+
+    return (valuesNok) ? FALSE : TRUE;
 }
 
 static c_bool
@@ -66,23 +79,31 @@ v_readerQosConsistent(
     v_readerQos qos)
 {
     c_bool result;
-    c_equality cmp;
+    os_compare cmp;
 
     result = TRUE;
     if (qos != NULL) {
-        cmp = c_timeCompare(qos->deadline.period, qos->pacing.minSeperation);
-        if (cmp == C_LT) {
+        cmp = os_durationCompare(qos->deadline.v.period, qos->pacing.v.minSeperation);
+        if (cmp == OS_LESS) {
             result = FALSE;
+            OS_REPORT(OS_ERROR, "v_readerQosConsistent", V_RESULT_INCONSISTENT_QOS,
+                "Time-based filter period (%"PA_PRIduration"s) may not exceed deadline period (%"PA_PRIduration"s)",
+                OS_DURATION_PRINT(qos->pacing.v.minSeperation),
+                OS_DURATION_PRINT(qos->deadline.v.period));
         }
-        if ((qos->resource.max_samples_per_instance != V_LENGTH_UNLIMITED) &&
-            (qos->history.kind != V_HISTORY_KEEPALL) &&
-            (qos->history.depth > qos->resource.max_samples_per_instance)) {
+        if ((qos->resource.v.max_samples_per_instance != V_LENGTH_UNLIMITED) &&
+            (qos->history.v.kind != V_HISTORY_KEEPALL) &&
+            (qos->history.v.depth > qos->resource.v.max_samples_per_instance)) {
             result = FALSE;
+            OS_REPORT(OS_ERROR, "v_readerQosConsistent", V_RESULT_INCONSISTENT_QOS,
+                        "History depth (%d) may not exceed max_samples_per_instance resource limit (%d)",
+                        qos->history.v.depth, qos->resource.v.max_samples_per_instance);
         }
     }
 
     return result;
 }
+
 /**************************************************************
  * constructor/destructor
  **************************************************************/
@@ -92,73 +113,87 @@ v_readerQosNew(
     v_readerQos template)
 {
     v_readerQos q;
-    c_type type;
     c_base base;
 
     assert(kernel != NULL);
     assert(C_TYPECHECK(kernel,v_kernel));
 
-    if (v_readerQosValidValues(template) &&
-        v_readerQosConsistent(template)) {
-        base = c_getBase(c_object(kernel));
-        q = v_readerQos(v_qosCreate(kernel,V_READER_QOS));
+    base = c_getBase(c_object(kernel));
+    q = v_readerQos(v_qosCreate(base,V_READER_QOS));
 
-        if (q != NULL) {
-            if (template != NULL) {
-
-                *q = *template;
-                type = c_octet_t(base);
-                q->userData.size = template->userData.size;
-                if (template->userData.size > 0) {
-                    q->userData.value = c_arrayNew(type,template->userData.size);
-                    memcpy(q->userData.value,template->userData.value,template->userData.size);
+    if (q != NULL) {
+        if (template != NULL) {
+            *q = *template;
+            q->userData.v.size = template->userData.v.size;
+            if (template->userData.v.size > 0) {
+                q->userData.v.value = c_arrayNew_s(c_octet_t(base),(c_ulong)template->userData.v.size);
+                if (q->userData.v.value) {
+                    memcpy(q->userData.v.value,template->userData.v.value,(c_ulong)template->userData.v.size);
                 } else {
-                    q->userData.value = NULL;
-                }
-                if (q->share.enable) {
-                    q->share.name = c_stringNew(base,template->share.name);
-                } else {
-                    q->share.name = NULL;
-                }
-                if (q->userKey.enable) {
-                    q->userKey.expression = c_stringNew(base,template->userKey.expression);
-                } else {
-                    q->userKey.expression = NULL;
+                    OS_REPORT(OS_ERROR, "v_readerQosNew", V_RESULT_OUT_OF_MEMORY,
+                              "Failed to allocate user_data policy of datareader QoS.");
+                    c_free(q);
+                    return NULL;
                 }
             } else {
-                q->durability.kind                            = V_DURABILITY_VOLATILE;
-                q->deadline.period                            = C_TIME_INFINITE;
-                q->latency.duration                           = C_TIME_ZERO;
-                q->liveliness.kind                            = V_LIVELINESS_AUTOMATIC;
-                q->liveliness.lease_duration                  = C_TIME_ZERO;
-                q->reliability.kind                           = V_RELIABILITY_BESTEFFORT;
-                q->reliability.max_blocking_time              = C_TIME_ZERO;
-                q->reliability.synchronous                    = FALSE;
-                q->orderby.kind                               = V_ORDERBY_RECEPTIONTIME;
-                q->history.kind                               = V_HISTORY_KEEPLAST;
-                q->history.depth                              = 1;
-                q->resource.max_samples                       = V_LENGTH_UNLIMITED;
-                q->resource.max_instances                     = V_LENGTH_UNLIMITED;
-                q->resource.max_samples_per_instance          = V_LENGTH_UNLIMITED;
-                q->userData.size                              = 0;
-                q->userData.value                             = NULL;
-                q->ownership.kind                             = V_OWNERSHIP_SHARED;
-                q->pacing.minSeperation                       = C_TIME_ZERO;
-                q->lifecycle.autopurge_nowriter_samples_delay = C_TIME_INFINITE;
-                q->lifecycle.autopurge_disposed_samples_delay = C_TIME_INFINITE;
-                q->lifecycle.enable_invalid_samples           = TRUE;
-                q->lifespan.used                              = FALSE;
-                q->lifespan.duration                          = C_TIME_INFINITE;
-                q->share.enable                               = FALSE;
-                q->share.name                                 = NULL;
-                q->userKey.enable                             = FALSE;
-                q->userKey.expression                         = NULL;
+                q->userData.v.value = NULL;
             }
+            if (q->share.v.enable) {
+                q->share.v.name = c_stringNew_s(base,template->share.v.name);
+                if (!q->share.v.name) {
+                    OS_REPORT(OS_ERROR, "v_readerQosNew", V_RESULT_OUT_OF_MEMORY,
+                              "Failed to allocate share policy of datareader QoS.");
+                    c_free(q);
+                    return NULL;
+                }
+            } else {
+                q->share.v.name = NULL;
+            }
+            if (q->userKey.v.enable) {
+                q->userKey.v.expression = c_stringNew_s(base,template->userKey.v.expression);
+                if (!q->userKey.v.expression) {
+                    OS_REPORT(OS_ERROR, "v_readerQosNew", V_RESULT_OUT_OF_MEMORY,
+                              "Failed to allocate user_key policy of datareader QoS.");
+                    c_free(q);
+                    return NULL;
+                }
+            } else {
+                q->userKey.v.expression = NULL;
+            }
+        } else {
+            q->durability.v.kind                            = V_DURABILITY_VOLATILE;
+            q->deadline.v.period                            = OS_DURATION_INFINITE;
+            q->latency.v.duration                           = OS_DURATION_ZERO;
+            q->liveliness.v.kind                            = V_LIVELINESS_AUTOMATIC;
+            q->liveliness.v.lease_duration                  = OS_DURATION_ZERO;
+            q->reliability.v.kind                           = V_RELIABILITY_BESTEFFORT;
+            q->reliability.v.max_blocking_time              = OS_DURATION_ZERO;
+            q->reliability.v.synchronous                    = FALSE;
+            q->orderby.v.kind                               = V_ORDERBY_RECEPTIONTIME;
+            q->history.v.kind                               = V_HISTORY_KEEPLAST;
+            q->history.v.depth                              = 1;
+            q->resource.v.max_samples                       = V_LENGTH_UNLIMITED;
+            q->resource.v.max_instances                     = V_LENGTH_UNLIMITED;
+            q->resource.v.max_samples_per_instance          = V_LENGTH_UNLIMITED;
+            q->userData.v.size                              = 0;
+            q->userData.v.value                             = NULL;
+            q->ownership.v.kind                             = V_OWNERSHIP_SHARED;
+            q->pacing.v.minSeperation                       = OS_DURATION_ZERO;
+            q->lifecycle.v.autopurge_nowriter_samples_delay = OS_DURATION_INFINITE;
+            q->lifecycle.v.autopurge_disposed_samples_delay = OS_DURATION_INFINITE;
+            q->lifecycle.v.autopurge_dispose_all            = FALSE;
+            q->lifecycle.v.enable_invalid_samples           = TRUE;
+            q->lifecycle.v.invalid_sample_visibility        = V_VISIBILITY_MINIMUM_INVALID_SAMPLES;
+            q->lifespan.v.used                              = FALSE;
+            q->lifespan.v.duration                          = OS_DURATION_INFINITE;
+            q->share.v.enable                               = FALSE;
+            q->share.v.name                                 = NULL;
+            q->userKey.v.enable                             = FALSE;
+            q->userKey.v.expression                         = NULL;
         }
     } else {
-        OS_REPORT(OS_ERROR, "v_readerQosNew", 0,
-            "ReaderQos not created: inconsistent qos");
-        q = NULL;
+        OS_REPORT(OS_ERROR, "v_readerQosNew", V_RESULT_OUT_OF_MEMORY,
+                  "Out of resources: allocate memory for Qos value failed");
     }
 
     return q;
@@ -170,11 +205,12 @@ v_readerQosFree(
 {
     c_free(q);
 }
+
 /**************************************************************
  * Protected functions
  **************************************************************/
 v_result
-v_readerQosSet(
+v_readerQosCompare(
     v_readerQos q,
     v_readerQos tmpl,
     c_bool enabled,
@@ -182,14 +218,13 @@ v_readerQosSet(
 {
     v_qosChangeMask cm;
     v_result result;
-    c_type type;
 
     cm = 0;
-    if ((q != NULL) && (tmpl != NULL)) {
+    if ((q != NULL) && (tmpl != NULL) && (changeMask != NULL)) {
         if (v_readerQosValidValues(tmpl)) {
             if (v_readerQosConsistent(tmpl)) {
                 /* built change mask */
-#define _SETMASK_(type,qos,label) if (!v_##type##PolicyEqual(q->qos, tmpl->qos)) { cm |= V_POLICY_BIT_##label; }
+#define _SETMASK_(type,qos,label) if (!v_##type##PolicyIEqual(q->qos, tmpl->qos)) { cm |= V_POLICY_BIT_##label; }
                 _SETMASK_(durability,durability,DURABILITY)
                 _SETMASK_(deadline,deadline,DEADLINE)
                 _SETMASK_(latency,latency,LATENCY)
@@ -208,54 +243,56 @@ v_readerQosSet(
 #undef _SETMASK_
                 /* check whether immutable policies are changed */
                 if (((cm & immutableMask) != 0) && (enabled)) {
+                    v_policyReportImmutable(cm, immutableMask);
                     result = V_RESULT_IMMUTABLE_POLICY;
+                    OS_REPORT(OS_ERROR, "v_readerQosCompare", result,
+                              "Precondition not met: Immutable Qos policy violation");
                 } else {
-                    /* set new policies */
-                    q->durability  = tmpl->durability;
-                    q->deadline    = tmpl->deadline;
-                    q->latency     = tmpl->latency;
-                    q->liveliness  = tmpl->liveliness;
-                    q->reliability = tmpl->reliability;
-                    q->orderby     = tmpl->orderby;
-                    q->history     = tmpl->history;
-                    q->resource    = tmpl->resource;
-                    q->ownership   = tmpl->ownership;
-                    q->pacing      = tmpl->pacing;
-                    q->lifecycle   = tmpl->lifecycle;
-                    q->lifespan    = tmpl->lifespan;
-
-                    /* q->share is immutable,  no copy needed */
-                    /* q->userKey is immutable, no copy needed */ 
-                    
-                    if (cm & V_POLICY_BIT_USERDATA) {
-                        c_free(q->userData.value);
-                        q->userData.size = tmpl->userData.size;
-                        if (tmpl->userData.size > 0) {
-                            type = c_octet_t(c_getBase(c_object(q)));
-                            q->userData.value = c_arrayNew(type,tmpl->userData.size);
-                            memcpy(q->userData.value,tmpl->userData.value,tmpl->userData.size);                
-                        } else {
-                            q->userData.value = NULL;
-                        }
-                    }
+                    *changeMask = cm;
                     result = V_RESULT_OK;
                 }
             } else {
                 result = V_RESULT_INCONSISTENT_QOS;
+                OS_REPORT(OS_ERROR, "v_readerQosCompare", result,
+                          "Precondition not met: Detected Inconsistent Qos policy");
             }
         } else {
             result = V_RESULT_ILL_PARAM;
+            OS_REPORT(OS_ERROR, "v_readerQosCompare", result,
+                      "Bad parameter: Detected Invalid Qos policy");
         }
     } else {
         result = V_RESULT_ILL_PARAM;
-    }
-
-    if (changeMask != NULL) {
-        *changeMask = cm;
+        OS_REPORT(OS_ERROR, "v_readerQosCompare", result,
+                    "Bad parameter: Qos1 = 0x%"PA_PRIxADDR", Qos2 = 0x%"PA_PRIxADDR", changeMask holder = 0x%"PA_PRIxADDR"",
+                    (os_address)q, (os_address)tmpl, (os_address)changeMask);
     }
 
     return result;
 }
+
 /**************************************************************
  * Public functions
  **************************************************************/
+v_result
+v_readerQosCheck(
+    v_readerQos _this)
+{
+    v_result result = V_RESULT_OK;
+
+    if (_this) {
+        if (v_readerQosValidValues(_this)) {
+            if (!v_readerQosConsistent(_this)) {
+                result = V_RESULT_INCONSISTENT_QOS;
+                OS_REPORT(OS_ERROR, "v_readerQosCheck", result,
+                    "ReaderQoS is inconsistent.");
+            }
+        } else {
+            result = V_RESULT_ILL_PARAM;
+            OS_REPORT(OS_ERROR, "v_readerQosCheck", result,
+                "ReaderQoS is invalid.");
+        }
+    }
+
+    return result;
+}

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include <stdio.h>
@@ -133,33 +141,33 @@ extern void define (const char * name, int nargs, unsigned char * repl, int how)
    }
 }
 
-extern void undef (char * name)
+extern void undef (const char * name)
 {
    int h;
-   DEF **D;
+   DEF **dp;
    DEF *d;
-   int rv;
 
    h = hash ((unsigned char *) name);
-   for (D = symtbl + h;*D;D = &(*D)->link)
+
+   dp = symtbl + h;
+   while (*dp != NULL)
    {
-      if (strcmp((*D)->name, name) == 0)
+      if (strcmp ((*dp)->name, name) == 0)
       {
          break;
       }
+      dp = &(*dp)->link;
    }
-   rv = 0;
-   d = *D;
+   d = *dp;
    if (d)
    {
-      *D = d->link;
-      os_free(d->name);
-      os_free((char *)d->repl);
-      OLD(d);
-      n_in_table --;
-      rv = 1;
+      *dp = d->link;
+      os_free (d->name);
+      os_free ((char *)d->repl);
+      OLD (d);
+      n_in_table--;
    }
-   if (strcmp(name, "at_sign_ctrls") == 0)
+   if (strcmp (name, "at_sign_ctrls") == 0)
    {
       extern int do_at_ctrls;
       do_at_ctrls = 0;

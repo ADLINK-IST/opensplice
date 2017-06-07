@@ -1,18 +1,27 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "c_iterator.h"
 #include <ctype.h>
 #include "os_heap.h"
 #include "os_stdlib.h"
+#include "os_errno.h"
 
 #include "idl_tmplExp.h"
 
@@ -39,7 +48,7 @@ idl_macroAttribNew (
     c_char closeToken)
 {
     /* QAC EXPECT 5007; will not use wrapper */
-    idl_macroAttrib macroAttrib = os_malloc ((size_t)C_SIZEOF(idl_macroAttrib));
+    idl_macroAttrib macroAttrib = os_malloc (C_SIZEOF(idl_macroAttrib));
 
     macroAttrib->startToken = startToken;
     macroAttrib->openToken = openToken;
@@ -70,7 +79,7 @@ idl_macroNew (
     const c_char *value)
 {
     /* QAC EXPECT 5007; will not use wrapper */
-    idl_macro macro = os_malloc((size_t)C_SIZEOF(idl_macro));
+    idl_macro macro = os_malloc(C_SIZEOF(idl_macro));
 
     macro->name = os_strdup (name);
     macro->value = os_strdup (value);
@@ -136,7 +145,7 @@ idl_macroSet
 idl_macroSetNew (
     void)
 {
-    idl_macroSet macroSet = os_malloc ((size_t)C_SIZEOF(idl_macroSet));
+    idl_macroSet macroSet = os_malloc (C_SIZEOF(idl_macroSet));
 
     macroSet->macroSet = c_iterNew (0);
     return macroSet;
@@ -208,8 +217,8 @@ idl_macroSetGet (
  ****************************************************************/
 C_STRUCT(idl_stream) {
     c_char	*stream;
-    c_long	length;
-    c_long	curpos;
+    os_size_t	length;
+    os_size_t	curpos;
 };
 
 idl_stream
@@ -248,7 +257,7 @@ idl_streamCurGet (
     return &stream->stream[stream->curpos];
 }
 
-c_long
+os_size_t
 idl_streamLength (
     const idl_stream stream)
 {
@@ -269,7 +278,7 @@ idl_streamInNew (
     const c_char *stream_val,
     const idl_macroAttrib macroAttrib)
 {
-    idl_streamIn	stream = os_malloc ((size_t)C_SIZEOF(idl_streamIn));
+    idl_streamIn	stream = os_malloc (C_SIZEOF(idl_streamIn));
 
     assert (stream_val);
     assert (macroAttrib);
@@ -301,19 +310,14 @@ c_char
 idl_streamInRel (
     /* QAC EXPECT 3673; Can not be solved here */
     const idl_streamIn stream,
-    c_long offset)
+    os_size_t offset)
 {
-    c_long abspos;
     idl_stream str = idl_stream(stream);
-
-    abspos = str->curpos + offset;
-    if (abspos >= str->length) {
-        abspos = str->length -1;
+    if (str->length - str->curpos > offset) {
+        return str->stream[str->curpos + offset];
+    } else {
+        return 0;
     }
-    if (abspos < 0) {
-        abspos = 0;
-    }
-    return str->stream[abspos];
 }
 
 void
@@ -346,14 +350,14 @@ idl_streamInWindCur (
  ****************************************************************/
 C_STRUCT(idl_streamOut) {
     C_EXTENDS(idl_stream);
-    c_long max_length;
+    os_size_t max_length;
 };
 
 idl_streamOut
 idl_streamOutNew (
-    c_long max_length)
+    os_size_t max_length)
 {
-    idl_streamOut stream = os_malloc ((size_t)C_SIZEOF(idl_streamOut));
+    idl_streamOut stream = os_malloc (C_SIZEOF(idl_streamOut));
 
     idl_streamInit (idl_stream(stream), "");
     stream->max_length = max_length;
@@ -369,7 +373,7 @@ idl_streamOutFree (
     os_free (stream);
 }
 
-c_long
+os_size_t
 idl_streamOutPut (
     /* QAC EXPECT 3673; Can not be solved here */
     const idl_streamOut stream,
@@ -445,7 +449,7 @@ idl_dirOutNew(
                     os_mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
                     status = os_stat(dirName, &statBuf);
                 }
-                if (!OS_ISDIR (statBuf.stat_mode)) {
+                if (status != os_resultSuccess || !OS_ISDIR (statBuf.stat_mode)) {
 #ifdef WIN32
                     if ((strlen(dirName) == 2) && (dirName[1] == ':')) {
                         /*This is a device like for instance: 'C:'*/
@@ -473,7 +477,7 @@ idl_dirOutNew(
                 }
                 idl_outputdir = os_strdup(name);
 
-                if (!OS_ISDIR (statBuf.stat_mode)) {
+                if (status != os_resultSuccess || !OS_ISDIR (statBuf.stat_mode)) {
 #ifdef WIN32
                     if ((strlen(dirName) == 2) && (dirName[1] == ':')) {
                         /*This is a device like for instance: 'C:'. Check if it exists...*/
@@ -543,7 +547,7 @@ idl_fileOutNew (
     const c_char *name,
     const c_char *mode)
 {
-    idl_fileOut stream = os_malloc ((size_t)C_SIZEOF(idl_fileOut));
+    idl_fileOut stream = os_malloc (C_SIZEOF(idl_fileOut));
     c_char *fname;
 
     if(idl_outputdir){
@@ -571,6 +575,17 @@ idl_fileOutFree (
     fclose (stream->file);
     /* QAC EXPECT 5007; will not use wrapper */
     os_free (stream);
+}
+
+/* NOTE: this function calls exit */
+void
+idl_fileOpenError(
+    const c_char *name)
+{
+    os_int err;
+    err = os_getErrno ();
+    printf ("Error opening file %s for writing. Reason: %s (%d)\n", name, os_strError ( err ), err);
+    exit (-1);
 }
 
 c_long
@@ -669,7 +684,7 @@ idl_tmplExp
 idl_tmplExpNew (
     const idl_macroSet macroSet)
 {
-    idl_tmplExp tmplExp = os_malloc ((size_t)C_SIZEOF(idl_tmplExp));
+    idl_tmplExp tmplExp = os_malloc (C_SIZEOF(idl_tmplExp));
 
     tmplExp->macroSet = macroSet;
     return tmplExp;
@@ -830,6 +845,9 @@ idl_tmplExpGetMacroDoubleArg (
     idl_streamOut arg1Stream;
     idl_streamOut arg2Stream;
     int return_val;
+    OS_UNUSED_ARG(arg2);
+
+    OS_UNUSED_ARG(arg2);
 
     arg1Stream = idl_streamOutNew (0);
     /* QAC EXPECT 3416; No unexpected side effect here */
@@ -1011,7 +1029,7 @@ idl_tmplExpProcessMacro (
         if (idl_tmplExpGetMacroSingleArg (tmplExp, si, string)) {
             /* QAC EXPECT 3416; No unexpected side effect here */
             for (ni = 0; ni < strlen(string); ni++) {
-                string[ni] = toupper (string[ni]);
+                string[ni] = (c_char) toupper (string[ni]);
             }
             idl_tmplExpInsertText (so, string);
         } else {
@@ -1154,7 +1172,7 @@ idl_tmplExpProcessMacro (
         case 2:
             sscanf (mul1, "%d", &value1);
             sscanf (mul2, "%d", &value2);
-            snprintf (res, (size_t)sizeof(res), "%d", value1 * value2);
+            snprintf (res, sizeof(res), "%d", value1 * value2);
             idl_tmplExpInsertText (so, res);
         break;
         default:
@@ -1188,7 +1206,7 @@ idl_tmplExpProcessMacro (
             sscanf (div1, "%d", &value1);
             sscanf (div2, "%d", &value2);
             if (value2 != 0) {
-                snprintf (res, (size_t)sizeof(res), "%d", value1 / value2);
+                snprintf (res, sizeof(res), "%d", value1 / value2);
                 idl_tmplExpInsertText (so, res);
             } else {
                 fprintf (stderr, "div: Divide by zero exception\n");
@@ -1224,7 +1242,7 @@ idl_tmplExpProcessMacro (
         case 2:
             sscanf (add1, "%d", &value1);
             sscanf (add2, "%d", &value2);
-            snprintf (res, (size_t)sizeof(res), "%d", value1 + value2);
+            snprintf (res, sizeof(res), "%d", value1 + value2);
             idl_tmplExpInsertText (so, res);
         break;
         default:
@@ -1257,7 +1275,7 @@ idl_tmplExpProcessMacro (
         case 2:
             sscanf (sub1, "%d", &value1);
             sscanf (sub2, "%d", &value2);
-            snprintf (res, (size_t)sizeof(res), "%d", value1 - value2);
+            snprintf (res, sizeof(res), "%d", value1 - value2);
             idl_tmplExpInsertText (so, res);
         break;
         default:
@@ -1278,7 +1296,7 @@ idl_tmplExpProcessMacro (
 	/* QAC EXPECT 3416; No unexpected side effect here */
         if (idl_tmplExpGetMacroSingleArg (tmplExp, si, macro_name)) {
             sscanf (idl_tmplExpMacroValue(tmplExp, macro_name), "%d", &val);
-            snprintf (res, (size_t)sizeof(res), "%d", val+1);
+            snprintf (res, sizeof(res), "%d", val+1);
             idl_tmplExpInsertText (so, res);
             macro = idl_macroNew (macro_name, res);
             idl_macroSetAdd (tmplExp->macroSet, macro);
@@ -1301,7 +1319,7 @@ idl_tmplExpProcessMacro (
 	/* QAC EXPECT 3416; No unexpected side effect here */
         if (idl_tmplExpGetMacroSingleArg (tmplExp, si, macro_name)) {
             sscanf (idl_tmplExpMacroValue(tmplExp, macro_name), "%d", &val);
-            snprintf (res, (size_t)sizeof(res), "%d", val-1);
+            snprintf (res, sizeof(res), "%d", val-1);
             idl_tmplExpInsertText (so, res);
             macro = idl_macroNew (macro_name, res);
             idl_macroSetAdd (tmplExp->macroSet, macro);
@@ -1324,7 +1342,7 @@ idl_tmplExpProcessMacro (
 /* QAC EXPECT 3416; No unexpected side effect here */
         if (idl_tmplExpGetMacroSingleArg (tmplExp, si, arg)) {
             sscanf (arg, "%d", &val);
-            snprintf (res, (size_t)sizeof(res), "%x", val);
+            snprintf (res, sizeof(res), "%x", val);
             idl_tmplExpInsertText (so, res);
         } else {
             fprintf (stderr, "hex: Incomplete function 'hex' missing '%c'\n",
@@ -1345,7 +1363,7 @@ idl_tmplExpProcessMacro (
 	/* QAC EXPECT 3416; No unexpected side effect here */
         if (idl_tmplExpGetMacroSingleArg (tmplExp, si, arg)) {
             sscanf (arg, "%d", &val);
-            snprintf (res, (size_t)sizeof(res), "%o", val);
+            snprintf (res, sizeof(res), "%o", val);
             idl_tmplExpInsertText (so, res);
         } else {
             fprintf (stderr, "oct: Incomplete function 'oct' missing '%c'\n",
@@ -1375,7 +1393,7 @@ idl_tmplExpProcessTmpl (
         if ((int)idl_streamInCur(si) == (int)si->macroAttrib->startToken) {
             so = idl_streamOutNew (0);
             processResult = idl_tmplExpProcessMacro (tmplExp, si, so);
-            idl_fileOutPrintf (fo, idl_streamGet (idl_stream(so)));
+            idl_fileOutPrintf (fo, "%s", idl_streamGet (idl_stream(so)));
             idl_streamOutFree (so);
         } else {
             idl_fileOutPut(fo, idl_streamInCur(si));

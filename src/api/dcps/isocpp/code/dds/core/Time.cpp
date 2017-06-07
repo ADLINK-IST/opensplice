@@ -1,12 +1,20 @@
 /*
 *                         OpenSplice DDS
 *
-*   This software and documentation are Copyright 2006 to 2012 PrismTech
-*   Limited and its licensees. All rights reserved. See file:
-*
-*                     $OSPL_HOME/LICENSE
-*
-*   for full copyright notice and license terms.
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
 *
 */
 
@@ -95,49 +103,44 @@ const dds::core::Time dds::core::Time::from_secs(double seconds)
 int dds::core::Time::compare(const Time& that) const
 {
     int ret;
-
-    if(sec_ >= that.sec_ && (sec_ > that.sec_ || nsec_ > that.nsec_))
-    {
+    if(*this > that) {
         ret = 1;
-    }
-    else if(sec_ <= that.sec_ && (sec_ < that.sec_ || nsec_ < that.nsec_))
-    {
+    } else if(*this < that) {
         ret = -1;
-    }
-    else
-    {
+    } else {
         ret = 0;
     }
-
     return ret;
 }
 
 bool
 dds::core::Time::operator >(const Time& that) const
 {
-    return sec_ >= that.sec_ && (sec_ > that.sec_ || nsec_ > that.nsec_);
+    return (sec_ > that.sec_) || ((sec_ == that.sec_) && (nsec_ > that.nsec_));
 }
 
 bool
 dds::core::Time::operator >=(const Time& that) const
 {
-    return sec_ >= that.sec_ && nsec_ >= that.nsec_;
+    return (*this > that) || (*this == that);
 }
 
 bool
 dds::core::Time::operator ==(const Time& that) const
 {
-    return sec_ == that.sec_ && nsec_ == that.nsec_;
+    return (sec_ == that.sec_) && (nsec_ == that.nsec_);
 }
+
 bool
 dds::core::Time::operator <=(const Time& that) const
 {
-    return sec_ <= that.sec_ && nsec_ <= that.nsec_;
+    return (*this < that) || (*this == that);
 }
+
 bool
 dds::core::Time::operator <(const Time& that) const
 {
-    return sec_ <= that.sec_ && (sec_ < that.sec_ || nsec_ < that.nsec_);
+    return (sec_ < that.sec_) || ((sec_ == that.sec_) && (nsec_ < that.nsec_));
 }
 
 dds::core::Time& dds::core::Time::operator+=(const Duration& a_ti)

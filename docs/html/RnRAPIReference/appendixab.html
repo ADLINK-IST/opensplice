@@ -1,0 +1,450 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Appendix A &mdash; Vortex OpenSplice Record and Replay API Reference</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Vortex OpenSplice Record and Replay API Reference" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="appendix-a">
+<span id="id1"></span><h1>Appendix A<a class="headerlink" href="#appendix-a" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="rnr-topic-api-idl-specification">
+<span id="id2"></span><h2>RnR Topic API IDL specification<a class="headerlink" href="#rnr-topic-api-idl-specification" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-idl"><div class="highlight"><pre><span class="o">/*</span> Record &amp; Replay data model
+ <span class="o">*</span>
+ <span class="o">*</span> This IDL file contains the R&amp;R data model. The file is divided in two sections<span class="o">:</span> helper types <span class="k">and</span>
+ <span class="o">*</span> topics that use these types.
+ <span class="o">*/</span>
+
+<span class="o">#</span>include &quot;dds_dcps.idl&quot;
+
+module RnR {
+    <span class="o">/************************</span> TYPES <span class="o">************************/</span>
+
+    <span class="o">/*</span> ValueKind is the discriminator <span class="k">of</span> the &#39;value&#39; union <span class="k">of</span> a KeyValue <span class="o">*/</span>
+    enum ValueKind {
+        VALUEKIND_STRING,
+        VALUEKIND_LONG,
+        VALUEKIND_FLOAT,
+        VALUEKIND_BOOLEAN,
+        VALUEKIND_TIME
+    };
+
+    <span class="o">/*</span> ConditionKind the discriminator <span class="k">of</span> the &#39;Condition&#39; union type <span class="o">*/</span>
+    enum ConditionKind {
+        COND_REL_TIME,
+        COND_ABS_TIME,
+        COND_DATA,
+        COND_LIFECYCLE
+    };
+
+    <span class="o">/*</span> CommandKind is the discriminator <span class="k">of</span> the &#39;kind&#39; union <span class="k">of</span> a Command <span class="o">*/</span>
+    enum CommandKind {
+        ADD_RECORD_COMMAND,
+        REMOVE_RECORD_COMMAND,
+        ADD_REPLAY_COMMAND,
+        REMOVE_REPLAY_COMMAND,
+        START_SCENARIO_COMMAND,
+        STOP_SCENARIO_COMMAND,
+        SUSPEND_SCENARIO_COMMAND,
+        CONFIG_COMMAND,
+        SETREPLAYSPEED_COMMAND,
+        TRUNCATE_COMMAND,
+        GENERIC_COMMAND
+    };
+
+    <span class="o">/*</span> ServiceState contains the possible states <span class="k">of</span> an R&amp;R service <span class="o">*/</span>
+    enum ServiceState {
+        SERVICE_INITIALISING,    <span class="o">/*</span> Service is starting <span class="o">*/</span>
+        SERVICE_OPERATIONAL,     <span class="o">/*</span> Builtin<span class="o">-</span>scenario is started, service is able to receive commands <span class="o">*/</span>
+        SERVICE_TERMINATING,     <span class="o">/*</span> Service is stopping all scenarios <span class="k">and</span> shutting down <span class="o">*/</span>
+        SERVICE_TERMINATED       <span class="o">/*</span> Service is terminated <span class="o">*/</span>
+    };
+
+    <span class="o">/*</span> ScenarioState contains the possible states <span class="k">of</span> a R&amp;R scenario <span class="o">*/</span>
+    enum ScenarioState {
+        SCENARIO_RUNNING,        <span class="o">/*</span> Scenario is active <span class="k">and</span> able to receive <span class="k">and</span> process commands <span class="o">*/</span>
+        SCENARIO_STOPPED,        <span class="o">/*</span> Scenario is stopped <span class="k">and</span> unable to receive commands <span class="o">*/</span>
+        SCENARIO_SUSPENDED       <span class="o">/*</span> Scenario is suspended <span class="k">and</span> will resume processing commands when scenario is (re)started <span class="k">or</span> continued <span class="o">*/</span>
+    };
+
+    <span class="o">/*</span> StorageState contains the possible states <span class="k">of</span> a R&amp;R storage <span class="o">*/</span>
+    enum StorageState {
+        STORAGE_READY,           <span class="o">/*</span> Defined, but <span class="k">not</span> opened yet. <span class="o">*/</span>
+        STORAGE_OPEN,            <span class="o">/*</span> Storage successfully opened <span class="o">*/</span>
+        STORAGE_ERROR,           <span class="o">/*</span> An unrecoverable error has occurred in the storage <span class="o">*/</span>
+        STORAGE_OUTOFRESOURCES,  <span class="o">/*</span> Storage is out<span class="o">-</span><span class="k">of</span><span class="o">-</span>resources <span class="o">*/</span>
+        STORAGE_CLOSED           <span class="o">/*</span> Storage has been closed <span class="o">*/</span>
+    };
+
+    <span class="o">/*</span> Condition is a union, used to express conditions in the Command topic <span class="o">*/</span>
+    union Condition <span class="k">switch</span> (ConditionKind) {
+        <span class="k">case</span> COND_REL_TIME<span class="o">:</span>             <span class="o">/*</span> Relative time since previous command, <span class="o">*/</span>
+            DDS<span class="o">::</span>Duration_t relTime;    <span class="o">/*</span> i.e. the time that has passed since the previous command was processed <span class="o">*/</span>
+        <span class="k">case</span> COND_ABS_TIME<span class="o">:</span>             <span class="o">/*</span> Absolute (wall) time, <span class="o">*/</span>
+            DDS<span class="o">::</span>Time_t absTime;        <span class="o">/*</span> i.e. a fixed point in time <span class="o">*/</span>
+        <span class="k">case</span> COND_DATA<span class="o">:</span>                 <span class="o">/*</span> Content<span class="o">-</span>expression on data samples <span class="o">*/</span>
+            <span class="nb">string</span> dataExpr;            <span class="o">/*</span> i.e. a specific sample matching the expression, was published in the DDS domain <span class="o">*/</span>
+        <span class="k">case</span> COND_LIFECYCLE<span class="o">:</span>            <span class="o">/*</span> Content<span class="o">-</span>expression on data lifecycle, <span class="o">*/</span>
+            <span class="nb">string</span> lifecycleExpr;       <span class="o">/*</span> i.e. a specific instance transitions from alive to <span class="k">not</span> alive <span class="o">*/</span>
+    };
+
+    union Value <span class="k">switch</span>(ValueKind) {
+        <span class="k">case</span> VALUEKIND_STRING<span class="o">:</span>       <span class="o">/*</span> Value is a <span class="nb">string</span> <span class="o">*/</span>
+            <span class="nb">string</span> sValue;
+        <span class="k">case</span> VALUEKIND_LONG<span class="o">:</span>         <span class="o">/*</span> Value is a <span class="nb">long</span> number <span class="o">*/</span>
+            <span class="nb">long</span> lValue;
+        <span class="k">case</span> VALUEKIND_FLOAT<span class="o">:</span>        <span class="o">/*</span> Value is a floating<span class="o">-</span>point number <span class="o">*/</span>
+            <span class="nb">float</span> fValue;
+        <span class="k">case</span> VALUEKIND_BOOLEAN<span class="o">:</span>      <span class="o">/*</span> Value is a boolean <span class="o">*/</span>
+            boolean bValue;
+        <span class="k">case</span> VALUEKIND_TIME<span class="o">:</span>         <span class="o">/*</span> Value is a timestamp <span class="o">*/</span>
+            DDS<span class="o">::</span>Time_t tValue;
+    };
+
+    <span class="o">/*</span> Generic key<span class="o">:</span>value type, <span class="nb">where</span> value is an union supporting various kinds <span class="k">of</span> values <span class="o">*/</span>
+    struct KeyValue {
+        <span class="nb">string</span> keyval;                   <span class="o">/*</span> <span class="nb">String</span> key <span class="o">*/</span>
+        Value value;
+    };
+
+    <span class="o">/*</span> Used <span class="k">for</span> specifying a range <span class="k">of</span> times <span class="o">*/</span>
+    <span class="o">/*</span> <span class="k">For</span> every valid TimeRange &#39;start&#39; <span class="o">&lt;=</span> &#39;<span class="k">end</span>&#39; should hold <span class="o">*/</span>
+    struct TimeRange {
+        <span class="o">/*</span> Absolute time (inclusive) indicating the start <span class="k">of</span> the range. When
+         <span class="o">*</span> start.sec <span class="o">==</span> TIME_INVALID_SEC <span class="k">and</span> start.nanosec <span class="o">==</span> TIME_INVALID_NSEC,
+         <span class="o">*</span> start is considered to be smaller than all times it is compared to
+         <span class="o">*</span> (i.e., start is interpreted as <span class="o">-</span>INFINITY). <span class="o">*/</span>
+        DDS<span class="o">::</span>Time_t start;
+        <span class="o">/*</span> Absolute time (inclusive) indicating the <span class="k">end</span> <span class="k">of</span> the range. When
+         <span class="o">*</span> <span class="k">end</span>.sec <span class="o">==</span> TIME_INVALID_SEC <span class="k">and</span> <span class="k">end</span>.nanosec <span class="o">==</span> TIME_INVALID_NSEC,
+         <span class="o">*</span> <span class="k">end</span> is considered to be greater than all times it is compared to
+         <span class="o">*</span> (i.e., <span class="k">end</span> is interpreted as <span class="o">+</span>INFINITY). <span class="o">*/</span>
+        DDS<span class="o">::</span>Time_t <span class="k">end</span>;
+    };
+
+    <span class="o">/*</span> Command<span class="o">-</span>type to add record<span class="o">-</span>interest to a storage <span class="o">*/</span>
+    struct AddRecordCommand {
+        <span class="nb">string</span> storage;                         <span class="o">/*</span> Name identifying a storage to record to <span class="o">*/</span>
+
+        <span class="o">/*</span> Meta<span class="o">-</span>filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> interestExpr;          <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to record <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> blacklistExpr;         <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to block from record <span class="o">*/</span>
+
+        <span class="o">/*</span> Content filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> filterExpr;            <span class="o">/*</span> Sequence <span class="k">of</span> content<span class="o">-</span>filter<span class="o">-</span>expressions <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> excludedAttributeExpr; <span class="o">/*</span> Sequence <span class="k">of</span> expressions to exclude specific members <span class="k">of</span> topics <span class="o">*/</span>
+    };
+
+    <span class="o">/*</span> Command<span class="o">-</span>type to remove record<span class="o">-</span>interest from a storage <span class="o">*/</span>
+    struct RemoveRecordCommand {
+        <span class="nb">string</span> storage;                         <span class="o">/*</span> Name identifying a storage to <span class="nb">stop</span> recording to <span class="o">*/</span>
+
+        <span class="o">/*</span> Meta<span class="o">-</span>filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> interestExpr;          <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to <span class="nb">stop</span> recording <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> blacklistExpr;         <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to <span class="nb">stop</span> blocking from record <span class="o">*/</span>
+
+        <span class="o">/*</span> Content filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> filterExpr;            <span class="o">/*</span> Sequence <span class="k">of</span> content<span class="o">-</span>filter<span class="o">-</span>expressions <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> excludedAttributeExpr; <span class="o">/*</span> Sequence <span class="k">of</span> expressions to exclude specific members <span class="k">of</span> topics <span class="o">*/</span>
+    };
+
+    <span class="o">/*</span> Command<span class="o">-</span>type to add replay<span class="o">-</span>interest to a storage <span class="o">*/</span>
+    struct AddReplayCommand {
+        <span class="nb">string</span> storage;                         <span class="o">/*</span> Name identifying a storage to replay from <span class="o">*/</span>
+
+        <span class="o">/*</span> Meta<span class="o">-</span>filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> interestExpr;          <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to replay <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> blacklistExpr;         <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to block from replay <span class="o">*/</span>
+        sequence<span class="o">&lt;</span>TimeRange<span class="o">&gt;</span> timeExpr;           <span class="o">/*</span> Sequence <span class="k">of</span> time<span class="o">-</span>ranges to replay. When <span class="nb">empty</span> no filtering on time is done <span class="o">*/</span>
+
+        <span class="o">/*</span> Content filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> filterExpr;            <span class="o">/*</span> Sequence <span class="k">of</span> content<span class="o">-</span>filter<span class="o">-</span>expressions <span class="o">*/</span>
+
+        <span class="o">/*</span> Resource limits <span class="o">*/</span>
+        boolean useOriginalTimestamps;          <span class="o">/*</span> <span class="k">If</span> true, replay with original timestamps. <span class="k">If</span> false use current time <span class="o">*/</span>
+
+        <span class="o">/*</span> <span class="k">If</span> TRUE, fast<span class="o">-</span>forward to first matching sample. <span class="k">If</span> FALSE, a delay will be introduced before the sample is inserted,
+         <span class="o">*</span> to resemble timing behaviour <span class="k">of</span> the recording <span class="o">*/</span>
+        boolean skipToFirstSample;
+    };
+
+    <span class="o">/*</span> Command<span class="o">-</span>type to remove replay<span class="o">-</span>interest from a storage <span class="o">*/</span>
+    struct RemoveReplayCommand {
+        <span class="nb">string</span> storage;                         <span class="o">/*</span> Name identifying a storage to <span class="nb">stop</span> replaying from <span class="o">*/</span>
+
+        <span class="o">/*</span> Meta<span class="o">-</span>filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> interestExpr;          <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to <span class="nb">stop</span> replaying <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> blacklistExpr;         <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to <span class="nb">stop</span> blocking from replay <span class="o">*/</span>
+        sequence<span class="o">&lt;</span>TimeRange<span class="o">&gt;</span> timeExpr;           <span class="o">/*</span> Sequence <span class="k">of</span> time<span class="o">-</span>ranges to <span class="nb">stop</span> replaying <span class="o">*/</span>
+
+        <span class="o">/*</span> Content filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> filterExpr;            <span class="o">/*</span> Sequence <span class="k">of</span> content<span class="o">-</span>filter<span class="o">-</span>expressions <span class="o">*/</span>
+    };
+
+    <span class="o">/*</span> Command<span class="o">-</span>type to set the replay<span class="o">-</span>speed <span class="k">of</span> a storage <span class="o">*/</span>
+    struct SetReplaySpeedCommand {
+        <span class="nb">string</span> storage;                         <span class="o">/*</span> Name identifying a storage to replay from <span class="o">*/</span>
+        <span class="nb">float</span> speed;                            <span class="o">/*</span> Replay speed factor <span class="o">*/</span>
+    };
+
+    <span class="o">/*</span> Container type <span class="k">of</span> the per<span class="o">-</span>topic storage statistics <span class="o">*/</span>
+    struct TopicStatistics {
+        <span class="nb">string</span> name;                            <span class="o">/*</span> partition.topic name <span class="o">*/</span>
+        <span class="nb">long</span> numberOfSamplesRecorded;           <span class="o">/*</span> <span class="nb">Total</span> number <span class="k">of</span> samples recorded <span class="o">*/</span>
+        <span class="nb">long</span> numberOfBytesRecorded;             <span class="o">/*</span> <span class="nb">Total</span> number <span class="k">of</span> bytes recorded <span class="o">*/</span>
+        <span class="nb">long</span> recordRateMinimum;                 <span class="o">/*</span> Record rates (per publication period) <span class="o">*/</span>
+        <span class="nb">long</span> recordRateAverage;
+        <span class="nb">long</span> recordRateMaximum;
+        <span class="nb">long</span> numberOfSamplesReplayed;           <span class="o">/*</span> <span class="nb">Total</span> number <span class="k">of</span> samples replayed <span class="o">*/</span>
+        <span class="nb">long</span> numberOfBytesReplayed;             <span class="o">/*</span> <span class="nb">Total</span> number <span class="k">of</span> bytes replayed <span class="o">*/</span>
+        <span class="nb">long</span> replayRateMinimum;                 <span class="o">/*</span> Replay rates (per publication period) <span class="o">*/</span>
+        <span class="nb">long</span> replayRateAverage;
+        <span class="nb">long</span> replayRateMaximum;
+    };
+
+    union Kind <span class="k">switch</span>(CommandKind) {
+        <span class="k">case</span> ADD_RECORD_COMMAND<span class="o">:</span>                <span class="o">/*</span> Record command <span class="o">*/</span>
+            AddRecordCommand addRecord;
+        <span class="k">case</span> REMOVE_RECORD_COMMAND<span class="o">:</span>
+            RemoveRecordCommand removeRecord;
+        <span class="k">case</span> ADD_REPLAY_COMMAND<span class="o">:</span>                <span class="o">/*</span> Replay command <span class="o">*/</span>
+            AddReplayCommand addReplay;
+        <span class="k">case</span> REMOVE_REPLAY_COMMAND<span class="o">:</span>
+            RemoveReplayCommand removeReplay;
+        <span class="k">case</span> CONFIG_COMMAND<span class="o">:</span>                    <span class="o">/*</span> Config command <span class="o">*/</span>
+            sequence<span class="o">&lt;</span>KeyValue<span class="o">&gt;</span> config;
+        <span class="k">case</span> START_SCENARIO_COMMAND<span class="o">:</span>            <span class="o">/*</span> Scenario<span class="o">-</span>control commands <span class="o">*/</span>
+        <span class="k">case</span> STOP_SCENARIO_COMMAND<span class="o">:</span>
+        <span class="k">case</span> SUSPEND_SCENARIO_COMMAND<span class="o">:</span>
+            <span class="nb">string</span> name;
+        <span class="k">case</span> SETREPLAYSPEED_COMMAND<span class="o">:</span>            <span class="o">/*</span> Storage replay<span class="o">-</span>speed command <span class="o">*/</span>
+            SetReplaySpeedCommand setreplayspeed;
+        <span class="k">case</span> TRUNCATE_COMMAND<span class="o">:</span>                  <span class="o">/*</span> Storage truncate command <span class="o">*/</span>
+            <span class="nb">string</span> storage;
+        <span class="k">case</span> GENERIC_COMMAND<span class="o">:</span>                   <span class="o">/*</span> <span class="k">For</span> future extensibility <span class="o">*/</span>
+            sequence<span class="o">&lt;</span>KeyValue<span class="o">&gt;</span> extCommands;
+    };
+
+    <span class="o">/************************</span> TOPICS <span class="o">************************/</span>
+
+    <span class="o">/*</span> Topic used to control an R&amp;R service <span class="o">*/</span>
+    struct Command {
+        <span class="nb">string</span> scenarioName;        <span class="o">/*</span> Name identifying the scenario to which this command belongs <span class="o">*/</span>
+        <span class="nb">string</span> rnrId;               <span class="o">/*</span> Name identifying the service, <span class="k">or</span> &#39;<span class="o">*</span>&#39; to address all services <span class="o">*/</span>
+        Kind kind;
+        sequence<span class="o">&lt;</span>Condition<span class="o">&gt;</span> conditions; <span class="o">/*</span> Sequence <span class="k">of</span> conditions which must all be true before the command is executed <span class="o">*/</span>
+    };
+<span class="o">#</span>pragma keylist Command scenarioName
+
+    <span class="o">/*</span> Topic used to monitor the status <span class="k">of</span> an R&amp;R service <span class="o">*/</span>
+    struct ServiceStatus {
+        <span class="nb">string</span> rnrId;               <span class="o">/*</span> Name identifying the service <span class="o">*/</span>
+        ServiceState state;         <span class="o">/*</span> Current state <span class="k">of</span> the service <span class="o">*/</span>
+    };
+<span class="o">#</span>pragma keylist ServiceStatus rnrId
+
+    <span class="o">/*</span> Topic used to monitor the status <span class="k">of</span> an R&amp;R scenario <span class="o">*/</span>
+    struct ScenarioStatus {
+        <span class="nb">string</span> rnrId;               <span class="o">/*</span> Name identifying the service <span class="o">*/</span>
+        <span class="nb">string</span> scenarioName;        <span class="o">/*</span> Name identifying the scenario <span class="o">*/</span>
+        ScenarioState state;        <span class="o">/*</span> Current state <span class="k">of</span> the scenario <span class="o">*/</span>
+    };
+<span class="o">#</span>pragma keylist ScenarioStatus scenarioName rnrId
+
+    <span class="o">/*</span> Topic used to monitor the status <span class="k">of</span> a storage controlled by an R&amp;R service <span class="o">*/</span>
+    struct StorageStatus {
+        <span class="nb">string</span> rnrId;               <span class="o">/*</span> Name identifying the service <span class="o">*/</span>
+        <span class="nb">string</span> storageName;         <span class="o">/*</span> Name identifying the storage <span class="o">*/</span>
+        StorageState state;         <span class="o">/*</span> Current state <span class="k">of</span> the storage <span class="o">*/</span>
+        <span class="nb">string</span> storageAttr;         <span class="o">/*</span> Current storage attributes <span class="o">*/</span>
+
+        sequence<span class="o">&lt;</span>KeyValue<span class="o">&gt;</span> properties;  <span class="o">/*</span> key <span class="o">=</span> property name, value <span class="o">=</span> property value <span class="o">*/</span>
+    };
+<span class="o">#</span>pragma keylist StorageStatus storageName rnrId
+
+    <span class="o">/*</span> Topic used to publish statistics <span class="k">of</span> a storage <span class="o">*/</span>
+    struct StorageStatistics {
+        <span class="nb">string</span> rnrId;
+        <span class="nb">string</span> storageName;
+        sequence<span class="o">&lt;</span>TopicStatistics<span class="o">&gt;</span> statistics;
+    };
+<span class="o">#</span>pragma keylist StorageStatistics storageName rnrId
+};
+
+module RnR_V2 {
+    <span class="o">/*</span> In v2 <span class="k">of</span> the RnR API, the following changes were made<span class="o">:</span>
+     <span class="o">*</span> <span class="o">-</span> a KeyValue sequence &#39;extensions&#39; has been added <span class="k">for</span> future extensions <span class="k">of</span> Command.
+     <span class="o">*</span> <span class="o">-</span> The Add<span class="o">-</span> <span class="k">and</span> RemoveReplayCommand contain a KeyValue sequence &#39;transformations&#39; <span class="k">for</span> changing properties
+     <span class="o">*</span> <span class="k">of</span> samples upon replay.
+     <span class="o">*/</span>
+
+     <span class="o">/************************</span> TYPES <span class="o">************************/</span>
+
+    <span class="o">/*</span> Command<span class="o">-</span>type to add replay<span class="o">-</span>interest with transformations to a storage <span class="o">*/</span>
+    struct AddReplayCommand {
+        <span class="nb">string</span> storage;                         <span class="o">/*</span> Name identifying a storage to replay from <span class="o">*/</span>
+
+        <span class="o">/*</span> Meta<span class="o">-</span>filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> interestExpr;          <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to replay <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> blacklistExpr;         <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to block from replay <span class="o">*/</span>
+        sequence<span class="o">&lt;</span>RnR<span class="o">::</span>TimeRange<span class="o">&gt;</span> timeExpr;           <span class="o">/*</span> Sequence <span class="k">of</span> time<span class="o">-</span>ranges to replay. When <span class="nb">empty</span> no filtering on time is done <span class="o">*/</span>
+
+        <span class="o">/*</span> Content filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> filterExpr;            <span class="o">/*</span> Sequence <span class="k">of</span> content<span class="o">-</span>filter<span class="o">-</span>expressions <span class="o">*/</span>
+
+        <span class="o">/*</span> Resource limits <span class="o">*/</span>
+        boolean useOriginalTimestamps;          <span class="o">/*</span> <span class="k">If</span> true, replay with original timestamps. <span class="k">If</span> false use current time <span class="o">*/</span>
+
+        <span class="o">/*</span> <span class="k">If</span> TRUE, fast<span class="o">-</span>forward to first matching sample. <span class="k">If</span> FALSE, a delay will be introduced before the sample is inserted,
+         <span class="o">*</span> to resemple timing behaviour <span class="k">of</span> the recording <span class="o">*/</span>
+        boolean skipToFirstSample;
+
+        <span class="o">/*</span> Transformations <span class="o">*/</span>
+        sequence<span class="o">&lt;</span>RnR<span class="o">::</span>KeyValue<span class="o">&gt;</span> transformations;     <span class="o">/*</span> QoS transformations to apply to the sample before replaying <span class="o">*/</span>
+    };
+
+    <span class="o">/*</span> Command<span class="o">-</span>type to remove replay<span class="o">-</span>interest with transformations <span class="o">*/</span>
+    struct RemoveReplayCommand {
+        <span class="nb">string</span> storage;                         <span class="o">/*</span> Name identifying a storage to <span class="nb">stop</span> replaying from <span class="o">*/</span>
+
+        <span class="o">/*</span> Meta<span class="o">-</span>filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> interestExpr;          <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to <span class="nb">stop</span> replaying <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> blacklistExpr;         <span class="o">/*</span> Sequence <span class="k">of</span> &#39;partition.topic&#39; expressions to <span class="nb">stop</span> blocking from replay <span class="o">*/</span>
+        sequence<span class="o">&lt;</span>RnR<span class="o">::</span>TimeRange<span class="o">&gt;</span> timeExpr;           <span class="o">/*</span> Sequence <span class="k">of</span> time<span class="o">-</span>ranges to <span class="nb">stop</span> replaying <span class="o">*/</span>
+
+        <span class="o">/*</span> Content filters <span class="o">*/</span>
+        sequence<span class="o">&lt;</span><span class="nb">string</span><span class="o">&gt;</span> filterExpr;            <span class="o">/*</span> Sequence <span class="k">of</span> content<span class="o">-</span>filter<span class="o">-</span>expressions <span class="o">*/</span>
+
+        <span class="o">/*</span> Transformations <span class="o">*/</span>
+        sequence<span class="o">&lt;</span>RnR<span class="o">::</span>KeyValue<span class="o">&gt;</span> transformations;     <span class="o">/*</span> QoS transformations to to <span class="nb">stop</span> replaying <span class="o">*/</span>
+    };
+
+    union Kind <span class="k">switch</span>(RnR<span class="o">::</span>CommandKind) {
+        <span class="k">case</span> ADD_RECORD_COMMAND<span class="o">:</span>                <span class="o">/*</span> Record command <span class="o">*/</span>
+            RnR<span class="o">::</span>AddRecordCommand addRecord;
+        <span class="k">case</span> REMOVE_RECORD_COMMAND<span class="o">:</span>
+            RnR<span class="o">::</span>RemoveRecordCommand removeRecord;
+        <span class="k">case</span> ADD_REPLAY_COMMAND<span class="o">:</span>                <span class="o">/*</span> Replay command <span class="o">*/</span>
+            AddReplayCommand addReplay;
+        <span class="k">case</span> REMOVE_REPLAY_COMMAND<span class="o">:</span>
+            RemoveReplayCommand removeReplay;
+        <span class="k">case</span> CONFIG_COMMAND<span class="o">:</span>                    <span class="o">/*</span> Config command <span class="o">*/</span>
+            sequence<span class="o">&lt;</span>RnR<span class="o">::</span>KeyValue<span class="o">&gt;</span> config;
+        <span class="k">case</span> START_SCENARIO_COMMAND<span class="o">:</span>            <span class="o">/*</span> Scenario<span class="o">-</span>control commands <span class="o">*/</span>
+        <span class="k">case</span> STOP_SCENARIO_COMMAND<span class="o">:</span>
+        <span class="k">case</span> SUSPEND_SCENARIO_COMMAND<span class="o">:</span>
+            <span class="nb">string</span> name;
+        <span class="k">case</span> SETREPLAYSPEED_COMMAND<span class="o">:</span>            <span class="o">/*</span> Storage replay<span class="o">-</span>speed command <span class="o">*/</span>
+            RnR<span class="o">::</span>SetReplaySpeedCommand setreplayspeed;
+        <span class="k">case</span> TRUNCATE_COMMAND<span class="o">:</span>                  <span class="o">/*</span> Storage truncate command <span class="o">*/</span>
+            <span class="nb">string</span> storage;
+        <span class="k">case</span> GENERIC_COMMAND<span class="o">:</span>                   <span class="o">/*</span> <span class="k">For</span> future extensibility <span class="o">*/</span>
+            sequence<span class="o">&lt;</span>RnR<span class="o">::</span>KeyValue<span class="o">&gt;</span> extCommands;
+    };
+
+    <span class="o">/************************</span> TOPICS <span class="o">************************/</span>
+
+    <span class="o">/*</span> Topic used to control an R&amp;R service <span class="o">*/</span>
+    struct Command {
+        <span class="nb">string</span> scenarioName;        <span class="o">/*</span> Name identifying the scenario to which this command belongs <span class="o">*/</span>
+        <span class="nb">string</span> rnrId;               <span class="o">/*</span> Name identifying the service, <span class="k">or</span> &#39;<span class="o">*</span>&#39; to address all services <span class="o">*/</span>
+        Kind kind;
+        sequence<span class="o">&lt;</span>RnR<span class="o">::</span>Condition<span class="o">&gt;</span> conditions; <span class="o">/*</span> Sequence <span class="k">of</span> conditions which must all be true before the command is executed <span class="o">*/</span>
+        sequence<span class="o">&lt;</span>RnR<span class="o">::</span>KeyValue<span class="o">&gt;</span> extensions;  <span class="o">/*</span> Sequence reserved <span class="k">for</span> future enhancements <span class="o">*/</span>
+    };
+<span class="o">#</span>pragma keylist Command scenarioName
+};
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Appendix A</a><ul>
+<li><a class="reference internal" href="#rnr-topic-api-idl-specification">RnR Topic API IDL specification</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/appendixab.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="index.html">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

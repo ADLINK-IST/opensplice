@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -22,6 +30,9 @@ extern "C" {
 #define v__observerClearEventFlags(_this) \
         (v_observer(_this)->eventFlags = 0)
 
+#define v_observerEventMask(_this) \
+        (v_observer(_this)->eventMask)
+
 /**
  * The initialisation of an observer object.
  * This method initialises all attributes of the observer class and
@@ -32,10 +43,7 @@ extern "C" {
  */
 void
 v_observerInit (
-    v_observer _this,
-    const c_char *name,
-    v_statistics s,
-    c_bool enable);
+    v_observer _this);
 
 /**
  * The de-initialisation of an observer object.
@@ -54,11 +62,11 @@ v_observerFree (
 
 /**
  * Retrieves and stores event data in the observer in one transaction.
- * 
+ *
  * Retrieves and stores event data in the observer in a thread-safe manner.
  * It must be thread-safe, since the data can be used to determine whether
  * the observer must be triggered or not.
- * 
+ *
  * \param _this     the reference to an observer object.
  * \param eventData the event data to store in the observer.
  * \return          the overwritten event data in the observer.
@@ -75,7 +83,16 @@ v__observerWait(
 c_ulong
 v__observerTimedWait(
     v_observer _this,
-    const c_time time);
+    const os_duration time);
+
+c_ulong
+v_observerGetEventFlags(
+    v_observer _this);
+
+c_ulong
+v__observerSetEvent(
+    v_observer _this,
+    c_ulong event);
 
 #if defined (__cplusplus)
 }

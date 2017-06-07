@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.common.model.sample;
@@ -24,6 +32,8 @@ import org.opensplice.cm.data.Sample;
 import org.opensplice.cm.data.State;
 import org.opensplice.cm.data.UserData;
 import org.opensplice.cm.qos.MessageQoS;
+import org.opensplice.cmdataadapter.TypeInfo;
+import org.opensplice.cmdataadapter.TypeInfo.TypeEvolution;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.SampleModelSizeException;
 import org.opensplice.common.model.ModelRegister;
@@ -90,13 +100,6 @@ public abstract class DetailSampleModel extends ModelRegister{
     public abstract Sample take() throws CommonException, SampleModelSizeException;
 
     public abstract Sample readNext() throws CommonException, SampleModelSizeException;
-    
-    /**
-     * Provides access to the key list of the data that is read/taken.
-     * 
-     * @return The comma separated list of keys.
-     */
-    public abstract String getDataTypeKeyList() throws CommonException;
 
     /**
      * Exports the complete content of the model to the specified file in XML
@@ -256,8 +259,8 @@ public abstract class DetailSampleModel extends ModelRegister{
     
     protected String getKeyList(Topic t) throws CommonException{
         String keys = null;
-        String result = null;
         String[] keyList;
+        StringBuilder result = new StringBuilder();
 
         keys = t.getKeyList();
 
@@ -265,14 +268,13 @@ public abstract class DetailSampleModel extends ModelRegister{
             keyList = keys.split(",");
 
             for(int i=0; i<keyList.length; i++){
-                if(result != null){
-                    result += "," + keyList[i].substring(9);
-                } else {
-                    result = keyList[i].substring(9);
+                if (result.length() != 0) {
+                    result.append(",");
                 }
+                result.append(keyList[i].substring(9));
             }
         }
-        return result;
+        return result.toString();
     }
 
     /**
@@ -361,9 +363,8 @@ public abstract class DetailSampleModel extends ModelRegister{
     public UserData getCurrentUserData() {
         if (lastReadSample != null) {
             return lastReadSample.getMessage().getUserData();
-        } else {
-            return toBeWrittenUserData;
         }
+        return toBeWrittenUserData;
     }
 
     public void setCurrentUserData(UserData data) {
@@ -390,8 +391,8 @@ public abstract class DetailSampleModel extends ModelRegister{
     public String generateColumnName(String name, int index) {
         String result = name + "[" + index + "]";
         UserData data = this.getUserDataModel().getDataAt(index).getMessage().getUserData();
-        if (data.isCollection(name) && name.startsWith(structDetail)) {
-            result = structDetail + "[" + index + "]" + name.substring(structDetail.length());
+        if (data.isCollection(name)) {
+            result = structDetail + "[" + index + "]" + name.substring(structDetail.replaceAll("\\[\\d*\\]", "").length());
         }
         return result;
     }
@@ -415,6 +416,14 @@ public abstract class DetailSampleModel extends ModelRegister{
     }
 
     /**
+     * Get the TypeEvolution that this DetailSampleModel is using to adapt UserData with.
+     * @return the TypeEvolution
+     */
+    public TypeEvolution getTypeEvolution() {
+        return typeEvolution;
+    }
+
+    /**
      * All UserData of the Sample object that are added will be administrated 
      * in this component.
      */
@@ -434,4 +443,6 @@ public abstract class DetailSampleModel extends ModelRegister{
     protected Sample lastReadSample = null;
     protected String structDetail = null;
     protected UserData toBeWrittenUserData = null;
+    protected TypeInfo typeInfo = null;
+    protected TypeEvolution typeEvolution = null;
 }

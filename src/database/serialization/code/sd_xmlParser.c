@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "c_base.h"
@@ -85,7 +93,6 @@ static c_bool
 sd_xmlStringSkipAssign (
     c_char **str);
 
-
 static c_bool
 sd_xmlStringGetQuotedString (
     c_char **str,
@@ -94,8 +101,7 @@ sd_xmlStringGetQuotedString (
 static c_bool
 sd_xmlStringProcSpecial (
     c_char *str,
-    c_char **retval);
-
+    c_char **retval) __nonnull_all__ __attribute_warn_unused_result__;
 
 static c_bool
 sd_xmlStringIsEmpty (
@@ -106,15 +112,11 @@ sd_xmlParserStackPush (
     sd_xmlParserStack   stack,
     sd_xmlParserElement element)
 {
-    sd_xmlParserEntry entry = (sd_xmlParserEntry) os_malloc(sizeof(*entry));
-
+    sd_xmlParserEntry entry = os_malloc(sizeof(*entry));
     assert(stack);
-
-    if ( entry ) {
-        entry->element = element;
-        entry->next    = *stack;
-        *stack         = entry;
-    }
+    entry->element = element;
+    entry->next    = *stack;
+    *stack         = entry;
 }
 
 static sd_xmlParserElement
@@ -176,14 +178,9 @@ sd_xmlParserStackPeek2 (
 static sd_xmlParserAttribute
 sd_xmlParserAttributeNew ( void )
 {
-    sd_xmlParserAttribute attribute;
-
-    attribute = (sd_xmlParserAttribute) os_malloc(C_SIZEOF(sd_xmlParserAttribute));
-    if ( attribute ) {
-        attribute->name  = NULL;
-        attribute->value = NULL;
-    }
-
+    sd_xmlParserAttribute attribute = os_malloc(C_SIZEOF(sd_xmlParserAttribute));
+    attribute->name  = NULL;
+    attribute->value = NULL;
     return attribute;
 }
 
@@ -207,13 +204,8 @@ sd_xmlParserAttributeFree (
 static sd_xmlParserElement
 sd_xmlParserElementNew ( void )
 {
-    sd_xmlParserElement element;
-
-    element = (sd_xmlParserElement) os_malloc(C_SIZEOF(sd_xmlParserElement));
-    if ( element ) {
-        memset(element, 0, C_SIZEOF(sd_xmlParserElement));
-    }
-
+    sd_xmlParserElement element = os_malloc(C_SIZEOF(sd_xmlParserElement));
+    memset(element, 0, C_SIZEOF(sd_xmlParserElement));
     return element;
 }
 
@@ -233,10 +225,10 @@ sd_xmlParserElementFree (
         if ( element->attributes ) {
             sd_xmlParserAttribute attribute;
 
-            attribute = (sd_xmlParserAttribute) sd_listTakeFirst(element->attributes);
+            attribute = sd_listTakeFirst(element->attributes);
             while ( attribute ) {
                 sd_xmlParserAttributeFree(attribute);
-                attribute = (sd_xmlParserAttribute) sd_listTakeFirst(element->attributes);
+                attribute = sd_listTakeFirst(element->attributes);
             }
             sd_listFree(element->attributes);
         }
@@ -286,22 +278,15 @@ sd_xmlParseElement (
     c_bool                noError = TRUE;
 
     element = sd_xmlParserElementNew();
-
-    if ( element ) {
-        if ( sd_xmlStringGetIdent(str, &element->name) ) {
-            if ( !sd_xmlStringIsEmpty(str) ) {
-                element->attributes = sd_listNew();
-                if ( element->attributes ) {
-                    ready = FALSE;
-                } else {
-                    noError = FALSE;
-                }
-            } else {
-                ready = TRUE;
-            }
+    if ( sd_xmlStringGetIdent(str, &element->name) ) {
+        if ( !sd_xmlStringIsEmpty(str) ) {
+            element->attributes = sd_listNew();
+            ready = FALSE;
         } else {
-            SET_XMLPARSER_ERROR(parser, INVALID_XML_FORMAT);
+            ready = TRUE;
         }
+    } else {
+        SET_XMLPARSER_ERROR(parser, INVALID_XML_FORMAT);
     }
 
     while ( !ready && noError ) {
@@ -354,21 +339,15 @@ sd_xmlParserNew (
      sd_xmlParserCallback  callback,
      void                 *argument)
 {
-    sd_xmlParser parser;
-
-    parser = (sd_xmlParser)os_malloc(C_SIZEOF(sd_xmlParser));
-
-    if ( parser ) {
-        parser->callback    = callback;
-        parser->argument    = argument;
-        parser->state       = SD_XML_STATE_INITIAL;
-        parser->value       = NULL;
-        parser->xmlString   = (char *)xmlString;
-        parser->readPtr     = xmlString;
-        parser->errorInfo   = NULL;
-        parser->stack       = NULL;
-    }
-
+    sd_xmlParser parser = os_malloc(C_SIZEOF(sd_xmlParser));
+    parser->callback    = callback;
+    parser->argument    = argument;
+    parser->state       = SD_XML_STATE_INITIAL;
+    parser->value       = NULL;
+    parser->xmlString   = (char *)xmlString;
+    parser->readPtr     = xmlString;
+    parser->errorInfo   = NULL;
+    parser->stack       = NULL;
     return parser;
 }
 
@@ -442,16 +421,17 @@ sd_xmlParserGetToken (
                 if ( element ) {
                     sd_xmlParserStackPush(&parser->stack, element);
                     parser->state = SD_XML_STATE_BTAG;
-                    result = parser->callback(SD_XML_PARSER_KIND_ELEMENT_START,
-                                          element, parser->argument, parser);
+                    result = parser->callback(SD_XML_PARSER_KIND_ELEMENT_START, element, parser->argument, parser);
                 } else {
                     parser->state = SD_XML_STATE_ERROR;
                     token = SD_XML_TOKEN_ERROR;
+                    (void)token;
                     SET_XMLPARSER_ERROR(parser, INVALID_TAG_FORMAT)
                 }
             } else {
                 parser->state = SD_XML_STATE_ERROR;
                 token = SD_XML_TOKEN_ERROR;
+                (void)token;
                 SET_XMLPARSER_ERROR(parser, UNEXPECTED_OPENING_TAG)
             }
             break;
@@ -463,17 +443,18 @@ sd_xmlParserGetToken (
                 if ( sd_xmlParserMatchCurrent(parser, element) ) {
                     sd_xmlParserElementFree(sd_xmlParserStackPop(&parser->stack));
                     parser->state = SD_XML_STATE_ETAG;
-                    result = parser->callback(SD_XML_PARSER_KIND_ELEMENT_END,
-                                          element, parser->argument, parser);
+                    result = parser->callback(SD_XML_PARSER_KIND_ELEMENT_END, element, parser->argument, parser);
                 } else {
                     parser->state = SD_XML_STATE_ERROR;
                     token = SD_XML_TOKEN_ERROR;
+                    (void)token;
                     SET_XMLPARSER_ERROR(parser, UNEXPECTED_CLOSING_TAG)
                 }
                 sd_xmlParserElementFree(element);
             } else {
                 parser->state = SD_XML_STATE_ERROR;
                 token = SD_XML_TOKEN_ERROR;
+                (void)token;
                 SET_XMLPARSER_ERROR(parser, INVALID_TAG_FORMAT)
             }
             break;
@@ -483,19 +464,21 @@ sd_xmlParserGetToken (
                 TRACE(printf("<%s/>\n", str));
                 element = sd_xmlParseElement(parser, &str);
                 if ( element ) {
-                    result = parser->callback(SD_XML_PARSER_KIND_ELEMENT_START,
-                                          element, parser->argument, parser);
-                    result = parser->callback(SD_XML_PARSER_KIND_ELEMENT_END,
-                                          element, parser->argument, parser);
+                    result = parser->callback(SD_XML_PARSER_KIND_ELEMENT_START, element, parser->argument, parser);
+                    if (result) {
+                        result = parser->callback(SD_XML_PARSER_KIND_ELEMENT_END, element, parser->argument, parser);
+                    }
                     sd_xmlParserElementFree(element);
                 } else {
                     parser->state = SD_XML_STATE_ERROR;
                     token = SD_XML_TOKEN_ERROR;
+                    (void)token;
                     SET_XMLPARSER_ERROR(parser, INVALID_TAG_FORMAT)
                 }
             } else {
                 parser->state = SD_XML_STATE_ERROR;
                 token = SD_XML_TOKEN_ERROR;
+                (void)token;
                 SET_XMLPARSER_ERROR(parser, UNEXPECTED_OPENING_TAG)
             }
             break;
@@ -503,16 +486,17 @@ sd_xmlParserGetToken (
             if ( parser->state == SD_XML_STATE_BTAG ) {
                 if ( sd_xmlParseData(parser, parser->value) ) {
                     parser->state = SD_XML_STATE_DATA;
-                    result = parser->callback(SD_XML_PARSER_KIND_DATA,
-                                          NULL, parser->argument, parser);
+                    result = parser->callback(SD_XML_PARSER_KIND_DATA, NULL, parser->argument, parser);
                 } else {
                     parser->state = SD_XML_STATE_ERROR;
                     token = SD_XML_TOKEN_ERROR;
+                    (void)token;
                     SET_XMLPARSER_ERROR(parser, INVALID_DATA_FORMAT)
                 }
             } else {
                 parser->state = SD_XML_STATE_ERROR;
                 token = SD_XML_TOKEN_ERROR;
+                (void)token;
                 SET_XMLPARSER_ERROR(parser, UNEXPECTED_DATA)
             }
             break;
@@ -523,6 +507,7 @@ sd_xmlParserGetToken (
             } else {
                 parser->state = SD_XML_STATE_ERROR;
                 token = SD_XML_TOKEN_ERROR;
+                (void)token;
                 SET_XMLPARSER_ERROR(parser, INVALID_XML_FORMAT)
             }
             break;
@@ -550,22 +535,15 @@ sd_xmlParserParse (
 {
     c_bool          result = TRUE;
     sd_xmlParser    parser;
-
     assert(xmlString);
-
     parser = sd_xmlParserNew(xmlString, callback, argument);
-    if ( parser ) {
-        while ( result && (parser->state != SD_XML_STATE_READY) ) {
-            result = sd_xmlParserGetToken(parser);
-        }
-        if ( !result ) {
-            *errorInfo = parser->errorInfo;
-        }
-        sd_xmlParserFree(parser);
-    } else {
-        result = FALSE;
+    while ( result && (parser->state != SD_XML_STATE_READY) ) {
+        result = sd_xmlParserGetToken(parser);
     }
-
+    if ( !result ) {
+        *errorInfo = parser->errorInfo;
+    }
+    sd_xmlParserFree(parser);
     return result;
 }
 
@@ -624,7 +602,7 @@ getCharsUntil (
     p = strchr(str, c);
     if ( p ) {
         l = (c_ulong)(p - str) + 1;
-        res = (c_char *) os_malloc(l+1);
+        res = os_malloc(l+1);
         os_strncpy(res, str, l);
         res[l] = '\0';
         *len = l;
@@ -633,11 +611,13 @@ getCharsUntil (
     return res;
 }
 
+static c_bool sd_xmlEscapedChar (c_char  *str, c_char  *retval, c_size *processed) __nonnull_all__ __attribute_warn_unused_result__;
+
 static c_bool
 sd_xmlEscapedChar (
     c_char  *str,
     c_char  *retval,
-    c_ulong *processed)
+    c_size *processed)
 {
     int     base = 10;
     c_char *p;
@@ -674,21 +654,24 @@ sd_xmlStringProcSpecial (
     c_char **retval)
 {
     c_char *res;
-    c_ulong s = 0;
+    size_t s = 0;
     c_ulong d = 0;
-    c_ulong i,l;
+    c_ulong i;
     c_bool result = TRUE;
 
     assert(str);
 
-    l = strlen(str)+1;
-    res = (c_char *) os_malloc(l);
-    memset(res, 0, l);
+    {
+        os_size_t l = strlen(str)+1;
+        res = os_malloc(l);
+        memset(res, 0, l);
+    }
 
     while ( result && (str[s] != '\0') ) {
         if ( str[s] == SD_AMPERSAND ) {
             s++;
             if ( (str[s] != '\0') && (str[s] == '#') ) {
+                os_size_t l;
                 s++;
                 if ( sd_xmlEscapedChar(&str[s], &res[d], &l) ) {
                     d++;
@@ -699,7 +682,7 @@ sd_xmlStringProcSpecial (
             } else {
                 result = FALSE;
                 for ( i = 0; !result && (i < sd_xmlSpecialTableSize); i++ ) {
-                    l = strlen(sd_xmlSpecialTable[i].repr);
+                    os_size_t l = strlen(sd_xmlSpecialTable[i].repr);
                     if ( strncmp(sd_xmlSpecialTable[i].repr, &str[s], l) == 0 ) {
                         s += l;
                         res[d++] = sd_xmlSpecialTable[i].value;
@@ -721,6 +704,7 @@ sd_xmlStringProcSpecial (
     return result;
 }
 
+static void sd_xmlStringSkipSpaces (c_char **str) __nonnull_all__;
 
 static void
 sd_xmlStringSkipSpaces (
@@ -732,11 +716,13 @@ sd_xmlStringSkipSpaces (
     sd_strSkipChars(str, SD_SKIP_SPACES);
 }
 
+static c_char *sd_xmlStringSkipTrailSpaces (c_char *str) __nonnull_all__;
+
 static c_char *
 sd_xmlStringSkipTrailSpaces (
     c_char *str)
 {
-    c_long i;
+    os_size_t i;
 
     assert(str);
 
@@ -753,6 +739,8 @@ sd_xmlStringSkipTrailSpaces (
 
 #define SD_COMMENT_START "<!--"
 #define SD_COMMENT_END   "-->"
+
+static c_bool sd_xmlStringSkipComment (c_char **str) __nonnull_all__ __attribute_warn_unused_result__;
 
 static c_bool
 sd_xmlStringSkipComment (
@@ -782,6 +770,8 @@ sd_xmlStringSkipComment (
 #undef SD_COMMENT_START
 #undef SD_COMMENT_END
 
+static sd_xmlTokenKind sd_xmlStringGetOpeningTag (c_char **str, c_char **value) __nonnull_all__ __attribute_warn_unused_result__;
+
 static sd_xmlTokenKind
 sd_xmlStringGetOpeningTag (
     c_char **str,
@@ -796,28 +786,26 @@ sd_xmlStringGetOpeningTag (
     sd_xmlStringSkipSpaces(str);
 
     v = sd_strGetChars(str, SD_CHARS_DATA);
-
-    if ( v ) {
-        if ( sd_xmlStringProcSpecial(v, value) ) {
-            if ( **str == '\0' ) {
-                token = SD_XML_TOKEN_ERROR;
-            } else  if ( **str == '>' ) {
-                *str = &((*str)[1]);
-                *value = sd_xmlStringSkipTrailSpaces(*value);
-                token = SD_XML_TOKEN_BTAG;
-            } else if ( (**str == '/') && ((*str)[1] == '>') ) {
-                *str = &((*str)[2]);
-                *value = sd_xmlStringSkipTrailSpaces(*value);
-                token = SD_XML_TOKEN_STAG;
-            } else {
-                token = SD_XML_TOKEN_ERROR;
-            }
+    if ( sd_xmlStringProcSpecial(v, value) ) {
+        if ( **str == '\0' ) {
+            token = SD_XML_TOKEN_ERROR;
+        } else  if ( **str == '>' ) {
+            *str = &((*str)[1]);
+            *value = sd_xmlStringSkipTrailSpaces(*value);
+            token = SD_XML_TOKEN_BTAG;
+        } else if ( (**str == '/') && ((*str)[1] == '>') ) {
+            *str = &((*str)[2]);
+            *value = sd_xmlStringSkipTrailSpaces(*value);
+            token = SD_XML_TOKEN_STAG;
+        } else {
+            token = SD_XML_TOKEN_ERROR;
         }
-        os_free(v);
     }
-
+    os_free(v);
     return token;
 }
+
+static sd_xmlTokenKind sd_xmlStringGetClosingTag (c_char **str, c_char **value) __nonnull_all__ __attribute_warn_unused_result__;
 
 static sd_xmlTokenKind
 sd_xmlStringGetClosingTag (
@@ -833,22 +821,21 @@ sd_xmlStringGetClosingTag (
     sd_xmlStringSkipSpaces(str);
 
     v = sd_strGetChars(str, SD_CHARS_DATA);
-
-    if ( v ) {
-        if ( sd_xmlStringProcSpecial(v, value) ) {
-            if ( **str == '>' ) {
-                *str = &((*str)[1]);
-                *value = sd_xmlStringSkipTrailSpaces(*value);
-                token = SD_XML_TOKEN_ETAG;
-            } else {
-                token = SD_XML_TOKEN_ERROR;
-            }
+    if ( sd_xmlStringProcSpecial(v, value) ) {
+        if ( **str == '>' ) {
+            *str = &((*str)[1]);
+            *value = sd_xmlStringSkipTrailSpaces(*value);
+            token = SD_XML_TOKEN_ETAG;
+        } else {
+            token = SD_XML_TOKEN_ERROR;
         }
-        os_free(v);
     }
+    os_free(v);
 
     return token;
 }
+
+static sd_xmlTokenKind sd_xmlStringGetData (c_char **str, c_char **value) __nonnull_all__ __attribute_warn_unused_result__;
 
 static sd_xmlTokenKind
 sd_xmlStringGetData (
@@ -864,22 +851,19 @@ sd_xmlStringGetData (
     sd_xmlStringSkipSpaces(str);
 
     v = sd_strGetChars(str, SD_CHARS_DATA);
-
-    if ( v ) {
-        if ( sd_xmlStringProcSpecial(v, value) ) {
-            if ( (**str == '0') || (**str == '<') ) {
-                *value = sd_xmlStringSkipTrailSpaces(*value);
-                token = SD_XML_TOKEN_DATA;
-            } else {
-                token = SD_XML_TOKEN_ERROR;
-            }
+    if ( sd_xmlStringProcSpecial(v, value) ) {
+        if ( (**str == '0') || (**str == '<') ) {
+            *value = sd_xmlStringSkipTrailSpaces(*value);
+            token = SD_XML_TOKEN_DATA;
+        } else {
+            token = SD_XML_TOKEN_ERROR;
         }
-        os_free(v);
     }
-
+    os_free(v);
     return token;
 }
 
+static sd_xmlTokenKind sd_xmlStringGetToken (c_char **str, c_char **value) __nonnull_all__ __attribute_warn_unused_result__;
 
 static sd_xmlTokenKind
 sd_xmlStringGetToken (
@@ -908,6 +892,7 @@ sd_xmlStringGetToken (
     return token;
 }
 
+static c_bool sd_xmlStringGetIdent (c_char **str, c_char **ident) __nonnull_all__ __attribute_warn_unused_result__;
 
 static c_bool
 sd_xmlStringGetIdent (
@@ -919,17 +904,16 @@ sd_xmlStringGetIdent (
     sd_xmlStringSkipSpaces(str);
 
     *ident = sd_strGetChars(str, SD_CHARS_IDENT);
-
-    if ( *ident ) {
-        if ( IS_ALPHA((*ident)[0]) ) {
-            result = TRUE;
-        } else {
-            os_free(*ident);
-            *ident = NULL;
-        }
+    if ( IS_ALPHA((*ident)[0]) ) {
+        result = TRUE;
+    } else {
+        os_free(*ident);
+        *ident = NULL;
     }
     return result;
 }
+
+static c_bool sd_xmlStringSkipAssign (c_char **str) __nonnull_all__ __attribute_warn_unused_result__;
 
 static c_bool
 sd_xmlStringSkipAssign (
@@ -947,6 +931,8 @@ sd_xmlStringSkipAssign (
     return result;
 }
 
+static c_bool sd_xmlStringGetQuotedString (c_char **str, c_char **value) __nonnull_all__ __attribute_warn_unused_result__;
+
 static c_bool
 sd_xmlStringGetQuotedString (
     c_char **str,
@@ -962,18 +948,18 @@ sd_xmlStringGetQuotedString (
         quote = **str;
         *str = &(*str)[1];
         val = sd_strGetChars(str, SD_CHARS_STRING);
-        if ( val ) {
-            if ( **str == quote ) {
-                *str = &(*str)[1];
-                if ( sd_xmlStringProcSpecial(val, value) ) {
-                    result = TRUE;
-                }
+        if ( **str == quote ) {
+            *str = &(*str)[1];
+            if ( sd_xmlStringProcSpecial(val, value) ) {
+                result = TRUE;
             }
-            os_free(val);
         }
+        os_free(val);
     }
     return result;
 }
+
+static c_bool sd_xmlStringIsEmpty (c_char **str) __nonnull_all__;
 
 static c_bool
 sd_xmlStringIsEmpty (
@@ -990,6 +976,7 @@ sd_xmlStringIsEmpty (
     return result;
 }
 
+#if 0
 static c_bool
 printXmlAttribute (
     sd_xmlNode node,
@@ -1002,7 +989,6 @@ printXmlAttribute (
 
     return TRUE;
 }
-
 
 static c_bool
 printXmlElement (
@@ -1033,6 +1019,7 @@ printXmlElement (
     }
     return TRUE;
 }
+#endif
 
 static void
 buildXmlElementInfo (
@@ -1047,7 +1034,7 @@ buildXmlElementInfo (
             for ( i = 0; i < sd_listSize(element->attributes); i++ ) {
                 sd_xmlParserAttribute attribute;
 
-                attribute = (sd_xmlParserAttribute) sd_listAt(element->attributes,i);
+                attribute = sd_listAt(element->attributes,i);
                 if ( attribute->name && attribute->value ) {
                     sd_stringAdd(message, "%s=\"%s\"", attribute->name, attribute->value);
                 }
@@ -1068,7 +1055,7 @@ sd_xmlParserSetError (
     sd_xmlParserElement element = NULL;
     sd_xmlParserElement parent  = NULL;
 
-    if ( parser && !parser->errorInfo ) {
+    if ( !parser->errorInfo ) {
         sd_string location = sd_stringNew(256);
         element = sd_xmlParserStackPeek(&parser->stack);
         parent  = sd_xmlParserStackPeek2(&parser->stack);

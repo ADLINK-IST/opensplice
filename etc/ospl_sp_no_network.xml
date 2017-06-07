@@ -1,35 +1,19 @@
 <OpenSplice>
-   <Domain>
-      <Name>ospl_sp_no_network</Name>
-      <Id>0</Id>
-      <SingleProcess>true</SingleProcess>
-      <Service name="durability">
-         <Command>durability</Command>
-      </Service>
-      <Service enabled="false" name="cmsoap">
-         <Command>cmsoap</Command>
-      </Service>
-   </Domain>
-   <DurabilityService name="durability">
-      <Network>
-         <Alignment>
-            <TimeAlignment>FALSE</TimeAlignment>
-            <RequestCombinePeriod>
-               <Initial>2.5</Initial>
-               <Operational>0.1</Operational>
-            </RequestCombinePeriod>
-         </Alignment>
-      </Network>
-      <NameSpaces>
-         <NameSpace name="defaultNamespace">
-            <Partition>*</Partition>
-         </NameSpace>
-         <Policy nameSpace="defaultNamespace" durability="Durable" alignee="Initial" aligner="True"/>
-      </NameSpaces>
-   </DurabilityService>
-   <TunerService name="cmsoap">
-      <Server>
-         <PortNr>Auto</PortNr>
-      </Server>
-   </TunerService>
+    <Domain>
+        <Name>ospl_sp_no_network</Name>
+        <Id>0</Id>
+        <SingleProcess>true</SingleProcess>
+        <Description>Stand-alone 'single-process' deployment without networking connectivity.</Description>
+        <Service name="cmsoap">
+            <Command>cmsoap</Command>
+        </Service>
+        <DurablePolicies>
+            <Policy obtain="*.*"/>
+        </DurablePolicies>
+    </Domain>
+    <TunerService name="cmsoap">
+        <Server>
+            <PortNr>Auto</PortNr>
+        </Server>
+    </TunerService>
 </OpenSplice>

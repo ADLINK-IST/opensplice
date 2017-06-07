@@ -20,6 +20,7 @@ namespace test.sacs
             Test.Framework.TestResult result;
             test.sacs.MyDataWriterListener listener;
             DDS.ReturnCode rc;
+
             string expResult = "DataWriterListener test succeeded.";
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
                 .Pass, Test.Framework.TestVerdict.Fail);
@@ -45,12 +46,12 @@ namespace test.sacs
                 result.Result = "Invalid mask could be used when attaching a listener.";
                 return result;
             }
-            rc = datawriter.SetListener(listener, DDS.StatusKind.PublicationMatched);
+            /*rc = datawriter.SetListener(listener, DDS.StatusKind.PublicationMatched);
             if (rc != DDS.ReturnCode.Ok)
             {
                 result.Result = "Listener could not be attached (2).";
                 return result;
-            }
+            }*/
             result.Result = expResult;
             result.Verdict = Test.Framework.TestVerdict.Pass;
             return result;

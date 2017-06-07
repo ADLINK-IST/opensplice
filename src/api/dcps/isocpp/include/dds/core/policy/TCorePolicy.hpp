@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2012 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef OSPL_DDS_CORE_POLICY_TCOREPOLICY_HPP_
@@ -771,10 +779,9 @@ TReliability<D> TReliability<D>::Reliable(const dds::core::Duration& max_blockin
 }
 
 template <typename D>
-TReliability<D> TReliability<D>::BestEffort()
+TReliability<D> TReliability<D>::BestEffort(const dds::core::Duration& max_blocking_time)
 {
-    return TReliability(dds::core::policy::ReliabilityKind::BEST_EFFORT,
-                        dds::core::Duration::zero());
+    return TReliability(dds::core::policy::ReliabilityKind::BEST_EFFORT, max_blocking_time);
 }
 
 //TDestinationOrder
@@ -957,6 +964,7 @@ TLiveliness<D> TLiveliness<D>::ManualByTopic(const dds::core::Duration& lease_du
     return TLiveliness(dds::core::policy::LivelinessKind::MANUAL_BY_TOPIC, lease_duration);
 }
 
+
 #ifdef OMG_DDS_PERSISTENCE_SUPPORT
 
 //TDurabilityService
@@ -1061,6 +1069,118 @@ int32_t TDurabilityService<D>::max_samples_per_instance() const
 }
 
 #endif  // OMG_DDS_PERSISTENCE_SUPPORT
+
+
+//TShare
+template <typename D>
+TShare<D>::TShare(const std::string& name, bool enable)
+    : dds::core::Value<D>(name, enable) { }
+
+template <typename D>
+TShare<D>::TShare(const TShare& other) : dds::core::Value<D>(other.name(), other.enable()) { }
+
+template <typename D>
+std::string 
+TShare<D>::name() const
+{
+    return this->delegate().name();
+}
+
+template <typename D>
+TShare<D>& 
+TShare<D>::name(const std::string& name)
+{
+    this->delegate().name(name);
+    return *this;
+}
+
+template <typename D>
+bool 
+TShare<D>::enable() const
+{
+    return this->delegate().enable();
+}
+
+template <typename D>
+TShare<D>& 
+TShare<D>::enable(bool enable)
+{
+    this->delegate().enable(enable);
+    return *this;
+}
+
+
+//TProductData
+template <typename D>
+TProductData<D>::TProductData(const std::string& value)
+    : dds::core::Value<D>(value) { }
+
+template <typename D>
+TProductData<D>::TProductData(const TProductData& other) : dds::core::Value<D>(other.value()) { }
+
+template <typename D>
+std::string 
+TProductData<D>::value() const
+{
+    return this->delegate().value();
+}
+
+template <typename D>
+TProductData<D>& 
+TProductData<D>::value(const std::string& value)
+{
+    this->delegate().name(value);
+    return *this;
+}
+
+
+//TSubscriptionKey
+template <typename D>
+TSubscriptionKey<D>::TSubscriptionKey(bool use_key_list, const std::string& key) : dds::core::Value<D>(use_key_list, key) { }
+
+template <typename D>
+TSubscriptionKey<D>::TSubscriptionKey(bool use_key_list, const dds::core::StringSeq& keys) : dds::core::Value<D>(use_key_list, keys) { }
+
+template <typename D>
+TSubscriptionKey<D>::TSubscriptionKey(const TSubscriptionKey& other) : dds::core::Value<D>(other.use_key_list(), other.key()) { }
+
+template <typename D>
+TSubscriptionKey<D>&
+TSubscriptionKey<D>::key(const std::string& key)
+{
+    this->delegate().key(key);
+    return *this;
+}
+
+template <typename D>
+TSubscriptionKey<D>&
+TSubscriptionKey<D>::key(const dds::core::StringSeq& keys)
+{
+    this->delegate().key(keys);
+    return *this;
+}
+
+template <typename D>
+const dds::core::StringSeq
+TSubscriptionKey<D>::key() const
+{
+    return this->delegate().key();
+}
+
+template <typename D>
+bool 
+TSubscriptionKey<D>::use_key_list() const
+{
+    return this->delegate().use_key_list();
+}
+
+template <typename D>
+TSubscriptionKey<D>& 
+TSubscriptionKey<D>::use_key_list(bool use_key_list)
+{
+    this->delegate().use_key_list(use_key_list);
+    return *this;
+}
 
 #ifdef OMG_DDS_EXTENSIBLE_AND_DYNAMIC_TOPIC_TYPE_SUPPORT
 

@@ -226,7 +226,7 @@ AST_EnumVal *AST_Enum::fe_add_enum_val(AST_EnumVal *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    /*
     * Add it to enclosing scope

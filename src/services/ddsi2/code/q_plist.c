@@ -1,7 +1,27 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <ctype.h>
 
 #include "os_heap.h"
 #include "os_stdlib.h"
@@ -50,7 +70,7 @@ typedef struct nn_ipaddress_params_tmp {
 } nn_ipaddress_params_tmp_t;
 
 struct dd {
-  const char *buf;
+  const unsigned char *buf;
   unsigned bufsz;
   unsigned bswap: 1;
   nn_protocol_version_t protocol_version;
@@ -58,9 +78,30 @@ struct dd {
 };
 
 struct cdroctetseq {
-  int len;
+  unsigned len;
   unsigned char value[1];
 };
+
+/* Avoiding all nn_log-related activities when LC_PLIST is not set
+   (and it hardly ever is, as it is not even included in "trace")
+   saves a couple of % CPU on a high-rate subscriber - that's worth
+   it.  So we need a macro & a support function. */
+static int trace_plist (const char *fmt, ...)
+{
+  va_list ap;
+  va_start (ap, fmt);
+  nn_vlog (LC_PLIST, fmt, ap);
+  va_end (ap);
+  return 0;
+}
+#define TRACE_PLIST(args) ((config.enabled_logcats & LC_PLIST) ? (trace_plist args) : 0)
+
+static void log_octetseq (logcat_t cat, unsigned n, const unsigned char *xs);
+
+static unsigned align4u (unsigned x)
+{
+  return (x + 3u) & (unsigned)-4;
+}
 
 static int protocol_version_is_newer (nn_protocol_version_t pv)
 {
@@ -68,113 +109,106 @@ static int protocol_version_is_newer (nn_protocol_version_t pv)
   return (pv.major < mv.major) ? 0 : (pv.major > mv.major) ? 1 : (pv.minor > mv.minor);
 }
 
-static int validate_string (const struct dd *dd)
+static int validate_string (const struct dd *dd, unsigned *len)
 {
   const struct cdrstring *x = (const struct cdrstring *) dd->buf;
-  int len;
   if (dd->bufsz < sizeof (struct cdrstring))
   {
     TRACE (("plist/validate_string: buffer too small (header)\n"));
     return ERR_INVALID;
   }
-  len = (int) (dd->bswap ? bswap4u (x->length) : x->length);
-  if (len < 1 || len > (int) (dd->bufsz - offsetof (struct cdrstring, contents)))
+  *len = dd->bswap ? bswap4u (x->length) : x->length;
+  if (*len < 1 || *len > dd->bufsz - offsetof (struct cdrstring, contents))
   {
-    TRACE (("plist/validate_string: length %d out of range\n", len));
+    TRACE (("plist/validate_string: length %u out of range\n", *len));
     return ERR_INVALID;
   }
-  if (x->contents[len-1] != 0)
+  if (x->contents[*len-1] != 0)
   {
     TRACE (("plist/validate_string: terminator missing\n"));
     return ERR_INVALID;
   }
-  return len;
+  return 0;
 }
 
-static int alias_string (const char **ptr, const struct dd *dd)
+static int alias_string (const unsigned char **ptr, const struct dd *dd, unsigned *len)
 {
-  int len;
-  if ((len = validate_string (dd)) < 0)
-    return len;
+  int rc;
+  if ((rc = validate_string (dd, len)) < 0)
+    return rc;
   else
   {
     const struct cdrstring *x = (const struct cdrstring *) dd->buf;
     *ptr = x->contents;
-    return len;
-  }
-}
-
-static int unalias_string (char **str, int bswap)
-{
-  const char *alias = *str;
-  int len;
-  if (bswap == 0 || bswap == 1)
-  {
-    const int *plen = (const int *) alias - 1;
-    len = bswap ? bswap4 (*plen) : *plen;
-  }
-  else
-  {
-    len = (int) strlen (alias) + 1;
-  }
-  if ((*str = os_malloc (len)) == NULL)
-  {
-    TRACE (("plist/unalias_string: out of memory (%d)\n", len));
-    return ERR_OUT_OF_MEMORY;
-  }
-  else
-  {
-    memcpy (*str, alias, len);
     return 0;
   }
 }
 
-static int validate_octetseq (const struct dd *dd)
+static void unalias_string (char **str, int bswap)
+{
+  const char *alias = *str;
+  unsigned len;
+  if (bswap == 0 || bswap == 1)
+  {
+    const unsigned *plen = (const unsigned *) alias - 1;
+    len = bswap ? bswap4u (*plen) : *plen;
+  }
+  else
+  {
+    len = (unsigned) strlen (alias) + 1;
+  }
+  *str = os_malloc (len);
+  memcpy (*str, alias, len);
+}
+
+static int validate_octetseq (const struct dd *dd, unsigned *len)
 {
   const struct cdroctetseq *x = (const struct cdroctetseq *) dd->buf;
-  int len;
   if (dd->bufsz < offsetof (struct cdroctetseq, value))
     return ERR_INVALID;
-  len = dd->bswap ? bswap4 (x->len) : x->len;
-  if (len < 0 || len > (int) (dd->bufsz - offsetof (struct cdroctetseq, value)))
+  *len = dd->bswap ? bswap4u (x->len) : x->len;
+  if (*len > dd->bufsz - offsetof (struct cdroctetseq, value))
     return ERR_INVALID;
-  return len;
+  return 0;
 }
 
 static int alias_octetseq (nn_octetseq_t *oseq, const struct dd *dd)
 {
-  int len;
-  if ((len = validate_octetseq (dd)) < 0)
-    return len;
+  unsigned len;
+  int rc;
+  if ((rc = validate_octetseq (dd, &len)) < 0)
+    return rc;
   else
   {
     const struct cdroctetseq *x = (const struct cdroctetseq *) dd->buf;
     oseq->length = len;
     oseq->value = (len == 0) ? NULL : (unsigned char *) x->value;
-    return len;
+    return 0;
   }
 }
 
-static int unalias_octetseq (nn_octetseq_t *oseq, UNUSED_ARG (int bswap))
+static int alias_blob (nn_octetseq_t *oseq, const struct dd *dd)
+{
+  oseq->length = dd->bufsz;
+  oseq->value = (oseq->length == 0) ? NULL : (unsigned char *) dd->buf;
+  return 0;
+}
+
+static void unalias_octetseq (nn_octetseq_t *oseq, UNUSED_ARG (int bswap))
 {
   if (oseq->length != 0)
   {
     unsigned char *vs;
-    if ((vs = os_malloc (oseq->length)) == NULL)
-    {
-      TRACE (("plist/unalias_octetseq: out of memory (%d)\n", (int) oseq->length));
-      return ERR_OUT_OF_MEMORY;
-    }
+    vs = os_malloc (oseq->length);
     memcpy (vs, oseq->value, oseq->length);
     oseq->value = vs;
   }
-  return 0;
 }
 
 static int validate_stringseq (const struct dd *dd)
 {
-  const char *seq = dd->buf;
-  const char *seqend = seq + dd->bufsz;
+  const unsigned char *seq = dd->buf;
+  const unsigned char *seqend = seq + dd->bufsz;
   struct dd dd1 = *dd;
   int i, n;
   if (dd->bufsz < sizeof (int))
@@ -199,15 +233,16 @@ static int validate_stringseq (const struct dd *dd)
   {
     for (i = 0; i < n && seq <= seqend; i++)
     {
-      int len1;
+      unsigned len1;
+      int rc;
       dd1.buf = seq;
       dd1.bufsz = (unsigned) (seqend - seq);
-      if ((len1 = validate_string (&dd1)) < 0)
+      if ((rc = validate_string (&dd1, &len1)) < 0)
       {
         TRACE (("plist/validate_stringseq: invalid string\n"));
-        return len1;
+        return rc;
       }
-      seq += sizeof (unsigned) + ALIGN4 (len1);
+      seq += sizeof (unsigned) + align4u (len1);
     }
     if (i < n)
     {
@@ -225,11 +260,12 @@ static int alias_stringseq (nn_stringseq_t *strseq, const struct dd *dd)
   /* Not truly an alias: it allocates an array of pointers that alias
      the individual null-terminated strings. Also: see
      validate_stringseq */
-  const char *seq = dd->buf;
-  const char *seqend = seq + dd->bufsz;
+  const unsigned char *seq = dd->buf;
+  const unsigned char *seqend = seq + dd->bufsz;
   struct dd dd1 = *dd;
   char **strs;
-  int i, result;
+  unsigned i;
+  int result;
   if (dd->bufsz < sizeof (int))
   {
     TRACE (("plist/alias_stringseq: buffer too small (header)\n"));
@@ -237,11 +273,11 @@ static int alias_stringseq (nn_stringseq_t *strseq, const struct dd *dd)
   }
   memcpy (&strseq->n, seq, sizeof (strseq->n));
   if (dd->bswap)
-    strseq->n = bswap4 (strseq->n);
-  seq += sizeof (int);
-  if (strseq->n < 0)
+    strseq->n = bswap4u (strseq->n);
+  seq += sizeof (unsigned);
+  if (strseq->n >= OS_MAX_INTEGER(unsigned) / sizeof(*strs))
   {
-    TRACE (("plist/alias_stringseq: length %d out of range\n", (int) strseq->n));
+    TRACE (("plist/alias_stringseq: length %u out of range\n", strseq->n));
     return ERR_INVALID;
   }
   else if (strseq->n == 0)
@@ -250,26 +286,21 @@ static int alias_stringseq (nn_stringseq_t *strseq, const struct dd *dd)
   }
   else
   {
-    if ((strs = os_malloc (strseq->n * sizeof (*strs))) == NULL)
-    {
-      TRACE (("plist/alias_stringseq: out of memory (%u)\n", strseq->n * sizeof (*strs)));
-      return ERR_OUT_OF_MEMORY;
-    }
+    strs = os_malloc (strseq->n * sizeof (*strs));
     for (i = 0; i < strseq->n && seq <= seqend; i++)
     {
-      int len1;
+      unsigned len1;
       dd1.buf = seq;
       dd1.bufsz = (unsigned) (seqend - seq);
       /* (const char **) to silence the compiler, unfortunately strseq
          can't have a const char **strs, that would require a const
          and a non-const version of it. */
-      if ((len1 = alias_string ((const char **) &strs[i], &dd1)) < 0)
+      if ((result = alias_string ((const unsigned char **) &strs[i], &dd1, &len1)) < 0)
       {
         TRACE (("plist/alias_stringseq: invalid string\n"));
-        result = len1;
         goto fail;
       }
-      seq += sizeof (unsigned) + ALIGN4 (len1);
+      seq += sizeof (unsigned) + align4u (len1);
     }
     if (i != strseq->n)
     {
@@ -287,78 +318,51 @@ static int alias_stringseq (nn_stringseq_t *strseq, const struct dd *dd)
 
 static void free_stringseq (nn_stringseq_t *strseq)
 {
-  int i;
+  unsigned i;
   for (i = 0; i < strseq->n; i++)
   {
     if (strseq->strs[i])
+    {
       os_free (strseq->strs[i]);
+    }
   }
   os_free (strseq->strs);
 }
 
 static int unalias_stringseq (nn_stringseq_t *strseq, int bswap)
 {
-  int i, res;
+  unsigned i;
   char **strs;
   if (strseq->n != 0)
   {
-    if ((strs = os_malloc (strseq->n * sizeof (*strs))) == NULL)
-    {
-      TRACE (("plist/unalias_stringseq: out of memory (%u)\n", strseq->n * sizeof (*strs)));
-      return ERR_OUT_OF_MEMORY;
-    }
+    strs = os_malloc (strseq->n * sizeof (*strs));
     for (i = 0; i < strseq->n; i++)
     {
       strs[i] = strseq->strs[i];
-      if ((res = unalias_string (&strs[i], bswap)) < 0)
-        goto fail;
+      unalias_string (&strs[i], bswap);
     }
     os_free (strseq->strs);
     strseq->strs = strs;
   }
   return 0;
- fail:
-  /* free what has been unaliased so far, and zero all pointers to
-     prevent confusion, but leave the strs because we can't clear the
-     corresponding 'present' bit */
-  for (--i; i >= 0; i--)
-    os_free (strs[i]);
-  os_free (strs);
-  return res;
 }
 
-static int duplicate_stringseq (nn_stringseq_t *dest, const nn_stringseq_t *src)
+static void duplicate_stringseq (nn_stringseq_t *dest, const nn_stringseq_t *src)
 {
-  int i, res;
+  unsigned i;
   dest->n = src->n;
+assert (dest->strs == NULL);
   if (dest->n == 0)
   {
     dest->strs = NULL;
-    return 0;
+    return;
   }
-  if ((dest->strs = os_malloc (dest->n * sizeof (*dest->strs))) == NULL)
-  {
-    TRACE (("plist/duplicate_stringseq: out of memory (%u)\n", dest->n * sizeof (*dest->strs)));
-    return ERR_OUT_OF_MEMORY;
-  }
+  dest->strs = os_malloc (dest->n * sizeof (*dest->strs));
   for (i = 0; i < dest->n; i++)
   {
     dest->strs[i] = src->strs[i];
-    if ((res = unalias_string (&dest->strs[i], -1)) < 0)
-    {
-      TRACE (("plist/duplicate_stringseq: unalias failed\n"));
-      goto fail;
-    }
+    unalias_string (&dest->strs[i], -1);
   }
-  return 0;
- fail:
-  /* free what has been duplicateed so far, and zero all pointers to
-     prevent confusion, but leave the strs because we can't clear the
-     corresponding 'present' bit */
-  for (--i; i >= 0; i--)
-    os_free (dest->strs[i]);
-  os_free (dest->strs);
-  return res;
 }
 
 static void free_locators (nn_locators_t *locs)
@@ -371,7 +375,7 @@ static void free_locators (nn_locators_t *locs)
   }
 }
 
-static int unalias_locators (nn_locators_t *locs, UNUSED_ARG (int bswap))
+static void unalias_locators (nn_locators_t *locs, UNUSED_ARG (int bswap))
 {
   nn_locators_t newlocs;
   struct nn_locators_one *lold;
@@ -383,12 +387,7 @@ static int unalias_locators (nn_locators_t *locs, UNUSED_ARG (int bswap))
   for (lold = locs->first; lold != NULL; lold = lold->next)
   {
     struct nn_locators_one *n;
-    if ((n = os_malloc (sizeof (*n))) == NULL)
-    {
-      TRACE (("plist/unalias_locators: out of memory (%u)\n", sizeof (*n)));
-      free_locators (&newlocs);
-      return ERR_OUT_OF_MEMORY;
-    }
+    n = os_malloc (sizeof (*n));
     n->next = NULL;
     n->loc = lold->loc;
     if (newlocs.first == NULL)
@@ -398,14 +397,29 @@ static int unalias_locators (nn_locators_t *locs, UNUSED_ARG (int bswap))
     newlocs.last = n;
   }
   *locs = newlocs;
-  return 0;
+}
+
+static void unalias_eotinfo (nn_prismtech_eotinfo_t *txnid, UNUSED_ARG (int bswap))
+{
+  if (txnid->n > 0)
+  {
+    nn_prismtech_eotgroup_tid_t *vs;
+    vs = os_malloc (txnid->n * sizeof (*vs));
+    memcpy (vs, txnid->tids, txnid->n * sizeof (*vs));
+    txnid->tids = vs;
+  }
 }
 
 void nn_plist_fini (nn_plist_t *ps)
 {
-  struct t { unsigned fl; os_size_t off; };
+  struct t { os_uint64 fl; os_size_t off; };
   static const struct t simple[] = {
     { PP_ENTITY_NAME, offsetof (nn_plist_t, entity_name) },
+    { PP_PRISMTECH_NODE_NAME, offsetof (nn_plist_t, node_name) },
+    { PP_PRISMTECH_EXEC_NAME, offsetof (nn_plist_t, exec_name) },
+    { PP_PRISMTECH_PARTICIPANT_VERSION_INFO, offsetof (nn_plist_t, prismtech_participant_version_info.internals) },
+    { PP_PRISMTECH_TYPE_DESCRIPTION, offsetof (nn_plist_t, type_description) },
+    { PP_PRISMTECH_EOTINFO, offsetof (nn_plist_t, eotinfo.tids) }
   };
   static const struct t locs[] = {
     { PP_UNICAST_LOCATOR, offsetof (nn_plist_t, unicast_locators) },
@@ -430,28 +444,19 @@ void nn_plist_fini (nn_plist_t *ps)
     if ((ps->present & locs[i].fl) && !(ps->aliased & locs[i].fl))
       free_locators ((nn_locators_t *) ((char *) ps + locs[i].off));
   }
-  if ((ps->present & PP_PRISMTECH_PARTICIPANT_VERSION_INFO) &&
-     !(ps->aliased & PP_PRISMTECH_PARTICIPANT_VERSION_INFO)) {
-    os_free(ps->prismtech_participant_version_info.internals);
-  }
-
-
   ps->present = 0;
 }
 
-int nn_plist_unalias (nn_plist_t *ps)
+#if 0 /* not currently needed */
+void nn_plist_unalias (nn_plist_t *ps)
 {
-  int bswap = ps->unalias_needs_bswap;
-  int res;
 #define P(name_, func_, field_) do {                                    \
     if ((ps->present & PP_##name_) && (ps->aliased & PP_##name_)) {     \
-      if ((res = unalias_##func_ (&ps->field_, bswap)) < 0)             \
-        goto fail;                                                      \
+      unalias_##func_ (&ps->field_, -1);                                \
       ps->aliased &= ~PP_##name_;                                       \
     }                                                                   \
   } while (0)
-  if ((res = nn_xqos_unalias (&ps->qos)) < 0)
-    goto fail;
+  nn_xqos_unalias (&ps->qos);
   P (ENTITY_NAME, string, entity_name);
   P (UNICAST_LOCATOR, locators, unicast_locators);
   P (MULTICAST_LOCATOR, locators, multicast_locators);
@@ -459,26 +464,28 @@ int nn_plist_unalias (nn_plist_t *ps)
   P (DEFAULT_MULTICAST_LOCATOR, locators, default_multicast_locators);
   P (METATRAFFIC_UNICAST_LOCATOR, locators, metatraffic_unicast_locators);
   P (METATRAFFIC_MULTICAST_LOCATOR, locators, metatraffic_multicast_locators);
+  P (PRISMTECH_NODE_NAME, string, node_name);
+  P (PRISMTECH_EXEC_NAME, string, exec_name);
+  P (PRISMTECH_TYPE_DESCRIPTION, string, type_description);
+  P (PRISMTECH_EOTINFO, eotinfo, eotinfo);
 #undef P
   if ((ps->present & PP_PRISMTECH_PARTICIPANT_VERSION_INFO) &&
-      (ps->aliased & PP_PRISMTECH_PARTICIPANT_VERSION_INFO)) {
-    if ((res = unalias_string(&ps->prismtech_participant_version_info.internals, bswap)) < 0)
-      goto fail;
+      (ps->aliased & PP_PRISMTECH_PARTICIPANT_VERSION_INFO))
+  {
+    unalias_string (&ps->prismtech_participant_version_info.internals, -1);
     ps->aliased &= ~PP_PRISMTECH_PARTICIPANT_VERSION_INFO;
   }
 
   assert (ps->aliased == 0);
-  return 0;
- fail:
-  nn_plist_fini (ps);
-  return res;
 }
+#endif
 
-static int do_octetseq (nn_octetseq_t *dst, unsigned *present, unsigned *aliased, unsigned wanted, unsigned fl, const struct dd *dd)
+static int do_octetseq (nn_octetseq_t *dst, os_uint64 *present, os_uint64 *aliased, os_uint64 wanted, os_uint64 fl, const struct dd *dd)
 {
   int res;
+  unsigned len;
   if (!(wanted & fl))
-    return NN_STRICT_P ? validate_octetseq (dd) : 0;
+    return NN_STRICT_P ? validate_octetseq (dd, &len) : 0;
   if ((res = alias_octetseq (dst, dd)) >= 0)
   {
     *present |= fl;
@@ -487,12 +494,12 @@ static int do_octetseq (nn_octetseq_t *dst, unsigned *present, unsigned *aliased
   return res;
 }
 
-static int do_string (char **dst, unsigned *present, unsigned *aliased, unsigned wanted, unsigned fl, const struct dd *dd)
+static int do_blob (nn_octetseq_t *dst, os_uint64 *present, os_uint64 *aliased, os_uint64 wanted, os_uint64 fl, const struct dd *dd)
 {
   int res;
   if (!(wanted & fl))
-    return NN_STRICT_P ? validate_string (dd) : 0;
-  if ((res = alias_string ((const char **) dst, dd)) >= 0)
+    return 0;
+  if ((res = alias_blob (dst, dd)) >= 0)
   {
     *present |= fl;
     *aliased |= fl;
@@ -500,7 +507,21 @@ static int do_string (char **dst, unsigned *present, unsigned *aliased, unsigned
   return res;
 }
 
-static int do_stringseq (nn_stringseq_t *dst, unsigned *present, unsigned *aliased, unsigned wanted, unsigned fl, const struct dd *dd)
+static int do_string (char **dst, os_uint64 *present, os_uint64 *aliased, os_uint64 wanted, os_uint64 fl, const struct dd *dd)
+{
+  int res;
+  unsigned len;
+  if (!(wanted & fl))
+    return NN_STRICT_P ? validate_string (dd, &len) : 0;
+  if ((res = alias_string ((const unsigned char **) dst, dd, &len)) >= 0)
+  {
+    *present |= fl;
+    *aliased |= fl;
+  }
+  return res;
+}
+
+static int do_stringseq (nn_stringseq_t *dst, os_uint64 *present, os_uint64 *aliased, os_uint64 wanted, os_uint64 fl, const struct dd *dd)
 {
   int res;
   if (!(wanted & fl))
@@ -544,7 +565,7 @@ static void bswap_duration (nn_duration_t *d)
   d->nanosec = bswap4 (d->nanosec);
 }
 
-static int validate_duration (const nn_duration_t *d)
+int validate_duration (const nn_duration_t *d)
 {
   /* Accepted are zero, positive, infinite or invalid as defined in
      the DDS 1.2 spec. */
@@ -566,13 +587,13 @@ static void bswap_duration (nn_duration_t *d)
   bswap_time (d);
 }
 
-static int validate_duration (const nn_duration_t *d)
+int validate_duration (const nn_duration_t *d)
 {
   return validate_time (d);
 }
 #endif
 
-static int do_duration (nn_duration_t *q, unsigned *present, unsigned fl, const struct dd *dd)
+static int do_duration (nn_duration_t *q, os_uint64 *present, os_uint64 fl, const struct dd *dd)
 {
   int res;
   if (dd->bufsz < sizeof (*q))
@@ -591,10 +612,10 @@ static int do_duration (nn_duration_t *q, unsigned *present, unsigned fl, const 
 
 static void bswap_durability_qospolicy (nn_durability_qospolicy_t *q)
 {
-  q->kind = bswap4 (q->kind);
+  q->kind = bswap4u (q->kind);
 }
 
-static int validate_durability_qospolicy (const nn_durability_qospolicy_t *q)
+int validate_durability_qospolicy (const nn_durability_qospolicy_t *q)
 {
   switch (q->kind)
   {
@@ -612,11 +633,11 @@ static int validate_durability_qospolicy (const nn_durability_qospolicy_t *q)
 
 static void bswap_history_qospolicy (nn_history_qospolicy_t *q)
 {
-  q->kind = bswap4 (q->kind);
+  q->kind = bswap4u (q->kind);
   q->depth = bswap4 (q->depth);
 }
 
-static int validate_history_qospolicy (const nn_history_qospolicy_t *q)
+int validate_history_qospolicy (const nn_history_qospolicy_t *q)
 {
   /* Validity of history setting and of resource limits are dependent,
      but we don't have access to the resource limits here ... the
@@ -653,7 +674,7 @@ static void bswap_resource_limits_qospolicy (nn_resource_limits_qospolicy_t *q)
   q->max_samples_per_instance = bswap4 (q->max_samples_per_instance);
 }
 
-static int validate_resource_limits_qospolicy (const nn_resource_limits_qospolicy_t *q)
+int validate_resource_limits_qospolicy (const nn_resource_limits_qospolicy_t *q)
 {
   const int unlimited = NN_DDS_LENGTH_UNLIMITED;
   /* Note: dependent on history setting as well (see
@@ -687,7 +708,7 @@ static int validate_resource_limits_qospolicy (const nn_resource_limits_qospolic
   return 0;
 }
 
-static int validate_history_and_resource_limits (const nn_history_qospolicy_t *qh, const nn_resource_limits_qospolicy_t *qr)
+int validate_history_and_resource_limits (const nn_history_qospolicy_t *qh, const nn_resource_limits_qospolicy_t *qr)
 {
   const int unlimited = NN_DDS_LENGTH_UNLIMITED;
   int res;
@@ -730,7 +751,7 @@ static void bswap_durability_service_qospolicy (nn_durability_service_qospolicy_
   bswap_resource_limits_qospolicy (&q->resource_limits);
 }
 
-static int validate_durability_service_qospolicy (const nn_durability_service_qospolicy_t *q)
+int validate_durability_service_qospolicy (const nn_durability_service_qospolicy_t *q)
 {
   int res;
   if ((res = validate_duration (&q->service_cleanup_delay)) < 0)
@@ -748,11 +769,11 @@ static int validate_durability_service_qospolicy (const nn_durability_service_qo
 
 static void bswap_liveliness_qospolicy (nn_liveliness_qospolicy_t *q)
 {
-  q->kind = bswap4 (q->kind);
+  q->kind = bswap4u (q->kind);
   bswap_duration (&q->lease_duration);
 }
 
-static int validate_liveliness_qospolicy (const nn_liveliness_qospolicy_t *q)
+int validate_liveliness_qospolicy (const nn_liveliness_qospolicy_t *q)
 {
   int res;
   switch (q->kind)
@@ -817,10 +838,10 @@ static int validate_xform_reliability_qospolicy (nn_reliability_qospolicy_t *qds
 
 static void bswap_destination_order_qospolicy (nn_destination_order_qospolicy_t *q)
 {
-  q->kind = bswap4 (q->kind);
+  q->kind = bswap4u (q->kind);
 }
 
-static int validate_destination_order_qospolicy (const nn_destination_order_qospolicy_t *q)
+int validate_destination_order_qospolicy (const nn_destination_order_qospolicy_t *q)
 {
   switch (q->kind)
   {
@@ -835,10 +856,10 @@ static int validate_destination_order_qospolicy (const nn_destination_order_qosp
 
 static void bswap_ownership_qospolicy (nn_ownership_qospolicy_t *q)
 {
-  q->kind = bswap4 (q->kind);
+  q->kind = bswap4u (q->kind);
 }
 
-static int validate_ownership_qospolicy (const nn_ownership_qospolicy_t *q)
+int validate_ownership_qospolicy (const nn_ownership_qospolicy_t *q)
 {
   switch (q->kind)
   {
@@ -856,17 +877,17 @@ static void bswap_ownership_strength_qospolicy (nn_ownership_strength_qospolicy_
   q->value = bswap4 (q->value);
 }
 
-static int validate_ownership_strength_qospolicy (UNUSED_ARG (const nn_ownership_strength_qospolicy_t *q))
+int validate_ownership_strength_qospolicy (UNUSED_ARG (const nn_ownership_strength_qospolicy_t *q))
 {
   return 1;
 }
 
 static void bswap_presentation_qospolicy (nn_presentation_qospolicy_t *q)
 {
-  q->access_scope = bswap4 (q->access_scope);
+  q->access_scope = bswap4u (q->access_scope);
 }
 
-static int validate_presentation_qospolicy (const nn_presentation_qospolicy_t *q)
+int validate_presentation_qospolicy (const nn_presentation_qospolicy_t *q)
 {
   switch (q->access_scope)
   {
@@ -900,12 +921,12 @@ static void bswap_transport_priority_qospolicy (nn_transport_priority_qospolicy_
   q->value = bswap4 (q->value);
 }
 
-static int validate_transport_priority_qospolicy (UNUSED_ARG (const nn_transport_priority_qospolicy_t *q))
+int validate_transport_priority_qospolicy (UNUSED_ARG (const nn_transport_priority_qospolicy_t *q))
 {
   return 1;
 }
 
-static int add_locator (nn_locators_t *ls, unsigned *present, unsigned wanted, unsigned fl, const nn_locator_t *loc)
+static int add_locator (nn_locators_t *ls, os_uint64 *present, os_uint64 wanted, os_uint64 fl, const nn_locator_t *loc)
 {
   if (wanted & fl)
   {
@@ -916,11 +937,7 @@ static int add_locator (nn_locators_t *ls, unsigned *present, unsigned wanted, u
       ls->first = NULL;
       ls->last = NULL;
     }
-    if ((nloc = os_malloc (sizeof (*nloc))) == NULL)
-    {
-      TRACE (("plist/add_locator: out of memory (%u)\n", sizeof (*nloc)));
-      return ERR_OUT_OF_MEMORY;
-    }
+    nloc = os_malloc (sizeof (*nloc));
     nloc->loc = *loc;
     nloc->next = NULL;
     if (ls->first == NULL)
@@ -956,9 +973,9 @@ static int locator_address_zero (const nn_locator_t *loc)
 static int do_locator
 (
   nn_locators_t *ls,
-  unsigned *present,
-  unsigned wanted,
-  unsigned fl,
+  os_uint64 *present,
+  os_uint64 wanted,
+  os_uint64 fl,
   const struct dd *dd
 )
 {
@@ -973,7 +990,7 @@ static int do_locator
   if (dd->bswap)
   {
     loc.kind = bswap4 (loc.kind);
-    loc.port = bswap4 (loc.port);
+    loc.port = bswap4u (loc.port);
   }
   switch (loc.kind)
   {
@@ -1016,7 +1033,7 @@ static int do_locator
       return 0;
     default:
       TRACE (("plist/do_locator: invalid kind (%d)\n", (int) loc.kind));
-      return ERR_INVALID;
+      return NN_PEDANTIC_P ? ERR_INVALID : 0;
   }
   return add_locator (ls, present, wanted, fl, &loc);
 }
@@ -1029,44 +1046,45 @@ static void locator_from_ipv4address_port (nn_locator_t *loc, const nn_ipv4addre
   memcpy (loc->address + 12, a, 4);
 }
 
-static int do_ipv4address (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest_tmp, unsigned wanted, unsigned fl, const struct dd *dd)
+static int do_ipv4address (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest_tmp, os_uint64 wanted, unsigned fl_tmp, const struct dd *dd)
 {
   nn_ipv4address_t *a;
   nn_port_t *p;
   nn_locators_t *ls;
-  unsigned fl1, fldest;
+  unsigned fl1_tmp;
+  os_uint64 fldest;
   if (dd->bufsz < sizeof (*a))
   {
     TRACE (("plist/do_ipv4address: buffer too small\n"));
     return ERR_INVALID;
   }
-  switch (fl)
+  switch (fl_tmp)
   {
     case PPTMP_MULTICAST_IPADDRESS:
       a = &dest_tmp->multicast_ipaddress;
       p = NULL; /* don't know which port to use ... */
-      fl1 = 0;
+      fl1_tmp = 0;
       fldest = PP_MULTICAST_LOCATOR;
       ls = &dest->multicast_locators;
       break;
     case PPTMP_DEFAULT_UNICAST_IPADDRESS:
       a = &dest_tmp->default_unicast_ipaddress;
       p = &dest_tmp->default_unicast_port;
-      fl1 = PPTMP_DEFAULT_UNICAST_PORT;
+      fl1_tmp = PPTMP_DEFAULT_UNICAST_PORT;
       fldest = PP_DEFAULT_UNICAST_LOCATOR;
       ls = &dest->unicast_locators;
       break;
     case PPTMP_METATRAFFIC_UNICAST_IPADDRESS:
       a = &dest_tmp->metatraffic_unicast_ipaddress;
       p = &dest_tmp->metatraffic_unicast_port;
-      fl1 = PPTMP_METATRAFFIC_UNICAST_PORT;
+      fl1_tmp = PPTMP_METATRAFFIC_UNICAST_PORT;
       fldest = PP_METATRAFFIC_UNICAST_LOCATOR;
       ls = &dest->metatraffic_unicast_locators;
       break;
     case PPTMP_METATRAFFIC_MULTICAST_IPADDRESS:
       a = &dest_tmp->metatraffic_multicast_ipaddress;
       p = &dest_tmp->metatraffic_multicast_port;
-      fl1 = PPTMP_METATRAFFIC_MULTICAST_PORT;
+      fl1_tmp = PPTMP_METATRAFFIC_MULTICAST_PORT;
       fldest = PP_METATRAFFIC_MULTICAST_LOCATOR;
       ls = &dest->metatraffic_multicast_locators;
       break;
@@ -1074,14 +1092,14 @@ static int do_ipv4address (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest_tmp
       abort ();
   }
   memcpy (a, dd->buf, sizeof (*a));
-  dest_tmp->present |= fl;
+  dest_tmp->present |= fl_tmp;
 
   /* PPTMP_MULTICAST_IPADDRESS must fail because we don't have a port.
      (There are of course other ways of failing ...)  Option 1: set
      fl1 to a value to bit that's never set; option 2: explicit check.
      Since this code hardly ever gets executed, use option 2. */
 
-  if (fl1 && ((dest_tmp->present & (fl | fl1)) == (fl | fl1)))
+  if (fl1_tmp && ((dest_tmp->present & (fl_tmp | fl1_tmp)) == (fl_tmp | fl1_tmp)))
   {
     /* If port already known, add corresponding locator and discard
        both address & port from the set of present plist: this
@@ -1089,7 +1107,7 @@ static int do_ipv4address (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest_tmp
 
     nn_locator_t loc;
     locator_from_ipv4address_port (&loc, a, p);
-    dest_tmp->present &= ~(fl | fl1);
+    dest_tmp->present &= ~(fl_tmp | fl1_tmp);
     return add_locator (ls, &dest->present, wanted, fldest, &loc);
   }
   else
@@ -1098,37 +1116,38 @@ static int do_ipv4address (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest_tmp
   }
 }
 
-static int do_port (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest_tmp, unsigned wanted, unsigned fl, const struct dd *dd)
+static int do_port (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest_tmp, os_uint64 wanted, unsigned fl_tmp, const struct dd *dd)
 {
   nn_ipv4address_t *a;
   nn_port_t *p;
   nn_locators_t *ls;
-  unsigned fl1, fldest;
+  os_uint64 fldest;
+  unsigned fl1_tmp;
   if (dd->bufsz < sizeof (*p))
   {
     TRACE (("plist/do_port: buffer too small\n"));
     return ERR_INVALID;
   }
-  switch (fl)
+  switch (fl_tmp)
   {
     case PPTMP_DEFAULT_UNICAST_PORT:
       a = &dest_tmp->default_unicast_ipaddress;
       p = &dest_tmp->default_unicast_port;
-      fl1 = PPTMP_DEFAULT_UNICAST_IPADDRESS;
+      fl1_tmp = PPTMP_DEFAULT_UNICAST_IPADDRESS;
       fldest = PP_DEFAULT_UNICAST_LOCATOR;
       ls = &dest->unicast_locators;
       break;
     case PPTMP_METATRAFFIC_UNICAST_PORT:
       a = &dest_tmp->metatraffic_unicast_ipaddress;
       p = &dest_tmp->metatraffic_unicast_port;
-      fl1 = PPTMP_METATRAFFIC_UNICAST_IPADDRESS;
+      fl1_tmp = PPTMP_METATRAFFIC_UNICAST_IPADDRESS;
       fldest = PP_METATRAFFIC_UNICAST_LOCATOR;
       ls = &dest->metatraffic_unicast_locators;
       break;
     case PPTMP_METATRAFFIC_MULTICAST_PORT:
       a = &dest_tmp->metatraffic_multicast_ipaddress;
       p = &dest_tmp->metatraffic_multicast_port;
-      fl1 = PPTMP_METATRAFFIC_MULTICAST_IPADDRESS;
+      fl1_tmp = PPTMP_METATRAFFIC_MULTICAST_IPADDRESS;
       fldest = PP_METATRAFFIC_MULTICAST_LOCATOR;
       ls = &dest->metatraffic_multicast_locators;
       break;
@@ -1143,15 +1162,15 @@ static int do_port (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest_tmp, unsig
     TRACE (("plist/do_port: invalid port (%d)\n", (int) *p));
     return ERR_INVALID;
   }
-  dest_tmp->present |= fl;
-  if ((dest_tmp->present & (fl | fl1)) == (fl | fl1))
+  dest_tmp->present |= fl_tmp;
+  if ((dest_tmp->present & (fl_tmp | fl1_tmp)) == (fl_tmp | fl1_tmp))
   {
     /* If port already known, add corresponding locator and discard
        both address & port from the set of present plist: this
        allows adding another pair. */
     nn_locator_t loc;
     locator_from_ipv4address_port (&loc, a, p);
-    dest_tmp->present &= ~(fl | fl1);
+    dest_tmp->present &= ~(fl_tmp | fl1_tmp);
     return add_locator (ls, &dest->present, wanted, fldest, &loc);
   }
   else
@@ -1184,6 +1203,31 @@ static int valid_participant_guid (const nn_guid_t *g, UNUSED_ARG (const struct 
   }
 }
 
+static int valid_group_guid (const nn_guid_t *g, UNUSED_ARG (const struct dd *dd))
+{
+  /* All 0 is GUID_UNKNOWN, which is a defined GUID */
+  if (g->prefix.u[0] == 0 && g->prefix.u[1] == 0 && g->prefix.u[2] == 0)
+  {
+    if (g->entityid.u == 0)
+      return 0;
+    else
+    {
+      TRACE (("plist/valid_group_guid: prefix is 0 but entityid is not (%u)\n", g->entityid.u));
+      return ERR_INVALID;
+    }
+  }
+  else if (g->entityid.u != 0)
+  {
+    /* accept any entity id */
+    return 0;
+  }
+  else
+  {
+    TRACE (("plist/valid_group_guid: entityid is 0\n"));
+    return ERR_INVALID;
+  }
+}
+
 static int valid_endpoint_guid (const nn_guid_t *g, const struct dd *dd)
 {
   /* All 0 is GUID_UNKNOWN, which is a defined GUID */
@@ -1193,7 +1237,7 @@ static int valid_endpoint_guid (const nn_guid_t *g, const struct dd *dd)
       return 0;
     else
     {
-      TRACE (("plist/valid_endpoint_guid: prefix is 0 but entityid is not (%u)\n", g->entityid.u));
+      TRACE (("plist/valid_endpoint_guid: prefix is 0 but entityid is not (%x)\n", g->entityid.u));
       return ERR_INVALID;
     }
   }
@@ -1212,7 +1256,7 @@ static int valid_endpoint_guid (const nn_guid_t *g, const struct dd *dd)
             return 0;
           else
           {
-            TRACE (("plist/valid_endpoint_guid[src=USER,proto=%d.%d]: invalid kind (%u)\n",
+            TRACE (("plist/valid_endpoint_guid[src=USER,proto=%d.%d]: invalid kind (%x)\n",
                     dd->protocol_version.major, dd->protocol_version.minor,
                     g->entityid.u & NN_ENTITYID_KIND_MASK));
             return ERR_INVALID;
@@ -1237,7 +1281,7 @@ static int valid_endpoint_guid (const nn_guid_t *g, const struct dd *dd)
             return 0;
           else
           {
-            TRACE (("plist/valid_endpoint_guid[src=BUILTIN,proto=%d.%d]: invalid entityid (%u)\n",
+            TRACE (("plist/valid_endpoint_guid[src=BUILTIN,proto=%d.%d]: invalid entityid (%x)\n",
                     dd->protocol_version.major, dd->protocol_version.minor, g->entityid.u));
             return ERR_INVALID;
           }
@@ -1250,18 +1294,33 @@ static int valid_endpoint_guid (const nn_guid_t *g, const struct dd *dd)
         return 0;
       else
       {
-        TRACE (("plist/valid_endpoint_guid[src=VENDOR,proto=%d.%d,vendor=%d.%d]: invalid entityid (%u)\n",
-                dd->protocol_version.major, dd->protocol_version.minor,
-                dd->vendorid.id[0], dd->vendorid.id[1], g->entityid.u));
-        return ERR_INVALID;
+        switch (g->entityid.u)
+        {
+          case NN_ENTITYID_SEDP_BUILTIN_CM_PARTICIPANT_WRITER:
+          case NN_ENTITYID_SEDP_BUILTIN_CM_PARTICIPANT_READER:
+          case NN_ENTITYID_SEDP_BUILTIN_CM_PUBLISHER_WRITER:
+          case NN_ENTITYID_SEDP_BUILTIN_CM_PUBLISHER_READER:
+          case NN_ENTITYID_SEDP_BUILTIN_CM_SUBSCRIBER_WRITER:
+          case NN_ENTITYID_SEDP_BUILTIN_CM_SUBSCRIBER_READER:
+            return 0;
+          default:
+            if (protocol_version_is_newer (dd->protocol_version))
+              return 0;
+            else
+            {
+              TRACE (("plist/valid_endpoint_guid[src=VENDOR,proto=%d.%d]: invalid entityid (%x)\n",
+                      dd->protocol_version.major, dd->protocol_version.minor, g->entityid.u));
+              return 0;
+            }
+        }
       }
     default:
-      TRACE (("plist/valid_endpoint_guid: invalid source (%u)\n", g->entityid.u));
+      TRACE (("plist/valid_endpoint_guid: invalid source (%x)\n", g->entityid.u));
       return ERR_INVALID;
   }
 }
 
-static int do_guid (nn_guid_t *dst, unsigned *present, unsigned fl, int (*valid) (const nn_guid_t *g, const struct dd *dd), const struct dd *dd)
+static int do_guid (nn_guid_t *dst, os_uint64 *present, os_uint64 fl, int (*valid) (const nn_guid_t *g, const struct dd *dd), const struct dd *dd)
 {
   if (dd->bufsz < sizeof (*dst))
   {
@@ -1310,11 +1369,11 @@ static void bswap_prismtech_participant_version_info (nn_prismtech_participant_v
       pvi->unused[i] = bswap4u (pvi->unused[i]);
 }
 
-static int do_prismtech_participant_version_info (nn_prismtech_participant_version_info_t *pvi, unsigned *present, unsigned *aliased, const struct dd *dd)
+static int do_prismtech_participant_version_info (nn_prismtech_participant_version_info_t *pvi, os_uint64 *present, os_uint64 *aliased, const struct dd *dd)
 {
   if (!vendor_is_prismtech (dd->vendorid))
     return 0;
-  else if (dd->bufsz < sizeof (pvi))
+  else if (dd->bufsz < NN_PRISMTECH_PARTICIPANT_VERSION_INFO_FIXED_CDRSIZE)
   {
     TRACE (("plist/do_prismtech_participant_version_info[pid=PRISMTECH_PARTICIPANT_VERSION_INFO]: buffer too small\n"));
     return ERR_INVALID;
@@ -1324,15 +1383,16 @@ static int do_prismtech_participant_version_info (nn_prismtech_participant_versi
     int res;
     unsigned sz = NN_PRISMTECH_PARTICIPANT_VERSION_INFO_FIXED_CDRSIZE - sizeof(unsigned);
     unsigned *pu = (unsigned *)dd->buf;
+    unsigned len;
     struct dd dd1 = *dd;
 
     memcpy (pvi, dd->buf, sz);
     if (dd->bswap)
       bswap_prismtech_participant_version_info(pvi);
 
-    dd1.buf = (char *)&pu[5];
+    dd1.buf = (unsigned char *) &pu[5];
     dd1.bufsz = dd->bufsz - sz;
-    if ((res = alias_string ((const char **)&pvi->internals, &dd1)) >= 0) {
+    if ((res = alias_string ((const unsigned char **) &pvi->internals, &dd1, &len)) >= 0) {
       *present |= PP_PRISMTECH_PARTICIPANT_VERSION_INFO;
       *aliased |= PP_PRISMTECH_PARTICIPANT_VERSION_INFO;
       res = 0;
@@ -1342,12 +1402,171 @@ static int do_prismtech_participant_version_info (nn_prismtech_participant_versi
   }
 }
 
+static int do_share_qospolicy (nn_share_qospolicy_t *q, os_uint64 *present, os_uint64 *aliased, os_uint64 fl, const struct dd *dd)
+{
+  struct dd dd1;
+  unsigned len;
+  int res;
+  if (dd->bufsz < 4)
+  {
+    TRACE (("plist/do_share: buffer too small\n"));
+    return ERR_INVALID;
+  }
+  q->enable = (unsigned char) dd->buf[0];
+  if (q->enable != 0 && q->enable != 1)
+  {
+    TRACE (("plist/do_share: invalid enable (%d)\n", (int) q->enable));
+    return ERR_INVALID;
+  }
+  dd1 = *dd;
+  dd1.buf += 4;
+  dd1.bufsz -= 4;
+  if ((res = alias_string ((const unsigned char **) &q->name, &dd1, &len)) >= 0)
+  {
+    *present |= fl;
+    *aliased |= fl;
+  }
+  return res;
+}
+
+static void unalias_share_qospolicy (nn_share_qospolicy_t *q, int bswap)
+{
+  unalias_string (&q->name, bswap);
+}
+
+static int do_subscription_keys_qospolicy (nn_subscription_keys_qospolicy_t *q, os_uint64 *present, os_uint64 *aliased, os_uint64 fl, const struct dd *dd)
+{
+  struct dd dd1;
+  int res;
+  if (dd->bufsz < 4)
+  {
+    TRACE (("plist/do_subscription_keys: buffer too small\n"));
+    return ERR_INVALID;
+  }
+  q->use_key_list = (unsigned char) dd->buf[0];
+  if (q->use_key_list != 0 && q->use_key_list != 1)
+  {
+    TRACE (("plist/do_subscription_keys: invalid use_key_list (%d)\n", (int) q->use_key_list));
+    return ERR_INVALID;
+  }
+  dd1 = *dd;
+  dd1.buf += 4;
+  dd1.bufsz -= 4;
+  if ((res = alias_stringseq (&q->key_list, &dd1)) >= 0)
+  {
+    *present |= fl;
+    *aliased |= fl;
+  }
+  return res;
+}
+
+static int unalias_subscription_keys_qospolicy (nn_subscription_keys_qospolicy_t *q, int bswap)
+{
+  return unalias_stringseq (&q->key_list, bswap);
+}
+
+static int do_reader_lifespan_qospolicy (nn_reader_lifespan_qospolicy_t *q, os_uint64 *present, os_uint64 fl, const struct dd *dd)
+{
+  int res;
+  if (dd->bufsz < sizeof (*q))
+  {
+    TRACE (("plist/do_reader_lifespan: buffer too small\n"));
+    return ERR_INVALID;
+  }
+  *q = *((nn_reader_lifespan_qospolicy_t *) dd->buf);
+  if (dd->bswap)
+    bswap_duration (&q->duration);
+  if (q->use_lifespan != 0 && q->use_lifespan != 1)
+  {
+    TRACE (("plist/do_reader_lifespan: invalid use_lifespan (%d)\n", (int) q->use_lifespan));
+    return ERR_INVALID;
+  }
+  if ((res = validate_duration (&q->duration)) >= 0)
+    *present |= fl;
+  return res;
+}
+
+static int do_entity_factory_qospolicy (nn_entity_factory_qospolicy_t *q, os_uint64 *present, os_uint64 fl, const struct dd *dd)
+{
+  if (dd->bufsz < sizeof (*q))
+  {
+    TRACE (("plist/do_entity_factory: buffer too small\n"));
+    return ERR_INVALID;
+  }
+  q->autoenable_created_entities = dd->buf[0];
+  if (q->autoenable_created_entities != 0 && q->autoenable_created_entities != 1)
+  {
+    TRACE (("plist/do_entity_factory: invalid autoenable_created_entities (%d)\n", (int) q->autoenable_created_entities));
+    return ERR_INVALID;
+  }
+  *present |= fl;
+  return 0;
+}
+
+int validate_reader_data_lifecycle (const nn_reader_data_lifecycle_qospolicy_t *q)
+{
+  if (validate_duration (&q->autopurge_nowriter_samples_delay) < 0 ||
+      validate_duration (&q->autopurge_disposed_samples_delay) < 0)
+  {
+    TRACE (("plist/init_one_parameter[pid=PRISMTECH_READER_DATA_LIFECYCLE]: invalid autopurge_nowriter_sample_delay or autopurge_disposed_samples_delay\n"));
+    return ERR_INVALID;
+  }
+  if (q->autopurge_dispose_all != 0 && q->autopurge_dispose_all != 1)
+  {
+    TRACE (("plist/init_one_parameter[pid=PRISMTECH_READER_DATA_LIFECYCLE]: invalid autopurge_dispose_all\n"));
+    return ERR_INVALID;
+  }
+  if (q->enable_invalid_samples != 0 && q->enable_invalid_samples != 1)
+  {
+    TRACE (("plist/init_one_parameter[pid=PRISMTECH_READER_DATA_LIFECYCLE]: invalid enable_invalid_samples\n"));
+    return ERR_INVALID;
+  }
+  /* Don't check consistency between enable_invalid_samples and invalid_samples_mode (yet) */
+  switch (q->invalid_sample_visibility)
+  {
+    case NN_NO_INVALID_SAMPLE_VISIBILITY_QOS:
+    case NN_MINIMUM_INVALID_SAMPLE_VISIBILITY_QOS:
+    case NN_ALL_INVALID_SAMPLE_VISIBILITY_QOS:
+      break;
+    default:
+      TRACE (("plist/init_one_parameter[pid=PRISMTECH_READER_DATA_LIFECYCLE]: invalid invalid_sample_visibility\n"));
+      return ERR_INVALID;
+  }
+  return 0;
+}
+
+static int do_reader_data_lifecycle_v0 (nn_reader_data_lifecycle_qospolicy_t *q, const struct dd *dd)
+{
+  memcpy (q, dd->buf, 2 * sizeof (nn_duration_t));
+  q->autopurge_dispose_all = 0;
+  q->enable_invalid_samples = 1;
+  q->invalid_sample_visibility = NN_MINIMUM_INVALID_SAMPLE_VISIBILITY_QOS;
+  if (dd->bswap)
+  {
+    bswap_duration (&q->autopurge_nowriter_samples_delay);
+    bswap_duration (&q->autopurge_disposed_samples_delay);
+  }
+  return validate_reader_data_lifecycle (q);
+}
+
+static int do_reader_data_lifecycle_v1 (nn_reader_data_lifecycle_qospolicy_t *q, const struct dd *dd)
+{
+  memcpy (q, dd->buf, sizeof (*q));
+  if (dd->bswap)
+  {
+    bswap_duration (&q->autopurge_nowriter_samples_delay);
+    bswap_duration (&q->autopurge_disposed_samples_delay);
+    q->invalid_sample_visibility = (nn_invalid_sample_visibility_kind_t) bswap4u ((unsigned) q->invalid_sample_visibility);
+  }
+  return validate_reader_data_lifecycle (q);
+}
+
 static int init_one_parameter
 (
   nn_plist_t *dest,
   nn_ipaddress_params_tmp_t *dest_tmp,
-  unsigned pwanted,
-  unsigned qwanted,
+  os_uint64 pwanted,
+  os_uint64 qwanted,
   unsigned short pid,
   const struct dd *dd
 )
@@ -1438,51 +1657,65 @@ static int init_one_parameter
       return do_stringseq (&dest->qos.partition, &dest->qos.present, &dest->qos.aliased, qwanted, QP_PARTITION, dd);
 
     case PID_PRISMTECH_READER_DATA_LIFECYCLE: /* PrismTech specific */
-      if (!vendor_is_prismtech (dd->vendorid))
-        return 0;
-      else if (dd->bufsz < sizeof (dest->qos.reader_data_lifecycle))
       {
-        TRACE (("plist/init_one_parameter[pid=PRISMTECH_READER_DATA_LIFECYCLE]: buffer too small\n"));
-        return ERR_INVALID;
-      }
-      else
-      {
-        nn_reader_data_lifecycle_qospolicy_t *q = &dest->qos.reader_data_lifecycle;
-        memcpy (q, dd->buf, sizeof (*q));
-        if (dd->bswap)
+        int ret;
+        if (!vendor_is_prismtech (dd->vendorid))
+          return 0;
+        if (dd->bufsz >= sizeof (nn_reader_data_lifecycle_qospolicy_t))
+          ret = do_reader_data_lifecycle_v1 (&dest->qos.reader_data_lifecycle, dd);
+        else if (dd->bufsz >= 2 * sizeof (nn_duration_t))
+          ret = do_reader_data_lifecycle_v0 (&dest->qos.reader_data_lifecycle, dd);
+        else
         {
-          bswap_duration (&q->autopurge_nowriter_samples_delay);
-          bswap_duration (&q->autopurge_disposed_samples_delay);
+          TRACE (("plist/init_one_parameter[pid=PRISMTECH_READER_DATA_LIFECYCLE]: buffer too small\n"));
+          ret = ERR_INVALID;
         }
-        if (validate_duration (&q->autopurge_nowriter_samples_delay) < 0 ||
-            validate_duration (&q->autopurge_disposed_samples_delay) < 0)
-        {
-          TRACE (("plist/init_one_parameter[pid=PRISMTECH_WRITER_DATA_LIFECYCLE]: invalid autopurge_nowriter_sample_delay or autopurge_disposed_samples_delay\n"));
-          return ERR_INVALID;
-        }
-        dest->qos.present |= QP_PRISMTECH_READER_DATA_LIFECYCLE;
-        return 0;
+        if (ret >= 0)
+          dest->qos.present |= QP_PRISMTECH_READER_DATA_LIFECYCLE;
+        return ret;
       }
     case PID_PRISMTECH_WRITER_DATA_LIFECYCLE: /* PrismTech specific */
       if (!vendor_is_prismtech (dd->vendorid))
         return 0;
-      else if (dd->bufsz < sizeof (dest->qos.writer_data_lifecycle))
-      {
-        TRACE (("plist/init_one_parameter[pid=PRISMTECH_WRITER_DATA_LIFECYCLE]: buffer too small\n"));
-        return ERR_INVALID;
-      }
       else
       {
         nn_writer_data_lifecycle_qospolicy_t *q = &dest->qos.writer_data_lifecycle;
-        memcpy (q, dd->buf, sizeof (*q));
+        if (dd->bufsz < 1)
+        {
+          TRACE (("plist/init_one_parameter[pid=PRISMTECH_WRITER_DATA_LIFECYCLE]: buffer too small\n"));
+          return ERR_INVALID;
+        }
+        else if (dd->bufsz < sizeof (*q))
+        {
+          /* Spec form, with just autodispose_unregistered_instances */
+          q->autodispose_unregistered_instances = dd->buf[0];
+          q->autounregister_instance_delay = nn_to_ddsi_duration (T_NEVER);
+          q->autopurge_suspended_samples_delay = nn_to_ddsi_duration (T_NEVER);
+        }
+        else
+        {
+          memcpy (q, dd->buf, sizeof (*q));
+          if (dd->bswap)
+          {
+            bswap_duration (&q->autounregister_instance_delay);
+            bswap_duration (&q->autopurge_suspended_samples_delay);
+          }
+        }
         if (q->autodispose_unregistered_instances & ~1)
         {
           TRACE (("plist/init_one_parameter[pid=PRISMTECH_WRITER_DATA_LIFECYCLE]: invalid autodispose_unregistered_instances (%d)\n", (int) q->autodispose_unregistered_instances));
           return ERR_INVALID;
         }
+        if (validate_duration (&q->autounregister_instance_delay) < 0 ||
+            validate_duration (&q->autopurge_suspended_samples_delay) < 0)
+        {
+          TRACE (("plist/init_one_parameter[pid=PRISMTECH_WRITER_DATA_LIFECYCLE]: invalid autounregister_instance_delay or autopurge_suspended_samples_delay\n"));
+          return ERR_INVALID;
+        }
         dest->qos.present |= QP_PRISMTECH_WRITER_DATA_LIFECYCLE;
         return 0;
       }
+
     case PID_PRISMTECH_RELAXED_QOS_MATCHING:
       if (!vendor_is_prismtech (dd->vendorid))
         return 0;
@@ -1501,6 +1734,27 @@ static int init_one_parameter
           return ERR_INVALID;
         }
         dest->qos.present |= QP_PRISMTECH_RELAXED_QOS_MATCHING;
+        return 0;
+      }
+
+    case PID_PRISMTECH_SYNCHRONOUS_ENDPOINT: /* PrismTech specific */
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      else if (dd->bufsz < sizeof (dest->qos.synchronous_endpoint))
+      {
+        TRACE (("plist/init_one_parameter[pid=PRISMTECH_SYNCHRONOUS_ENDPOINT]: buffer too small\n"));
+        return ERR_INVALID;
+      }
+      else
+      {
+        nn_synchronous_endpoint_qospolicy_t *q = &dest->qos.synchronous_endpoint;
+        memcpy (q, dd->buf, sizeof (*q));
+        if (q->value != 0 && q->value != 1)
+        {
+          TRACE (("plist/init_one_parameter[pid=PRISMTECH_SYNCHRONOUS_ENDPOINT]: invalid value for synchronous flag\n"));
+          return ERR_INVALID;
+        }
+        dest->qos.present |= QP_PRISMTECH_SYNCHRONOUS_ENDPOINT;
         return 0;
       }
 
@@ -1620,8 +1874,10 @@ static int init_one_parameter
     case PID_PARTICIPANT_GUID:
       return do_guid (&dest->participant_guid, &dest->present, PP_PARTICIPANT_GUID, valid_participant_guid, dd);
 
-    case PID_PARTICIPANT_ENTITYID:
     case PID_GROUP_GUID:
+      return do_guid (&dest->group_guid, &dest->present, PP_GROUP_GUID, valid_group_guid, dd);
+
+    case PID_PARTICIPANT_ENTITYID:
     case PID_GROUP_ENTITYID:
       /* DDSI 2.1 table 9.13: reserved for future use */
       return 0;
@@ -1646,6 +1902,8 @@ static int init_one_parameter
                                           NN_DISC_BUILTIN_ENDPOINT_PUBLICATION_DETECTOR |
                                           NN_DISC_BUILTIN_ENDPOINT_SUBSCRIPTION_ANNOUNCER |
                                           NN_DISC_BUILTIN_ENDPOINT_SUBSCRIPTION_DETECTOR |
+                                          NN_DISC_BUILTIN_ENDPOINT_TOPIC_ANNOUNCER |
+                                          NN_DISC_BUILTIN_ENDPOINT_TOPIC_DETECTOR |
                                           /* undefined ones: */
                                           NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_PROXY_ANNOUNCER |
                                           NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_PROXY_DETECTOR |
@@ -1660,6 +1918,23 @@ static int init_one_parameter
         return ERR_INVALID;
       }
       dest->present |= PP_BUILTIN_ENDPOINT_SET;
+      return 0;
+
+    case PID_PRISMTECH_BUILTIN_ENDPOINT_SET:
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      else if (dd->bufsz < sizeof (dest->prismtech_builtin_endpoint_set))
+      {
+        TRACE (("plist/init_one_parameter[pid=PRISMTECH_BUILTIN_ENDPOINT_SET(%d)]: buffer too small\n", pid));
+        return ERR_INVALID;
+      }
+      else
+      {
+        memcpy (&dest->prismtech_builtin_endpoint_set, dd->buf, sizeof (dest->prismtech_builtin_endpoint_set));
+        if (dd->bswap)
+          dest->prismtech_builtin_endpoint_set = bswap4u (dest->prismtech_builtin_endpoint_set);
+        dest->present |= PP_PRISMTECH_BUILTIN_ENDPOINT_SET;
+      }
       return 0;
 
     case PID_PROPERTY_LIST:
@@ -1700,8 +1975,33 @@ static int init_one_parameter
       dest->present |= PP_STATUSINFO;
       return 0;
 
-    case PID_CONTENT_FILTER_INFO:
     case PID_COHERENT_SET:
+      if (dd->bufsz < sizeof (dest->coherent_set_seqno))
+      {
+        TRACE (("plist/init_one_parameter[pid=COHERENT_SET]: buffer too small\n"));
+        return ERR_INVALID;
+      }
+      else
+      {
+        nn_sequence_number_t *q = &dest->coherent_set_seqno;
+        os_int64 seqno;
+        memcpy (q, dd->buf, sizeof (*q));
+        if (dd->bswap)
+        {
+          q->high = bswap4 (q->high);
+          q->low = bswap4u (q->low);
+        }
+        seqno = fromSN(dest->coherent_set_seqno);
+        if (seqno <= 0 && seqno != NN_SEQUENCE_NUMBER_UNKNOWN)
+        {
+          TRACE (("plist/init_one_parameter[pid=COHERENT_SET]: invalid sequence number (%" PA_PRId64 ")\n", seqno));
+          return ERR_INVALID;
+        }
+        dest->present |= PP_COHERENT_SET;
+        return 0;
+      }
+
+    case PID_CONTENT_FILTER_INFO:
     case PID_DIRECTED_WRITE:
     case PID_ORIGINAL_WRITER_INFO:
       /* FIXME */
@@ -1720,12 +2020,68 @@ static int init_one_parameter
       }
       return do_guid (&dest->endpoint_guid, &dest->present, PP_ENDPOINT_GUID, valid_endpoint_guid, dd);
 
-    case PID_PRISMTECH_ENDPOINT_GUID:
-      /* PrismTech specific variant of ENDPOINT_GUID, for strict compliancy */
+    case PID_PRISMTECH_ENDPOINT_GUID: /* case PID_RTI_TYPECODE: */
+      if (vendor_is_prismtech (dd->vendorid))
+      {
+        /* PrismTech specific variant of ENDPOINT_GUID, for strict compliancy */
+        return do_guid (&dest->endpoint_guid, &dest->present, PP_ENDPOINT_GUID, valid_endpoint_guid, dd);
+      }
+      else if (vendor_is_rti (dd->vendorid))
+      {
+        /* For RTI it is a typecode */
+        return do_blob (&dest->qos.rti_typecode, &dest->qos.present, &dest->qos.aliased, qwanted, QP_RTI_TYPECODE, dd);
+
+      }
+      else
+      {
+        return 0;
+      }
+
+    case PID_PRISMTECH_ENDPOINT_GID:
       if (!vendor_is_prismtech (dd->vendorid))
         return 0;
+      else if (dd->bufsz < sizeof (v_gid))
+      {
+        TRACE (("plist/init_one_parameter[pid=PID_PRISMTECH_ENDPOINT_GID]: buffer too small\n"));
+        return ERR_INVALID;
+      }
       else
-        return do_guid (&dest->endpoint_guid, &dest->present, PP_ENDPOINT_GUID, valid_endpoint_guid, dd);
+      {
+        v_gid *g = &dest->endpoint_gid;
+        memcpy (g, dd->buf, sizeof (*g));
+        if (dd->bswap)
+        {
+          g->systemId = bswap4u (g->systemId);
+          g->localId = bswap4u (g->localId);
+          g->serial = bswap4u (g->serial);
+        }
+        /* FIXME: localId and serial have limited range, &c. */
+        dest->present |= PP_PRISMTECH_ENDPOINT_GID;
+        return 0;
+      }
+
+    case PID_PRISMTECH_GROUP_GID:
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      else if (dd->bufsz < sizeof (v_gid))
+      {
+        TRACE (("plist/init_one_parameter[pid=PID_PRISMTECH_GROUP_GID]: buffer too small\n"));
+        return ERR_INVALID;
+      }
+      else
+      {
+        v_gid *g = &dest->group_gid;
+        memcpy (g, dd->buf, sizeof (*g));
+        if (dd->bswap)
+        {
+          g->systemId = bswap4u (g->systemId);
+          g->localId = bswap4u (g->localId);
+          g->serial = bswap4u (g->serial);
+        }
+        /* FIXME: localId and serial have limited range, &c. */
+        dest->present |= PP_PRISMTECH_GROUP_GID;
+        return 0;
+      }
 
     case PID_PRISMTECH_WRITER_INFO: /* PrismTech specific */
       if (!vendor_is_prismtech (dd->vendorid))
@@ -1744,8 +2100,119 @@ static int init_one_parameter
         dest->present |= PP_PRISMTECH_WRITER_INFO;
         return 0;
       }
+
     case PID_PRISMTECH_PARTICIPANT_VERSION_INFO:
       return do_prismtech_participant_version_info(&dest->prismtech_participant_version_info, &dest->present, &dest->aliased, dd);
+
+    case PID_PRISMTECH_SUBSCRIPTION_KEYS:
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      return do_subscription_keys_qospolicy (&dest->qos.subscription_keys, &dest->qos.present, &dest->qos.aliased, QP_PRISMTECH_SUBSCRIPTION_KEYS, dd);
+
+    case PID_PRISMTECH_READER_LIFESPAN:
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      return do_reader_lifespan_qospolicy (&dest->qos.reader_lifespan, &dest->qos.present, QP_PRISMTECH_READER_LIFESPAN, dd);
+
+    case PID_PRISMTECH_SHARE:
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      return do_share_qospolicy (&dest->qos.share, &dest->qos.present, &dest->qos.aliased, QP_PRISMTECH_SHARE, dd);
+
+    case PID_PRISMTECH_ENTITY_FACTORY:
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      return do_entity_factory_qospolicy (&dest->qos.entity_factory, &dest->qos.present, QP_PRISMTECH_ENTITY_FACTORY, dd);
+
+    case PID_PRISMTECH_NODE_NAME:
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      return do_string (&dest->node_name, &dest->present, &dest->aliased, pwanted, PP_PRISMTECH_NODE_NAME, dd);
+
+    case PID_PRISMTECH_EXEC_NAME:
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      return do_string (&dest->exec_name, &dest->present, &dest->aliased, pwanted, PP_PRISMTECH_EXEC_NAME, dd);
+
+    case PID_PRISMTECH_SERVICE_TYPE:
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      if (dd->bufsz < sizeof (dest->service_type))
+      {
+        TRACE (("plist/init_one_parameter[pid=PRISMTECH_SERVICE_TYPE]: buffer too small\n"));
+        return ERR_INVALID;
+      }
+      memcpy (&dest->service_type, dd->buf, sizeof (dest->service_type));
+      if (dd->bswap)
+        dest->service_type = bswap4u (dest->service_type);
+      dest->present |= PP_PRISMTECH_SERVICE_TYPE;
+      return 0;
+
+    case PID_PRISMTECH_PROCESS_ID:
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      if (dd->bufsz < sizeof (dest->process_id))
+      {
+        TRACE (("plist/init_one_parameter[pid=PRISMTECH_PROCESS_ID]: buffer too small\n"));
+        return ERR_INVALID;
+      }
+      memcpy (&dest->process_id, dd->buf, sizeof (dest->process_id));
+      if (dd->bswap)
+        dest->process_id = bswap4u (dest->process_id);
+      dest->present |= PP_PRISMTECH_PROCESS_ID;
+      return 0;
+
+    case PID_PRISMTECH_TYPE_DESCRIPTION:
+      if (!vendor_is_prismtech (dd->vendorid))
+        return 0;
+      return do_string (&dest->type_description, &dest->present, &dest->aliased, pwanted, PP_PRISMTECH_TYPE_DESCRIPTION, dd);
+
+    case PID_PRISMTECH_EOTINFO:
+      if (!vendor_is_opensplice (dd->vendorid))
+        return 0;
+      else if (dd->bufsz < 2*sizeof (os_uint32))
+      {
+        TRACE (("plist/init_one_parameter[pid=PRISMTECH_EOTINFO]: buffer too small (1)\n"));
+        return ERR_INVALID;
+      }
+      else
+      {
+        nn_prismtech_eotinfo_t *q = &dest->eotinfo;
+        os_uint32 i;
+        q->transactionId = ((const os_uint32 *) dd->buf)[0];
+        q->n = ((const os_uint32 *) dd->buf)[1];
+        if (dd->bswap)
+        {
+          q->n = bswap4u (q->n);
+          q->transactionId = bswap4u (q->transactionId);
+        }
+        if (q->n > (dd->bufsz - 2*sizeof (os_uint32)) / sizeof (nn_prismtech_eotgroup_tid_t))
+        {
+          TRACE (("plist/init_one_parameter[pid=PRISMTECH_EOTINFO]: buffer too small (2)\n"));
+          return ERR_INVALID;
+        }
+        if (q->n == 0)
+          q->tids = NULL;
+        else
+          q->tids = (nn_prismtech_eotgroup_tid_t *) (dd->buf + 2*sizeof (os_uint32));
+        for (i = 0; i < q->n; i++)
+        {
+          q->tids[i].writer_entityid.u = fromBE4u (q->tids[i].writer_entityid.u);
+          if (dd->bswap)
+            q->tids[i].transactionId = bswap4u (q->tids[i].transactionId);
+        }
+        dest->present |= PP_PRISMTECH_EOTINFO;
+        dest->aliased |= PP_PRISMTECH_EOTINFO;
+        if (config.enabled_logcats & LC_PLIST)
+        {
+          TRACE_PLIST (("eotinfo: txn %u {", q->transactionId));
+          for (i = 0; i < q->n; i++)
+            TRACE_PLIST ((" %x:%u", q->tids[i].writer_entityid.u, q->tids[i].transactionId));
+          TRACE_PLIST ((" }\n"));
+        }
+        return 0;
+      }
+
 
       /* Deprecated ones (used by RTI, but not relevant to DDSI) */
     case PID_PERSISTENCE:
@@ -1808,6 +2275,91 @@ void nn_plist_init_empty (nn_plist_t *dest)
   nn_xqos_init_empty (&dest->qos);
 }
 
+void nn_plist_mergein_missing (nn_plist_t *a, const nn_plist_t *b)
+{
+  /* Adds entries's from B to A (duplicating memory) (only those not
+     present in A, obviously) */
+
+  /* Simple ones (that don't need memory): everything but topic, type,
+     partition, {group,topic|user} data */
+#define CQ(fl_, name_) do {                                     \
+    if (!(a->present & PP_##fl_) && (b->present & PP_##fl_)) {  \
+      a->name_ = b->name_;                                      \
+      a->present |= PP_##fl_;                                   \
+    }                                                           \
+  } while (0)
+  CQ (PROTOCOL_VERSION, protocol_version);
+  CQ (VENDORID, vendorid);
+  CQ (EXPECTS_INLINE_QOS, expects_inline_qos);
+  CQ (PARTICIPANT_MANUAL_LIVELINESS_COUNT, participant_manual_liveliness_count);
+  CQ (PARTICIPANT_BUILTIN_ENDPOINTS, participant_builtin_endpoints);
+  CQ (PARTICIPANT_LEASE_DURATION, participant_lease_duration);
+  CQ (PARTICIPANT_GUID, participant_guid);
+  CQ (ENDPOINT_GUID, endpoint_guid);
+  CQ (GROUP_GUID, group_guid);
+  CQ (BUILTIN_ENDPOINT_SET, builtin_endpoint_set);
+  CQ (KEYHASH, keyhash);
+  CQ (STATUSINFO, statusinfo);
+  CQ (COHERENT_SET, coherent_set_seqno);
+  CQ (PRISMTECH_SERVICE_TYPE, service_type);
+  CQ (PRISMTECH_PROCESS_ID, process_id);
+  CQ (PRISMTECH_BUILTIN_ENDPOINT_SET, prismtech_builtin_endpoint_set);
+  CQ (PRISMTECH_WRITER_INFO, prismtech_writer_info);
+  CQ (PRISMTECH_GROUP_GID, group_gid);
+  CQ (PRISMTECH_ENDPOINT_GID, endpoint_gid);
+#undef CQ
+
+  /* For allocated ones it is Not strictly necessary to use tmp, as
+     a->name_ may only be interpreted if the present flag is set, but
+     this keeps a clean on failure and may thereby save us from a
+     nasty surprise. */
+#define CQ(fl_, name_, type_, tmp_type_) do {                   \
+    if (!(a->present & PP_##fl_) && (b->present & PP_##fl_)) {  \
+      tmp_type_ tmp = b->name_;                                 \
+      unalias_##type_ (&tmp, -1);                               \
+      a->name_ = tmp;                                           \
+      a->present |= PP_##fl_;                                   \
+    }                                                           \
+  } while (0)
+  CQ (UNICAST_LOCATOR, unicast_locators, locators, nn_locators_t);
+  CQ (MULTICAST_LOCATOR, unicast_locators, locators, nn_locators_t);
+  CQ (DEFAULT_UNICAST_LOCATOR, default_unicast_locators, locators, nn_locators_t);
+  CQ (DEFAULT_MULTICAST_LOCATOR, default_multicast_locators, locators, nn_locators_t);
+  CQ (METATRAFFIC_UNICAST_LOCATOR, metatraffic_unicast_locators, locators, nn_locators_t);
+  CQ (METATRAFFIC_MULTICAST_LOCATOR, metatraffic_multicast_locators, locators, nn_locators_t);
+  CQ (ENTITY_NAME, entity_name, string, char *);
+  CQ (PRISMTECH_NODE_NAME, node_name, string, char *);
+  CQ (PRISMTECH_EXEC_NAME, exec_name, string, char *);
+  CQ (PRISMTECH_TYPE_DESCRIPTION, type_description, string, char *);
+  CQ (PRISMTECH_EOTINFO, eotinfo, eotinfo, nn_prismtech_eotinfo_t);
+#undef CQ
+  if (!(a->present & PP_PRISMTECH_PARTICIPANT_VERSION_INFO) &&
+      (b->present & PP_PRISMTECH_PARTICIPANT_VERSION_INFO))
+  {
+    nn_prismtech_participant_version_info_t tmp = b->prismtech_participant_version_info;
+    unalias_string (&tmp.internals, -1);
+    a->prismtech_participant_version_info = tmp;
+    a->present |= PP_PRISMTECH_PARTICIPANT_VERSION_INFO;
+  }
+
+  nn_xqos_mergein_missing (&a->qos, &b->qos);
+}
+
+void nn_plist_copy (nn_plist_t *dst, const nn_plist_t *src)
+{
+  nn_plist_init_empty (dst);
+  nn_plist_mergein_missing (dst, src);
+}
+
+nn_plist_t *nn_plist_dup (const nn_plist_t *src)
+{
+  nn_plist_t *dst;
+  dst = os_malloc (sizeof (*dst));
+  nn_plist_copy (dst, src);
+  assert (dst->aliased == 0);
+  return dst;
+}
+
 static int final_validation (nn_plist_t *dest)
 {
     /* Resource limits & history are related, so if only one is given,
@@ -1838,20 +2390,18 @@ int nn_plist_init_frommsg
 (
   nn_plist_t *dest,
   char **nextafterplist,
-  unsigned pwanted,
-  unsigned qwanted,
+  os_uint64 pwanted,
+  os_uint64 qwanted,
   const nn_plist_src_t *src
 )
 {
-  const char *pl;
+  const unsigned char *pl;
   struct dd dd;
   nn_ipaddress_params_tmp_t dest_tmp;
 
 #ifndef NDEBUG
   memset (dest, 0, sizeof (*dest));
 #endif
-
-  assert (src->bufsz >= 0);
 
   if (nextafterplist)
     *nextafterplist = NULL;
@@ -1882,26 +2432,25 @@ int nn_plist_init_frommsg
   dest->unalias_needs_bswap = dd.bswap;
   dest_tmp.present = 0;
 
-#if ENABLE_LOGGING
-  TRACE (("NN_PLIST_INIT (bswap %d)\n", dd.bswap));
-#endif
+  TRACE_PLIST (("NN_PLIST_INIT (bswap %d)\n", dd.bswap));
 
   pl = src->buf;
   while (pl + sizeof (nn_parameter_t) <= src->buf + src->bufsz)
   {
     nn_parameter_t *par = (nn_parameter_t *) pl;
-    unsigned short pid, length;
+    nn_parameterid_t pid;
+    unsigned short length;
     int res;
     /* swapping header partially based on wireshark dissector
        output, partially on intuition, and in a small part based on
        the spec */
-    pid = dd.bswap ? bswap2u (par->parameterid) : par->parameterid;
-    length = dd.bswap ? bswap2u (par->length) : par->length;
+    pid = (nn_parameterid_t) (dd.bswap ? bswap2u (par->parameterid) : par->parameterid);
+    length = (unsigned short) (dd.bswap ? bswap2u (par->length) : par->length);
     if (pid == PID_SENTINEL)
     {
       /* Sentinel terminates list, the length is ignored, DDSI
          9.4.2.11. */
-      /*nn_log (LC_TRACE, "%4x PID %x\n", (unsigned) (pl - (char *) hdr), pid);*/
+      TRACE_PLIST (("%4x PID %x\n", (unsigned) (pl - src->buf), pid));
       if ((res = final_validation (dest)) < 0)
       {
         nn_plist_fini (dest);
@@ -1915,7 +2464,7 @@ int nn_plist_init_frommsg
         return 0;
       }
     }
-    if (length > src->bufsz - sizeof (*par) - (pl - src->buf))
+    if (length > src->bufsz - sizeof (*par) - (unsigned) (pl - src->buf))
     {
       NN_WARNING3 ("plist(vendor %d.%d): parameter length %d out of bounds\n",
                    src->vendorid.id[0], src->vendorid.id[1], length);
@@ -1930,7 +2479,14 @@ int nn_plist_init_frommsg
       return ERR_INVALID;
     }
 
-    dd.buf = (const char *) (par + 1);
+    if (config.enabled_logcats & LC_PLIST)
+    {
+      TRACE_PLIST (("%4x PID %x len %d ", (unsigned) (pl - src->buf), pid, length));
+      log_octetseq(LC_PLIST, length, (const unsigned char *) (par + 1));
+      TRACE_PLIST (("\n"));
+    }
+
+    dd.buf = (const unsigned char *) (par + 1);
     dd.bufsz = (unsigned) length;
     if ((res = init_one_parameter (dest, &dest_tmp, pwanted, qwanted, pid, &dd)) < 0)
     {
@@ -1939,7 +2495,6 @@ int nn_plist_init_frommsg
       nn_plist_fini (dest);
       return res;
     }
-    /*nn_log (LC_TRACE, "%4x PID %x len %d\n", (unsigned) (pl - (char *) hdr), pid, length);*/
     pl += sizeof (*par) + length;
   }
   /* If we get here, that means we reached the end of the message
@@ -1950,13 +2505,12 @@ int nn_plist_init_frommsg
   return ERR_INVALID;
 }
 
-char *nn_plist_quickscan (struct nn_rsample_info *dest, const struct nn_rmsg *rmsg, const nn_plist_src_t *src)
+unsigned char *nn_plist_quickscan (struct nn_rsample_info *dest, const struct nn_rmsg *rmsg, const nn_plist_src_t *src)
 {
   /* Sets a few fields in dest, returns address of first byte
      following parameter list, or NULL on error.  Most errors will go
      undetected, unlike nn_plist_init_frommsg(). */
-  const char *pl;
-  assert (src->bufsz >= 0);
+  const unsigned char *pl;
 
   dest->statusinfo = 0;
   dest->pt_wr_info_zoff = NN_OFF_TO_ZOFF (0);
@@ -1982,20 +2536,19 @@ char *nn_plist_quickscan (struct nn_rsample_info *dest, const struct nn_rmsg *rm
                    src->vendorid.id[0], src->vendorid.id[1], src->encoding);
       return NULL;
   }
-#if ENABLE_LOGGING
-  TRACE (("NN_PLIST_QUICKSCAN (bswap %d)\n", dest->bswap));
-#endif
+  TRACE_PLIST (("NN_PLIST_QUICKSCAN (bswap %d)\n", dest->bswap));
   pl = src->buf;
   while (pl + sizeof (nn_parameter_t) <= src->buf + src->bufsz)
   {
     nn_parameter_t *par = (nn_parameter_t *) pl;
-    os_ushort pid, length;
-    pid = dest->bswap ? bswap2u (par->parameterid) : par->parameterid;
-    length = dest->bswap ? bswap2u (par->length) : par->length;
+    nn_parameterid_t pid;
+    os_ushort length;
+    pid = (nn_parameterid_t) (dest->bswap ? bswap2u (par->parameterid) : par->parameterid);
+    length = (os_ushort) (dest->bswap ? bswap2u (par->length) : par->length);
     pl += sizeof (*par);
     if (pid == PID_SENTINEL)
-      return (char *) pl;
-    if (length > src->bufsz - (pl - src->buf))
+      return (unsigned char *) pl;
+    if (length > src->bufsz - (size_t)(pl - src->buf))
     {
       NN_WARNING3 ("plist(vendor %d.%d): quickscan: parameter length %d out of bounds\n",
                   src->vendorid.id[0], src->vendorid.id[1], length);
@@ -2012,7 +2565,6 @@ char *nn_plist_quickscan (struct nn_rsample_info *dest, const struct nn_rmsg *rm
       case PID_PAD:
         break;
       case PID_KEYHASH:
-        /* couldn't care less about the key hash */
         break;
       case PID_STATUSINFO:
         if (length < 4)
@@ -2027,8 +2579,8 @@ char *nn_plist_quickscan (struct nn_rsample_info *dest, const struct nn_rmsg *rm
 #if (NN_STATUSINFO_DISPOSE | NN_STATUSINFO_UNREGISTER) != 3
 #error "expected dispose/unregister to be in lowest 2 bits"
 #endif
-          dest->statusinfo = stinfo & 3;
-          if (stinfo & ~3)
+          dest->statusinfo = stinfo & 3u;
+          if (stinfo & ~3u)
             dest->complex_qos = 1;
         }
         break;
@@ -2039,9 +2591,10 @@ char *nn_plist_quickscan (struct nn_rsample_info *dest, const struct nn_rmsg *rm
                   src->vendorid.id[0], src->vendorid.id[1]));
           return NULL;
         }
-        dest->pt_wr_info_zoff = NN_OFF_TO_ZOFF ((int) (pl - NN_RMSG_PAYLOAD (rmsg)));
+        dest->pt_wr_info_zoff = NN_OFF_TO_ZOFF ((unsigned) (pl - NN_RMSG_PAYLOAD (rmsg)));
         break;
       default:
+        TRACE_PLIST (("(pid=%x complex_qos=1)", pid));
         dest->complex_qos = 1;
         break;
     }
@@ -2056,7 +2609,7 @@ char *nn_plist_quickscan (struct nn_rsample_info *dest, const struct nn_rmsg *rm
 
 void nn_plist_extract_wrinfo (nn_prismtech_writer_info_t *wri, const struct nn_rsample_info *sampleinfo, const struct nn_rdata *rdata)
 {
-  int wrinfo_off = NN_SAMPLEINFO_WRINFO_OFF (sampleinfo);
+  unsigned wrinfo_off = NN_SAMPLEINFO_WRINFO_OFF (sampleinfo);
   assert (wrinfo_off > NN_RDATA_SUBMSG_OFF (rdata));
   assert (wrinfo_off + sizeof (*wri) <= NN_RDATA_PAYLOAD_OFF (rdata));
   memcpy (wri, NN_RMSG_PAYLOADOFF (rdata->rmsg, wrinfo_off), sizeof (*wri));
@@ -2072,7 +2625,15 @@ void nn_xqos_init_empty (nn_xqos_t *dest)
   dest->present = dest->aliased = 0;
 }
 
-static int xqos_init_default_common (nn_xqos_t *xqos)
+int nn_plist_init_default_participant (nn_plist_t *plist)
+{
+  nn_plist_init_empty (plist);
+  plist->qos.present |= QP_PRISMTECH_ENTITY_FACTORY;
+  plist->qos.entity_factory.autoenable_created_entities = 0;
+  return 0;
+}
+
+static void xqos_init_default_common (nn_xqos_t *xqos)
 {
   nn_xqos_init_empty (xqos);
 
@@ -2119,14 +2680,13 @@ static int xqos_init_default_common (nn_xqos_t *xqos)
   xqos->present |= QP_PRISMTECH_RELAXED_QOS_MATCHING;
   xqos->relaxed_qos_matching.value = 0;
 
-  return 0;
+  xqos->present |= QP_PRISMTECH_SYNCHRONOUS_ENDPOINT;
+  xqos->synchronous_endpoint.value = 0;
 }
 
-int nn_xqos_init_default_reader (nn_xqos_t *xqos)
+void nn_xqos_init_default_reader (nn_xqos_t *xqos)
 {
-  int res;
-  if ((res = xqos_init_default_common (xqos)) < 0)
-    return res;
+  xqos_init_default_common (xqos);
 
   xqos->present |= QP_RELIABILITY;
   xqos->reliability.kind = NN_BEST_EFFORT_RELIABILITY_QOS;
@@ -2137,14 +2697,28 @@ int nn_xqos_init_default_reader (nn_xqos_t *xqos)
   xqos->present |= QP_PRISMTECH_READER_DATA_LIFECYCLE;
   xqos->reader_data_lifecycle.autopurge_nowriter_samples_delay = nn_to_ddsi_duration (T_NEVER);
   xqos->reader_data_lifecycle.autopurge_disposed_samples_delay = nn_to_ddsi_duration (T_NEVER);
-  return 0;
+  xqos->reader_data_lifecycle.autopurge_dispose_all = 0;
+  xqos->reader_data_lifecycle.enable_invalid_samples = 1;
+  xqos->reader_data_lifecycle.invalid_sample_visibility = NN_MINIMUM_INVALID_SAMPLE_VISIBILITY_QOS;
+
+  xqos->present |= QP_PRISMTECH_READER_LIFESPAN;
+  xqos->reader_lifespan.use_lifespan = 0;
+  xqos->reader_lifespan.duration = nn_to_ddsi_duration (T_NEVER);
+
+  xqos->present |= QP_PRISMTECH_SHARE;
+  xqos->aliased |= QP_PRISMTECH_SHARE;
+  xqos->share.enable = 0;
+  xqos->share.name = "";
+
+  xqos->present |= QP_PRISMTECH_SUBSCRIPTION_KEYS;
+  xqos->subscription_keys.use_key_list = 0;
+  xqos->subscription_keys.key_list.n = 0;
+  xqos->subscription_keys.key_list.strs = NULL;
 }
 
-int nn_xqos_init_default_writer (nn_xqos_t *xqos)
+void nn_xqos_init_default_writer (nn_xqos_t *xqos)
 {
-  int res;
-  if ((res = xqos_init_default_common (xqos)) < 0)
-    return res;
+  xqos_init_default_common (xqos);
 
   xqos->present |= QP_DURABILITY_SERVICE;
   xqos->durability_service.service_cleanup_delay = nn_to_ddsi_duration (0);
@@ -2169,14 +2743,77 @@ int nn_xqos_init_default_writer (nn_xqos_t *xqos)
 
   xqos->present |= QP_PRISMTECH_WRITER_DATA_LIFECYCLE;
   xqos->writer_data_lifecycle.autodispose_unregistered_instances = 1;
-  return 0;
+  xqos->writer_data_lifecycle.autounregister_instance_delay = nn_to_ddsi_duration (T_NEVER);
+  xqos->writer_data_lifecycle.autopurge_suspended_samples_delay = nn_to_ddsi_duration (T_NEVER);
 }
 
-int nn_xqos_mergein_missing (nn_xqos_t *a, const nn_xqos_t *b)
+void nn_xqos_init_default_writer_noautodispose (nn_xqos_t *xqos)
+{
+  nn_xqos_init_default_writer (xqos);
+  xqos->writer_data_lifecycle.autodispose_unregistered_instances = 0;
+}
+
+void nn_xqos_init_default_topic (nn_xqos_t *xqos)
+{
+  xqos_init_default_common (xqos);
+
+  xqos->present |= QP_DURABILITY_SERVICE;
+  xqos->durability_service.service_cleanup_delay = nn_to_ddsi_duration (0);
+  xqos->durability_service.history.kind = NN_KEEP_LAST_HISTORY_QOS;
+  xqos->durability_service.history.depth = 1;
+  xqos->durability_service.resource_limits.max_samples = NN_DDS_LENGTH_UNLIMITED;
+  xqos->durability_service.resource_limits.max_instances = NN_DDS_LENGTH_UNLIMITED;
+  xqos->durability_service.resource_limits.max_samples_per_instance = NN_DDS_LENGTH_UNLIMITED;
+
+  xqos->present |= QP_RELIABILITY;
+  xqos->reliability.kind = NN_BEST_EFFORT_RELIABILITY_QOS;
+  xqos->reliability.max_blocking_time = nn_to_ddsi_duration (100 * T_MILLISECOND);
+
+  xqos->present |= QP_TRANSPORT_PRIORITY;
+  xqos->transport_priority.value = 0;
+
+  xqos->present |= QP_LIFESPAN;
+  xqos->lifespan.duration = nn_to_ddsi_duration (T_NEVER);
+
+  xqos->present |= QP_PRISMTECH_SUBSCRIPTION_KEYS;
+  xqos->subscription_keys.use_key_list = 0;
+  xqos->subscription_keys.key_list.n = 0;
+  xqos->subscription_keys.key_list.strs = NULL;
+}
+
+void nn_xqos_init_default_subscriber (nn_xqos_t *xqos)
+{
+  nn_xqos_init_empty (xqos);
+
+  xqos->present |= QP_PRISMTECH_ENTITY_FACTORY;
+  xqos->entity_factory.autoenable_created_entities = 1;
+
+  xqos->present |= QP_PRISMTECH_SHARE;
+  xqos->aliased |= QP_PRISMTECH_SHARE;
+  xqos->share.enable = 0;
+  xqos->share.name = "";
+
+  xqos->present |= QP_PARTITION;
+  xqos->partition.n = 0;
+  xqos->partition.strs = NULL;
+}
+
+void nn_xqos_init_default_publisher (nn_xqos_t *xqos)
+{
+  nn_xqos_init_empty (xqos);
+
+  xqos->present |= QP_PRISMTECH_ENTITY_FACTORY;
+  xqos->entity_factory.autoenable_created_entities = 1;
+
+  xqos->present |= QP_PARTITION;
+  xqos->partition.n = 0;
+  xqos->partition.strs = NULL;
+}
+
+void nn_xqos_mergein_missing (nn_xqos_t *a, const nn_xqos_t *b)
 {
   /* Adds QoS's from B to A (duplicating memory) (only those not
      present in A, obviously) */
-  int res;
 
   /* Simple ones (that don't need memory): everything but topic, type,
      partition, {group,topic|user} data */
@@ -2204,6 +2841,9 @@ int nn_xqos_mergein_missing (nn_xqos_t *a, const nn_xqos_t *b)
   CQ (PRISMTECH_READER_DATA_LIFECYCLE, reader_data_lifecycle);
   CQ (PRISMTECH_WRITER_DATA_LIFECYCLE, writer_data_lifecycle);
   CQ (PRISMTECH_RELAXED_QOS_MATCHING, relaxed_qos_matching);
+  CQ (PRISMTECH_READER_LIFESPAN, reader_lifespan);
+  CQ (PRISMTECH_ENTITY_FACTORY, entity_factory);
+  CQ (PRISMTECH_SYNCHRONOUS_ENDPOINT, synchronous_endpoint);
 #undef CQ
 
   /* For allocated ones it is Not strictly necessary to use tmp, as
@@ -2213,8 +2853,7 @@ int nn_xqos_mergein_missing (nn_xqos_t *a, const nn_xqos_t *b)
 #define CQ(fl_, name_, type_, tmp_type_) do {                   \
     if (!(a->present & QP_##fl_) && (b->present & QP_##fl_)) {  \
       tmp_type_ tmp = b->name_;                                 \
-      if ((res = unalias_##type_ (&tmp, -1)) < 0)               \
-        return res;                                             \
+      unalias_##type_ (&tmp, -1);                               \
       a->name_ = tmp;                                           \
       a->present |= QP_##fl_;                                   \
     }                                                           \
@@ -2224,32 +2863,34 @@ int nn_xqos_mergein_missing (nn_xqos_t *a, const nn_xqos_t *b)
   CQ (USER_DATA, user_data, octetseq, nn_octetseq_t);
   CQ (TOPIC_NAME, topic_name, string, char *);
   CQ (TYPE_NAME, type_name, string, char *);
+  CQ (PRISMTECH_SHARE, share, share_qospolicy, nn_share_qospolicy_t);
+  CQ (RTI_TYPECODE, rti_typecode, octetseq, nn_octetseq_t);
 #undef CQ
+  if (!(a->present & QP_PRISMTECH_SUBSCRIPTION_KEYS) && (b->present & QP_PRISMTECH_SUBSCRIPTION_KEYS))
+  {
+      a->subscription_keys.use_key_list = b->subscription_keys.use_key_list;
+      duplicate_stringseq (&a->subscription_keys.key_list, &b->subscription_keys.key_list);
+      a->present |= QP_PRISMTECH_SUBSCRIPTION_KEYS;
+  }
   if (!(a->present & QP_PARTITION) && (b->present & QP_PARTITION))
   {
-    if ((res = duplicate_stringseq (&a->partition, &b->partition)) < 0)
-      return res;
+    duplicate_stringseq (&a->partition, &b->partition);
     a->present |= QP_PARTITION;
   }
-  return 0;
 }
 
-int nn_xqos_copy (nn_xqos_t *dst, const nn_xqos_t *src)
+void nn_xqos_copy (nn_xqos_t *dst, const nn_xqos_t *src)
 {
   nn_xqos_init_empty (dst);
-  return nn_xqos_mergein_missing (dst, src);
+  nn_xqos_mergein_missing (dst, src);
 }
 
-int nn_xqos_unalias (nn_xqos_t *xqos)
+void nn_xqos_unalias (nn_xqos_t *xqos)
 {
-  int res;
-#if ENABLE_LOGGING
-  TRACE (("NN_XQOS_UNALIAS\n"));
-#endif
+  TRACE_PLIST (("NN_XQOS_UNALIAS\n"));
 #define Q(name_, func_, field_) do {                                    \
     if ((xqos->present & QP_##name_) && (xqos->aliased & QP_##name_)) { \
-      if ((res = unalias_##func_ (&xqos->field_, -1)) < 0)              \
-        goto fail;                                                      \
+      unalias_##func_ (&xqos->field_, -1);                              \
       xqos->aliased &= ~QP_##name_;                                     \
     }                                                                   \
   } while (0)
@@ -2259,53 +2900,69 @@ int nn_xqos_unalias (nn_xqos_t *xqos)
   Q (TOPIC_NAME, string, topic_name);
   Q (TYPE_NAME, string, type_name);
   Q (PARTITION, stringseq, partition);
+  Q (PRISMTECH_SHARE, share_qospolicy, share);
+  Q (PRISMTECH_SUBSCRIPTION_KEYS, subscription_keys_qospolicy, subscription_keys);
+  Q (RTI_TYPECODE, octetseq, rti_typecode);
 #undef Q
   assert (xqos->aliased == 0);
-  return 0;
- fail:
-  nn_xqos_fini (xqos);
-  return res;
 }
 
 void nn_xqos_fini (nn_xqos_t *xqos)
 {
-  struct t { unsigned fl; os_size_t off; };
+  struct t { os_uint64 fl; os_size_t off; };
   static const struct t qos_simple[] = {
     { QP_GROUP_DATA, offsetof (nn_xqos_t, group_data.value) },
     { QP_TOPIC_DATA, offsetof (nn_xqos_t, topic_data.value) },
     { QP_USER_DATA, offsetof (nn_xqos_t, user_data.value) },
     { QP_TOPIC_NAME, offsetof (nn_xqos_t, topic_name) },
     { QP_TYPE_NAME, offsetof (nn_xqos_t, type_name) },
+    { QP_PRISMTECH_SHARE, offsetof (nn_xqos_t, share.name) },
+    { QP_RTI_TYPECODE, offsetof (nn_xqos_t, rti_typecode.value) },
   };
   int i;
-#if ENABLE_LOGGING
-  TRACE (("NN_XQOS_FINI\n"));
-#endif
+  TRACE_PLIST (("NN_XQOS_FINI\n"));
   for (i = 0; i < (int) (sizeof (qos_simple) / sizeof (*qos_simple)); i++)
   {
     if ((xqos->present & qos_simple[i].fl) && !(xqos->aliased & qos_simple[i].fl))
     {
       void **pp = (void **) ((char *) xqos + qos_simple[i].off);
-#if ENABLE_LOGGING
-      TRACE (("NN_XQOS_FINI free %p\n", *pp));
-#endif
+      TRACE_PLIST (("NN_XQOS_FINI free %p\n", *pp));
       os_free (*pp);
     }
   }
   if (xqos->present & QP_PARTITION)
   {
     if (!(xqos->aliased & QP_PARTITION))
+    {
       free_stringseq (&xqos->partition);
+    }
     else
     {
       /* until proper message buffers arrive */
-#if ENABLE_LOGGING
-      TRACE (("NN_PLIST_FINI free %p\n", xqos->partition.strs));
-#endif
+      TRACE_PLIST (("NN_XQOS_FINI free %p\n", xqos->partition.strs));
       os_free (xqos->partition.strs);
     }
   }
+  if (xqos->present & QP_PRISMTECH_SUBSCRIPTION_KEYS)
+  {
+    if (!(xqos->aliased & QP_PRISMTECH_SUBSCRIPTION_KEYS))
+      free_stringseq (&xqos->subscription_keys.key_list);
+    else
+    {
+      /* until proper message buffers arrive */
+      TRACE_PLIST (("NN_XQOS_FINI free %p\n", xqos->subscription_keys.key_list.strs));
+      os_free (xqos->subscription_keys.key_list.strs);
+    }
+  }
   xqos->present = 0;
+}
+
+nn_xqos_t * nn_xqos_dup (const nn_xqos_t *src)
+{
+  nn_xqos_t *dst = os_malloc (sizeof (*dst));
+  nn_xqos_copy (dst, src);
+  assert (dst->aliased == 0);
+  return dst;
 }
 
 static int octetseqs_differ (const nn_octetseq_t *a, const nn_octetseq_t *b)
@@ -2322,6 +2979,17 @@ static int durations_differ (const nn_duration_t *a, const nn_duration_t *b)
 #endif
 }
 
+static int stringseqs_differ (const nn_stringseq_t *a, const nn_stringseq_t *b)
+{
+  unsigned i;
+  if (a->n != b->n)
+    return 1;
+  for (i = 0; i < a->n; i++)
+    if (strcmp (a->strs[i], b->strs[i]))
+      return 1;
+  return 0;
+}
+
 static int histories_differ (const nn_history_qospolicy_t *a, const nn_history_qospolicy_t *b)
 {
   return (a->kind != b->kind || (a->kind == NN_KEEP_LAST_HISTORY_QOS && a->depth != b->depth));
@@ -2335,7 +3003,7 @@ static int resource_limits_differ (const nn_resource_limits_qospolicy_t *a, cons
 
 static int partition_is_default (const nn_partition_qospolicy_t *a)
 {
-  int i;
+  unsigned i;
   for (i = 0; i < a->n; i++)
     if (strcmp (a->strs[i], "") != 0)
       return 0;
@@ -2344,7 +3012,7 @@ static int partition_is_default (const nn_partition_qospolicy_t *a)
 
 static int partitions_equal_n2 (const nn_partition_qospolicy_t *a, const nn_partition_qospolicy_t *b)
 {
-  int i, j;
+  unsigned i, j;
   for (i = 0; i < a->n; i++)
   {
     for (j = 0; j < b->n; j++)
@@ -2360,13 +3028,12 @@ static int partitions_equal_nlogn (const nn_partition_qospolicy_t *a, const nn_p
 {
   char *statictab[8], **tab;
   int equal = 1;
-  int i;
+  unsigned i;
 
   if (a->n <= (int) (sizeof (statictab) / sizeof (*statictab)))
     tab = statictab;
-  else if ((tab = os_malloc (a->n * sizeof (*tab))) == NULL)
-    /* when we run out of memory, the quadratic algorithm is the only option */
-    return partitions_equal_n2 (a, b);
+  else
+    tab = os_malloc (a->n * sizeof (*tab));
 
   for (i = 0; i < a->n; i++)
     tab[i] = a->strs[i];
@@ -2420,13 +3087,13 @@ static int partitions_equal (const nn_partition_qospolicy_t *a, const nn_partiti
   }
 }
 
-unsigned nn_xqos_delta (const nn_xqos_t *a, const nn_xqos_t *b, unsigned mask)
+os_uint64 nn_xqos_delta (const nn_xqos_t *a, const nn_xqos_t *b, os_uint64 mask)
 {
   /* Returns QP_... set for RxO settings where a differs from b; if
      present in a but not in b (or in b but not in a) it counts as a
      difference. */
-  unsigned delta = (a->present ^ b->present) & mask;
-  unsigned check = (a->present & b->present) & mask;
+  os_uint64 delta = (a->present ^ b->present) & mask;
+  os_uint64 check = (a->present & b->present) & mask;
   if (check & QP_TOPIC_NAME) {
     if (strcmp (a->topic_name, b->topic_name))
       delta |= QP_TOPIC_NAME;
@@ -2450,7 +3117,7 @@ unsigned nn_xqos_delta (const nn_xqos_t *a, const nn_xqos_t *b, unsigned mask)
       delta |= QP_GROUP_DATA;
   }
   if (check & QP_TOPIC_DATA) {
-    if (octetseqs_differ (&a->group_data, &b->group_data))
+    if (octetseqs_differ (&a->topic_data, &b->topic_data))
       delta |= QP_TOPIC_DATA;
   }
   if (check & QP_DURABILITY) {
@@ -2481,8 +3148,7 @@ unsigned nn_xqos_delta (const nn_xqos_t *a, const nn_xqos_t *b, unsigned mask)
   }
   if (check & QP_RELIABILITY) {
     if (a->reliability.kind != b->reliability.kind ||
-        (a->reliability.kind == NN_RELIABLE_RELIABILITY_QOS &&
-         durations_differ (&a->reliability.max_blocking_time, &b->reliability.max_blocking_time)))
+        durations_differ (&a->reliability.max_blocking_time, &b->reliability.max_blocking_time))
       delta |= QP_RELIABILITY;
   }
   if (check & QP_DESTINATION_ORDER) {
@@ -2506,7 +3172,7 @@ unsigned nn_xqos_delta (const nn_xqos_t *a, const nn_xqos_t *b, unsigned mask)
       delta |= QP_LIFESPAN;
   }
   if (check & QP_USER_DATA) {
-    if (octetseqs_differ (&a->group_data, &b->group_data))
+    if (octetseqs_differ (&a->user_data, &b->user_data))
       delta |= QP_USER_DATA;
   }
   if (check & QP_OWNERSHIP) {
@@ -2525,12 +3191,19 @@ unsigned nn_xqos_delta (const nn_xqos_t *a, const nn_xqos_t *b, unsigned mask)
     if (durations_differ (&a->reader_data_lifecycle.autopurge_disposed_samples_delay,
                           &b->reader_data_lifecycle.autopurge_disposed_samples_delay) ||
         durations_differ (&a->reader_data_lifecycle.autopurge_nowriter_samples_delay,
-                          &b->reader_data_lifecycle.autopurge_nowriter_samples_delay))
+                          &b->reader_data_lifecycle.autopurge_nowriter_samples_delay) ||
+        a->reader_data_lifecycle.autopurge_dispose_all != b->reader_data_lifecycle.autopurge_dispose_all ||
+        a->reader_data_lifecycle.enable_invalid_samples != b->reader_data_lifecycle.enable_invalid_samples ||
+        a->reader_data_lifecycle.invalid_sample_visibility != b->reader_data_lifecycle.invalid_sample_visibility)
       delta |= QP_PRISMTECH_READER_DATA_LIFECYCLE;
   }
   if (check & QP_PRISMTECH_WRITER_DATA_LIFECYCLE) {
     if (a->writer_data_lifecycle.autodispose_unregistered_instances !=
-        b->writer_data_lifecycle.autodispose_unregistered_instances)
+        b->writer_data_lifecycle.autodispose_unregistered_instances ||
+        durations_differ (&a->writer_data_lifecycle.autopurge_suspended_samples_delay,
+                          &b->writer_data_lifecycle.autopurge_suspended_samples_delay) ||
+        durations_differ (&a->writer_data_lifecycle.autounregister_instance_delay,
+                          &b->writer_data_lifecycle.autounregister_instance_delay))
       delta |= QP_PRISMTECH_WRITER_DATA_LIFECYCLE;
   }
   if (check & QP_PRISMTECH_RELAXED_QOS_MATCHING) {
@@ -2538,40 +3211,68 @@ unsigned nn_xqos_delta (const nn_xqos_t *a, const nn_xqos_t *b, unsigned mask)
         b->relaxed_qos_matching.value)
       delta |= QP_PRISMTECH_RELAXED_QOS_MATCHING;
   }
+  if (check & QP_PRISMTECH_READER_LIFESPAN) {
+    /* Note: the conjunction need not test both a & b for having use_lifespan set */
+    if (a->reader_lifespan.use_lifespan != b->reader_lifespan.use_lifespan ||
+        (a->reader_lifespan.use_lifespan && b->reader_lifespan.use_lifespan &&
+         durations_differ (&a->reader_lifespan.duration, &b->reader_lifespan.duration)))
+      delta |= QP_PRISMTECH_READER_LIFESPAN;
+  }
+  if (check & QP_PRISMTECH_SHARE) {
+    /* Note: the conjunction need not test both a & b for having use_lifespan set */
+    if (a->share.enable != b->share.enable ||
+        (a->share.enable && b->share.enable &&
+         strcmp (a->share.name, b->share.name)))
+      delta |= QP_PRISMTECH_SHARE;
+  }
+  if (check & QP_PRISMTECH_SUBSCRIPTION_KEYS) {
+    /* Note: the conjunction need not test both a & b for having use_lifespan set */
+    if (a->subscription_keys.use_key_list != b->subscription_keys.use_key_list ||
+        (a->subscription_keys.use_key_list && b->subscription_keys.use_key_list &&
+         stringseqs_differ (&a->subscription_keys.key_list, &b->subscription_keys.key_list)))
+      delta |= QP_PRISMTECH_SUBSCRIPTION_KEYS;
+  }
+  if (check & QP_PRISMTECH_ENTITY_FACTORY) {
+    if (a->entity_factory.autoenable_created_entities !=
+        b->entity_factory.autoenable_created_entities)
+      delta |= QP_PRISMTECH_ENTITY_FACTORY;
+  }
+  if (check & QP_PRISMTECH_SYNCHRONOUS_ENDPOINT) {
+    if (a->synchronous_endpoint.value != b->synchronous_endpoint.value)
+      delta |= QP_PRISMTECH_SYNCHRONOUS_ENDPOINT;
+  }
+  if (check & QP_RTI_TYPECODE) {
+    if (octetseqs_differ (&a->rti_typecode, &b->rti_typecode))
+      delta |= QP_RTI_TYPECODE;
+  }
   return delta;
 }
 
 /*************************/
 
-int nn_xqos_addtomsg (struct nn_xmsg *m, const nn_xqos_t *xqos, unsigned wanted)
+void nn_xqos_addtomsg (struct nn_xmsg *m, const nn_xqos_t *xqos, os_uint64 wanted)
 {
-  /* Returns new nn_xmsg pointer (currently, reallocs may happen), or NULL
-     on out-of-memory. (In which case the original nn_xmsg is freed, cos
-     that is then required anyway */
-  unsigned w = xqos->present & wanted;
+  /* Returns new nn_xmsg pointer (currently, reallocs may happen) */
+
+  os_uint64 w = xqos->present & wanted;
   char *tmp;
-  int res;
 #define SIMPLE(name_, field_) \
   do { \
     if (w & QP_##name_) { \
-      if ((tmp = nn_xmsg_addpar (m, PID_##name_, sizeof (xqos->field_))) == NULL) \
-        return ERR_OUT_OF_MEMORY; \
+      tmp = nn_xmsg_addpar (m, PID_##name_, sizeof (xqos->field_)); \
       *((nn_##field_##_qospolicy_t *) tmp) = xqos->field_; \
     } \
   } while (0)
 #define FUNC_BY_REF(name_, field_, func_) \
   do { \
     if (w & QP_##name_) { \
-      if ((res = nn_xmsg_addpar_##func_ (m, PID_##name_, &xqos->field_)) < 0) \
-        return res; \
+      nn_xmsg_addpar_##func_ (m, PID_##name_, &xqos->field_); \
     } \
   } while (0)
-
 #define FUNC_BY_VAL(name_, field_, func_) \
   do { \
     if (w & QP_##name_) { \
-      if ((res = nn_xmsg_addpar_##func_ (m, PID_##name_, xqos->field_)) < 0) \
-        return res; \
+      nn_xmsg_addpar_##func_ (m, PID_##name_, xqos->field_); \
     } \
   } while (0)
 
@@ -2599,111 +3300,147 @@ int nn_xqos_addtomsg (struct nn_xmsg *m, const nn_xqos_t *xqos, unsigned wanted)
   SIMPLE (PRISMTECH_READER_DATA_LIFECYCLE, reader_data_lifecycle);
   SIMPLE (PRISMTECH_WRITER_DATA_LIFECYCLE, writer_data_lifecycle);
   SIMPLE (PRISMTECH_RELAXED_QOS_MATCHING, relaxed_qos_matching);
+  SIMPLE (PRISMTECH_READER_LIFESPAN, reader_lifespan);
+  FUNC_BY_REF (PRISMTECH_SHARE, share, share);
+  FUNC_BY_REF (PRISMTECH_SUBSCRIPTION_KEYS, subscription_keys, subscription_keys);
+  SIMPLE (PRISMTECH_ENTITY_FACTORY, entity_factory);
+  SIMPLE (PRISMTECH_SYNCHRONOUS_ENDPOINT, synchronous_endpoint);
+  FUNC_BY_REF (RTI_TYPECODE, rti_typecode, octetseq);
 #undef FUNC_BY_REF
 #undef FUNC_BY_VAL
 #undef SIMPLE
-  return 0;
 }
 
-static int add_locators (struct nn_xmsg *m, unsigned present, unsigned flag, const nn_locators_t *ls, int pid)
+static void add_locators (struct nn_xmsg *m, os_uint64 present, os_uint64 flag, const nn_locators_t *ls, unsigned pid)
 {
   const struct nn_locators_one *l;
   if (present & flag)
   {
     for (l = ls->first; l != NULL; l = l->next)
     {
-      char *tmp;
-      if ((tmp = nn_xmsg_addpar (m, pid, sizeof (nn_locator_t))) == NULL)
-        return ERR_OUT_OF_MEMORY;
+      char *tmp = nn_xmsg_addpar (m, pid, sizeof (nn_locator_t));
       memcpy (tmp, &l->loc, sizeof (nn_locator_t));
     }
   }
-  return 0;
 }
 
-int nn_plist_addtomsg (struct nn_xmsg *m, const nn_plist_t *ps, unsigned pwanted, unsigned qwanted)
+void nn_plist_addtomsg (struct nn_xmsg *m, const nn_plist_t *ps, os_uint64 pwanted, os_uint64 qwanted)
 {
   /* Returns new nn_xmsg pointer (currently, reallocs may happen), or NULL
      on out-of-memory. (In which case the original nn_xmsg is freed, cos
      that is then required anyway */
-  unsigned w = ps->present & pwanted;
+  os_uint64 w = ps->present & pwanted;
   char *tmp;
-  int res;
 #define SIMPLE_TYPE(name_, field_, type_) \
   do { \
     if (w & PP_##name_) { \
-      if ((tmp = nn_xmsg_addpar (m, PID_##name_, sizeof (ps->field_))) == NULL) \
-        return ERR_OUT_OF_MEMORY; \
+      tmp = nn_xmsg_addpar (m, PID_##name_, sizeof (ps->field_)); \
       *((type_ *) tmp) = ps->field_; \
     } \
   } while (0)
 #define FUNC_BY_VAL(name_, field_, func_) \
   do { \
     if (w & PP_##name_) { \
-      if ((res = nn_xmsg_addpar_##func_ (m, PID_##name_, ps->field_)) < 0) \
-        return res; \
+      nn_xmsg_addpar_##func_ (m, PID_##name_, ps->field_); \
     } \
   } while (0)
 #define FUNC_BY_REF(name_, field_, func_) \
   do { \
     if (w & PP_##name_) { \
-      if ((res = nn_xmsg_addpar_##func_ (m, PID_##name_, &ps->field_)) < 0) \
-        return res; \
+      nn_xmsg_addpar_##func_ (m, PID_##name_, &ps->field_); \
     } \
   } while (0)
 
-  if ((res = nn_xqos_addtomsg (m, &ps->qos, qwanted)) < 0)
-    return res;
+  nn_xqos_addtomsg (m, &ps->qos, qwanted);
   SIMPLE_TYPE (PROTOCOL_VERSION, protocol_version, nn_protocol_version_t);
   SIMPLE_TYPE (VENDORID, vendorid, nn_vendorid_t);
 
-  if ((res = add_locators (m, ps->present, PP_UNICAST_LOCATOR, &ps->unicast_locators, PID_UNICAST_LOCATOR)) < 0)
-    return res;
-  if ((res = add_locators (m, ps->present, PP_MULTICAST_LOCATOR, &ps->multicast_locators, PID_MULTICAST_LOCATOR)) < 0)
-    return res;
-  if ((res = add_locators (m, ps->present, PP_DEFAULT_UNICAST_LOCATOR, &ps->default_unicast_locators, PID_DEFAULT_UNICAST_LOCATOR)) < 0)
-    return res;
-  if ((res = add_locators (m, ps->present, PP_DEFAULT_MULTICAST_LOCATOR, &ps->default_multicast_locators, PID_DEFAULT_MULTICAST_LOCATOR)) < 0)
-    return res;
-  if ((res = add_locators (m, ps->present, PP_METATRAFFIC_UNICAST_LOCATOR, &ps->metatraffic_unicast_locators, PID_METATRAFFIC_UNICAST_LOCATOR)) < 0)
-    return res;
-  if ((res = add_locators (m, ps->present, PP_METATRAFFIC_MULTICAST_LOCATOR, &ps->metatraffic_multicast_locators, PID_METATRAFFIC_MULTICAST_LOCATOR)) < 0)
-    return res;
+  add_locators (m, ps->present, PP_UNICAST_LOCATOR, &ps->unicast_locators, PID_UNICAST_LOCATOR);
+  add_locators (m, ps->present, PP_MULTICAST_LOCATOR, &ps->multicast_locators, PID_MULTICAST_LOCATOR);
+  add_locators (m, ps->present, PP_DEFAULT_UNICAST_LOCATOR, &ps->default_unicast_locators, PID_DEFAULT_UNICAST_LOCATOR);
+  add_locators (m, ps->present, PP_DEFAULT_MULTICAST_LOCATOR, &ps->default_multicast_locators, PID_DEFAULT_MULTICAST_LOCATOR);
+  add_locators (m, ps->present, PP_METATRAFFIC_UNICAST_LOCATOR, &ps->metatraffic_unicast_locators, PID_METATRAFFIC_UNICAST_LOCATOR);
+  add_locators (m, ps->present, PP_METATRAFFIC_MULTICAST_LOCATOR, &ps->metatraffic_multicast_locators, PID_METATRAFFIC_MULTICAST_LOCATOR);
 
-  SIMPLE_TYPE (EXPECTS_INLINE_QOS, expects_inline_qos, char);
+  SIMPLE_TYPE (EXPECTS_INLINE_QOS, expects_inline_qos, unsigned char);
   SIMPLE_TYPE (PARTICIPANT_LEASE_DURATION, participant_lease_duration, nn_duration_t);
   FUNC_BY_REF (PARTICIPANT_GUID, participant_guid, guid);
   SIMPLE_TYPE (BUILTIN_ENDPOINT_SET, builtin_endpoint_set, unsigned);
   SIMPLE_TYPE (KEYHASH, keyhash, nn_keyhash_t);
   FUNC_BY_VAL (STATUSINFO, statusinfo, BE4u);
+  SIMPLE_TYPE (COHERENT_SET, coherent_set_seqno, nn_sequence_number_t);
   if (! NN_PEDANTIC_P)
     FUNC_BY_REF (ENDPOINT_GUID, endpoint_guid, guid);
   else
   {
     if (w & PP_ENDPOINT_GUID)
     {
-      if ((res = nn_xmsg_addpar_guid (m, PID_PRISMTECH_ENDPOINT_GUID, &ps->endpoint_guid)) < 0)
-        return res;
+      nn_xmsg_addpar_guid (m, PID_PRISMTECH_ENDPOINT_GUID, &ps->endpoint_guid);
     }
   }
-  SIMPLE_TYPE (PRISMTECH_WRITER_INFO, prismtech_writer_info, nn_prismtech_writer_info_t);
+  FUNC_BY_REF (GROUP_GUID, group_guid, guid);
+  SIMPLE_TYPE (PRISMTECH_BUILTIN_ENDPOINT_SET, prismtech_builtin_endpoint_set, unsigned);
   FUNC_BY_REF (PRISMTECH_PARTICIPANT_VERSION_INFO, prismtech_participant_version_info, parvinfo);
+  FUNC_BY_VAL (ENTITY_NAME, entity_name, string);
+  FUNC_BY_VAL (PRISMTECH_NODE_NAME, node_name, string);
+  FUNC_BY_VAL (PRISMTECH_EXEC_NAME, exec_name, string);
+  SIMPLE_TYPE (PRISMTECH_PROCESS_ID, process_id, unsigned);
+  SIMPLE_TYPE (PRISMTECH_SERVICE_TYPE, service_type, unsigned);
+  SIMPLE_TYPE (PRISMTECH_WRITER_INFO, prismtech_writer_info, nn_prismtech_writer_info_t);
+  SIMPLE_TYPE (PRISMTECH_GROUP_GID, group_gid, v_gid);
+  SIMPLE_TYPE (PRISMTECH_ENDPOINT_GID, endpoint_gid, v_gid);
+  FUNC_BY_VAL (PRISMTECH_TYPE_DESCRIPTION, type_description, string);
+  FUNC_BY_REF (PRISMTECH_EOTINFO, eotinfo, eotinfo);
 #undef FUNC_BY_REF
 #undef FUNC_BY_VAL
 #undef SIMPLE
-  return 0;
 }
 
 /*************************/
 
+static unsigned isprint_runlen (unsigned n, const unsigned char *xs)
+{
+  unsigned m;
+  for (m = 0; m < n && xs[m] != '"' && isprint (xs[m]); m++)
+    ;
+  return m;
+}
+
+static void log_octetseq (logcat_t cat, unsigned n, const unsigned char *xs)
+{
+  unsigned i = 0;
+  while (i < n)
+  {
+    unsigned m = isprint_runlen(n - i, xs);
+    if (m >= 4)
+    {
+      nn_log (cat, "%s\"%*.*s\"", i == 0 ? "" : ",", m, m, xs);
+      xs += m;
+      i += m;
+    }
+    else
+    {
+      if (m == 0)
+        m = 1;
+      while (m--)
+      {
+        nn_log (cat, "%s%d", i == 0 ? "" : ",", *xs++);
+        i++;
+      }
+    }
+  }
+}
+
 void nn_log_xqos (logcat_t cat, const nn_xqos_t *xqos)
 {
-  unsigned p = xqos->present;
+  os_uint64 p = xqos->present;
   const char *prefix = "";
 #define LOGB0(fmt_) nn_log (cat, "%s" fmt_, prefix)
 #define LOGB1(fmt_, arg0_) nn_log (cat, "%s" fmt_, prefix, arg0_)
 #define LOGB2(fmt_, arg0_, arg1_) nn_log (cat, "%s" fmt_, prefix, arg0_, arg1_)
 #define LOGB3(fmt_, arg0_, arg1_, arg2_) nn_log (cat, "%s" fmt_, prefix, arg0_, arg1_, arg2_)
+#define LOGB4(fmt_, arg0_, arg1_, arg2_, arg3_) nn_log (cat, "%s" fmt_, prefix, arg0_, arg1_, arg2_, arg3_)
+#define LOGB5(fmt_, arg0_, arg1_, arg2_, arg3_, arg4_) nn_log (cat, "%s" fmt_, prefix, arg0_, arg1_, arg2_, arg3_, arg4_)
 #define DO(name_, body_) do { if (p & QP_##name_) { { body_ } prefix = ","; } } while (0)
 
 #if DDSI_DURATION_ACCORDING_TO_SPEC
@@ -2718,15 +3455,23 @@ void nn_log_xqos (logcat_t cat, const nn_xqos_t *xqos)
   DO (TYPE_NAME, { LOGB1 ("type=%s", xqos->type_name); });
   DO (PRESENTATION, { LOGB3 ("presentation=%d:%d:%d", xqos->presentation.access_scope, xqos->presentation.coherent_access, xqos->presentation.ordered_access); });
   DO (PARTITION, {
-      int i;
+      unsigned i;
       LOGB0 ("partition={");
       for (i = 0; i < xqos->partition.n; i++) {
         nn_log (cat, "%s%s", (i == 0) ? "" : ",", xqos->partition.strs[i]);
       }
       nn_log (cat, "}");
     });
-  DO (GROUP_DATA, { LOGB1 ("group_data=%d<...>", xqos->group_data.length); });
-  DO (TOPIC_DATA, { LOGB1 ("topic_data=%d<...>", xqos->topic_data.length); });
+  DO (GROUP_DATA, {
+    LOGB1 ("group_data=%d<", xqos->group_data.length);
+    log_octetseq (cat, xqos->group_data.length, xqos->group_data.value);
+    nn_log (cat, ">");
+  });
+  DO (TOPIC_DATA, {
+    LOGB1 ("topic_data=%d<", xqos->topic_data.length);
+    log_octetseq (cat, xqos->topic_data.length, xqos->topic_data.value);
+    nn_log (cat, ">");
+  });
   DO (DURABILITY, { LOGB1 ("durability=%d", xqos->durability.kind); });
   DO (DURABILITY_SERVICE, {
       LOGB0 ("durability_service=");
@@ -2743,17 +3488,44 @@ void nn_log_xqos (logcat_t cat, const nn_xqos_t *xqos)
   DO (RESOURCE_LIMITS, { LOGB3 ("resource_limits=%d:%d:%d", xqos->resource_limits.max_samples, xqos->resource_limits.max_instances, xqos->resource_limits.max_samples_per_instance); });
   DO (TRANSPORT_PRIORITY, { LOGB1 ("transport_priority=%d", xqos->transport_priority.value); });
   DO (LIFESPAN, { LOGB1 ("lifespan="FMT_DUR, PRINTARG_DUR (xqos->lifespan.duration)); });
-  DO (USER_DATA, { LOGB1 ("user_data=%d<...>", xqos->user_data.length); });
+  DO (USER_DATA, {
+    LOGB1 ("user_data=%d<", xqos->user_data.length);
+    log_octetseq (cat, xqos->user_data.length, xqos->user_data.value);
+    nn_log (cat, ">");
+  });
   DO (OWNERSHIP, { LOGB1 ("ownership=%d", xqos->ownership.kind); });
   DO (OWNERSHIP_STRENGTH, { LOGB1 ("ownership_strength=%d", xqos->ownership_strength.value); });
   DO (TIME_BASED_FILTER, { LOGB1 ("time_based_filter="FMT_DUR, PRINTARG_DUR (xqos->time_based_filter.minimum_separation)); });
-  DO (PRISMTECH_READER_DATA_LIFECYCLE, { LOGB2 ("reader_data_lifecycle="FMT_DUR":"FMT_DUR, PRINTARG_DUR (xqos->reader_data_lifecycle.autopurge_nowriter_samples_delay), PRINTARG_DUR (xqos->reader_data_lifecycle.autopurge_disposed_samples_delay)); });
-  DO (PRISMTECH_WRITER_DATA_LIFECYCLE, { LOGB1 ("writer_data_lifecycle=%d", xqos->writer_data_lifecycle.autodispose_unregistered_instances); });
+  DO (PRISMTECH_READER_DATA_LIFECYCLE, { LOGB5 ("reader_data_lifecycle="FMT_DUR":"FMT_DUR":%d:%d:%d", PRINTARG_DUR (xqos->reader_data_lifecycle.autopurge_nowriter_samples_delay), PRINTARG_DUR (xqos->reader_data_lifecycle.autopurge_disposed_samples_delay), xqos->reader_data_lifecycle.autopurge_dispose_all, xqos->reader_data_lifecycle.enable_invalid_samples, (int) xqos->reader_data_lifecycle.invalid_sample_visibility); });
+  DO (PRISMTECH_WRITER_DATA_LIFECYCLE, {
+    LOGB3 ("writer_data_lifecycle={%d,"FMT_DUR","FMT_DUR"}",
+           xqos->writer_data_lifecycle.autodispose_unregistered_instances,
+           PRINTARG_DUR (xqos->writer_data_lifecycle.autounregister_instance_delay),
+           PRINTARG_DUR (xqos->writer_data_lifecycle.autopurge_suspended_samples_delay)); });
   DO (PRISMTECH_RELAXED_QOS_MATCHING, { LOGB1 ("relaxed_qos_matching=%d", xqos->relaxed_qos_matching.value); });
+  DO (PRISMTECH_READER_LIFESPAN, { LOGB2 ("reader_lifespan={%d,"FMT_DUR"}", xqos->reader_lifespan.use_lifespan, PRINTARG_DUR (xqos->reader_lifespan.duration)); });
+  DO (PRISMTECH_SUBSCRIPTION_KEYS, {
+    unsigned i;
+    LOGB1 ("subscription_keys={%d,{", xqos->subscription_keys.use_key_list);
+    for (i = 0; i < xqos->subscription_keys.key_list.n; i++) {
+      nn_log (cat, "%s%s", (i == 0) ? "" : ",", xqos->subscription_keys.key_list.strs[i]);
+    }
+    nn_log (cat, "}}");
+  });
+  DO (PRISMTECH_SHARE, { LOGB2 ("share={%d,%s}", xqos->share.enable, xqos->share.name ? xqos->share.name : "(null)"); });
+  DO (PRISMTECH_ENTITY_FACTORY, { LOGB1 ("entity_factory=%d", xqos->entity_factory.autoenable_created_entities); });
+  DO (PRISMTECH_SYNCHRONOUS_ENDPOINT, { LOGB1 ("synchronous_endpoint=%d", xqos->synchronous_endpoint.value); });
+  DO (RTI_TYPECODE, {
+    LOGB1 ("rti_typecode=%d<", xqos->rti_typecode.length);
+    log_octetseq (cat, xqos->rti_typecode.length, xqos->rti_typecode.value);
+    nn_log (cat, ">");
+  });
 
 #undef PRINTARG_DUR
 #undef FMT_DUR
 #undef DO
+#undef LOGB5
+#undef LOGB4
 #undef LOGB3
 #undef LOGB2
 #undef LOGB1

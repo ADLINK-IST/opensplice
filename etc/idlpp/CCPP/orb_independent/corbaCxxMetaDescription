@@ -1,2 +1,0 @@
-const char * $(scopedtypename)TypeSupport::metaDescriptor[] = {"$(meta-descriptor)"};
-const ::DDS::ULong ($(scopedtypename)TypeSupport::metaDescriptorArrLength) = $(meta-descriptorArrLength);

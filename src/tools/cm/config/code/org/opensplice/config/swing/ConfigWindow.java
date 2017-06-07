@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.config.swing;
@@ -14,11 +22,16 @@ package org.opensplice.config.swing;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Event;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -29,6 +42,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
+import org.opensplice.common.util.ConfigModeIntializer;
 import org.opensplice.common.view.MainWindow;
 import org.opensplice.common.view.StatusPanel;
 import org.opensplice.config.data.DataConfiguration;
@@ -59,11 +73,22 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     private JMenu helpMenu = null;
     private JMenuItem helpContentsItem = null;
     private DataConfiguration config = null;
+    private List<Image> appLogos = null;
 
 
     private DataNodePopup popupSupport = null;
     private ConfigTransferHandler transferHandler = null;
-    private static final String    defaultTitle      = "OpenSplice Configurator";
+
+    private String windowTitle = "Configurator";
+    public static final String    OSPL_WINDOW_TITLE      = "Vortex OpenSplice Configurator";
+    public static final String    LITE_WINDOW_TITLE      = "Vortex Lite Configurator";
+
+    public static final String    OSPL_SERVICE_LABEL = "Service";
+    public static final String    LITE_SERVICE_LABEL = "Component";
+
+    public static String    SERVICE_LABEL;
+    public static String    SERVICE_TEXT;
+
     /**
      * This is the default constructor
      */
@@ -220,6 +245,15 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         return this.controller;
     }
     
+    public void setWindowTitle (int configMode) {
+        if (configMode == ConfigModeIntializer.LITE_MODE) {
+            this.windowTitle = LITE_WINDOW_TITLE;
+        } else {
+            this.windowTitle = OSPL_WINDOW_TITLE;
+        }
+        super.setTitle(this.windowTitle);
+    }
+
     private void updateMenus(){
         this.getAddServiceMenu().removeAll();
         this.getRemoveServiceMenu().removeAll();
@@ -264,12 +298,12 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
             f = config.getFile();
             
             if(f != null){
-                title = ConfigWindow.defaultTitle + " | " + f.getAbsolutePath();
+                title = this.windowTitle + " | " + f.getAbsolutePath();
             } else {
-                title = ConfigWindow.defaultTitle + " | <NoName>";
+                title = this.windowTitle + " | <NoName>";
             }
         } else {
-            title = ConfigWindow.defaultTitle;
+            title = this.windowTitle;
         }
         this.setTitle(title);
     }
@@ -325,11 +359,14 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     private void initialize() {
         this.setSize(800, 600);
         this.controller = new ConfigWindowController(this);
+        // setServiceLabel relies on the
+        // ConfigModeIntializer.CONFIGURATOR_MODE variable which
+        // has been set during construction of ConfigWndowController
+        this.setServiceLabel();
         this.popupSupport = new DataNodePopup();
         this.transferHandler = new ConfigTransferHandler(this);
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.setJMenuBar(getConfigMenuBar());
-        this.setTitle(ConfigWindow.defaultTitle);
         this.setLocationRelativeTo(this.getParent());
         this.setContentPane(getJContentPane());
         
@@ -341,6 +378,23 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
             }
         });
         this.updateMenus();
+        this.setAppLogo();
+    }
+
+    /**
+     * Set the proper service label to be used throughout the configurator UI.
+     * Ospl uses the label "Service" while Lite uses the label "Component"
+     * (since the concept of service does not really exist)
+     *
+     */
+    private void setServiceLabel(){
+        if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.LITE_MODE){
+            SERVICE_LABEL = OSPL_SERVICE_LABEL;
+            SERVICE_TEXT = OSPL_SERVICE_LABEL.toLowerCase();
+        } else {
+            SERVICE_LABEL = LITE_SERVICE_LABEL;
+            SERVICE_TEXT = LITE_SERVICE_LABEL.toLowerCase();
+        }
     }
 
     /**
@@ -459,7 +513,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     private JMenu getAddServiceMenu(){
         if (addServiceMenu == null){
             addServiceMenu = new JMenu();
-            addServiceMenu.setText("Add Service");
+            addServiceMenu.setText("Add " + SERVICE_LABEL);
             addServiceMenu.setMnemonic(KeyEvent.VK_A);
         }
         return addServiceMenu;
@@ -468,7 +522,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     private JMenu getRemoveServiceMenu(){
         if (removeServiceMenu == null){
             removeServiceMenu = new JMenu();
-            removeServiceMenu.setText("Remove Service");
+            removeServiceMenu.setText("Remove " + SERVICE_LABEL);
             removeServiceMenu.setMnemonic(KeyEvent.VK_R);
         }
         return removeServiceMenu;
@@ -589,5 +643,33 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
             printItem.addActionListener(controller);
         }
         return printItem;
+    }
+
+    /**
+     * Set the Logo image to be used in Configurator's window and taskbar button.
+     */
+    private void setAppLogo() {
+        if (appLogos == null) {
+            try {
+                List<URL> imgUrls = new ArrayList<URL>(4);
+                // Expected location of the icons in tuner jar
+                URL url = getClass().getResource("/resources/ptlogoc16.png");
+                imgUrls.add(url != null ? url : getClass().getResource("/ptlogoc16.png"));
+                url = getClass().getResource("/resources/ptlogoc24.png");
+                imgUrls.add(url != null ? url : getClass().getResource("/ptlogoc24.png"));
+                url = getClass().getResource("/resources/ptlogoc32.png");
+                imgUrls.add(url != null ? url : getClass().getResource("/ptlogoc32.png"));
+                url = getClass().getResource("/resources/ptlogoc48.png");
+                imgUrls.add(url != null ? url : getClass().getResource("/ptlogoc48.png"));
+
+                appLogos = new ArrayList<Image>(4);
+                for (URL imgUrl : imgUrls) {
+                    if (imgUrl != null) {
+                        appLogos.add(Toolkit.getDefaultToolkit().getImage(imgUrl));
+                    }
+                }
+                this.setIconImages(appLogos);
+            } catch (Exception e) {}
+        }
     }
 }

@@ -1,0 +1,27 @@
+parseconditions:
+    desc: RMI ClientServerLogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: server_id
+          type: line
+          inst: 2
+          required: yes
+          line: "=== Server Name=MyServer , Instance ID=1"
+
+        - name: start_ddsruntime
+          type: line
+          inst: 2
+          required: yes
+          line: "=== Starting the DDS Runtime"
+
+        - name: runtime_stop
+          type: line
+          inst: 1
+          required: yes
+          line: "=== Stopping the DDS Runtime"

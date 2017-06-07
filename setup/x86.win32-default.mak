@@ -9,9 +9,6 @@ CC  = $(WINCMD) cl
 CXX = $(WINCMD) cl
 CSC = $(WINCMD) Csc
 
-# Binary used for filtering: in the future must be empty
-FILTER =
-
 # Binary used for linking
 LD_SO            = $(WINCMD) link
 	# Binary used for linking executables
@@ -82,7 +79,7 @@ else
     VS_INCLUDE =  -I"$(VS_HOME)/VC/INCLUDE"
     VS_INCLUDE += -I"$(VS_HOME)/VC/PlatformSDK/include"
     VS_INCLUDE += -I"$(VS_HOME)/VC/atlmfc/include"
- 
+
     VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib"
     VS_LIB_FLAGS += -L"$(VS_HOME)/VC/PlatformSDK/lib"
 else
@@ -90,7 +87,7 @@ else
 # VS2008 & VS 2010
     VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
     VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include"
- 
+
     VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib"
     VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib"
 else
@@ -106,15 +103,19 @@ endif
 endif
 endif
 
-# Set compiler options for single threaded process
-#    The definition _CRT_SECURE_NO_DEPRECATE is to suppress warnings, remove when not using deprecated functions
-CFLAGS	= -TC $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	= -EHsc -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG)
-CSFLAGS	= -noconfig -nowarn:1701,1702 -errorreport:prompt -warn:4 $(CSFLAGS_DEBUG) -optimize-
+# We have to target at least Windows XP SP2. This currently is hardcoded for all build-machines.
+# Preferably though, this should be part of the target/tied to the platform code.
+CFLAGS += -D_WIN32_WINNT=0x0502
+CPPFLAGS += -D_WIN32_WINNT=0x0502
 
+# Set compiler options
+#    The definition _CRT_SECURE_NO_DEPRECATE is to suppress warnings, remove when not using deprecated functions
+CFLAGS	+= -TC $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(MTCFLAGS)
+CXXFLAGS	+= -EHsc -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(MTCFLAGS)
+CSFLAGS	= -platform:x86 -noconfig -nowarn:1701,1702 -errorreport:prompt -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # Set CPP flags
-CPPFLAGS	 = -nologo -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_USE_32BIT_TIME_T $(VS_INCLUDE)
+CPPFLAGS	 += -nologo -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE $(VS_INCLUDE)
 
 # Set compiler options for multi threaded process
 # notify usage of posix threads
@@ -139,15 +140,11 @@ SHLDLIBS	 =
 
 # Set component specific libraries that are platform dependent
 LDLIBS_CXX =
-LDLIBS_NW = -lws2_32
+LDLIBS_NW = -lws2_32 -lIphlpapi
 LDLIBS_OS = -lkernel32 -lAdvapi32
 LDLIBS_CMS = -lws2_32
 LDLIBS_JAVA = -ljvm
 LDLIBS_ODBC= -lodbc32
-
-LDLIBS_ZLIB = -lzlib
-LDFLAGS_ZLIB = "-L$(ZLIB_HOME)"
-CINCS_ZLIB = "-I$(ZLIB_HOME)"
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .obj

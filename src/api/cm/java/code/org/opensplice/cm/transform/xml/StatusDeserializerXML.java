@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.transform.xml;
@@ -26,61 +34,63 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
 import org.opensplice.cm.status.*;
 import org.opensplice.cm.transform.StatusDeserializer;
 import org.opensplice.cm.transform.TransformationException;
 
 /**
- * 
- * 
- * @date Oct 13, 2004 
+ *
+ *
+ * @date Oct 13, 2004
  */
 public class StatusDeserializerXML implements StatusDeserializer{
     private DocumentBuilder builder;
     private Logger logger;
-    
+
     public StatusDeserializerXML() throws ParserConfigurationException{
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setValidating(false);
         factory.setNamespaceAware(false);
-        builder = factory.newDocumentBuilder(); 
+        builder = factory.newDocumentBuilder();
         logger = Logger.getLogger("org.opensplice.api.cm.transform.xml");
     }
-    
+
+    @Override
     public Status deserializeStatus(Object serialized) throws TransformationException {
         if(serialized == null){
             throw new TransformationException("Supplied Status is not valid.");
         }
         Status status = null;
         Document document;
-        
+
         if(serialized instanceof String){
             String xmlStatus = (String)serialized;
             /*
-            logger.logp(Level.SEVERE, "StatusDeserializerXML", "deserializeStatusses", 
-                                       "Deserializing statusses from string:\n'" + 
+            logger.logp(Level.SEVERE, "StatusDeserializerXML", "deserializeStatusses",
+                                       "Deserializing statusses from string:\n'" +
                                        xmlStatus + "'");
-            */     
+            */
             try {
-                document = builder.parse(new InputSource(new StringReader(xmlStatus)));
+                synchronized(builder){
+                    document = builder.parse(new InputSource(new StringReader(xmlStatus)));
+                }
             }
             catch (SAXException se) {
-                logger.logp(Level.SEVERE,  "StatusDeserializerXML", 
-                                           "deserializeStatusses", 
+                logger.logp(Level.SEVERE,  "StatusDeserializerXML",
+                                           "deserializeStatusses",
                                            "SAXException occurred, Statusses could not be deserialized");
                 throw new TransformationException(se.getMessage());
             }
             catch (IOException ie) {
-                logger.logp(Level.SEVERE,  "StatusDeserializerXML", 
-                                           "deserializeStatusses", 
+                logger.logp(Level.SEVERE,  "StatusDeserializerXML",
+                                           "deserializeStatusses",
                                            "IOException occurred, Statusses could not be deserialized");
                 throw new TransformationException(ie.getMessage());
             }
             if(document == null){
                 throw new TransformationException("Supplied Status is not valid.");
             }
-            
+
             Element rootElement = document.getDocumentElement();
             status = this.buildStatus(rootElement);
         }
@@ -92,15 +102,15 @@ public class StatusDeserializerXML implements StatusDeserializer{
         String state = null;
         Status s;
         NodeList stateElements;
-        
+
         s = null;
         kind = rootElement.getFirstChild().getFirstChild().getNodeValue();
         stateElements = rootElement.getElementsByTagName("state");
-        
+
         if(stateElements.getLength() > 0){
             state = stateElements.item(0).getFirstChild().getNodeValue();
         }
-        
+
         if("K_DOMAINSTATUS".equals(kind)){
             s = this.buildPartitionStatus(rootElement, state);
         } else if("K_TOPICSTATUS".equals(kind)){
@@ -112,20 +122,20 @@ public class StatusDeserializerXML implements StatusDeserializer{
         } else if("K_WRITERSTATUS".equals(kind)){
             s = this.buildWriterStatus(rootElement, state);
         } else {
-            logger.logp(Level.SEVERE,  "StatusDeserializerXML", 
-                    "buildStatusses", 
+            logger.logp(Level.SEVERE,  "StatusDeserializerXML",
+                    "buildStatusses",
                     "Found unknown status: " + kind);
         }
         return s;
     }
-    
+
     private PartitionStatus buildPartitionStatus(Element el, String state){
         GroupsChangedInfo s = null;
         PartitionStatus result = null;
         Element statusElement = null;
-        
+
         NodeList elements = el.getElementsByTagName("groupsChanged");
-        
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             s = this.buildGroupsChangedInfo(statusElement);
@@ -133,14 +143,14 @@ public class StatusDeserializerXML implements StatusDeserializer{
         }
         return result;
     }
-    
+
     private TopicStatus buildTopicStatus(Element el, String state){
         InconsistentTopicInfo s = null;
         TopicStatus result = null;
         Element statusElement = null;
-        
+
         NodeList elements = el.getElementsByTagName("inconsistentTopic");
-        
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             s = this.buildInconsistentTopicInfo(statusElement);
@@ -148,24 +158,24 @@ public class StatusDeserializerXML implements StatusDeserializer{
         }
         return result;
     }
-    
+
     private SubscriberStatus buildSubscriberStatus(Element el, String state){
         SubscriberStatus result = null;
         Element statusElement = null;
         NodeList elements;
         SampleLostInfo sl = null;
-        
+
         elements = el.getElementsByTagName("sampleLost");
-        
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             sl = this.buildSampleLostInfo(statusElement);
         }
         result = new SubscriberStatus(state, sl);
-        
+
         return result;
     }
-    
+
     private WriterStatus buildWriterStatus(Element el, String state){
         LivelinessLostInfo ll = null;
         DeadlineMissedInfo dm = null;
@@ -173,37 +183,37 @@ public class StatusDeserializerXML implements StatusDeserializer{
         TopicMatchInfo ti = null;
         WriterStatus result = null;
         Element statusElement = null;
-        
+
         NodeList elements = el.getElementsByTagName("livelinessLost");
-        
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             ll = this.buildLivelinessLostInfo(statusElement);
         }
         elements = el.getElementsByTagName("deadlineMissed");
-        
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             dm = this.buildDeadlineMissedInfo(statusElement);
         }
         elements = el.getElementsByTagName("incompatibleQos");
-        
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             iq = this.buildIncompatibleQosInfo(statusElement);
         }
-        
+
         elements = el.getElementsByTagName("publicationMatch");
-        
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             ti = this.buildTopicMatchInfo(statusElement);
         }
         result = new WriterStatus(state, ll, dm, iq, ti);
-        
+
         return result;
     }
-    
+
     private ReaderStatus buildReaderStatus(Element el, String state){
         LivelinessChangedInfo lc = null;
         SampleRejectedInfo sr = null;
@@ -211,36 +221,36 @@ public class StatusDeserializerXML implements StatusDeserializer{
         IncompatibleQosInfo iq = null;
         SampleLostInfo sl = null;
         TopicMatchInfo tm = null;
-        
+
         ReaderStatus result = null;
         Element statusElement = null;
-        
+
         NodeList elements = el.getElementsByTagName("livelinessChanged");
-                                                     
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             lc = this.buildLivelinessChangedInfo(statusElement);
         }
         elements = el.getElementsByTagName("sampleRejected");
-        
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             sr = this.buildSampleRejectedInfo(statusElement);
         }
         elements = el.getElementsByTagName("deadlineMissed");
-        
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             dm = this.buildDeadlineMissedInfo(statusElement);
         }
         elements = el.getElementsByTagName("incompatibleQos");
-        
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             iq = this.buildIncompatibleQosInfo(statusElement);
         }
         elements = el.getElementsByTagName("sampleLost");
-        
+
         if(elements.getLength() > 0){
             statusElement = (Element)(elements.item(0));
             sl = this.buildSampleLostInfo(statusElement);
@@ -252,86 +262,86 @@ public class StatusDeserializerXML implements StatusDeserializer{
             tm = this.buildTopicMatchInfo(statusElement);
         }
         result = new ReaderStatus(state, lc, sr, dm, iq, sl, tm);
-        
+
         return result;
     }
-    
+
     private GroupsChangedInfo buildGroupsChangedInfo(Element el){
         long totalCount = 0;
         long totalChanged = 0;
-        
+
         if("NULL".equals(el.getFirstChild().getNodeValue()))
         {
             return null;
         }
         NodeList members = el.getChildNodes();
         String name;
-        
+
         for(int i=0; i<members.getLength(); i++){
             name = members.item(i).getNodeName();
-            
+
             if("totalCount".equals(name)){
                 totalCount = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
             } else if("totalChanged".equals(name)){
                 totalChanged = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
-            } 
+            }
         }
         return new GroupsChangedInfo(totalCount, totalChanged);
     }
-    
+
     private SampleLostInfo buildSampleLostInfo(Element el){
         long totalCount = 0;
         long totalChanged = 0;
-        
+
         if("NULL".equals(el.getFirstChild().getNodeValue()))
         {
             return null;
         }
         NodeList members = el.getChildNodes();
-        
+
         for(int i=0; i<members.getLength(); i++){
             if("totalCount".equals(members.item(i).getNodeName())){
                 totalCount = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
             } else if("totalChanged".equals(members.item(i).getNodeName())){
                 totalChanged = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
-            } 
+            }
         }
         return new SampleLostInfo(totalCount, totalChanged);
     }
-    
+
     private InconsistentTopicInfo buildInconsistentTopicInfo(Element el){
         long totalCount = 0;
         long totalChanged = 0;
-        
+
         if("NULL".equals(el.getFirstChild().getNodeValue()))
         {
             return null;
         }
         NodeList members = el.getChildNodes();
-        
+
         for(int i=0; i<members.getLength(); i++){
             if("totalCount".equals(members.item(i).getNodeName())){
                 totalCount = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
             } else if("totalChanged".equals(members.item(i).getNodeName())){
                 totalChanged = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
-            } 
+            }
         }
         return new InconsistentTopicInfo(totalCount, totalChanged);
     }
-    
+
     private SampleRejectedInfo buildSampleRejectedInfo(Element el){
         long totalCount = 0;
         long totalChanged = 0;
         SampleRejectedKind lastReason = null;
         String lastInstanceHandle = null;
-        
+
         if("NULL".equals(el.getFirstChild().getNodeValue()))
         {
             return null;
         }
         NodeList members = el.getChildNodes();
         String name;
-        
+
         for(int i=0; i<members.getLength(); i++){
             name = members.item(i).getNodeName();
             if("totalCount".equals(name)){
@@ -349,10 +359,10 @@ public class StatusDeserializerXML implements StatusDeserializer{
                     String name2;
                     String index = null;
                     String serial = null;
-                    
+
                     for(int j=0; j<members2.getLength(); j++){
                         name2 = members2.item(j).getNodeName();
-                        
+
                         if("index".equals(name2)){
                             index = members2.item(j).getFirstChild().getNodeValue();
                         } else if("serial".equals(name2)){
@@ -365,25 +375,25 @@ public class StatusDeserializerXML implements StatusDeserializer{
         }
         return new SampleRejectedInfo(totalCount, totalChanged, lastReason, lastInstanceHandle);
     }
-    
+
     private TopicMatchInfo buildTopicMatchInfo(Element el){
         long totalCount = 0;
         long totalChanged = 0;
         long currentCount = 0;
         long currentCountChanged = 0;
-        
+
         String lastHandle = null;
         String name;
-        
+
         if("NULL".equals(el.getFirstChild().getNodeValue()))
         {
             return null;
         }
         NodeList members = el.getChildNodes();
-        
+
         for(int i=0; i<members.getLength(); i++){
             name = members.item(i).getNodeName();
-            
+
             if("totalCount".equals(name)){
                 totalCount = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
             } else if("totalChanged".equals(name)){
@@ -398,24 +408,24 @@ public class StatusDeserializerXML implements StatusDeserializer{
         }
         return new TopicMatchInfo(totalCount, totalChanged, currentCount, currentCountChanged, lastHandle);
     }
-    
+
     private LivelinessChangedInfo buildLivelinessChangedInfo(Element el){
         long activeCount = 0;
         long inactiveCount = 0;
         long activeCountChange = 0;
         long inactiveCountChange = 0;
         String instanceHandle = null;
-        
+
         if("NULL".equals(el.getFirstChild().getNodeValue()))
         {
             return null;
         }
         NodeList members = el.getChildNodes();
         String name;
-        
+
         for(int i=0; i<members.getLength(); i++){
             name = members.item(i).getNodeName();
-            
+
             if("activeCount".equals(name)){
                 activeCount = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
             } else if("inactiveCount".equals(name)){
@@ -433,10 +443,10 @@ public class StatusDeserializerXML implements StatusDeserializer{
                     String name2;
                     String index = null;
                     String serial = null;
-                    
+
                     for(int j=0; j<members2.getLength(); j++){
                         name2 = members2.item(j).getNodeName();
-                        
+
                         if("index".equals(name2)){
                             index = members2.item(j).getFirstChild().getNodeValue();
                         } else if("serial".equals(name2)){
@@ -449,22 +459,22 @@ public class StatusDeserializerXML implements StatusDeserializer{
         }
         return new LivelinessChangedInfo(activeCount, inactiveCount, activeCountChange, inactiveCountChange, instanceHandle);
     }
-    
+
     private DeadlineMissedInfo buildDeadlineMissedInfo(Element el){
         long totalCount = 0;
         long totalChanged = 0;
         String lastInstanceHandle = null;
-        
+
         if("NULL".equals(el.getFirstChild().getNodeValue()))
         {
             return null;
         }
         NodeList members = el.getChildNodes();
         String name;
-        
+
         for(int i=0; i<members.getLength(); i++){
             name = members.item(i).getNodeName();
-            
+
             if("totalCount".equals(name)){
                 totalCount = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
             } else if("totalChanged".equals(name)){
@@ -478,10 +488,10 @@ public class StatusDeserializerXML implements StatusDeserializer{
                     String name2;
                     String index = null;
                     String serial = null;
-                    
+
                     for(int j=0; j<members2.getLength(); j++){
                         name2 = members2.item(j).getNodeName();
-                        
+
                         if("index".equals(name2)){
                             index = members2.item(j).getFirstChild().getNodeValue();
                         } else if("serial".equals(name2)){
@@ -494,43 +504,43 @@ public class StatusDeserializerXML implements StatusDeserializer{
         }
         return new DeadlineMissedInfo(totalCount, totalChanged, lastInstanceHandle);
     }
-        
+
     private LivelinessLostInfo buildLivelinessLostInfo(Element el){
         long totalCount = 0;
         long totalChanged = 0;
-        
+
         if("NULL".equals(el.getFirstChild().getNodeValue()))
         {
             return null;
         }
         NodeList members = el.getChildNodes();
-        
+
         for(int i=0; i<members.getLength(); i++){
             if("totalCount".equals(members.item(i).getNodeName())){
                 totalCount = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
             } else if("totalChanged".equals(members.item(i).getNodeName())){
                 totalChanged = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
-            } 
+            }
         }
         return new LivelinessLostInfo(totalCount, totalChanged);
     }
-    
+
     private IncompatibleQosInfo buildIncompatibleQosInfo(Element el){
         long totalCount = 0;
         long totalChanged = 0;
         long lastPolicyId = 0;
-        ArrayList qpc = new ArrayList();
-        
+        ArrayList<Long> qpc = new ArrayList<Long>();
+
         if("NULL".equals(el.getFirstChild().getNodeValue()))
         {
             return null;
         }
         NodeList members = el.getChildNodes();
         String name;
-        
+
         for(int i=0; i<members.getLength(); i++){
             name = members.item(i).getNodeName();
-            
+
             if("totalCount".equals(name)){
                 totalCount = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
             } else if("totalChanged".equals(name)){
@@ -539,10 +549,10 @@ public class StatusDeserializerXML implements StatusDeserializer{
                 lastPolicyId = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
             } else if("policyCount".equals(name)){
                 if("NULL".equals(members.item(i).getFirstChild().getNodeValue())){
-                    
+
                 } else {
                     NodeList elements = members.item(i).getChildNodes();
-                    
+
                     for(int j=0; j<elements.getLength(); j++){
                         if("element".equals(elements.item(j).getNodeName())){
                             qpc.add(new Long(elements.item(j).getFirstChild().getNodeValue()));
@@ -552,9 +562,9 @@ public class StatusDeserializerXML implements StatusDeserializer{
             }
         }
         IncompatibleQosInfo s = new IncompatibleQosInfo(totalCount, totalChanged);
-        
+
         for(int i=0; i<qpc.size(); i++){
-            s.addPolicy(((Long)qpc.get(i)).longValue());
+            s.addPolicy((qpc.get(i)).longValue());
         }
         s.setLastPolicyId(lastPolicyId);
         return s;
@@ -563,19 +573,19 @@ public class StatusDeserializerXML implements StatusDeserializer{
     private QosPolicyCount buildQosPolicyCount(Element el){
         long policyId = 0;
         long count = 0;
-        
+
         if("NULL".equals(el.getFirstChild().getNodeValue()))
         {
             return null;
         }
         NodeList members = el.getChildNodes();
-        
+
         for(int i=0; i<members.getLength(); i++){
             if("policyId".equals(members.item(i).getNodeName())){
                 policyId = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
             } else if("count".equals(members.item(i).getNodeName())){
                 count = Long.parseLong(members.item(i).getFirstChild().getNodeValue());
-            } 
+            }
         }
         return new QosPolicyCount(policyId, count);
     }

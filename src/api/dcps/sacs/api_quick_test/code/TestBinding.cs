@@ -1,21 +1,21 @@
-// The OpenSplice DDS Community Edition project.
-//
-// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
-// Copyright (C) 2009  L-3 Communications / IS
-// 
-//  This library is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License Version 3 dated 29 June 2007, as published by the
-//  Free Software Foundation.
-// 
-//  This library is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-// 
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
 
 using System;
 using DDS;
@@ -89,7 +89,7 @@ namespace testNamespace
             Console.WriteLine("DomainParticipantFactory.get_qos: {0}", result);
             Console.WriteLine("DomainParticipantFactoryQos.entity_factory.autoenable_created_entities: " + dpfQos.EntityFactory.AutoenableCreatedEntities);
 
-            dpfQos.EntityFactory.AutoenableCreatedEntities = false;
+            dpfQos.EntityFactory.AutoenableCreatedEntities = true;
             result = dpf.SetQos(dpfQos);
             Console.WriteLine("DomainParticipantFactory.set_qos: {0}", result);
 
@@ -129,7 +129,7 @@ namespace testNamespace
             Console.WriteLine("Current Local Time: {0}", currentTime.ToDatetime().ToLocalTime());
 
             // And look up this DomainParticipant.
-            IDomainParticipant dp2 = dpf.LookupParticipant(null);
+            IDomainParticipant dp2 = dpf.LookupParticipant(DDS.DomainId.Default);
 
             DomainParticipantQos dp2Qos = null;
 
@@ -138,7 +138,6 @@ namespace testNamespace
             result = dp2.GetQos(ref dp2Qos);
             Console.WriteLine("DomainParticipant.get_qos: {0}", result);
             Console.WriteLine("DomainParticipantQos.entity_factory.autoenable_created_entities: " + dp2Qos.EntityFactory.AutoenableCreatedEntities);
-
             // Create a new PublisherQos and set some values...
             PublisherQos publisherQos = new PublisherQos();
             publisherQos.EntityFactory.AutoenableCreatedEntities = true;
@@ -152,8 +151,8 @@ namespace testNamespace
             IPublisher publisher = dp.CreatePublisher(publisherQos);
             Console.WriteLine("Create Publisher: {0}", publisher);
 
-            //DataWriterQos dwQos;
-            //publisher.GetDefaultDataWriterQos(out dwQos);
+            DataWriterQos dwQos = null;
+            publisher.GetDefaultDataWriterQos(ref dwQos);
 
 
             // Create a Detection Type Support and register it's type
@@ -187,7 +186,7 @@ namespace testNamespace
             //			result = ErrorInfo.GetMessage(out msg);
 
             // Create a DataWriter for the topic
-            Data.IDataTestDataWriter dataWriter = publisher.CreateDataWriter(topic) as Data.IDataTestDataWriter;
+            Data.IDataTestDataWriter dataWriter = publisher.CreateDataWriter(topic, dwQos) as Data.IDataTestDataWriter;
 
             // Create a SubscriberQos object and set the partition name
             SubscriberQos subscriberQos = null;
@@ -215,22 +214,35 @@ namespace testNamespace
                 as Data.IDataTestDataReader;
 
             // Create a filtered detection topic (only read detections that have an id != 4)
-            IContentFilteredTopic filteredTopic = dp.CreateContentFilteredTopic("Another", topic, "TestId <> %0", "4");
-
-			string[] testParams = null;
-			result = filteredTopic.GetExpressionParameters(ref testParams);
-			result = filteredTopic.SetExpressionParameters("hello", "test");
-			result = filteredTopic.GetExpressionParameters(ref testParams);
+            IContentFilteredTopic filteredTopic = dp.CreateContentFilteredTopic("Another", topic, "TestId <> %0", "234");
+            //IContentFilteredTopic filteredTopic = dp.CreateContentFilteredTopic("Another", topic, "TestStr = %0", "not really");
+            string[] testParams = null;
+            result = filteredTopic.GetExpressionParameters(ref testParams);
+            if (result != DDS.ReturnCode.Ok || testParams == null || testParams.Length != 1 || !testParams[0].Equals("234"))
+            {
+                Console.WriteLine("filteredTopic.GetExpressionParameters does not return the expected parameter.....");
+            }
+            else
+            {
+                Console.WriteLine("filteredTopic.GetExpressionParameters returns the expected parameter.....");
+            }
+            
+            result = filteredTopic.SetExpressionParameters("hello", "test");
+            if (result != DDS.ReturnCode.Ok)
+            {
+                Console.WriteLine("filteredTopic.SetExpressionParameters returns not OK: result = " + result);
+            }
+//            result = filteredTopic.GetExpressionParameters(ref testParams);
 
             // Create a DataReader to read the filtered topic
-            IDataReader reader2 = sub.CreateDataReader(filteredTopic);
+            Data.IDataTestDataReader reader2 = sub.CreateDataReader(filteredTopic) as Data.IDataTestDataReader;
 
             IQueryCondition queryCondition = dataReader.CreateQueryCondition(
                 "TestId = %0",
                 "234");
 
             // just for testing...
-            //GC.Collect();
+            GC.Collect();
 
             // WaitSet
             WaitSet waitSet = new WaitSet();
@@ -243,12 +255,8 @@ namespace testNamespace
             IStatusCondition sc2 = reader2.StatusCondition;
 
             // read conditions...
-            // IReadCondition readCond = reader2.CreateReadCondition();
-            // waitSet.AttachCondition(readCond);
-
-            ICondition[] cond = null;
-            //waitSet.Wait(ref cond, Duration.Infinite);
-
+             IReadCondition readCond = reader2.CreateReadCondition();
+             waitSet.AttachCondition(readCond);
 
             Console.WriteLine("Press enter to write data");
             Console.ReadLine();
@@ -280,10 +288,12 @@ namespace testNamespace
             Console.ReadLine();
 
             // Read the data
+            ICondition[] cond = null;
+            waitSet.Wait(ref cond, Duration.Infinite);
+            
+
             SampleInfo[] infos = null;
             Data.DataTest[] dataValues = null;
-
-//            result = dataReader.ReadWithCondition(ref dataValues, ref infos, DDS.Length.Unlimited, queryCondition);
 
             result = dataReader.Read(ref dataValues, ref infos);
             Console.WriteLine("dataReader: {0}", dataReader);
@@ -298,10 +308,49 @@ namespace testNamespace
                     Console.WriteLine("info: ValidData: {0},  InstHandle: {1},  PubHandle:{2},  SourceTS: {3}, ArrivalTS: {4}, sample: {5}, view: {6}, instance: {7}",
                                       infos[index].ValidData,
                                       infos[index].InstanceHandle, infos[index].PublicationHandle,
-                                      infos[index].SourceTimestamp, infos[index].ArrivalTimestamp,
+                                      infos[index].SourceTimestamp, infos[index].ReceptionTimestamp,
                                       infos[index].SampleState, infos[index].ViewState, infos[index].InstanceState);
                 }
             }
+
+            Console.WriteLine("Press enter to read data from contentfiltered topic");
+            Console.ReadLine();
+
+            result = reader2.Read(ref dataValues, ref infos, DDS.Length.Unlimited);
+            if (dataValues != null)
+            {
+                Console.WriteLine("Number of samples received: {0}", dataValues.Length);
+                for (int index = 0; index < dataValues.Length; index++)
+                {
+                    Console.WriteLine("TestId: {0}, ProviderId: {1}, Emergency: {2}, TestStr: {3}", dataValues[index].TestId,
+                                      dataValues[index].ProviderId, dataValues[index].Emergency, dataValues[index].TestStr);
+                    Console.WriteLine("info: ValidData: {0},  InstHandle: {1},  PubHandle:{2},  SourceTS: {3}, ArrivalTS: {4}, sample: {5}, view: {6}, instance: {7}",
+                                      infos[index].ValidData,
+                                      infos[index].InstanceHandle, infos[index].PublicationHandle,
+                                      infos[index].SourceTimestamp, infos[index].ReceptionTimestamp,
+                                      infos[index].SampleState, infos[index].ViewState, infos[index].InstanceState);
+                }
+            }
+
+            Console.WriteLine("Press enter to read data from query");
+            Console.ReadLine();
+
+            result = dataReader.ReadWithCondition(ref dataValues, ref infos, DDS.Length.Unlimited, queryCondition);
+            if (dataValues != null)
+            {
+                Console.WriteLine("Number of samples received: {0}", dataValues.Length);
+                for (int index = 0; index < dataValues.Length; index++)
+                {
+                    Console.WriteLine("TestId: {0}, ProviderId: {1}, Emergency: {2}, TestStr: {3}", dataValues[index].TestId,
+                                      dataValues[index].ProviderId, dataValues[index].Emergency, dataValues[index].TestStr);
+                    Console.WriteLine("info: ValidData: {0},  InstHandle: {1},  PubHandle:{2},  SourceTS: {3}, ArrivalTS: {4}, sample: {5}, view: {6}, instance: {7}",
+                                      infos[index].ValidData,
+                                      infos[index].InstanceHandle, infos[index].PublicationHandle,
+                                      infos[index].SourceTimestamp, infos[index].ReceptionTimestamp,
+                                      infos[index].SampleState, infos[index].ViewState, infos[index].InstanceState);
+                }
+            }
+
             Console.WriteLine("Press enter to cleanup");
             Console.ReadLine();
 

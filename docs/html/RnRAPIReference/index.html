@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The Vortex Record and Replay API Reference &mdash; Vortex OpenSplice Record and Replay API Reference</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Vortex OpenSplice Record and Replay API Reference" href="#" />
+    <link rel="next" title="1. Preface" href="preface.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-vortex-record-and-replay-api-reference">
+<h1>The Vortex Record and Replay API Reference<a class="headerlink" href="#the-vortex-record-and-replay-api-reference" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">1. Preface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#about-the-record-and-replay-api-reference">1.1. About The Record and Replay API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#intended-audience">1.2. Intended Audience</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#organisation">1.3. Organisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preface.html#conventions">1.4. Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">2. Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#features">2.1. Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scenarios.html">3. Scenarios</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scenarios.html#different-versions-of-the-scenario-topic">3.1. Different versions of the scenario topic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scenarios.html#builtinscenario">3.2. BuiltinScenario</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scenarios.html#command-durability">3.3. Command durability</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="topic-api-overview.html">4. Topic API Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="topic-api-overview.html#record-replay-topics">4.1. Record &amp; Replay topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="topic-api-overview.html#relevant-qos-settings">4.2. Relevant QoS settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="topic-api-overview.html#command-type">4.3. Command Type</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#control-commands">4.3.1. Control commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#config-command">4.3.2. Config command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#add-record-command">4.3.3. ADD_RECORD_COMMAND</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#remove-record-command">4.3.4. REMOVE_RECORD_COMMAND</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#add-replay-command">4.3.5. ADD_REPLAY_COMMAND</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#remove-replay-command">4.3.6. REMOVE_REPLAY_COMMAND</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#truncate-command">4.3.7. TRUNCATE_COMMAND</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#setreplayspeed-command">4.3.8. SETREPLAYSPEED_COMMAND</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="topic-api-overview.html#status-types">4.4. Status Types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#service-status">4.4.1. Service Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#scenario-status">4.4.2. Scenario Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#storage-status">4.4.3. Storage Status</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="topic-api-overview.html#storage-statistics">4.5. Storage Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="topic-api-overview.html#miscellaneous-types">4.6. Miscellaneous Types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#keyvalue">4.6.1. KeyValue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topic-api-overview.html#timerange">4.6.2. TimeRange</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="issues.html">5. Known Issues</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="issues.html#ability-to-create-topics">5.1. Ability to create topics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="impact.html">6. Impact on DDS Domain</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="impact.html#intrusiveness">6.1. Intrusiveness</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="appendixa.html">7. Appendix A</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="appendixa.html#rnr-topic-api-idl-specification">7.1. RnR Topic API IDL specification</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bibliography.html">8. References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">9. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">9.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">9.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The Vortex Record and Replay API Reference</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="preface.html"
+                        title="next chapter">1. Preface</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="preface.html" title="1. Preface"
+             >next</a> |</li>
+        <li><a href="#">RnR API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

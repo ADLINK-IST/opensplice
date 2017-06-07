@@ -10,8 +10,9 @@ echo "=== Launching HelloWorld "
 sleep 5
 ./HelloWorldDataPublisher > pubResult.txt
 
-# Allow time for output to txt file to be written
-sleep 10
+echo "=== Waiting for processes to terminate"
+waitForProcessTermination HelloWorldDataPublisher  30
+waitForProcessTermination HelloWorldDataSubscriber 30
 
 helloworldCheckResult
 

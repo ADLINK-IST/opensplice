@@ -1,211 +1,206 @@
-﻿// The OpenSplice DDS Community Edition project.
-//
-// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
-// Copyright (C) 2009  L-3 Communications / IS
-// 
-//  This library is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License Version 3 dated 29 June 2007, as published by the
-//  Free Software Foundation.
-// 
-//  This library is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-// 
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ */
 
 using System;
 using System.Runtime.InteropServices;
 
+using DDS.OpenSplice.Kernel;
+using DDS.OpenSplice.CustomMarshalers;
+
 namespace DDS.OpenSplice
 {
-    public static class FooDataWriter // : DataWriter
+    public abstract class FooDataWriter<T, TMarshaler> : DataWriter
+            where T : class
+            where TMarshaler : FooDatabaseMarshaler<T>
     {
-        public static InstanceHandle RegisterInstance(
-                DataWriter writer, 
-                object instanceData)
-        {
-            GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
-            InstanceHandle result = Gapi.FooDataWriter.register_instance(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle));
-            tmpGCHandle.Free();
+        private TMarshaler sampleMarshaler;
 
-            return result;
+        public FooDataWriter(DatabaseMarshaler marshaler)
+        {
+            sampleMarshaler = marshaler as TMarshaler;
         }
 
-        public static InstanceHandle RegisterInstanceWithTimestamp(
-                DataWriter writer, 
-                object instanceData, 
+        public virtual InstanceHandle RegisterInstance(
+                T instanceData,
                 Time sourceTimestamp)
         {
-            GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
-            InstanceHandle result = Gapi.FooDataWriter.register_instance_w_timestamp(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle),
-                    ref sourceTimestamp);
-            tmpGCHandle.Free();
+            ReturnCode result = DDS.ReturnCode.BadParameter;
+            InstanceHandle handle = DDS.InstanceHandle.Nil;
+            
+            ReportStack.Start();
+            if ((sourceTimestamp == Time.Current) ||
+                (QosManager.countErrors(sourceTimestamp) == 0)) {
+                long uHandle = handle;
+                GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
+                result = uResultToReturnCode(
+                        User.Writer.RegisterInstance(
+                                rlReq_UserPeer,
+                                sampleMarshaler.CopyIn,
+                                GCHandle.ToIntPtr(tmpGCHandle),
+                                sourceTimestamp.OsTimeW,
+                                ref uHandle));
+                handle = uHandle;
+                tmpGCHandle.Free();
+            }
+            ReportStack.Flush(this, result != ReturnCode.Ok);
 
-            return result;
+            return handle;
         }
 
-        public static ReturnCode UnregisterInstance(
-                DataWriter writer, 
-                object instanceData, 
-                InstanceHandle instanceHandle)
-        {
-            GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
-            ReturnCode result = Gapi.FooDataWriter.unregister_instance(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle),
-                    instanceHandle);
-            tmpGCHandle.Free();
-
-            return result;
-        }
-
-        public static ReturnCode UnregisterInstanceWithTimestamp(
-                DataWriter writer, 
-                object instanceData,
-                InstanceHandle instanceHandle, 
+        public virtual ReturnCode UnregisterInstance(
+                T instanceData,
+                InstanceHandle instanceHandle,
                 Time sourceTimestamp)
         {
-            GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
-            ReturnCode result = Gapi.FooDataWriter.unregister_instance_w_timestamp(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle),
-                    instanceHandle,
-                    ref sourceTimestamp);
-            tmpGCHandle.Free();
+            ReturnCode result = DDS.ReturnCode.BadParameter;
+
+            ReportStack.Start();
+            if ((sourceTimestamp == Time.Current) ||
+                (QosManager.countErrors(sourceTimestamp) == 0)) {
+                GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
+                result = uResultToReturnCode(
+                        User.Writer.UnregisterInstance(
+                                rlReq_UserPeer,
+                                sampleMarshaler.CopyIn,
+                                GCHandle.ToIntPtr(tmpGCHandle),
+                                sourceTimestamp.OsTimeW,
+                                instanceHandle));
+                tmpGCHandle.Free();
+            }
+            ReportStack.Flush(this, (result != ReturnCode.Ok) && (result != ReturnCode.Timeout));
 
             return result;
         }
 
-        public static ReturnCode Write(
-                DataWriter writer, 
-                object instanceData, 
-                InstanceHandle instanceHandle)
-        {
-            GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
-            ReturnCode result = Gapi.FooDataWriter.write(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle),
-                    instanceHandle);
-            tmpGCHandle.Free();
-
-            return result;
-        }
-
-        public static ReturnCode WriteWithTimestamp(
-                DataWriter writer, 
-                object instanceData, 
-                InstanceHandle instanceHandle, 
+        public virtual ReturnCode Write(
+                T instanceData,
+                InstanceHandle instanceHandle,
                 Time sourceTimestamp)
         {
-            GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
-            ReturnCode result = Gapi.FooDataWriter.write_w_timestamp(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle),
-                    instanceHandle,
-                    ref sourceTimestamp);
-            tmpGCHandle.Free();
+            ReturnCode result = DDS.ReturnCode.BadParameter;
+
+            ReportStack.Start();
+            if ((sourceTimestamp == Time.Current) ||
+                (QosManager.countErrors(sourceTimestamp)) == 0) {
+                GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
+                result = uResultToReturnCode(
+                        User.Writer.Write(
+                                rlReq_UserPeer,
+                                sampleMarshaler.CopyIn,
+                                GCHandle.ToIntPtr(tmpGCHandle),
+                                sourceTimestamp.OsTimeW,
+                                instanceHandle));
+                tmpGCHandle.Free();
+            }
+            ReportStack.Flush(this, (result != ReturnCode.Ok) && (result != ReturnCode.Timeout));
 
             return result;
         }
 
-        public static ReturnCode Dispose(
-                DataWriter writer, 
-                object instanceData, 
-                InstanceHandle instanceHandle)
-        {
-            GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
-            ReturnCode result = Gapi.FooDataWriter.dispose(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle),
-                    instanceHandle);
-            tmpGCHandle.Free();
-
-            return result;
-        }
-
-        public static ReturnCode DisposeWithTimestamp(
-                DataWriter writer, 
-                object instanceData,
-                InstanceHandle instanceHandle, 
+        public virtual ReturnCode Dispose(
+                T instanceData,
+                InstanceHandle instanceHandle,
                 Time sourceTimestamp)
         {
-            GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
-            ReturnCode result = Gapi.FooDataWriter.dispose_w_timestamp(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle),
-                    instanceHandle,
-                    ref sourceTimestamp);
-            tmpGCHandle.Free();
+            ReturnCode result = DDS.ReturnCode.BadParameter;
+
+            ReportStack.Start();
+            if ((sourceTimestamp == Time.Current) ||
+                (QosManager.countErrors(sourceTimestamp) == 0)) {
+                GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
+                result = uResultToReturnCode(
+                        User.Writer.Dispose(
+                                rlReq_UserPeer,
+                                sampleMarshaler.CopyIn,
+                                GCHandle.ToIntPtr(tmpGCHandle),
+                                sourceTimestamp.OsTimeW,
+                                instanceHandle));
+                tmpGCHandle.Free();
+            }
+            ReportStack.Flush(this, (result != ReturnCode.Ok) && (result != ReturnCode.Timeout));
 
             return result;
         }
 
-        public static ReturnCode WriteDispose(
-                DataWriter writer, 
-                object instanceData, 
-                InstanceHandle instanceHandle)
-        {
-            GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
-            ReturnCode result = Gapi.FooDataWriter.writedispose(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle),
-                    instanceHandle);
-            tmpGCHandle.Free();
-
-            return result;
-        }
-
-        public static ReturnCode WriteDisposeWithTimestamp(
-                DataWriter writer, 
-                object instanceData,
-                InstanceHandle instanceHandle, 
+        public virtual ReturnCode WriteDispose(
+                T instanceData,
+                InstanceHandle instanceHandle,
                 Time sourceTimestamp)
         {
-            GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
-            ReturnCode result = Gapi.FooDataWriter.writedispose_w_timestamp(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle),
-                    instanceHandle,
-                    ref sourceTimestamp);
-            tmpGCHandle.Free();
+            ReturnCode result = DDS.ReturnCode.BadParameter;
+
+            ReportStack.Start();
+            if ((sourceTimestamp == Time.Current) ||
+                (QosManager.countErrors(sourceTimestamp) == 0)) {
+                GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
+                result = uResultToReturnCode(
+                        User.Writer.WriteDispose(
+                                rlReq_UserPeer,
+                                sampleMarshaler.CopyIn,
+                                GCHandle.ToIntPtr(tmpGCHandle),
+                                sourceTimestamp.OsTimeW,
+                                instanceHandle));
+                tmpGCHandle.Free();
+            }
+            ReportStack.Flush(this, (result != ReturnCode.Ok) && (result != ReturnCode.Timeout));
 
             return result;
         }
 
-        public static ReturnCode GetKeyValue(
-                DataWriter writer, 
-                ref object key, 
+        public virtual ReturnCode GetKeyValue(
+                ref T key,
                 InstanceHandle instanceHandle)
         {
-            GCHandle tmpGCHandle = GCHandle.Alloc(key, GCHandleType.Normal);
-            ReturnCode result = Gapi.FooDataWriter.get_key_value(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle),
-                    instanceHandle);
-            tmpGCHandle.Free();
+            ReportStack.Start();
+            GCHandle keyHandle = GCHandle.Alloc(key, GCHandleType.Normal);
+            ReturnCode result = uResultToReturnCode(
+                    User.Writer.CopyKeysFromInstanceHandle(
+                            rlReq_UserPeer,
+                            instanceHandle,
+                            sampleMarshaler.CopyOut,
+                            GCHandle.ToIntPtr(keyHandle)));
+            key = keyHandle.Target as T;
+            keyHandle.Free();
+            ReportStack.Flush(this, result != ReturnCode.Ok);
 
             return result;
         }
 
-        public static InstanceHandle LookupInstance(
-                DataWriter writer, 
-                object instanceData)
+        public virtual InstanceHandle LookupInstance(
+                T instanceData)
         {
-            GCHandle tmpGCHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
-            InstanceHandle result = Gapi.FooDataWriter.lookup_instance(
-                    writer.GapiPeer,
-                    GCHandle.ToIntPtr(tmpGCHandle));
-            tmpGCHandle.Free();
+            InstanceHandle handle = InstanceHandle.Nil;
 
-            return result;
+            ReportStack.Start();
+            long uHandle = handle;
+            GCHandle keyHandle = GCHandle.Alloc(instanceData, GCHandleType.Normal);
+            ReturnCode result = uResultToReturnCode(
+                    User.Writer.LookupInstance(
+                            rlReq_UserPeer,
+                            sampleMarshaler.CopyIn,
+                            GCHandle.ToIntPtr(keyHandle),
+                            ref uHandle));
+            handle = uHandle;
+            keyHandle.Free();
+            ReportStack.Flush(this, result != ReturnCode.Ok);
+
+            return handle;
         }
     }
 }

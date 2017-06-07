@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v_public.h"
@@ -24,6 +32,8 @@
 #include "v__group.h"
 #include "v__groupQueue.h"
 #include "v__topic.h"
+#include "v__topicAdapter.h"
+#include "v__topicImpl.h"
 #include "v_query.h"
 #include "v_status.h"
 #include "v_serviceManager.h"
@@ -36,9 +46,11 @@
 #include "v__dataReaderInstance.h"
 #include "v__dataView.h"
 #include "v__deliveryService.h"
+#include "v__listener.h"
 #include "v_dataReaderQuery.h"
 #include "v_dataViewQuery.h"
 #include "v_dataViewInstance.h"
+#include "v_statusCondition.h"
 
 c_bool
 v_publicInit(
@@ -81,22 +93,28 @@ v_publicDispose(
     case K_NETWORKREADER:  v_networkReaderDeinit(v_networkReader(o));   break;
     case K_READER:         v_readerDeinit(v_reader(o));                 break;
     case K_GROUPQUEUE:     v_groupQueueDeinit(v_groupQueue(o));         break;
-    case K_TOPIC:          v_topicDeinit(v_topic(o));                   break;
+    case K_TOPIC:          v_topicImplDeinit(v_topicImpl(o));           break;
+    case K_TOPIC_ADAPTER:  v_topicAdapterDeinit(v_topicAdapter(o));     break;
     case K_ENTITY:                                                      break;
     case K_DOMAIN:         v_partitionDeinit(v_partition(o));           break;
     case K_GROUP:          v_groupDeinit(v_group(o));                   break;
+
     case K_SERVICEMANAGER: /* Is never freed! */                        break;
     case K_SPLICED:        v_splicedDeinit(v_spliced(o));               break;
     case K_NETWORKING:
     case K_DURABILITY:
+    case K_NWBRIDGE:
     case K_CMSOAP:
     case K_RNR:
     case K_SERVICE:        v_serviceDeinit(v_service(o));               break;
     case K_SERVICESTATE:   /* Is never freed! */                        break;
     case K_CONFIGURATION:                                               break;
+    case K_LISTENER:       v_listenerDeinit(v_listener(o));             break;
+
     case K_QUERY:
-        OS_REPORT(OS_ERROR, "v_publicDispose failure",
-                  0, "deinit of abstract class K_QUERY");
+        OS_REPORT(OS_CRITICAL, "v_publicDispose failure",
+                  V_RESULT_INTERNAL_ERROR, "deinit of abstract class K_QUERY");
+        assert(FALSE);
     break;
     case K_DATAREADERQUERY:
         v_dataReaderQueryDeinit(v_dataReaderQuery(o));
@@ -113,10 +131,14 @@ v_publicDispose(
         v_dataReaderInstanceDeinit(v_dataReaderInstance(o));
     break;
     case K_DATAVIEWINSTANCE:
+    case K_ORDEREDINSTANCE:
         v_dataViewInstanceDeinit(v_dataViewInstance(o));
     break;
+    case K_STATUSCONDITION:
+        v_statusConditionDeinit(v_statusCondition(o));
+    break;
     default:
-        OS_REPORT_1(OS_ERROR,"v_publicDispose failed",0,
+        OS_REPORT(OS_CRITICAL,"v_publicDispose failed",V_RESULT_ILL_PARAM,
                     "illegal entity kind (%d) specified",v_objectKind(o));
         assert(FALSE);
     break;

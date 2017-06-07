@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "os_heap.h"
@@ -198,11 +206,9 @@ sd_nodeNew (
         case SD_TYPEINFO_KIND_FLOAT:
         case SD_TYPEINFO_KIND_DOUBLE:
         case SD_TYPEINFO_KIND_TIME:
-            node = (sd_node) os_malloc(C_SIZEOF(sd_node));
-            if ( node ) {
-                memset(node, 0, C_SIZEOF(sd_node));
-                sd_nodeInit(node, kind, initAction, action);
-            }
+            node = os_malloc(C_SIZEOF(sd_node));
+            memset(node, 0, C_SIZEOF(sd_node));
+            sd_nodeInit(node, kind, initAction, action);
             break;
         default:
             assert(0);
@@ -242,8 +248,8 @@ sd_nodeWalkAction (
     void *obj,
     void *arg)
 {
-    sd_node           node = (sd_node)obj;
-    sd_nodeActionArg *info = (sd_nodeActionArg *) arg;
+    sd_node           node = obj;
+    sd_nodeActionArg *info = arg;
 
     assert(node);
     assert(node->initAction);
@@ -273,7 +279,7 @@ sd_nodeDefaultInitAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg *info       = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg *info = arg;
     sd_list           attributes;
     c_bool            result     = FALSE;
 
@@ -299,7 +305,7 @@ sd_elementDefaultAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg *info       = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg *info       = arg;
     sd_element        element    = (sd_element) node;
     c_bool            result     = FALSE;
     sd_list           attributes;
@@ -326,7 +332,7 @@ sd_moduleAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg *info       = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg *info       = arg;
     sd_module         pmodule    = (sd_module) node;
 
     assert(pmodule);
@@ -360,18 +366,10 @@ sd_moduleNew (
     c_char *name)
 {
     sd_module pmodule;
-
-    pmodule = (sd_module)os_malloc(C_SIZEOF(sd_module));
-    if ( pmodule ) {
-        memset(pmodule, 0, C_SIZEOF(sd_module));
-        sd_elementInit((sd_element)pmodule, SD_TYPEINFO_KIND_MODULE,
-                       name, sd_elementDefaultAction, sd_moduleAction);
-        pmodule->children = sd_listNew();
-        if ( !pmodule->children ) {
-            sd_moduleFree(pmodule);
-        }
-    }
-
+    pmodule = os_malloc(C_SIZEOF(sd_module));
+    memset(pmodule, 0, C_SIZEOF(sd_module));
+    sd_elementInit((sd_element)pmodule, SD_TYPEINFO_KIND_MODULE, name, sd_elementDefaultAction, sd_moduleAction);
+    pmodule->children = sd_listNew();
     return pmodule;
 }
 
@@ -409,7 +407,7 @@ sd_structAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg *info       = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg *info       = arg;
     sd_struct         pstruct    = (sd_struct) node;
 
     assert(node);
@@ -442,19 +440,10 @@ static sd_struct
 sd_structNew (
     c_char *name)
 {
-    sd_struct pstruct;
-
-    pstruct = (sd_struct)os_malloc(C_SIZEOF(sd_struct));
-    if ( pstruct ) {
-        memset(pstruct, 0, C_SIZEOF(sd_struct));
-        sd_elementInit((sd_element)pstruct, SD_TYPEINFO_KIND_STRUCT,
-                       name, sd_elementDefaultAction, sd_structAction);
-        pstruct->members = sd_listNew();
-        if ( !pstruct->members ) {
-            sd_structFree(pstruct);
-        }
-    }
-
+    sd_struct pstruct = os_malloc(C_SIZEOF(sd_struct));
+    memset(pstruct, 0, C_SIZEOF(sd_struct));
+    sd_elementInit((sd_element)pstruct, SD_TYPEINFO_KIND_STRUCT, name, sd_elementDefaultAction, sd_structAction);
+    pstruct->members = sd_listNew();
     return pstruct;
 }
 
@@ -485,7 +474,7 @@ sd_memberAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg *info       = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg *info       = arg;
     sd_member         pmember    = (sd_member) node;
     c_bool            result     = FALSE;
 
@@ -516,15 +505,9 @@ static sd_member
 sd_memberNew (
     c_char *name)
 {
-    sd_member pmember;
-
-    pmember = (sd_member)os_malloc(C_SIZEOF(sd_member));
-    if ( pmember ) {
-        memset(pmember, 0, C_SIZEOF(sd_member));
-        sd_elementInit((sd_element)pmember, SD_TYPEINFO_KIND_MEMBER,
-                       name, sd_elementDefaultAction, sd_memberAction);
-    }
-
+    sd_member pmember = os_malloc(C_SIZEOF(sd_member));
+    memset(pmember, 0, C_SIZEOF(sd_member));
+    sd_elementInit((sd_element)pmember, SD_TYPEINFO_KIND_MEMBER, name, sd_elementDefaultAction, sd_memberAction);
     return pmember;
 }
 
@@ -573,7 +556,7 @@ sd_unionAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg *info       = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg *info       = arg;
     sd_union          punion     = (sd_union) node;
 
     assert(node);
@@ -612,19 +595,10 @@ static sd_union
 sd_unionNew (
     c_char *name)
 {
-    sd_union punion;
-
-    punion = (sd_union)os_malloc(C_SIZEOF(sd_union));
-    if ( punion ) {
-        memset(punion, 0, C_SIZEOF(sd_union));
-        sd_elementInit((sd_element)punion, SD_TYPEINFO_KIND_UNION,
-                       name, sd_elementDefaultAction, sd_unionAction);
-        punion->cases = sd_listNew();
-        if ( !punion->cases ) {
-            sd_unionFree(punion);
-        }
-    }
-
+    sd_union punion = os_malloc(C_SIZEOF(sd_union));
+    memset(punion, 0, C_SIZEOF(sd_union));
+    sd_elementInit((sd_element)punion, SD_TYPEINFO_KIND_UNION, name, sd_elementDefaultAction, sd_unionAction);
+    punion->cases = sd_listNew();
     return punion;
 }
 
@@ -663,7 +637,7 @@ sd_unionCaseAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg *info       = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg *info       = arg;
     sd_unionCase      punionCase = (sd_unionCase) node;
 
     assert(node);
@@ -702,19 +676,10 @@ static sd_unionCase
 sd_unionCaseNew (
     c_char *name)
 {
-    sd_unionCase punionCase;
-
-    punionCase = (sd_unionCase)os_malloc(C_SIZEOF(sd_unionCase));
-    if ( punionCase ) {
-        memset(punionCase, 0, C_SIZEOF(sd_unionCase));
-        sd_elementInit((sd_element)punionCase, SD_TYPEINFO_KIND_UNIONCASE,
-                       name, sd_elementDefaultAction, sd_unionCaseAction);
-        punionCase->labels = sd_listNew();
-        if ( !punionCase->labels ) {
-            sd_unionCaseFree(punionCase);
-        }
-    }
-
+    sd_unionCase punionCase = os_malloc(C_SIZEOF(sd_unionCase));
+    memset(punionCase, 0, C_SIZEOF(sd_unionCase));
+    sd_elementInit((sd_element)punionCase, SD_TYPEINFO_KIND_UNIONCASE, name, sd_elementDefaultAction, sd_unionCaseAction);
+    punionCase->labels = sd_listNew();
     return punionCase;
 }
 
@@ -771,7 +736,7 @@ sd_unionLabelAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg    *info        = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg    *info        = arg;
     sd_unionLabel        punionLabel = (sd_unionLabel) node;
     c_bool               result      = FALSE;
     sd_list              attributes;
@@ -823,15 +788,10 @@ static sd_unionLabel
 sd_unionLabelNew (
     c_char *value)
 {
-    sd_unionLabel punionLabel;
-
-    punionLabel = (sd_unionLabel)os_malloc(C_SIZEOF(sd_unionLabel));
-    if ( punionLabel ) {
-        memset(punionLabel, 0, C_SIZEOF(sd_unionLabel));
-        sd_nodeInit((sd_node)punionLabel, SD_TYPEINFO_KIND_UNIONLABEL, sd_unionLabelAction, sd_nodeDefaultAction);
-        punionLabel->value = sd_stringDup(value);
-    }
-
+    sd_unionLabel punionLabel = os_malloc(C_SIZEOF(sd_unionLabel));
+    memset(punionLabel, 0, C_SIZEOF(sd_unionLabel));
+    sd_nodeInit((sd_node)punionLabel, SD_TYPEINFO_KIND_UNIONLABEL, sd_unionLabelAction, sd_nodeDefaultAction);
+    punionLabel->value = sd_stringDup(value);
     return punionLabel;
 }
 
@@ -840,7 +800,7 @@ sd_unionSwitchInitAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg    *info        = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg    *info        = arg;
     c_bool               result      = FALSE;
     sd_list              attributes;
 
@@ -865,7 +825,7 @@ sd_unionSwitchAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg *info         = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg *info         = arg;
     sd_unionSwitch    punionSwitch = (sd_unionSwitch) node;
     c_bool            result       = FALSE;
 
@@ -896,15 +856,9 @@ static sd_unionSwitch
 sd_unionSwitchNew (
     void )
 {
-    sd_unionSwitch punionSwitch;
-
-    punionSwitch = (sd_unionSwitch)os_malloc(C_SIZEOF(sd_unionSwitch));
-    if ( punionSwitch ) {
-        memset(punionSwitch, 0, C_SIZEOF(sd_unionSwitch));
-        sd_nodeInit((sd_node)punionSwitch, SD_TYPEINFO_KIND_UNIONSWITCH,
-                       sd_unionSwitchInitAction, sd_unionSwitchAction);
-    }
-
+    sd_unionSwitch punionSwitch = os_malloc(C_SIZEOF(sd_unionSwitch));
+    memset(punionSwitch, 0, C_SIZEOF(sd_unionSwitch));
+    sd_nodeInit((sd_node)punionSwitch, SD_TYPEINFO_KIND_UNIONSWITCH, sd_unionSwitchInitAction, sd_unionSwitchAction);
     return punionSwitch;
 }
 
@@ -948,7 +902,7 @@ sd_typeDefAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg *info       = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg *info       = arg;
     sd_typeDef        ptypeDef   = (sd_typeDef) node;
     c_bool            result     = FALSE;
 
@@ -979,15 +933,9 @@ static sd_typeDef
 sd_typeDefNew (
     c_char *name)
 {
-    sd_typeDef ptypeDef;
-
-    ptypeDef = (sd_typeDef)os_malloc(C_SIZEOF(sd_typeDef));
-    if ( ptypeDef ) {
-        memset(ptypeDef, 0, C_SIZEOF(sd_typeDef));
-        sd_elementInit((sd_element)ptypeDef, SD_TYPEINFO_KIND_TYPEDEF,
-                       name, sd_elementDefaultAction, sd_typeDefAction);
-    }
-
+    sd_typeDef ptypeDef = os_malloc(C_SIZEOF(sd_typeDef));
+    memset(ptypeDef, 0, C_SIZEOF(sd_typeDef));
+    sd_elementInit((sd_element)ptypeDef, SD_TYPEINFO_KIND_TYPEDEF, name, sd_elementDefaultAction, sd_typeDefAction);
     return ptypeDef;
 }
 
@@ -1038,7 +986,7 @@ sd_enumAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg *info       = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg *info       = arg;
     sd_enum           penum      = (sd_enum) node;
 
     assert(node);
@@ -1071,19 +1019,10 @@ static sd_enum
 sd_enumNew (
     c_char *name)
 {
-    sd_enum penum;
-
-    penum = (sd_enum)os_malloc(C_SIZEOF(sd_enum));
-    if ( penum) {
-        memset(penum, 0, C_SIZEOF(sd_enum));
-        sd_elementInit((sd_element)penum, SD_TYPEINFO_KIND_ENUM,
-                       name, sd_elementDefaultAction, sd_enumAction);
-        penum->elements = sd_listNew();
-        if ( !penum->elements ) {
-            sd_enumFree(penum);
-        }
-    }
-
+    sd_enum penum = os_malloc(C_SIZEOF(sd_enum));
+    memset(penum, 0, C_SIZEOF(sd_enum));
+    sd_elementInit((sd_element)penum, SD_TYPEINFO_KIND_ENUM, name, sd_elementDefaultAction, sd_enumAction);
+    penum->elements = sd_listNew();
     return penum;
 }
 
@@ -1114,7 +1053,7 @@ sd_enumLabelAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg    *info        = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg    *info        = arg;
     sd_enumLabel         penumLabel  = (sd_enumLabel) node;
     c_bool               result      = FALSE;
     sd_list              attributes  = sd_listNew();
@@ -1159,19 +1098,13 @@ sd_enumLabelNew (
     c_bool  valueDefined,
     c_long  value)
 {
-    sd_enumLabel penumLabel;
-
-    penumLabel = (sd_enumLabel)os_malloc(C_SIZEOF(sd_enumLabel));
-    if ( penumLabel ) {
-        memset(penumLabel, 0, C_SIZEOF(sd_enumLabel));
-        sd_elementInit((sd_element)penumLabel, SD_TYPEINFO_KIND_ENUMLABEL,
-                       name, sd_enumLabelAction, sd_nodeDefaultAction);
-        if ( valueDefined ) {
-            penumLabel->valueDefined = valueDefined;
-            penumLabel->value        = value;
-        }
+    sd_enumLabel penumLabel = os_malloc(C_SIZEOF(sd_enumLabel));
+    memset(penumLabel, 0, C_SIZEOF(sd_enumLabel));
+    sd_elementInit((sd_element)penumLabel, SD_TYPEINFO_KIND_ENUMLABEL, name, sd_enumLabelAction, sd_nodeDefaultAction);
+    if ( valueDefined ) {
+        penumLabel->valueDefined = valueDefined;
+        penumLabel->value        = value;
     }
-
     return penumLabel;
 }
 
@@ -1188,15 +1121,9 @@ static sd_typeRef
 sd_typeRefNew (
     c_char *name)
 {
-    sd_typeRef ptypeRef;
-
-    ptypeRef = (sd_typeRef)os_malloc(C_SIZEOF(sd_typeRef));
-    if ( ptypeRef ) {
-        memset(ptypeRef, 0, C_SIZEOF(sd_typeRef));
-        sd_elementInit((sd_element)ptypeRef, SD_TYPEINFO_KIND_TYPE,
-                       name, sd_elementDefaultAction, sd_nodeDefaultAction);
-    }
-
+    sd_typeRef ptypeRef = os_malloc(C_SIZEOF(sd_typeRef));
+    memset(ptypeRef, 0, C_SIZEOF(sd_typeRef));
+    sd_elementInit((sd_element)ptypeRef, SD_TYPEINFO_KIND_TYPE, name, sd_elementDefaultAction, sd_nodeDefaultAction);
     return ptypeRef;
 }
 
@@ -1205,7 +1132,7 @@ sd_templateInitAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg    *info        = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg    *info        = arg;
     sd_template          ptemplate   = (sd_template) node;
     c_bool               result      = FALSE;
     sd_list              attributes;
@@ -1244,7 +1171,7 @@ sd_templateAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg *info         = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg *info         = arg;
     sd_template       ptemplate    = (sd_template) node;
     c_bool            result       = FALSE;
 
@@ -1275,15 +1202,10 @@ sd_templateNew (
     sd_typeInfoKind kind,
     c_long          size)
 {
-    sd_template ptemplate;
-
-    ptemplate = (sd_template)os_malloc(C_SIZEOF(sd_template));
-    if ( ptemplate ) {
-        memset(ptemplate, 0, C_SIZEOF(sd_template));
-        sd_nodeInit((sd_node)ptemplate, kind, sd_templateInitAction, sd_templateAction);
-        ptemplate->size = size;
-    }
-
+    sd_template ptemplate = os_malloc(C_SIZEOF(sd_template));
+    memset(ptemplate, 0, C_SIZEOF(sd_template));
+    sd_nodeInit((sd_node)ptemplate, kind, sd_templateInitAction, sd_templateAction);
+    ptemplate->size = size;
     return ptemplate;
 }
 
@@ -1335,7 +1257,7 @@ sd_stringAction (
     sd_node node,
     void    *arg)
 {
-    sd_nodeActionArg    *info        = (sd_nodeActionArg *) arg;
+    sd_nodeActionArg    *info        = arg;
     sd_string            pstring     = (sd_string) node;
     c_bool               result      = FALSE;
     sd_list              attributes;
@@ -1383,14 +1305,10 @@ sd_stringNew (
     c_long length)
 {
     sd_string pstring;
-
-    pstring = (sd_string)os_malloc(C_SIZEOF(sd_string));
-    if ( pstring ) {
-        memset(pstring, 0, C_SIZEOF(sd_string));
-        sd_nodeInit((sd_node)pstring, SD_TYPEINFO_KIND_STRING, sd_stringAction, sd_nodeDefaultAction);
-        pstring->length = length;
-    }
-
+    pstring = os_malloc(C_SIZEOF(sd_string));
+    memset(pstring, 0, C_SIZEOF(sd_string));
+    sd_nodeInit((sd_node)pstring, SD_TYPEINFO_KIND_STRING, sd_stringAction, sd_nodeDefaultAction);
+    pstring->length = length;
     return pstring;
 }
 
@@ -1503,9 +1421,9 @@ sd_typeInfoPop (
 
     if ( !sd_listIsEmpty(typeInfo->stack) ) {
         assert(typeInfo->current);
-        node = (sd_node)sd_listTakeFirst(typeInfo->stack);
+        node = sd_listTakeFirst(typeInfo->stack);
         assert(typeInfo->current == node);
-        typeInfo->current = (sd_node)sd_listReadFirst(typeInfo->stack);
+        typeInfo->current = sd_listReadFirst(typeInfo->stack);
     }
 
     return node;
@@ -1516,23 +1434,17 @@ static sd_typeInfo
 sd_typeInfoNew (
     void)
 {
-    sd_typeInfo info;
-
-    info = (sd_typeInfo)os_malloc(C_SIZEOF(sd_typeInfo));
-    if ( info ) {
-        info->root      = sd_moduleNew(NULL);
-        info->current   = NULL;
-        info->stack     = sd_listNew();
-        info->emptyList = sd_listNew();
-        info->errorInfo = NULL;
-        if ( info->stack && info->emptyList && info->root ) {
-            sd_typeInfoPush(info, (sd_node)info->root);
-        } else {
-            sd_typeInfoFree(info);
-            info = NULL;
-        }
-
-
+    sd_typeInfo info = os_malloc(C_SIZEOF(sd_typeInfo));
+    info->root      = sd_moduleNew(NULL);
+    info->current   = NULL;
+    info->stack     = sd_listNew();
+    info->emptyList = sd_listNew();
+    info->errorInfo = NULL;
+    if ( info->stack && info->emptyList && info->root ) {
+        sd_typeInfoPush(info, (sd_node)info->root);
+    } else {
+        sd_typeInfoFree(info);
+        info = NULL;
     }
     return info;
 }
@@ -1598,8 +1510,8 @@ attributeCompare (
     void *arg)
 {
     c_bool                 equal     = FALSE;
-    sd_xmlParserAttribute  attribute = (sd_xmlParserAttribute) obj;
-    const c_char          *name      = (const c_char *) arg;
+    sd_xmlParserAttribute  attribute = obj;
+    const c_char          *name      = arg;
 
     if ( attribute && name && (strcmp(attribute->name, name) == 0) ) {
         equal = TRUE;
@@ -1627,7 +1539,7 @@ getElementName (
     c_char                *name     = NULL;
 
     if ( list ) {
-        attribute = (sd_xmlParserAttribute) sd_listFind(list, attributeCompare, "name");
+        attribute = sd_listFind(list, attributeCompare, "name");
         if ( attribute ) {
             name = attribute->value;
         }
@@ -1687,15 +1599,11 @@ handleModule (
 
         if ( name ) {
             pmodule = sd_moduleNew(name);
-            if ( pmodule ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)pmodule) ) {
-                    sd_typeInfoPush(info, (sd_node)pmodule);
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)pmodule);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)pmodule) ) {
+                sd_typeInfoPush(info, (sd_node)pmodule);
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)pmodule);
             }
         } else {
             SET_XMLPARSER_ERROR(handle, MODULE_SPEC_INVALID);
@@ -1728,15 +1636,11 @@ handleStruct (
 
         if ( name ) {
             pstruct = sd_structNew(name);
-            if ( pstruct ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)pstruct) ) {
-                    sd_typeInfoPush(info, (sd_node)pstruct);
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)pstruct);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)pstruct) ) {
+                sd_typeInfoPush(info, (sd_node)pstruct);
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)pstruct);
             }
         } else {
             SET_XMLPARSER_ERROR(handle, STRUCT_SPEC_INVALID);
@@ -1770,15 +1674,11 @@ handleMember (
 
         if ( name ) {
             member = sd_memberNew(name);
-            if ( member ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)member) ) {
-                    sd_typeInfoPush(info, (sd_node)member);
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)member);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)member) ) {
+                sd_typeInfoPush(info, (sd_node)member);
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)member);
             }
         } else {
             SET_XMLPARSER_ERROR(handle, MEMBER_SPEC_INVALID);
@@ -1811,15 +1711,11 @@ handleUnion (
 
         if ( name ) {
             punion = sd_unionNew(name);
-            if ( punion ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)punion) ) {
-                    sd_typeInfoPush(info, (sd_node)punion);
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)punion);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)punion) ) {
+                sd_typeInfoPush(info, (sd_node)punion);
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)punion);
             }
         } else {
             SET_XMLPARSER_ERROR(handle, UNION_SPEC_INVALID);
@@ -1852,15 +1748,11 @@ handleUnionCase (
 
         if ( name ) {
             pcase = sd_unionCaseNew(name);
-            if ( pcase ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)pcase) ) {
-                    sd_typeInfoPush(info, (sd_node)pcase);
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)pcase);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)pcase) ) {
+                sd_typeInfoPush(info, (sd_node)pcase);
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)pcase);
             }
         } else {
             SET_XMLPARSER_ERROR(handle, UNIONCASE_SPEC_INVALID);
@@ -1898,14 +1790,10 @@ handleUnionLabel (
 
         if ( attribute ) {
             plabel = sd_unionLabelNew(attribute->value);
-            if ( plabel ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)plabel) ) {
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)plabel);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)plabel) ) {
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)plabel);
             }
         }
     } else {
@@ -1944,6 +1832,8 @@ handleDefaultLabel (
                     break;
             }
         } else {
+            noError = FALSE;
+            SET_XMLPARSER_ERROR(handle, UNION_SPEC_INVALID);
             punionCase = NULL;
         }
 
@@ -1956,15 +1846,11 @@ handleDefaultLabel (
 
         if ( noError ) {
             plabel = sd_unionLabelNew(0);
-            if ( plabel ) {
-                plabel->isDefault = TRUE;
-                if ( sd_typeInfoAddChild(info, (sd_node)plabel) ) {
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)plabel);
-                }
+            plabel->isDefault = TRUE;
+            if ( sd_typeInfoAddChild(info, (sd_node)plabel) ) {
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)plabel);
             }
         }
     } else {
@@ -1985,19 +1871,16 @@ handleUnionSwitch (
     c_bool          result = FALSE;
 
     OS_UNUSED_ARG(attributes);
+    OS_UNUSED_ARG(handle);
     TRACE(printf("handleUnionSwitch called\n"));
 
     if ( start ) {
         punionSwitch = sd_unionSwitchNew();
-        if ( punionSwitch ) {
-            if ( sd_typeInfoAddChild(info, (sd_node)punionSwitch) ) {
-                sd_typeInfoPush(info, (sd_node)punionSwitch);
-                result = TRUE;
-            } else {
-                sd_nodeFree((sd_node)punionSwitch);
-            }
+        if ( sd_typeInfoAddChild(info, (sd_node)punionSwitch) ) {
+            sd_typeInfoPush(info, (sd_node)punionSwitch);
+            result = TRUE;
         } else {
-            SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+            sd_nodeFree((sd_node)punionSwitch);
         }
     } else {
         sd_typeInfoPop(info);
@@ -2026,15 +1909,11 @@ handleTypeDef (
 
         if ( name ) {
             ptypeDef = sd_typeDefNew(name);
-            if ( ptypeDef ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)ptypeDef) ) {
-                    sd_typeInfoPush(info, (sd_node)ptypeDef);
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)ptypeDef);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)ptypeDef) ) {
+                sd_typeInfoPush(info, (sd_node)ptypeDef);
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)ptypeDef);
             }
         } else {
             SET_XMLPARSER_ERROR(handle, TYPEDEF_SPEC_INVALID);
@@ -2063,15 +1942,11 @@ handleEnum (
 
         if ( name ) {
             penum = sd_enumNew(name);
-            if ( penum ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)penum) ) {
-                    sd_typeInfoPush(info, (sd_node)penum);
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)penum);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)penum) ) {
+                sd_typeInfoPush(info, (sd_node)penum);
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)penum);
             }
         } else {
             SET_XMLPARSER_ERROR(handle, ENUM_SPEC_INVALID);
@@ -2116,14 +1991,10 @@ handleEnumLabel (
 
         if ( noError ) {
             plabel = sd_enumLabelNew(name, valueDefined, value);
-            if ( plabel ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)plabel) ) {
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)plabel);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)plabel) ) {
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)plabel);
             }
         }
     } else {
@@ -2150,14 +2021,10 @@ handleTypeRef (
 
         if ( name ) {
             ptypeRef = sd_typeRefNew(name);
-            if ( ptypeRef ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)ptypeRef) ) {
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)ptypeRef);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)ptypeRef) ) {
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)ptypeRef);
             }
         } else {
             SET_XMLPARSER_ERROR(handle, TYPE_SPEC_INVALID);
@@ -2191,15 +2058,11 @@ handleTemplate (
 
         if ( noError ) {
             ptemplate = sd_templateNew(kind, size);
-            if ( ptemplate ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)ptemplate) ) {
-                    sd_typeInfoPush(info, (sd_node)ptemplate);
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)ptemplate);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)ptemplate) ) {
+                sd_typeInfoPush(info, (sd_node)ptemplate);
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)ptemplate);
             }
         } else {
             if ( kind == SD_TYPEINFO_KIND_ARRAY ) {
@@ -2257,14 +2120,10 @@ handleString (
 
         if ( noError ) {
             pstring = sd_stringNew(length);
-            if ( pstring ) {
-                if ( sd_typeInfoAddChild(info, (sd_node)pstring) ) {
-                    result = TRUE;
-                } else {
-                    sd_nodeFree((sd_node)pstring);
-                }
+            if ( sd_typeInfoAddChild(info, (sd_node)pstring) ) {
+                result = TRUE;
             } else {
-                SET_XMLPARSER_ERROR(handle, MEMORY_ALLOCATION_FAILED);
+                sd_nodeFree((sd_node)pstring);
             }
         } else {
             SET_XMLPARSER_ERROR(handle, STRING_SPEC_INVALID);
@@ -2430,39 +2289,38 @@ handleTime (
 
 typedef struct sd_elementTypeEntry_s {
     const c_char      *name;
-    sd_typeInfoKind    kind;
     sd_typeInfoHandler typeInfoHandler;
 } sd_elementTypeEntry;
 
 static const sd_elementTypeEntry elementTypeMap[] = {
-    { "MetaData",   -1,                           handleMetaData     },
-    { "Module",     SD_TYPEINFO_KIND_MODULE,      handleModule       },
-    { "Struct",     SD_TYPEINFO_KIND_STRUCT,      handleStruct       },
-    { "Member",     SD_TYPEINFO_KIND_MEMBER,      handleMember       },
-    { "Union",      SD_TYPEINFO_KIND_UNION,       handleUnion        },
-    { "Case",       SD_TYPEINFO_KIND_UNIONCASE,   handleUnionCase    },
-    { "SwitchType", SD_TYPEINFO_KIND_UNIONSWITCH, handleUnionSwitch  },
-    { "Label",      SD_TYPEINFO_KIND_UNIONLABEL,  handleUnionLabel   },
-    { "TypeDef",    SD_TYPEINFO_KIND_TYPEDEF,     handleTypeDef      },
-    { "Enum",       SD_TYPEINFO_KIND_ENUM,        handleEnum         },
-    { "Element",    SD_TYPEINFO_KIND_ENUMLABEL,   handleEnumLabel    },
-    { "Type",       SD_TYPEINFO_KIND_TYPE,        handleTypeRef      },
-    { "Array",      SD_TYPEINFO_KIND_ARRAY,       handleArray        },
-    { "Sequence",   SD_TYPEINFO_KIND_SEQUENCE,    handleSequence     },
-    { "String",     SD_TYPEINFO_KIND_STRING,      handleString       },
-    { "Char",       SD_TYPEINFO_KIND_CHAR,        handleChar         },
-    { "Boolean",    SD_TYPEINFO_KIND_BOOLEAN,     handleBoolean      },
-    { "Octet",      SD_TYPEINFO_KIND_OCTET,       handleOctet        },
-    { "Short",      SD_TYPEINFO_KIND_SHORT,       handleShort        },
-    { "UShort",     SD_TYPEINFO_KIND_USHORT,      handleUShort       },
-    { "Long",       SD_TYPEINFO_KIND_LONG,        handleLong         },
-    { "ULong",      SD_TYPEINFO_KIND_ULONG,       handleULong        },
-    { "LongLong",   SD_TYPEINFO_KIND_LONGLONG,    handleLongLong     },
-    { "ULongLong",  SD_TYPEINFO_KIND_ULONGLONG,   handleULongLong    },
-    { "Float",      SD_TYPEINFO_KIND_FLOAT,       handleFloat        },
-    { "Double",     SD_TYPEINFO_KIND_DOUBLE,      handleDouble       },
-    { "Time",       SD_TYPEINFO_KIND_TIME,        handleTime         },
-    { "Default",    SD_TYPEINFO_KIND_UNIONLABEL,  handleDefaultLabel }
+    { "MetaData",   handleMetaData     },
+    { "Module",     handleModule       },
+    { "Struct",     handleStruct       },
+    { "Member",     handleMember       },
+    { "Union",      handleUnion        },
+    { "Case",       handleUnionCase    },
+    { "SwitchType", handleUnionSwitch  },
+    { "Label",      handleUnionLabel   },
+    { "TypeDef",    handleTypeDef      },
+    { "Enum",       handleEnum         },
+    { "Element",    handleEnumLabel    },
+    { "Type",       handleTypeRef      },
+    { "Array",      handleArray        },
+    { "Sequence",   handleSequence     },
+    { "String",     handleString       },
+    { "Char",       handleChar         },
+    { "Boolean",    handleBoolean      },
+    { "Octet",      handleOctet        },
+    { "Short",      handleShort        },
+    { "UShort",     handleUShort       },
+    { "Long",       handleLong         },
+    { "ULong",      handleULong        },
+    { "LongLong",   handleLongLong     },
+    { "ULongLong",  handleULongLong    },
+    { "Float",      handleFloat        },
+    { "Double",     handleDouble       },
+    { "Time",       handleTime         },
+    { "Default",    handleDefaultLabel }
 };
 static const c_long elementTypeMapSize = sizeof(elementTypeMap)/sizeof(sd_elementTypeEntry);
 
@@ -2492,7 +2350,7 @@ handleXmlElement (
     sd_xmlParser         handle)
 {
     c_bool             result   = FALSE;
-    sd_typeInfo        info     = (sd_typeInfo) argument;
+    sd_typeInfo        info     = argument;
     sd_typeInfoHandler handler;
 
     switch ( kind ) {
@@ -2525,11 +2383,9 @@ walkModules (
     void *obj,
     void *arg)
 {
-    sd_node           node      = (sd_node)obj;
-    sd_nodeActionArg *actionArg = (sd_nodeActionArg *)arg;
-
+    sd_node           node      = obj;
+    sd_nodeActionArg *actionArg = arg;
     actionArg->result = node->initAction(node, actionArg);
-
     return actionArg->result;
 }
 
@@ -2546,20 +2402,18 @@ sd_typeInfoParserParse (
 
     if ( callback ) {
         info = sd_typeInfoNew();
-        if ( info ) {
-            result = sd_xmlParserParse(description, handleXmlElement, info, errorInfo);
-            if ( result ) {
-                actionArg.typeInfo  = info;
-                actionArg.node      = NULL;
-                actionArg.callback  = callback;
-                actionArg.arguments = argument;
-                actionArg.result    = FALSE;
+        result = sd_xmlParserParse(description, handleXmlElement, info, errorInfo);
+        if ( result ) {
+            actionArg.typeInfo  = info;
+            actionArg.node      = NULL;
+            actionArg.callback  = callback;
+            actionArg.arguments = argument;
+            actionArg.result    = FALSE;
 
-                assert(info->root);
+            assert(info->root);
 
-                sd_listWalk(info->root->children, walkModules, &actionArg);
-                result = actionArg.result;
-            }
+            sd_listWalk(info->root->children, walkModules, &actionArg);
+            result = actionArg.result;
         }
         sd_typeInfoFree(info);
     }
@@ -2597,8 +2451,8 @@ findTypeInfoAttribute (
     void *object,
     void *argument)
 {
-    sd_typeInfoAttribute *attribute = (sd_typeInfoAttribute *) object;
-    const c_char         *name      = (const c_char *) argument;
+    sd_typeInfoAttribute *attribute = object;
+    const c_char         *name      = argument;
     c_bool                found     = FALSE;
 
     assert(attribute);

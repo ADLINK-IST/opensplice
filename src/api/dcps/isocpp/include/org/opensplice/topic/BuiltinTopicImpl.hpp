@@ -1,12 +1,20 @@
 /*
 *                         OpenSplice DDS
 *
-*   This software and documentation are Copyright 2006 to 2012 PrismTech
-*   Limited and its licensees. All rights reserved. See file:
-*
-*                     $OSPL_HOME/LICENSE
-*
-*   for full copyright notice and license terms.
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
 *
 */
 
@@ -33,6 +41,11 @@ class ParticipantBuiltinTopicDataImpl;
 class TopicBuiltinTopicDataImpl;
 class PublicationBuiltinTopicDataImpl;
 class SubscriptionBuiltinTopicDataImpl;
+class CMParticipantBuiltinTopicDataImpl;
+class CMPublisherBuiltinTopicDataImpl;
+class CMSubscriberBuiltinTopicDataImpl;
+class CMDataWriterBuiltinTopicDataImpl;
+class CMDataReaderBuiltinTopicDataImpl;
 }
 }
 }
@@ -472,4 +485,300 @@ public:
     ::dds::core::policy::TopicData          topic_data_;
     ::dds::core::policy::GroupData          group_data_;
 };
+
+//==============================================================================
+//            CMParticipantBuiltinTopicData
+//==============================================================================
+
+class org::opensplice::topic::CMParticipantBuiltinTopicDataImpl
+{
+public:
+    const dds::topic::BuiltinTopicKey&        key() const
+    {
+        return key_;
+    }
+
+    const ::dds::core::policy::ProductData&   product() const
+    {
+        return product_;
+    }
+
+    bool operator ==(const CMParticipantBuiltinTopicDataImpl& other) const
+    {
+        return other.key_ == key_
+               && other.product_ == product_;
+    }
+
+protected:
+    dds::topic::BuiltinTopicKey        key_;
+    ::dds::core::policy::ProductData   product_;
+};
+
+//==============================================================================
+//            CMPublisherBuiltinTopicData
+//==============================================================================
+
+class org::opensplice::topic::CMPublisherBuiltinTopicDataImpl
+{
+public:
+    const dds::topic::BuiltinTopicKey&        key() const
+    {
+        return key_;
+    }
+
+    const ::dds::core::policy::ProductData&   product() const
+    {
+        return product_;
+    }
+
+    const dds::topic::BuiltinTopicKey&        participant_key() const
+    {
+        return participant_key_;
+    }
+
+    const std::string&                        name() const
+    {
+        return name_;
+    }
+
+    const ::dds::core::policy::EntityFactory& entity_factory() const
+    {
+        return entity_factory_;
+    }
+
+    const ::dds::core::policy::Partition&     partition() const
+    {
+        return partition_;
+    }
+
+    bool operator ==(const CMPublisherBuiltinTopicDataImpl& other) const
+    {
+        return other.key_ == key_
+               && other.product_ == product_
+               && other.participant_key_ == participant_key_
+               && other.name_ == name_
+               && other.entity_factory_ == entity_factory_
+               && other.partition_ == partition_;
+    }
+
+protected:
+    dds::topic::BuiltinTopicKey        key_;
+    ::dds::core::policy::ProductData   product_;
+    dds::topic::BuiltinTopicKey        participant_key_;
+    std::string                        name_;
+    ::dds::core::policy::EntityFactory entity_factory_;
+    ::dds::core::policy::Partition     partition_;
+};
+
+//==============================================================================
+//            CMSubscriberBuiltinTopicData
+//==============================================================================
+
+class org::opensplice::topic::CMSubscriberBuiltinTopicDataImpl
+{
+public:
+    const dds::topic::BuiltinTopicKey&        key() const
+    {
+        return key_;
+    }
+
+    const ::dds::core::policy::ProductData&   product() const
+    {
+        return product_;
+    }
+
+    const dds::topic::BuiltinTopicKey&        participant_key() const
+    {
+        return participant_key_;
+    }
+
+    const std::string&                        name() const
+    {
+        return name_;
+    }
+
+    const ::dds::core::policy::EntityFactory& entity_factory() const
+    {
+        return entity_factory_;
+    }
+
+    const ::dds::core::policy::Partition&     partition() const
+    {
+        return partition_;
+    }
+
+    const ::dds::core::policy::Share&         share() const
+    {
+        return share_;
+    }
+
+    bool operator ==(const CMSubscriberBuiltinTopicDataImpl& other) const
+    {
+        return other.key_ == key_
+               && other.product_ == product_
+               && other.participant_key_ == participant_key_
+               && other.name_ == name_
+               && other.entity_factory_ == entity_factory_
+               && other.partition_ == partition_
+               && other.share_ == share_;
+    }
+
+protected:
+    dds::topic::BuiltinTopicKey        key_;
+    ::dds::core::policy::ProductData   product_;
+    dds::topic::BuiltinTopicKey        participant_key_;
+    std::string                        name_;
+    ::dds::core::policy::EntityFactory entity_factory_;
+    ::dds::core::policy::Partition     partition_;
+    ::dds::core::policy::Share         share_;
+};
+
+//==============================================================================
+//            CMDataWriterBuiltinTopicData
+//==============================================================================
+
+class org::opensplice::topic::CMDataWriterBuiltinTopicDataImpl
+{
+public:
+    const dds::topic::BuiltinTopicKey&              key() const
+    {
+        return key_;
+    }
+
+    const ::dds::core::policy::ProductData&         product() const
+    {
+        return product_;
+    }
+
+    const dds::topic::BuiltinTopicKey&              publisher_key() const
+    {
+        return publisher_key_;
+    }
+
+    const std::string&                              name() const
+    {
+        return name_;
+    }
+
+    const ::dds::core::policy::History&             history() const
+    {
+        return history_;
+    }
+
+    const ::dds::core::policy::ResourceLimits&      resource_limits() const
+    {
+        return resource_limits_;
+    }
+
+    const ::dds::core::policy::WriterDataLifecycle& writer_data_lifecycle() const
+    {
+        return writer_data_lifecycle_;
+    }
+
+    bool operator ==(const CMDataWriterBuiltinTopicDataImpl& other) const
+    {
+        return other.key_ == key_
+               && other.product_ == product_
+               && other.publisher_key_ == publisher_key_
+               && other.name_ == name_
+               && other.history_ == history_
+               && other.resource_limits_ == resource_limits_
+               && other.writer_data_lifecycle_ == writer_data_lifecycle_;
+    }
+
+protected:
+    dds::topic::BuiltinTopicKey              key_;
+    ::dds::core::policy::ProductData         product_;
+    dds::topic::BuiltinTopicKey              publisher_key_;
+    std::string                              name_;
+    ::dds::core::policy::History             history_;
+    ::dds::core::policy::ResourceLimits      resource_limits_;
+    ::dds::core::policy::WriterDataLifecycle writer_data_lifecycle_;
+};
+
+//==============================================================================
+//            CMDataReaderBuiltinTopicData
+//==============================================================================
+
+class org::opensplice::topic::CMDataReaderBuiltinTopicDataImpl
+{
+public:
+    const dds::topic::BuiltinTopicKey&              key() const
+    {
+        return key_;
+    }
+
+    const ::dds::core::policy::ProductData&         product() const
+    {
+        return product_;
+    }
+
+    const dds::topic::BuiltinTopicKey&              subscriber_key() const
+    {
+        return subscriber_key_;
+    }
+
+    const std::string&                              name() const
+    {
+        return name_;
+    }
+
+    const ::dds::core::policy::History&             history() const
+    {
+        return history_;
+    }
+
+    const ::dds::core::policy::ResourceLimits&      resource_limits() const
+    {
+        return resource_limits_;
+    }
+
+    const ::dds::core::policy::ReaderDataLifecycle& reader_data_lifecycle() const
+    {
+        return reader_data_lifecycle_;
+    }
+
+    const ::dds::core::policy::SubscriptionKey&     subscription_keys() const
+    {
+        return subscription_keys_;
+    }
+
+    const ::dds::core::policy::Lifespan&            reader_lifespan() const
+    {
+        return reader_lifespan_;
+    }
+
+    const ::dds::core::policy::Share&               share() const
+    {
+        return share_;
+    }
+
+    bool operator ==(const CMDataReaderBuiltinTopicDataImpl& other) const
+    {
+        return other.key_ == key_
+               && other.product_ == product_
+               && other.subscriber_key_ == subscriber_key_
+               && other.name_ == name_
+               && other.history_ == history_
+               && other.resource_limits_ == resource_limits_
+               && other.reader_data_lifecycle_ == reader_data_lifecycle_
+               && other.subscription_keys_ == subscription_keys_
+               && other.reader_lifespan_ == reader_lifespan_
+               && other.share_ == share_;
+    }
+
+protected:
+    dds::topic::BuiltinTopicKey              key_;
+    ::dds::core::policy::ProductData         product_;
+    dds::topic::BuiltinTopicKey              subscriber_key_;
+    std::string                              name_;
+    ::dds::core::policy::History             history_;
+    ::dds::core::policy::ResourceLimits      resource_limits_;
+    ::dds::core::policy::ReaderDataLifecycle reader_data_lifecycle_;
+    ::dds::core::policy::SubscriptionKey     subscription_keys_;
+    ::dds::core::policy::Lifespan            reader_lifespan_;
+    ::dds::core::policy::Share               share_;
+};
+
+
 #endif /* ORG_OPENSPLICE_TOPIC_BUILTIN_TOPIC_IMPL_HPP */

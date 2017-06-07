@@ -55,7 +55,7 @@ $sp($(spaces))#define $(type_name)DataWriter_get_offered_deadline_missed_status 
 $sp($(spaces))
 $sp($(spaces))#define $(type_name)DataWriter_get_offered_incompatible_qos_status DDS_DataWriter_get_offered_incompatible_qos_status
 $sp($(spaces))
-$sp($(spaces))#define $(type_name)DataWriter_get_publication_match_status DDS_DataWriter_get_publication_match_status
+$sp($(spaces))#define $(type_name)DataWriter_get_publication_matched_status DDS_DataWriter_get_publication_matched_status
 $sp($(spaces))
 $sp($(spaces))#define $(type_name)DataWriter_get_publisher DDS_DataWriter_get_publisher
 $sp($(spaces))
@@ -191,7 +191,7 @@ $sp($(spaces))#define $(type_name)DataReader_get_sample_rejected_status DDS_Data
 $sp($(spaces))
 $sp($(spaces))#define $(type_name)DataReader_get_subscriber DDS_DataReader_get_subscriber
 $sp($(spaces))
-$sp($(spaces))#define $(type_name)DataReader_get_subscription_match_status DDS_DataReader_get_subscription_match_status
+$sp($(spaces))#define $(type_name)DataReader_get_subscription_matched_status DDS_DataReader_get_subscription_matched_status
 $sp($(spaces))
 $sp($(spaces))#define $(type_name)DataReader_get_topicdescription DDS_DataReader_get_topicdescription
 $sp($(spaces))

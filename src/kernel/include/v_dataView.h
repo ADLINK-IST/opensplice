@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef V_DATAVIEW_H
@@ -45,7 +53,7 @@ extern "C" {
 
 #define v_dataView_t(scope) \
         c_type(c_resolve(c_getBase(scope), \
-                          "kernelModule::v_dataView"))
+                          "kernelModuleI::v_dataView"))
 
 OS_API v_dataView
 v_dataViewNew(
@@ -58,6 +66,15 @@ OS_API void
 v_dataViewFree(
     v_dataView dataView);
 
+OS_API v_dataViewQos
+v_dataViewGetQos(
+    v_dataView _this);
+
+OS_API v_result
+v_dataViewSetQos(
+    v_dataView _this,
+    v_dataViewQos qos);
+
 OS_API v_dataReader
 v_dataViewGetReader(
     v_dataView dataView);
@@ -67,45 +84,51 @@ v_dataViewWrite(
     v_dataView dataView,
     v_readerSample sample);
 
-OS_API c_bool
+OS_API v_result
 v_dataViewRead(
     v_dataView dataView,
     v_readerSampleAction action,
-    c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
-OS_API c_bool
+OS_API v_result
 v_dataViewTake(
     v_dataView dataView,
     v_readerSampleAction action,
-    c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
-OS_API c_bool
+OS_API v_result
 v_dataViewReadInstance(
     v_dataView dataView,
     v_dataViewInstance instance,
     v_readerSampleAction action,
-    c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
-OS_API c_bool
+OS_API v_result
 v_dataViewTakeInstance(
     v_dataView dataView,
     v_dataViewInstance instance,
     v_readerSampleAction action,
-    c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
-OS_API c_bool
+OS_API v_result
 v_dataViewReadNextInstance(
     v_dataView dataView,
     v_dataViewInstance instance,
     v_readerSampleAction action,
-    c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
-OS_API c_bool
+OS_API v_result
 v_dataViewTakeNextInstance(
     v_dataView dataView,
     v_dataViewInstance instance,
     v_readerSampleAction action,
-    c_voidp arg);
+    c_voidp arg,
+    os_duration timeout);
 
 OS_API v_dataViewInstance
 v_dataViewLookupInstance (

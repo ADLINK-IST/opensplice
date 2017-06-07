@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /*
@@ -320,34 +328,6 @@ idl_checkEnumerationValue(
     c_constant constant);
 
 static int
-idl_checkReferencedIdentifierInScope (
-    c_metaObject scope,
-    char *name,
-    idl_errorFunction rf)
-{
-    char errorBuffer [IDL_MAX_ERRORSIZE];
-    c_metaObject mo;
-    int result = 0;
-
-    /* rule [5] */
-    if (scope) {
-        mo = c_metaObject(c_metaFindByName (scope, name, CQ_METAOBJECTS | CQ_CASEINSENSITIVE));
-            if (mo) {
-            if (strcmp(mo->name, name) != 0) {
-                result++;
-                snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_Spelling], mo->name);
-                rf(errorBuffer);
-            }
-        } else {
-            result++;
-            snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_UndeclaredIdentifier], name);
-            rf(errorBuffer);
-        }
-    }
-    return result;
-}
-
-static int
 idl_checkNonDeclaratorDefinition(
     c_metaObject scope,
     char *name,
@@ -383,7 +363,7 @@ idl_checkLiteral(
 
     switch (c_baseObject(type)->kind) {
         case M_COLLECTION:
-            if (c_collectionType(type)->kind == C_STRING) {
+            if (c_collectionType(type)->kind == OSPL_C_STRING) {
             /* string */
             if (value.kind != V_STRING) {
                 result++;
@@ -442,13 +422,13 @@ idl_checkLiteral(
                     rf(errorBuffer);
                 }
                     } else {
-                if (value.is.LongLong < C_MIN_SHORT(LL)) {
+                if (value.is.LongLong < C_MIN_SHORT) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
                         "more negative than short allows");
                     rf(errorBuffer);
                 } else {
-                    if (value.is.LongLong > C_MAX_SHORT(LL)) {
+                    if (value.is.LongLong > C_MAX_SHORT) {
                         result++;
                         snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
                             "more positive than short allows");
@@ -466,13 +446,13 @@ idl_checkLiteral(
                             rf(errorBuffer);
                 }
             } else {
-                if (value.is.LongLong < (long long)C_MIN_USHORT(LL)) {
+                if (value.is.LongLong < C_MIN_USHORT) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
                              "negative which unsigned short does not allow");
                     rf(errorBuffer);
                 } else {
-                    if (value.is.LongLong > (long long)C_MAX_USHORT(LL)) {
+                    if (value.is.LongLong > C_MAX_USHORT) {
                         result++;
                         snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
                                  "more positive than unsigned short allows");
@@ -490,13 +470,13 @@ idl_checkLiteral(
                             rf(errorBuffer);
                 }
             } else {
-                if (value.is.LongLong < C_MIN_LONG(LL)) {
+                if (value.is.LongLong < C_MIN_LONG) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
                              "more negative than long allows");
                     rf(errorBuffer);
                 } else {
-                    if (value.is.LongLong > (long long)C_MAX_LONG(LL)) {
+                    if (value.is.LongLong > C_MAX_LONG) {
                         result++;
                         snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
                                  "more positive than long allows");
@@ -514,13 +494,13 @@ idl_checkLiteral(
                             rf(errorBuffer);
                 }
                     } else {
-                if (value.is.LongLong < (long long)C_MIN_ULONG(LL)) {
+                if (value.is.LongLong < C_MIN_ULONG) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
                              "negative which unsigned long does not allow");
                     rf(errorBuffer);
                 } else {
-                    if (value.is.LongLong > (long long)C_MAX_ULONG(LL)) {
+                    if (value.is.LongLong > C_MAX_ULONG) {
                         result++;
                         snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
                                  "more positive than unsigned long allows");
@@ -1090,7 +1070,7 @@ idl_checkClassFromType (
         }
     } else {
         if (c_baseObject(type)->kind == M_COLLECTION) {
-            if (c_collectionType(type)->kind == C_STRING) {
+            if (c_collectionType(type)->kind == OSPL_C_STRING) {
                 cc = idl_String;
             }
         }
@@ -1140,7 +1120,7 @@ idl_checkClassFromConstant(
             cc = idl_Other;
         }
     } else if (c_baseObject(operand)->kind == M_COLLECTION) {
-        if (c_collectionType(operand)->kind == C_STRING) {
+        if (c_collectionType(operand)->kind == OSPL_C_STRING) {
             cc = idl_String;
         }
     }
@@ -1153,7 +1133,7 @@ idl_checkEnumerationValue(
     c_constant constant)
 {
     int result = 1;
-    int i;
+    c_ulong i;
 
     if (c_baseObject(constant->operand)->kind == M_CONSTANT) {
         result = idl_checkEnumerationValue(enumeration, c_constant(constant->operand));
@@ -1277,7 +1257,7 @@ checkUnsupportedTypeUsage(
    c_metaWalkActionArg arg)
 {
     struct unsupportedArg *a = (struct unsupportedArg *)arg;
-    int i;
+    c_ulong i;
     c_metaObject mo;
     ut_result utr;
 
@@ -1303,7 +1283,7 @@ checkUnsupportedTypeUsage(
                 checkUnsupportedTypeUsage(c_metaObject(c_typeActualType(c_type(metaObject))), arg);
             break;
             case M_UNION:
-                utr = ut_stackPush(a->context, (void *)metaObject);
+                (void) ut_stackPush(a->context, (void *)metaObject);
                 i = 0;
                 while (i < c_arraySize(c_union(metaObject)->cases)) {
                     checkUnsupportedTypeUsage(c_metaObject(c_union(metaObject)->cases[i]), arg);
@@ -1311,9 +1291,10 @@ checkUnsupportedTypeUsage(
                 }
                 mo = ut_stackPop(a->context);
                 assert(mo == metaObject);
+                OS_UNUSED_ARG(mo);
             break;
             case M_STRUCTURE:
-                utr = ut_stackPush(a->context, (void *)metaObject);
+                (void) ut_stackPush(a->context, (void *)metaObject);
                 i = 0;
                 while (i < c_arraySize(c_structure(metaObject)->members)) {
                     checkUnsupportedTypeUsage(c_metaObject(c_structure(metaObject)->members[i]), arg);
@@ -1321,6 +1302,7 @@ checkUnsupportedTypeUsage(
                 }
                 mo = ut_stackPop(a->context);
                 assert(mo == metaObject);
+                OS_UNUSED_ARG(mo);
             break;
             case M_UNIONCASE:
                 checkUnsupportedTypeUsage(c_metaObject(c_specifier(metaObject)->type), arg);
@@ -1420,14 +1402,15 @@ idl_checkStructDeclaratorDefinition(
 {
     char errorBuffer[IDL_MAX_ERRORSIZE];
     int result = 0;
-    int i, j;
+    c_ulong i, j;
     char *namei;
     char *namej;
     c_type type;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     /* rule [21] */
-    i = c_iterLength(iter);
-    j = i;
     for (i = 0; i < c_iterLength(iter); i++) {
         for (j = i+1; j < c_iterLength(iter); j++) {
             namei = c_specifier(c_iterObject(iter, i))->name;
@@ -1462,10 +1445,13 @@ idl_checkUnionDeclaratorDefinition(
 {
     char errorBuffer[IDL_MAX_ERRORSIZE];
     int result = 0;
-    int i, j;
+    c_ulong i, j;
     char *namei;
     char *namej;
     c_type type;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     /* rule [26] */
     for (i = 0; i < c_iterLength(iter); i++) {
@@ -1518,15 +1504,17 @@ idl_checkUnionCaseDefinition(
     idl_errorFunction rf)
 {
     int result = 0;
-    int i;
+    c_ulong i;
     c_unionCase uc;
     unsigned int defaultLabelCount = 0;
     c_bool switchTypeError = TRUE;
-    unsigned long long rangeMax;
+    unsigned long long rangeMax = 0;
     unsigned long long labelCount = 0L;
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     /* rule [23] */
-    i = c_iterLength(iter);
     for (i = 0; i < c_iterLength(iter); i++) {
         uc = c_unionCase(c_iterObject(iter, i));
         if (c_arraySize(uc->labels) == 0) {
@@ -1723,6 +1711,9 @@ idl_checkTypeReference(
 {
     int result = 0;
     char errorBuffer[IDL_MAX_ERRORSIZE];
+    OS_UNUSED_ARG(scope);
+
+    OS_UNUSED_ARG(scope);
 
     /* rule [6] */
     if (type) {
@@ -1836,7 +1827,7 @@ idl_checkKeyListTypeName(
                 mo = c_metaObject(c_typeActualType(c_type(mo)));
                 if (!CQ_KIND_IN_MASK(mo, CQ_UNION | CQ_STRUCTURE)) {
                     result++;
-                    snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_IllegalKeyType]);
+                    snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, "%s", errorText[idl_IllegalKeyType]);
                     rf(errorBuffer);
                     } else {
                     arg.unsupported = FALSE;
@@ -1871,7 +1862,7 @@ idl_checkSimpleFieldName(
     c_iter fields = NULL;
     c_specifier sp;
     c_metaObject keyMetaObj;
-    char *fieldName;
+    char *fieldName = name;
     int result = 0;
 
     /* simple field name consists of <field>, not [<field>.]*<field> like for keylist. */
@@ -1979,10 +1970,10 @@ idl_checkKeyListFieldName(
                 if (c_baseObject(type)->kind == M_COLLECTION) {
                     collType = c_collectionType(type);
                     /* string or bounded string are acceptable collections */
-                    if (collType->kind != C_STRING) {
+                    if (collType->kind != OSPL_C_STRING) {
                         /* now, char array and long array for builtin topics remains acceptable */
                         subtype = c_typeActualType(collType->subType);
-                        if (collType->kind == C_ARRAY &&
+                        if (collType->kind == OSPL_C_ARRAY &&
                             c_baseObject(subtype)->kind == M_PRIMITIVE)
                         {
                             primitiveType = c_primitive(subtype);
@@ -1994,11 +1985,16 @@ idl_checkKeyListFieldName(
                                 rf(errorBuffer);
                             }
                             else if (primitiveType->kind == P_LONG) {
-                                /* check that type is 1 of the 4 builtin topics:
+                                /* check that type is 1 of the 9 builtin topics:
                                  *   DDS.ParticipantBuiltinTopicData
                                  *   DDS.TopicBuiltinTopicData
                                  *   DDS.PublicationBuiltinTopicData
                                  *   DDS.SubscriptionBuiltinTopicData
+                                 *   DDS.CMParticipantBuiltinTopicData
+                                 *   DDS.CMPublisherBuiltinTopicData
+                                 *   DDS.CMSubscriberBuiltinTopicData
+                                 *   DDS.CMDataWriterBuiltinTopicData
+                                 *   DDS.CMDataReaderBuiltinTopicData
                                  */
                                 if (!scope->definedIn                                            /* if topic has no parent */
                                     || scope->definedIn->name == 0                               /* if topic parent has no name */
@@ -2010,6 +2006,11 @@ idl_checkKeyListFieldName(
                                        && strcmp(scope->name, "TopicBuiltinTopicData") != 0         /* if topic is not DDS.TopicBuiltinTopicData */
                                        && strcmp(scope->name, "PublicationBuiltinTopicData") != 0   /* if topic is not DDS.PublicationBuiltinTopicData */
                                        && strcmp(scope->name, "SubscriptionBuiltinTopicData") != 0  /* if topic is not DDS.SubscriptionBuiltinTopicData */
+                                       && strcmp(scope->name, "CMParticipantBuiltinTopicData") != 0 /* if topic is not DDS.CMParticipantBuiltinTopicData */
+                                       && strcmp(scope->name, "CMPublisherBuiltinTopicData") != 0   /* if topic is not DDS.CMPublisherBuiltinTopicData */
+                                       && strcmp(scope->name, "CMSubscriberBuiltinTopicData") != 0  /* if topic is not DDS.CMSubscriberBuiltinTopicData */
+                                       && strcmp(scope->name, "CMDataWriterBuiltinTopicData") != 0  /* if topic is not DDS.CMDataWriterBuiltinTopicData */
+                                       && strcmp(scope->name, "CMDataReaderBuiltinTopicData") != 0  /* if topic is not DDS.CMDataReaderBuiltinTopicData */
                                        )
                                     )
                                 {

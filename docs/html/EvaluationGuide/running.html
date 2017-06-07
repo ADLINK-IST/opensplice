@@ -1,0 +1,169 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. How to run OpenSplice Enterprise &mdash; OpenSplice Evaluation and Benchmarking Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Evaluation and Benchmarking Guide" href="index.html" />
+    <link rel="next" title="8. Performance Tests and Examples" href="tests.html" />
+    <link rel="prev" title="6. Benchmarking OpenSplice: Decision Trees" href="decisions.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tests.html" title="8. Performance Tests and Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="decisions.html" title="6. Benchmarking OpenSplice: Decision Trees"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="how-to-run-opensplice-enterprise">
+<span id="id1"></span><h1>7. How to run OpenSplice Enterprise<a class="headerlink" href="#how-to-run-opensplice-enterprise" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="the-opensplice-enterprise-environment">
+<span id="id2"></span><h2>7.1. The OpenSplice Enterprise Environment<a class="headerlink" href="#the-opensplice-enterprise-environment" title="Permalink to this headline">¶</a></h2>
+<p>A release file is provided with the OpenSplice Enterprise
+installation which contains the environment variables that
+are required.</p>
+<p>Create an OpenSplice Enterprise environment as follows.</p>
+<p><strong>First:</strong></p>
+<p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div>Open a shell and source the <tt class="docutils literal"><span class="pre">release.com</span></tt> file from
+the OpenSplice Enterprise installation directory.</div></blockquote>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div>Open a <em>Windows Command prompt</em> and run the <tt class="docutils literal"><span class="pre">release.bat</span></tt>
+file in the OpenSplice Enterprise installation directory.</div></blockquote>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div>Alternatively, use the <em>OpenSplice DDS Command Prompt</em>
+that can be accessed from the Windows <em>Start</em> menu
+(this will implicitly run <tt class="docutils literal"><span class="pre">release.bat</span></tt>).</div></blockquote>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd>Note that the OpenSplice Enterprise Launcher tool also provides a
+<tt class="docutils literal"><span class="pre">Console</span></tt> option which sets up the OpenSplice Enterprise environment.</dd>
+</dl>
+<p><strong>Next:</strong></p>
+<p>Set the <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable to refer to the OpenSplice Enterprise
+configuration that is required (see the section
+<a class="reference internal" href="architectural.html#how-to-select-the-architectural-mode"><em>How to select the Architectural Mode</em></a>).</p>
+</div>
+<div class="section" id="running-single-process-and-shared-memory-modes">
+<h2>7.2. Running Single Process and Shared Memory Modes<a class="headerlink" href="#running-single-process-and-shared-memory-modes" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>With an <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable referring to a <em>Single Process</em> deployment,
+you just need to start the DDS application process. The
+<tt class="docutils literal"><span class="pre">create_participant()</span></tt> operation, which is the entry into the DDS
+Domain, will create the entire DDS infrastructure within the
+application process and the services will be started as threads.</li>
+<li>With an <tt class="docutils literal"><span class="pre">OSPL_URI</span></tt> variable referring to a <em>Shared Memory</em> deployment, it
+is necessary to start the DDS infrastructure before starting your DDS
+application processes. That is done by using the <tt class="docutils literal"><span class="pre">ospl</span></tt> utility tool:</li>
+</ul>
+<div class="highlight-bash"><div class="highlight"><pre>ospl start
+<span class="c"># now run the DDS application processes as normal</span>
+ospl stop
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">7. How to run OpenSplice Enterprise</a><ul>
+<li><a class="reference internal" href="#the-opensplice-enterprise-environment">7.1. The OpenSplice Enterprise Environment</a></li>
+<li><a class="reference internal" href="#running-single-process-and-shared-memory-modes">7.2. Running Single Process and Shared Memory Modes</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="decisions.html"
+                        title="previous chapter">6. Benchmarking OpenSplice: Decision Trees</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tests.html"
+                        title="next chapter">8. Performance Tests and Examples</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/running.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tests.html" title="8. Performance Tests and Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="decisions.html" title="6. Benchmarking OpenSplice: Decision Trees"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Evaluation and Benchmarking Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

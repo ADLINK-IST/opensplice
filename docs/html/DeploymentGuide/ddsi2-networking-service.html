@@ -1,0 +1,1687 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. The DDSI2 and DDSI2E Networking Services &mdash; The OpenSplice Deployment Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The OpenSplice Deployment Guide" href="index.html" />
+    <link rel="next" title="8. The NetworkingBridge Service" href="networkingbridge-service.html" />
+    <link rel="prev" title="6. The Networking Service" href="networking-service.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="networkingbridge-service.html" title="8. The NetworkingBridge Service"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="networking-service.html" title="6. The Networking Service"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-ddsi2-and-ddsi2e-networking-services">
+<span id="id1"></span><h1>7. The DDSI2 and DDSI2E Networking Services<a class="headerlink" href="#the-ddsi2-and-ddsi2e-networking-services" title="Permalink to this headline">¶</a></h1>
+<p><em>The purpose and scope of the</em> Data-Distribution Service Interoperability Wire
+Protocol <em>is to ensure that applications based on different vendors’ implementations
+of DDS can interoperate. The protocol was standardized by the OMG in 2008, and
+was designed to meet the specific requirements of data-distribution systems.</em></p>
+<p>Features of the <em>DDSI</em> protocol include:</p>
+<ul class="simple">
+<li>Performance and Quality-of-Service properties to enable best-effort and
+reliable publish-subscribe communications for real-time applications over
+standard IP networks.</li>
+<li>Fault tolerance to allow the creation of networks without single points of failure.</li>
+<li>Plug-and-play Connectivity so that new applications and services are
+automatically discovered and applications can join and leave the network at any
+time without the need for reconfiguration.</li>
+<li>Configurability to allow balancing the requirements for reliability and timeliness
+for each data delivery.</li>
+<li>Scalability to enable systems to potentially scale to very large networks.</li>
+</ul>
+<p><em>DDSI-Extended</em> (DDSI2E) is an extended version of the DDSI2 networking service,
+giving extra features for:</p>
+<ul class="simple">
+<li><em>Network partitions</em>: Network partitions provide the ability to use alternative
+multicast addresses for combinations of DCPS topics and partitions to separate
+out traffic flows, for example for routing or load reduction.</li>
+<li><em>Security</em>: Encryption can be configured per network partition. This enables
+configuring encrypted transmission for subsets of the data.</li>
+<li><em>Bandwidth limiting and traffic scheduling</em>: Any number of ‘network channels’
+can be defined, each with an associated transport priority. Application data is
+routed via the network channel with the best matching priority. For each network
+channel, outgoing bandwidth limits can be set and the IP ‘differentiated services’
+options can be controlled.</li>
+</ul>
+<p>The remainder of this section gives background on these two services and describes
+how the various mechanisms and their configuration parameters interact.</p>
+<p>Please refer to the <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a>
+section fully-detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2EService</span></tt></li>
+</ul>
+<div class="section" id="ddsi-concepts">
+<span id="id2"></span><h2>7.1. DDSI Concepts<a class="headerlink" href="#ddsi-concepts" title="Permalink to this headline">¶</a></h2>
+<p>The DDSI 2.1 standard is very intimately related to the DDS 1.2 standard, with a
+clear correspondence between the entities in DDSI and those in DCPS. However,
+this correspondence is not one-to-one.</p>
+<p>In this section we give a high-level description of the concepts of the DDSI
+specification, with hardly any reference to the specifics of the OpenSplice
+implementation, DDSI2, which are addressed in subsequent sections. This
+division was chosen to aid readers interested in interoperability to understand
+where the specification ends and the OpenSplice implementation begins.</p>
+<div class="section" id="mapping-of-dcps-domains-to-ddsi-domains">
+<span id="id3"></span><h3>7.1.1. Mapping of DCPS domains to DDSI domains<a class="headerlink" href="#mapping-of-dcps-domains-to-ddsi-domains" title="Permalink to this headline">¶</a></h3>
+<p>In DCPS, a domain is uniquely identified by a non-negative integer, the domain id.
+DDSI maps this domain id to UDP/IP port numbers to be used for communicating
+with the peer nodes — these port numbers are particularly important for the
+discovery protocol — and this mapping of domain ids to UDP/IP port numbers
+ensures that accidental cross-domain communication is impossible with the
+default mapping.</p>
+<p>DDSI does not communicate the DCPS port number in the discovery protocol; it
+assumes that each domain id maps to a unique port number. While it is unusual to
+change the mapping, the specification requires this to be possible, and this means
+that two different DCPS domain ids can be mapped to a single DDSI domain.</p>
+</div>
+<div class="section" id="mapping-of-dcps-entities-to-ddsi-entities">
+<span id="id4"></span><h3>7.1.2. Mapping of DCPS entities to DDSI entities<a class="headerlink" href="#mapping-of-dcps-entities-to-ddsi-entities" title="Permalink to this headline">¶</a></h3>
+<p>Each DCPS domain participant in a domain is mirrored in DDSI as a DDSI
+participant. These DDSI participants drive the discovery of participants, readers and
+writers in DDSI <em>via</em> the discovery protocols. By default each DDSI participant has a
+unique address on the network in the form of its own UDP/IP socket with a unique
+port number.</p>
+<p>Any data reader or data writer created by a DCPS domain participant is mirrored in
+DDSI as a DDSI reader or writer. In this translation, some of the structure of the
+DCPS domain is lost, because DDSI has no knowledge of DCPS Subscribers and
+Publishers. Instead, each DDSI reader is the combination of the corresponding
+DCPS data reader and the DCPS subscriber it belongs to; similarly, each DDSI
+writer is a combination of the corresponding DCPS data writer and DCPS publisher.
+This corresponds to the way the DCPS built-in topics describe the DCPS data
+readers and data writers, as there are no built-in topics for describing the DCPS
+subscribers and publishers either.</p>
+<p>In addition to the application-created readers and writers (referred to as
+<em>‘endpoints’</em>), DDSI participants have a number of DDSI built-in endpoints used for
+discovery and liveliness checking/asserting. The most important ones are those
+absolutely required for discovery: readers and writers for the discovery data
+concerning DDSI participants, DDSI readers and DDSI writers. Some other ones
+exist as well, and a DDSI implementation can leave out some of these if it has no
+use for them. For example, if a participant has no writers, it doesn’t strictly need the
+DDSI built-in endpoints for describing writers, nor the DDSI built-in endpoint for
+learning of readers of other participants.</p>
+</div>
+<div class="section" id="reliable-communication">
+<span id="id5"></span><h3>7.1.3. Reliable communication<a class="headerlink" href="#reliable-communication" title="Permalink to this headline">¶</a></h3>
+<p><em>Best-effort</em> communication is simply a wrapper around UDP/IP: the packet(s)
+containing a sample are sent to the addresses at which the readers reside. No state is
+maintained on the writer. If a packet is lost, the reader will simply drop the sample
+and continue with the next one.</p>
+<p>When <em>reliable</em> communication is used, the writer does maintain a copy of the
+sample, in case a reader detects it has lost packets and requests a retransmission.
+These copies are stored in the writer history cache (or WHC) of the DDSI writer.
+The DDSI writer is required to periodically send <em>Heartbeats</em> to its readers to ensure
+that all readers will learn of the presence of new samples in the WHC even when
+packets get lost.</p>
+<p>If a reader receives a Heartbeat and detects it did not receive all samples, it requests
+a retransmission by sending an <em>AckNack</em> message to the writer, in which it
+simultaneously informs the writer up to what sample it has received everything, and
+which ones it has not yet received. Whenever the writer indicates it requires a
+response to a Heartbeat the readers will send an AckNack message even when no
+samples are missing. In this case, it becomes a pure acknowledgement.</p>
+<p>The combination of these behaviours in principle allows the writer to remove old
+samples from its WHC when it fills up too far, and allows readers to always receive
+all data. A complication exists in the case of unresponsive readers, readers that do
+not respond to a Heartbeat at all, or that for some reason fail to receive some
+samples despite resending it. The specification leaves the way these get treated
+unspecified.</p>
+<p>Note that while this Heartbeat/AckNack mechanism is very straightforward, the
+specification actually allows suppressing heartbeats, merging of AckNacks and
+retransmissions, <em>etc.</em>. The use of these techniques is required to allow for a
+performant DDSI implementation, whilst avoiding the need for sending redundant
+messages.</p>
+</div>
+<div class="section" id="ddsi-specific-transient-local-behaviour">
+<span id="id6"></span><h3>7.1.4. DDSI-specific transient-local behaviour<a class="headerlink" href="#ddsi-specific-transient-local-behaviour" title="Permalink to this headline">¶</a></h3>
+<p>The above describes the essentials of the mechanism used for samples of the
+<em>‘volatile’</em> durability kind, but the DCPS specification also provides
+<em>‘transient-local’</em>, <em>‘transient’</em> and <em>‘persistent’</em> data. Of these, the
+DDSI specification currently only covers <em>transient-local</em>, and this is
+the only form of durable data available when interoperating across vendors.</p>
+<p>In DDSI, transient-local data is implemented using the WHC that is normally used
+for reliable communication. For transient-local data, samples are retained even
+when all readers have acknowledged them. With the default history setting of
+<tt class="docutils literal"><span class="pre">KEEP_LAST</span></tt> with <tt class="docutils literal"><span class="pre">history_depth</span> <span class="pre">=</span> <span class="pre">1</span></tt>, this means that late-joining readers
+can still obtain the latest sample for each existing instance.</p>
+<p>Naturally, once the DCPS writer is deleted (or disappears for whatever reason), the
+DDSI writer disappears as well, and with it, its history. For this reason, transient
+data is generally much to be preferred over transient-local data. In OpenSplice the
+durability service implements all three durability kinds without requiring any
+special support from the networking services, ensuring that the full set of
+durability features is always available between OpenSplice nodes.</p>
+</div>
+<div class="section" id="discovery-of-participants-endpoints">
+<span id="id7"></span><h3>7.1.5. Discovery of participants &amp; endpoints<a class="headerlink" href="#discovery-of-participants-endpoints" title="Permalink to this headline">¶</a></h3>
+<p>DDSI participants discover each other by means of the <em>‘Simple Participant
+Discovery Protocol’</em>, or <em>‘SPDP</em>’ for short. This protocol is based on periodically
+sending a message containing the specifics of the participant to a set of known
+addresses. By default, this is a standardised multicast address (<tt class="docutils literal"><span class="pre">239.255.0.1</span></tt>;
+the port number is derived from the domain id) that all DDSI implementations
+listen to.</p>
+<p>Particularly important in the SPDP message are the unicast and multicast addresses
+at which the participant can be reached. Typically, each participant has a unique
+unicast address, which in practice means all participants on a node all have a
+different UDP/IP port number in their unicast address. In a multicast-capable
+network, it doesn’t matter what the actual address (including port number) is,
+because all participants will learn them through these SPDP messages.</p>
+<p>The protocol does allow for unicast-based discovery, which requires listing the
+addresses of machines where participants may be located, and ensuring each
+participant uses one of a small set of port numbers. Because of this, some of the port
+numbers are derived not only from the domain id, but also from a <em>‘participant
+index’</em>, which is a small non-negative integer, unique to a participant within a node.
+(The DDSI2 service adds an indirection and uses at most one participant index
+regardless of how many DCPS participants it handles.)</p>
+<p>Once two participants have discovered each other, and both have matched the DDSI
+built-in endpoints their peer is advertising in the SPDP message, the <em>‘Simple
+Endpoint Discovery Protocol’</em> or <em>‘SEDP’</em> takes over, exchanging information on the
+DCPS data readers and data writers in the two participants.</p>
+<p>The SEDP data is handled as reliable, transient-local data. Therefore, the SEDP
+writers send Heartbeats, the SEDP readers detect they have not yet received all
+samples and send AckNacks requesting retransmissions, the writer responds to these
+and eventually receives a pure acknowledgement informing it that the reader has
+now received the complete set.</p>
+<p><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></p>
+<blockquote>
+<div>Note that the discovery process necessarily creates a burst of traffic each time
+a participant is added to the system: <em>all</em> existing participants respond to the
+SPDP message, following which all start exchanging SEDP data.</div></blockquote>
+</div>
+</div>
+<div class="section" id="opensplice-ddsi2-specifics">
+<span id="id8"></span><h2>7.2. OpenSplice DDSI2 specifics<a class="headerlink" href="#opensplice-ddsi2-specifics" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="translating-between-opensplice-and-ddsi">
+<span id="id9"></span><h3>7.2.1. Translating between OpenSplice and DDSI<a class="headerlink" href="#translating-between-opensplice-and-ddsi" title="Permalink to this headline">¶</a></h3>
+<p>Given that DDSI is the DDS interoperability specification, that the mapping
+between DCPS entities and DDSI entities is straightforward, and that OpenSplice is
+a full implementation of the DDS specification, one might expect that relationship
+between OpenSplice and its DDSI implementation, DDSI2, is trivial. Unfortunately,
+this is not the case, and it does show in a number of areas. A high-level overview
+such as this paragraph is not the place for the details of these cases, but they
+will be described in due course.</p>
+<p>The root cause of these complexities is a difference in design philosophy between
+OpenSplice and the more recent DDSI.</p>
+<p>DDSI is very strictly a <em>peer-to-peer</em> protocol at the level of individual endpoints,
+requiring lots of discovery traffic, and (at least when implemented naively) very bad
+scalability. It is exactly these three problems that OpenSplice was designed to avoid,
+and it does so successfully with its native <em>RTNetworking</em> service.</p>
+<p>Because of this design for scalability and the consequent use of service processes
+rather than forcing everything into self-contained application processes, there are
+various ways in which DDSI2 has to translate between the two worlds. For example,
+queuing and buffering and, consequently, blocking behaviour are subtly different;
+DDSI2 needs to also perform local discovery of DCPS endpoints to gather enough
+information for faithfully representing the system in terms of DDSI, it needs to
+translate between completely different namespaces (native OpenSplice identifiers
+are very different from the GUIDs used by DDSI), and it needs to work around
+receiving asynchronous notifications for events one would expect to be synchronous
+in DDSI.</p>
+<p>This <em>Guide</em> aims to not only provide guidance in configuring DDSI2, but also help
+in understanding the trade-offs involved.</p>
+</div>
+<div class="section" id="federated-versus-standalone-deployment">
+<span id="id10"></span><h3>7.2.2. Federated versus Standalone deployment<a class="headerlink" href="#federated-versus-standalone-deployment" title="Permalink to this headline">¶</a></h3>
+<p>As has been described elsewhere (see the <a class="reference internal" href="overview.html#overview"><em>Overview</em></a> in this
+<em>Guide</em> and also the <em>Getting Started Guide</em>), OpenSplice has multiple
+deployment models selectable in the configuration file (some of these require
+a license).</p>
+<p>For DDSI2, there is no difference between the various models: it simply serves
+whatever DCPS participants are in the same ‘instance’, whether that instance be a
+federation of processes on a single node, all attached to a shared memory segment
+managed by a set of OpenSplice service processes on that node, or a standalone one
+in which a single process incorporates the OpenSplice services as libraries.</p>
+<p>This <em>Guide</em> ignores the various deployment modes, using the terminology
+associated with the federated deployment mode because that mode is the driving
+force behind several of the user-visible design decisions in DDSI2. In consequence,
+for a standalone deployment, the term <em>‘node’</em> as used in this <em>Guide</em> refers
+to a single process.</p>
+</div>
+<div class="section" id="discovery-behaviour">
+<span id="id11"></span><h3>7.2.3. Discovery behaviour<a class="headerlink" href="#discovery-behaviour" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="local-discovery-and-built-in-topics">
+<span id="id12"></span><h4>7.2.3.1. Local discovery and built-in topics<a class="headerlink" href="#local-discovery-and-built-in-topics" title="Permalink to this headline">¶</a></h4>
+<p>Inside one node, DDSI2 monitors the creation and deletion of local DCPS domain
+participants, data readers and data writers. It relies on the DCPS built-in topics to
+keep track of these events, and hence the use of DDSI requires that these topics are
+enabled in the configuration, which is the default (see the description of
+<tt class="docutils literal"><span class="pre">//OpenSplice/Domain/BuiltinTopics[&#64;enabled]</span></tt>
+in the <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section).</p>
+<p>If the built-in topics must be disabled to reduce network load, then the alternative
+is to instruct DDSI2 to completely ignore them using the DCPS topic/partition to
+network partition mapping available in the enhanced version, DDSI2E.</p>
+<p>A separate issue is that of the DCPS built-in topics when interoperating with other
+implementations. In OpenSplice the built-in topics are first-class topics, <em>i.e.</em> the
+only difference between application topics and the built-in topics in OpenSplice is
+that the built-in topics are pre-defined and that they are published and used by the
+OpenSplice services. This in turn allows the RTNetworking service to avoid
+discovery of individual domain participants and endpoints, enabling its excellent
+scalability.</p>
+<p>Conversely, DDSI defines a different and slightly extended representation for the
+information in the built-in topics as part of the discovery protocol specification, with
+a clear intent to locally reconstruct the samples of the built-in topics. Unfortunately,
+this also means that the DCPS built-in topics become a special case.</p>
+<p>Taken together, DDSI2 is in the unfortunate situation of having to straddle two very
+different approaches. While local reconstruction of the DCPS built-in topics by
+DDSI2 is clearly possible, it would negatively impact the handling of transient data.
+Since handling transient data is one of the true strengths of OpenSplice, DDSI2
+currently does not perform this reconstruction, with the unfortunate implication that
+loss of liveliness will not be handled fully when interoperating with another DDSI
+implementation.</p>
+</div>
+<div class="section" id="proxy-participants-and-endpoints">
+<span id="id13"></span><h4>7.2.3.2. Proxy participants and endpoints<a class="headerlink" href="#proxy-participants-and-endpoints" title="Permalink to this headline">¶</a></h4>
+<p>DDSI2 is what the DDSI specification calls a <em>‘stateful’</em> implementation. Writers
+only send data to discovered readers and readers only accept data from discovered
+writers. (There is one exception: the writer may choose to multicast the data, and
+anyone listening will be able to receive it, if a reader has already discovered the
+writer but not <em>vice-versa</em>; it may accept the data even though the connection is not
+fully established yet.) Consequently, for each remote participant and reader or
+writer, DDSI2 internally creates a proxy participant, proxy reader or proxy writer.
+In the discovery process, writers are matched with proxy readers, and readers are
+matched with proxy writers, based on the topic and type names and the QoS
+settings.</p>
+<p>Proxies have the same natural hierarchy that ‘normal’ DDSI entities have: each
+proxy endpoint is owned by some proxy participant, and once the proxy participant
+is deleted, all of its proxy endpoints are deleted as well. Participants assert their
+liveliness periodically, and when nothing has been heard from a participant for the
+lease duration published by that participant in its SPDP message, the lease becomes
+expired triggering a clean-up.</p>
+<p>Under normal circumstances, deleting endpoints simply triggers disposes and
+unregisters in SEDP protocol, and, similarly, deleting a participant also creates
+special messages that allow the peers to immediately reclaim resources instead of
+waiting for the lease to expire.</p>
+</div>
+<div class="section" id="sharing-of-discovery-information">
+<span id="id14"></span><h4>7.2.3.3. Sharing of discovery information<a class="headerlink" href="#sharing-of-discovery-information" title="Permalink to this headline">¶</a></h4>
+<p>DDSI2 is designed to service any number of participants, as one would expect for a
+service capable of being deployed in a federated system. This obviously means it is
+aware of all participants, readers and writers on a node. It also means that the
+discovery protocol as sketched earlier is rather wasteful: there is no need for each
+individual participant serviced by DDSI2 to run the full discovery protocol for itself.</p>
+<p>Instead of implementing the protocol as suggested by the standard, DDSI2 shares all
+discovery activities amongst the participants, allowing one to add participants on a
+node with only a minimal impact on the system. It is even possible to have only a
+single DDSI participant on each node, which then becomes the virtual owner of all
+the endpoints serviced by that instance of DDSI2. (See
+<a class="reference internal" href="#combining-multiple-participants">Combining multiple participants</a>  and refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a>
+section for a detailed description of
+<tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/SquashParticipants</span></tt>.) In this latter mode,
+there is no discovery penalty at all for having many participants, but evidently,
+any participant-based liveliness monitoring will be affected.</p>
+<p>Because other implementations of the DDSI specification may be written on the
+assumption that all participants perform their own discovery, it is possible to
+simulate that with DDSI2. It will not actually perform the discovery for each
+participant independently, but it will generate the network traffic <em>as if</em> it does.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OOpenSplice/DDSI2Service/Internal/BuiltinEndpointSet</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/ConservativeBuiltinReaderStartup</span></tt></li>
+</ul>
+<p>However, please note that at the time of writing, we are not aware of any
+DDSI implementation requiring the use of these settings.)</p>
+<p>By sharing the discovery information across all participants in a single node, each
+new participant or endpoint is immediately aware of the existing peers and will
+immediately try to communicate with these peers. This may generate some
+redundant network traffic if these peers take a significant amount of time for
+discovering this new participant or endpoint.</p>
+<p>Another advantage (particularly in a federated deployment) is that the amount of
+memory required for discovery and the state of the remote entities is independent of
+the number of participants that exist locally.</p>
+</div>
+<div class="section" id="lingering-writers">
+<span id="id15"></span><h4>7.2.3.4. Lingering writers<a class="headerlink" href="#lingering-writers" title="Permalink to this headline">¶</a></h4>
+<p>When an application deletes a reliable DCPS data writer, there is no guarantee that
+all its readers have already acknowledged the correct receipt of all samples. In such
+a case, DDSI2 lets the writer (and the owning participant if necessary) linger in the
+system for some time, controlled by the <tt class="docutils literal"><span class="pre">Internal/WriterLingerDuration</span></tt> option.
+The writer is deleted when all samples have been acknowledged by all readers or
+the linger duration has elapsed, whichever comes first.</p>
+<p>The writer linger duration setting is currently not applied when DDSI2 is requested
+to terminate. In a federated deployment it is unlikely to visibly affect system
+behaviour, but in a standalone deployment data written just before terminating the
+application may be lost.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+a detailed description of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/WriterLingerDuration</span></tt></li>
+</ul>
+</div>
+<div class="section" id="start-up-mode">
+<span id="id16"></span><h4>7.2.3.5. Start-up mode<a class="headerlink" href="#start-up-mode" title="Permalink to this headline">¶</a></h4>
+<p>A similar issue exists when starting DDSI2: DDSI discovery takes time, and when
+data is written immediately after DDSI2 has started, it is likely that the discovery
+process hasn’t completed yet and some remote readers have not yet been
+discovered. This would cause the writers to throw away samples for lack of interest,
+even though matching readers already existed at the time of starting. For best-effort
+writers, this is perhaps surprising but still acceptable; for reliable writers, however,
+it would be very counter-intuitive.</p>
+<p>Hence the existence of the so-called <em>‘start-up mode’</em>, during which all volatile
+reliable writers are treated as-if they are transient-local writers. Transient-local data
+is meant to ensure samples are available to late-joining readers, the start-up mode
+uses this same mechanism to ensure late-discovered readers will also receive the
+data. This treatment of volatile data as-if it were transient-local happens entirely
+within DDSI2 and is invisible to the outside world, other than the availability of
+some samples that would not otherwise be available.</p>
+<p>Once DDSI2 has completed its initial discovery, it has built up its view of the
+network and can locally match new writers against already existing readers, and
+consequently keeps any new samples published in a writer history cache because
+these existing readers have not acknowledged them yet. Hence why this mode is tied
+to the start-up of the DDSI2 service, rather than to that of an individual writer.</p>
+<p>Unfortunately it is impossible to detect with certainty when the initial discovery
+process has been completed and therefore the time DDSI2 remains in this start-up
+mode is controlled by an option: General/StartupModeDuration.</p>
+<p>While in general this start-up mode is beneficial, it is not always so. There are two
+downsides: the first is that during the start-up period, the writer history caches can
+grow significantly larger than one would normally expect; the second is that it does
+mean large amounts of historical data may be transferred to readers discovered
+relatively late in the process.</p>
+<p>In a federated deployment on a local-area network, the likelihood of this behaviour
+causing problems is negligible, as in such a configuration the DDSI2 service
+typically starts seconds before the applications and besides the discovery times are
+short. The other extreme is a single-process deployment in a wide-area network,
+where the application starts immediately and discovery times may be long.</p>
+</div>
+</div>
+<div class="section" id="writer-history-qos-and-throttling">
+<span id="id17"></span><h3>7.2.4. Writer history QoS and throttling<a class="headerlink" href="#writer-history-qos-and-throttling" title="Permalink to this headline">¶</a></h3>
+<p>The DDSI specification heavily relies on the notion of a writer history cache (WHC)
+within which a sequence number uniquely identifies each sample. The original
+OpenSplice design has a different division of responsibilities between various
+components than what is assumed by the DDSI specification and this includes the
+WHC. Despite the different division, the resulting behaviour is the same.</p>
+<p>DDSI2 bridges this divide by constructing its own WHC when needed. This WHC
+integrates two different indices on the samples published by a writer: one is on
+sequence number, which is used for retransmitting lost samples, and one is on key
+value and is used for retaining the current state of each instance in the WHC.</p>
+<p>The index on key value allows dropping samples from the index on sequence
+number when the state of an instance is overwritten by a new sample. For
+transient-local, it conversely (also) allows retaining the current state of each
+instance even when all readers have acknowledged a sample.</p>
+<p>The index on sequence number is required for retransmitting old data, and is
+therefore needed for all reliable writers. The index on key values is always needed
+for transient-local data, and can optionally be used for other writers using a history
+setting of <tt class="docutils literal"><span class="pre">KEEP_LAST</span></tt> with depth <tt class="docutils literal"><span class="pre">1</span></tt>. (The <tt class="docutils literal"><span class="pre">Internal/AggressiveKeepLast1Whc</span></tt>
+setting controls this behaviour.) The advantage of an index on key value in such
+a case is that superseded samples can be dropped aggressively, instead of having
+to deliver them to all readers; the disadvantage is that it is somewhat more
+resource-intensive.</p>
+<p>Writer throttling is based on the WHC size using a simple bang-bang controller.
+Once the WHC contains <tt class="docutils literal"><span class="pre">Internal/Watermarks/WhcHigh</span></tt> bytes in
+unacknowledged samples, it stalls the writer until the number of bytes in
+unacknowledged samples drops below <tt class="docutils literal"><span class="pre">Internal/Watermarks/WhcLow</span></tt>.</p>
+<p>While ideally only the one writer would be stalled, the interface between the
+OpenSplice kernel and DDSI2 is such that other outgoing traffic may be stalled as
+well. See <a class="reference internal" href="#unresponsive-readers-head-of-stream-blocking">Unresponsive readers &amp; head-of-stream blocking</a>.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/AggressiveKeepLast1Whc</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/Watermarks/WhcHigh</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/Watermarks/WhcLow</span></tt></li>
+</ul>
+</div>
+<div class="section" id="unresponsive-readers-head-of-stream-blocking">
+<span id="id18"></span><h3>7.2.5. Unresponsive readers &amp; head-of-stream blocking<a class="headerlink" href="#unresponsive-readers-head-of-stream-blocking" title="Permalink to this headline">¶</a></h3>
+<p>For reliable communications, DDSI2 must retain sent samples in the WHC until
+they have been acknowledged. Especially in case of a <tt class="docutils literal"><span class="pre">KEEP_ALL</span></tt> history kind, but
+also in the default case when the WHC is not aggressively dropping old samples of
+instances (<tt class="docutils literal"><span class="pre">Internal/AggressiveKeepLast1Whc</span></tt>), a reader that fails to acknowledge
+the samples timely will cause the WHC to run into resource limits.</p>
+<p>The correct treatment suggested by the DDS specification is to simply take the
+writer history QoS setting, apply this to the DDSI2 WHC, and block the writer up to
+its ‘max_blocking_time’ QoS setting. However, the scalable architecture of
+OpenSplice renders this simple approach infeasible because of the division of labour
+between the application processes and the various services. Of course, even if it
+were a possible approach, the problem would still not be gone entirely, as one
+unresponsive (for whatever reason) reader would still be able to prevent the writer
+from making progress and thus prevent the system from making progress if the
+writer is a critical one.</p>
+<p>Because of this, once DDSI2 hits a resource limit on a WHC, it blocks the sequence
+of outgoing samples for up to <tt class="docutils literal"><span class="pre">Internal/ResponsivenessTimeout</span></tt>.
+If this timeout is set larger than roughly the domain expiry time
+(<tt class="docutils literal"><span class="pre">//OpenSplice/Domain/Lease/ExpiryTime</span></tt>), it may cause entire nodes to lose
+liveliness. The enhanced version, DDSI2E, has the ability to use multiple queues
+and can avoid this problem; please refer to <a class="reference internal" href="#channel-configuration">Channel configuration</a>.</p>
+<p>Any readers that fail to acknowledge samples in time will be marked ‘unresponsive’
+and be treated as best-effort readers until they start acknowledging data again.
+Readers that are marked unresponsive by a writer may therefore observe sample
+loss. The ‘sample lost’ status of the data readers can be used to detect this.</p>
+<p>One particular case where this can easily occur is if a reader becomes unreachable,
+for example because a network cable is unplugged. While this will eventually cause
+a lease to expire, allowing the proxy reader to be removed and the writer to no
+longer retain data for it, in the meantime the writer can easily run into a WHC limit.
+This will then cause the writer to mark the reader as unresponsive, and the system
+will continue to operate. The presence of unacknowledged data in a WHC as well as
+the existence of unresponsive readers will force the publication of Heartbeats, and
+so unplugging a network cable will typically induce a stream of Heartbeats from
+some writers.</p>
+<p>Another case where this can occur is with a very fast writer, and a reader on a slow
+host, and with large buffers on both sides: then the time needed by the receiving host
+to process the backlog can become longer than this responsiveness timeout, causing
+the writer to mark the reader as unresponsive, in turn causing the backlog to be
+dropped. This allows the reader catch up, at which point it once again acknowledges
+data promptly and will be considered responsive again, causing a new backlog to
+build up, and so on.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/AggressiveKeepLast1Whc</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/ResponsivenessTimeout</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/Domain/Lease/ExpiryTime</span></tt></li>
+</ul>
+</div>
+<div class="section" id="handling-of-multiple-partitions-and-wildcards">
+<span id="id19"></span><h3>7.2.6. Handling of multiple partitions and wildcards<a class="headerlink" href="#handling-of-multiple-partitions-and-wildcards" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="publishing-in-multiple-partitions">
+<span id="id20"></span><h4>7.2.6.1. Publishing in multiple partitions<a class="headerlink" href="#publishing-in-multiple-partitions" title="Permalink to this headline">¶</a></h4>
+<p>A variety of design choices allow OpenSplice in combination with its
+RTNetworking service to be fully dynamically discovered, yet without requiring an
+expensive discovery protocol. A side effect of these choices is that a DCPS writer
+publishing a single sample in multiple partitions simultaneously will be translated
+by the current version of DDSI2 as a writer publishing multiple identical samples in
+all these partitions, but with unique sequence numbers.</p>
+<p>When DDSI2 is used to communicate between OpenSplice nodes, this is not an
+application-visible issue, but it is visible when interoperating with other
+implementations. Fortunately, publishing in multiple partitions is rarely a wise
+choice in a system design.</p>
+<p>Note that this only concerns publishing in multiple partitions, subscribing in
+multiple partitions works exactly as expected, and is also a far more common
+system design choice.</p>
+</div>
+<div class="section" id="wildcard-partitions">
+<span id="id21"></span><h4>7.2.6.2. Wildcard partitions<a class="headerlink" href="#wildcard-partitions" title="Permalink to this headline">¶</a></h4>
+<p>DDSI2 fully implements publishing and subscribing using partition wildcards, but
+depending on many (deployment time and application design) details, the use of
+partition wildcards for publishing data can easily lead to the replication of data as
+mentioned in the previous subsection (<a class="reference internal" href="#publishing-in-multiple-partitions">Publishing in multiple partitions</a>).</p>
+<p>Secondly, because DDSI2 implements transient-local data internally in a different
+way from the way the OpenSplice durability service does, it is strongly
+recommended that the combination of transient-local data and publishing using
+partition wildcards be avoided completely.</p>
+</div>
+</div>
+</div>
+<div class="section" id="network-and-discovery-configuration">
+<span id="id22"></span><h2>7.3. Network and discovery configuration<a class="headerlink" href="#network-and-discovery-configuration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="networking-interfaces">
+<span id="id23"></span><h3>7.3.1. Networking interfaces<a class="headerlink" href="#networking-interfaces" title="Permalink to this headline">¶</a></h3>
+<p>DDSI2 uses a single network interface, the <em>‘preferred’</em> interface, for transmitting
+its multicast packets and advertises only the address corresponding to this interface
+in the DDSI discovery protocol.</p>
+<p>To determine the default network interface, DDSI2 ranks the eligible interfaces by
+quality, and then selects the interface with the highest quality. If multiple interfaces
+are of the highest quality, it will select the first enumerated one. Eligible interfaces
+are those that are up and have the right kind of address family (IPv4 or IPv6).
+Priority is then determined as follows:</p>
+<ul class="simple">
+<li>interfaces with a non-link-local address are preferred over those with
+a link-local one;</li>
+<li>multicast-capable is preferred, or if none is available</li>
+<li>non-multicast capable but neither point-to-point, or if none is available</li>
+<li>point-to-point, or if none is available</li>
+<li>loopback</li>
+</ul>
+<p>If this procedure doesn’t select the desired interface automatically, it can be
+overridden by setting <tt class="docutils literal"><span class="pre">General/NetworkInterfaceAddress</span></tt> to either the name of the
+interface, the IP address of the host on the desired interface, or the network portion
+of the IP address of the host on the desired interface. An exact match on the address
+is always preferred and is the only option that allows selecting the desired one when
+multiple addresses are tied to a single interface.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+a detailed description of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/NetworkService/General/NetworkInterfaceAddress</span></tt></li>
+</ul>
+<p>The default address family is IPv4, setting General/UseIPv6 will change this to
+IPv6. Currently, DDSI2 does not mix IPv4 and IPv6 addressing. Consequently, all
+DDSI participants in the network must use the same addressing mode. When
+interoperating, this behaviour is the same, <em>i.e.</em> it will look at either IPv4 or IPv6
+addresses in the advertised address information in the SPDP and SEDP discovery
+protocols.</p>
+<p>IPv6 link-local addresses are considered undesirable because they need to be
+published and received <em>via</em> the discovery mechanism, but there is in general no way
+to determine to which interface a received link-local address is related.</p>
+<p>If IPv6 is requested and the preferred interface has a non-link-local address, DDSI2
+will operate in a <em>‘global addressing’</em> mode and will only consider discovered
+non-link-local addresses. In this mode, one can select any set of interface for
+listening to multicasts. Note that this behaviour is essentially identical to that when
+using IPv4, as IPv4 does not have the formal notion of address scopes that IPv6 has.
+If instead only a link-local address is available, DDSI2 will run in a <em>‘link-local
+addressing’</em> mode. In this mode it will accept any address in a discovery packet,
+assuming that a link-local address is valid on the preferred interface. To minimise
+the risk involved in this assumption, it only allows the preferred interface for
+listening to multicasts.</p>
+<p>When a remote participant publishes multiple addresses in its SPDP message (or in
+SEDP messages, for that matter), it will select a single address to use for
+communicating with that participant. The address chosen is the first eligible one on
+the same network as the locally chosen interface, else one that is on a network
+corresponding to any of the other local interfaces, and finally simply the first one.
+Eligibility is determined in the same way as for network interfaces.</p>
+<div class="section" id="multicasting">
+<span id="id24"></span><h4>7.3.1.1. Multicasting<a class="headerlink" href="#multicasting" title="Permalink to this headline">¶</a></h4>
+<p>DDSI2 allows configuring to what extent multicast is to be used:</p>
+<ul class="simple">
+<li>whether to use multicast for data communications,</li>
+<li>whether to use multicast for participant discovery,</li>
+<li>on which interfaces to listen for multicasts.</li>
+</ul>
+<p>It is advised to allow multicasting to be used. However, if there are restrictions on
+the use of multicasting, or if the network reliability is dramatically different for
+multicast than for unicast, it may be attractive to disable multicast for normal
+communications. In this case, setting <tt class="docutils literal"><span class="pre">General/AllowMulticast</span></tt> to <tt class="docutils literal"><span class="pre">false</span></tt> will
+force DDSI2 to use unicast communications for everything except the periodic
+distribution of the participant discovery messages.</p>
+<p>If at all possible, it is strongly advised to leave multicast-based participant
+discovery enabled, because that avoids having to specify a list of nodes to
+contact, and it furthermore reduces the network load considerably. However,
+if need be, one can disable the participant discovery from sending multicasts
+by setting <tt class="docutils literal"><span class="pre">Internal/SuppressSpdpMulticast</span></tt> to <tt class="docutils literal"><span class="pre">true</span></tt>.</p>
+<p>To disable incoming multicasts, or to control from which interfaces multicasts are
+to be accepted, one can use the <tt class="docutils literal"><span class="pre">General/MulticastRecvInterfaceAddresses</span></tt> setting.
+This allows listening on no interface, the preferred, all or a specific set
+of interfaces.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/General/AllowMulticast</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/SuppressSpdpMulticast</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/General/MulticastRecvNetworkInterfaceAddress</span></tt></li>
+</ul>
+</div>
+<div class="section" id="discovery-configuration">
+<span id="id25"></span><h4>7.3.1.2. Discovery configuration<a class="headerlink" href="#discovery-configuration" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="discovery-addresses">
+<span id="id26"></span><h5>7.3.1.2.1. Discovery addresses<a class="headerlink" href="#discovery-addresses" title="Permalink to this headline">¶</a></h5>
+<p>The DDSI discovery protocols, SPDP for the domain participants and SEDP for
+their endpoints, usually operate well without any explicit configuration.
+Indeed, the SEDP protocol never requires any configuration.</p>
+<p>DDSI2 by default uses the domain id as specified in <tt class="docutils literal"><span class="pre">//OpenSplice/Domain/Id</span></tt>
+but allows overriding it for special configurations using
+the <tt class="docutils literal"><span class="pre">Discovery/DomainId</span></tt> setting. The domain id is the basis for all UDP/IP port
+number calculations, which can be tweaked when necessary using the configuration
+settings under Discovery/Ports. It is however rarely necessary to change the
+standardised defaults.</p>
+<p>The SPDP protocol periodically sends, for each domain participant, an SPDP
+sample to a set of addresses, which by default contains just the multicast address,
+which is standardised for IPv4 (<tt class="docutils literal"><span class="pre">239.255.0.1</span></tt>), but not for IPv6 (it uses
+<tt class="docutils literal"><span class="pre">ff02::ffff:239.255.0.1</span></tt>). The actual address can be overridden using the
+<tt class="docutils literal"><span class="pre">Discovery/SPDPMulticastAddress</span></tt> setting, which requires a valid multicast address.</p>
+<p>In addition (or as an alternative) to the multicast-based discovery, any number of
+unicast addresses can be configured as addresses to be contacted by specifying peers
+in the <tt class="docutils literal"><span class="pre">Discovery/Peers</span></tt> section. Each time an
+SPDP message is sent, it is sent to all of these addresses.</p>
+<p>Default behaviour of DDSI2 is to include each IP address several times in the set,
+each time with a different UDP port number (corresponding to another participant
+index), allowing at least several applications to be present on these hosts.</p>
+<p>Obviously, configuring a number of peers in this way causes a large burst of packets
+to be sent each time an SPDP message is sent out, and each local DDSI participant
+causes a burst of its own. Most of the participant indices will not actually be use,
+making this rather wasteful behaviour.</p>
+<p>DDSI2 allows explicitly adding a port number to the IP address, formatted as
+IP:PORT, to avoid this waste, but this requires manually calculating the port
+number. In practice it also requires fixing the participant index using
+<tt class="docutils literal"><span class="pre">Discovery/ParticipantIndex</span></tt> (see the description of ‘PI’ in
+<a class="reference internal" href="#controlling-port-numbers">Controlling port numbers</a>) to ensure that the configured port
+number indeed corresponds to the remote DDSI2 (or other DDSI implementation),
+and therefore is really practicable only in a federated deployment.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/Domain/Id</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Discovery/DomainId</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Discovery/SPDPMulticastAddress</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Discovery/Peers</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Discovery/ParticipantIndex</span></tt></li>
+</ul>
+</div>
+<div class="section" id="asymmetrical-discovery">
+<span id="id27"></span><h5>7.3.1.2.2. Asymmetrical discovery<a class="headerlink" href="#asymmetrical-discovery" title="Permalink to this headline">¶</a></h5>
+<p>On reception of an SPDP packet, DDSI2 adds the addresses advertised in that SPDP
+packet to this set, allowing asymmetrical discovery. In an extreme example, if SPDP
+multicasting is disabled entirely, host A has the address of host B in its peer list
+and host B has an empty peer list, then B will eventually discover A because of an
+SPDP message sent by A, at which point it adds A’s address to its own set and starts
+sending its own SPDP message to A, allowing A to discover B. This takes a bit
+longer than normal multicast based discovery, though.</p>
+</div>
+<div class="section" id="timing-of-spdp-packets">
+<span id="id28"></span><h5>7.3.1.2.3. Timing of SPDP packets<a class="headerlink" href="#timing-of-spdp-packets" title="Permalink to this headline">¶</a></h5>
+<p>The interval with which the SPDP packets are transmitted is configurable as well,
+using the Discovery/SPDPInterval setting. A longer interval reduces the network
+load, but also increases the time discovery takes, especially in the face of temporary
+network disconnections.</p>
+</div>
+<div class="section" id="endpoint-discovery">
+<span id="id29"></span><h5>7.3.1.2.4. Endpoint discovery<a class="headerlink" href="#endpoint-discovery" title="Permalink to this headline">¶</a></h5>
+<p>Although the SEDP protocol never requires any configuration, the network
+partitioning of OpenSplice DDSI2E does interact with it: so-called ‘ignored
+partitions’ can be used to instruct DDSI2 to completely ignore certain DCPS topic
+and partition combinations, which will prevent DDSI2 from forwarding data for
+these topic/partition combinations to and from the network.</p>
+<p>While it is rarely necessary, it is worth mentioning that by overriding the domain id
+used by DDSI in conjunction with ignored partitions and unique SPDP multicast
+addresses allows partitioning the data and giving each partition its own instance of
+DDSI2.</p>
+</div>
+</div>
+</div>
+<div class="section" id="combining-multiple-participants">
+<span id="id30"></span><h3>7.3.2. Combining multiple participants<a class="headerlink" href="#combining-multiple-participants" title="Permalink to this headline">¶</a></h3>
+<p>In an OpenSplice standalone deployment the various configured services, such as
+spliced and DDSI2, still retain their identity by creating their own DCPS domain
+participants. DDSI2 faithfully mirrors all these participants in DDSI, and it will
+appear at the DDSI level as if there is a large system with many participants,
+whereas in reality there are only a few application participants.</p>
+<p>The <tt class="docutils literal"><span class="pre">Internal/SquashParticipants</span></tt> option can be used to simulate the existence
+of only one participant, the DDSI2 service itself, which owns all endpoints on
+that node. This reduces the background messages because far fewer liveliness
+assertions need to be sent.</p>
+<p>Clearly, the liveliness monitoring features that are related to domain participants
+will be affected if multiple DCPS domain participants are combined into a single
+DDSI domain participant. The OpenSplice services all use a liveliness QoS setting
+of AUTOMATIC, which works fine.</p>
+<p>In a federated deployment, the effect of this option is to have only a single DDSI
+domain participant per node. This is of course much more scalable, but in no way
+resembles the actual structure of the system if there are in fact multiple application
+processes running on that node.</p>
+<p>However, in OpenSplice the built-in topics are not derived from the DDSI
+discovery, and hence in an OpenSplice-only network the use of the
+<tt class="docutils literal"><span class="pre">Internal/SquashParticipants</span></tt> setting will not result in any loss of information
+in the DCPS API or in the OpenSplice tools such as the Tester.</p>
+<p>When interoperability with another vendor is not needed, enabling the
+<tt class="docutils literal"><span class="pre">SquashParticipants</span></tt> option is often a good choice.</p>
+<p>Please refer to the <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+a detailed description of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/SquashParticipants</span></tt></li>
+</ul>
+</div>
+<div class="section" id="controlling-port-numbers">
+<span id="id31"></span><h3>7.3.3. Controlling port numbers<a class="headerlink" href="#controlling-port-numbers" title="Permalink to this headline">¶</a></h3>
+<p>The port numbers used by DDSI2 are determined as follows, where the first two
+items are given by the DDSI specification and the third is unique to DDSI2 as a way
+of serving multiple participants by a single DDSI instance:</p>
+<ul class="simple">
+<li>2 ‘well-known’ multicast ports: <tt class="docutils literal"><span class="pre">B</span></tt> and <tt class="docutils literal"><span class="pre">B+1</span></tt></li>
+<li>2 unicast ports at which only this instance of DDSI2 is listening:
+<tt class="docutils literal"><span class="pre">B+PG*PI+10</span></tt> and <tt class="docutils literal"><span class="pre">B+PG*PI+11</span></tt></li>
+<li>1 unicast port per domain participant it serves, chosen by the kernel
+from the anonymous ports, <em>i.e.</em> &gt;= 32768</li>
+</ul>
+<p>where:</p>
+<ul class="simple">
+<li><em>B</em> is <tt class="docutils literal"><span class="pre">Discovery/Ports/Base</span></tt> (<tt class="docutils literal"><span class="pre">7400</span></tt>) + <tt class="docutils literal"><span class="pre">Discovery/Ports/DomainGain</span></tt>
+(<tt class="docutils literal"><span class="pre">250</span></tt>) * <tt class="docutils literal"><span class="pre">Domain/Id</span></tt></li>
+<li><em>PG</em> is <tt class="docutils literal"><span class="pre">Discovery/Ports/ParticipantGain</span></tt> (<tt class="docutils literal"><span class="pre">2</span></tt>)</li>
+<li><em>PI</em> is <tt class="docutils literal"><span class="pre">Discovery/ParticipantIndex</span></tt></li>
+</ul>
+<p>The default values, taken from the DDSI specification, are in parentheses. There are
+actually even more parameters, here simply turned into constants as there is
+absolutely no point in ever changing these values; however, they <em>are</em> configurable
+and the interested reader is referred to the DDSI 2.1 specification, section 9.6.1.</p>
+<p>PI is the most interesting, as it relates to having multiple instances of DDSI2 in the
+same domain on a single node. In a federated deployment, this never happens
+(exceptional cases excluded). Its configured value is either <em>‘auto’</em>, <em>‘none’</em> or a
+non-negative integer. This setting matters:</p>
+<ul class="simple">
+<li>When it is <em>‘auto’</em> (which is the default), DDSI2 probes UDP port numbers on
+start-up, starting with PI = 0, incrementing it by one each time until it finds a pair
+of available port numbers, or it hits the limit. The maximum PI it will ever choose
+is currently still hard-coded at 9 as a way of limiting the cost of unicast discovery.
+(It is recognised that this limit can cause issues in a standalone deployment.)</li>
+<li>When it is <em>‘none’</em> it simply ignores the ‘participant index’ altogether and asks the
+kernel to pick two random ports (&gt;= 32768). This eliminates the limit on the
+number of standalone deployments on a single machine and works just fine with
+multicast discovery while complying with all other parts of the specification for
+interoperability. However, it is incompatible with unicast discovery.</li>
+<li>When it is a non-negative integer, it is simply the value of PI in the above
+calculations. If multiple instances of DDSI2 on a single machine are needed, they
+will need unique values for PI, and so for standalone deployments this particular
+alternative is hardly useful.</li>
+</ul>
+<p>Clearly, to fully control port numbers, setting <tt class="docutils literal"><span class="pre">Discovery/ParticipantIndex</span></tt> (= PI)
+to a hard-coded value is the only possibility. In a federated deployment this is an
+option that has very few downsides, and generally <tt class="docutils literal"><span class="pre">0</span></tt> will be a good choice.</p>
+<p>By fixing PI, the port numbers needed for unicast discovery are fixed as well. This
+allows listing peers as IP:PORT pairs, significantly reducing traffic, as explained in
+the preceding subsection.</p>
+<p>The other non-fixed ports that are used are the per-domain participant ports, the
+third item in the list. These are used only because there exist some DDSI
+implementations that assume each domain participant advertises a unique port
+number as part of the discovery protocol, and hence that there is never any need for
+including an explicit destination participant id when intending to address a single
+domain participant by using its unicast locator. DDSI2 never makes this assumption,
+instead opting to send a few bytes extra to ensure the contents of a message are all
+that is needed. With other implementations, you will need to check.</p>
+<p>If all DDSI implementations in the network include full addressing information in
+the messages, like DDSI2, then the per-domain participant ports serve no purpose at
+all. The default <tt class="docutils literal"><span class="pre">false</span></tt> setting of <tt class="docutils literal"><span class="pre">Compatibility/ManySocketsMode</span></tt> disables the
+creation of these ports.</p>
+<p>This setting has a few other side benefits as well, as there will generally be more
+participants using the same unicast locator, improving the chances for requiring but
+a single unicast even when addressing a multiple participants in a node. The obvious
+case where this is beneficial is when one host has not received a multicast.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Discovery/Ports/Base</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Discovery/Ports/DomainGain</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Discovery/Ports/ParticipantGain</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Discovery/ParticipantIndex</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Compatibility/ManySocketsMode</span></tt></li>
+</ul>
+</div>
+<div class="section" id="coexistence-with-opensplice-rtnetworking">
+<span id="id32"></span><h3>7.3.4. Coexistence with OpenSplice RTNetworking<a class="headerlink" href="#coexistence-with-opensplice-rtnetworking" title="Permalink to this headline">¶</a></h3>
+<p>DDSI2 has a special mode, configured using <tt class="docutils literal"><span class="pre">General/CoexistWithNativeNetworking</span></tt>,
+to allow it to operate in conjunction with OpenSplice RTNetworking: in this mode
+DDSI2 only handles packets sent by other vendors’ implementations, allowing all
+intra-OpenSplice traffic to be handled by the RTNetworking service while still
+providing interoperability with other vendors.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+a detailed description of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/General/CoexistWithNativeNetworking</span></tt></li>
+</ul>
+</div>
+</div>
+<div class="section" id="data-path-configuration">
+<span id="id33"></span><h2>7.4. Data path configuration<a class="headerlink" href="#data-path-configuration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="data-path-architecture">
+<span id="id34"></span><h3>7.4.1. Data path architecture<a class="headerlink" href="#data-path-architecture" title="Permalink to this headline">¶</a></h3>
+<p>The data path in DDSI2 consists of a transmitting and a receiving side. The main
+path in the transmit side accepts data to be transmitted from the OpenSplice kernel
+<em>via</em> a network queue and administrates and formats the data for transmission over
+the network.</p>
+<p>The secondary path handles asynchronous events such as the periodic generation of
+writer Heartbeats and the transmitting of acknowledgement messages from readers
+to writers, in addition to handling the retransmission of old data on request. These
+requests can originate in packet loss, but also in requests for historical data from
+transient-local readers.</p>
+<p>The diagram <a class="reference internal" href="#data-flow-using-two-channels">Data flow using two channels</a> gives an overview of the main data
+flow and the threads in a configuration using two channels. Configuring multiple
+channels is an enhanced feature that is available only in DDSI2E, but the
+principle is the same in both variants.</p>
+<p class="centered" id="data-flow-using-two-channels">
+<strong><strong>Data flow using two channels</strong></strong></p><a class="reference internal image-reference" href="_images/DDSI2_DataFlow2channels.png"><img alt="Data flow using two channels" class="align-center" src="_images/DDSI2_DataFlow2channels.png" style="width: 150mm;" /></a>
+</div>
+<div class="section" id="transmit-side-configuration">
+<span id="id35"></span><h3>7.4.2. Transmit-side configuration<a class="headerlink" href="#transmit-side-configuration" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="transmit-processing">
+<span id="id36"></span><h4>7.4.2.1. Transmit processing<a class="headerlink" href="#transmit-processing" title="Permalink to this headline">¶</a></h4>
+<p>DDSI2E divides the outgoing data stream into prioritised channels. These channels
+are handled completely independently, effectively allowing mapping DDS transport
+priorities to operating system thread priorities. Although the ability to define
+multiple channels is limited to DDSI2E, DDSI2 uses the same mechanisms but is
+restricted to what in DDSI2E is the default channel if none are configured explicitly.
+For details on configuring channels, see <a class="reference internal" href="#channel-configuration">Channel configuration</a>.</p>
+<p>Each channel has its own transmit thread, draining a queue with samples to be
+transmitted from the OpenSplice kernel. The maximum size of the queue can be
+configured per channel, and the default for the individual channels is configured
+using the <tt class="docutils literal"><span class="pre">Sizing/NetworkQueueSize</span></tt> setting. In DDSI2, this setting simply controls
+the queue size, as the default channel of DDSI2E has the default queue size. A larger
+queue size increases the potential latency and (shared) memory requirements, but
+improves the possibilities for smoothing out traffic if the applications publish it in
+bursts.</p>
+<p>Once a networking service has taken a sample from the queue, it takes responsibility
+for it. Consequently, if it is to be sent reliably and there are insufficient resources to
+store it in the WHC, it must wait for resources to become available.
+See <a class="reference internal" href="#unresponsive-readers-head-of-stream-blocking">Unresponsive readers &amp; head-of-stream blocking</a>.</p>
+<p>The DDSI control messages (Heartbeat, AckNack, <em>etc.</em>) are sent by a thread
+dedicated to handling timed events and asynchronous transmissions, including
+retransmissions of samples on request of a reader. This thread is known as the
+‘timed-event thread’ and there is at least one such thread, but each channel can have
+its own one.</p>
+<p>DDSI2E can also perform traffic shaping and bandwidth limiting, configurable per
+channel, and with independent limits for data on the one hand and control and
+retransmissions on the other hand.</p>
+</div>
+<div class="section" id="retransmit-merging">
+<span id="id37"></span><h4>7.4.2.2. Retransmit merging<a class="headerlink" href="#retransmit-merging" title="Permalink to this headline">¶</a></h4>
+<p>A remote reader can request retransmissions whenever it receives a Heartbeat and
+detects samples are missing. If a sample was lost on the network for many or all
+readers, the next heartbeat is likely to trigger a ‘storm’ of retransmission requests.
+Thus, the writer should attempt merging these requests into a multicast
+retransmission, to avoid retransmitting the same sample over &amp; over again to many
+different readers. Similarly, while readers should try to avoid requesting
+retransmissions too often, in an interoperable system the writers should be robust
+against it.</p>
+<p>In DDSI2, upon receiving a Heartbeat that indicates samples are missing, a reader
+will schedule a retransmission request to be sent after <tt class="docutils literal"><span class="pre">Internal/NackDelay</span></tt>,
+or combine it with an already scheduled request if possible. Any samples received
+in between receipt of the Heartbeat and the sending of the AckNack will not need
+to be retransmitted.</p>
+<p>Secondly, a writer attempts to combine retransmit requests in two different ways.
+The first is to change messages from unicast to multicast when another retransmit
+request arrives while the retransmit has not yet taken place. This is particularly
+effective when bandwidth limiting causes a backlog of samples to be retransmitted.
+The behaviour of the second can be configured using the <tt class="docutils literal"><span class="pre">Internal/RetransmitMerging</span></tt>
+setting. Based on this setting, a retransmit request for a sample is either honoured
+unconditionally, or it may be suppressed (or ‘merged’) if it comes in shortly after
+a multicasted retransmission of that very sample, on the assumption that the second
+reader will likely receive the retransmit, too. The <tt class="docutils literal"><span class="pre">Internal/RetransmitMergingPeriod</span></tt>
+controls the length of this time window.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/NackDelay</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/RetransmitMerging</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/RetransmitMergingPeriod</span></tt></li>
+</ul>
+</div>
+<div class="section" id="retransmit-backlogs">
+<span id="id38"></span><h4>7.4.2.3. Retransmit backlogs<a class="headerlink" href="#retransmit-backlogs" title="Permalink to this headline">¶</a></h4>
+<p>Another issue is that a reader can request retransmission of many samples at once.
+When the writer simply queues all these samples for retransmission, it may well
+result in a huge backlog of samples to be retransmitted. As a result, the ones near the
+end of the queue may be delayed by so much that the reader issues another
+retransmit request. DDSI2E provides bandwidth limiting, which makes the situation
+even worse, as it can significantly increase the time it takes for a sample to be sent
+out once it has been queued for retransmission.</p>
+<p>Therefore, DDSI2 limits the number of samples queued for retransmission and
+ignores (those parts of) retransmission requests that would cause the retransmit
+queue to contain too many samples or take too much time to process. There are two
+settings governing the size of these queues, and the limits are applied per
+timed-event thread (<em>i.e.</em> the global one, and typically one for each configured
+channel with limited bandwidth when using DDSI2E). The first is
+<tt class="docutils literal"><span class="pre">Internal/MaxQueuedRexmitMessages</span></tt>, which limits the number of retransmit
+messages, the second <tt class="docutils literal"><span class="pre">Internal/MaxQueuedRexmitBytes</span></tt> which limits the number of
+bytes. The latter is automatically set based on the combination
+of the allowed transmit bandwidth and the <tt class="docutils literal"><span class="pre">Internal/NackDelay</span></tt> setting, as an
+approximation of the likely time until the next potential retransmit request
+from the reader.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/MaxQueuedRexmitMessages</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/MaxQueuedRexmitBytes</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/NackDelay</span></tt></li>
+</ul>
+</div>
+<div class="section" id="controlling-fragmentation">
+<span id="id39"></span><h4>7.4.2.4. Controlling fragmentation<a class="headerlink" href="#controlling-fragmentation" title="Permalink to this headline">¶</a></h4>
+<p>Samples in DDS can be arbitrarily large, and will not always fit within a single
+datagram. DDSI has facilities to fragment samples so they can fit in UDP
+datagrams, and similarly IP has facilities to fragment UDP datagrams to into
+network packets. The DDSI specification states that one must not unnecessarily
+fragment at the DDSI level, but DDSI2 simply provides a fully configurable
+behaviour.</p>
+<p>If the serialised form of a sample is at least <tt class="docutils literal"><span class="pre">Internal/FragmentSize</span></tt>,
+it will be fragmented using the DDSI fragmentation. All but the last fragment
+will be exactly this size; the last one may be smaller.</p>
+<p>Control messages, non-fragmented samples, and sample fragments are all subject to
+packing into datagrams before sending it out on the network, based on various
+attributes such as the destination address, to reduce the number of network packets.
+This packing allows datagram payloads of up to <tt class="docutils literal"><span class="pre">Internal/MaxMessageSize</span></tt>,
+overshooting this size if the set maximum is too small to contain what must be
+sent as a single unit. Note that in this case, there is a real problem anyway,
+and it no longer matters where the data is rejected, if it is
+rejected at all. UDP/IP header sizes are not taken into account in this maximum
+message size.</p>
+<p>The IP layer then takes this UDP datagram, possibly fragmenting it into multiple
+packets to stay within the maximum size the underlying network supports. A
+trade-off to be made is that while DDSI fragments can be retransmitted individually,
+the processing overhead of DDSI fragmentation is larger than that of UDP
+fragmentation.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/FragmentSize</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/MaxMessageSize</span></tt></li>
+</ul>
+</div>
+</div>
+<div class="section" id="receive-side-configuration">
+<span id="id40"></span><h3>7.4.3. Receive-side configuration<a class="headerlink" href="#receive-side-configuration" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="receive-processing">
+<span id="id41"></span><h4>7.4.3.1. Receive processing<a class="headerlink" href="#receive-processing" title="Permalink to this headline">¶</a></h4>
+<p>Receiving of data is split into multiple threads, as also depicted in the overall
+DDSI2 data path diagram <a class="reference internal" href="#data-flow-using-two-channels">Data flow using two channels</a>:</p>
+<ul class="simple">
+<li>A single receive thread responsible for retrieving network packets and running
+the protocol state machine;</li>
+<li>A delivery thread dedicated to processing DDSI built-in data: participant
+discovery, endpoint discovery and liveliness assertions;</li>
+<li>One or more delivery threads dedicated to the handling of application data:
+deserialisation and delivery to the DCPS data reader caches.</li>
+</ul>
+<p>The receive thread is responsible for retrieving all incoming network packets,
+running the protocol state machine, which involves scheduling of AckNack and
+Heartbeat messages and queueing of samples that must be retransmitted, and for
+defragmenting and ordering incoming samples.</p>
+<p>For a specific proxy writer—the local manifestation of a remote DDSI data writer—
+with a number of data readers, the organisation is as shown in
+the diagram <a class="reference internal" href="#proxy-writer-with-multiple-data-readers">Proxy writer with multiple data readers</a>.</p>
+<p class="centered" id="proxy-writer-with-multiple-data-readers">
+<strong><strong>Proxy writer with multiple data readers</strong></strong></p><a class="reference internal image-reference" href="_images/DDSI2_RemoteDataWriter.png"><img alt="Proxy writer with multiple data readers" class="align-center" src="_images/DDSI2_RemoteDataWriter.png" style="width: 150mm;" /></a>
+<p>Fragmented data first enters the defragmentation stage, which is per proxy writer.
+The number of samples that can be defragmented simultaneously is limited, for
+reliable data to <tt class="docutils literal"><span class="pre">Internal/DefragReliableMaxSamples</span></tt>
+and for unreliable data to <tt class="docutils literal"><span class="pre">Internal/DefragUnreliableMaxSamples</span></tt>.</p>
+<p>Samples (defragmented if necessary) received out of sequence are buffered,
+primarily per proxy writer, but, secondarily, per reader catching up on historical
+(transient-local) data. The size of the first is limited to
+<tt class="docutils literal"><span class="pre">Internal/PrimaryReorderMaxSamples</span></tt>, the size of the second to
+<tt class="docutils literal"><span class="pre">Internal/SecondaryReorderMaxSamples</span></tt>.</p>
+<p>In between the receive thread and the delivery threads sit queues, of which the
+maximum size is controlled by the <tt class="docutils literal"><span class="pre">Internal/DeliveryQueueMaxSamples</span></tt>
+setting. Generally there is no need for these queues to be very large, their
+primary function is to smooth out the processing when batches of samples become
+available at once, for example following a retransmission.</p>
+<p>When any of these receive buffers hit their size limit, DDSI2 will drop incoming
+(fragments of) samples and/or buffered (fragments of) samples to ensure the receive
+thread can continue to make progress. Such dropped samples will eventually be
+retransmitted.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/DefragReliableMaxSamples</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/DefragUnreliableMaxSamples</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/PrimaryReorderMaxSamples</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/SecondaryReorderMaxSamples</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/DeliveryQueueMaxSamples</span></tt></li>
+</ul>
+</div>
+<div class="section" id="minimising-receive-latency">
+<span id="id42"></span><h4>7.4.3.2. Minimising receive latency<a class="headerlink" href="#minimising-receive-latency" title="Permalink to this headline">¶</a></h4>
+<p>In low-latency environments, a few microseconds can be gained by processing the
+application data directly in the receive thread, or synchronously with respect to the
+incoming network traffic, instead of queueing it for asynchronous processing by a
+delivery thread. This happens for data transmitted with the <em>max_latency</em> QoS setting
+at most a configurable value and the <em>transport_priority</em> QoS setting at least a
+configurable value. By default, these values are <tt class="docutils literal"><span class="pre">0</span></tt> and the maximum transport
+priority, effectively disabling synchronous delivery for all but the most important
+and urgent data.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/SynchronousDeliveryLatencyBound</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/SynchronousDeliveryPriorityThreshold</span></tt></li>
+</ul>
+</div>
+</div>
+<div class="section" id="direction-independent-settings">
+<span id="id43"></span><h3>7.4.4. Direction-independent settings<a class="headerlink" href="#direction-independent-settings" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="maximum-sample-size">
+<span id="id44"></span><h4>7.4.4.1. Maximum sample size<a class="headerlink" href="#maximum-sample-size" title="Permalink to this headline">¶</a></h4>
+<p>DDSI2 provides a setting, <tt class="docutils literal"><span class="pre">Internal/MaxSampleSize</span></tt>, to control the maximum size
+of samples that the service is willing to process. The size is the size of
+the (CDR) serialised payload, and the limit holds both for built-in data and for
+application data. The (CDR) serialised payload is never larger than the in-memory
+representation of the data.</p>
+<p>On the transmitting side, samples larger than <tt class="docutils literal"><span class="pre">MaxSampleSize</span></tt> are dropped with a
+warning in the OpenSplice info log. DDSI2 behaves as if the sample never existed.
+The current structure of the interface between the OpenSplice kernel and the
+OpenSplice networking services unfortunately prevents DDSI2 from properly
+reporting this back to the application that wrote the sample, so the only guaranteed
+way of detecting the dropping of the sample is by checking the info log.</p>
+<p>Similarly, on the receiving side, samples large than <tt class="docutils literal"><span class="pre">MaxSampleSize</span></tt> are dropped,
+and this is done as early as possible, immediately following the reception of a
+sample or fragment of one, to prevent any resources from being claimed for longer
+than strictly necessary. Where the transmitting side completely ignores the sample,
+on the receiving side DDSI2 pretends the sample has been correctly received and, at
+the DDSI2 level, acknowledges reception to the writer when asked. This allows
+communication to continue.</p>
+<p>When the receiving side drops a sample, readers will get a <em>‘sample lost’</em> notification
+at the next sample that does get delivered to those readers. This condition means that
+again checking the info log is ultimately the only truly reliable way of determining
+whether samples have been dropped or not.</p>
+<p>While dropping samples (or fragments thereof) as early as possible is beneficial
+from the point of view of reducing resource usage, it can make it hard to decide
+whether or not dropping a particular sample has been recorded in the log already.
+Under normal operational circumstances, DDSI2 will report a single event for each
+sample dropped, but it may on occasion report multiple events for the same sample.</p>
+<p>Finally, it is technically allowed to set <tt class="docutils literal"><span class="pre">MaxSampleSize</span></tt> to very small sizes,
+even to the point that the discovery data can’t be communicated anymore.
+The dropping of the discovery data will be duly reported, but the usefulness
+of such a configuration seems doubtful.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+a detailed description of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Internal/MaxSampleSize</span></tt></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="ddsi2e-enhanced-features">
+<span id="id45"></span><h2>7.5. DDSI2E Enhanced features<a class="headerlink" href="#ddsi2e-enhanced-features" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="introduction-to-ddsi2e">
+<span id="id46"></span><h3>7.5.1. Introduction to DDSI2E<a class="headerlink" href="#introduction-to-ddsi2e" title="Permalink to this headline">¶</a></h3>
+<p>DDSI2E is an enhanced version of the DDSI2 service, adding three major features:</p>
+<ul class="simple">
+<li>Channels: parallel processing of independent data stream, with prioritisation
+based on the transport priority setting of the data writers, and supporting
+traffic-shaping of outgoing data;</li>
+<li>Network partitions: use of special multicast addresses for some partition-topic
+combinations as well as allowing ignoring data; and</li>
+<li>Encryption: encrypting all traffic for a certain network partition.
+This section provides details on the configuration of these three features.</li>
+</ul>
+</div>
+<div class="section" id="channel-configuration">
+<span id="id47"></span><h3>7.5.2. Channel configuration<a class="headerlink" href="#channel-configuration" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="channel-configuration-overview">
+<span id="id48"></span><h4>7.5.2.1. Channel configuration overview<a class="headerlink" href="#channel-configuration-overview" title="Permalink to this headline">¶</a></h4>
+<p>DDSI2E allows defining <em>channels</em>, which are independent data paths within the
+DDSI service. OpenSplice chooses a channel based by matching the transport
+priority QoS setting of the data writer with the threshold specified for the various
+channels. Because each channel has a set of dedicated threads to perform the
+processing and the thread priorities can all be configured, it is straightforward to
+guarantee that samples from high-priority data writers will get precedence over
+those from low-priority data throughout the service stack.</p>
+<p>A second aspect to the use of channels is that the head-of-line blocking mentioned
+in <a class="reference internal" href="#unresponsive-readers-head-of-stream-blocking">Unresponsive readers &amp; head-of-stream blocking</a>.
+Unresponsive readers &amp; head-of-stream blocking is <em>per channel</em>, guaranteeing that a
+high-priority channel will not be disrupted by an unresponsive reader of low-priority
+data.</p>
+<p>The channel-specific threads perform essentially all processing (serialisation, writer
+history cache management, deserialisation, delivery to DCPS data readers, <em>etc.</em>), but
+there still is one shared thread involved. This is the receive thread (‘recv’) that
+demultiplexes incoming packets and implements the protocol state machine. The
+receive thread only performs minimal work on each incoming packet, and never has
+to wait for the processing of user data.</p>
+<p>The existence of the receive thread is the only major difference between DDSI2E
+channels and those of the OpenSplice RTNetworking service: in the RTNetworking
+service, each thread is truly independent. This change is the consequence of
+DDSI2E interoperating with implementations that are not aware of channels and
+with DDSI2E nodes that have differently configured channels, unlike the
+RTNetworking service where all nodes must use exactly the same channel
+definitions.</p>
+<p>When configuring multiple channels, it is recommended to set the CPU priority of
+the receive thread to at least that of the threads of the highest priority channel,
+to ensure the receive thread will be scheduled in promptly.</p>
+<p>If no channels are defined explicitly, a single, default channel is used. In DDSI2
+(rather than DDSI2E), the processing is as if only this default channel exists.</p>
+</div>
+<div class="section" id="transmit-side">
+<span id="id49"></span><h4>7.5.2.2. Transmit side<a class="headerlink" href="#transmit-side" title="Permalink to this headline">¶</a></h4>
+<p>For each discovered local data writer, DDSI2E determines the channel to use. This
+is the channel with the lowest threshold priority of all channels that have a threshold
+priority that is higher than the writer’s transport priority. If there is no such channel,
+<em>i.e.</em> the writer has a transport priority higher than the highest channel threshold, the
+channel with the highest threshold is used.</p>
+<p>Each channel has its own network queue into which the OpenSplice kernel writes
+samples to be transmitted and that DDSI2E reads. The size of this queue can be set
+for each channel independently by using <tt class="docutils literal"><span class="pre">Channels/Channel/QueueSize</span></tt>, with the
+default taken from the global <tt class="docutils literal"><span class="pre">Sizing/NetworkQueueSize</span></tt>.</p>
+<p>Bandwidth limiting and traffic shaping are configured per channel as well. The
+following parameters are configurable:</p>
+<ul class="simple">
+<li>bandwidth limit</li>
+<li>auxiliary bandwidth limit</li>
+<li>IP QoS settings</li>
+</ul>
+<p>The traffic shaping is based on a <a href="#id50"><span class="problematic" id="id51">`</span></a>leaky bucket’ algorithm: transmit credits are added
+at a constant rate, the total transmit credit is capped, and each outgoing packet
+reduces the available transmit credit. Outgoing packets must wait until enough
+transmit credits are available.</p>
+<p>Each channel has two separate credits: data and auxiliary. The data credit is used
+strictly for transmitting fresh data (<em>i.e.</em> directly corresponding to writes, disposes,
+<em>etc.</em>) and control messages directly caused by transmitting that data. This credit is
+configured using the <tt class="docutils literal"><span class="pre">Channels/Channel/DataBandwidthLimit</span></tt> setting. By default, a
+channel is treated as if it has infinite data credit, disabling traffic shaping.</p>
+<p>The auxiliary credit is used for everything else: asynchronous control data &amp;
+retransmissions, and is configured using the
+<tt class="docutils literal"><span class="pre">Channels/Channel/AuxiliaryBandwidthLimit</span></tt> setting.</p>
+<p>When an auxiliary bandwidth limit has been set explicitly, or when one explicitly
+sets, <em>e.g.</em> a thread priority for a thread named ‘tev.channel-name’, an independent
+event thread handles the generation of auxiliary data for that channel. But if neither
+is given, the global event thread instead handles all auxiliary data for the channel.</p>
+<p>The global event thread has an auxiliary credit of its own, configured using
+<tt class="docutils literal"><span class="pre">Internal/AuxiliaryBandwidthLimit</span></tt>. This credit applies to all discovery-related
+traffic, as well as to all auxiliary data generated by channels without their own
+event thread.</p>
+<p>Generally, it is best to simply specify both the data and the auxiliary bandwidth for
+each channel separately, and set <tt class="docutils literal"><span class="pre">Internal/AuxiliaryBandwidthLimit</span></tt>
+to limit the network bandwidth the discovery &amp; liveliness protocols can consume.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2EService/Channels/Channel/QueueSize</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Sizing/NetworkQueueSize</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2EService/Channels/Channel/DataBandwidthLimit</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2EService/Channels/Channel/AuxiliaryBandwidthLimit</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2EService/Internal/AuxiliaryBandwidthLimit</span></tt></li>
+</ul>
+</div>
+<div class="section" id="receive-side">
+<span id="id52"></span><h4>7.5.2.3. Receive side<a class="headerlink" href="#receive-side" title="Permalink to this headline">¶</a></h4>
+<p>On the receive side, the single receive thread accepts incoming data and runs the
+protocol state machine. Data ready for delivery to the local data readers is queued on
+the delivery queue for the channel that best matches the proxy writer that wrote the
+data, according to the same criterion used for selecting the outgoing channel for the
+data writer.</p>
+<p>The delivery queue is emptied by the delivery thread, ‘dq.channel-name’, which
+deserialises the data and updates the data readers. Because each channel has its own
+delivery thread with its own scheduling priority, once the data leaves the receive
+thread and is enqueued for the delivery thread, higher priority data once again takes
+precedence over lower priority data.</p>
+</div>
+<div class="section" id="discovery-traffic">
+<span id="id53"></span><h4>7.5.2.4. Discovery traffic<a class="headerlink" href="#discovery-traffic" title="Permalink to this headline">¶</a></h4>
+<p>DDSI discovery data is always transmitted by the global timed-event thread (‘tev’),
+and always processed by the special delivery thread for DDSI built-in data
+(‘dq.builtin’). By explicitly creating a timed-event thread, one effectively separates
+application data from all discovery data. One way of creating such a thread is by
+setting properties for it (see <a class="reference internal" href="#thread-configuration">Thread configuration</a>),
+another is by setting a bandwidth limit on the auxiliary data of the channel
+(see <a class="reference internal" href="#transmit-side">Transmit side</a>).</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+a detailed description of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2EService/Channels/Channel/AuxiliaryBandwidthLimit</span></tt>.)</li>
+</ul>
+</div>
+<div class="section" id="on-interoperability">
+<span id="id54"></span><h4>7.5.2.5. On interoperability<a class="headerlink" href="#on-interoperability" title="Permalink to this headline">¶</a></h4>
+<p>DDSI2E channels are fully compliant with the wire protocol. One can mix &amp; match
+DDSI2E with different sets of channels and with other vendors’ implementation.</p>
+</div>
+</div>
+<div class="section" id="network-partition-configuration">
+<span id="id55"></span><h3>7.5.3. Network partition configuration<a class="headerlink" href="#network-partition-configuration" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="network-partition-configuration-overview">
+<span id="id56"></span><h4>7.5.3.1. Network partition configuration overview<a class="headerlink" href="#network-partition-configuration-overview" title="Permalink to this headline">¶</a></h4>
+<p>Network partitions introduce alternative multicast addresses for data. In the DDSI
+discovery protocol, a reader can override the default address at which it is reachable,
+and this feature of the discovery protocol is used to advertise alternative multicast
+addresses. The DDSI writers in the network will (also) multicast to such an
+alternative multicast address when multicasting samples or control data.</p>
+<p>The mapping of a DCPS data reader to a network partition is indirect: DDSI2E first
+matches the DCPS data reader partitions and topic against a table of <em>‘partition
+mappings’</em>, partition/topic combinations to obtain the name of a network partition,
+then looks up the network partition. This makes it easier to map many different
+partition/topic combinations to the same multicast address without having to specify
+the actual multicast address many times over.</p>
+<p>If no match is found, DDSI2E automatically defaults to standardised DDSI
+multicast address.</p>
+</div>
+<div class="section" id="matching-rules">
+<span id="id57"></span><h4>7.5.3.2. Matching rules<a class="headerlink" href="#matching-rules" title="Permalink to this headline">¶</a></h4>
+<p>Matching of a DCPS partition/topic combination proceeds in the order in which the
+partition mappings are specified in the configuration. The first matching mapping is
+the one that will be used. The <tt class="docutils literal"><span class="pre">*</span></tt> and <tt class="docutils literal"><span class="pre">?</span></tt> wildcards are available for
+the DCPS partition/topic combination in the partition mapping.</p>
+<p>As mentioned earlier (see <a class="reference internal" href="#local-discovery-and-built-in-topics">Local discovery and built-in topics</a>),
+DDSI2E can be instructed to ignore all DCPS data readers and writers for
+certain DCPS partition/topic combinations through the use of <em>‘IgnoredPartitions’</em>.
+The ignored partitions use the same matching rules as normal mappings, and take
+precedence over the normal mappings.</p>
+</div>
+<div class="section" id="multiple-matching-mappings">
+<span id="id58"></span><h4>7.5.3.3. Multiple matching mappings<a class="headerlink" href="#multiple-matching-mappings" title="Permalink to this headline">¶</a></h4>
+<p>A single DCPS data reader can be associated with a set of partitions, and each
+partition/topic combination can potentially map to a different network partitions. In
+this case, DDSI2E will use the first matching network partition. This does not affect
+what data the reader will receive; it only affects the addressing on the network.</p>
+</div>
+<div class="section" id="id59">
+<span id="id60"></span><h4>7.5.3.4. On interoperability<a class="headerlink" href="#id59" title="Permalink to this headline">¶</a></h4>
+<p>DDSI2E network partitions are fully compliant with the wire protocol. One can mix
+and match DDSI2E with different sets of network partitions and with other vendors’
+implementations.</p>
+</div>
+</div>
+<div class="section" id="encryption-configuration">
+<span id="id61"></span><h3>7.5.4. Encryption configuration<a class="headerlink" href="#encryption-configuration" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="encryption-configuration-overview">
+<span id="id62"></span><h4>7.5.4.1. Encryption configuration overview<a class="headerlink" href="#encryption-configuration-overview" title="Permalink to this headline">¶</a></h4>
+<p>DDSI2E encryption support allows the definition of <em>‘security profiles’</em>, named
+combinations of (symmetrical block) ciphers and keys. These can be associated with
+subsets of the DCPS data writers via the network partitions: data from a DCPS data
+writer matching a particular network partition will be encrypted if that network
+partition has an associated security profile.</p>
+<p>The encrypted data will be tagged with a unique identifier for the network partition,
+in cleartext. The receiving nodes use this identifier to lookup the network partition
+&amp; the associated encryption key and cipher.</p>
+<p>Clearly, this requires that the definition of the encrypted network partitions must be
+identical on the transmitting and the receiving sides. If the network partition cannot
+be found, or if the associated key or cipher differs, the receiver will ignore the
+encrypted data. It is therefore not necessary to share keys with nodes that have no
+need for the encrypted data.</p>
+<p>The encryption is performed <em>per-packet</em>; there is no chaining from one packet to
+the next.</p>
+</div>
+<div class="section" id="id63">
+<span id="id64"></span><h4>7.5.4.2. On interoperability<a class="headerlink" href="#id63" title="Permalink to this headline">¶</a></h4>
+<p>Encryption is not yet a standardised part of DDSI, but the standard does allow
+vendor-specific extensions. DDSI2E encryption relies on a vendor-specific
+extension to marshal encrypted data into valid DDSI messages, but they cannot be
+interpreted by implementations that do not recognise this particular extension.</p>
+</div>
+</div>
+</div>
+<div class="section" id="thread-configuration">
+<span id="id65"></span><h2>7.6. Thread configuration<a class="headerlink" href="#thread-configuration" title="Permalink to this headline">¶</a></h2>
+<p>DDSI2 creates a number of threads and each of these threads has a number of
+properties that can be controlled individually. The threads involved in the data path
+are shown in <a class="reference internal" href="#data-flow-using-two-channels"><em>the diagram</em></a> in
+<a class="reference internal" href="#data-path-architecture"><em>Data path architecture</em></a>.
+The properties that can be controlled are:</p>
+<ul class="simple">
+<li>stack size,</li>
+<li>scheduling class, and</li>
+<li>scheduling priority.</li>
+</ul>
+<p>The threads are named and the attribute <tt class="docutils literal"><span class="pre">Threads/Thread[&#64;name]</span></tt>
+is used to set the properties by thread name. Any subset of threads can be
+given special properties; anything not specified explicitly is left at the
+default value.</p>
+<p>(See the detailed description of
+<tt class="docutils literal"><span class="pre">OpenSplice/DDSI2Service/Threads/Thread[&#64;name]</span></tt>
+in the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section)</p>
+<p>The following threads exist:</p>
+<ul class="simple">
+<li><em>gc</em>:
+garbage collector, which sleeps until garbage collection is requested for an
+entity, at which point it starts monitoring the state of DDSI2, pushing the
+entity through whatever state transitions are needed once it is safe to do
+so, ending with the freeing of the memory.</li>
+<li><em>main</em>:
+the main thread of DDSI2, which performs start-up and teardown and
+monitors the creation and deletion of entities in the local node using
+the built-in topics.</li>
+<li><em>recv</em>:
+accepts incoming network packets from all sockets/ports, performs all
+protocol processing, queues (nearly) all protocol messages sent in response
+for handling by the timed-event thread, queues for delivery or, in special
+cases, delivers it directly to the data readers.</li>
+<li><em>dq.builtins</em>:
+processes all discovery data coming in from the network.</li>
+<li><em>lease</em>:
+performs internal liveliness monitoring of DDSI2 and renews the
+OpenSplice kernel lease if the status is satisfactory.</li>
+<li><em>tev</em>:
+timed-event handling, used for all kinds of things, such as: periodic
+transmission of participant discovery and liveliness messages, transmission
+of control messages for reliable writers and readers (except those that have
+their own timed-event thread), retransmitting of reliable data on request
+(except those that have their own timed-event thread), and handling of
+start-up mode to normal mode transition.</li>
+</ul>
+<p>and, for each defined channel:</p>
+<ul class="simple">
+<li><em>xmit.channel-name</em>:
+takes data from the OpenSplice kernel’s queue for this channel, serialises
+it and forwards it to the network.</li>
+<li><em>dq.channel-name</em>:
+deserialisation and asynchronous delivery of all user data.</li>
+<li><em>tev.channel-name</em>:
+channel-specific ‘timed-event’ handling: transmission of control messages
+for reliable writers and readers and retransmission of data on request.
+Channel-specific threads exist only if the configuration includes an
+element for it or if an auxiliary bandwidth limit is set for the channel.</li>
+</ul>
+<p>For DDSI2, and DDSI2E when no channels are explicitly defined, there is one
+channel named <em>‘user’</em>.</p>
+</div>
+<div class="section" id="reporting-and-tracing">
+<span id="id66"></span><h2>7.7. Reporting and tracing<a class="headerlink" href="#reporting-and-tracing" title="Permalink to this headline">¶</a></h2>
+<p>DDSI2 can produce highly detailed traces of all traffic and internal activities.
+It enables individual categories of information, as well as having a simple
+verbosity level that enables fixed sets of categories and of which the definition
+corresponds to that of the other OpenSplice services.</p>
+<p>The categorisation of tracing output is incomplete and hence most of the verbosity
+levels and categories are not of much use in the current release. This is an ongoing
+process and here we describe the target situation rather than the current situation.</p>
+<p>All <em>‘fatal’</em> and <em>‘error’</em> messages are written both to the DDSI2 log and to the
+<tt class="docutils literal"><span class="pre">ospl-error.log</span></tt> file; similarly all ‘warning’ messages are written to the DDSI2
+log and the <tt class="docutils literal"><span class="pre">ospl-info.log</span></tt> file.</p>
+<p>The Tracing element has the following sub elements:</p>
+<ul class="simple">
+<li><em>Verbosity</em>:
+selects a tracing level by enabled a pre-defined set of categories. The
+list below gives the known tracing levels, and the categories they enable:<ul>
+<li><em>none</em></li>
+<li><em>severe</em>: ‘error’ and ‘fatal’</li>
+<li><em>warning</em>, <em>info</em>: severe + ‘warning’</li>
+<li><em>config</em>: info + ‘config’</li>
+<li><em>fine</em>: config + ‘discovery’</li>
+<li><em>finer</em>: fine + ‘traffic’, ‘timing’ and ‘info’</li>
+<li><em>finest</em>: fine + ‘trace’</li>
+</ul>
+</li>
+<li><em>EnableCategory</em>:
+a comma-separated list of keywords, each keyword enabling
+individual categories. The following keywords are recognised:<ul>
+<li><em>fatal</em>: all fatal errors, errors causing immediate termination</li>
+<li><em>error</em>: failures probably impacting correctness but not necessarily causing
+immediate termination.</li>
+<li><em>warning</em>: abnormal situations that will likely not impact correctness.</li>
+<li><em>config</em>: full dump of the configuration</li>
+<li><em>info</em>: general informational notices</li>
+<li><em>discovery</em>: all discovery activity</li>
+<li><em>data</em>: include data content of samples in traces</li>
+<li><em>radmin</em>: receive buffer administration</li>
+<li><em>timing</em>: periodic reporting of CPU loads per thread</li>
+<li><em>traffic</em>: periodic reporting of total outgoing data</li>
+</ul>
+</li>
+</ul>
+<p>In addition, the keyword <em>trace</em> enables all but <em>radmin</em>.</p>
+<ul class="simple">
+<li><em>OutputFile</em>:
+the file to write the DDSI2 log to</li>
+<li><em>AppendToFile</em>:
+boolean, set to <tt class="docutils literal"><span class="pre">true</span></tt> to append to the log instead of replacing
+the file.</li>
+</ul>
+<p>Currently, the useful verbosity settings are <em>config</em> and <em>finest</em>.</p>
+<p><em>Config</em> writes the full configuration to the DDSI2 log file as well as
+any warnings or errors, which can be a good way to verify everything is
+configured and behaving as expected.</p>
+<p><em>Finest</em> provides a detailed trace of everything that occurs and is an
+indispensable source of information when analysing problems; however,
+it also requires a significant amount of time and results in huge log files.</p>
+<p>Whether these logging levels are set using the verbosity level or by enabling
+the corresponding categories is immaterial.</p>
+</div>
+<div class="section" id="compatibility-and-conformance">
+<span id="id67"></span><h2>7.8. Compatibility and conformance<a class="headerlink" href="#compatibility-and-conformance" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="conformance-modes">
+<span id="id68"></span><h3>7.8.1. Conformance modes<a class="headerlink" href="#conformance-modes" title="Permalink to this headline">¶</a></h3>
+<p>The DDSI2 service operates in one of three modes: <em>pedantic</em>, <em>strict</em> and <em>lax</em>;
+the mode is configured using the <tt class="docutils literal"><span class="pre">Compatibility/StandardsConformance</span></tt> setting.
+The default is <em>lax</em>.</p>
+<p>(Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+a detailed description of
+<tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Compatibility/StandardsConformance</span></tt>.)</p>
+<p>In <em>pedantic</em> mode, it strives very hard to strictly conform to the DDSI 2.1
+standard. It even uses a vendor-specific extension for an essential element
+missing in the specification, used for specifying the GUID of a DCPS data reader
+or data writer in the discovery protocol; and it adheres to the specified
+encoding of the reliability QoS. This mode is of interest for compliancy
+testing but not for practical use, even though there is no application-level
+observable difference between an all-OpenSplice system using the DDSI2
+service in pedantic mode and one operating in any of the other modes.</p>
+<p>The second mode, <em>strict</em>, instead attempts to follow the <em>intent</em> of the
+specification while staying close to the letter of it. The points in which
+it deviates from the standard are in all probability editing errors that
+will be rectified in the next update. When operated in this mode, one
+would expect it to be fully interoperable with other vendors’ implementations,
+but this is not the case. The deviations in other vendors’ implementations
+are not required to implement DDSI 2.1, as is proven by the OpenSplice DDSI2
+service, and they cannot rightly be considered ‘true’ implementations of
+the DDSI 2.1 standard.</p>
+<p>The default mode, <em>lax</em>, attempts to work around (most of) the deviations
+of other implementations, and provides interoperability with (at least) RTI
+DDS and InterCOM/Gallium DDS. (For compatibility with TwinOaks CoreDX DDS,
+additional settings are needed. See
+<a class="reference internal" href="#compatibility-issues-with-twinoaks"><em>the next section</em></a>
+for more information.)
+In lax mode, the OpenSplice DDSI2 service not only accepts some invalid
+messages, but will even transmit them. The consequences for interoperability
+of not doing this are simply too severe.
+It should be noted that if one configures two OpenSplice nodes with DDSI2 in
+different compliancy modes, the one in the stricter mode will complain about
+messages sent by the one in the less strict mode. Pedantic mode will complain about
+invalid encodings used in strict mode, strict mode will complain about illegal
+messages transmitted by the lax mode. There is nonetheless interoperability
+between strict and lax.</p>
+<div class="section" id="compatibility-issues-with-rti">
+<span id="id69"></span><h4>7.8.1.1. Compatibility issues with RTI<a class="headerlink" href="#compatibility-issues-with-rti" title="Permalink to this headline">¶</a></h4>
+<p>In <em>lax</em> mode, there should be no major issues with most topic types when working
+across a network, but within a single host there is a known problem with the way
+RTI DDS uses, or attempts to use, its shared memory transport to communicate with
+OpenSplice, which clearly advertises only UDP/IP addresses at which it is
+reachable. The result is an inability to reliably establish bidirectional
+communication between the two.</p>
+<p>Disposing data may also cause problems, as RTI DDS leaves out the serialised key
+value and instead expects the reader to rely on an embedded hash of the key value.
+In the strict modes, the DDSI2 service requires a proper key value to be supplied;
+in the relaxed mode, it is willing to accept key hash, provided it is of a form that
+contains the key values in an unmangled form.</p>
+<p>If an RTI DDS data writer disposes an instance with a key of which the serialised
+representation may be larger than 16 bytes, this problem is likely to occur. In
+practice, the most likely cause is using a key as string, either unbounded, or with a
+maximum length larger than 11 bytes. See the DDSI specification for details.</p>
+<p>In <em>strict</em> mode, there is interoperation with RTI DDS, but at the cost of incredibly
+high CPU and network load, caused by a Heartbeats and AckNacks going
+back-and-forth between a reliable RTI DDS data writer and a reliable OpenSplice
+DCPS data reader. The problem is that once the OpenSplice reader informs the RTI
+writer that it has received all data (using a valid AckNack message), the RTI writer
+immediately publishes a message listing the range of available sequence numbers
+and requesting an acknowledgement, which becomes an endless loop.</p>
+<p>The best settings for interoperation appear to be:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">Compatibility/StandardsConformance</span></tt>: <em>lax</em></li>
+<li><tt class="docutils literal"><span class="pre">Compatibility/AckNackNumbitsEmptySet</span></tt>: <em>0</em></li>
+</ul>
+<p>Note that the latter setting causes the DDSI2 service to generate illegal messages,
+and is the default when in lax mode.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Compatibility/StandardsConformance</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Compatibility/AckNackNumbitsEmptySet</span></tt></li>
+</ul>
+</div>
+<div class="section" id="compatibility-issues-with-twinoaks">
+<span id="id70"></span><h4>7.8.1.2. Compatibility issues with TwinOaks<a class="headerlink" href="#compatibility-issues-with-twinoaks" title="Permalink to this headline">¶</a></h4>
+<p>Interoperability with TwinOaks CoreDX requires:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">Compatibility/ManySocketsMode</span></tt>: <em>true</em></li>
+<li><tt class="docutils literal"><span class="pre">Compatibility/StandardsConformance</span></tt>: <em>lax</em></li>
+<li><tt class="docutils literal"><span class="pre">Compatibility/AckNackNumbitsEmptySet</span></tt>: <em>0</em></li>
+<li><tt class="docutils literal"><span class="pre">Compatibility/ExplicitlyPublishQosSetToDefault</span></tt>: <em>true</em></li>
+</ul>
+<p>The <tt class="docutils literal"><span class="pre">ManySocketsMode</span></tt> option needs to be changed from the default, to ensure that
+each domain participant has a unique locator; this is needed because TwinOaks
+CoreDX DDS does not include the full GUID of a reader or writer if it needs to
+address just one. Note that the behaviour of TwinOaks CoreDX DDS is allowed by the
+specification.</p>
+<p>The <tt class="docutils literal"><span class="pre">Compatibility/ExplicitlyPublishQosSetToDefault</span></tt> settings work around
+TwinOaks CoreDX DDS’ use of incorrect default values for some of the QoS
+settings if they are not explicitly supplied during discovery.</p>
+<p>Please refer to the  <a class="reference internal" href="guide.html#configuration"><em>Configuration</em></a> section for
+detailed descriptions of:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Compatibility/ManySocketsMode</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Compatibility/StandardsConformance</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Compatibility/AckNackNumbitsEmptySet</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">//OpenSplice/DDSI2Service/Compatibility/ExplicitlyPublishQosSetToDefault</span></tt></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">7. The DDSI2 and DDSI2E Networking Services</a><ul>
+<li><a class="reference internal" href="#ddsi-concepts">7.1. DDSI Concepts</a><ul>
+<li><a class="reference internal" href="#mapping-of-dcps-domains-to-ddsi-domains">7.1.1. Mapping of DCPS domains to DDSI domains</a></li>
+<li><a class="reference internal" href="#mapping-of-dcps-entities-to-ddsi-entities">7.1.2. Mapping of DCPS entities to DDSI entities</a></li>
+<li><a class="reference internal" href="#reliable-communication">7.1.3. Reliable communication</a></li>
+<li><a class="reference internal" href="#ddsi-specific-transient-local-behaviour">7.1.4. DDSI-specific transient-local behaviour</a></li>
+<li><a class="reference internal" href="#discovery-of-participants-endpoints">7.1.5. Discovery of participants &amp; endpoints</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#opensplice-ddsi2-specifics">7.2. OpenSplice DDSI2 specifics</a><ul>
+<li><a class="reference internal" href="#translating-between-opensplice-and-ddsi">7.2.1. Translating between OpenSplice and DDSI</a></li>
+<li><a class="reference internal" href="#federated-versus-standalone-deployment">7.2.2. Federated versus Standalone deployment</a></li>
+<li><a class="reference internal" href="#discovery-behaviour">7.2.3. Discovery behaviour</a><ul>
+<li><a class="reference internal" href="#local-discovery-and-built-in-topics">7.2.3.1. Local discovery and built-in topics</a></li>
+<li><a class="reference internal" href="#proxy-participants-and-endpoints">7.2.3.2. Proxy participants and endpoints</a></li>
+<li><a class="reference internal" href="#sharing-of-discovery-information">7.2.3.3. Sharing of discovery information</a></li>
+<li><a class="reference internal" href="#lingering-writers">7.2.3.4. Lingering writers</a></li>
+<li><a class="reference internal" href="#start-up-mode">7.2.3.5. Start-up mode</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#writer-history-qos-and-throttling">7.2.4. Writer history QoS and throttling</a></li>
+<li><a class="reference internal" href="#unresponsive-readers-head-of-stream-blocking">7.2.5. Unresponsive readers &amp; head-of-stream blocking</a></li>
+<li><a class="reference internal" href="#handling-of-multiple-partitions-and-wildcards">7.2.6. Handling of multiple partitions and wildcards</a><ul>
+<li><a class="reference internal" href="#publishing-in-multiple-partitions">7.2.6.1. Publishing in multiple partitions</a></li>
+<li><a class="reference internal" href="#wildcard-partitions">7.2.6.2. Wildcard partitions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#network-and-discovery-configuration">7.3. Network and discovery configuration</a><ul>
+<li><a class="reference internal" href="#networking-interfaces">7.3.1. Networking interfaces</a><ul>
+<li><a class="reference internal" href="#multicasting">7.3.1.1. Multicasting</a></li>
+<li><a class="reference internal" href="#discovery-configuration">7.3.1.2. Discovery configuration</a><ul>
+<li><a class="reference internal" href="#discovery-addresses">7.3.1.2.1. Discovery addresses</a></li>
+<li><a class="reference internal" href="#asymmetrical-discovery">7.3.1.2.2. Asymmetrical discovery</a></li>
+<li><a class="reference internal" href="#timing-of-spdp-packets">7.3.1.2.3. Timing of SPDP packets</a></li>
+<li><a class="reference internal" href="#endpoint-discovery">7.3.1.2.4. Endpoint discovery</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#combining-multiple-participants">7.3.2. Combining multiple participants</a></li>
+<li><a class="reference internal" href="#controlling-port-numbers">7.3.3. Controlling port numbers</a></li>
+<li><a class="reference internal" href="#coexistence-with-opensplice-rtnetworking">7.3.4. Coexistence with OpenSplice RTNetworking</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data-path-configuration">7.4. Data path configuration</a><ul>
+<li><a class="reference internal" href="#data-path-architecture">7.4.1. Data path architecture</a></li>
+<li><a class="reference internal" href="#transmit-side-configuration">7.4.2. Transmit-side configuration</a><ul>
+<li><a class="reference internal" href="#transmit-processing">7.4.2.1. Transmit processing</a></li>
+<li><a class="reference internal" href="#retransmit-merging">7.4.2.2. Retransmit merging</a></li>
+<li><a class="reference internal" href="#retransmit-backlogs">7.4.2.3. Retransmit backlogs</a></li>
+<li><a class="reference internal" href="#controlling-fragmentation">7.4.2.4. Controlling fragmentation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#receive-side-configuration">7.4.3. Receive-side configuration</a><ul>
+<li><a class="reference internal" href="#receive-processing">7.4.3.1. Receive processing</a></li>
+<li><a class="reference internal" href="#minimising-receive-latency">7.4.3.2. Minimising receive latency</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#direction-independent-settings">7.4.4. Direction-independent settings</a><ul>
+<li><a class="reference internal" href="#maximum-sample-size">7.4.4.1. Maximum sample size</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ddsi2e-enhanced-features">7.5. DDSI2E Enhanced features</a><ul>
+<li><a class="reference internal" href="#introduction-to-ddsi2e">7.5.1. Introduction to DDSI2E</a></li>
+<li><a class="reference internal" href="#channel-configuration">7.5.2. Channel configuration</a><ul>
+<li><a class="reference internal" href="#channel-configuration-overview">7.5.2.1. Channel configuration overview</a></li>
+<li><a class="reference internal" href="#transmit-side">7.5.2.2. Transmit side</a></li>
+<li><a class="reference internal" href="#receive-side">7.5.2.3. Receive side</a></li>
+<li><a class="reference internal" href="#discovery-traffic">7.5.2.4. Discovery traffic</a></li>
+<li><a class="reference internal" href="#on-interoperability">7.5.2.5. On interoperability</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#network-partition-configuration">7.5.3. Network partition configuration</a><ul>
+<li><a class="reference internal" href="#network-partition-configuration-overview">7.5.3.1. Network partition configuration overview</a></li>
+<li><a class="reference internal" href="#matching-rules">7.5.3.2. Matching rules</a></li>
+<li><a class="reference internal" href="#multiple-matching-mappings">7.5.3.3. Multiple matching mappings</a></li>
+<li><a class="reference internal" href="#id59">7.5.3.4. On interoperability</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#encryption-configuration">7.5.4. Encryption configuration</a><ul>
+<li><a class="reference internal" href="#encryption-configuration-overview">7.5.4.1. Encryption configuration overview</a></li>
+<li><a class="reference internal" href="#id63">7.5.4.2. On interoperability</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#thread-configuration">7.6. Thread configuration</a></li>
+<li><a class="reference internal" href="#reporting-and-tracing">7.7. Reporting and tracing</a></li>
+<li><a class="reference internal" href="#compatibility-and-conformance">7.8. Compatibility and conformance</a><ul>
+<li><a class="reference internal" href="#conformance-modes">7.8.1. Conformance modes</a><ul>
+<li><a class="reference internal" href="#compatibility-issues-with-rti">7.8.1.1. Compatibility issues with RTI</a></li>
+<li><a class="reference internal" href="#compatibility-issues-with-twinoaks">7.8.1.2. Compatibility issues with TwinOaks</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="networking-service.html"
+                        title="previous chapter">6. The Networking Service</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="networkingbridge-service.html"
+                        title="next chapter">8. The NetworkingBridge Service</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/ddsi2-networking-service.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="networkingbridge-service.html" title="8. The NetworkingBridge Service"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="networking-service.html" title="6. The Networking Service"
+             >previous</a> |</li>
+        <li><a href="index.html">Deployment Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

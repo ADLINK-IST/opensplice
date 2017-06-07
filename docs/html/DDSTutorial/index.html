@@ -1,0 +1,207 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The Data Distribution Service Tutorial &mdash; The Data Distribution Service Tutorial</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="The Data Distribution Service Tutorial" href="#" />
+    <link rel="next" title="1. Foundations" href="foundations.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="foundations.html" title="1. Foundations"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">DDS Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-data-distribution-service-tutorial">
+<h1>The Data Distribution Service Tutorial<a class="headerlink" href="#the-data-distribution-service-tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="foundations.html">1. Foundations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="foundations.html#the-data-distribution-service">1.1. The Data Distribution Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foundations.html#the-omg-dds-standard">1.2. The OMG DDS Standard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foundations.html#dds-in-a-nutshell">1.3. DDS in a Nutshell</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="foundations.html#global-data-space">1.3.1. Global Data Space</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foundations.html#domain-participant">1.3.2. Domain Participant</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foundations.html#topics">1.3.3. Topics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foundations.html#reading-and-writing-data">1.3.4. Reading and Writing Data</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="foundations.html#summary">1.4. Summary</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="topics-etc.html">2. Topics, Domains and Partitions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="topics-etc.html#topics-inside-out">2.1. Topics Inside Out</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="topics-etc.html#topic-types">2.1.1. Topic Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topics-etc.html#topic-keys-instances-and-samples">2.1.2. Topic Keys, Instances and Samples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="topics-etc.html#scoping-information">2.2. Scoping Information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="topics-etc.html#domain">2.2.1. Domain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="topics-etc.html#partition">2.2.2. Partition</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="topics-etc.html#content-filtering">2.3. Content Filtering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="topics-etc.html#summary">2.4. Summary</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="readandwrite.html">3. Reading and Writing Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="readandwrite.html#writing-data">3.1. Writing Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#topic-instances-life-cycle">3.1.1. Topic-Instances Life-cycle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#automatic-life-cycle-management">3.1.2. Automatic Life-cycle Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#explicit-life-cycle-management">3.1.3. Explicit Life-cycle Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#keyless-topics">3.1.4. Keyless Topics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#blocking-or-non-blocking-write">3.1.5. Blocking or Non-Blocking Write?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="readandwrite.html#accessing-data">3.2. Accessing Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#read-vs-take">3.2.1. Read <em>vs.</em> Take</a></li>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#data-and-meta-data">3.2.2. Data and Meta-Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#selecting-samples">3.2.3. Selecting Samples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="readandwrite.html#state-based-selection">3.2.3.1. State-based Selection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="readandwrite.html#content-based-selection">3.2.3.2. Content-based Selection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="readandwrite.html#instance-based-selection">3.2.3.3. Instance-based Selection</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#iterators-or-containers">3.2.4. Iterators or Containers?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#blocking-or-non-blocking-read-take">3.2.5. Blocking or Non-Blocking Read/Take?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="readandwrite.html#waiting-and-being-notified">3.3. Waiting and being Notified</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#waitsets">3.3.1. Waitsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="readandwrite.html#listeners">3.3.2. Listeners</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="readandwrite.html#summary">3.4. Summary</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="qos.html">4. Quality of Service</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="qos.html#the-dds-qos-model">4.1. The DDS QoS Model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="qos.html#data-availability">4.1.1. Data availability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="qos.html#data-delivery">4.1.2. Data delivery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="qos.html#data-timeliness">4.1.3. Data timeliness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="qos.html#resources">4.1.4. Resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="qos.html#configuration">4.1.5. Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="qos.html#setting-qos">4.1.6. Setting QoS</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="qos.html#summary">4.2. Summary</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="appendix-A.html">5. Appendix A</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="appendix-A.html#online-resources">5.1. Online Resources</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="appendix-A.html#examples-source-code">5.1.1. Examples Source Code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="appendix-A.html#getting-a-dds-implementation">5.1.2. Getting a DDS Implementation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="appendix-A.html#c-11-considerations">5.1.3. C++11 Considerations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="acronyms.html">6. Acronyms &amp; Abbreviations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="biblio.html">7. Bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">8. Contacts &amp; Notices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contacts">8.1. Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#notices">8.2. Notices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The Data Distribution Service Tutorial</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="foundations.html"
+                        title="next chapter">1. Foundations</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="foundations.html" title="1. Foundations"
+             >next</a> |</li>
+        <li><a href="#">DDS Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

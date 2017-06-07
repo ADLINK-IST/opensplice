@@ -88,6 +88,26 @@ namespace test.sacs
                 return result;
             }
 
+            rc = reader.GetSubscriptionMatchedStatus(ref smStatus);
+            
+            if (rc != DDS.ReturnCode.Ok)
+            {
+                result.Result = "GetSubscriptionMatchedStatus call failed.";
+                return result;
+            }
+            if (smStatus.TotalCount != 1)
+            {
+                result.Result = "SubscriptionMatched.TotalCount != 1. (" + smStatus.TotalCount +
+                    ").";
+                return result;
+            }
+            if (smStatus.TotalCountChange != 1)
+            {
+                result.Result = "SubscriptionMatched.TotalCountChange != 1." + smStatus.TotalCountChange
+                     + ").";
+                return result;
+            }
+
             value = condition.GetTriggerValue();
             if (value)
             {

@@ -1,0 +1,81 @@
+parseconditions:
+    desc: RMI ClientServerLogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: server_proxy
+          type: line
+          inst: 1
+          required: yes
+          line: "=== Succeeded in getting the server proxy named MyCPPServer :"
+
+        - name: first_message
+          type: line
+          inst: 1
+          required: yes
+          line: "[0]=first message"
+
+        - name: second_message
+          type: line
+          inst: 1
+          required: yes
+          line: "[1]=second message"
+
+        - name: third_message
+          type: line
+          inst: 1
+          required: yes
+          line: "[2]=third message"
+
+        - name: long_message_sequence
+          type: line
+          inst: 1
+          required: yes
+          line: "[0]=1 / [1]=2 / [2]=3"
+
+        - name: first_message_reply
+          type: line
+          inst: 1
+          required: yes
+          line: "[0]=reply_to_first message"
+
+        - name: second_message_reply
+          type: line
+          inst: 1
+          required: yes
+          line: "[1]=reply_to_second message"
+
+        - name: third_message_reply
+          type: line
+          inst: 1
+          required: yes
+          line: "[2]=reply_to_third message"
+
+        - name: struct_first_message
+          type: line
+          inst: 1
+          required: yes
+          line: "[0] member1=first message/member2=a/member3=1"
+
+        - name: struct_second_message
+          type: line
+          inst: 1
+          required: yes
+          line: "[1] member1=second message/member2=b/member3=2"
+
+        - name: struct_third_message
+          type: line
+          inst: 1
+          required: yes
+          line: "[2] member1=third message/member2=c/member3=3"
+
+        - name: runtime_stop
+          type: line
+          inst: 1
+          required: yes
+          line: "=== Runtime stop"

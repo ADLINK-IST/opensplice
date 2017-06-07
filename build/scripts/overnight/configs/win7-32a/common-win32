@@ -1,0 +1,3 @@
+. configs/`hostname`/common
+export OPENSPLICE_PLATFORM_CODE=P637
+export PYTHON_HOME=/home/dds/INSTALLED_FOR_DDS/portablepython-2.7.3.1

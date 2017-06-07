@@ -1,0 +1,339 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Proto message for a DDS system &mdash; OpenSplice GPB Tutorial</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice GPB Tutorial" href="index.html" />
+    <link rel="next" title="4. Compiling the datamodel with the GPB compiler" href="compiling-datamodel.html" />
+    <link rel="prev" title="2. Introduction" href="introduction.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="compiling-datamodel.html" title="4. Compiling the datamodel with the GPB compiler"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="proto-message-for-a-dds-system">
+<span id="id1"></span><h1>3. Proto message for a DDS system<a class="headerlink" href="#proto-message-for-a-dds-system" title="Permalink to this headline">¶</a></h1>
+<p>Individual declarations in a <tt class="docutils literal"><span class="pre">.proto</span></tt> file can be annotated with a number
+of options. Options do not change the overall meaning of a declaration,
+but may affect the way it is handled in a particular context.</p>
+<p>Options can be defined at different levels:</p>
+<blockquote>
+<div><ul class="simple">
+<li>File-level options: meaning they should be written at the top-level
+scope, not inside any message, enum, or service definition.</li>
+<li>Message-level options: meaning they should be written inside message
+definitions.</li>
+<li>Field-level options: meaning they should be written inside field
+definitions. Enum types, enum values, service types, and service
+methods.</li>
+</ul>
+</div></blockquote>
+<div class="section" id="use-case-person">
+<h2>3.1. Use case: Person<a class="headerlink" href="#use-case-person" title="Permalink to this headline">¶</a></h2>
+<p>In this use case example, a system capable of describing the personal
+data of persons must be built using the GPB data-model</p>
+<p>The layout can be:</p>
+<div class="highlight-python"><div class="highlight"><pre>string name
+integer age
+sequence phone-number + type
+sequence friends
+</pre></div>
+</div>
+</div>
+<div class="section" id="proto-file-for-the-person-example">
+<h2>3.2. Proto file for the Person example<a class="headerlink" href="#proto-file-for-the-person-example" title="Permalink to this headline">¶</a></h2>
+<p>This use case is described in this <tt class="docutils literal"><span class="pre">.proto</span></tt> file:</p>
+<div class="highlight-protobuf"><div class="highlight"><pre><span class="k">import</span> <span class="s">&quot;omg/dds/descriptor.proto&quot;</span><span class="p">;</span>
+<span class="kn">package</span> <span class="nn">address</span><span class="p">;</span>
+
+<span class="kd">message</span> <span class="nc">Person</span> <span class="p">{</span>
+   <span class="k">required</span> <span class="kt">string</span> <span class="na">name</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+   <span class="k">required</span> <span class="kt">int32</span> <span class="na">age</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+   <span class="k">optional</span> <span class="kt">string</span> <span class="na">email</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+
+   <span class="kd">enum</span> <span class="n">PhoneType</span> <span class="p">{</span>
+      <span class="na">UNDEFINED</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+      <span class="na">MOBILE</span>    <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+      <span class="na">HOME</span>      <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+      <span class="na">WORK</span>      <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+   <span class="p">}</span>
+
+   <span class="kd">message</span> <span class="nc">PhoneNumber</span> <span class="p">{</span>
+      <span class="k">required</span> <span class="kt">string</span> <span class="na">number</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+      <span class="k">optional</span> <span class="n">PhoneType</span> <span class="na">type</span>  <span class="o">=</span> <span class="mi">2</span> <span class="p">[</span><span class="k">default</span> <span class="o">=</span> <span class="n">HOME</span><span class="p">];</span>
+   <span class="p">}</span>
+
+<span class="k">repeated</span> <span class="n">PhoneNumber</span> <span class="na">phone</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+<span class="k">repeated</span> <span class="n">Person</span> <span class="na">friend</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>GPB labels every field as either a <em>required</em> or an <em>optional</em> field.
+Required fields are <em>always</em> used/filled; optional fields may or may not
+be.</p>
+<p>Different data models are compatible if all <em>required</em> fields are the same.
+Data models can be extended with extra fields; if those new fields are all
+<em>optional</em>, then the new model will still be compatible with older applications
+using the old data model.</p>
+<p>In our example the <em>name</em> and <em>age</em> are always required. The <em>email</em> string
+is optional, as extra information for this person. The sequences with phone
+numbers and friends are allowed to be empty.</p>
+<p>Detailed explanation for the layout of a <tt class="docutils literal"><span class="pre">.proto</span></tt> file can be found in
+the Google Protocol buffer documentation on
+<a class="reference external" href="https://developers.google.com/protocol-buffers/docs/proto">https://developers.google.com/protocol-buffers/docs/proto</a></p>
+</div>
+<div class="section" id="annotating-a-proto-message-for-use-as-a-type-in-dds">
+<h2>3.3. Annotating a proto message for use as a type in DDS<a class="headerlink" href="#annotating-a-proto-message-for-use-as-a-type-in-dds" title="Permalink to this headline">¶</a></h2>
+<p>For the GPB message to be able to be handled correctly in a DDS system,
+some options are needed in the <tt class="docutils literal"><span class="pre">.proto</span></tt> file which define how the GPB
+message shall behave in the DDS system.</p>
+<p>At the message level there is an extra option <tt class="docutils literal"><span class="pre">.omg.dds.type</span></tt>.
+This tells the protocol buffer compiler that this message is also a dds type message.
+This type option has a optional extra parameter for giving this type a dds type name.
+By default it has the same name in the DDS domain as it has in GPB.</p>
+<p>The Person example with this option:</p>
+<div class="highlight-protobuf"><div class="highlight"><pre><span class="k">import</span> <span class="s">&quot;omg/dds/descriptor.proto&quot;</span><span class="p">;</span>
+
+<span class="kn">package</span> <span class="nn">address</span><span class="p">;</span>
+
+<span class="kd">message</span> <span class="nc">Person</span> <span class="p">{</span>
+ <span class="k">option</span> <span class="p">(</span><span class="o">.</span><span class="n">omg.dds.type</span><span class="p">)</span> <span class="o">=</span> <span class="p">{};</span>
+ <span class="k">required</span> <span class="kt">string</span> <span class="na">name</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+ <span class="k">required</span> <span class="kt">int32</span> <span class="na">age</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+
+<span class="kd">enum</span> <span class="n">PhoneType</span> <span class="p">{</span>
+  <span class="na">UNDEFINED</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="na">MOBILE</span>    <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="na">HOME</span>      <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+  <span class="na">WORK</span>      <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">message</span> <span class="nc">PhoneNumber</span> <span class="p">{</span>
+   <span class="k">required</span> <span class="kt">string</span> <span class="na">number</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="k">optional</span> <span class="n">PhoneType</span> <span class="na">type</span>  <span class="o">=</span> <span class="mi">2</span> <span class="p">[</span><span class="k">default</span> <span class="o">=</span> <span class="n">HOME</span><span class="p">];</span>
+ <span class="p">}</span>
+ <span class="k">repeated</span> <span class="n">PhoneNumber</span> <span class="na">phone</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+ <span class="k">repeated</span> <span class="n">Person</span> <span class="na">friend</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="section" id="proto-file-with-omg-dds-member-key-option">
+<h3>3.3.1. Proto file with omg.dds.member.key option<a class="headerlink" href="#proto-file-with-omg-dds-member-key-option" title="Permalink to this headline">¶</a></h3>
+<p>For support of a key value in the datamodel, the option <tt class="docutils literal"><span class="pre">key</span></tt> can be given as a
+field-member option. One or more fields containing this option will indicate that
+these members make a unique key identifier in the data model. A field
+indicated as a key field must always be a <em>required</em> field for GPB. Also a key
+field is automatically a filterable field, as described below.</p>
+<p>The Person example with <em>name</em> as a unique key (this means that each unique value
+of the name will lead to a separate instance in DDS with its own history):</p>
+<div class="highlight-protobuf"><div class="highlight"><pre><span class="k">import</span> <span class="s">&quot;omg/dds/descriptor.proto&quot;</span><span class="p">;</span>
+
+<span class="kn">package</span> <span class="nn">address</span><span class="p">;</span>
+
+<span class="kd">message</span> <span class="nc">Person</span> <span class="p">{</span>
+   <span class="k">option</span> <span class="p">(</span><span class="o">.</span><span class="n">omg.dds.type</span><span class="p">)</span> <span class="o">=</span> <span class="p">{};</span>
+   <span class="k">required</span> <span class="kt">string</span> <span class="na">name</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">[(</span><span class="o">.</span><span class="n">omg.dds.member</span><span class="p">)</span><span class="o">.</span><span class="na">key</span> <span class="o">=</span> <span class="kc">true</span><span class="p">];</span>
+   <span class="k">required</span> <span class="kt">int32</span> <span class="na">age</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+   <span class="k">optional</span> <span class="kt">string</span> <span class="na">email</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kd">enum</span> <span class="n">PhoneType</span> <span class="p">{</span>
+   <span class="na">UNDEFINED</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+   <span class="na">MOBILE</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+   <span class="na">HOME</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+   <span class="na">WORK</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kd">message</span> <span class="nc">PhoneNumber</span> <span class="p">{</span>
+   <span class="k">required</span> <span class="kt">string</span> <span class="na">number</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+   <span class="k">optional</span> <span class="n">PhoneType</span> <span class="na">type</span> <span class="o">=</span> <span class="mi">2</span> <span class="p">[</span><span class="k">default</span> <span class="o">=</span> <span class="n">HOME</span><span class="p">];</span>
+<span class="p">}</span>
+
+<span class="k">repeated</span> <span class="n">PhoneNumber</span> <span class="na">phone</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+<span class="k">repeated</span> <span class="n">Person</span> <span class="na">friend</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="proto-file-with-omg-dds-member-filterable-option">
+<h3>3.3.2. Proto file with omg.dds.member.filterable option<a class="headerlink" href="#proto-file-with-omg-dds-member-filterable-option" title="Permalink to this headline">¶</a></h3>
+<p>For support of filterable fields in the datamodel, the option <tt class="docutils literal"><span class="pre">filterable</span></tt> can be
+given as a field-member option.</p>
+<p>One or more fields with this option indicates that these members are available
+for dynamic querying and filtering by means of a <tt class="docutils literal"><span class="pre">QueryCondition</span></tt> or
+<tt class="docutils literal"><span class="pre">ContentFilteredTopic</span></tt> in DDS.</p>
+<p>A field marked as a filterable field must always be a <em>required</em> field in GPB.
+A key field is always filterable, by definition.</p>
+<p>The Person example with <em>age</em> as a filterable attribute:</p>
+<div class="highlight-protobuf"><div class="highlight"><pre><span class="k">import</span> <span class="s">&quot;omg/dds/descriptor.proto&quot;</span><span class="p">;</span>
+
+<span class="kn">package</span> <span class="nn">address</span><span class="p">;</span>
+
+<span class="kd">message</span> <span class="nc">Person</span> <span class="p">{</span>
+ <span class="k">option</span> <span class="p">(</span><span class="o">.</span><span class="n">omg.dds.type</span><span class="p">)</span> <span class="o">=</span> <span class="p">{};</span>
+ <span class="k">required</span> <span class="kt">string</span> <span class="na">name</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">[(</span><span class="o">.</span><span class="n">omg.dds.member</span><span class="p">)</span><span class="o">.</span><span class="na">key</span> <span class="o">=</span> <span class="kc">true</span><span class="p">];</span>
+ <span class="k">required</span> <span class="kt">int32</span> <span class="na">age</span> <span class="o">=</span> <span class="mi">2</span> <span class="p">[(</span><span class="o">.</span><span class="n">omg.dds.member</span><span class="p">)</span><span class="o">.</span><span class="na">filterable</span> <span class="o">=</span> <span class="kc">true</span><span class="p">];</span>
+ <span class="k">optional</span> <span class="kt">string</span> <span class="na">email</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+
+<span class="kd">enum</span> <span class="n">PhoneType</span> <span class="p">{</span>
+  <span class="na">UNDEFINED</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="na">MOBILE</span>    <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="na">HOME</span>      <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+  <span class="na">WORK</span>      <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">message</span> <span class="nc">PhoneNumber</span> <span class="p">{</span>
+   <span class="k">required</span> <span class="kt">string</span> <span class="na">number</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="k">optional</span> <span class="n">PhoneType</span> <span class="na">type</span>  <span class="o">=</span> <span class="mi">2</span> <span class="p">[</span><span class="k">default</span> <span class="o">=</span> <span class="n">HOME</span><span class="p">];</span>
+ <span class="p">}</span>
+ <span class="k">repeated</span> <span class="n">PhoneNumber</span> <span class="na">phone</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+ <span class="k">repeated</span> <span class="n">Person</span> <span class="na">friend</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="proto-file-with-omg-dds-member-name-option">
+<h3>3.3.3. Proto file with omg.dds.member.name option<a class="headerlink" href="#proto-file-with-omg-dds-member-name-option" title="Permalink to this headline">¶</a></h3>
+<p>The previous examples will result in a DDS type with the directly-mapped fields in
+IDL with the same name as in proto. (Key fields and filterable fields are directly
+mapped.)</p>
+<p>If a different name is needed in the DDS domain for a fieldname in the generated
+IDL and dds type, a name can be given as an <tt class="docutils literal"><span class="pre">omg.dds.member</span></tt> option.</p>
+<p>Example where the <em>age</em> field will be named <tt class="docutils literal"><span class="pre">AgeInYears</span></tt> in the DDS domain:</p>
+<div class="highlight-protobuf"><div class="highlight"><pre><span class="k">import</span> <span class="s">&quot;omg/dds/descriptor.proto&quot;</span><span class="p">;</span>
+
+<span class="kn">package</span> <span class="nn">address</span><span class="p">;</span>
+
+<span class="kd">message</span> <span class="nc">Person</span> <span class="p">{</span>
+ <span class="k">option</span> <span class="p">(</span><span class="o">.</span><span class="n">omg.dds.type</span><span class="p">)</span> <span class="o">=</span> <span class="p">{};</span>
+ <span class="k">required</span> <span class="kt">string</span> <span class="na">name</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">[(</span><span class="o">.</span><span class="n">omg.dds.member</span><span class="p">)</span><span class="o">.</span><span class="na">key</span> <span class="o">=</span> <span class="kc">true</span><span class="p">];</span>
+ <span class="k">required</span> <span class="kt">int32</span> <span class="na">age</span> <span class="o">=</span> <span class="mi">2</span>   <span class="p">[(</span><span class="o">.</span><span class="n">omg.dds.member</span><span class="p">)</span> <span class="o">=</span> <span class="p">{</span> <span class="n">name</span><span class="o">:</span> <span class="s">&quot;AgeInYears&quot;</span> <span class="n">filterable</span><span class="o">:</span> <span class="kc">true</span> <span class="p">}];</span>
+ <span class="k">optional</span> <span class="kt">string</span> <span class="na">email</span> <span class="o">=</span> <span class="mi">3</span> <span class="p">;</span>
+
+<span class="kd">enum</span> <span class="n">PhoneType</span> <span class="p">{</span>
+  <span class="na">UNDEFINED</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="na">MOBILE</span>    <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="na">HOME</span>      <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+  <span class="na">WORK</span>      <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">message</span> <span class="nc">PhoneNumber</span> <span class="p">{</span>
+   <span class="k">required</span> <span class="kt">string</span> <span class="na">number</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="k">optional</span> <span class="n">PhoneType</span> <span class="na">type</span>  <span class="o">=</span> <span class="mi">2</span> <span class="p">[</span><span class="k">default</span> <span class="o">=</span> <span class="n">HOME</span><span class="p">];</span>
+ <span class="p">}</span>
+ <span class="k">repeated</span> <span class="n">PhoneNumber</span> <span class="na">phone</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+ <span class="k">repeated</span> <span class="n">Person</span> <span class="na">friend</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. Proto message for a DDS system</a><ul>
+<li><a class="reference internal" href="#use-case-person">3.1. Use case: Person</a></li>
+<li><a class="reference internal" href="#proto-file-for-the-person-example">3.2. Proto file for the Person example</a></li>
+<li><a class="reference internal" href="#annotating-a-proto-message-for-use-as-a-type-in-dds">3.3. Annotating a proto message for use as a type in DDS</a><ul>
+<li><a class="reference internal" href="#proto-file-with-omg-dds-member-key-option">3.3.1. Proto file with omg.dds.member.key option</a></li>
+<li><a class="reference internal" href="#proto-file-with-omg-dds-member-filterable-option">3.3.2. Proto file with omg.dds.member.filterable option</a></li>
+<li><a class="reference internal" href="#proto-file-with-omg-dds-member-name-option">3.3.3. Proto file with omg.dds.member.name option</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="previous chapter">2. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="compiling-datamodel.html"
+                        title="next chapter">4. Compiling the datamodel with the GPB compiler</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/proto-message.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="compiling-datamodel.html" title="4. Compiling the datamodel with the GPB compiler"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="2. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

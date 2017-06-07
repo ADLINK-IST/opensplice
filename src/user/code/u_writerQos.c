@@ -1,116 +1,77 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "u_writerQos.h"
 
-/**************************************************************
- * Private functions
- **************************************************************/
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
 u_writerQos
 u_writerQosNew(
-    u_writerQos tmpl)
+    u_writerQos _template)
 {
-    u_result result;
-    u_writerQos q;
+    u_writerQos _this;
 
-    q = os_malloc(sizeof(C_STRUCT(v_writerQos)));
-    if (q != NULL) {
-        if (tmpl != NULL) {
-            *q = *tmpl;
-            q->userData.size = tmpl->userData.size;
-            if (tmpl->userData.size > 0) {
-                q->userData.value = os_malloc(tmpl->userData.size);
-                memcpy(q->userData.value,tmpl->userData.value,tmpl->userData.size);                
-            } else {
-                q->userData.value = NULL;
-            }
-        } else {
-            result = u_writerQosInit(q);
-            if (result != U_RESULT_OK) {
-                u_writerQosFree(q);
-                q = NULL;
-            }
+    assert(!_template || ((v_qos)_template)->kind == V_WRITER_QOS);
+
+    _this = os_malloc(sizeof(C_STRUCT(v_writerQos)));
+    if (_template != NULL) {
+        *_this = *_template;
+
+        _this->userData.v.value = NULL;
+        if (_template->userData.v.size > 0) {
+            assert(_template->userData.v.value);
+            _this->userData.v.value = os_malloc((c_ulong)_template->userData.v.size);
+            _this->userData.v.size = _template->userData.v.size;
+            memcpy(_this->userData.v.value, _template->userData.v.value, (c_ulong) _template->userData.v.size);
         }
-    }
-
-    return q;
-}
-
-u_result
-u_writerQosInit(
-    u_writerQos q)
-{
-    u_result result;
-
-    if (q != NULL) {
-        ((v_qos)q)->kind                                = V_WRITER_QOS;
-        q->durability.kind                              = V_DURABILITY_VOLATILE;
-        q->deadline.period                              = C_TIME_INFINITE;
-        q->latency.duration                             = C_TIME_ZERO;
-        q->liveliness.kind                              = V_LIVELINESS_AUTOMATIC;
-        q->liveliness.lease_duration                    = C_TIME_ZERO;
-        q->reliability.kind                             = V_RELIABILITY_BESTEFFORT;
-        q->reliability.max_blocking_time                = C_TIME_ZERO;
-        q->reliability.synchronous                      = FALSE;
-        q->orderby.kind                                 = V_ORDERBY_RECEPTIONTIME;
-        q->history.kind                                 = V_HISTORY_KEEPLAST;
-        q->history.depth                                = 1;
-        q->resource.max_samples                         = V_LENGTH_UNLIMITED;
-        q->resource.max_instances                       = V_LENGTH_UNLIMITED;
-        q->resource.max_samples_per_instance            = V_LENGTH_UNLIMITED;
-        q->userData.size                                = 0;
-        q->userData.value                               = NULL;
-        q->ownership.kind                               = V_OWNERSHIP_SHARED;
-        q->strength.value                               = 0;
-        q->lifecycle.autodispose_unregistered_instances = TRUE;
-        q->lifecycle.autopurge_suspended_samples_delay  = C_TIME_INFINITE;
-        q->lifecycle.autounregister_instance_delay      = C_TIME_INFINITE;
-        q->lifespan.duration                            = C_TIME_INFINITE;
-        q->transport.value                              = 0;
-        result = U_RESULT_OK;
     } else {
-        result = U_RESULT_ILL_PARAM;
+        ((v_qos)_this)->kind                                  = V_WRITER_QOS;
+        _this->durability.v.kind                              = V_DURABILITY_VOLATILE;
+        _this->deadline.v.period                              = OS_DURATION_INFINITE;
+        _this->latency.v.duration                             = OS_DURATION_ZERO;
+        _this->liveliness.v.kind                              = V_LIVELINESS_AUTOMATIC;
+        _this->liveliness.v.lease_duration                    = OS_DURATION_ZERO;
+        _this->reliability.v.kind                             = V_RELIABILITY_BESTEFFORT;
+        _this->reliability.v.max_blocking_time                = OS_DURATION_ZERO;
+        _this->reliability.v.synchronous                      = FALSE;
+        _this->orderby.v.kind                                 = V_ORDERBY_RECEPTIONTIME;
+        _this->history.v.kind                                 = V_HISTORY_KEEPLAST;
+        _this->history.v.depth                                = 1;
+        _this->resource.v.max_samples                         = V_LENGTH_UNLIMITED;
+        _this->resource.v.max_instances                       = V_LENGTH_UNLIMITED;
+        _this->resource.v.max_samples_per_instance            = V_LENGTH_UNLIMITED;
+        _this->userData.v.size                                = 0;
+        _this->userData.v.value                               = NULL;
+        _this->ownership.v.kind                               = V_OWNERSHIP_SHARED;
+        _this->strength.v.value                               = 0;
+        _this->lifecycle.v.autodispose_unregistered_instances = TRUE;
+        _this->lifecycle.v.autopurge_suspended_samples_delay  = OS_DURATION_INFINITE;
+        _this->lifecycle.v.autounregister_instance_delay      = OS_DURATION_INFINITE;
+        _this->lifespan.v.duration                            = OS_DURATION_INFINITE;
+        _this->transport.v.value                              = 0;
     }
-
-    return result;
-}
-
-void
-u_writerQosDeinit(
-    u_writerQos q)
-{
-    if (q != NULL) {
-        os_free(q->userData.value);
-        q->userData.value = NULL;
-    }
+    return _this;
 }
 
 void
 u_writerQosFree(
-    u_writerQos q)
+    u_writerQos _this)
 {
-    if (q != NULL) {
-        u_writerQosDeinit(q);
-        os_free(q);
-    }
+    assert(_this && ((v_qos)_this)->kind == V_WRITER_QOS);
+    os_free(_this->userData.v.value);
+    os_free(_this);
 }
-
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/

@@ -1,12 +1,20 @@
 /*
 *                         OpenSplice DDS
 *
-*   This software and documentation are Copyright 2006 to 2012 PrismTech
-*   Limited and its licensees. All rights reserved. See file:
-*
-*                     $OSPL_HOME/LICENSE
-*
-*   for full copyright notice and license terms.
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
 *
 */
 
@@ -18,6 +26,7 @@
 #ifndef ORG_OPENSPLICE_DOMAIN_DOMAINPARTICIPANT_EVENT_HANDLER_HPP_
 #define ORG_OPENSPLICE_DOMAIN_DOMAINPARTICIPANT_EVENT_HANDLER_HPP_
 
+#include <dds/core/WeakReference.hpp>
 #include <org/opensplice/core/config.hpp>
 
 namespace org
@@ -32,7 +41,7 @@ class OSPL_ISOCPP_IMPL_API DomainParticipantEventForwarder: public DDS::DomainPa
 {
 public:
     DomainParticipantEventForwarder(
-        const DOMAINT& domain_,
+        const DOMAINT &domain_,
         dds::domain::DomainParticipantListener* listener);
 
     virtual ~DomainParticipantEventForwarder();
@@ -59,8 +68,8 @@ public:
     virtual void on_subscription_matched(DDS::DataReader_ptr reader, const DDS::SubscriptionMatchedStatus& status) {};
     virtual void on_sample_lost(DDS::DataReader_ptr reader, const DDS::SampleLostStatus& status) {};
 
-    DOMAINT domain_;
-    dds::domain::DomainParticipantListener* listener_;
+    dds::core::WeakReference<DOMAINT> domain_;
+    dds::domain::DomainParticipantListener *listener_;
 };
 }
 }

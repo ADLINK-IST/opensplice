@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
@@ -21,7 +29,7 @@
 
 FE_ValueInheritanceSpec::FE_ValueInheritanceSpec
 (
-   idl_bool truncatable,
+   bool truncatable,
    UTL_NameList *ihl,
    UTL_NameList *supl
 )
@@ -83,7 +91,7 @@ FE_ValueInheritanceSpec::compile_value_inheritance(UTL_NameList *nl)
       /*
        * Look it up
        */
-      d = idl_global->scopes()->top()->lookup_by_name(l->item(), I_TRUE);
+      d = idl_global->scopes()->top()->lookup_by_name(l->item(), true);
 
       /*
        * Not found?
@@ -200,7 +208,7 @@ FE_ValueInheritanceSpec::compile_inheritance(UTL_NameList *nl)
       /*
        * Look it up
        */
-      d = idl_global->scopes()->top()->lookup_by_name(l->item(), I_TRUE);
+      d = idl_global->scopes()->top()->lookup_by_name(l->item(), true);
 
       /*
        * Not found?
@@ -303,7 +311,7 @@ long FE_ValueInheritanceSpec::n_supports()
    return pd_n_supports;
 }
 
-idl_bool FE_ValueInheritanceSpec::truncatable()
+bool FE_ValueInheritanceSpec::truncatable()
 {
    return pd_truncatable;
 }

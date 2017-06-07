@@ -1,27 +1,40 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include "v__waitset.h"
 #include "v__observer.h"
+#include "v__subscriber.h"
+#include "v__dataView.h"
 #include "v_observable.h"
 #include "v_public.h"
 #include "v_proxy.h"
 #include "v_event.h"
 #include "v_query.h"
+#include "v_group.h"
+#include "v_statusCondition.h"
+#include "v_dataReaderQuery.h"
+#include "v_dataViewQuery.h"
 
 #include "os_report.h"
+#include "vortex_os.h"
 
-#define v_waitsetEvent(o) (C_CAST(o,v_waitsetEvent))
-#define v_waitsetEventHistoryDelete(e)  (C_CAST(e,v_waitsetEventHistoryDelete))
-#define v_waitsetEventHistoryRequest(e) (C_CAST(e, v_waitsetEventHistoryRequest))
+#define WAITSET_BUSY_FLAG (0x80000000)
 
 #define v_waitsetEventList(_this) \
         (v_observer(_this)->eventData)
@@ -29,29 +42,50 @@
 #define v_waitsetWakeup(_this,event,userData) \
         v_observerNotify(v_observer(_this),event,userData)
 
-typedef struct findProxyArgument {
-    v_handle observable;
-    v_proxy proxy;
-} findProxyArgument;
-
 static void
 v_waitsetClearRemovedObserverPendingEvents(
     v_waitset _this,
     void* userDataRemoved);
 
-static c_bool
-findProxy(
-    c_object o,
-    c_voidp arg)
+static void
+waitsetDetachAll(v_waitset _this)
 {
-    v_proxy proxy = (v_proxy)o;
-    findProxyArgument *a = (findProxyArgument *)arg;
+    v_proxy proxy, removed;
+    v_observable o;
+    v_handleResult result;
+    v_waitsetEvent event, eventList;
+    void* userDataRemoved = NULL;
 
-    if (v_handleIsEqual(proxy->source,a->observable)) {
-        a->proxy = proxy;
-        return FALSE;
-    } else {
-        return TRUE;
+    /* disable interest to avoid arrival of new events. */
+    v_observerSetEventMask(v_observer(_this), 0);
+
+    v_waitsetLock(_this);
+
+    /* remove and free all events */
+    eventList = v_waitsetEvent(v_waitsetEventList(_this));
+    v_waitsetEventList(_this) = NULL;
+    while (eventList) {
+        event = eventList;
+        eventList = eventList->next;
+        event->next = NULL;
+        c_free(event);
+    }
+    proxy = _this->observables;
+    _this->observables = NULL;
+    /* wakeup blocking threads. */
+    v_waitsetWakeup(_this, NULL, NULL);
+    v_waitsetUnlock(_this);
+
+    while (proxy) {
+        result = v_handleClaim(proxy->source,(v_object *)&o);
+        if (result == V_HANDLE_OK) {
+            (void)v_handleRelease(proxy->source);
+            (void)v_observableRemoveObserver(o,v_observer(_this), &userDataRemoved);
+        }
+        removed = proxy;
+        proxy = proxy->next;
+        removed->next = NULL;
+        c_free(removed);
     }
 }
 
@@ -61,20 +95,21 @@ v_waitsetNew(
 {
     v_waitset _this;
     v_kernel kernel;
-    c_type proxyType;
 
     assert(C_TYPECHECK(p,v_participant));
 
     kernel = v_objectKernel(p);
     _this = v_waitset(v_objectNew(kernel,K_WAITSET));
     if (_this != NULL) {
-        v_observerInit(v_observer(_this),"Waitset", NULL, TRUE);
-        _this->participant = p;
-        _this->eventCache = NULL;
-        proxyType = v_kernelType(kernel,K_PROXY);
-        _this->observables = c_setNew(proxyType);
+        v_observerInit(v_observer(_this));
         v_observerSetEventData(v_observer(_this), NULL);
-        v_participantAdd(p, v_entity(_this));
+        _this->observables = NULL;
+        _this->participant = p;
+        _this->waitsetEventEnabled = TRUE;
+        _this->count = 0;
+        _this->waitDisconnectCount = 0;
+        c_condInit(c_getBase(_this), &_this->syncDisconnect, &v_observer(_this)->mutex);
+        v_participantAdd(p, v_object(_this));
     }
 
     return _this;
@@ -91,9 +126,10 @@ v_waitsetFree(
 
     p = v_participant(_this->participant);
     if (p != NULL) {
-        v_participantRemove(p, v_entity(_this));
+        v_participantRemove(p, v_object(_this));
         _this->participant = NULL;
     }
+    waitsetDetachAll(_this);
     v_observerFree(v_observer(_this));
 }
 
@@ -101,88 +137,21 @@ void
 v_waitsetDeinit(
    v_waitset _this)
 {
-    v_waitsetEvent event;
-    v_observable o;
-    v_observable* oPtr;
-    v_proxy found;
-    v_handleResult result;
-    void* userDataRemoved = NULL;
-
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
     if (_this == NULL) {
         return;
     }
-    v_waitsetLock(_this);
 
-    found = c_take(_this->observables);
-    while (found) {
-        oPtr = &o;
-        result = v_handleClaim(found->source,(v_object *)oPtr);
-        if (result == V_HANDLE_OK) {
-            v_observableRemoveObserver(o,v_observer(_this), &userDataRemoved);
-            v_waitsetClearRemovedObserverPendingEvents(_this, userDataRemoved);
-            result = v_handleRelease(found->source);
-        }
-        c_free(found);
-        found = c_take(_this->observables);
-    }
-    /* wakeup blocking threads to evaluate new condition. */
-    /* remove all events */
-    while (v_waitsetEvent(v_waitsetEventList(_this)) != NULL) {
-        event = v_waitsetEvent(v_waitsetEventList(_this));
-        v_waitsetEventList(_this) = event->next;
-        event->next = NULL;
-        c_free(event);
-    }
-    v_waitsetWakeup(_this, NULL, NULL);
-    v_waitsetUnlock(_this);
     v_observerDeinit(v_observer(_this));
 }
 
-static v_waitsetEvent
-v_waitsetEventNew(
-    v_waitset _this)
-{
-    v_kernel k;
-    v_waitsetEvent event;
-
-    if (_this->eventCache) {
-        event = _this->eventCache;
-        _this->eventCache = event->next;
-    } else {
-        k = v_objectKernel(_this);
-        event = c_new(v_kernelType(k,K_WAITSETEVENT));
-
-        if (!event) {
-            OS_REPORT(OS_ERROR,
-                      "v_waitsetEventNew",0,
-                      "Failed to allocate event.");
-            assert(FALSE);
-        }
-    }
-    return event;
-}
-
-static void
-v_waitsetEventFree(
+void
+v_waitsetLogEvents(
     v_waitset _this,
-    v_waitsetEvent event)
+    c_bool enable)
 {
-    if (event) {
-        if (v_eventTest(event->kind,V_EVENT_HISTORY_DELETE)) {
-            c_free(event);
-        } else if(event->kind == V_EVENT_HISTORY_REQUEST) {
-            c_free(event);
-        } else if(event->kind == V_EVENT_PERSISTENT_SNAPSHOT) {
-            c_free(event);
-        } else if(event->kind == V_EVENT_CONNECT_WRITER) {
-            c_free(event);
-        }else {
-            event->next = _this->eventCache;
-            _this->eventCache = event;
-        }
-    }
+    _this->waitsetEventEnabled = enable;
 }
 
 void
@@ -197,160 +166,266 @@ v_waitsetNotify(
  */
 {
     v_waitsetEvent event,found;
-    c_base base;
-    v_historyDeleteEventData hde;
-    v_waitsetEventHistoryDelete wehd;
-    v_waitsetEventHistoryRequest wehr;
-    v_waitsetEventPersistentSnapshot weps;
-    v_waitsetEventConnectWriter wecw;
-    v_kernel k;
+    v_handle sourceHandle;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
 
-    if (e != NULL) {
-        k = v_objectKernel(_this);
-        if (e->kind == V_EVENT_HISTORY_DELETE) {
-            /* delete historical data */
-            wehd = c_new(v_kernelType(k,K_WAITSETEVENTHISTORYDELETE));
-            if (wehd) {
-                base = c_getBase(c_object(_this));
-                hde = (v_historyDeleteEventData)e->userData;
+    EVENT_TRACE("v_waitsetNotify: _this(0x%x), event(0x%x), userData(0x%x)\n", _this, e, userData);
 
-                wehd->deleteTime    = hde->deleteTime;
-                wehd->partitionExpr = c_stringNew(base,hde->partitionExpression);
-                wehd->topicExpr     = c_stringNew(base,hde->topicExpression);
-            } else {
-                OS_REPORT(OS_ERROR,
-                          "v_waitset::v_waitsetNotify",0,
-                          "Failed to allocate v_waitsetEventHistoryDelete object.");
-                assert(FALSE);
-            }
-            event = (v_waitsetEvent)wehd;
-        } else if (e->kind == V_EVENT_HISTORY_REQUEST) {
-            /* request historical data */
-            wehr = c_new(v_kernelType(k, K_WAITSETEVENTHISTORYREQUEST));
-            if (wehr) {
-                wehr->request = (v_historicalDataRequest)c_keep(e->userData);
-            } else {
-                OS_REPORT(OS_ERROR,
-                          "v_waitset::v_waitsetNotify",0,
-                          "Failed to allocate v_waitsetEventHistoryRequest object.");
-                assert(FALSE);
-            }
-            event = (v_waitsetEvent)wehr;
-        } else if (e->kind == V_EVENT_PERSISTENT_SNAPSHOT) {
-            /* request persistent snapshot data */
-            weps = c_new(v_kernelType(k, K_WAITSETEVENTPERSISTENTSNAPSHOT));
-            if (weps) {
-                weps->request = (v_persistentSnapshotRequest)c_keep(e->userData);
-            } else {
-                OS_REPORT(OS_ERROR,
-                          "v_waitset::v_waitsetNotify",0,
-                          "Failed to allocate v_waitsetEventPersistentSnapshot object.");
-                assert(FALSE);
-            }
-            event = (v_waitsetEvent)weps;
-        } else if (e->kind == V_EVENT_CONNECT_WRITER) {
-            /* request persistent snapshot data */
-            wecw = c_new(v_kernelType(k, K_WAITSETEVENTCONNECTWRITER));
-            if (wecw) {
-                wecw->group = (v_group)e->userData;
-            } else {
-                OS_REPORT(OS_ERROR,
-                          "v_waitset::v_waitsetNotify",0,
-                          "Failed to allocate v_waitsetEventConnectWriter object.");
-                assert(FALSE);
-            }
-            event = (v_waitsetEvent)wecw;
-        } else {
-            /* Group events by origin of event */
-            /* What about events while no threads are waiting?
-             * It seems that the list of events can grow to infinite length.
-             */
-            found = v_waitsetEvent(v_waitsetEventList(_this));
-            while ((found != NULL) && (!v_handleIsEqual(found->source,e->source))){
-                found = found->next;
-            }
-            if (found == NULL) {
-                event = v_waitsetEventNew(_this);
-            } else {
-                found->kind |= e->kind;
-                event = NULL;
-            }
+    if ((_this->waitsetEventEnabled) && (e != NULL)) {
+        sourceHandle = v_publicHandle(v_public(e->source));
+
+        /* Group events by origin of event */
+        /* What about events while no threads are waiting?
+         * It seems that the list of events can grow to infinite length.
+         */
+        found = v_waitsetEvent(v_waitsetEventList(_this));
+        while ((found != NULL) &&
+               (!v_handleIsEqual(found->source,sourceHandle)))
+        {
+            found = found->next;
         }
-        if (event) {
-            event->source.server = e->source.server;
-            event->source.index  = e->source.index;
-            event->source.serial = e->source.serial;
-            event->kind          = e->kind;
-            event->userData      = userData;
+        if (found == NULL) {
+            event = c_new(v_kernelType(v_objectKernel(_this),K_WAITSETEVENT));
+            event->kind = e->kind;
+            event->source = sourceHandle;
+            event->userData = userData;
+            event->eventData = c_keep(e->data);
             event->next = v_waitsetEvent(v_waitsetEventList(_this));
             v_waitsetEventList(_this) = (c_voidp)event;
+            EVENT_TRACE("v_waitsetNotify: _this(0x%x), Event(0x%x) { kind(0x%x), source.index(%d), userData(0x%x) }\n",
+                        _this, e, e->kind, sourceHandle.index, userData);
+        } else {
+            found->kind |= e->kind;
         }
     }
+}
+
+c_bool
+on_data_available(
+    c_object o,
+    c_voidp arg)
+{
+    os_uint32 *events = (os_uint32 *)arg;
+    OS_UNUSED_ARG(o);
+
+    EVENT_TRACE("v_waitset::on_data_available userData(0x%x) }\n", o);
+    *events |= V_EVENT_DATA_AVAILABLE;
+
+    return OS_TRUE;
+}
+
+static void
+flush_pending_grouptransactions(
+    v_query query)
+{
+    v_collection src;
+    v_subscriber subscriber;
+
+    src = v_querySource(query);
+    switch (v_objectKind(src)) {
+    case K_DATAREADER:
+        subscriber = v_readerSubscriber(v_reader(src));
+    break;
+    case K_DATAVIEW:
+        subscriber = v_readerSubscriber(v_reader(v_dataViewReader(v_dataView(src))));
+    break;
+    default:
+        subscriber = NULL;
+    break;
+    }
+    if (subscriber) {
+        v_subscriberLock(subscriber);
+        if (v__subscriberRequireAccessLockCoherent(subscriber)) {
+            v_subscriberLockAccess(subscriber);
+            v_subscriberUnlock(subscriber);
+            v_transactionGroupAdminFlush(subscriber->transactionGroupAdmin);
+            v_subscriberLock(subscriber);
+            v_subscriberUnlockAccess(subscriber);
+        }
+        v_subscriberUnlock(subscriber);
+    }
+    c_free(src);
+}
+
+c_bool
+test_condition (
+    v_handle handle)
+{
+    os_uint32 events = 0;
+    v_object condition = NULL;
+
+    (void)v_handleClaim(handle,(v_object *)&condition);
+    if (condition) {
+        switch (v_objectKind(condition)) {
+        case K_STATUSCONDITION:
+            EVENT_TRACE("v_waitset::test_condition K_STATUSCONDITION(0x%x) }\n", condition);
+            events = v_statusConditionGetTriggerValue(v_statusCondition(condition));
+        break;
+        case K_DATAREADERQUERY:
+            EVENT_TRACE("v_waitset::test_condition K_DATAREADERQUERY:(0x%x) }\n", condition);
+            flush_pending_grouptransactions(v_query(condition));
+            (void)v_dataReaderQueryTest(v_dataReaderQuery(condition), on_data_available, &events);
+        break;
+        case K_DATAVIEWQUERY:
+            EVENT_TRACE("v_waitset::test_condition K_DATAVIEWQUERY::(0x%x) }\n", condition);
+            flush_pending_grouptransactions(v_query(condition));
+            (void)v_dataViewQueryTest(v_dataViewQuery(condition), on_data_available, &events);
+        break;
+        default:
+        break;
+        }
+        (void)v_handleRelease(handle);
+    }
+    return (events != 0);
+}
+
+#define INITIAL_BUFFER_SIZE (32)
+
+v_result
+v_waitsetWait2(
+    v_waitset _this,
+    v_waitsetAction2 action,
+    c_voidp arg,
+    const os_duration time)
+{
+    os_boolean proceed = OS_TRUE;
+    v_result result = V_RESULT_OK;
+    v_proxy initial[INITIAL_BUFFER_SIZE];
+    v_proxy *buffer, proxy;
+    c_long count;
+    c_ulong length, i, bufferSize;
+    os_boolean triggered;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_waitset));
+
+    /* Test trigger values of attached observables. */
+    count = 0;
+
+    v_waitsetLock(_this);
+    if (_this->count > INITIAL_BUFFER_SIZE) {
+        /* Initial buffer size is insufficient so allocate a new one. */
+        buffer = os_malloc(_this->count * sizeof(*buffer));
+        bufferSize = _this->count;
+    } else {
+        buffer = initial;
+        bufferSize = INITIAL_BUFFER_SIZE;
+    }
+    length = 0;
+    proxy = _this->observables;
+    while (proxy) {
+        buffer[length++] = c_keep(proxy);
+        proxy = proxy->next;
+    }
+    assert(length == _this->count);
+
+    /* We need to release the lock to avoid deadlock while checking the conditions,
+     * this implies that data available triggers may be received just after testing them
+     * (i.e. conditions becoming true).
+     * To avoid missing these triggers the data available event flag is reset and afterwards
+     * just before blocking the flags are checked for events.
+     */
+    triggered = (v_observer(_this)->eventFlags & V_EVENT_TRIGGER);
+    v_observer(_this)->eventFlags &= V_EVENT_OBJECT_DESTROYED;
+    if (length > 0) {
+        _this->waitDisconnectCount |= WAITSET_BUSY_FLAG;
+    }
+    v_waitsetUnlock(_this);
+
+    for (i=0; i<length; i++) {
+        if (test_condition(buffer[i]->source)) {
+            action(buffer[i]->userData, arg);
+            count++;
+        }
+        c_free(buffer[i]);
+    }
+    proceed = action(NULL, arg); /* test guard conditions. */
+
+    /*
+     * If none of the conditions evaluate true then block until triggered and then
+     * reevaluate the conditions and callback on each true conditions.
+     */
+
+    if ((count == 0) && proceed) {
+        if (OS_DURATION_ISZERO(time)) {
+            result = V_RESULT_TIMEOUT;
+        } else {
+            c_ulong wait_flags;
+
+            v_waitsetLock(_this);
+            _this->waitDisconnectCount &= ~WAITSET_BUSY_FLAG;
+            if (_this->waitDisconnectCount > 0) {
+                c_condBroadcast(&_this->syncDisconnect);
+            }
+            if (!(triggered) && (v_observerGetEventFlags(v_observer(_this)) == 0)) {
+                EVENT_TRACE("v_waitsetWait: Enter Timed Wait waitset(0x%x)\n", _this);
+                wait_flags = v__observerTimedWait(v_observer(_this),time);
+                v__observerClearEventFlags(_this);
+                if (wait_flags & V_EVENT_OBJECT_DESTROYED) {
+                    result = V_RESULT_DETACHING;
+                } else if (wait_flags & V_EVENT_TIMEOUT) {
+                    result = V_RESULT_TIMEOUT;
+                }
+            }
+            if (result != V_RESULT_TIMEOUT) {
+                if(_this->count > bufferSize){
+                    if(bufferSize > INITIAL_BUFFER_SIZE){
+                        os_free(buffer);
+                    }
+                    buffer = os_malloc(_this->count * sizeof(*buffer));
+                    bufferSize = _this->count;
+                }
+                length = 0;
+                proxy = _this->observables;
+                while (proxy) {
+                    buffer[length++] = c_keep(proxy);
+                    proxy = proxy->next;
+                }
+                if (length > 0) {
+                    _this->waitDisconnectCount |= WAITSET_BUSY_FLAG;
+                }
+            }
+            v_waitsetUnlock(_this);
+            if (result != V_RESULT_TIMEOUT) {
+                for (i=0; i<length; i++) {
+                    if (test_condition(buffer[i]->source)) {
+                        action(buffer[i]->userData, arg);
+                        count++;
+                    }
+                    c_free(buffer[i]);
+                }
+                (void)action(NULL, arg); /* test guard conditions. */
+            }
+        }
+    }
+
+    v_waitsetLock(_this);
+    _this->waitDisconnectCount &= ~WAITSET_BUSY_FLAG;
+    if (_this->waitDisconnectCount > 0) {
+        c_condBroadcast(&_this->syncDisconnect);
+    }
+    v_waitsetUnlock(_this);
+
+    if (bufferSize > INITIAL_BUFFER_SIZE) {
+        assert(buffer != initial);
+        /* The initial static buffer is already replaced so free the previously allocated one. */
+        os_free(buffer);
+    }
+    EVENT_TRACE("v_waitsetWait: Exit Timed Wait waitset(0x%x) result = %s\n", _this, v_resultImage(result));
+    return result;
 }
 
 v_result
 v_waitsetWait(
     v_waitset _this,
     v_waitsetAction action,
-    c_voidp arg)
-{
-    v_waitsetEvent event, eventList;
-    v_result result;
-    c_ulong wait_flags;
-
-    assert(_this != NULL);
-    assert(C_TYPECHECK(_this,v_waitset));
-
-    wait_flags = 0;
-    v_waitsetLock(_this);
-    eventList = v_waitsetEvent(v_waitsetEventList(_this));
-
-    while ((eventList == NULL) &&
-           (!(wait_flags & V_EVENT_OBJECT_DESTROYED)))
-    {
-        wait_flags = v__observerWait(v_observer(_this));
-        eventList = v_waitsetEvent(v_waitsetEventList(_this));
-    }
-
-    v__observerClearEventFlags(_this);
-    v_waitsetEventList(_this) = NULL;
-    if (action) {
-        v_waitsetUnlock(_this);
-        event = eventList;
-        while (event) {
-            action(event, arg);
-            event = event->next;
-        }
-        v_waitsetLock(_this);
-    }
-    while (eventList) {
-        event = eventList;
-        eventList = eventList->next;
-        event->next = NULL; /* otherwise entire list is freed! */
-        v_waitsetEventFree(_this,event); /* free whole list. */
-    }
-    v_waitsetUnlock(_this);
-
-    if (wait_flags & V_EVENT_OBJECT_DESTROYED) {
-        result = V_RESULT_DETACHING;
-    } else {
-        result = V_RESULT_OK;
-    }
-    return result;
-}
-
-v_result
-v_waitsetTimedWait(
-    v_waitset _this,
-    v_waitsetAction action,
     c_voidp arg,
-    const c_time time)
+    const os_duration time)
 {
     v_waitsetEvent event, eventList;
-    v_result result;
+    v_result result = V_RESULT_OK;
     c_ulong wait_flags;
 
     assert(_this != NULL);
@@ -360,37 +435,43 @@ v_waitsetTimedWait(
     v_waitsetLock(_this);
     eventList = v_waitsetEvent(v_waitsetEventList(_this));
 
+    EVENT_TRACE("v_waitsetWait: Enter Timed Wait waitset(0x%x)\n", _this);
     while ((eventList == NULL) &&
-           (!(wait_flags & (V_EVENT_OBJECT_DESTROYED | V_EVENT_TIMEOUT)))) {
+           (!(wait_flags & (V_EVENT_OBJECT_DESTROYED | V_EVENT_TIMEOUT))))
+    {
+        EVENT_TRACE("v_waitsetWait: -- waitset(0x%x) No events => block!\n", _this);
         wait_flags = v__observerTimedWait(v_observer(_this),time);
+        EVENT_TRACE("v_waitsetWait: -- waitset(0x%x) Trigger! => unblock! result flags = 0x%x\n", _this, wait_flags);
         eventList = v_waitsetEvent(v_waitsetEventList(_this));
     }
     v__observerClearEventFlags(_this);
     v_waitsetEventList(_this) = NULL;
-    if (action) {
-        v_waitsetUnlock(_this);
-        event = eventList;
-        while (event) {
-            action(event, arg);
-            event = event->next;
-        }
-        v_waitsetLock(_this);
-    }
-    while (eventList) {
-        event = eventList;
-        eventList = eventList->next;
-        event->next = NULL; /* otherwise entire list is freed! */
-        v_waitsetEventFree(_this,event); /* free whole list. */
-    }
     v_waitsetUnlock(_this);
 
     if (wait_flags & V_EVENT_OBJECT_DESTROYED) {
         result = V_RESULT_DETACHING;
+        c_free(eventList); /* Avoid potentially leaking events. */
+    } else if (eventList) {
+        event = eventList;
+        while (event) {
+            eventList = event->next;
+            EVENT_TRACE("v_waitsetWait: waitset(0x%x), Event = "
+                        "{ kind(0x%x), source index(%d), userData(0x%x) } action = 0x%x\n",
+                        _this, event->kind, event->source.index, event->userData, action);
+            if (action) {
+                action(event, arg);
+            }
+            event->next = NULL; /* otherwise entire list is freed! */
+            c_free(event);
+            event = eventList;
+        }
     } else if (wait_flags & V_EVENT_TIMEOUT) {
         result = V_RESULT_TIMEOUT;
     } else {
-        result = V_RESULT_OK;
+        assert(FALSE); /* Not expected. */
     }
+    EVENT_TRACE("v_waitsetWait: Exit Timed Wait waitset(0x%x) result = %s\n",
+                 _this, v_resultImage(result));
     return result;
 }
 
@@ -399,16 +480,29 @@ v_waitsetTrigger(
     v_waitset _this,
     c_voidp eventArg)
 {
-    C_STRUCT(v_event) event;
+    v_waitsetEvent event;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
 
     v_waitsetLock(_this);
-    event.kind = V_EVENT_TRIGGER;
-    event.source = v_publicHandle(v_public(_this));
-    event.userData = NULL;
-    v_waitsetWakeup(_this, &event, eventArg);
+    if (_this->waitsetEventEnabled) {
+        event = c_new(v_kernelType(v_objectKernel(_this),K_WAITSETEVENT));
+        event->kind = V_EVENT_TRIGGER;
+        event->source = v_publicHandle(v_public(_this));
+        event->userData = eventArg;
+        event->eventData = NULL;
+        event->next = v_waitsetEvent(v_waitsetEventList(_this));
+        v_waitsetEventList(_this) = (c_voidp)event;
+        EVENT_TRACE("v_waitsetTrigger: waitset(0x%x), userData(0x%x) }\n", _this, eventArg);
+        v_observerNotify(v_observer(_this), NULL, NULL);
+    } else {
+        /* TODO: It would be more efficient only to trigger when waiting but this not always work
+         * e.g. tc_waitset_stress test will crash. need to investigate.
+         */
+        EVENT_TRACE("v_waitsetTrigger: waitset(0x%x), userData(0x%x) }\n", _this, eventArg);
+        v_observerNotify(v_observer(_this), NULL, NULL);
+    }
     v_waitsetUnlock(_this);
 }
 
@@ -420,62 +514,91 @@ v_waitsetAttach (
 {
     c_bool result;
     v_proxy proxy;
-    findProxyArgument arg;
+    v_handle handle;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
 
-    arg.observable = v_publicHandle(v_public(o));
-    arg.proxy = NULL;
-
     v_waitsetLock(_this);
-    c_setWalk(_this->observables, findProxy,&arg);
-    if (arg.proxy == NULL) { /* no proxy to the observer exists */
-        proxy = v_proxyNew(v_objectKernel(_this),
-                           arg.observable, userData);
-        c_insert(_this->observables,proxy);
-        c_free(proxy);
+    handle = v_publicHandle(v_public(o));
+    proxy = _this->observables;
+    while (proxy) {
+        if (v_handleIsEqual(proxy->source,handle)) break;
+        proxy = proxy->next;
     }
+    if (!proxy) {
+        proxy = v_proxyNew(v_objectKernel(_this), handle, userData);
+        proxy->next = _this->observables;
+        _this->observables = proxy;
+        _this->count++;
+    }
+    _this->waitDisconnectCount |= WAITSET_BUSY_FLAG;
     v_waitsetUnlock(_this);
     result = v_observableAddObserver(o,v_observer(_this), userData);
     /* wakeup blocking threads to evaluate new condition. */
-    if (v_observerWaitCount(_this)) {
+    if (test_condition(handle)) {
         v_waitsetTrigger(_this, NULL);
     }
+
+    v_waitsetLock(_this);
+    _this->waitDisconnectCount &= ~WAITSET_BUSY_FLAG;
+    if (_this->waitDisconnectCount > 0) {
+        c_condBroadcast(&_this->syncDisconnect);
+    }
+    v_waitsetUnlock(_this);
+
     return result;
 }
 
-c_bool
+c_long
 v_waitsetDetach (
     v_waitset _this,
     v_observable o)
 {
-    c_bool result;
-    v_proxy found;
-    findProxyArgument arg;
+    c_bool removed;
+    c_long result;
+    v_proxy proxy, prev;
+    v_handle handle;
     void* userDataRemoved = NULL;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
 
-    arg.observable = v_publicHandle(v_public(o));
-    arg.proxy = NULL;
+    handle = v_publicHandle(v_public(o));
     v_waitsetLock(_this);
-    c_setWalk(_this->observables,findProxy,&arg);
-    if (arg.proxy != NULL) { /* proxy to the observer found */
-        found = c_remove(_this->observables,arg.proxy,NULL,NULL);
-        assert(found == arg.proxy);
-        c_free(found);
+    prev = NULL;
+    proxy = _this->observables;
+    while (proxy) {
+        if (v_handleIsEqual(proxy->source,handle)) {
+            if (prev) {
+                prev->next = proxy->next;
+            } else {
+                _this->observables = proxy->next;
+            }
+            proxy->next = NULL;
+            c_free(proxy);
+            _this->count--;
+            break;
+        }
+        prev = proxy;
+        proxy = proxy->next;
     }
+    _this->waitDisconnectCount++;
+    while ((_this->waitDisconnectCount & WAITSET_BUSY_FLAG) == WAITSET_BUSY_FLAG) {
+        c_condWait(&_this->syncDisconnect, &v_observer(_this)->mutex);
+    }
+    _this->waitDisconnectCount--;
     v_waitsetUnlock(_this);
-
-    result = v_observableRemoveObserver(o,v_observer(_this), &userDataRemoved);
+    removed = v_observableRemoveObserver(o,v_observer(_this), &userDataRemoved);
+    if (removed) {
+        result = (c_long) _this->count;
+    } else {
+        result = -1;
+    }
     v_waitsetClearRemovedObserverPendingEvents(_this, userDataRemoved);
 
     /* wakeup blocking threads to evaluate new condition. */
-    if (v_observerWaitCount(_this)) {
-        v_waitsetTrigger(_this, NULL);
-    }
+    v_waitsetTrigger(_this, NULL);
     return result;
 }
 
@@ -494,6 +617,9 @@ v_waitsetClearRemovedObserverPendingEvents(
         v_waitsetEvent event;
         v_waitsetEvent prevEvent = NULL;
 
+        v_waitsetLock(_this);
+        EVENT_TRACE("v_waitsetClearRemovedObserverPendingEvents: waitset(0x%x), userData(0x%x)\n",
+                    _this, userDataRemoved);
         eventList = v_waitsetEvent(v_waitsetEventList(_this));
         event = eventList;
         while (event)
@@ -502,8 +628,7 @@ v_waitsetClearRemovedObserverPendingEvents(
              * the found event, then this event pertains to the observer we
              * just removed and we must undertake action!
              */
-            if(userDataRemoved == event->userData)
-            {
+            if (userDataRemoved == event->userData) {
                 /* We need to remove the event from the linked list, to accomplish
                  * this we need to link the previous event (if any) to the next
                  * event, which basically cuts out the now invalid event from
@@ -511,32 +636,41 @@ v_waitsetClearRemovedObserverPendingEvents(
                  * event list, then make the head of the event list equal to the
                  * next event
                  */
-                if(prevEvent)
-                {
+                if (prevEvent) {
                     prevEvent->next = event->next;
-                } else
-                {
+                } else {
                     v_waitsetEventList(_this) = event->next;
                 }
                 /* Free the memory of the event */
                 event->next = NULL; /* otherwise entire list is freed! */
-                v_waitsetEventFree(_this,event); /* free whole list. */
+                c_free(event);
                 /* set the event pointer to the correct next event pointer */
-                if(prevEvent)
-                {
+                if (prevEvent) {
                     event = prevEvent->next;
-                } else
-                {
+                } else {
                     event = v_waitsetEventList(_this);
                 }
-            } else
-            {
-                /* store this event as the 'prevEvent' and move to the next
-                 * event
-                 */
+            } else {
                 prevEvent = event;
                 event = event->next;
             }
         }
+        v_waitsetUnlock(_this);
     }
+}
+
+c_ulong
+v_waitsetCount(
+    v_waitset _this)
+{
+    c_ulong count;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_waitset));
+
+    v_waitsetLock(_this);
+    count = _this->count;
+    v_waitsetUnlock(_this);
+
+    return count;
 }

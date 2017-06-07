@@ -12,6 +12,10 @@ sleep 2
 
 ./sacpp_querycondition_pub > pubResult.txt
 
+echo === Waiting for processes to terminate
+waitForProcessTermination sacpp_querycondition_pub 30
+waitForProcessTermination sacpp_querycondition_sub 30
+
 queryconditionCheckResult
 
 stopOSPL

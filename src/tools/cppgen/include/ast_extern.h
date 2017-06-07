@@ -86,7 +86,7 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 extern void AST_record_fwd_interface(AST_InterfaceFwd *i);
 extern void AST_check_fwd_interface();
 
-extern idl_bool AST_illegal_recursive_type(AST_Decl *t);
+extern bool AST_illegal_recursive_type(AST_Decl *t);
 
 #endif           // _AST_EXTERN_AST_EXTERN_HH
 

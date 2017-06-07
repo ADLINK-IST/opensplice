@@ -1,0 +1,28 @@
+import "omg/dds/descriptor.proto";
+
+package address;
+
+message Organisation {
+    required string name = 1 [(.omg.dds.member).key = true];
+    required string address = 2 [(.omg.dds.member).filterable = true];
+    optional Person.PhoneNumber phone = 3;
+}
+
+message Person {
+  option (.omg.dds.type) = {name: "dds.Person"};
+  required string name = 1 [(.omg.dds.member).key = true]; 
+  required int32 age = 2 [(.omg.dds.member) = {filterable: true}];
+  optional string email = 3;
+  enum PhoneType {
+    MOBILE = 0;
+    HOME = 1;
+    WORK = 2;
+  }
+
+  message PhoneNumber {
+    required string number = 1;
+    optional PhoneType type = 2 [default = HOME];
+  }
+  repeated PhoneNumber phone = 4;
+  required Organisation worksFor = 5;
+}

@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef NN_LOG_H
@@ -16,9 +24,16 @@
 
 #include "os_report.h"
 #include "os_defs.h"
+#include "q_time.h"
 
 #if defined (__cplusplus)
 extern "C" {
+#endif
+
+#ifdef OSPL_BUILD_DDSI2
+#define OS_API OS_API_EXPORT
+#else
+#define OS_API OS_API_IMPORT
 #endif
 
 #define LC_FATAL 1u
@@ -33,15 +48,18 @@ extern "C" {
 #define LC_TIMING 512u
 #define LC_TRAFFIC 1024u
 #define LC_TOPIC 2048u
-#define LC_ALLCATS (LC_FATAL | LC_ERROR | LC_WARNING | LC_CONFIG | LC_INFO | LC_DISCOVERY | LC_DATA | LC_TRACE | LC_TIMING | LC_TRAFFIC)
+#define LC_TCP 4096u
+#define LC_PLIST 8192u
+#define LC_WHC 16384u
+#define LC_ALLCATS (LC_FATAL | LC_ERROR | LC_WARNING | LC_CONFIG | LC_INFO | LC_DISCOVERY | LC_DATA | LC_TRACE | LC_TIMING | LC_TRAFFIC | LC_TCP)
 
 typedef unsigned logcat_t;
 
 typedef struct logbuf {
   char buf[2048];
-  int bufsz;
-  int pos;
-  os_int64 tstamp;
+  size_t bufsz;
+  size_t pos;
+  nn_wctime_t tstamp;
 } *logbuf_t;
 
 logbuf_t logbuf_new (void);
@@ -49,22 +67,22 @@ void logbuf_init (logbuf_t lb);
 void logbuf_free (logbuf_t lb);
 
 int nn_vlog (logcat_t cat, const char *fmt, va_list ap);
-int nn_log (logcat_t cat, const char *fmt, ...);
-int nn_trace (const char *fmt, ...);
-void nn_log_set_tstamp (os_int64 tnow);
+OS_API int nn_log (logcat_t cat, const char *fmt, ...) __attribute_format__((printf,2,3));
+OS_API int nn_trace (const char *fmt, ...) __attribute_format__((printf,1,2));
+void nn_log_set_tstamp (nn_wctime_t tnow);
 
 #define TRACE(args) ((config.enabled_logcats & LC_TRACE) ? (nn_trace args) : 0)
 
 #define LOG_THREAD_CPUTIME(guard) do {                                  \
     if (config.enabled_logcats & LC_TIMING)                             \
     {                                                                   \
-      os_int64 tnow = now ();                                           \
-      if (tnow >= (guard))                                              \
+      nn_mtime_t tnow = now_mt ();                                      \
+      if (tnow.v >= (guard).v)                                          \
       {                                                                 \
         os_int64 ts = get_thread_cputime ();                            \
         nn_log (LC_TIMING, "thread_cputime %d.%09d\n",                  \
                 (int) (ts / T_SECOND), (int) (ts % T_SECOND));          \
-        (guard) = tnow + T_SECOND;                                      \
+        (guard).v = tnow.v + T_SECOND;                                  \
       }                                                                 \
     }                                                                   \
   } while (0)
@@ -215,7 +233,7 @@ void nn_log_set_tstamp (os_int64 tnow);
     os_report (OS_FATAL, config.servicename, __FILE__, __LINE__,  0, (fmt), a, b, c, d, e, f, g, h, i, j); \
     abort (); \
   } while (0)
-
+#undef OS_API
 #if defined (__cplusplus)
 }
 #endif

@@ -1,19 +1,26 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 package org.opensplice.cm.transform.xml;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,16 +34,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Attr;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
-
-import org.opensplice.cm.Storage;
 import org.opensplice.cm.Storage.Result;
 import org.opensplice.cm.data.UserData;
-import org.opensplice.cm.impl.StorageImpl;
 import org.opensplice.cm.meta.MetaType;
 import org.opensplice.cm.transform.MetaTypeDeserializer;
 import org.opensplice.cm.transform.StorageDeserializer;
@@ -72,6 +73,7 @@ public class StorageDeserializerXML implements StorageDeserializer{
         es = new ElementSerializerXML();
     }
 
+    @Override
     public Object deserializeStorage(Object serialized) throws TransformationException {
         if(serialized == null){
             throw new TransformationException("Supplied Storage is not valid.");
@@ -82,7 +84,9 @@ public class StorageDeserializerXML implements StorageDeserializer{
         if(serialized instanceof String){
             String xmlStorage = (String)serialized;
             try {
-                document = builder.parse(new InputSource(new StringReader(xmlStorage)));
+                synchronized(builder){
+                    document = builder.parse(new InputSource(new StringReader(xmlStorage)));
+                }
             }
             catch (SAXException se) {
                 logger.logp(Level.SEVERE,  "StorageDeserializerXML",
@@ -147,6 +151,7 @@ public class StorageDeserializerXML implements StorageDeserializer{
         return r;
     }
 
+    @Override
     public Result deserializeStorageResult(Object serialized) throws TransformationException {
         if(serialized == null){
             throw new TransformationException("Supplied StorageResult is not valid.");
@@ -182,6 +187,7 @@ public class StorageDeserializerXML implements StorageDeserializer{
         return result;
     }
 
+    @Override
     public Result deserializeOpenResult_Result(Object serialized) throws TransformationException {
         if(serialized == null){
             throw new TransformationException("Supplied StorageOpenResult is not valid.");
@@ -224,6 +230,7 @@ public class StorageDeserializerXML implements StorageDeserializer{
         return result;
     }
 
+    @Override
     public Object deserializeOpenResult_Storage(Object serialized) throws TransformationException {
         if(serialized == null){
             throw new TransformationException("Supplied StorageOpenResult is not valid.");
@@ -266,6 +273,7 @@ public class StorageDeserializerXML implements StorageDeserializer{
         return storage;
     }
 
+    @Override
     public Result deserializeReadResult_Result(Object serialized) throws TransformationException {
         if(serialized == null){
             throw new TransformationException("Supplied StorageReadResult is not valid.");
@@ -308,6 +316,7 @@ public class StorageDeserializerXML implements StorageDeserializer{
         return result;
     }
 
+    @Override
     public UserData deserializeReadResult_Data(Object serialized, MetaType type) throws TransformationException {
         if(serialized == null){
             throw new TransformationException("Supplied StorageReadResult is not valid.");
@@ -382,6 +391,7 @@ public class StorageDeserializerXML implements StorageDeserializer{
         return result;
     }
 
+    @Override
     public String deserializeReadResult_DataTypeName(Object serialized) throws TransformationException
     {
         if(serialized == null){
@@ -431,6 +441,7 @@ public class StorageDeserializerXML implements StorageDeserializer{
         return result;
     }
 
+    @Override
     public MetaType deserializeGetTypeResult_Metadata(Object serialized) throws TransformationException, DataTypeUnsupportedException {
         if(serialized == null){
             throw new TransformationException("Supplied GetTypeResult is not valid.");

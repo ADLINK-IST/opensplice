@@ -1,3 +1,22 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *
+ */
 #include <assert.h>
 
 #include "os_if.h"
@@ -18,7 +37,7 @@
 
 #include "sysdeps.h" /* for getrusage() */
 
-static void nn_retrieve_lease_settings (os_time *sleepTime)
+static void nn_retrieve_lease_settings (os_duration *sleepTime)
 {
   const float leaseSec = config.servicelease_expiry_time;
   float sleepSec = leaseSec * config.servicelease_update_factor;
@@ -31,8 +50,7 @@ static void nn_retrieve_lease_settings (os_time *sleepTime)
   if (sleepSec > 1.0f)
     sleepSec = 1.0f;
 
-  sleepTime->tv_sec = (os_int32) sleepSec;
-  sleepTime->tv_nsec = (os_int32) ((sleepSec - (float) sleepTime->tv_sec) * 1e9f);
+  *sleepTime = os_durationMul(1*OS_DURATION_SECOND, sleepSec);
 }
 
 struct alive_wd {
@@ -41,7 +59,7 @@ struct alive_wd {
 };
 
 struct nn_servicelease {
-  os_time sleepTime;
+  os_duration sleepTime;
   int keepgoing;
   struct alive_wd *av_ary;
   void (*renew_cb) (void *arg);
@@ -60,8 +78,9 @@ static void *lease_renewal_thread (struct nn_servicelease *sl)
      assignment. */
   const os_int64 min_progress_check_intv = 100 * T_MILLISECOND;
   struct thread_state1 *self = lookup_thread_state ();
-  os_int64 tlast = 0;
-  int i;
+  nn_mtime_t tlast = { 0 };
+  int was_alive = 1;
+  unsigned i;
   for (i = 0; i < thread_states.nthreads; i++)
   {
     sl->av_ary[i].alive = 1;
@@ -70,15 +89,15 @@ static void *lease_renewal_thread (struct nn_servicelease *sl)
   os_mutexLock (&sl->lock);
   while (sl->keepgoing)
   {
-    int n_alive = 0;
-    os_int64 tnow = now ();
+    unsigned n_alive = 0;
+    nn_mtime_t tnow = now_mt ();
 
-    TRACE (("servicelease: tnow %lld:", tnow));
+    TRACE (("servicelease: tnow %"PA_PRId64":", tnow.v));
 
     /* Check progress only if enough time has passed: there is no
        guarantee that os_cond_timedwait wont ever return early, and we
        do want to avoid spurious warnings. */
-    if (tnow < tlast + min_progress_check_intv)
+    if (tnow.v < tlast.v + min_progress_check_intv)
     {
       n_alive = thread_states.nthreads;
     }
@@ -94,7 +113,7 @@ static void *lease_renewal_thread (struct nn_servicelease *sl)
           vtime_t vt = thread_states.ts[i].vtime;
           vtime_t wd = thread_states.ts[i].watchdog;
           int alive = vtime_asleep_p (vt) || vtime_asleep_p (wd) || vtime_gt (wd, sl->av_ary[i].wd);
-          n_alive += alive;
+          n_alive += (unsigned) alive;
           TRACE ((" %d(%s):%c:%u:%u->%u:", i, thread_states.ts[i].name, alive ? 'a' : 'd', vt, sl->av_ary[i].wd, wd));
           sl->av_ary[i].wd = wd;
           if (sl->av_ary[i].alive != alive)
@@ -106,7 +125,7 @@ static void *lease_renewal_thread (struct nn_servicelease *sl)
             else
               msg = "once again made progress";
             NN_WARNING2 ("thread %s %s\n", name ? name : "(anon)", msg);
-            sl->av_ary[i].alive = alive;
+            sl->av_ary[i].alive = (char) alive;
           }
         }
       }
@@ -123,10 +142,14 @@ static void *lease_renewal_thread (struct nn_servicelease *sl)
          liveliness updates from here.
          FIXME: should terminate failure of renew_cb() */
       sl->renew_cb (sl->renew_arg);
+      was_alive = 1;
     }
     else
     {
       TRACE ((": [%d] NOT renewing\n", n_alive));
+      if (was_alive)
+        log_stack_traces ();
+      was_alive = 0;
     }
 
 #if SYSDEPS_HAVE_GETRUSAGE
@@ -148,7 +171,7 @@ static void *lease_renewal_thread (struct nn_servicelease *sl)
     }
 #endif
 
-    os_condTimedWait (&sl->cond, &sl->lock, &sl->sleepTime);
+    os_condTimedWait (&sl->cond, &sl->lock, sl->sleepTime);
 
     /* We are never active in a way that matters for the garbage
        collection of old writers, &c. */
@@ -166,9 +189,7 @@ struct nn_servicelease *nn_servicelease_new (void (*renew_cb) (void *arg), void 
 {
   struct nn_servicelease *sl;
 
-  if ((sl = os_malloc (sizeof (*sl))) == NULL)
-    goto fail_0;
-
+  sl = os_malloc (sizeof (*sl));
   nn_retrieve_lease_settings (&sl->sleepTime);
   sl->keepgoing = -1;
   sl->renew_cb = renew_cb ? renew_cb : dummy_renew_cb;
@@ -179,10 +200,10 @@ struct nn_servicelease *nn_servicelease_new (void (*renew_cb) (void *arg), void 
     goto fail_vtimes;
   /* service lease update thread initializes av_ary */
 
-  if (os_mutexInit (&sl->lock, &gv.mattr) != os_resultSuccess)
+  if (os_mutexInit (&sl->lock, NULL) != os_resultSuccess)
     goto fail_lock;
 
-  if (os_condInit (&sl->cond, &sl->lock, &gv.cattr) != os_resultSuccess)
+  if (os_condInit (&sl->cond, &sl->lock, NULL) != os_resultSuccess)
     goto fail_cond;
   return sl;
 
@@ -192,7 +213,6 @@ struct nn_servicelease *nn_servicelease_new (void (*renew_cb) (void *arg), void 
   os_free (sl->av_ary);
  fail_vtimes:
   os_free (sl);
- fail_0:
   return NULL;
 }
 

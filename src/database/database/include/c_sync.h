@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #ifndef C_SYNC_H
@@ -48,16 +56,11 @@ typedef struct {
 } c_mutex;
 #endif
 
-typedef enum {
-    SHARED_MUTEX,
-    PRIVATE_MUTEX
-} c_mutexAttr;
-
-OS_API c_syncResult c_mutexInit     (c_mutex *mtx, const c_mutexAttr attr);
-OS_API c_syncResult c_mutexLock     (c_mutex *mtx);
+OS_API c_syncResult c_mutexInit     (c_base base, c_mutex *mtx);
+OS_API void         c_mutexLock     (c_mutex *mtx);
 OS_API c_syncResult c_mutexTryLock  (c_mutex *mtx);
-OS_API c_syncResult c_mutexUnlock   (c_mutex *mtx);
-OS_API c_syncResult c_mutexDestroy  (c_mutex *mtx);
+OS_API void         c_mutexUnlock   (c_mutex *mtx);
+OS_API void         c_mutexDestroy  (c_mutex *mtx);
 
 #ifdef NDEBUG
 typedef os_rwlock c_lock;
@@ -68,31 +71,22 @@ typedef struct {
 } c_lock;
 #endif
 
-typedef enum {
-    SHARED_LOCK,
-    PRIVATE_LOCK
-} c_lockAttr;
-
-OS_API c_syncResult c_lockInit      (c_lock *lck, const c_lockAttr attr);
-OS_API c_syncResult c_lockRead      (c_lock *lck);
-OS_API c_syncResult c_lockWrite     (c_lock *lck);
+OS_API c_syncResult c_lockInit      (c_base base, c_lock *lck);
+OS_API void         c_lockRead      (c_lock *lck);
+OS_API void         c_lockWrite     (c_lock *lck);
 OS_API c_syncResult c_lockTryRead   (c_lock *lck);
 OS_API c_syncResult c_lockTryWrite  (c_lock *lck);
-OS_API c_syncResult c_lockUnlock    (c_lock *lck);
-OS_API c_syncResult c_lockDestroy   (c_lock *lck);
+OS_API void         c_lockUnlock    (c_lock *lck);
+OS_API void         c_lockDestroy   (c_lock *lck);
 
 typedef os_cond c_cond;
-typedef enum {
-    SHARED_COND,
-    PRIVATE_COND
-} c_condAttr;
 
-OS_API c_syncResult c_condInit      (c_cond *cnd, c_mutex *mtx, const c_condAttr attr);
-OS_API c_syncResult c_condWait      (c_cond *cnd, c_mutex *mtx);
-OS_API c_syncResult c_condTimedWait (c_cond *cnd, c_mutex *mtx, const c_time time);
-OS_API c_syncResult c_condSignal    (c_cond *cnd);
-OS_API c_syncResult c_condBroadcast (c_cond *cnd);
-OS_API c_syncResult c_condDestroy   (c_cond *cnd);
+OS_API c_syncResult c_condInit      (c_base base, c_cond *cnd, c_mutex *mtx);
+OS_API void         c_condWait      (c_cond *cnd, c_mutex *mtx);
+OS_API c_syncResult c_condTimedWait (c_cond *cnd, c_mutex *mtx, const os_duration time);
+OS_API void         c_condSignal    (c_cond *cnd);
+OS_API void         c_condBroadcast (c_cond *cnd);
+OS_API void         c_condDestroy   (c_cond *cnd);
 
 typedef struct c_threadId {
     os_threadId value;

@@ -77,32 +77,34 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 ** USE: Included from ast.hh
 */
 
-#include "idl_fwd.h"
-#include "idl_narrow.h"
-#include "ast_decl.h"
+#include <idl_fwd.h>
+#include <idl_narrow.h>
+#include <ast_decl.h>
 
 
 class AST_Type : public virtual AST_Decl
 {
-
 public:
-   // Operations
 
-   // Constructor(s)
-   AST_Type();
-   AST_Type(AST_Decl::NodeType nt, UTL_ScopedName *n, const UTL_Pragmas &p);
-   virtual ~AST_Type()
-   {}
+   AST_Type ();
+   AST_Type (AST_Decl::NodeType nt, UTL_ScopedName *n, const UTL_Pragmas &p);
 
-   idl_bool local();
-   void set_local(const idl_bool l);
+   virtual ~AST_Type () {}
+
+   bool local ();
+   void set_local (const bool l);
+   bool abstract ();
+   void set_abstract (const bool l);
 
    // Narrowing
-   DEF_NARROW_METHODS1(AST_Type, AST_Decl);
-   DEF_NARROW_FROM_DECL(AST_Type);
+
+   DEF_NARROW_METHODS1 (AST_Type, AST_Decl);
+   DEF_NARROW_FROM_DECL (AST_Type);
 
 private:
-   idl_bool pd_local; // Is local?
+
+   bool pd_local; // Is local?
+   bool pd_abstract; // Is abstract?
 };
 
-#endif           // _AST_TYPE_AST_TYPE_HH
+#endif

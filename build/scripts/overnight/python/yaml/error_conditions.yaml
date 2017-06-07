@@ -1,0 +1,63 @@
+parseconditions:
+    desc: Errors LogParser Conditions
+
+    file: run.log
+    parsecontents: yes
+    type: local
+
+    product: Vortex OpenSplice
+
+    conditions: 
+        - name: seg_fault
+          type: line
+          inst: 0
+          required: no
+          line: " *segmentation* "
+
+        - name: not_found
+          type: line
+          inst: 0
+          required: no
+          line: " *not found* "
+
+        - name: assertion
+          type: line
+          inst: 0
+          required: no
+          line: " *assertion*"
+
+        - name: no_class_def
+          type: line
+          inst: 0
+          required: no
+          line: " *NoClassDefFoundError* "
+
+        - name: kernel_failed
+          type: line
+          inst: 0
+          required: no
+          line: " *creation of kernel failed* "
+
+        - name: killed
+          type: line
+          inst: 0
+          required: no
+          line: " *killed* "
+
+        - name: glibc
+          type: line
+          inst: 0
+          required: no
+          line: " *glibc* "
+
+        - name: failed
+          type: line
+          inst: 0
+          required: no
+          line: " *failed* "
+
+        - name: fatal_error
+          type: line
+          inst: 0
+          required: no
+          line: " *Fatal error* "

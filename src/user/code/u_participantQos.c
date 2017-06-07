@@ -1,96 +1,62 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 
 #include "u_participantQos.h"
 #include "v_scheduler.h"
 
-/**************************************************************
- * Private functions
- **************************************************************/
-
-/**************************************************************
- * constructor/destructor
- **************************************************************/
-v_participantQos
+u_participantQos
 u_participantQosNew(
-    v_participantQos tmpl)
+    const u_participantQos _template)
 {
-    v_participantQos q;
+    u_participantQos _this;
 
-    q = os_malloc(sizeof(C_STRUCT(v_participantQos)));
-    if (q != NULL) {
-        if (tmpl != NULL) {
-            *q = *tmpl;
-            q->userData.size = tmpl->userData.size;
-            if (tmpl->userData.size > 0) {
-                q->userData.value = os_malloc(tmpl->userData.size);
-                memcpy(q->userData.value,tmpl->userData.value,tmpl->userData.size);                
-            } else {
-                q->userData.value = NULL;
-            }
-        } else {
-            u_participantQosInit(q);
+    assert(!_template || ((v_qos)_template)->kind == V_PARTICIPANT_QOS);
+
+    _this = os_malloc(sizeof(C_STRUCT(v_participantQos)));
+    if (_template != NULL) {
+        *_this = *_template;
+        _this->userData.v.value = NULL;
+        if (_template->userData.v.size > 0) {
+            assert(_template->userData.v.value != NULL);
+            _this->userData.v.value = os_malloc((c_ulong) _template->userData.v.size);
+            _this->userData.v.size = _template->userData.v.size;
+            memcpy(_this->userData.v.value, _template->userData.v.value, (c_ulong) _template->userData.v.size);
         }
-    }
-
-    return q;
-}
-
-u_result
-u_participantQosInit(
-    v_participantQos q)
-{
-    u_result result;
-
-    if (q != NULL) {
-        ((v_qos)q)->kind                             = V_PARTICIPANT_QOS;
-        q->userData.value                            = NULL;
-        q->userData.size                             = 0;
-        q->entityFactory.autoenable_created_entities = TRUE;
-	q->watchdogScheduling.kind = V_SCHED_DEFAULT;
-	q->watchdogScheduling.priorityKind = V_SCHED_PRIO_RELATIVE;
-	q->watchdogScheduling.priority = 0;
-        result = U_RESULT_OK;
     } else {
-        result = U_RESULT_ILL_PARAM;
+        ((v_qos)_this)->kind                               = V_PARTICIPANT_QOS;
+        _this->userData.v.value                            = NULL;
+        _this->userData.v.size                             = 0;
+        _this->entityFactory.v.autoenable_created_entities = TRUE;
+        _this->watchdogScheduling.v.kind                   = V_SCHED_DEFAULT;
+        _this->watchdogScheduling.v.priorityKind           = V_SCHED_PRIO_RELATIVE;
+        _this->watchdogScheduling.v.priority               = 0;
     }
 
-    return result;
-}
-
-void
-u_participantQosDeinit(
-    v_participantQos q)
-{
-    if (q != NULL) {
-        os_free(q->userData.value);
-        q->userData.value = NULL;
-    }
+    return _this;
 }
 
 void
 u_participantQosFree(
-    v_participantQos q)
+    const u_participantQos _this)
 {
-    if (q != NULL) {
-        u_participantQosDeinit(q);
-        os_free(q);
-    }
+    assert(_this && ((v_qos)_this)->kind == V_PARTICIPANT_QOS);
+    os_free(_this->userData.v.value);
+    os_free(_this);
 }
-
-/**************************************************************
- * Protected functions
- **************************************************************/
-
-/**************************************************************
- * Public functions
- **************************************************************/

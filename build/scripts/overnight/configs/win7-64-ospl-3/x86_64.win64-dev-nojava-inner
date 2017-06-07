@@ -1,0 +1,2 @@
+. configs/common-inner
+. configs/`hostname`/dev_build_64bit

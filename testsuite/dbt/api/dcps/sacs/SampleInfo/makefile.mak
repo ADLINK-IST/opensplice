@@ -1,5 +1,5 @@
 TARGET_CSEXEC  = SACSTesterSampleInfo
-CS_NAMESPCS	   = test test/sacs
+CS_NAMESPCS    = test test/sacs
 DATA_MODEL     = test_type
 TEST_FRAMEWORK = cstestframe
 

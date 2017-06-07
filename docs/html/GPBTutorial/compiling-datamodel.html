@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Compiling the datamodel with the GPB compiler &mdash; OpenSplice GPB Tutorial</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice GPB Tutorial" href="index.html" />
+    <link rel="next" title="5. Using the generated API in applications" href="using-generated-api.html" />
+    <link rel="prev" title="3. Proto message for a DDS system" href="proto-message.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="using-generated-api.html" title="5. Using the generated API in applications"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="proto-message.html" title="3. Proto message for a DDS system"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="compiling-the-datamodel-with-the-gpb-compiler">
+<span id="id1"></span><h1>4. Compiling the datamodel with the GPB compiler<a class="headerlink" href="#compiling-the-datamodel-with-the-gpb-compiler" title="Permalink to this headline">¶</a></h1>
+<p>Once you&#8217;ve defined your messages, you run the protocol buffer
+compiler for your application&#8217;s language on your <tt class="docutils literal"><span class="pre">.proto</span></tt> file to
+generate data access classes. These provide simple accessors
+for each field so, for instance, if your chosen language is ISO-C++,
+running the compiler on the above example will generate a class
+called <em>Person</em>. You can then use this class in your
+application to populate, serialize, and retrieve <em>Person</em> protocol
+buffer messages.</p>
+<div class="section" id="dds-specific-gpb-compiler-plugin-to-generate-code">
+<h2>4.1. DDS-specific GPB-compiler plugin to generate code.<a class="headerlink" href="#dds-specific-gpb-compiler-plugin-to-generate-code" title="Permalink to this headline">¶</a></h2>
+<p>The GPB compiler can be extended to support new languages <em>via</em>
+so-called plugins. The compiler invokes the plugin while providing
+the GPB type definition to it in the form of a GPB message.
+For DDS support the OpenSplice GPB-compiler is delivered with
+Vortex OpenSplice.</p>
+<p>The Vortex OpenSplice IDL compiler is invoked by the OpenSplice
+GPB-compiler plugin to generate the DDS type including typed
+DataWriter and DataReader code. Additionally, code is generated to
+convert an instance of the DDS type to the GPB type and <em>vice versa</em>,
+which hides the DDS type from the application entirely.</p>
+</div>
+<div class="section" id="java-5-example">
+<h2>4.2. Java 5 example<a class="headerlink" href="#java-5-example" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="_images/icon-java.png"><img alt="java" src="_images/icon-java.png" style="height: 6mm;" /></a></p>
+<p>In this example we assume that a correct OpenSplice environment is
+set (<tt class="docutils literal"><span class="pre">release.bat</span></tt> has been run).</p>
+<p>For creating the DDS-specific code by the GPB compiler the option
+<tt class="docutils literal"><span class="pre">--ddsjava_out</span></tt> must be given to the compiler. Also the path to the
+OpenSplice GPB-compiler must be supplied.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>protoc --java_out    =outputPath
+       --ddsjava_out =outputPath
+       --proto_path  =PathToProtoFile
+       --proto_path  =PathToProtoSelf
+       --proto_path  =PathToOpenSpliceProtoCompiler
+       protoFileToCompile
+</pre></div>
+</div>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">--java_out</span></tt> gives the path where the GDP generated code will be stored.</li>
+<li><tt class="docutils literal"><span class="pre">--ddsjava_out</span></tt> gives the path where the DDS-specific generated code will be stored.</li>
+<li>first <tt class="docutils literal"><span class="pre">--proto_path</span></tt>: the protoc compiler needs the path where the <tt class="docutils literal"><span class="pre">.proto</span></tt> file is located.</li>
+<li>second <tt class="docutils literal"><span class="pre">--proto_path</span></tt>: the path where the GPB environment is installed on your local machine.</li>
+<li>third <tt class="docutils literal"><span class="pre">--proto_path</span></tt>: specifies the path to the OpenSplice proto descriptor.
+This is normally <tt class="docutils literal"><span class="pre">$OSPL_HOME/include/protobuf</span></tt>.</li>
+<li><tt class="docutils literal"><span class="pre">protoFileToCompile</span></tt> the last option is the <tt class="docutils literal"><span class="pre">.proto</span></tt> file.</li>
+</ul>
+</div></blockquote>
+<p>Assuming that we need the generated code in the <tt class="docutils literal"><span class="pre">./generated</span></tt> directory
+and the previous <tt class="docutils literal"><span class="pre">address.proto</span></tt> example is in the current directory,
+the command will be:</p>
+<div class="highlight-python"><div class="highlight"><pre>protoc --java_out=./generated
+       --ddsjava_out=./generated
+       --proto_path=./
+       --proto_path=$PROTOBUF_HOME/src
+       --proto_path=$OSPL_HOME/include/protobuf
+       ./address.proto
+</pre></div>
+</div>
+<p>The generated code, in the <tt class="docutils literal"><span class="pre">./generated</span></tt> directory, can be
+compiled normally with the Java compiler together with your own
+written applications.</p>
+<p>The only pre-requisite is that <tt class="docutils literal"><span class="pre">$OSPL_HOME/jar/dcpssaj5.jar</span></tt> and
+<tt class="docutils literal"><span class="pre">$OSPL_HOME/jar/dcpsprotobuf.jar</span></tt> are in the classpath so that the
+Java compiler can find the included OpenSplice <tt class="docutils literal"><span class="pre">jar</span></tt> files.</p>
+<p>This example is delivered with OpenSplice, and is located in
+<tt class="docutils literal"><span class="pre">examples/protobuf/java5</span></tt>.</p>
+<p>If the generated <tt class="docutils literal"><span class="pre">.idl</span></tt> file is needed by other applications, this file
+will also be generated in the <tt class="docutils literal"><span class="pre">--ddsjava_out</span></tt> path if the environment
+variable <tt class="docutils literal"><span class="pre">OSPL_PROTOBUF_INCLUDE_IDL</span></tt> is set to true.</p>
+</div>
+<div class="section" id="c-example">
+<h2>4.3. C++ example<a class="headerlink" href="#c-example" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="_images/icon-cpp.png"><img alt="cpp" src="_images/icon-cpp.png" style="height: 6mm;" /></a></p>
+<p>In this example we assume that a correct OpenSplice environment is
+set (so release.bat has been run)
+For creating the DDS specific code by the GPB compiler the option
+&#8211;ddscpp_out must be given to the compiler. Also the path to the
+OpenSplice GPB-compiler must be given.
+Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>protoc --cpp_out     =outputPath
+       --ddscpp_out  =outputPath
+       --proto_path  =PathToProtoFile
+       --proto_path  =PathToProtoSelf
+       --proto_path  =PathToOpenSpliceProtoCompiler
+       protoFileToCompile
+</pre></div>
+</div>
+<blockquote>
+<div><ul class="simple">
+<li><tt class="docutils literal"><span class="pre">--cpp_out</span></tt> gives the path where the GDP generated code will be stored.</li>
+<li><tt class="docutils literal"><span class="pre">--ddscpp_out</span></tt> gives the path where the DDS-specific generated code will be stored.</li>
+<li>first <tt class="docutils literal"><span class="pre">--proto_path</span></tt>: the protoc compiler needs the path where the <tt class="docutils literal"><span class="pre">.proto</span></tt> file is located.</li>
+<li>second <tt class="docutils literal"><span class="pre">--proto_path</span></tt>: the path where the GPB environment is installed on your local machine.</li>
+<li>third <tt class="docutils literal"><span class="pre">--proto_path</span></tt>: specifies the path to the OpenSplice proto descriptor.
+This is normally <tt class="docutils literal"><span class="pre">$OSPL_HOME/include/protobuf</span></tt>.</li>
+<li><tt class="docutils literal"><span class="pre">protoFileToCompile</span></tt> the last option is the <tt class="docutils literal"><span class="pre">.proto</span></tt> file.</li>
+</ul>
+</div></blockquote>
+<p>Assuming that we need the generated code in the <tt class="docutils literal"><span class="pre">./generated</span></tt> directory
+and the previous <tt class="docutils literal"><span class="pre">address.proto</span></tt> example is in the current directory,
+the command will be:</p>
+<div class="highlight-python"><div class="highlight"><pre>protoc --cpp_out=./generated
+       --ddscpp_out=./generated
+       --proto_path=./
+       --proto_path=$PROTOBUF_HOME/src
+       --proto_path=$OSPL_HOME/include/protobuf
+       ./address.proto
+</pre></div>
+</div>
+<p>The generated code, in the <tt class="docutils literal"><span class="pre">./generated</span></tt> directory, can be
+compiled normally with the C++ compiler together with your own
+written applications.</p>
+<p>This example is delivered with OpenSplice, and is located in
+<tt class="docutils literal"><span class="pre">examples/protobuf/isocpp2</span></tt>.</p>
+<p>If the generated <tt class="docutils literal"><span class="pre">.idl</span></tt> file is needed by other applications, this file
+will also be generated in the <tt class="docutils literal"><span class="pre">--ddscpp_out</span></tt> path if the environment
+variable <tt class="docutils literal"><span class="pre">OSPL_PROTOBUF_INCLUDE_IDL</span></tt> is set to true.</p>
+</div>
+<div class="section" id="tempory-idl-file-created-by-the-gpb-data-model">
+<h2>4.4. Tempory IDL file created by the GPB data-model<a class="headerlink" href="#tempory-idl-file-created-by-the-gpb-data-model" title="Permalink to this headline">¶</a></h2>
+<p>The IDL file created for the previous example will contain:</p>
+<div class="highlight-idl"><div class="highlight"><pre>module org {
+   module omg {
+      module dds {
+         module protobuf {
+            typedef sequence<span class="o">&lt;</span>octet<span class="o">&gt;</span> gpb_payload_t;
+         };
+      };
+   };
+};
+
+module address {
+    module dds {
+        struct Person {
+            <span class="nb">string</span> name;
+            <span class="nb">long</span> age;
+            <span class="nb">string</span> worksFor_name;
+            <span class="nb">string</span> worksFor_address;
+            <span class="o">::</span>org<span class="o">::</span>omg<span class="o">::</span>dds<span class="o">::</span>protobuf<span class="o">::</span>gpb_payload_t ospl_protobuf_data;
+        };
+        <span class="o">#</span>pragma keylist Person name worksFor_name
+    };
+};
+</pre></div>
+</div>
+<p>This idl file is deleted after the idl-pp compiler is finished. If the
+temporary idl file is needed in other DDS applications (it also usable for
+other DDS vendors), then the environment variable <tt class="docutils literal"><span class="pre">OSPL_PROTOBUF_INCLUDE_IDL</span></tt>
+must be set to true to prevent the idl file from being deleted.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. Compiling the datamodel with the GPB compiler</a><ul>
+<li><a class="reference internal" href="#dds-specific-gpb-compiler-plugin-to-generate-code">4.1. DDS-specific GPB-compiler plugin to generate code.</a></li>
+<li><a class="reference internal" href="#java-5-example">4.2. Java 5 example</a></li>
+<li><a class="reference internal" href="#c-example">4.3. C++ example</a></li>
+<li><a class="reference internal" href="#tempory-idl-file-created-by-the-gpb-data-model">4.4. Tempory IDL file created by the GPB data-model</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="proto-message.html"
+                        title="previous chapter">3. Proto message for a DDS system</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="using-generated-api.html"
+                        title="next chapter">5. Using the generated API in applications</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/compiling-datamodel.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="using-generated-api.html" title="5. Using the generated API in applications"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="proto-message.html" title="3. Proto message for a DDS system"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice GPB Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

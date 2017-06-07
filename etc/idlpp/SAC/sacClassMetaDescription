@@ -1,2 +1,3 @@
 const char * $(type_name)_metaDescriptor[] = {"$(meta-descriptor)"};
-const c_ulong  $(type_name)_metaDescriptorArrLength = $(meta-descriptorArrLength);
+const int  $(type_name)_metaDescriptorArrLength = $(meta-descriptorArrLength);
+const int  $(type_name)_metaDescriptorLength = $(meta-descriptorLength);

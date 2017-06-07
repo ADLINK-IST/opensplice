@@ -115,6 +115,7 @@ public:
       EIDL_BACK_END,    // Back end error
       EIDL_PERFECT_HASH,   // couldn't do perfect hashing
       EIDL_ILLEGAL_ID, // identifier differs from keyword only in case
+      EIDL_WIDE_TYPE, // unsupported wide type
       EIDL_OK      // No error
    };
 

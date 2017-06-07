@@ -1,6 +1,9 @@
 export VS_HOME='/cygdrive/C/Program Files (x86)/Microsoft Visual Studio 11.0'
 export WINDOWSSDKDIR='/cygdrive/C/Program Files (x86)/Windows Kits/8.0'
 export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
+export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
+export LAUNCH4J_HOME=/home/dds/INSTALLED_FOR_DDS/Launch4j
+export PATH=/usr/local/bin:$PATH
 
 #Winxp combined with new cygwin does not set TMP or TEMP even when in the windows settings
 #as the native calls done via TAO ask for a temp directory and windows fallback to using

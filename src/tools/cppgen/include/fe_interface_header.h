@@ -79,34 +79,49 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 class FE_InterfaceHeader
 {
-
 public:
-   // Operations
 
-   // Constructor(s)
-   FE_InterfaceHeader(idl_bool local, UTL_ScopedName *n, UTL_NameList *l);
-   virtual ~FE_InterfaceHeader()
-   {}
+   FE_InterfaceHeader
+   (
+      bool local,
+      bool abstract,
+      UTL_ScopedName *n,
+      UTL_NameList *l
+   );
+
+   virtual ~FE_InterfaceHeader() 
+   {
+      if (pd_inherits)
+      {
+         delete pd_inherits;
+      }
+   }
 
    // Data Accessors
-   UTL_ScopedName *interface_name();
-   AST_Interface **inherits();
-   long n_inherits();
-   idl_bool local();
+
+   UTL_ScopedName *interface_name ();
+   AST_Interface **inherits ();
+   long n_inherits ();
+   bool local ();
+   bool abstract ();
 
 private:
+
    // Data
+
    UTL_ScopedName *pd_interface_name; // Interface name
    AST_Interface **pd_inherits;  // Inherited interfaces
    long pd_n_inherits;  // How many
-   idl_bool pd_local;
+   bool pd_local;
+   bool pd_abstract;
 
    // Operations
 
    // Compile the flattened unique list of interfaces which this
    // interface inherits from
+
    void compile_one_inheritance(AST_Interface *i);
    void compile_inheritance(UTL_NameList *l);
 };
 
-#endif           // _FE_INTERFACE_HEADER_FE_INTERFACE_HH
+#endif

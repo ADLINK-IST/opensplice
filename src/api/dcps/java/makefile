@@ -7,6 +7,7 @@ endif # INCLUDE_API_DCPS_SAJ
 
 ifeq ($(INCLUDE_API_DCPS_CJ),yes)
 SUBSYSTEMS += cj
+SUBSYSTEMS += cj_y2038_ready
 INCLUDE_COMMON=yes
 endif # INCLUDE_API_DCPS_CJ
 

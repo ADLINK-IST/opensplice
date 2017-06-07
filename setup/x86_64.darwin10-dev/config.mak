@@ -14,6 +14,10 @@ endif
 CFLAGS_OPT       = -O0 -fno-strict-aliasing
 CFLAGS_DEBUG     = -g #-D_TYPECHECK_ -DE_DEBUG
 JCFLAGS          = -g
+ifeq "$(USE_ADDRESS_SANITIZER)" "yes"
+CFLAGS_DEBUG    += -fsanitize=address
+LDFLAGS         += -fsanitize=address
+endif
 
 # Csc compiler flags
 CSFLAGS_DEBUG    = -define:DEBUG\;TRACE -debug+ -debug:full

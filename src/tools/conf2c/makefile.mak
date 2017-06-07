@@ -13,15 +13,13 @@ ifneq (,$(findstring vxworks5,$(SPLICE_REAL_TARGET)))
 CFLAGS     += -DTARGET_VXWORKS_KM
 endif
 
+ifneq (,$(findstring int,$(SPLICE_REAL_TARGET)))
+CFLAGS     += -DNO_DYNAMIC_LIB -DTARGET_INTEGRITY
+endif
+
 LDFLAGS     += $(LDFLAGS_FLEX)
 LDLIBS		+= $(LDLIBS_FLEX)
-#if we are building for the host then use ddshts lib
-#as there is no ddskernel
-ifneq ($(SPLICE_TARGET),$(SPLICE_REAL_TARGET))
-LDLIBS += -l$(DDS_HTS)
-else
 LDLIBS += -l$(DDS_CORE)
-endif
 
 CINCS		+= -I$(OSPL_HOME)/src/database/database/include
 CINCS		+= -I$(OSPL_HOME)/src/configuration/config/include

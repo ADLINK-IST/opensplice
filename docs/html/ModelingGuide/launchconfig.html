@@ -1,0 +1,296 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. Creating Launch Configurations &mdash; Modeling Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.5.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Modeling Guide" href="index.html" />
+    <link rel="next" title="8. Compiling and Running" href="compileandrun.html" />
+    <link rel="prev" title="6. Code Generation" href="codegeneration.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="compileandrun.html" title="8. Compiling and Running"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="codegeneration.html" title="6. Code Generation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="creating-launch-configurations">
+<span id="id1"></span><h1>7. Creating Launch Configurations<a class="headerlink" href="#creating-launch-configurations" title="Permalink to this headline">¶</a></h1>
+<p><em>This section describes how to set up &#8216;launch
+configurations&#8217; for the Vortex OpenSplice Modeler
+which provide additional convenient ways to
+run and control the Modeler.</em></p>
+<p>A Vortex OpenSplice daemon must be running on the host where your code
+will be run and for the domain within which your code will
+operate.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd><table border="1" class="first last docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Starting a Vortex OpenSplice daemon is only required when
+running a <em>Shared Memory</em> Deployment. For more details about
+starting Vortex OpenSplice, please see the Vortex OpenSplice
+<em>Deployment Guide</em>.</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p>The Modeler includes an HDE icon <a class="reference internal" href="_images/000_icon_HDE.png"><img alt="hdeicon" src="_images/000_icon_HDE.png" style="height: 4mm;" /></a> (located in the Eclipse
+<em>Icon Bar</em>) which can start and stop the Vortex OpenSplice daemon.
+However, configurations can be manually created to start and stop the
+daemon if desired or if the daemon does not start when using the
+HDE tool from the icon bar.</p>
+<p>The instructions provided in this section describe how to
+manually create, start, and stop configurations for the
+Vortex OpenSplice (OSPL) daemon.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd><table border="1" class="first last docutils">
+<colgroup>
+<col width="100%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><p class="first">It is recommended that Vortex OpenSplice launch configurations
+are created which can start and stop the Vortex OpenSplice
+daemon: this will enable Vortex OpenSplice code to be run from
+within Eclipse.</p>
+<p class="last">These instructions assume that the environment is configured
+for the version of Vortex OpenSplice that will be used. Refer to
+the Vortex OpenSplice <em>Getting Started Guide</em> for configuration
+information.
+Environment variables can be set for specific launch
+configurations by selecting the launch configuration and
+clicking on the <em>Environment</em> tab.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<div class="section" id="creating-and-running-an-ospl-start-launch-configuration">
+<h2>7.1. Creating and Running an <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">start</span></tt> Launch Configuration<a class="headerlink" href="#creating-and-running-an-ospl-start-launch-configuration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="creating-the-start-configuration">
+<h3>7.1.1. Creating the <tt class="docutils literal"><span class="pre">start</span></tt> Configuration<a class="headerlink" href="#creating-the-start-configuration" title="Permalink to this headline">¶</a></h3>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Choose <em>Run &gt; External Tools &gt; External Tools</em> from the
+Eclipse <em>Menu Bar</em>. This will open the <em>External Tools</em> dialog.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Right-click on the <em>Program</em> item located in tree view (located
+on the left-hand side of the <em>External Tools</em> dialog) and choose
+<em>New</em>. This will create a new item under the <em>Program</em> item.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Enter <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">start</span></tt> in the <em>Name</em> text field (located near the top
+of the dialog); this is for the launch configuration.</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div><p>In the <em>Location</em> text box, use the <em>Browse File System</em> button
+to locate the <tt class="docutils literal"><span class="pre">OSPL</span></tt> executable (<tt class="docutils literal"><span class="pre">ospl.exe</span></tt> on Windows platforms).
+The full pathname for the <tt class="docutils literal"><span class="pre">OSPL</span></tt> executable should appear in the
+<em>Location</em> text box.</p>
+<p>For example, on Windows this could be
+<tt class="docutils literal"><span class="pre">&quot;C:\Program</span> <span class="pre">Files</span> <span class="pre">(x86)\PrismTech\Vortex_v2\Device\VortexOpenSplice\6.6.0p1\HDE\x86.win32\bin\ospl.exe&quot;</span></tt>.</p>
+</div></blockquote>
+<p><strong>Step 5</strong></p>
+<blockquote>
+<div>Enter the word <tt class="docutils literal"><span class="pre">start</span></tt> in the <em>Arguments</em> text box. This will
+instruct the <tt class="docutils literal"><span class="pre">OSPL</span></tt> executable to start the daemon.</div></blockquote>
+<p><strong>Step 6</strong></p>
+<blockquote>
+<div>Click the <em>Apply</em> button to apply the changes.</div></blockquote>
+<p><strong>Step 7</strong></p>
+<blockquote>
+<div>Click the <em>Close</em> button to close the dialog.</div></blockquote>
+</div>
+<div class="section" id="running-the-start-configuration">
+<h3>7.1.2. Running the <tt class="docutils literal"><span class="pre">start</span></tt> Configuration<a class="headerlink" href="#running-the-start-configuration" title="Permalink to this headline">¶</a></h3>
+<p>Running the <tt class="docutils literal"><span class="pre">start</span></tt> launch configuration executes the <tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">start</span></tt>
+command and starts the daemon.</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Choose <em>Run &gt; External Tools &gt; External Tools</em> from the
+Eclipse <em>Menu Bar</em>. This will open the <em>External Tools</em> dialog.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Select the <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">start</span></tt> item (located under the <em>Program</em> item)
+in tree view (located on the left-hand side of the <em>External
+Tools</em> dialog).</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Click the <em>Run</em> button (located at the bottom of the dialog).
+This will start the daemon.</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div>Click the <em>Close</em> button to close the dialog.</div></blockquote>
+</div>
+</div>
+<div class="section" id="creating-and-running-an-ospl-stop-launch-configuration">
+<h2>7.2. Creating and Running an <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">stop</span></tt> Launch Configuration<a class="headerlink" href="#creating-and-running-an-ospl-stop-launch-configuration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="creating-the-stop-configuration">
+<h3>7.2.1. Creating the <tt class="docutils literal"><span class="pre">stop</span></tt> Configuration<a class="headerlink" href="#creating-the-stop-configuration" title="Permalink to this headline">¶</a></h3>
+<p><em>Either:</em></p>
+<p>Repeat all of the steps shown under Section 3.8.1.1,
+Creating the start Configuration, above, but use <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">stop</span></tt>
+for the launch configuration&#8217;s name, and enter <tt class="docutils literal"><span class="pre">stop</span></tt> in the
+<em>Arguments</em> text box instead of <tt class="docutils literal"><span class="pre">start</span></tt>.</p>
+<p><em>OR:</em></p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Right-click on the launch configuration created under
+Section 3.8.1.1, Creating the start Configuration.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Click <em>Duplicate</em>.</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Select <em>Duplicate Launch Configuration</em>.</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div>Rename it from <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">start</span> <span class="pre">(1)</span></tt> to <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">stop</span></tt> by entering
+the new name in the <em>Name</em> field</div></blockquote>
+<p><strong>Step 5</strong></p>
+<blockquote>
+<div>Replace <tt class="docutils literal"><span class="pre">start</span></tt> with <tt class="docutils literal"><span class="pre">stop</span></tt> in the <em>argument</em> field.</div></blockquote>
+<p><strong>Step 6</strong></p>
+<blockquote>
+<div>Click <em>Apply</em>.</div></blockquote>
+</div>
+<div class="section" id="running-the-stop-configuration">
+<h3>7.2.2. Running the <tt class="docutils literal"><span class="pre">stop</span></tt> Configuration<a class="headerlink" href="#running-the-stop-configuration" title="Permalink to this headline">¶</a></h3>
+<p>Running the <tt class="docutils literal"><span class="pre">stop</span></tt> launch configuration executes the <tt class="docutils literal"><span class="pre">ospl</span> <span class="pre">stop</span></tt>
+command and stops the daemon.</p>
+<p><strong>Step 1</strong></p>
+<blockquote>
+<div>Choose <em>Run &gt; External Tools &gt; External Tools</em> from the
+Eclipse <em>Menu Bar</em>. This will open the <em>External Tools</em> dialog.</div></blockquote>
+<p><strong>Step 2</strong></p>
+<blockquote>
+<div>Select the <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">stop</span></tt> item (located under the <em>Program</em> item)
+in tree view (located on the left-hand side of the <em>External
+Tools</em> dialog).</div></blockquote>
+<p><strong>Step 3</strong></p>
+<blockquote>
+<div>Click the <em>Run</em> button.
+This will stop the daemon.</div></blockquote>
+<p><strong>Step 4</strong></p>
+<blockquote>
+<div>Click the <em>Close</em> button to close the dialog.</div></blockquote>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">7. Creating Launch Configurations</a><ul>
+<li><a class="reference internal" href="#creating-and-running-an-ospl-start-launch-configuration">7.1. Creating and Running an <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">start</span></tt> Launch Configuration</a><ul>
+<li><a class="reference internal" href="#creating-the-start-configuration">7.1.1. Creating the <tt class="docutils literal"><span class="pre">start</span></tt> Configuration</a></li>
+<li><a class="reference internal" href="#running-the-start-configuration">7.1.2. Running the <tt class="docutils literal"><span class="pre">start</span></tt> Configuration</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#creating-and-running-an-ospl-stop-launch-configuration">7.2. Creating and Running an <tt class="docutils literal"><span class="pre">OSPL</span> <span class="pre">stop</span></tt> Launch Configuration</a><ul>
+<li><a class="reference internal" href="#creating-the-stop-configuration">7.2.1. Creating the <tt class="docutils literal"><span class="pre">stop</span></tt> Configuration</a></li>
+<li><a class="reference internal" href="#running-the-stop-configuration">7.2.2. Running the <tt class="docutils literal"><span class="pre">stop</span></tt> Configuration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="codegeneration.html"
+                        title="previous chapter">6. Code Generation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="compileandrun.html"
+                        title="next chapter">8. Compiling and Running</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/launchconfig.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="compileandrun.html" title="8. Compiling and Running"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="codegeneration.html" title="6. Code Generation"
+             >previous</a> |</li>
+        <li><a href="index.html">Modeling Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

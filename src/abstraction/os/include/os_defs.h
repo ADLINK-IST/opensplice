@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 /****************************************************************
@@ -20,13 +28,171 @@
 #ifndef OS_DEFS_H
 #define OS_DEFS_H
 
+/* OS_RETCODE_* must be defined here for as long as os_result exists. */
+#include "os_retcode.h"
+#include "os_decl_attributes.h"
+
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
-/* Include OS specific header file				*/
-#include "include/os_defs.h"
-#include "os_if.h"
+/* \brief OS_FUNCTION provides undecorated function name of current function
+ *
+ * Behavior of OS_FUNCTION outside a function is undefined. Note that
+ * implementations differ across compilers and compiler versions. It might be
+ * implemented as either a string literal or a constant variable.
+ */
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901)
+#   define OS_FUNCTION __func__
+#elif defined(__cplusplus) && (__cplusplus >= 201103)
+#   define OS_FUNCTION __func__
+#elif defined(__GNUC__)
+#   define OS_FUNCTION __FUNCTION__
+#elif defined(__clang__)
+#   define OS_FUNCTION __FUNCTION__
+#elif defined(__ghs__)
+#   define OS_FUNCTION __FUNCTION__
+#elif (defined(__SUNPRO_C) || defined(__SUNPRO_CC))
+/* Solaris Studio had support for __func__ before it supported __FUNCTION__.
+   Compiler flag -features=extensions is required on older versions. */
+#   define OS_FUNCTION __func__
+#elif defined(__FUNCTION__)
+/* Visual Studio */
+#   define OS_FUNCTION __FUNCTION__
+#elif defined(__vxworks)
+/* At least versions 2.9.6 and 3.3.4 of the GNU C Preprocessor only define
+   __GNUC__ if the entire GNU C compiler is in use. VxWorks 5.5 targets invoke
+   the preprocessor separately resulting in __GNUC__ not being defined. */
+#   define OS_FUNCTION __FUNCTION__
+#else
+#   warning "OS_FUNCTION is not supported"
+#endif
+
+/* \brief OS_PRETTY_FUNCTION provides function signature of current function
+ *
+ * See comments on OS_FUNCTION for details.
+ */
+#if defined(__GNUC__)
+#   define OS_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#elif defined(__clang__)
+#   define OS_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#elif defined(__ghs__)
+#   define OS_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#elif (defined(__SUNPRO_C) && __SUNPRO_C >= 0x5100)
+/* Solaris Studio supports __PRETTY_FUNCTION__ in C since version 12.1 */
+#   define OS_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#elif (defined(__SUNPRO_CC) && __SUNPRO_CC >= 0x5120)
+/* Solaris Studio supports __PRETTY_FUNCTION__ in C++ since version 12.3 */
+#   define OS_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#elif defined(__FUNCSIG__)
+/* Visual Studio */
+#   define OS_PRETTY_FUNCTION __FUNCSIG__
+#elif defined(__vxworks)
+/* See comments on __vxworks macro above. */
+#   define OS_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#else
+/* Do not warn user about OS_PRETTY_FUNCTION falling back to OS_FUNCTION.
+#   warning "OS_PRETTY_FUNCTION is not supported, using OS_FUNCTION"
+*/
+#   define OS_PRETTY_FUNCTION OS_FUNCTION
+#endif
+
+#if defined(__GNUC__)
+#if ((__GNUC__ * 100) + __GNUC_MINOR__) >= 402
+#define OSPL_GCC_DIAG_STR(s) #s
+#define OSPL_GCC_DIAG_JOINSTR(x,y) OSPL_GCC_DIAG_STR(x ## y)
+#define OSPL_GCC_DIAG_DO_PRAGMA(x) _Pragma (#x)
+#define OSPL_GCC_DIAG_PRAGMA(x) OSPL_GCC_DIAG_DO_PRAGMA(GCC diagnostic x)
+#if ((__GNUC__ * 100) + __GNUC_MINOR__) >= 406
+#define OSPL_DIAG_OFF(x) OSPL_GCC_DIAG_PRAGMA(push) OSPL_GCC_DIAG_PRAGMA(ignored OSPL_GCC_DIAG_JOINSTR(-W,x))
+#define OSPL_DIAG_ON(x) OSPL_GCC_DIAG_PRAGMA(pop)
+#else
+#define OSPL_DIAG_OFF(x) OSPL_GCC_DIAG_PRAGMA(ignored OSPL_GCC_DIAG_JOINSTR(-W,x))
+#define OSPL_DIAG_ON(x)  OSPL_GCC_DIAG_PRAGMA(warning OSPL_GCC_DIAG_JOINSTR(-W,x))
+#endif
+#else
+#define OSPL_DIAG_OFF(x)
+#define OSPL_DIAG_ON(x)
+#endif
+#else
+#define OSPL_DIAG_OFF(x)
+#define OSPL_DIAG_ON(x)
+#endif
+
+/** \brief Definition of the scope attribute */
+typedef enum os_scopeAttr {
+    /** The scope of the service is system wide */
+    OS_SCOPE_SHARED,
+    /** The scope of the service is process wide */
+    OS_SCOPE_PRIVATE
+} os_scopeAttr;
+
+/** \brief Definition of the error-checking attribute */
+typedef enum os_errorCheckingAttr {
+    /** Error checking is disabled. */
+    OS_ERRORCHECKING_DISABLED,
+    /** Error checking is enabled. */
+    OS_ERRORCHECKING_ENABLED
+} os_errorCheckingAttr;
+
+/** \brief Definition of the service return values */
+typedef enum os_result {
+    /** The service is successfully completed */
+    os_resultSuccess = OS_RETCODE_ID_OS_RESULT,
+    /** A resource was not found */
+    os_resultUnavailable,
+    /** The service is timed out */
+    os_resultTimeout,
+    /** The requested resource is busy */
+    os_resultBusy,
+    /** An invalid argument is passed */
+    os_resultInvalid,
+    /** The operating system returned a failure */
+    os_resultFail
+} os_result;
+
+/** \brief Definition of boolean with it's possible values */
+typedef enum os_boolean {
+    OS_FALSE = 0,
+    OS_TRUE = 1
+} os_boolean;
+
+#if defined (__cplusplus)
+}
+#endif
+
+  /* Platform specific includes */
+#if __linux__ == 1
+#include <../linux/include/os_os_defs.h>
+#elif __vxworks == 1
+#if __RTP__ == 1
+#include <../vxworks_rtp/include/os_os_defs.h>
+#else
+#include <../vxworks_km/include/os_os_defs.h>
+#endif
+#elif __sun == 1
+#include <../solaris/include/os_os_defs.h>
+#elif defined(__INTEGRITY)
+#include <../integrity/include/os_os_defs.h>
+#elif  __PikeOS__ == 1
+#include <../pikeos3/include/os_os_defs.h>
+#elif defined(__QNX__)
+#include <../qnx/include/os_os_defs.h>
+#elif defined(_MSC_VER)
+#ifdef _WIN32_WCE
+#include <../wince/include/os_os_defs.h>
+#else
+#include <../win32/include/os_os_defs.h>
+#endif
+#elif defined __APPLE__
+#include <../darwin10/include/os_os_defs.h>
+#else
+#error Platform missing from os_defs.h list
+#endif
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 #ifndef OS_SOCKET_USE_FCNTL
 #error OS_SOCKET_USE_FCNTL must be defined for this platform.
@@ -75,6 +241,24 @@ extern "C" {
 #endif
 #ifndef UINT32_MAX
 #define UINT32_MAX (4294967295U)
+#endif
+#ifndef INT16_MIN
+#define INT16_MIN (-32767-1)
+#endif
+#ifndef INT16_MAX
+#define INT16_MAX (32767)
+#endif
+#ifndef UINT16_MAX
+#define UINT16_MAX (65535U)
+#endif
+#ifndef INT8_MIN
+#define INT8_MIN (-128)
+#endif
+#ifndef INT8_MAX
+#define INT8_MAX (127)
+#endif
+#ifndef UINT8_MAX
+#define UINT8_MAX (255U)
 #endif
 
 /* Compiler Silencing macros
@@ -172,13 +356,22 @@ typedef ssize_t os_ssize_t;
  */
 typedef os_os_mode_t os_mode_t;
 
-/** \brief Definition of the scope attribute */
-typedef enum os_scopeAttr {
-    /** The scope of the service is system wide */
-    OS_SCOPE_SHARED,
-    /** The scope of the service is process wide */
-    OS_SCOPE_PRIVATE
-} os_scopeAttr;
+/** \brief Types on which we define atomic operations.  The 64-bit
+ *  types are always defined, even if we don't really support atomic
+ *   operations on them.
+ */
+typedef struct { os_uint32 v; } pa_uint32_t;
+typedef struct { os_uint64 v; } pa_uint64_t;
+typedef struct { os_address v; } pa_uintptr_t;
+typedef pa_uintptr_t pa_voidp_t;
+
+/** \brief Initializers for the types on which atomic operations are
+    defined.
+ */
+#define PA_UINT32_INIT(v) { (v) }
+#define PA_UINT64_INIT(v) { (v) }
+#define PA_UINTPTR_INIT(v) { (v) }
+#define PA_VOIDP_INIT(v) { (os_address) (v) }
 
 /** \brief Definition of the page locking policy */
 typedef enum os_lockPolicy {
@@ -225,26 +418,11 @@ typedef enum os_schedClass {
 
 /** \brief Definition of the compare results */
 typedef enum os_compare {
+    OS_INVALID,
     OS_LESS,
     OS_EQUAL,
     OS_MORE
 } os_compare;
-
-/** \brief Definition of the service return values */
-typedef enum os_result {
-    /** The service is successfuly completed */
-    os_resultSuccess,
-    /** A resource was not found */
-    os_resultUnavailable,
-    /** The service is timed out */
-    os_resultTimeout,
-    /** The requested resource is busy */
-    os_resultBusy,
-    /** An invalid argument is passed */
-    os_resultInvalid,
-    /** The operating system returned a failure */
-    os_resultFail
-} os_result;
 
 /** \brief Definition of user credentials */
 typedef struct os_userCred {
@@ -254,11 +432,6 @@ typedef struct os_userCred {
     os_gid gid;
 } os_userCred;
 
-/** \brief Definition of boolean with it's possible values */
-typedef enum os_boolean {
-    OS_FALSE = 0,
-    OS_TRUE = 1
-} os_boolean;
 
 typedef void (*os_fptr)(void);
 
@@ -303,6 +476,14 @@ os_booleanImage(
 OS_API os_fptr
 os__fptr(
     void* ptr);
+
+OS_API os_int
+os_resultToReturnCode(
+    os_result result);
+
+OS_API const os_char *
+os_returnCodeImage(
+    os_int32);
 
 #undef OS_API
 

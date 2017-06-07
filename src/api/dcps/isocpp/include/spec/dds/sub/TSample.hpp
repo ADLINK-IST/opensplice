@@ -34,6 +34,7 @@ class Sample;
 /**
  * This class encapsulates the data and info meta-data associated with
  * DDS samples.
+ * See \ref DCPS_Modules_Subscription_SampleInfo "DataSample" for more information
  */
 template <typename T, template <typename Q> class DELEGATE>
 class dds::sub::Sample : public dds::core::Value< DELEGATE<T> >

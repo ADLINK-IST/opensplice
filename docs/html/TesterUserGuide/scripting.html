@@ -1,0 +1,691 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. Scripting &mdash; Test Tool User Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Test Tool User Guide" href="index.html" />
+    <link rel="next" title="7. Message Interfaces" href="messageinterfaces.html" />
+    <link rel="prev" title="5. Command Reference" href="commandref.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="messageinterfaces.html" title="7. Message Interfaces"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="commandref.html" title="5. Command Reference"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="scripting">
+<span id="id1"></span><h1>6. Scripting<a class="headerlink" href="#scripting" title="Permalink to this headline">¶</a></h1>
+<p><em>The Vortex OpenSplice Tester provides automatic testing capabilities by means of scripting. This
+section describes the features of Tester’s built-in scripting instructions, and how to
+install additional script engines.</em></p>
+<div class="section" id="the-script-language">
+<h2>6.1. The Script Language<a class="headerlink" href="#the-script-language" title="Permalink to this headline">¶</a></h2>
+<p>The script language as used by the Tester is specifically designed to create readable
+and easily maintainable scripts.</p>
+<p>Instructions are simple, with named parameters which enable the Tester to limit the
+testing to the fields applicable to the test. For example, the <tt class="docutils literal"><span class="pre">send</span></tt> instruction
+is an instruction which sends a topic. The basic syntax is the keyword <tt class="docutils literal"><span class="pre">send</span></tt>
+followed by the <tt class="docutils literal"><span class="pre">topicname</span></tt> and a list of named parameters between parentheses
+(‘round brackets’), terminated with a semicolon.</p>
+<p class="centered" id="illustrating-send-keyword-syntax">
+<strong><strong>Illustrating send keyword syntax</strong></strong></p><a class="reference internal image-reference" href="_images/073_coding.png"><img alt="Illustrating send keyword syntax" class="align-center" src="_images/073_coding.png" style="width: 70mm;" /></a>
+<p>The <tt class="docutils literal"><span class="pre">check</span></tt> instruction is similar to the <tt class="docutils literal"><span class="pre">send</span></tt> instruction; it has options
+to find a specific instance using key fields or a query.</p>
+<p class="centered" id="illustrating-check-keyword-syntax">
+<strong><strong>Illustrating check keyword syntax</strong></strong></p><a class="reference internal image-reference" href="_images/074_coding.png"><img alt="Illustrating check keyword syntax" class="align-center" src="_images/074_coding.png" style="width: 70mm;" /></a>
+<p>In this example a <tt class="docutils literal"><span class="pre">timeout</span></tt> is set, which will allow a wait of up to 0.2 seconds
+for the topic sample for the correct instance to arrive.</p>
+<div class="section" id="a-script-file">
+<h3>6.1.1. A script file<a class="headerlink" href="#a-script-file" title="Permalink to this headline">¶</a></h3>
+<p>A <tt class="docutils literal"><span class="pre">scenario</span></tt> has the following format:</p>
+<p class="centered" id="illustrating-scenario-keyword-syntax">
+<strong><strong>Illustrating scenario keyword syntax</strong></strong></p><a class="reference internal image-reference" href="_images/075_coding.png"><img alt="Illustrating scenario keyword syntax" class="align-center" src="_images/075_coding.png" style="width: 70mm;" /></a>
+<p>The name is for information only, and is not used further.</p>
+</div>
+<div class="section" id="variables">
+<h3>6.1.2. Variables<a class="headerlink" href="#variables" title="Permalink to this headline">¶</a></h3>
+<p>The script language allows the use of variables. Variables can be used to store
+values that can then be used at a later time. A variable is indicated by either
+a <tt class="docutils literal"><span class="pre">&lt;&lt;</span></tt> or a <tt class="docutils literal"><span class="pre">&gt;&gt;</span></tt> prefix. Variables may be declared implicitly, or explicitly
+using the <tt class="docutils literal"><span class="pre">var</span></tt> instruction.</p>
+<p class="centered" id="example-variable">
+<strong><strong>Example variable</strong></strong></p><a class="reference internal image-reference" href="_images/076_coding.png"><img alt="Example variable" class="align-center" src="_images/076_coding.png" style="width: 80mm;" /></a>
+<p>In this example the variable <tt class="docutils literal"><span class="pre">myvar</span></tt> is declared and initialized with the
+value <tt class="docutils literal"><span class="pre">5</span></tt>. Within the <tt class="docutils literal"><span class="pre">send</span></tt> instruction the variable is used to provide
+the value for the field index. The <tt class="docutils literal"><span class="pre">&lt;&lt;</span></tt> prefix indicates the direction of
+the assignment from the variable to the field.</p>
+<p class="centered" id="variable-with-prefix">
+<strong><strong>Variable with &gt;&gt; prefix</strong></strong></p><a class="reference internal image-reference" href="_images/077_coding.png"><img alt="Variable with &gt;&gt; prefix" class="align-center" src="_images/077_coding.png" style="width: 70mm;" /></a>
+<p>Here the variable <tt class="docutils literal"><span class="pre">index_of_4</span></tt> is declared implicitly and the value of the
+field index is copied to the variable (the prefix <tt class="docutils literal"><span class="pre">&gt;&gt;</span></tt> points to the variable).</p>
+<p>All environment variables and java virtual machine (JVM) properties are also
+available as variables,  and they can be used as shown below:</p>
+<p class="centered" id="using-environment-variables">
+<strong><strong>Using environment variables</strong></strong></p><a class="reference internal image-reference" href="_images/078_coding.png"><img alt="Using environment variables" class="align-center" src="_images/078_coding.png" style="width: 70mm;" /></a>
+<div class="section" id="special-variables">
+<h4>6.1.2.1. Special variables<a class="headerlink" href="#special-variables" title="Permalink to this headline">¶</a></h4>
+<p>There are some special variables which can be useful in scripts.</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">curtime_sec</span></tt> and <tt class="docutils literal"><span class="pre">curtime_nsec</span></tt> provide the second and
+nanosecond parts of the current time.</li>
+<li><tt class="docutils literal"><span class="pre">uniqid</span></tt> provides a unique number for every call, within the
+same session of the Tester.</li>
+<li><tt class="docutils literal"><span class="pre">script_file</span></tt> and <tt class="docutils literal"><span class="pre">script_path</span></tt> provide the scenario file name
+and the scenario file&#8217;s path respectively. If the currently executing
+scenario context changes because of a <tt class="docutils literal"><span class="pre">call</span></tt> instruction to another
+scenario or macro file, using these variables in the called scenario
+or macro will reflect the respective path and file name of the called
+script.</li>
+</ul>
+<p>Note that these special values are used <em>without</em> the <tt class="docutils literal"><span class="pre">&lt;&lt;</span></tt> prefix.</p>
+</div>
+</div>
+<div class="section" id="embedded-scripts">
+<h3>6.1.3. Embedded Scripts<a class="headerlink" href="#embedded-scripts" title="Permalink to this headline">¶</a></h3>
+<p>Inside a scenario any script compatible with the java ScriptEngineFactory
+can be used to provide calculated values for fields in a <tt class="docutils literal"><span class="pre">send</span></tt>,
+<tt class="docutils literal"><span class="pre">check</span></tt> or <tt class="docutils literal"><span class="pre">var</span></tt> instruction, or as a stand-alone statement.</p>
+<p class="centered" id="embedded-javascript">
+<strong><strong>Embedded javascript</strong></strong></p><a class="reference internal image-reference" href="_images/079_embeddedjavascript.png"><img alt="Embedded javascript" class="align-center" src="_images/079_embeddedjavascript.png" style="width: 70mm;" /></a>
+<p>Stand-alone scripts must be enclosed by left single quotes, and then followed by a
+semi-colon.</p>
+<p>Variables used in the javascript are translated before the evaluation of the script.
+In this specific case the <tt class="docutils literal"><span class="pre">&lt;&lt;dt</span></tt> is the delta time in the <tt class="docutils literal"><span class="pre">repeat</span></tt> function.
+All javascript in one scenario is executed in the same scope, and functions and
+variables declared at the beginning of a script are available later in the script.</p>
+<p>A specific script language can be selected by providing the name of the script
+language in the first line of the embedded script: <tt class="docutils literal"><span class="pre">#!&lt;language&gt;</span></tt>, for example
+<tt class="docutils literal"><span class="pre">#!js</span></tt>. Note that the language description must not be followed by any other text.
+See section 5.6, Installing Script Engines, on page 85, for instructions on
+installing a scripting language for use with the OpenSplice Tester. If no language
+descriptor is provided on the first line of a script, the default language is
+used as set in <em>Preferences</em>.</p>
+<p class="centered" id="more-embedded-javascript">
+<strong><strong>More embedded javascript</strong></strong></p><a class="reference internal image-reference" href="_images/080_coding.png"><img alt="More embedded javascript" class="align-center" src="_images/080_coding.png" style="width: 80mm;" /></a>
+</div>
+<div class="section" id="comments">
+<h3>6.1.4. Comments<a class="headerlink" href="#comments" title="Permalink to this headline">¶</a></h3>
+<p>Comments can have the following formats:</p>
+<p class="centered" id="format-of-comments">
+<strong><strong>Format of comments</strong></strong></p><a class="reference internal image-reference" href="_images/081_coding.png"><img alt="Format of comments" class="align-center" src="_images/081_coding.png" style="width: 80mm;" /></a>
+<p>Within the scenario editor, comments are displayed in green.</p>
+</div>
+<div class="section" id="macros">
+<h3>6.1.5. Macros<a class="headerlink" href="#macros" title="Permalink to this headline">¶</a></h3>
+<p>For repeated scenarios a repetitive part can be split off into
+a separate script file called a <em>macro</em>. Macros can have parameters.</p>
+<p class="centered" id="calling-a-macro-with-parameters">
+<strong><strong>Calling a macro with parameters</strong></strong></p><a class="reference internal image-reference" href="_images/082_coding.png"><img alt="Calling a macro with parameters" class="align-center" src="_images/082_coding.png" style="width: 80mm;" /></a>
+<p>Similarly to <tt class="docutils literal"><span class="pre">send</span></tt> and <tt class="docutils literal"><span class="pre">check</span></tt> instructions, values for fields can
+be optional. However, in a macro a default value <em>must</em> be provided for
+a parameter to be optional.</p>
+<p class="centered" id="setting-a-default-value-for-a-macro-parameter">
+<strong><strong>Setting a default value for a macro parameter</strong></strong></p><a class="reference internal image-reference" href="_images/083_coding.png"><img alt="Setting a default value for a macro parameter" class="align-center" src="_images/083_coding.png" style="width: 70mm;" /></a>
+<p>In this case <tt class="docutils literal"><span class="pre">t</span></tt> is optional, <tt class="docutils literal"><span class="pre">id</span></tt> and <tt class="docutils literal"><span class="pre">x</span></tt> are mandatory.</p>
+<p>It is possible to call a scenario using the <tt class="docutils literal"><span class="pre">call</span></tt> instruction.
+Scenarios do not have parameters.</p>
+</div>
+</div>
+<div class="section" id="the-instructions">
+<h2>6.2. The Instructions<a class="headerlink" href="#the-instructions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="send">
+<h3>6.2.1. Send<a class="headerlink" href="#send" title="Permalink to this headline">¶</a></h3>
+<p>Instruction to publish a sample of a topic.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">send</span> <span class="pre">&lt;readername&gt;</span> <span class="pre">(</span> <span class="pre">[fieldname</span> <span class="pre">=&gt;</span> <span class="pre">value,]*);</span></tt></div></blockquote>
+<p>The <tt class="docutils literal"><span class="pre">send</span></tt> instruction may include an ‘update parameter’. The <tt class="docutils literal"><span class="pre">update</span></tt>
+parameter name is a combination of the topic name, followed by an underscore
+(_) and the literal text ‘update’. Valid values for the update parameter are
+<tt class="docutils literal"><span class="pre">true</span></tt> and <tt class="docutils literal"><span class="pre">false</span></tt>. The <tt class="docutils literal"><span class="pre">update</span></tt> parameter allows scenario scripts to send
+a series of samples that evolve, each from the previous one, without having
+to explicitly specify all field values in each <tt class="docutils literal"><span class="pre">send</span></tt> instruction.</p>
+<p>If the <tt class="docutils literal"><span class="pre">update</span></tt> parameter is present, then the sample data sent is retained
+by the topic reader, associated with the topic key field value(s). A subsequent
+<tt class="docutils literal"><span class="pre">send</span></tt> instruction, including the <tt class="docutils literal"><span class="pre">update</span></tt> parameter set to <tt class="docutils literal"><span class="pre">true</span></tt> with
+the same topic key field value(s), will have its sample initialized from the
+retained values, if they exist. The sent sample with then replace the retained
+values.</p>
+<p>A <tt class="docutils literal"><span class="pre">send</span></tt> instruction including the <tt class="docutils literal"><span class="pre">update</span></tt> parameter set to <tt class="docutils literal"><span class="pre">false</span></tt> with
+the same topic key field value(s) will be initialized from the topic defaults,
+but the sent sample will be retained.</p>
+<p>A <tt class="docutils literal"><span class="pre">send</span></tt> instruction without the <tt class="docutils literal"><span class="pre">update</span></tt> parameter will be initialized from
+the topic defaults, and any retained value for the key field value(s) will
+be removed.</p>
+<p>Disposing the topic reader will remove all retained values.</p>
+</div>
+<div class="section" id="dispose">
+<h3>6.2.2. Dispose<a class="headerlink" href="#dispose" title="Permalink to this headline">¶</a></h3>
+<p>Instruction to dispose an instance of a topic.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">dispose</span> <span class="pre">&lt;readername&gt;</span> <span class="pre">(</span> <span class="pre">[fieldname</span> <span class="pre">=&gt;</span> <span class="pre">value,]*);</span></tt></div></blockquote>
+</div>
+<div class="section" id="writedispose">
+<h3>6.2.3. Writedispose<a class="headerlink" href="#writedispose" title="Permalink to this headline">¶</a></h3>
+<p>Instruction to write dispose an instance of a topic.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">writedispose</span> <span class="pre">&lt;readername&gt;</span> <span class="pre">(</span> <span class="pre">[fieldname</span> <span class="pre">=&gt;</span> <span class="pre">value,]*);</span></tt></div></blockquote>
+</div>
+<div class="section" id="check">
+<h3>6.2.4. Check<a class="headerlink" href="#check" title="Permalink to this headline">¶</a></h3>
+<p>Instruction to check a sample of a topic.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">check[_last</span> <span class="pre">|</span> <span class="pre">_any]</span> <span class="pre">|</span> <span class="pre">recheck_last</span> <span class="pre">&lt;readername&gt;</span> <span class="pre">(</span> <span class="pre">[timeout</span> <span class="pre">=&gt;</span>
+<span class="pre">&lt;timeout</span> <span class="pre">in</span> <span class="pre">seconds&gt;,]</span> <span class="pre">[&lt;fieldname&gt;</span> <span class="pre">=&gt;</span> <span class="pre">[!]&lt;value&gt;[:deviation],]*);</span></tt></div></blockquote>
+<p>A timeout value can be provided allowing the check to wait for <tt class="docutils literal"><span class="pre">&lt;timeout</span>
+<span class="pre">in</span> <span class="pre">seconds&gt;</span></tt> for the sample to arrive. If a sample meeting the criteria
+of the check is available either directly or within <tt class="docutils literal"><span class="pre">timeout</span></tt> seconds the
+fields as provided in the parameter list will be verified for correctness.</p>
+<p>When the value of a field is an output variable:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">&gt;&gt;&lt;varname&gt;</span></tt></div></blockquote>
+<p>Then the value will not be checked but entered in the variable with the
+name <tt class="docutils literal"><span class="pre">&lt;varname&gt;</span></tt>.</p>
+<p>There are two special fields, <tt class="docutils literal"><span class="pre">topicReceived</span></tt> and <tt class="docutils literal"><span class="pre">topicDisposed</span></tt>,
+which when used will provide a <tt class="docutils literal"><span class="pre">true</span></tt> or <tt class="docutils literal"><span class="pre">false</span></tt> value into a variable.</p>
+<p>When no sample is found which meets the criteria of the check then
+<tt class="docutils literal"><span class="pre">topicReceived</span></tt> will be set to <tt class="docutils literal"><span class="pre">false</span></tt> (and the check instruction will
+not fail); if a sample is received the value will be set to <tt class="docutils literal"><span class="pre">true</span></tt>. When
+a field <tt class="docutils literal"><span class="pre">topicDisposed</span></tt> is found, then the variable will be set to <tt class="docutils literal"><span class="pre">true</span></tt>
+if the sample was disposed and <tt class="docutils literal"><span class="pre">false</span></tt> if the sample was not disposed.
+In this case no fail is reported upon a check instruction
+when the checked sample was disposed.</p>
+<p>The value can be given a possible deviation in the form <tt class="docutils literal"><span class="pre">&lt;value&gt;:&lt;allowed</span>
+<span class="pre">deviation&gt;</span></tt>. In this case when the value for the field in the received
+sample is within the range from <tt class="docutils literal"><span class="pre">value</span></tt> <em>minus</em> <tt class="docutils literal"><span class="pre">allowed_deviation</span></tt>
+to <tt class="docutils literal"><span class="pre">value</span></tt> <em>plus</em> <tt class="docutils literal"><span class="pre">allowed_deviation</span></tt>, the value is considered correct.</p>
+<p>The sample which matches the check can be determined in several ways:</p>
+<ol class="arabic simple">
+<li>The topic does not have a keyfield(s) or the topic has keyfield(s)
+but no value is provided for all keyfield(s). In this case the oldest
+not checked or marked sample is checked.</li>
+<li>The topic has keyfield(s) and the check provides a value for all
+keyfield(s). In this case the last sample with the key is checked,
+so long as it was not previously checked. If no matching sample
+(within the possible timeout) is found then the check fails.</li>
+<li>One or more fields of the check are marked as a query by prefixing
+the value with a <tt class="docutils literal"><span class="pre">‘!’</span></tt>. The oldest not checked or marked sample
+which matches the query is checked. If no matching sample is found
+(within the possible timeout) the check fails.</li>
+<li>Instead of <tt class="docutils literal"><span class="pre">check</span></tt>, the command <tt class="docutils literal"><span class="pre">check_last</span></tt> is used. In this
+case (as for situations 1 and 3) the last not-previously-checked
+sample matching the criteria is checked.</li>
+<li>Instead of <tt class="docutils literal"><span class="pre">check</span></tt>, the command <tt class="docutils literal"><span class="pre">check_any</span></tt> is used. In this
+case also previously-checked or marked samples are considered.</li>
+<li>The command <tt class="docutils literal"><span class="pre">recheck_last</span></tt> will always check the last sample
+matching the criteria, regardless of whether it has previously
+been checked or not.</li>
+</ol>
+</div>
+<div class="section" id="miss">
+<h3>6.2.5. Miss<a class="headerlink" href="#miss" title="Permalink to this headline">¶</a></h3>
+<p>Instruction to check that no sample of a topic was received since the last
+checked or marked sample for the given key/query. The same rules apply as
+for the <tt class="docutils literal"><span class="pre">check</span></tt> instruction with respect to finding (or not) the matching
+topic sample.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">miss</span> <span class="pre">&lt;topicname&gt;</span> <span class="pre">([timeout</span> <span class="pre">=&gt;</span> <span class="pre">&lt;timeout_in_seconds&gt;,]</span> <span class="pre">[&lt;fieldname&gt;</span>
+<span class="pre">=&gt;</span> <span class="pre">[!]&lt;value&gt;[:&lt;deviation&gt;],]*);</span></tt></div></blockquote>
+</div>
+<div class="section" id="disposed">
+<h3>6.2.6. Disposed<a class="headerlink" href="#disposed" title="Permalink to this headline">¶</a></h3>
+<p>Instruction to check that an instance of a topic is disposed for the given key/query.
+The same rules apply as for the <tt class="docutils literal"><span class="pre">check</span></tt> instruction with respect to finding the
+disposed instance. Note that field values are only provided to find a specific instance
+(either by key or by query) and not verified for values as part of this instruction.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">disposed</span> <span class="pre">&lt;topicname&gt;</span> <span class="pre">([timeout</span> <span class="pre">=&gt;</span> <span class="pre">&lt;timeout_in_seconds&gt;,]</span>
+<span class="pre">[&lt;fieldname&gt;</span> <span class="pre">=&gt;</span> <span class="pre">[!]&lt;value&gt;,]*);</span></tt></div></blockquote>
+</div>
+<div class="section" id="mark">
+<h3>6.2.7. Mark<a class="headerlink" href="#mark" title="Permalink to this headline">¶</a></h3>
+<p>Mark all samples (with the given key/query) as read. Any regular miss/check
+function will not ‘see’ topic samples received before the mark instruction.
+If no key or query is provided all samples will be marked as read (and therefore
+not considered for <tt class="docutils literal"><span class="pre">check</span></tt> or <tt class="docutils literal"><span class="pre">check_last</span></tt> instructions). If a key value
+or query is provided, all samples matching the key/query will be marked as read.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">mark</span> <span class="pre">&lt;topicname&gt;</span> <span class="pre">(</span> <span class="pre">[fieldname</span> <span class="pre">=&gt;</span> <span class="pre">value,]*);</span></tt></div></blockquote>
+</div>
+<div class="section" id="repeat">
+<h3>6.2.8. Repeat<a class="headerlink" href="#repeat" title="Permalink to this headline">¶</a></h3>
+<p>Instruction to repeatedly send a topic for a specified count or until disposed.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">repeat</span> <span class="pre">&lt;topicname&gt;</span> <span class="pre">&lt;period&gt;</span> <span class="pre">&lt;count&gt;</span> <span class="pre">(</span> <span class="pre">[fieldname</span> <span class="pre">=&gt;</span> <span class="pre">value,]*);</span></tt></div></blockquote>
+<p>If <tt class="docutils literal"><span class="pre">&lt;count&gt;</span></tt> is <tt class="docutils literal"><span class="pre">‘0’</span></tt> then the repeat will continue until the scenario
+terminates or until a dispose for the same topic and key. The variable <tt class="docutils literal"><span class="pre">dt</span></tt>
+is available for calculating a field value based on time since the repeat was
+started. The period indicates the period with which the topic will be sent.
+Note that a repeat command by itself does not extend the execution of a
+scenario and that when a scenario finishes (<em>i.e.</em> all following instructions
+are executed) the repeat instruction is terminated automatically. In such a
+case the wait or message instruction can be used to ensure that the repeat
+instruction is completed.</p>
+</div>
+<div class="section" id="set">
+<h3>6.2.9. Set<a class="headerlink" href="#set" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">set</span></tt> instruction allows the call of a macro in a table-like fashion.
+The command allows a number of static parameters and variable parameters.
+The command has the following format:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">set</span> <span class="pre">&lt;macroname&gt;</span>
+<span class="pre">([&lt;fieldname&gt;=&gt;&lt;value&gt;]*)((&lt;fieldname&gt;*),[(&lt;value&gt;*),]*);</span></tt></div></blockquote>
+<p>For example, the following set instruction:</p>
+<div class="highlight-python"><div class="highlight"><pre>set send_and_check_test (
+     t =&gt; 2)
+ ((     x,id),
+  (   3.1, 1),
+  (  2.34, 2),
+  ( 3.678, 3),
+  (  6.34, 4),
+  ( 99.99, 5))
+</pre></div>
+</div>
+<p>In this example the <tt class="docutils literal"><span class="pre">send_and_check_test</span></tt> macro is called five times,
+all five calls will be made with <tt class="docutils literal"><span class="pre">t</span> <span class="pre">=</span> <span class="pre">2</span></tt> and the values for <tt class="docutils literal"><span class="pre">x</span></tt> and <tt class="docutils literal"><span class="pre">id</span></tt>
+as indicated by each row of values. This can be very useful for testing
+of translations.</p>
+</div>
+<div class="section" id="execute">
+<h3>6.2.10. Execute<a class="headerlink" href="#execute" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">execute</span></tt> instruction allows the execution of an application or
+command line script on the native OS.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">execute</span> <span class="pre">[wait]</span> <span class="pre">[log]</span> <span class="pre">“&lt;instruction&gt;”;</span></tt></div></blockquote>
+<p>If <tt class="docutils literal"><span class="pre">wait</span></tt> is set then the instruction will wait for the execute to complete.
+If <tt class="docutils literal"><span class="pre">log</span></tt> is set then the output of the execute will be logged to the <em>Debug</em>
+window (and resulting dump file). When <tt class="docutils literal"><span class="pre">log</span></tt> is used <tt class="docutils literal"><span class="pre">wait</span></tt> should also
+be used, to avoid overwriting log messages.</p>
+</div>
+<div class="section" id="log">
+<h3>6.2.11. Log<a class="headerlink" href="#log" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">log</span></tt> instruction logs a message to the <em>Debug</em> window. Log messages can
+provide information immediately (<em>e.g.</em> a step being made in a script, or a value
+of some variable) or post-execution as part of the logfile which includes the full
+content of the <em>Debug</em> window.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">log</span> <span class="pre">(“message”</span> <span class="pre">[optional</span> <span class="pre">var]);</span></tt></div></blockquote>
+</div>
+<div class="section" id="message">
+<h3>6.2.12. Message<a class="headerlink" href="#message" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">message</span></tt> instruction opens a dialog with the message and allows the
+operator to provide feedback and a OK/NOK indication. The feedback plus OK/NOK
+indication are logged to the <em>Debug</em> window.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">message</span> <span class="pre">(“message</span> <span class="pre">text”</span> <span class="pre">[optional</span> <span class="pre">var]);</span></tt></div></blockquote>
+<p>This instruction is useful for semi-automatic testing of user interfaces where
+the GUI part is done manually using message instructions.</p>
+</div>
+<div class="section" id="fail">
+<h3>6.2.13. Fail<a class="headerlink" href="#fail" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">fail</span></tt> instruction fails the execution of the scenario (final result).
+The execution terminates.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">fail</span> <span class="pre">(“message”</span> <span class="pre">[optional</span> <span class="pre">var]);</span></tt></div></blockquote>
+<p>The <tt class="docutils literal"><span class="pre">fail</span></tt> instruction can be useful in combination with an if instruction,
+for instance when a complex check is executed using javascript.</p>
+</div>
+<div class="section" id="call">
+<h3>6.2.14. Call<a class="headerlink" href="#call" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">call</span></tt> instruction calls a macro or scenario. The name of the macro/scenario
+is the filename without extension. Macros must be on the <tt class="docutils literal"><span class="pre">macropath</span></tt> as provided
+in the configuration file. The <em>Macrolist</em> window displays all available macros.
+Also note that the macro name <strong>must</strong> be unique throughout all of the available
+macros because the path is not part of the selection of a macro (just the
+filename without extension).</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">call</span> <span class="pre">&lt;macroname&gt;</span> <span class="pre">([&lt;parametername&gt;</span> <span class="pre">=&gt;</span> <span class="pre">&lt;value&gt;,]*);</span></tt></div></blockquote>
+</div>
+<div class="section" id="reader">
+<h3>6.2.15. Reader<a class="headerlink" href="#reader" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">reader</span></tt> instruction allows the creation or deletion of a reader. When the
+keyword <tt class="docutils literal"><span class="pre">dispose</span></tt> is used the reader (if it exists for that topic) will be deleted.
+When a reader is created the <tt class="docutils literal"><span class="pre">topicname</span></tt> is mandatory.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">reader</span> <span class="pre">[dispose]</span> <span class="pre">(&lt;topicname&gt;</span> <span class="pre">[,</span> <span class="pre">&lt;qos&gt;</span> <span class="pre">[,&lt;partition&gt;</span>
+<span class="pre">[,&lt;readername&gt;]]]);</span></tt></div></blockquote>
+<p>The qos can be provided in short notation (2 or 4 characters):</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">&lt;</span> <span class="pre">v</span> <span class="pre">|</span> <span class="pre">l</span> <span class="pre">|</span> <span class="pre">t</span> <span class="pre">|</span> <span class="pre">p</span> <span class="pre">&gt;&lt;</span> <span class="pre">b</span> <span class="pre">|</span> <span class="pre">r</span> <span class="pre">&gt;[h][&lt;S|E&gt;&lt;D|S&gt;</span></tt></div></blockquote>
+<p>where</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">&lt;</span> <span class="pre">v</span> <span class="pre">|</span> <span class="pre">l</span> <span class="pre">|</span> <span class="pre">t</span> <span class="pre">|</span> <span class="pre">p</span> <span class="pre">&gt;</span></tt></dt>
+<dd>Volatile, local transient, transient or persistent</dd>
+<dt><tt class="docutils literal"><span class="pre">&lt;</span> <span class="pre">b</span> <span class="pre">|</span> <span class="pre">r</span> <span class="pre">&gt;</span></tt></dt>
+<dd>Best effort or reliable</dd>
+<dt><tt class="docutils literal"><span class="pre">[h]</span></tt></dt>
+<dd>History, for a “keep” of 10 which allows for the
+reception of 10 samples with the same key in one
+poll interval</dd>
+<dt><tt class="docutils literal"><span class="pre">&lt;S|E&gt;</span></tt></dt>
+<dd>Shared or exclusive ownership</dd>
+<dt><tt class="docutils literal"><span class="pre">&lt;D|S&gt;</span></tt></dt>
+<dd>Ordering based on Destination or Source time stamp</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="instructions-for-graphs">
+<h2>6.3. Instructions for Graphs<a class="headerlink" href="#instructions-for-graphs" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="graph">
+<h3>6.3.1. Graph<a class="headerlink" href="#graph" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">graph</span></tt> instruction allows manipulation or save of the graph.
+It has the following parameters:</p>
+<div class="highlight-python"><div class="highlight"><pre>X
+Y
+Key
+Color
+Title
+xUnits
+yUnits
+save =&gt; &lt;name&gt;
+show =&gt; true|false
+reset =&gt; true|false
+</pre></div>
+</div>
+<p>Note that all graphs have the same X component; when omitted the X will be the
+sample time. If the Y parameter is set, then a new trace is created for the current
+graph. The X, key, color, title and units are used for this trace if provided.</p>
+<p>If <tt class="docutils literal"><span class="pre">reset</span></tt> is <tt class="docutils literal"><span class="pre">true</span></tt>, then the graph is cleared (<em>i.e.</em> all existing traces
+are deleted) before creating any new trace. If <tt class="docutils literal"><span class="pre">show</span></tt> is <tt class="docutils literal"><span class="pre">true</span></tt> then the graph
+is made visible after adding the trace; when <tt class="docutils literal"><span class="pre">false</span></tt>, then the graph is hidden
+after adding the trace. When <tt class="docutils literal"><span class="pre">save</span></tt> is <tt class="docutils literal"><span class="pre">true</span></tt> the graph will be saved to an
+image file after the trace has been added.</p>
+</div>
+<div class="section" id="column">
+<h3>6.3.2. Column<a class="headerlink" href="#column" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">column</span></tt> instruction allows the creation of an extra column from a
+script for use by the graph instruction.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">column</span> <span class="pre">[clear]</span> <span class="pre">(&lt;fieldname&gt;</span> <span class="pre">[,</span> <span class="pre">&lt;columnname&gt;]);</span></tt></div></blockquote>
+<p>When the optional <tt class="docutils literal"><span class="pre">clear</span></tt> is set then the column for the field with name
+<tt class="docutils literal"><span class="pre">fieldname</span></tt> will be removed. When <tt class="docutils literal"><span class="pre">columnname</span></tt> is omitted, the <tt class="docutils literal"><span class="pre">columnname</span></tt>
+will be the same as the fieldname.</p>
+</div>
+</div>
+<div class="section" id="instructions-for-flow-control">
+<h2>6.4. Instructions for Flow Control<a class="headerlink" href="#instructions-for-flow-control" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="wait">
+<h3>6.4.1. Wait<a class="headerlink" href="#wait" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">wait</span></tt> instruction forces a wait in the execution of the script.
+The time is provided in seconds.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">wait</span> <span class="pre">(&lt;time</span> <span class="pre">in</span> <span class="pre">seconds&gt;);</span></tt></div></blockquote>
+<p>Value can be a variable.</p>
+</div>
+<div class="section" id="if">
+<h3>6.4.2. If<a class="headerlink" href="#if" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">if</span></tt> instruction allows conditional execution of instructions.</p>
+<blockquote>
+<div><p><tt class="docutils literal"><span class="pre">If</span> <span class="pre">(val1</span> <span class="pre">&lt;operator&gt;</span> <span class="pre">val2)</span> <span class="pre">then</span></tt></p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">&lt;true</span> <span class="pre">instruction</span> <span class="pre">list&gt;</span></tt></div></blockquote>
+<p><tt class="docutils literal"><span class="pre">[else</span></tt></p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">&lt;false</span> <span class="pre">instruction</span> <span class="pre">list&gt;]</span></tt></div></blockquote>
+<p><tt class="docutils literal"><span class="pre">endif;</span></tt></p>
+</div></blockquote>
+<p>Where <tt class="docutils literal"><span class="pre">&lt;Operator&gt;</span></tt> is one of <tt class="docutils literal"><span class="pre">‘==’</span></tt>, <tt class="docutils literal"><span class="pre">‘!=’</span></tt>, <tt class="docutils literal"><span class="pre">‘&gt;’</span></tt>, <tt class="docutils literal"><span class="pre">‘&lt;‘</span></tt>, <tt class="docutils literal"><span class="pre">‘&gt;=’</span></tt>,
+<tt class="docutils literal"><span class="pre">‘&lt;=’</span></tt>, <tt class="docutils literal"><span class="pre">‘||’</span></tt>, <tt class="docutils literal"><span class="pre">‘&amp;&amp;’</span></tt>.</p>
+<p>Expressions can be layered with brackets:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">((&lt;&lt;x&gt;0)</span> <span class="pre">&amp;&amp;</span> <span class="pre">(&lt;&lt;y&gt;0))</span></tt></div></blockquote>
+</div>
+<div class="section" id="for">
+<h3>6.4.3. For<a class="headerlink" href="#for" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">for</span></tt> instruction allows the execution of a list of instructions
+multiple times.</p>
+<blockquote>
+<div><p><tt class="docutils literal"><span class="pre">for</span> <span class="pre">,&lt;var&gt;</span> <span class="pre">in</span> <span class="pre">1</span> <span class="pre">..</span> <span class="pre">10</span> <span class="pre">loop</span></tt></p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">&lt;instruction</span> <span class="pre">list</span> <span class="pre">which</span> <span class="pre">can</span> <span class="pre">use</span> <span class="pre">&lt;&lt;var&gt;</span></tt></div></blockquote>
+<p><tt class="docutils literal"><span class="pre">endloop;</span></tt></p>
+</div></blockquote>
+<p><em>or</em></p>
+<blockquote>
+<div><p><tt class="docutils literal"><span class="pre">for</span> <span class="pre">&lt;var&gt;</span> <span class="pre">in</span> <span class="pre">(a,b,c)</span> <span class="pre">loop</span></tt></p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">&lt;instruction</span> <span class="pre">list</span> <span class="pre">which</span> <span class="pre">can</span> <span class="pre">use</span> <span class="pre">&lt;&lt;var&gt;</span></tt></div></blockquote>
+<p><tt class="docutils literal"><span class="pre">endloop;</span></tt></p>
+</div></blockquote>
+</div>
+<div class="section" id="exit">
+<h3>6.4.4. Exit<a class="headerlink" href="#exit" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">exit</span></tt> instruction exits the scenario.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">exit;</span></tt></div></blockquote>
+</div>
+</div>
+<div class="section" id="instructions-for-the-message-interface">
+<h2>6.5. Instructions for the Message Interface<a class="headerlink" href="#instructions-for-the-message-interface" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="write">
+<h3>6.5.1. Write<a class="headerlink" href="#write" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">write</span></tt> instruction writes a message to the interface.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">write</span> <span class="pre">&lt;interface&gt;.&lt;message&gt;</span> <span class="pre">([&lt;fieldname&gt;</span> <span class="pre">=&gt;</span> <span class="pre">&lt;value&gt;,]*);</span></tt></div></blockquote>
+</div>
+<div class="section" id="read">
+<h3>6.5.2. Read<a class="headerlink" href="#read" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">read</span></tt> instruction checks a received message from the interface.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">read</span> <span class="pre">&lt;interface&gt;.&lt;message&gt;</span> <span class="pre">([&lt;fieldname&gt;</span> <span class="pre">=&gt;</span> <span class="pre">&lt;value&gt;,]*);</span></tt></div></blockquote>
+</div>
+<div class="section" id="connect">
+<h3>6.5.3. Connect<a class="headerlink" href="#connect" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">connect</span></tt> instruction calls the <tt class="docutils literal"><span class="pre">connect</span></tt> of the interface.
+The functionality depends on the implementation in the interface.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">connect</span> <span class="pre">&lt;interface&gt;;</span></tt></div></blockquote>
+</div>
+<div class="section" id="disconnect">
+<h3>6.5.4. Disconnect<a class="headerlink" href="#disconnect" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">disconnect</span></tt> instruction calls the <tt class="docutils literal"><span class="pre">disconnect</span></tt> of the interface.
+The functionality depends on the implementation in the interface.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">disconnect</span> <span class="pre">&lt;interface&gt;;</span></tt></div></blockquote>
+</div>
+<div class="section" id="control">
+<h3>6.5.5. Control<a class="headerlink" href="#control" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">control</span></tt> instruction allows the execution of special instructions
+as provided by the interface.</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">control</span> <span class="pre">&lt;interface&gt;.&lt;instruction&gt;[</span> <span class="pre">([&lt;fieldname&gt;</span> <span class="pre">=&gt;</span> <span class="pre">&lt;value&gt;,]*)];</span></tt></div></blockquote>
+</div>
+</div>
+<div class="section" id="installing-script-engines">
+<h2>6.6. Installing Script Engines<a class="headerlink" href="#installing-script-engines" title="Permalink to this headline">¶</a></h2>
+<p>In order to use additional script languages the appropriate script engines
+must be added to the Java <tt class="docutils literal"><span class="pre">classpath</span></tt>. The Java JRE already comes with
+a JavaScript engine by default (<em>i.e.</em> no specific installation is required).
+More Java script engines are available and can be used to support different
+scripting languages for the embedded scripts inside the scenario scripts,
+or for the additional fields.</p>
+<p>When Tester starts, the available script engines will be logged
+(default log file is <tt class="docutils literal"><span class="pre">/tmp/OSPLTEST.log</span></tt>).</p>
+<div class="section" id="jython">
+<h3>6.6.1. Jython<a class="headerlink" href="#jython" title="Permalink to this headline">¶</a></h3>
+<p>Download and install Jython on the target machine. Include <tt class="docutils literal"><span class="pre">jython.jar</span></tt>,
+which is normally located in the Jython installation directory, in the
+<tt class="docutils literal"><span class="pre">classpath</span></tt> of the OpenSplice Tester. Use this language by adding the
+following line as the first line of each script using the Jython
+script language:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">#!jython</span></tt></div></blockquote>
+</div>
+<div class="section" id="jruby">
+<h3>6.6.2. Jruby<a class="headerlink" href="#jruby" title="Permalink to this headline">¶</a></h3>
+<p>Download and install Jruby on the target machine. Include <tt class="docutils literal"><span class="pre">jruby.jar</span></tt>,
+which is normally located in the <tt class="docutils literal"><span class="pre">lib</span></tt> directory in the Jruby installation,
+in the <tt class="docutils literal"><span class="pre">classpath</span></tt> of the OpenSplice Tester. Use this language by adding
+the following line as the first line of each script using the Jruby
+script language:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">#!jruby</span></tt></div></blockquote>
+</div>
+<div class="section" id="groovy">
+<h3>6.6.3. Groovy<a class="headerlink" href="#groovy" title="Permalink to this headline">¶</a></h3>
+<p>Download and install Groovy on the target machine. Include
+<tt class="docutils literal"><span class="pre">groovy-all-&lt;version&gt;.jar</span></tt>, which is normally located in the
+<tt class="docutils literal"><span class="pre">embeddable</span></tt> directory in the Groovy installation, in the
+<tt class="docutils literal"><span class="pre">classpath</span></tt> of the OpenSplice Tester. Use this language by adding
+the following line as the first line of each script using
+the Groovy script language:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">#!groovy</span></tt></div></blockquote>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">6. Scripting</a><ul>
+<li><a class="reference internal" href="#the-script-language">6.1. The Script Language</a><ul>
+<li><a class="reference internal" href="#a-script-file">6.1.1. A script file</a></li>
+<li><a class="reference internal" href="#variables">6.1.2. Variables</a><ul>
+<li><a class="reference internal" href="#special-variables">6.1.2.1. Special variables</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#embedded-scripts">6.1.3. Embedded Scripts</a></li>
+<li><a class="reference internal" href="#comments">6.1.4. Comments</a></li>
+<li><a class="reference internal" href="#macros">6.1.5. Macros</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-instructions">6.2. The Instructions</a><ul>
+<li><a class="reference internal" href="#send">6.2.1. Send</a></li>
+<li><a class="reference internal" href="#dispose">6.2.2. Dispose</a></li>
+<li><a class="reference internal" href="#writedispose">6.2.3. Writedispose</a></li>
+<li><a class="reference internal" href="#check">6.2.4. Check</a></li>
+<li><a class="reference internal" href="#miss">6.2.5. Miss</a></li>
+<li><a class="reference internal" href="#disposed">6.2.6. Disposed</a></li>
+<li><a class="reference internal" href="#mark">6.2.7. Mark</a></li>
+<li><a class="reference internal" href="#repeat">6.2.8. Repeat</a></li>
+<li><a class="reference internal" href="#set">6.2.9. Set</a></li>
+<li><a class="reference internal" href="#execute">6.2.10. Execute</a></li>
+<li><a class="reference internal" href="#log">6.2.11. Log</a></li>
+<li><a class="reference internal" href="#message">6.2.12. Message</a></li>
+<li><a class="reference internal" href="#fail">6.2.13. Fail</a></li>
+<li><a class="reference internal" href="#call">6.2.14. Call</a></li>
+<li><a class="reference internal" href="#reader">6.2.15. Reader</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#instructions-for-graphs">6.3. Instructions for Graphs</a><ul>
+<li><a class="reference internal" href="#graph">6.3.1. Graph</a></li>
+<li><a class="reference internal" href="#column">6.3.2. Column</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#instructions-for-flow-control">6.4. Instructions for Flow Control</a><ul>
+<li><a class="reference internal" href="#wait">6.4.1. Wait</a></li>
+<li><a class="reference internal" href="#if">6.4.2. If</a></li>
+<li><a class="reference internal" href="#for">6.4.3. For</a></li>
+<li><a class="reference internal" href="#exit">6.4.4. Exit</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#instructions-for-the-message-interface">6.5. Instructions for the Message Interface</a><ul>
+<li><a class="reference internal" href="#write">6.5.1. Write</a></li>
+<li><a class="reference internal" href="#read">6.5.2. Read</a></li>
+<li><a class="reference internal" href="#connect">6.5.3. Connect</a></li>
+<li><a class="reference internal" href="#disconnect">6.5.4. Disconnect</a></li>
+<li><a class="reference internal" href="#control">6.5.5. Control</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#installing-script-engines">6.6. Installing Script Engines</a><ul>
+<li><a class="reference internal" href="#jython">6.6.1. Jython</a></li>
+<li><a class="reference internal" href="#jruby">6.6.2. Jruby</a></li>
+<li><a class="reference internal" href="#groovy">6.6.3. Groovy</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="commandref.html"
+                        title="previous chapter">5. Command Reference</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="messageinterfaces.html"
+                        title="next chapter">7. Message Interfaces</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/scripting.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="messageinterfaces.html" title="7. Message Interfaces"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="commandref.html" title="5. Command Reference"
+             >previous</a> |</li>
+        <li><a href="index.html">Tester User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2016, PrismTech.
+    </div>
+  </body>
+</html>

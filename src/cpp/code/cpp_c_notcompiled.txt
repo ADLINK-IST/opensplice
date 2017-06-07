@@ -2,7 +2,7 @@
 #include "malloc.h"
 #include "symtbl.h"
 #include "accum.h"
-#include "io.h"
+#include "cpp_io.h"
 #include "if.h"
 #include "include.h"
 

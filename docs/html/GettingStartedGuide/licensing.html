@@ -1,0 +1,288 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. Licensing OpenSplice &mdash; OpenSplice Getting Started Guide</title>
+    
+    <link rel="stylesheet" href="_static/vortex.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '6.x',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="OpenSplice Getting Started Guide" href="index.html" />
+    <link rel="next" title="8. Launcher" href="launcher.html" />
+    <link rel="prev" title="6. Using Vortex OpenSplice with Vortex Cloud and Vortex Fog" href="using-with-cloud.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="launcher.html" title="8. Launcher"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="using-with-cloud.html" title="6. Using Vortex OpenSplice with Vortex Cloud and Vortex Fog"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="licensing-opensplice">
+<span id="id1"></span><h1>7. Licensing OpenSplice<a class="headerlink" href="#licensing-opensplice" title="Permalink to this headline">¶</a></h1>
+<p><em>Vortex OpenSplice uses Reprise License Manager (RLM) to manage licenses.
+This section describes how to install a license file for Vortex OpenSplice
+and how to use the license manager.</em></p>
+<div class="section" id="general">
+<h2>7.1. General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h2>
+<p>The licensing software is automatically installed on the host machine as
+part of the OpenSplice distribution. The software consists of two parts:</p>
+<ul>
+<li><dl class="first docutils">
+<dt><em>Vortex OpenSplice binary files</em></dt>
+<dd><div class="first last line-block">
+<div class="line">which are installed in <tt class="docutils literal"><span class="pre">&lt;OpenSplice_Install_Dir&gt;/&lt;E&gt;/&lt;platform&gt;.&lt;os&gt;/bin</span></tt>,</div>
+<div class="line">where <tt class="docutils literal"><span class="pre">OpenSplice_Install_Dir</span></tt> is the directory</div>
+<div class="line">where Vortex OpenSplice is installed.</div>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><em>License files</em></dt>
+<dd><div class="first last line-block">
+<div class="line">which determine the terms of the license.</div>
+<div class="line">These will be supplied by PrismTech.</div>
+</div>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-info.png"><img alt="info" src="_images/icon-info.png" style="height: 6mm;" /></a></dt>
+<dd><strong>Licenses:</strong> PrismTech supplies an Vortex OpenSplice license file,
+<tt class="docutils literal"><span class="pre">license.lic</span></tt>. This file is <em>not</em> included in the software
+distribution, but is sent separately by PrismTech.</dd>
+</dl>
+</div>
+<div class="section" id="development-and-deployment-licenses">
+<h2>7.2. Development and Deployment Licenses<a class="headerlink" href="#development-and-deployment-licenses" title="Permalink to this headline">¶</a></h2>
+<p>Development licenses are on a per Single Named Developer basis. This
+means that each developer using the product requires a license.
+Vortex OpenSplice is physically licensed for development purposes.
+Vortex OpenSplice is also physically licensed on enterprise platforms for
+deployment.</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="_images/icon-caution.png"><img alt="caution" src="_images/icon-caution.png" style="height: 6mm;" /></a></dt>
+<dd>Some OpenSplice components are licensed individually and you will need
+the correct feature to be unlocked for you to use them.</dd>
+</dl>
+</div>
+<div class="section" id="installing-the-license-file">
+<h2>7.3. Installing the License File<a class="headerlink" href="#installing-the-license-file" title="Permalink to this headline">¶</a></h2>
+<p>Copy the license file to <tt class="docutils literal"><span class="pre">&lt;OpenSplice_Install_Dir&gt;/etc/license.lic</span></tt>
+on the machine that will run the license manager.
+<tt class="docutils literal"><span class="pre">&lt;OpenSplice_Install_Dir&gt;</span></tt> is the directory where OpenSplice is
+installed.</p>
+<p>This is the recommended location for the license file but you can put
+the file in any location that can be accessed by the license manager
+<tt class="docutils literal"><span class="pre">rlm</span></tt>.</p>
+<p>If another location is used or the environment has not been setup, then
+an environment variable, either <tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt>,
+must be set to the full path and filename of the license file (either
+variable can be set; there is no need to set both). For example:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">prismtech_LICENSE=/my/lic/dir/license.lic</span></tt></div></blockquote>
+<p>If licenses are distributed between multiple license files, the
+<tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt> variable can be set to point to
+the directory which contains the license files.</p>
+</div>
+<div class="section" id="running-the-license-manager-daemon">
+<h2>7.4. Running the License Manager Daemon<a class="headerlink" href="#running-the-license-manager-daemon" title="Permalink to this headline">¶</a></h2>
+<p>It is only necessary to run the License Manager Daemon for floating or
+counted licenses. In this case, the license manager must be running
+before OpenSplice DDS can be used. The license manager software is
+responsible for allocating licenses to developers and ensuring that the
+allowed number of concurrent licenses is not exceeded.</p>
+<p>For node-locked licenses, as is the case with all evaluation licenses,
+then it is not necessary to run the License Manager Daemon but the
+<tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt> variable must be set to the
+correct license file location.</p>
+<p>To run the license manager, use the following command:</p>
+<div class="highlight-bash"><div class="highlight"><pre>rlm -c &lt;location&gt;
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">&lt;location&gt;</span></tt> is the full path and filename of the license file. If
+licenses are distributed between multiple files, <tt class="docutils literal"><span class="pre">&lt;location&gt;</span></tt> should be
+the path to the directory that contains the license files.</p>
+<p>The <tt class="docutils literal"><span class="pre">rlm</span></tt> command will start the PrismTech vendor daemon <tt class="docutils literal"><span class="pre">prismtech</span></tt>,
+which controls the licensing of the OpenSplice DDS software.</p>
+<p>To obtain a license for OpenSplice DDS from a License Manager Daemon
+that is running on a different machine, set either the <tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt>
+or <tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt> environment variable to point to the License
+Manager Daemon, using the following syntax:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">RLM_LICENSE</span><span class="o">=</span>&lt;port&gt;@&lt;host&gt;
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">&lt;port&gt;</span></tt> is the port the daemon is running on and <tt class="docutils literal"><span class="pre">&lt;host&gt;</span></tt> is the
+host the daemon is running on.</p>
+<p>The port and host values can be obtained from the information output
+when the daemon is started. The format of this output is as shown in the
+following example:</p>
+<div class="highlight-bash"><div class="highlight"><pre>07/05 12:05 <span class="o">(</span>rlm<span class="o">)</span> License server started on rhel4e
+07/05 12:05 <span class="o">(</span>rlm<span class="o">)</span> Server architecture: x86_l2
+07/05 12:05 <span class="o">(</span>rlm<span class="o">)</span> License files:
+07/05 12:05 <span class="o">(</span>rlm<span class="o">)</span> license.lic
+07/05 12:05 <span class="o">(</span>rlm<span class="o">)</span>
+07/05 12:05 <span class="o">(</span>rlm<span class="o">)</span> Web server starting on port 5054
+07/05 12:05 <span class="o">(</span>rlm<span class="o">)</span> Using TCP/IP port 5053
+07/05 12:05 <span class="o">(</span>rlm<span class="o">)</span> Starting ISV servers:
+07/05 12:05 <span class="o">(</span>rlm<span class="o">)</span> ... prismtech on port 35562
+07/05 12:05 <span class="o">(</span>prismtech<span class="o">)</span> RLM License Server Version 9.1BL3 <span class="k">for</span> ISV <span class="s2">&quot;prismtech&quot;</span>
+07/05 12:05 <span class="o">(</span>prismtech<span class="o">)</span> Server architecture: x86_l2
+
+  Copyright <span class="o">(</span>C<span class="o">)</span> 2006-2011, Reprise Software, Inc. All rights reserved.
+
+  RLM contains software developed by the OpenSSL Project
+  <span class="k">for</span> use in the OpenSSL Toolkit <span class="o">(</span>http//www.openssl.org<span class="o">)</span>
+  Copyright <span class="o">(</span>c<span class="o">)</span> 1998-2008 The OpenSSL Project. All rights reserved.
+  Copyright <span class="o">(</span>c<span class="o">)</span> 1995-1998 Eric Young <span class="o">(</span>eay@cryptsoft.com<span class="o">)</span> All rights
+  reserved.
+
+07/05 12:05 <span class="o">(</span>prismtech<span class="o">)</span>
+07/05 12:05 <span class="o">(</span>prismtech<span class="o">)</span> Server started on rhel4e <span class="o">(</span>hostid: 0025643ad2a7<span class="o">)</span> <span class="k">for</span>:
+07/05 12:05 <span class="o">(</span>prismtech<span class="o">)</span> opensplice_product1 opensplice_product2
+07/05 12:05 <span class="o">(</span>prismtech<span class="o">)</span>
+07/05 12:05 <span class="o">(</span>prismtech<span class="o">)</span> License files:
+07/05 12:05 <span class="o">(</span>prismtech<span class="o">)</span> license.lic
+07/05 12:05 <span class="o">(</span>prismtech<span class="o">)</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">&lt;port&gt;</span></tt> value should be taken from the first line of the output.
+The <tt class="docutils literal"><span class="pre">&lt;server&gt;</span></tt> value should be taken from the last line. From this
+example, the value for <tt class="docutils literal"><span class="pre">RLM_LICENSE</span></tt> or <tt class="docutils literal"><span class="pre">prismtech_LICENSE</span></tt> would be:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">35562&#64;rhel4e</span></tt></div></blockquote>
+</div>
+<div class="section" id="utilities">
+<h2>7.5. Utilities<a class="headerlink" href="#utilities" title="Permalink to this headline">¶</a></h2>
+<p>A utility program, <tt class="docutils literal"><span class="pre">rlmutil</span></tt>, is available for license server
+management and administration. One feature of this utility is its
+ability to gracefully shut down the license manager. To shut down the
+license manager, preventing the checkout of licenses for the OpenSplice
+DDS software, run either of the following commands:</p>
+<div class="highlight-bash"><div class="highlight"><pre>rlmutil rlmdown -vendor prismtech
+
+rlmutil rlmdown -c &lt;location&gt;
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">&lt;location&gt;</span></tt> is the full path and filename of the license file.</p>
+<p>The <tt class="docutils literal"><span class="pre">rlmutil</span></tt> program is also used to generate a host identification
+code which is used to generate your license key. To generate the code,
+run the following command on the license server:</p>
+<p><a class="reference internal" href="_images/icon-linux.png"><img alt="linux" src="_images/icon-linux.png" style="height: 6mm;" /></a></p>
+<div class="highlight-bash"><div class="highlight"><pre>rlmutil rlmhostid
+</pre></div>
+</div>
+<p><a class="reference internal" href="_images/icon-windows.png"><img alt="windows" src="_images/icon-windows.png" style="height: 6mm;" /></a></p>
+<div class="highlight-bash"><div class="highlight"><pre>rlmutil rlmhostid ether
+</pre></div>
+</div>
+<p>This returns an ID code for the server, which will look similar to:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">Hostid</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">machine:</span> <span class="pre">0025643ad2a7</span></tt></div></blockquote>
+<p>This ID code must be supplied to PrismTech so that your license key can
+be generated.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/Vortex_logo_2014.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">7. Licensing OpenSplice</a><ul>
+<li><a class="reference internal" href="#general">7.1. General</a></li>
+<li><a class="reference internal" href="#development-and-deployment-licenses">7.2. Development and Deployment Licenses</a></li>
+<li><a class="reference internal" href="#installing-the-license-file">7.3. Installing the License File</a></li>
+<li><a class="reference internal" href="#running-the-license-manager-daemon">7.4. Running the License Manager Daemon</a></li>
+<li><a class="reference internal" href="#utilities">7.5. Utilities</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="using-with-cloud.html"
+                        title="previous chapter">6. Using Vortex OpenSplice with Vortex Cloud and Vortex Fog</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="launcher.html"
+                        title="next chapter">8. Launcher</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/licensing.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="launcher.html" title="8. Launcher"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="using-with-cloud.html" title="6. Using Vortex OpenSplice with Vortex Cloud and Vortex Fog"
+             >previous</a> |</li>
+        <li><a href="index.html">OpenSplice Getting Started Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2017, PrismTech.
+    </div>
+  </body>
+</html>

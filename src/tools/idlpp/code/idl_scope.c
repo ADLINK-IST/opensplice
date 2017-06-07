@@ -1,12 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2013 PrismTech
- *   Limited and its licensees. All rights reserved. See file:
+ *   This software and documentation are Copyright 2006 to TO_YEAR PrismTech
+ *   Limited, its affiliated companies and licensors. All rights reserved.
  *
- *                     $OSPL_HOME/LICENSE 
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
  *
- *   for full copyright notice and license terms. 
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  *
  */
 #include <assert.h>
@@ -65,7 +73,7 @@ idl_scopeElementNew (
     assert (scopeName);
     assert (strlen(scopeName));
 
-    element = os_malloc ((size_t)C_SIZEOF(idl_scopeElement));
+    element = os_malloc (C_SIZEOF(idl_scopeElement));
     element->scopeName = os_strdup (scopeName);
     element->scopeType = scopeType;
 
@@ -91,7 +99,7 @@ idl_scopeElementDup (
     idl_scopeElement new_element;
 
     assert (element);
-    new_element = os_malloc ((size_t)C_SIZEOF(idl_scopeElement));
+    new_element = os_malloc (C_SIZEOF(idl_scopeElement));
 
     new_element->scopeName = os_strdup (element->scopeName);
     new_element->scopeType = element->scopeType;
@@ -127,7 +135,7 @@ idl_scope
 idl_scopeNew (
     const char *baseName)
 {
-    idl_scope scope = os_malloc ((size_t)C_SIZEOF(idl_scope));
+    idl_scope scope = os_malloc (C_SIZEOF(idl_scope));
 
     scope->baseName = os_strdup (baseName);
     scope->scopePointer = -1;
@@ -302,40 +310,34 @@ idl_scopeStack (
 
     if (scope && (scope->scopePointer >= 0)) {
         /* If the stack is not empty */
-    si = 0;
+        si = 0;
         /* copy the first scope element name */
         scopeStack = os_strdup (idl_scopeElementName(scope->stack[si]));
         si++;
-    /* for all scope elements */
+        /* for all scope elements */
         while (si <= scope->scopePointer) {
-        elName = idl_scopeElementName(scope->stack[si]);
-        /* allocate space for current scope stack +
-           separator + next scope name
-        */
-        scopeStack = os_realloc (scopeStack, (size_t)(
-        (int)strlen(scopeStack)+
-            (int)strlen(scopeSepp)+
-        (int)strlen(elName)+1));
-        /* concatinate the separator */
-        os_strcat (scopeStack, scopeSepp);
-        /* concatinate scope name */
-        os_strcat (scopeStack, elName);
-        si++;
+            elName = idl_scopeElementName(scope->stack[si]);
+            /* allocate space for current scope stack +
+               separator + next scope name
+             */
+            scopeStack = os_realloc (scopeStack, strlen(scopeStack)+strlen(scopeSepp)+strlen(elName)+1);
+            /* concatinate the separator */
+            os_strcat (scopeStack, scopeSepp);
+            /* concatinate scope name */
+            os_strcat (scopeStack, elName);
+            si++;
         }
-    if (name) {
-        /* if a user identifier is specified,
-           allocate space for current scope stack +
-           separator + user identifier
-        */
-        scopeStack = os_realloc (scopeStack, (size_t)(
-        (int)strlen(scopeStack)+
-            (int)strlen(scopeSepp)+
-        (int)strlen(name)+1));
-        /* concatinate the separator */
-        os_strcat (scopeStack, scopeSepp);
-        /* concatinate user identifier */
-        os_strcat (scopeStack, name);
-    }
+        if (name) {
+            /* if a user identifier is specified,
+               allocate space for current scope stack +
+               separator + user identifier
+             */
+            scopeStack = os_realloc (scopeStack, strlen(scopeStack)+strlen(scopeSepp)+strlen(name)+1);
+            /* concatinate the separator */
+            os_strcat (scopeStack, scopeSepp);
+            /* concatinate user identifier */
+            os_strcat (scopeStack, name);
+        }
     } else {
         /* Empty scope stack */
         if (name) {

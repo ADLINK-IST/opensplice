@@ -1,4 +1,3 @@
-
 /*
  
 COPYRIGHT
@@ -102,7 +101,7 @@ AST_Module::AST_Module(UTL_ScopedName *n, const UTL_Pragmas &p)
  * Add this AST_PredefinedType node (a predefined type declaration) to
  * this scope
  */
-AST_PredefinedType *AST_Module::fe_add_predefined_type(AST_PredefinedType *t)
+AST_PredefinedType *AST_Module::fe_add_predefined_type (AST_PredefinedType *t)
 {
    AST_Decl *d;
 
@@ -139,7 +138,7 @@ AST_PredefinedType *AST_Module::fe_add_predefined_type(AST_PredefinedType *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -149,41 +148,13 @@ AST_PredefinedType *AST_Module::fe_add_predefined_type(AST_PredefinedType *t)
  */
 AST_Module *AST_Module::fe_add_module (AST_Module * t)
 {
-   AST_Decl *d;
+   /* Add new module to scope */
 
-   /*
-    * Already defined and cannot be redefined? Or already used?
-    */
+   add_to_scope(t);
 
-   d = lookup_for_add (t);
-   if (d != NULL)
-   {
-      if (!can_be_redefined (d))
-      {
-         idl_global->err()->error3 (UTL_Error::EIDL_REDEF, t, this, d);
-         return NULL;
-      }
+   /* Add to set of locally referenced symbols */
 
-      if (t->has_ancestor (d))
-      {
-         idl_global->err()->redefinition_in_scope (t, d);
-         return NULL;
-      }
-
-      /* Return existing module */
-
-      t = AST_Module::narrow_from_decl (d);
-   }
-   else
-   {
-      /* * Add new module to scope */
-
-      add_to_scope(t);
-
-      /* Add to set of locally referenced symbols */
-
-      add_to_referenced(t, I_FALSE);
-   }
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -191,16 +162,16 @@ AST_Module *AST_Module::fe_add_module (AST_Module * t)
 /*
  * Add this AST_Interface node (an interface declaration) to this scope
  */
-AST_Interface *AST_Module::fe_add_interface(AST_Interface *t)
+AST_Interface *AST_Module::fe_add_interface (AST_Interface * t)
 {
-   AST_Decl *predef;
-   AST_Interface *fwd;
+   AST_Decl * predef = lookup_for_add (t);
+   AST_Interface * fwd;
 
    /*
     * Already defined?
     */
 
-   if ((predef = lookup_for_add (t)) != NULL)
+   if (predef != NULL)
    {
       /*
        * Treat fwd declared interfaces specially
@@ -208,13 +179,14 @@ AST_Interface *AST_Module::fe_add_interface(AST_Interface *t)
 
       if (predef->node_type() == AST_Decl::NT_interface)
       {
-         fwd = AST_Interface::narrow_from_decl(predef);
+         fwd = AST_Interface::narrow_from_decl (predef);
 
          if (fwd == NULL)
             return NULL;
 
-         if (!fwd->is_defined())
-         { /* Forward declared and not defined yet */
+         if (!fwd->is_defined ())
+         { 
+            /* Forward declared and not defined yet */
 
             if (fwd->defined_in() != this)
             {
@@ -259,7 +231,7 @@ AST_Interface *AST_Module::fe_add_interface(AST_Interface *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -268,41 +240,42 @@ AST_Interface *AST_Module::fe_add_interface(AST_Interface *t)
  * Add this AST_InterfaceFwd node (a forward declaration of an IDL
  * interface) to this scope
  */
-AST_InterfaceFwd *AST_Module::fe_add_interface_fwd(AST_InterfaceFwd *i)
+AST_InterfaceFwd * AST_Module::fe_add_interface_fwd (AST_InterfaceFwd * i)
 {
-   AST_Decl *d;
-   AST_Interface *itf;
+   AST_Decl * d = lookup_for_add (i);
+   AST_Interface * itf;
 
    /*
     * Already defined and cannot be redefined? Or already used?
     */
-   if ((d = lookup_for_add (i)) != NULL)
+   if (d)
    {
       if (d->node_type() == AST_Decl::NT_interface && d->defined_in() == this)
       {
-         itf = AST_Interface::narrow_from_decl(d);
+         itf = AST_Interface::narrow_from_decl (d);
 
-         if (itf == NULL)
-            return NULL;
+         if (itf == 0)
+         {
+            return 0;
+         }
 
-         i->set_full_definition(itf);
-
+         i->set_full_definition (itf);
          return i;
       }
 
-      if (!can_be_redefined(d))
+      if (!can_be_redefined (d))
       {
          idl_global->err()->error3(UTL_Error::EIDL_REDEF, i, this, d);
          return NULL;
       }
 
-      if (referenced(d))
+      if (referenced (d))
       {
          idl_global->err()->error3(UTL_Error::EIDL_DEF_USE, i, this, d);
          return NULL;
       }
 
-      if (i->has_ancestor(d))
+      if (i->has_ancestor (d))
       {
          idl_global->err()->redefinition_in_scope(i, d);
          return NULL;
@@ -312,12 +285,12 @@ AST_InterfaceFwd *AST_Module::fe_add_interface_fwd(AST_InterfaceFwd *i)
    /*
     * Add it to scope
     */
-   add_to_scope(i);
+   add_to_scope (i);
 
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(i, I_FALSE);
+   add_to_referenced (i, false);
 
    return i;
 }
@@ -362,7 +335,7 @@ AST_Constant *AST_Module::fe_add_constant(AST_Constant *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -407,99 +380,104 @@ AST_Exception *AST_Module::fe_add_exception(AST_Exception *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
 
 /*
- * Add this AST_Union node (a union declaration) to this scope
+ * Add this AST_Union node (a union declaration) to this module
+ * scope. May be a declaration or a pre-declaration.
  */
-AST_Union *AST_Module::fe_add_union(AST_Union *t)
+AST_Union *AST_Module::fe_add_union (AST_Union * u)
 {
-   AST_Decl *d;
+   AST_Decl * d = lookup_for_add (u);
 
-   /*
-    * Already defined and cannot be redefined? Or already used?
-    */
-
-   if ((d = lookup_for_add (t)) != NULL)
+   if (d)
    {
-      if (!can_be_redefined(d))
-      {
-         idl_global->err()->error3(UTL_Error::EIDL_REDEF, t, this, d);
-         return NULL;
-      }
+      /* Check for existing declaration or pre-declaration */
 
-      if (referenced(d))
+      if (d->node_type () == AST_Decl::NT_union)
       {
-         idl_global->err()->error3(UTL_Error::EIDL_DEF_USE, t, this, d);
-         return NULL;
-      }
+         AST_Union * fwd = AST_Union::narrow_from_decl (d);
+         if (fwd->is_defined () && u->is_defined ())
+         {
+            idl_global->err()->error3 (UTL_Error::EIDL_REDEF, u, this, d);
+         }
+         else
+         {
+            if (! fwd->is_defined () && u->is_defined ())
+            {
+               reorder (d);
+            }
 
-      if (t->has_ancestor(d))
+            // Return existing
+
+            delete u;
+            u = fwd;
+         }
+      }
+      else
       {
-         idl_global->err()->redefinition_in_scope(t, d);
-         return NULL;
+         idl_global->err()->error3 (UTL_Error::EIDL_REDEF, u, this, d);
       }
    }
+   else
+   {
+      add_to_scope (u);
+      add_to_referenced (u, false);
+   }
 
-   /*
-    * Add it to scope
-    */
-   add_to_scope(t);
-
-   /*
-    * Add it to set of locally referenced symbols
-    */
-   add_to_referenced(t, I_FALSE);
-
-   return t;
+   return u;
 }
 
 /*
- * Add this AST_Structure node (a struct declaration) to this scope
+ * Add this AST_Structure node (a struct declaration) to the module
+ * scope. May be a declaration or a pre-declaration.
  */
-AST_Structure *AST_Module::fe_add_structure(AST_Structure *t)
+
+AST_Structure * AST_Module::fe_add_structure (AST_Structure * s)
 {
-   AST_Decl *d;
+   AST_Decl * d = lookup_for_add (s);
 
-   /*
-    * Already defined and cannot be redefined? Or already used?
-    */
+   if (d)
+   { 
+      /* Check for existing declaration or pre-declaration */
 
-   if ((d = lookup_for_add (t)) != NULL)
-   {
-      if (!can_be_redefined(d))
+      if (d->node_type () == AST_Decl::NT_struct)
       {
-         idl_global->err()->error3(UTL_Error::EIDL_REDEF, t, this, d);
-         return NULL;
+         AST_Structure * fwd = AST_Structure::narrow_from_decl (d);
+         if (fwd->is_defined () && s->is_defined ())
+         {
+            /* Invalid duplicate declaration */
+
+            idl_global->err()->error3 (UTL_Error::EIDL_REDEF, s, this, d);
+         }
+         else
+         {
+            if (! fwd->is_defined () && s->is_defined ())
+            {
+               reorder (d);
+            }
+
+            // Return existing
+
+            delete s;
+            s = fwd;
+         }
       }
-
-      if (referenced(d))
+      else
       {
-         idl_global->err()->error3(UTL_Error::EIDL_DEF_USE, t, this, d);
-         return NULL;
-      }
-
-      if (t->has_ancestor(d))
-      {
-         idl_global->err()->redefinition_in_scope(t, d);
-         return NULL;
+         idl_global->err()->error3 (UTL_Error::EIDL_REDEF, s, this, d);
       }
    }
+   else
+   {
+      add_to_scope (s);
+      add_to_referenced (s, false);
+   }
 
-   /*
-    * Add it to scope
-    */
-   add_to_scope(t);
-
-   /*
-    * Add it to set of locally referenced symbols
-    */
-   add_to_referenced(t, I_FALSE);
-
-   return t;
+   return s;
 }
 
 /*
@@ -515,21 +493,15 @@ AST_Enum *AST_Module::fe_add_enum(AST_Enum *t)
 
    if ((d = lookup_for_add (t)) != NULL)
    {
-      if (!can_be_redefined(d))
+      if (!can_be_redefined (d))
       {
          idl_global->err()->error3(UTL_Error::EIDL_REDEF, t, this, d);
          return NULL;
       }
 
-      if (referenced(d))
+      if (referenced (d))
       {
          idl_global->err()->error3(UTL_Error::EIDL_DEF_USE, t, this, d);
-         return NULL;
-      }
-
-      if (t->has_ancestor(d))
-      {
-         idl_global->err()->redefinition_in_scope(t, d);
          return NULL;
       }
    }
@@ -542,7 +514,7 @@ AST_Enum *AST_Module::fe_add_enum(AST_Enum *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -590,7 +562,7 @@ AST_EnumVal *AST_Module::fe_add_enum_val(AST_EnumVal *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -598,7 +570,7 @@ AST_EnumVal *AST_Module::fe_add_enum_val(AST_EnumVal *t)
 /*
  * Add this AST_Typedef node (a typedef) to this scope
  */
-AST_Typedef *AST_Module::fe_add_typedef(AST_Typedef *t)
+AST_Typedef *AST_Module::fe_add_typedef (AST_Typedef *t)
 {
    AST_Decl *d;
 
@@ -635,7 +607,7 @@ AST_Typedef *AST_Module::fe_add_typedef(AST_Typedef *t)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(t, I_FALSE);
+   add_to_referenced(t, false);
 
    return t;
 }
@@ -672,7 +644,7 @@ AST_Module::fe_add_opaque(AST_Opaque* o)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(o, I_FALSE);
+   add_to_referenced(o, false);
 
    return o;
 }
@@ -680,7 +652,7 @@ AST_Module::fe_add_opaque(AST_Opaque* o)
 /*
  * Add this AST_Value node (a value type declaration) to this scope
  */
-AST_Value *AST_Module::fe_add_valuetype(AST_Value *v)
+AST_Value *AST_Module::fe_add_valuetype (AST_Value *v)
 {
    AST_Decl *predef;
    AST_Interface *fwd;
@@ -750,7 +722,7 @@ AST_Value *AST_Module::fe_add_valuetype(AST_Value *v)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(v, I_FALSE);
+   add_to_referenced(v, false);
 
    return v;
 }
@@ -826,7 +798,7 @@ AST_BoxedValue *AST_Module::fe_add_boxed_valuetype(AST_BoxedValue *v)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(v, I_FALSE);
+   add_to_referenced(v, false);
 
    return v;
 }
@@ -880,16 +852,12 @@ AST_ValueFwd *AST_Module::fe_add_valuetype_fwd(AST_ValueFwd *v)
    /*
     * Add it to set of locally referenced symbols
     */
-   add_to_referenced(v, I_FALSE);
+   add_to_referenced(v, false);
 
    return v;
 }
 
-/*
- * Dump this AST_Module node to the ostream o
- */
-void
-AST_Module::dump(ostream &o)
+void AST_Module::dump (ostream &o)
 {
    o << "module ";
    local_name()->dump(o);
@@ -899,9 +867,11 @@ AST_Module::dump(ostream &o)
    o << "}";
 }
 
-/*
- * Narrowing methods
- */
-IMPL_NARROW_METHODS2(AST_Module, AST_Decl, UTL_Scope)
-IMPL_NARROW_FROM_DECL(AST_Module)
-IMPL_NARROW_FROM_SCOPE(AST_Module)
+void AST_Module::virt_set_gen_any (void)
+{
+   set_scoped_gen_any ();
+}
+
+IMPL_NARROW_METHODS2 (AST_Module, AST_Decl, UTL_Scope)
+IMPL_NARROW_FROM_DECL (AST_Module)
+IMPL_NARROW_FROM_SCOPE (AST_Module)

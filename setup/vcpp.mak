@@ -4,8 +4,9 @@ VCPP9 = $(findstring 15.00.,$(OSPL_COMPILER_VER))
 VCPP10 = $(findstring 16.00.,$(OSPL_COMPILER_VER))
 VCPP11 = $(findstring 17.00.,$(OSPL_COMPILER_VER))
 VCPP12 = $(findstring 18.00.,$(OSPL_COMPILER_VER))
+VCPP14 = $(findstring 19.00.,$(OSPL_COMPILER_VER))
 
-ifeq "$(VCPP7)$(VCPP8)$(VCPP9)$(VCPP10)$(VCPP11)$(VCPP12)" ""
+ifeq "$(VCPP7)$(VCPP8)$(VCPP9)$(VCPP10)$(VCPP11)$(VCPP12)$(VCPP14)" ""
 $(error Could not determine compiler version!)
 endif
 
@@ -28,6 +29,10 @@ MPC_CISH_TYPE_TO_GEN = "vc11"
 else
 ifneq ("$(VCPP12)", "")
 MPC_CISH_TYPE_TO_GEN = "vc12"
+else
+ifneq ("$(VCPP14)", "")
+MPC_CISH_TYPE_TO_GEN = "vc14"
+endif
 endif
 endif
 endif
