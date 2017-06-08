@@ -558,8 +558,7 @@ gsoap_check ()
     # In older versions the -v option is used to print version info.
     # Try to get the version info via -help first before trying the potentialy
     # blocking -v call.
-    soapcpp2 -help 2> soapcpp2.ver
-    GSOAP_VERSION=`sed -n '2p' < soapcpp2.ver | grep "The gSOAP" | awk '{print $NF}'`
+    GSOAP_VERSION=`soapcpp2 -V`
     if [ -z $GSOAP_VERSION ] ; then
         soapcpp2 -v 2> soapcpp2.ver
         GSOAP_VERSION=`sed -n '2p' < soapcpp2.ver | grep "The gSOAP" | awk '{print $NF}'`
