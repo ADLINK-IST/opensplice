@@ -539,6 +539,7 @@ gsoap_check ()
             echo "Error - Invalid Setup"
             return 1
         fi
+        SOAPCPP2=soapcpp2
         PATH="$GSOAPHOME/bin:$PATH"
     else
         # If not check the path for soapcpp2
@@ -556,15 +557,15 @@ gsoap_check ()
 
     # In newer versions of gSOAP the -v option verboses output and does not exit.
     # In older versions the -v option is used to print version info.
-    # Try to get the version info via -help first before trying the potentialy
+    # Try to get the version info via -V and -help first before trying the potentialy
     # blocking -v call.
-    soapcpp2 -help 2> soapcpp2.ver
-    GSOAP_VERSION=`sed -n '2p' < soapcpp2.ver | grep "The gSOAP" | awk '{print $NF}'`
+    GSOAP_VERSION=`${SOAPCPP2} -V 2>/dev/null`
     if [ -z $GSOAP_VERSION ] ; then
-        soapcpp2 -v 2> soapcpp2.ver
-        GSOAP_VERSION=`sed -n '2p' < soapcpp2.ver | grep "The gSOAP" | awk '{print $NF}'`
+        GSOAP_VERSION=`${SOAPCPP2} -help 2>&1 | sed -e '/^$/d' | head -n1 | grep -o '\([0-9]\.\)\+[0-9 a-z]*'`
+        if [ -z $GSOAP_VERSION ] ; then
+            GSOAP_VERSION=`${SOAPCPP2} -v 2>&1 | sed -e '/^$/d' | head -n1 | grep -o '\([0-9]\.\)\+[0-9 a-z]*'`
+        fi
     fi
-    rm -f soapcpp2.ver
     #if [ "$GSOAP_VERSION" != "2.7.8c" ]
     #then
     #    echo "Error - Only gsoap version 2.7.8c is supported"
