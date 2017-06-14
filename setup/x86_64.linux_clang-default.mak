@@ -21,11 +21,7 @@ TOUCH		 = touch
 	# Tool used for creating soft/hard links.
 LN               = ln
 	# Archiving
-ifeq (,$(OSPL_AR))
 AR               = /usr/bin/ar
-else
-AR               = $(OSPL_AR)
-endif
 AR_CMDS          = rv
 	# preprocessor
 MAKEDEPFLAGS     = -M

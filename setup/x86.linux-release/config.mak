@@ -15,12 +15,21 @@ ifeq ($(FORCE_DEBUG_SYMBOLS), no)
 CFLAGS += -std=c99
 
 # Compiler flags
-CFLAGS_OPT       = -O3 -g -fno-strict-aliasing $(CFLAGS_LTO)
+CFLAGS_OPT       = -O3 -g -fno-strict-aliasing
 CFLAGS_DEBUG     = -DNDEBUG
 JCFLAGS          = -g
 
 #Csc compiler flags
 CSFLAGS_DEBUG    =
+
+# Set by configure when gcc version >= 4.7
+ifeq ($(GCC_SUPPORTS_LTO),1)
+CFLAGS_OPT += $(CFLAGS_LTO)
+ifneq ($(AR_LTO),)
+AR = $(AR_LTO)
+endif
+endif
+
 else
 # Basically the release setting so it builds the core in release mode
 # but also remove optimization and add debug symbols

@@ -99,4 +99,5 @@ get_target_os_header_dir:
 	-@echo $(OS)$(OS_REV_SUFFIX)
 
 get_cc:
-	-@echo $(CC)
+	-@echo CC=$(CC)
+	-@echo AR=$(AR)

@@ -21,11 +21,9 @@ TOUCH		 = touch
 	# Tool used for creating soft/hard links.
 LN               = ln
 	# Archiving
-ifeq (,$(OSPL_AR))
 AR               = /usr/bin/ar
-else
-AR               = $(OSPL_AR)
-endif
+# Archiver when using link-time optimizations
+AR_LTO           = gcc-ar
 AR_CMDS          = rv
 	# preprocessor
 MAKEDEPFLAGS     = -M
@@ -71,6 +69,7 @@ CFLAGS_OPT       = -O3 -DNDEBUG -g -fno-strict-aliasing
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
 CFLAGS_STRICT	 = -Wall -W -Wno-long-long
 CFLAGS_PERMISSIVE= -Wno-unused-parameter -Wno-sign-compare -Wno-unused-function
+CFLAGS_LTO       = -flto
 ifeq ($(GCC_WERROR_IS_SWITCH_SUPPORT),1)
     # Seperate from STRICT because this option won't work with -O0 on older compilers now it can be overruled
     CFLAGS_STRICT_UNINITIALIZED = -Werror=uninitialized

@@ -250,21 +250,23 @@ gcc_check ()
     echo "OK - using version $GCC_FULLVERSION"
 
     if echo $GCC_FULLVERSION | gawk '{ if($1>="4.3"){exit 0}else{exit 1} }' ; then
-        set_var GCC_SUPPORTS_CPLUSPLUS11=1
+        set_var GCC_SUPPORTS_CPLUSPLUS11 1
         export GCC_SUPPORTS_CPLUSPLUS11
     fi
 
     # -flto works well in gcc >= 4.7
     if echo $GCC_FULLVERSION | gawk '{ if($1>="4.7"){exit 0}else{exit 1} }' ; then
-        # Don't use lto on host with broken binutils
-        if [ `hostname` != "ebmr-p" -a `hostname` != "ubuntu1604-32a" ]
+        echo "  NOTE - enabling link-time optimizations for release build"
+        set_var GCC_SUPPORTS_LTO 1
+        export GCC_SUPPORTS_LTO
+        pathcheck gcc-ar
+        if [ $? -ne 0 ]
         then
-           set_var CFLAGS_LTO=-flto
+            echo "  WARNING - unable to find gcc-ar this could result in link errors"
         fi
-        export CFLAGS_LTO
-        echo "NOTE: enabling link-time optimizations in release build"
+
     # Also at 4.7+ we disable maybe-uninitialized errors for some 3rd party code
-        set_var GCC_HAS_NO_MAYBE_UNINITIALIZED=yes
+        set_var GCC_HAS_NO_MAYBE_UNINITIALIZED yes
         export GCC_HAS_NO_MAYBE_UNINITIALIZED
     fi
     return 0
