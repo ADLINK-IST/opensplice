@@ -81,7 +81,7 @@ os_realloc(
     void *memblk,
     os_size_t size) __attribute_returns_nonnull__
                     __attribute_warn_unused_result__
-                    __attribute_alloc_size__((1));
+                    __attribute_alloc_size__((2));
 
 /** \brief Free allocated memory and return it to heap
  *
