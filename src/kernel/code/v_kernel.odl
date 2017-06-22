@@ -1905,6 +1905,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_bool                         inNotEmptyList;
         attribute os_timeE                       lastInsertionTime;
         attribute v_dataReaderSampleTemplate     pending;
+        attribute c_voidp                        userData;
     };
 
     class v_orderedInstance extends v_dataViewInstanceTemplate {
