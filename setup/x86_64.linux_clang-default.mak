@@ -19,7 +19,7 @@ MAKE		 = make
 	# Solaris native touch
 TOUCH		 = touch
 	# Tool used for creating soft/hard links.
-LN               = ln
+LN               = ln -s
 	# Archiving
 AR               = /usr/bin/ar
 AR_CMDS          = rv
