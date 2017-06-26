@@ -87,14 +87,14 @@ $(PROTO_ETC_DIR)/.STAMP:
 	@mkdir -p $(PROTO_ETC_DIR)
 	@touch $@
 
-ifeq (,$(or $(findstring win32,$(SPLICE_HOST)), $(findstring win64,$(SPLICE_HOST))))
 clean:
 	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) manifest/$(SPLICE_TARGET) generated/$(SPLICE_TARGET)
+	@rm -f $(OSPL_HOME)/exec/$(SPLICE_TARGET)/protoc-gen-ddsjava.exe
 	@rm -f $(LICENSE_MGR)
-else
-clean:
-	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) manifest/$(SPLICE_TARGET) generated/$(SPLICE_TARGET) $(OSPL_HOME)/exec/$(SPLICE_TARGET)/protoc-gen-ddsjava.exe
-endif
+	@if [ -d bld ] && [ `find bld/* -maxdepth 0 -type d 2> /dev/null | wc -l` -eq 0 ] ; then \
+		echo 1 ;\
+		rm -rf $(OSPL_HOME)/etc/protobuf ; \
+	fi
 
 run: jar
 	$(JAVA) -jar $(JAR_TARGET)/$(JAR_MODULE)
