@@ -147,7 +147,7 @@ ifeq (,$(or $(findstring win32,$(SPLICE_HOST)), $(findstring win64,$(SPLICE_HOST
 ifeq (,$(findstring studio,$(SPLICE_HOST)))
 %.d: %.cpp
 	@$(ECHO_COMMAND) DEP $<
-	$(AT_SIGN)cd $(dir $@) && $(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(CXXINCS) -MT$(@:%.d=%$(OBJ_POSTFIX)) $< >$(notdir $@)
+	$(AT_SIGN)$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(CXXINCS) -MT$(@:%.d=%$(OBJ_POSTFIX)) $< > $@
 else
 %.d: %.cpp
 	@$(ECHO_COMMAND) DEP $<
