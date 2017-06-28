@@ -1,41 +1,30 @@
-.NOTPARALLEL:
+JAR_BASE       := dcpssaj
 
-JAR_MODULE      = dcpssaj.jar
-JAR_LOCATION    = $(OSPL_HOME)
+JCODE_COMMON_DIR =  ../common/java/code
+JPACKAGES       = DDS org/opensplice/dds/dcps org/opensplice/dds/type
 
-JCODE_DIR       = ../common/java/code
-SAJ_CODE_DIR    = code
-IDL_CODE_DIR    = bld/code/$(SPLICE_TARGET)/DDS
-JPACKAGES       = DDS org/opensplice/dds/dcps
+JAVA_DIRS       = $(shell find $(JCODE_DIR) -type d)
+JAVA_DIRS      += $(shell find $(JCODE_COMMON_DIR) -type d)
+JAVA_FILES_TMP  = $(wildcard $(addsuffix /*.java,$(addprefix $(JCODE_DIR)/,$(JPACKAGES))))
+JAVA_FILES_TMP += $(wildcard $(addsuffix /*.java,$(addprefix $(JCODE_COMMON_DIR)/,$(JPACKAGES))))
 
-# Input IDL files.
-IDL_DIR		:= $(OSPL_HOME)/etc/idl
-TOPICIDL	:= $(IDL_DIR)/dds_builtinTopics.idl
-QOSIDL		:= $(IDL_DIR)/dds_namedQosTypes.idl
+IDL_FILES      := dds_builtinTopics.idl dds_namedQosTypes.idl
+IDL_JAVA_FILES  = $(IDL_CODE_DIR)/idl_java_files.txt
 
-ifneq (,$(or $(findstring win32, $(SPLICE_TARGET)), $(findstring win64, $(SPLICE_TARGET))))
-EXTRA_SOURCE    = $(IDL_CODE_DIR)/DDS/\*.java $(SAJ_CODE_DIR)/DDS/\*.java
-else
-EXTRA_SOURCE    = $(IDL_CODE_DIR)/DDS/*.java $(SAJ_CODE_DIR)/DDS/*.java
-endif
 
-JTIMESTAMP      = $(IDL_CODE_DIR)/.java_idl.timestamp
-JCODE_PATH      = $(SAJ_CODE_DIR):$(IDL_CODE_DIR):$(JCODE_DIR)
-IDLPP           = idlpp
 
-MANIFEST_TEMPLATE = meta-inf/manifest-osgi-bundle.tmpl
+JCODE_PATH      = $(JCODE_DIR):$(JCODE_COMMON_DIR):$(IDL_CODE_DIR)
 
-all link: $(JTIMESTAMP) jar
+JAR_DEPENDENCIES += $(IDL_TIMESTAMP)
+SRC_JAR_DEPENDENCIES += $(IDL_TIMESTAMP)
 
-include $(OSPL_HOME)/setup/makefiles/target.mak
+all link: jar src
 
-$(JTIMESTAMP): $(TOPICIDL) $(QOSIDL)
-	@rm -rf $(IDL_CODE_DIR) $(CLASS_DIR)
-	@mkdir -p $(IDL_CODE_DIR) $(CLASS_DIR)
-	$(IDLPP) -l java -S -d $(IDL_CODE_DIR) `ospl_normalizePath $(TOPICIDL)`
-	$(IDLPP) -l java -S -d $(IDL_CODE_DIR) `ospl_normalizePath $(QOSIDL)`
-	$(JCC) $(JCC_ARGS) $(EXTRA_SOURCE)
-	@touch $(JTIMESTAMP)
+include ../common.mak
 
-clean:
-	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) $(IDL_CODE_DIR) $(MANIFEST)
+$(IDL_JAVA_FILES): $(IDL_FILES) | $(IDL_CODE_DIR) $(CLASS_DIR)
+	@for f in $^ ; do \
+		echo $(IDLPP) -l java -S -d $(IDL_CODE_DIR) `ospl_normalizePath $$f` ; \
+		$(IDLPP) -l java -S -d $(IDL_CODE_DIR) `ospl_normalizePath $$f` ; \
+	done
+	find $(IDL_CODE_DIR) -type f -name *.java > $@

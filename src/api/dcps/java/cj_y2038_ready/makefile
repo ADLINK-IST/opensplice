@@ -1,49 +1,37 @@
-.NOTPARALLEL:
+JAR_BASE       := dcpscj_y2038_ready
 
-JAR_MODULE      = dcpscj_y2038_ready.jar
-JAR_LOCATION    = $(OSPL_HOME)
+JCODE_DIR      := ../cj/code
+JCODE_COMMON_DIR =  ../common/java/code
+JPACKAGES       = DDS org/opensplice/dds/dcps org/opensplice/dds/type
 
-JCODE_DIR       = ../common/java/code
-CJ_CODE_DIR     = ../cj/code
-IDL_CODE_DIR    = bld/code/$(SPLICE_TARGET)/DDS
-JPACKAGES       = DDS org/opensplice/dds/dcps
+JAVA_DIRS       = $(shell find $(JCODE_DIR) -type d)
+JAVA_DIRS      += $(shell find $(JCODE_COMMON_DIR) -type d)
+JAVA_FILES_TMP  = $(wildcard $(addsuffix /*.java,$(addprefix $(JCODE_DIR)/,$(JPACKAGES))))
+JAVA_FILES_TMP += $(wildcard $(addsuffix /*.java,$(addprefix $(JCODE_COMMON_DIR)/,$(JPACKAGES))))
 
-# Input IDL files.
-IDL_DIR		:= $(OSPL_HOME)/etc/idl
-TOPICIDL	:= $(IDL_DIR)/dds_builtinTopics.idl
-QOSIDL		:= $(IDL_DIR)/dds_namedQosTypes.idl
+IDL_FILES      := dds_builtinTopics.idl dds_namedQosTypes.idl
+IDL_JAVA_FILES  = $(IDL_CODE_DIR)/idl_java_files.txt
+GEN_IDL_FILES  := $(IDL_FILES:%.idl=%Dcps.idl)
+GEN_IDL_FILES_PREFIXED = $(addprefix $(IDL_CODE_DIR)/,$(GEN_IDL_FILES))
 
-TOPIC_DCPSIDL	= $(IDL_CODE_DIR)/$(subst .idl,Dcps.idl,$(notdir $(TOPICIDL)))
-QOS_DCPSIDL		= $(IDL_CODE_DIR)/$(subst .idl,Dcps.idl,$(notdir $(QOSIDL)))
-ifneq (,$(or $(findstring win32, $(SPLICE_TARGET)), $(findstring win64, $(SPLICE_TARGET))))
-EXTRA_SOURCE    = $(IDL_CODE_DIR)/DDS/\*.java
-else
-EXTRA_SOURCE    = $(IDL_CODE_DIR)/DDS/*.java
-endif
+JCODE_PATH      = $(JCODE_DIR):$(JCODE_COMMON_DIR):$(IDL_CODE_DIR)
+
+JAR_DEPENDENCIES += $(IDL_TIMESTAMP)
+SRC_JAR_DEPENDENCIES += $(IDL_TIMESTAMP)
 
 # JACORB
 JAVA_ORB = JACORB
 
-JTIMESTAMP      = $(IDL_CODE_DIR)/.java_idl.timestamp
-JCODE_PATH      = $(CJ_CODE_DIR):$(IDL_CODE_DIR):$(JCODE_DIR)
-IDLPP           = idlpp
+all link: jar src
 
-MANIFEST_TEMPLATE = meta-inf/manifest-osgi-bundle.tmpl
+include ../common.mak
 
-all link: $(JTIMESTAMP) jar
+$(IDL_CODE_DIR)/%Dcps.idl: %.idl | $(IDL_CODE_DIR)
+	$(IDLPP) -l java -C -d $(IDL_CODE_DIR) `ospl_normalizePath $<`
 
-include $(OSPL_HOME)/setup/makefiles/target.mak
-
-$(JTIMESTAMP): $(TOPICIDL)
-	@rm -rf $(IDL_CODE_DIR) $(CLASS_DIR)
-	@mkdir -p $(IDL_CODE_DIR) $(CLASS_DIR)
-	$(IDLPP) -l java -C -d $(IDL_CODE_DIR) `ospl_normalizePath $(TOPICIDL)`
-	$(IDLPP) -l java -C -d $(IDL_CODE_DIR) `ospl_normalizePath $(QOSIDL)`
-	$(JAVA) $(CP_JACORB_IDL) org.jacorb.idl.parser -DOSPL_DDS_Y2038_READY -I"$(OSPL_HOME_NORMALIZED)/etc/idl" -all -d $(IDL_CODE_DIR) $(TOPIC_DCPSIDL)
-	$(JAVA) $(CP_JACORB_IDL) org.jacorb.idl.parser -I"$(OSPL_HOME_NORMALIZED)/etc/idl" -all -d $(IDL_CODE_DIR) $(QOS_DCPSIDL)
-	$(JCC) $(JCC_ARGS) $(EXTRA_SOURCE)
-	@touch $(JTIMESTAMP)
-
-clean:
-	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) $(IDL_CODE_DIR)
-
+$(IDL_JAVA_FILES): $(GEN_IDL_FILES_PREFIXED) | $(CLASS_DIR)
+	@for f in $^ ; do \
+		echo $(JAVA) $(CP_JACORB_IDL) org.jacorb.idl.parser -DOSPL_DDS_Y2038_READY -I"$(OSPL_HOME_NORMALIZED)/etc/idl" -all -d $(IDL_CODE_DIR) $$f ; \
+		$(JAVA) $(CP_JACORB_IDL) org.jacorb.idl.parser -DOSPL_DDS_Y2038_READY -I"$(OSPL_HOME_NORMALIZED)/etc/idl" -all -d $(IDL_CODE_DIR) $$f ; \
+	done
+	find $(IDL_CODE_DIR) -type f -name *.java > $@

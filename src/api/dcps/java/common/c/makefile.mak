@@ -4,10 +4,10 @@
 TARGET_DLIB	:= $(DDS_DCPSSAJ)
 
 ifeq ($(INCLUDE_API_DCPS_SAJ),yes)
-JNI_CLASS_DIR := ../../../../saj/bld/$(SPLICE_TARGET)
+JNI_CLASS_DIR := ../../../../saj/bld/$(SPLICE_TARGET)/class
 else
 ifeq ($(INCLUDE_API_DCPS_CJ), yes)
-JNI_CLASS_DIR := ../../../../cj/bld/$(SPLICE_TARGET)
+JNI_CLASS_DIR := ../../../../cj/bld/$(SPLICE_TARGET)/class
 endif
 endif
 

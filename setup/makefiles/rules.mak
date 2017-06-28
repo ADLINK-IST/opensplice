@@ -5,12 +5,14 @@ include $(OSPL_OUTER_HOME)/setup/$(SPLICE_TARGET)/config.mak
 endif
 
 # This makefile defined the platform and component independent make rules.
-CLASS_DIR  =bld/$(SPLICE_TARGET)
+CLASS_DIR ?=bld/$(SPLICE_TARGET)
 JCODE_DIR ?=code
 JCODE_PATH ?= $(JCODE_DIR)
 JCFLAGS    +=-sourcepath '$(JCODE_PATH)'
-MANIFEST   =manifest/$(SPLICE_TARGET)/manifest.mf
-MANIFEST_TMP =manifest/$(SPLICE_TARGET)/manifest.tmp
+
+MANIFEST_TARGET := manifest/$(SPLICE_TARGET)
+MANIFEST     = $(MANIFEST_TARGET)/manifest.mf
+MANIFEST_TMP = $(MANIFEST_TARGET)/manifest.tmp
 
 # If JAR_MODULE is not defined, assign something to prevent warnings in make
 # output.
@@ -21,8 +23,10 @@ JAR_FILE   =$(JAR_TARGET)/$(JAR_MODULE)
 
 ifeq (,$(or $(findstring win32,$(SPLICE_HOST)), $(findstring win64,$(SPLICE_HOST))))
 JSEPARATOR := :
+JNORMALIZE = $(1)
 else
 JSEPARATOR := ;
+JNORMALIZE = $(shell cygpath -m $(1))
 endif
 
 ifdef JAVA_MAIN_CLASS
@@ -74,9 +78,12 @@ else
 	AT_SIGN=
 endif
 
+$(CLASS_DIR):
+	$(AT_SIGN)mkdir -p $@
+
 $(CLASS_DIR)/.STAMP:
-	mkdir -p $(CLASS_DIR)
-	touch $@
+	$(AT_SIGN)mkdir -p $(@D)
+	$(AT_SIGN)touch $@
 
 LOCAL_CLASS_DIR	=$(CLASS_DIR)/$(PACKAGE_DIR)
 
@@ -297,24 +304,13 @@ jar: $(JAR_FILE)
 # fix them all right now. This'll probably always be the case, but so
 # be it ...
 ifneq "$(findstring /testsuite/, $(PWD))" ""
-  ifeq (,$(or $(findstring win32,$(SPLICE_HOST)), $(findstring win64,$(SPLICE_HOST))))
-    $(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR)/.STAMP $(CLASS_FILES) $(JAR_TARGET)/.STAMP $(MANIFEST)
-	$(JAR) cmf $(MANIFEST) $(JAR_FILE) -C bld/$(SPLICE_TARGET) .
-  else
-    $(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR)/.STAMP $(CLASS_FILES) $(JAR_TARGET)/.STAMP $(MANIFEST)
-	$(JAR) cmf $(MANIFEST) $(shell cygpath -m $(JAR_FILE)) -C bld/$(SPLICE_TARGET) .
-  endif
+$(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR)/.STAMP $(CLASS_FILES) $(JAR_TARGET)/.STAMP $(MANIFEST)
+	$(JAR) cmf $(MANIFEST) $(call JNORMALIZE,$(JAR_FILE)) -C $(CLASS_DIR) .
 else
-  ifeq (,$(or $(findstring win32,$(SPLICE_HOST)), $(findstring win64,$(SPLICE_HOST))))
-    $(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR)/.STAMP $(JAVA_FILES) $(JAR_TARGET)/.STAMP $(MANIFEST)
-	$(AT_SIGN)$(JCC) $(JCC_ARGS) $(filter %.java, $^)
-	$(JAR) cmf $(MANIFEST) $(JAR_FILE) -C bld/$(SPLICE_TARGET) .
-  else
-    $(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR)/.STAMP $(JAVA_FILES) $(JAR_TARGET)/.STAMP $(MANIFEST)
-	$(AT_SIGN)echo $(sort $(filter %.java, $^)) > bld/$(SPLICE_TARGET)/java_files.txt
-	$(AT_SIGN)$(JCC) $(JCC_ARGS) @bld/$(SPLICE_TARGET)/java_files.txt
-	$(JAR) cmf $(MANIFEST) $(shell cygpath -m $(JAR_FILE)) -C bld/$(SPLICE_TARGET) .
-  endif
+$(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR)/.STAMP $(JAVA_FILES) $(JAR_TARGET)/.STAMP $(MANIFEST)
+	@echo $(sort $(call JNORMALIZE,$(filter %.java, $^))) > $(CLASS_DIR)/java_files.txt
+	$(AT_SIGN)$(JCC) $(JCC_ARGS) @$(CLASS_DIR)/java_files.txt
+	$(JAR) cmf $(MANIFEST) $(call JNORMALIZE,$(JAR_FILE)) -C $(CLASS_DIR) .
 endif
 
 CURRENT_JAVA_DDS_VERSION = "Implementation-Version:\ $(PACKAGE_VERSION)"
@@ -333,12 +329,14 @@ else
 CURRENT_JAVA_DDS_VERSION_GIT = $(shell echo "$(CURRENT_JAVA_DDS_VERSION), non-PrismTech build")
 endif
 
+$(MANIFEST_TARGET):
+	@mkdir -p $@
+
 # If a manifest template is given, use that and don't start empty.
 # Be sure that the template has the proper versions. Also remove
 # possible rlm references from the manifest when it isn't needed.
 # Add some global information at the end.
-$(MANIFEST):
-	@mkdir -p manifest/$(SPLICE_TARGET)
+$(MANIFEST): | $(MANIFEST_TARGET)
 	@rm -f $(MANIFEST)
 	@rm -f $(MANIFEST_TMP)
 ifdef MANIFEST_TEMPLATE
@@ -377,6 +375,9 @@ endif
 	@echo "$(MANIFEST_MAIN)" >> $(MANIFEST_TMP)
 	@mv $(MANIFEST_TMP) $(MANIFEST)
 
+$(JAR_TARGET):
+	$(AT_SIGN)mkdir -p $@
+
 $(JAR_TARGET)/.STAMP:
-	@mkdir -p $(JAR_LOCATION)/jar/$(SPLICE_TARGET)
-	@touch $@
+	$(AT_SIGN)mkdir -p $(@D)
+	$(AT_SIGN)touch $@
