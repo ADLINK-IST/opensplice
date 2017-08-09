@@ -102,7 +102,7 @@ STR                 \"([^"]*\"\")*[^"]*\"
 STR2                \'([^']*\'\')*[^']*\'
 STR3                \`([^']*\'\')*[^']*\'
 
-IDENT               [a-zA-Z][a-zA-Z0-9_]*
+IDENT               [a-zA-Z_][a-zA-Z0-9_]*
 FIELDNAME           {IDENT}(\.{IDENT})*
 PARAM               [$%][0-9][0-9]?
 
