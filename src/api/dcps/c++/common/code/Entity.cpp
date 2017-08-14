@@ -311,6 +311,13 @@ DDS::OpenSplice::Entity::wlReq_set_listener_mask (
     return result;
 }
 
+DDS::StatusMask
+DDS::OpenSplice::Entity::rlReq_get_listener_mask (
+)
+{
+    return this->listenerMask;
+}
+
 DDS::ReturnCode_t
 DDS::OpenSplice::Entity::set_listener_mask (
     DDS::StatusMask mask
@@ -374,12 +381,20 @@ DDS::OpenSplice::Entity::nlReq_get_listener (
     DDS::ReturnCode_t result;
 
     CPP_REPORT_STACK();
-    result = this->check();
+    result = this->read_lock();
     if (result == DDS::RETCODE_OK) {
-        a_listener = DDS::Listener::_duplicate(this->listener);
+        a_listener = this->rlReq_get_listener();
+        this->unlock();
     }
     CPP_REPORT_FLUSH(this, result != DDS::RETCODE_OK);
     return a_listener;
+}
+
+DDS::Listener_ptr
+DDS::OpenSplice::Entity::rlReq_get_listener (
+) THROW_ORB_EXCEPTIONS
+{
+    return  DDS::Listener::_duplicate(this->listener);
 }
 
 DDS::ReturnCode_t
@@ -407,6 +422,9 @@ DDS::OpenSplice::Entity::wlReq_wait_listener_removed()
 
     while ((result == DDS::RETCODE_OK) && this->listenerEnabled == true) {
         result = this->wlReq_wait();
+    }
+    if (result == DDS::RETCODE_TIMEOUT) {
+        CPP_REPORT(result, "Wait for listener removal timed-out");
     }
 
     return result;

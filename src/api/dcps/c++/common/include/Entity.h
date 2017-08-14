@@ -75,6 +75,9 @@ namespace DDS
                 DDS::StatusMask mask
             ) THROW_ORB_EXCEPTIONS;
 
+            DDS::StatusMask
+            rlReq_get_listener_mask();
+
             DDS::ReturnCode_t
             set_listener_mask (
                 DDS::StatusMask mask
@@ -134,6 +137,10 @@ namespace DDS
 
             virtual DDS::Listener_ptr
             nlReq_get_listener (
+            ) THROW_ORB_EXCEPTIONS;
+
+            DDS::Listener_ptr
+            rlReq_get_listener (
             ) THROW_ORB_EXCEPTIONS;
 
             virtual DDS::ReturnCode_t

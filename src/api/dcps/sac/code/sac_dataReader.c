@@ -133,30 +133,53 @@ _DataReader_deinit (
 {
     DDS_ReturnCode_t result = DDS_RETCODE_OK;
     _DataReader reader;
+    DDS_StatusMask mask;
+    DDS_string name;
 
     reader = _DataReader(_this);
     if (reader != NULL) {
-        if (c_iterLength(reader->readConditionList) != 0) {
-            result = DDS_RETCODE_PRECONDITION_NOT_MET;
-            SAC_REPORT(result, "DataReader has %d ReadConditions",
-                        c_iterLength(reader->readConditionList));
+
+        mask = DDS_Entity_get_listener_interest(DDS_Entity(reader));
+        if (mask != DDS_STATUS_MASK_NONE) {
+            result = DDS_Entity_set_listener_interest(DDS_Entity(reader), DDS_STATUS_MASK_NONE);
+            if (result != DDS_RETCODE_OK) {
+                result = DDS_RETCODE_ERROR;
+                name = DDS_Entity_get_name(DDS_Entity(reader));
+                SAC_REPORT(result, "DataReader %s failed to disable listener.", name);
+                DDS_free(name);
+            }
         }
-        if (c_iterLength(reader->queryConditionList) != 0) {
-            result = DDS_RETCODE_PRECONDITION_NOT_MET;
-            SAC_REPORT(result, "DataReader has %d QueryConditions",
-                        c_iterLength(reader->queryConditionList));
-        }
-        if (c_iterLength(reader->dataReaderViewList) != 0) {
-            result = DDS_RETCODE_PRECONDITION_NOT_MET;
-            SAC_REPORT(result, "DataReader has %d DataReaderViews",
-                        c_iterLength(reader->dataReaderViewList));
+        if (result == DDS_RETCODE_OK) {
+            if (c_iterLength(reader->readConditionList) != 0) {
+                result = DDS_RETCODE_PRECONDITION_NOT_MET;
+                name = DDS_Entity_get_name(DDS_Entity(reader));
+                SAC_REPORT(result, "DataReader %s has %d ReadConditions",
+                            name, c_iterLength(reader->readConditionList));
+                DDS_free(name);
+            }
+            if (c_iterLength(reader->queryConditionList) != 0) {
+                result = DDS_RETCODE_PRECONDITION_NOT_MET;
+                name = DDS_Entity_get_name(DDS_Entity(reader));
+                SAC_REPORT(result, "DataReader %s has %d QueryConditions",
+                            name, c_iterLength(reader->queryConditionList));
+                DDS_free(name);
+            }
+            if (c_iterLength(reader->dataReaderViewList) != 0) {
+                result = DDS_RETCODE_PRECONDITION_NOT_MET;
+                name = DDS_Entity_get_name(DDS_Entity(reader));
+                SAC_REPORT(result, "DataReader %s has %d DataReaderViews",
+                            name, c_iterLength(reader->dataReaderViewList));
+                DDS_free(name);
+            }
+            if ((result == DDS_RETCODE_PRECONDITION_NOT_MET) && (mask != DDS_STATUS_MASK_NONE)) {
+                DDS_Entity_set_listener_interest(DDS_Entity(reader), mask);
+            }
         }
     } else {
         result = DDS_RETCODE_BAD_PARAMETER;
         SAC_REPORT(result, "DataReader = NULL");
     }
     if (result == DDS_RETCODE_OK) {
-        DDS_Entity_set_listener_interest(DDS_Entity(reader), 0);
         DDS_Entity_disable_callbacks(DDS_Entity(reader));
         DDS_free(reader->defaultDataReaderViewQos);
         DDS_TopicDescription_free(reader->topicDescription);

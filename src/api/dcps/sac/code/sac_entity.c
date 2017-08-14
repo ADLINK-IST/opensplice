@@ -452,6 +452,17 @@ DDS_Entity_set_listener_interest (
     return result;
 }
 
+DDS_StatusMask
+DDS_Entity_get_listener_interest (
+    DDS_Entity _this)
+{
+    _Entity entity = _Entity(_this);
+
+    assert (entity != NULL);
+
+    return entity->interest;
+}
+
 static DDS_ReturnCode_t
 _Entity_set_listener_mask(
     _Entity _this,
@@ -851,4 +862,24 @@ DDS_Entity_release_user_data(
             }
         }
     }
+}
+
+DDS_string
+DDS_Entity_get_name(
+    DDS_Entity _this)
+{
+    DDS_string name;
+    os_char *uName;
+    DDS_ReturnCode_t result;
+    _Entity entity;
+
+    result = DDS_EntityCheck(_this, &entity);
+    if (result == DDS_RETCODE_OK) {
+        uName = u_entityName(entity->uEntity);
+        name = DDS_string_dup(uName);
+        os_free(uName);
+    } else {
+        name = DDS_string_dup("<unknown>");
+    }
+    return name;
 }

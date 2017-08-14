@@ -323,7 +323,6 @@ DDS::OpenSplice::Subscriber::delete_datareader (
 
         if (result == DDS::RETCODE_OK) {
             /* Destroy the Reader. */
-            (void)reader->set_listener(NULL, 0);
             result = reader->deinit ();
             if (result != DDS::RETCODE_OK) {
                 if (result == DDS::RETCODE_PRECONDITION_NOT_MET) {
@@ -353,7 +352,7 @@ DDS::OpenSplice::Subscriber::delete_contained_entities (
 
     result = this->write_lock ();
     if (result == DDS::RETCODE_OK) {
-        wlReq_deleteFactoryList<DDS::OpenSplice::DataReader *>(readers);
+        result = wlReq_deleteFactoryList<DDS::OpenSplice::DataReader *>(readers);
         this->unlock ();
     }
 

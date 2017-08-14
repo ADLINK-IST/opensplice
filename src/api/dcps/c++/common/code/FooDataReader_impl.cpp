@@ -224,16 +224,44 @@ DDS::ReturnCode_t
 DDS::OpenSplice::FooDataReader_impl::wlReq_deinit ()
 {
     DDS::ReturnCode_t result = DDS::RETCODE_OK;
+    DDS::StatusMask mask;
+    os_char *name;
 
-    if (this->pimpl->loanRegistry && (this->pimpl->ignoreLoansOnDeletion == false)) {
-        if (this->pimpl->loanRegistry->is_empty() == FALSE) {
-            result = DDS::RETCODE_PRECONDITION_NOT_MET;
-            CPP_REPORT(result, "DataReader still contains non returned loans.");
+    mask = this->rlReq_get_listener_mask();
+    if (mask != 0) {
+        result = this->wlReq_set_listener_mask(0);
+        if (result != DDS::RETCODE_OK) {
+            result = DDS::RETCODE_ERROR;
+            name = u_entityName(rlReq_get_user_entity());
+            CPP_REPORT(result, "DataReader %s failed to disable listener.", name);
+            os_free(name);
+        }
+    }
+
+    if (result == DDS::RETCODE_OK) {
+        if (this->pimpl->loanRegistry && (this->pimpl->ignoreLoansOnDeletion == false)) {
+            if (this->pimpl->loanRegistry->is_empty() == FALSE) {
+                result = DDS::RETCODE_PRECONDITION_NOT_MET;
+                name = u_entityName(rlReq_get_user_entity());
+                CPP_REPORT(result, "DataReader %s still contains non returned loans.", name);
+                os_free(name);
+            }
         }
     }
 
     if (result == DDS::RETCODE_OK) {
         result = DDS::OpenSplice::DataReader::wlReq_deinit();
+    }
+    if ((result == DDS::RETCODE_PRECONDITION_NOT_MET) && (mask != 0)) {
+        DDS::ReturnCode_t retcode;
+        /* Rollback only possible for precondition not met, reset the listener.
+         * Might have missed some events. */
+        retcode = this->wlReq_set_listener_mask(mask);
+        if (retcode != DDS::RETCODE_OK) {
+            name = u_entityName(rlReq_get_user_entity());
+            CPP_REPORT(retcode, "DataReader %s failed to reset the listener, no more callbacks", name);
+            os_free(name);
+        }
     }
 
     if (result == DDS::RETCODE_OK) {

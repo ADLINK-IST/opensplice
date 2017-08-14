@@ -69,6 +69,10 @@ DDS_Entity_set_listener_interest (
     DDS_Entity _this,
     const DDS_StatusMask mask);
 
+DDS_StatusMask
+DDS_Entity_get_listener_interest (
+    DDS_Entity _this);
+
 DDS_ReturnCode_t
 DDS_Entity_reset_dataAvailable_status (
     DDS_Entity _this);
@@ -87,6 +91,10 @@ DDS_Entity_wait_listener_removed_wlReq(
 
 void
 DDS_Entity_notify_listener_removed(
+    DDS_Entity _this);
+
+DDS_string
+DDS_Entity_get_name(
     DDS_Entity _this);
 
 #endif /* SAC_ENTITY_H */

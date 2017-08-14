@@ -277,12 +277,7 @@ u_entityName(
     result = u_observableReadClaim(u_observable(_this), (v_public *)&ke, C_MM_RESERVATION_ZERO);
 
     if(result == U_RESULT_OK){
-        name = v_entityName(ke);
-        if (name) {
-            name = os_strdup(name);
-        } else {
-            name = os_strdup("No Name");
-        }
+        name = os_strdup(v_entityName2(ke));
         u_observableRelease(u_observable(_this), C_MM_RESERVATION_ZERO);
     } else {
         name = os_strdup("Invalid Entity");

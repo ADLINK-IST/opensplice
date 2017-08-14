@@ -203,7 +203,10 @@ DDS::OpenSplice::CppSuperClass::wlReq_wait()
     os_result osr;
 
     osr = os_condTimedWait(&this->cond, &this->mutex, timeout);
-    if (osr != os_resultSuccess) {
+    if (osr == os_resultTimeout) {
+        result = DDS::RETCODE_TIMEOUT;
+        CPP_REPORT(result, "Object timed wait timed-out.");
+    } else if (osr != os_resultSuccess) {
         result = DDS::RETCODE_ERROR;
         CPP_REPORT(result, "Object timed wait failed.");
     }
