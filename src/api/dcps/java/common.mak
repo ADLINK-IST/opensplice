@@ -1,19 +1,9 @@
-# make 3.80 does not
-# - allow us to define a new-line
-# - support abspath
+# make 3.80 does not support abspath, abstracting it
 ifeq (3.80,$(MAKE_VERSION))
-DEP_LINEEND :=#
 ABSPATH = $(shell cd $(dir $(1)) && pwd)/$(notdir $(1))
 else
-# define new line character
-define nl
-
-
-endef
-DEP_LINEEND :=  \\$(nl)
 ABSPATH = $(abspath $(1))
 endif
-
 
 JAR_MODULE     ?= $(JAR_BASE).jar
 SRC_JAR_MODULE ?= $(JAR_BASE)-src.jar
@@ -68,15 +58,16 @@ $(DEP_DIR):
 $(DEP_DIR)/%.ddep: | $(DEP_DIR)
 	@$(ECHO_COMMAND) create $@
 	@echo "$(@:%.ddep=%.dep): \\" > $@
-	@echo "$(foreach d,$(JAVA_DIRS),$(call ABSPATH,$(d))$(DEP_LINEEND))" >> $@
+	@echo " $(foreach d,$(JAVA_DIRS), $(call ABSPATH,$(d)))" >> $@
 	@echo "" >> $@
 
 .DELETE_ON_ERROR: $(DEP_DIR)/%.dep
+ABS_DEP_LIST = $(foreach f,$(IDL_FILES),$(call ABSPATH,$(IDL_DIR)/$(f)))
+ABS_DEP_LIST += $(JAVA_FILES)
 $(DEP_DIR)/%.dep: | $(DEP_DIR)
 	@$(ECHO_COMMAND) create $@
 	@echo "$(@:$(DEP_DIR)%.dep=$(JAR_TARGET)%.jar): \\" > $@
-	@echo -n " $(foreach f,$(IDL_FILES), $(call ABSPATH,$(IDL_DIR)/$(f))$(DEP_LINEEND))" >> $@
-	@echo " $(foreach f,$(JAVA_FILES), $(f)$(DEP_LINEEND))" >> $@
+	@echo "$(ABS_DEP_LIST)" >> $@
 	@echo "" >> $@
 
 .PHONY: src
@@ -92,8 +83,8 @@ $(JAR_TARGET)/%-src.jar: $(SRC_JAR_DEPENDENCIES) | $(JAR_TARGET)
 .PHONY: clean
 clean:
 	@rm -rf $(CLASS_DIR) $(DEP_DIR) $(IDL_CODE_BASE_DIR) $(JBASE_DIR) $(MANIFEST_TARGET)
-	@rm -vf $(JAR_TARGET)/$(JAR_MODULE)
-	@rm -vf $(JAR_TARGET)/$(SRC_JAR_MODULE)
+	@rm -f $(JAR_TARGET)/$(JAR_MODULE)
+	@rm -f $(JAR_TARGET)/$(SRC_JAR_MODULE)
 
 ifneq ($(findstring clean,$(MAKECMDGOALS)),clean)
 -include $(JDEPENDENCIES)

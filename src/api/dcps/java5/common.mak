@@ -85,6 +85,6 @@ $(DOC_DIR)/$(DOC_JAR_MODULE): $(CLASSIC_JAR_FILE) $(JBASE_DIR)/java_files.txt $(
 .PHONY: clean
 clean:
 	@rm -rf $(CLASS_DIR) $(CLASSIC_SRC_DIR) $(JBASE_DIR) $(CLASSIC_PACKAGES) $(MANIFEST_TARGET)
-	@rm -vf $(JAR_FILE)
-	@rm -vf $(JAR_TARGET)/$(SRC_JAR_MODULE)
-	@rm -vf $(DOC_DIR)/$(DOC_JAR_MODULE)
+	@rm -f $(JAR_FILE)
+	@rm -f $(JAR_TARGET)/$(SRC_JAR_MODULE)
+	@rm -f $(DOC_DIR)/$(DOC_JAR_MODULE)
