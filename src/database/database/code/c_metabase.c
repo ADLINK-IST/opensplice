@@ -985,6 +985,26 @@ propertySize(
     }
 }
 
+static os_size_t
+propertyAlignment(
+    c_type type)
+{
+    switch(c_baseObjectKind(type)) {
+    case M_COLLECTION:
+        if (c_collectionType(type)->kind == OSPL_C_ARRAY) {
+            return type->alignment;
+        } else {
+            return C_ALIGNMENT(c_voidp);
+        }
+    case M_CLASS:
+        return C_ALIGNMENT(c_voidp);
+    case M_TYPEDEF:
+        return propertyAlignment(c_typeDef(type)->alias);
+    default:
+        return type->alignment;
+    }
+}
+
 static c_metaEquality
 _c_metaCompare (
     c_metaObject object,
@@ -1239,6 +1259,7 @@ c__metaFinalize(
     os_size_t alignment, size;
     os_size_t objectAlignment = C_ALIGNMENT(c_object);
     os_size_t ps;
+    os_size_t pa;
 
 #define _TYPEINIT_(o,t) c_typeInit(o,C_ALIGNMENT(t),sizeof(t))
 
@@ -1298,10 +1319,11 @@ c__metaFinalize(
                         size = member->offset + sizeof(void *);
                     break;
                     default:
-                        if (type->alignment > alignment) {
-                            alignment = type->alignment;
+                        pa = propertyAlignment(type);
+                        if (pa > alignment) {
+                            alignment = pa;
                         }
-                        member->offset = alignSize(size,type->alignment);
+                        member->offset = alignSize(size,pa);
                         ps = propertySize(type);
                         if (ps == 0) {
                             return S_ILLEGALRECURSION;
@@ -1383,8 +1405,9 @@ c__metaFinalize(
                         }
                     break;
                     default:
-                        if (type->alignment > alignment) {
-                            alignment = type->alignment;
+                        pa = propertyAlignment(type);
+                        if (pa > alignment) {
+                            alignment = pa;
                         }
                         ps = propertySize(type);
                         if (ps == 0) {
@@ -1423,7 +1446,7 @@ c__metaFinalize(
                     return S_ILLEGALRECURSION;
                 }
                 size = c_collectionType(o)->maxSize * ps;
-                alignment = c_collectionType(o)->subType->alignment;
+                alignment = propertyAlignment(c_collectionType(o)->subType);
                 c_typeInit(o,alignment,size);
             } else {
                 _TYPEINIT_(o,c_voidp);
@@ -1567,7 +1590,7 @@ c__metaFinalize(
                             alignment = property->type->alignment;
                         }
                         if (normalize) {
-                            property->offset = alignSize(size,property->type->alignment);
+                            property->offset = alignSize(size,propertyAlignment(property->type));
                         }
                         ps = propertySize(property->type);
                         if (ps == 0) {
