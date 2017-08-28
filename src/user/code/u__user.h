@@ -48,7 +48,7 @@ u_userServerId (
 
 void
 u_userSetupSignalHandling (
-    c_bool installExitRequestHandler);
+    c_bool isService);
 
 os_uint32
 u__userDomainIndex(

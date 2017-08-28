@@ -66,6 +66,10 @@ OS_API void
 os_signalHandlerFree(
     void);
 
+OS_API os_result
+os_signalHandlerEnableExceptionSignals (
+    void);
+
 /**
  * Registers the supplied callback for invocation on receiving an exit-request.
  *

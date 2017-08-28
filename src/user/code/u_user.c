@@ -255,63 +255,91 @@ u_userDetach(
 }
 
 static os_result
-u__userExceptionCallbackWrapper(
-        os_callbackArg exceptionCallbackArg, void *unused)
+u__userExceptionHandler(
+    os_callbackArg exceptionCallbackArg,
+    void *unused)
 {
     OS_UNUSED_ARG(unused);
 
-    if ((exceptionCallbackArg.ThreadId == 0) || (exceptionCallbackArg.ThreadId != u__userGetDetachThreadId())) {
-        OS_REPORT(OS_ERROR, "u__userExceptionCallbackWrapper", U_RESULT_INTERNAL_ERROR,
-                  "Exception occurred, the process now disconnects from the domain");
+    if ((exceptionCallbackArg.ThreadId == 0) ||
+        (exceptionCallbackArg.ThreadId != u__userGetDetachThreadId()))
+    {
+        OS_REPORT(OS_ERROR, "u__userExceptionHandler", U_RESULT_INTERNAL_ERROR,
+                  "An exception occurred, the process will now disconnects from all DDS domains");
         u__userDetach(U_USER_BLOCK_OPERATIONS | U_USER_EXCEPTION);
-    }
-    else {
-        OS_REPORT(OS_ERROR, "u__userExceptionCallbackWrapper", U_RESULT_INTERNAL_ERROR,
-                  "Exception occurred in u_detach, the exceptionHandler will NOT disconnects the process from the domain");
+    } else {
+        OS_REPORT(OS_ERROR, "u__userExceptionHandler", U_RESULT_INTERNAL_ERROR,
+                  "An exception occurred within the detach operation, "
+                  "the Exception Handler cannot contineu and will ignore this signal.");
     }
 
     return os_resultSuccess;
 }
 
 static os_result
-u__userExitRequestCallbackWrapper(
+u__userExitRequestHandler(
     os_callbackArg exitCallbackArg,
-    void * unused)
+    void *unused)
 {
     OS_UNUSED_ARG(unused);
-    if ((exitCallbackArg.ThreadId == 0) || (exitCallbackArg.ThreadId != u__userGetDetachThreadId())) {
-        OS_REPORT(OS_WARNING, "u__userExitRequestCallbackWrapper", U_RESULT_OK,
-                  "Received termination request, will detach user-layer from domain.");
-        u__userDetach(U_USER_DELETE_ENTITIES);
-    }
-    else {
-        OS_REPORT(OS_WARNING, "u__userExitRequestCallbackWrapper", U_RESULT_OK,
-                  "Received termination request from within u_detach process, signalHandler process will NOT detach user-layer from domain.");
+
+    if (!os_serviceGetSingleProcess()) {
+        /* Only in shared memory configuration there is a need to detach from the service.
+         * This is the user layers responsibility and is performed by the u_userDetach operation.
+         * Exit request is a normal condition so inform the u_userDetach operation to delete all
+         * remaining entities that belong to this process.
+         */
+        if ((exitCallbackArg.ThreadId == 0) ||
+            (exitCallbackArg.ThreadId != u__userGetDetachThreadId()))
+        {
+            OS_REPORT(OS_INFO, "u__userExitRequestHandler", U_RESULT_OK,
+                      "Process received a termination signal and will detach from all DDS domains.");
+            u__userDetach(U_USER_DELETE_ENTITIES);
+        } else {
+            OS_REPORT(OS_WARNING, "u__userExitRequestHandler", U_RESULT_OK,
+                      "Process received a termination signal from within the detach operation, "
+                      "the Exit Handler will ignore this signal and NOT detach from the DDS domains.");
+        }
     }
 
     return os_signalHandlerFinishExitRequest(exitCallbackArg);
 }
 
-void u_userSetupSignalHandling (c_bool installExitRequestHandler)
+/* This operation starts the os abstraction signal handler if not already started and
+ * registers the user layer exit-request and exception handler depending on the type of process.
+ * Processes can be applications or services and can be deployed as single process or shm configuration.
+ * The exception handler is only set for shm processes to try to detach from the service when the process
+ * raises an exception so that the service remains available for others. In single process configuration
+ * this is not required because the service is in process and will also die.
+ * The exit handler is only set for applications and will also detach from the service in case of shm
+ * deployment, it will not detach from the service in single process deployment because the service will
+ * also die.
+ */
+void
+u_userSetupSignalHandling(
+    c_bool isService)
 {
     u_user u;
     if ((u = u__userLock ()) != NULL) {
         if (!u->signalHandlingSetup) {
             u->signalHandlingSetup = OS_TRUE;
-            /* As long as there is no deinit for the user-layer, these handlers
-             * cannot be unregistered. The handles are thus explicitly leaked
-             * here.
-             * TODO: Add cleanup when OSPL-5853 is done. */
+            (void) os_signalHandlerNew();
             if (!os_serviceGetSingleProcess()) {
-                (void) os_signalHandlerNew();
-                if (installExitRequestHandler) {
-                    (void) os_signalHandlerRegisterExitRequestCallback(u__userExitRequestCallbackWrapper, NULL);
-                }
-                (void) os_signalHandlerRegisterExceptionCallback(u__userExceptionCallbackWrapper, NULL);
+                (void) os_signalHandlerEnableExceptionSignals();
+                (void) os_signalHandlerRegisterExceptionCallback(u__userExceptionHandler, NULL);
+            }
+            if (!isService) {
+                (void) os_signalHandlerRegisterExitRequestCallback(u__userExitRequestHandler, NULL);
             }
         }
         u__userUnlock();
     }
+}
+
+static void
+u__userAtExitHandler(void)
+{
+    os_signalHandlerFree();
 }
 
 os_int32
@@ -371,6 +399,8 @@ u_userInitialise(
         u->signalHandlingSetup = OS_FALSE;
 
         memset(u->domainList, 0, sizeof u->domainList);
+
+        os_procAtExit(u__userAtExitHandler);
 
         /* This will mark the user-layer initialized */
         user = initUser;

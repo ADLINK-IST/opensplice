@@ -56,13 +56,22 @@ os_signalHandlerIgnoreJavaSignals (void)
 
 os_result
 os_signalHandlerNew(
-    void)
+    os_boolean handleExitSignalsOnly)
 {
     /* The signalHandler is always started in the os_processModuleInit() on Win32.
      * Therefore later invocations to os_signalHandlerNew() have no effect on
      * this platform. */
     assert(signalHandlerObj);
 
+    OS_UNUSED_ARG(handleExitSignalsOnly);
+
+    return os_resultSuccess;
+}
+
+os_result
+os_signalHandlerEnableExceptionSignals (
+    void)
+{
     return os_resultSuccess;
 }
 

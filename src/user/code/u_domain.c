@@ -992,7 +992,7 @@ u_domainNew(
  */
     if (result == U_RESULT_OK) {
         *domain = u_objectAlloc(sizeof(**domain), U_DOMAIN, u__domainDeinitW, u__domainFreeW);
-        u_userSetupSignalHandling(FALSE);
+        u_userSetupSignalHandling(TRUE);
         result = u_entityInit(u_entity(*domain), v_entity(kernel), *domain);
         os_mutexInit(&(*domain)->mutex, NULL);
         os_condInit(&(*domain)->cond, &(*domain)->mutex, NULL);
@@ -1307,6 +1307,8 @@ u__domainOpen(
 /*
  * Startup Single process Domain.
  */
+            /* Start the signal handler to only handle exit signals */
+            u_userSetupSignalHandling(FALSE);
             result = startSplicedWithinProcess(&spliced_thread, uri);
             if (result == U_RESULT_OK) {
                 int count = 0;
@@ -1461,7 +1463,7 @@ u__domainOpen(
                                     "initialization of configuration admin failed for domain %s.",
                                     domainCfg.name);
                     } else {
-                        u_userSetupSignalHandling(!isService);
+                        u_userSetupSignalHandling(isService);
                         result = u_entityInit(u_entity(*domain), v_entity(kernel), *domain);
                         os_mutexInit(&(*domain)->mutex, NULL);
                         os_condInit(&(*domain)->cond, &(*domain)->mutex, NULL);

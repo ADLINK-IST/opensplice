@@ -84,6 +84,8 @@ struct os_signalHandler_s {
     int pipeIn[2]; /* a pipe to send a signal to the signal handler thread. */
     int pipeOut[2]; /* a pipe to receive a result from the signal handler thread. */
     os_signalHandlerCallbackInfo callbackInfo;
+    os_sigaction action;
+    os_boolean handleExceptions;
 };
 
 #ifdef NSIG
@@ -642,17 +644,22 @@ err_malloc:
 }
 
 static os_result
+os_signalHandlerEnableExitSignals (
+    void);
+
+static os_result
 os_signalHandlerInit(
     os_signalHandler _this)
 {
     os_result result = os_resultSuccess;
-    os_sigaction action;
     os_sigset block_all_sigset, old_sigset;
-    unsigned i, iException, iExit;
+    unsigned i;
     int r;
     os_threadAttr thrAttr;
 
     assert(_this);
+
+    _this->handleExceptions = OS_FALSE;
 
     if(os__signalHandlerCallbackInit(&_this->callbackInfo) != os_resultSuccess) {
         goto err_callbackInfoInit;
@@ -724,7 +731,8 @@ os_signalHandlerInit(
     for (i = 0; i < lengthof(excludes); i++) {
         const int sig = excludes[i];
         if (os_sigsetDel(&block_all_sigset, sig) != 0) {
-            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0, "os_sigsetDel(0x%"PA_PRIxADDR", %d) failed, result = %d", (os_address)&action, sig, r);
+            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0, "os_sigsetDel(0x%"PA_PRIxADDR", %d) failed, result = %d",
+                    (os_address)&_this->action, sig, r);
             goto err_sigsetMask;
         }
     }
@@ -765,95 +773,16 @@ os_signalHandlerInit(
     }
 
     /* install signal handlers */
-    action = os_sigactionNew(signalHandler, &block_all_sigset, SA_SIGINFO);
+    _this->action = os_sigactionNew(signalHandler, &block_all_sigset, SA_SIGINFO);
 
-    for (i = 0; i < lengthof(exceptions); i++) {
-        const int sig = exceptions[i];
-        r = os_sigsetDel(&action.sa_mask, sig);
-        if (r < 0) {
-            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
-                        "os_sigsetDel(0x%"PA_PRIxADDR", %d) failed, result = %d",
-                        (os_address)&action, sig, r);
-            goto err_exceptionSigSetDel;
-        }
+    if (os_signalHandlerEnableExitSignals() != os_resultSuccess) {
+        goto err_enableExitHandling;
     }
 
-    for (iException = 0; iException < lengthof(exceptions); iException++) {
-        const int sig = exceptions[iException];
-        /* For exceptions we always set our own signal handler, since
-         * applications that cause an exception are not in a position
-         * to ignore it. However, we will chain the old handler to our
-         * own. */
-        r = os_sigactionSet(sig, &action, &old_signalHandler[sig]);
-        if (r < 0) {
-            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
-                        "os_sigactionSet(%d, 0x%"PA_PRIxADDR", 0x%"PA_PRIxADDR") failed, result = %d",
-                        sig, (os_address)&action, (os_address)&old_signalHandler[sig], r);
-            goto err_exceptionSigSet;
-        }
-    }
-
-    for (iExit = 0; iExit < quits_len; iExit++) {
-        const int sig = quits[iExit];
-        /* By passing NULL we only retrieve the currently set handler. If
-         * the signal should be ignored, we don't do anything. Otherwise we
-         * chain the old handler to our own.
-         * man-page of sigaction only states behaviour when new
-         * action is non-NULL, but all known implementations act as
-         * expected. That is: return the currently set signal-hand-
-         * ler (and not the previous, as the man-pages state).
-         * NOTE: Not MT-safe */
-        r = os_sigactionSet(sig, NULL, &old_signalHandler[sig]);
-        if (r < 0) {
-            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
-                    "Could not retrieve currently set signal-handler for signal %d", sig);
-            goto err_exitSigSet;
-        }
-        if(old_signalHandler[sig].sa_handler != SIG_IGN){
-            /* We don't know if the oldHandler has been modified in the mean
-             * time, since there is no way to make the signal handler reentrant.
-             * It doesn't make sense to look for modifications now, since a
-             * new modification could be on its way while we are processing
-             * the current modification.
-             * For that reason we will ignore any intermediate modifications
-             * and continue setting our own handler. Processes should therefore
-             * refrain from modifying the signal handler in multiple threads.
-             */
-            r = os_sigactionSet(sig, &action, NULL);
-            if (r != 0) {
-                OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
-                            "os_sigactionSet(%d, 0x%"PA_PRIxADDR", 0x%"PA_PRIxADDR") failed, result = %d",
-                            sig, (os_address)&action, (os_address)&old_signalHandler[sig], r);
-                goto err_exitSigSet;
-            }
-        }
-    }
     return os_resultSuccess;
 
-
 /* Error handling */
-err_exitSigSet:
-    while(iExit) {
-        const int sig = quits[--iExit];
-        r = os_sigactionSet(sig, &old_signalHandler[sig], NULL);
-        if (r < 0) {
-            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
-                        "Failed to restore original handler: os_sigactionSet(%d, 0x%"PA_PRIxADDR", NULL) failed, result = %d",
-                        sig, (os_address)&old_signalHandler[sig], r);
-        }
-    }
-err_exceptionSigSet:
-    while(iException) {
-        const int sig = exceptions[--iException];
-        r = os_sigactionSet(sig, &old_signalHandler[sig], NULL);
-        if (r < 0) {
-            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
-                        "Failed to restore original handler: os_sigactionSet(%d, 0x%"PA_PRIxADDR", NULL) failed, result = %d",
-                        sig, (os_address)&old_signalHandler[sig], r);
-        }
-    }
-err_exceptionSigSetDel:
-    /* No undo needed for os_sigsetDel(...) */
+err_enableExitHandling:
 err_sigResetMask:
     os__signalHandlerThreadStop(_this);
 err_threadCreate:
@@ -873,6 +802,127 @@ err_pipeIn:
 err_callbackInfoInit:
     return os_resultFail;
 }
+
+
+static os_result
+os_signalHandlerEnableExitSignals (
+    void)
+{
+    os_signalHandler _this = signalHandlerObj;
+    unsigned iExit;
+    int r;
+
+    if (isSignallingSafe(0) && _this) {
+
+        for (iExit = 0; iExit < quits_len; iExit++) {
+            const int sig = quits[iExit];
+            /* By passing NULL we only retrieve the currently set handler. If
+             * the signal should be ignored, we don't do anything. Otherwise we
+             * chain the old handler to our own.
+             * man-page of sigaction only states behaviour when new
+             * action is non-NULL, but all known implementations act as
+             * expected. That is: return the currently set signal-hand-
+             * ler (and not the previous, as the man-pages state).
+             * NOTE: Not MT-safe */
+            r = os_sigactionSet(sig, NULL, &old_signalHandler[sig]);
+            if (r < 0) {
+                OS_REPORT(OS_ERROR, "os_signalHandlerEnableQuitSignals", 0,
+                        "Could not retrieve currently set signal-handler for signal %d", sig);
+                goto err_exitSigSet;
+            }
+            if(old_signalHandler[sig].sa_handler != SIG_IGN){
+                /* We don't know if the oldHandler has been modified in the mean
+                 * time, since there is no way to make the signal handler reentrant.
+                 * It doesn't make sense to look for modifications now, since a
+                 * new modification could be on its way while we are processing
+                 * the current modification.
+                 * For that reason we will ignore any intermediate modifications
+                 * and continue setting our own handler. Processes should therefore
+                 * refrain from modifying the signal handler in multiple threads.
+                 */
+                r = os_sigactionSet(sig, &_this->action, NULL);
+                if (r != 0) {
+                    OS_REPORT(OS_ERROR, "os_signalHandlerEnableQuitSignals", 0,
+                            "os_sigactionSet(%d, 0x%"PA_PRIxADDR", 0x%"PA_PRIxADDR") failed, result = %d",
+                            sig, (os_address)&_this->action, (os_address)&old_signalHandler[sig], r);
+                    goto err_exitSigSet;
+                }
+            }
+        }
+    }
+
+    return os_resultSuccess;
+
+err_exitSigSet:
+    while(iExit) {
+        const int sig = quits[--iExit];
+        r = os_sigactionSet(sig, &old_signalHandler[sig], NULL);
+        if (r < 0) {
+            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                "Failed to restore original handler: os_sigactionSet(%d, 0x%"PA_PRIxADDR", NULL) failed, result = %d",
+                sig, (os_address)&old_signalHandler[sig], r);
+        }
+    }
+
+    return os_resultFail;
+}
+
+os_result
+os_signalHandlerEnableExceptionSignals (
+    void)
+{
+    os_signalHandler _this = signalHandlerObj;
+    unsigned i, iException;
+    int r;
+
+    if (isSignallingSafe(0) && _this) {
+
+        for (i = 0; i < lengthof(exceptions); i++) {
+            const int sig = exceptions[i];
+            r = os_sigsetDel(&_this->action.sa_mask, sig);
+            if (r < 0) {
+                OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                        "os_sigsetDel(0x%"PA_PRIxADDR", %d) failed, result = %d",
+                        (os_address)&_this->action, sig, r);
+                goto err_exceptionSigSetDel;
+            }
+        }
+
+        for (iException = 0; iException < lengthof(exceptions); iException++) {
+            const int sig = exceptions[iException];
+            /* For exceptions we always set our own signal handler, since
+             * applications that cause an exception are not in a position
+             * to ignore it. However, we will chain the old handler to our
+             * own. */
+            r = os_sigactionSet(sig, &_this->action, &old_signalHandler[sig]);
+            if (r < 0) {
+                OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                        "os_sigactionSet(%d, 0x%"PA_PRIxADDR", 0x%"PA_PRIxADDR") failed, result = %d",
+                        sig, (os_address)&_this->action, (os_address)&old_signalHandler[sig], r);
+                goto err_exceptionSigSet;
+            }
+        }
+
+        _this->handleExceptions = OS_TRUE;
+    }
+
+    return os_resultSuccess;
+
+err_exceptionSigSet:
+    while(iException) {
+        const int sig = exceptions[--iException];
+        r = os_sigactionSet(sig, &old_signalHandler[sig], NULL);
+        if (r < 0) {
+            OS_REPORT(OS_ERROR, "os_signalHandlerInit", 0,
+                      "Failed to restore original handler: os_sigactionSet(%d, 0x%"PA_PRIxADDR", NULL) failed, result = %d",
+                       sig, (os_address)&old_signalHandler[sig], r);
+        }
+    }
+err_exceptionSigSetDel:
+    /* No undo needed for os_sigsetDel(...) */
+    return os_resultFail;
+}
+
 
 static void
 os__signalHandlerThreadStop(
@@ -905,15 +955,17 @@ os_signalHandlerFree(
     os_signalHandler _this = signalHandlerObj;
 
     if (isSignallingSafe(0) && _this) {
-        for (i=0; i<lengthof(exceptions); i++) {
-            const int sig = exceptions[i];
-            r = os_sigactionSet(sig, &old_signalHandler[sig], NULL);
-            if (r<0) {
-                OS_REPORT(OS_ERROR,
+        if (_this->handleExceptions) {
+            for (i=0; i<lengthof(exceptions); i++) {
+                const int sig = exceptions[i];
+                r = os_sigactionSet(sig, &old_signalHandler[sig], NULL);
+                if (r<0) {
+                    OS_REPORT(OS_ERROR,
                             "os_signalHandlerFree", 0,
                             "os_sigactionSet(%d, 0x%"PA_PRIxADDR", NULL) failed, result = %"PA_PRIdSIZE,
                             sig, (os_address)&old_signalHandler[sig], r);
-                assert(OS_FALSE);
+                    assert(OS_FALSE);
+                }
             }
         }
         os__signalHandlerThreadStop(_this);
@@ -929,6 +981,7 @@ os_signalHandlerFree(
     }
 #endif
 }
+
 
 os_result
 os_signalHandlerSetEnabled(
