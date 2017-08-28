@@ -69,8 +69,13 @@ v_builtinWritersDisable(
        while publishing builtin topic information
     */
     unsigned i;
+    v_writer w = NULL;
+
     for (i = 0; i < sizeof (_this->writers) / sizeof (_this->writers[0]); i++) {
+        w = _this->writers[i];
         _this->writers[i] = NULL;
+        v_writerFree(w);
+        c_free(w);
     }
 }
 

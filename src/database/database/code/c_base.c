@@ -48,6 +48,7 @@
 #define REFCOUNT_FLAG_ATOMIC     0x1000000u
 #define REFCOUNT_FLAG_TRACE      0x2000000u
 #define REFCOUNT_FLAG_TRACETYPE  0x4000000u
+#define REFCOUNT_FLAG_GARBAGE   0x10000000u
 
 #define c_oid(o)    ((c_object)(C_ADDRESS(o) + HEADERSIZE))
 #define c_header(o) ((c_header)(C_ADDRESS(o) - HEADERSIZE))
@@ -1655,11 +1656,15 @@ c_create (
     return base;
 }
 
+static void deleteGarbage(c_base base);
+
 void
 c_destroy (
     c_base _this)
 {
-    c_mmDestroy (_this->mm);
+    c_mm mm = _this->mm;
+    deleteGarbage(_this);
+    c_mmDestroy(mm);
 }
 
 void
@@ -1746,7 +1751,7 @@ c_unbind (
     } else {
         c_object object = binding->object;
         ut_avlDeleteDPath (&c_base_bindings_td, &base->bindings, binding, &p);
-        c_mmFree(base->mm, binding->name);
+        c_free(binding->name);
         c_mmFree(base->mm, binding);
         return object;
     }
@@ -2796,3 +2801,358 @@ c_baseObjectWalk(
 #endif
 #endif
 #undef ResolveType
+
+/*******
+ * Following operations involve garbage collection at database destruction to avoid leakage.
+ * The Database itself has some reference counting flaws that causes some memory leakage.
+ * The following deleteGarbage function is therefore created to deal with this leakage at
+ * database destruction. The deleteGarbage function is called by the c_destruct operation.
+ * This function will walk over all remaining objects and collect one reference to each object
+ * in a trashcan and afterwards free the allocated memory of each object referenced by the trashcan. 
+ *******/
+
+#define OBJECTTYPE(t,o) ACTUALTYPE(t,c_header(o)->type)
+#define CHECKOBJECT(o) assert(o == NULL || c_header(o)->confidence == CONFIDENCE)
+
+C_CLASS(c_trashcan);
+C_STRUCT(c_trashcan) {
+    c_iter trash;
+    c_iter arrays;
+    c_iter scopes;
+    c_iter collections;
+    c_iter references;
+};
+
+static void walkReferences(c_metaObject metaObject, c_object object, c_trashcan trashcan);
+
+static void
+collectScopeGarbage(
+c_metaObject o,
+c_voidp trashcan)
+{
+    CHECKOBJECT(o);
+    c_iterAppend(((c_trashcan)trashcan)->references, c_keep(o));
+}
+
+static c_bool
+collectGarbage(
+c_object o,
+c_voidp trashcan)
+{
+    CHECKOBJECT(o);
+    c_iterAppend(((c_trashcan)trashcan)->references, c_keep(o));
+    return TRUE;
+}
+
+static void
+collectReferenceGarbage(
+    c_voidp *p,
+    c_type type,
+    c_trashcan trashcan)
+{
+    c_type t = type;
+
+    if (p == NULL || t == NULL) return;
+
+    while (c_baseObject(t)->kind == M_TYPEDEF) {
+        t = c_typeDef(t)->alias;
+    }
+    switch (c_baseObject(t)->kind) {
+    case M_CLASS:
+    case M_INTERFACE:
+    case M_ANNOTATION:
+        CHECKOBJECT(*p);
+        c_iterAppend(trashcan->references, c_object(*p));
+    break;
+    case M_BASE:
+    case M_COLLECTION:
+        if ((c_collectionTypeKind(t) == OSPL_C_ARRAY) &&
+            (c_collectionTypeMaxSize(t) != 0))
+        {
+            walkReferences((c_metaObject)t, p, trashcan);
+        } else {
+            CHECKOBJECT(*p);
+            c_iterAppend(trashcan->references, c_object(*p));
+        }
+    break;
+    case M_EXCEPTION:
+    case M_STRUCTURE:
+    case M_UNION:
+        walkReferences(c_metaObject(type),p, trashcan);
+    break;
+    case M_PRIMITIVE:
+    break;
+    default:
+    break;
+    }
+}
+
+static void
+walkReferences(
+    c_metaObject metaObject,
+    c_object o,
+    c_trashcan trashcan)
+{
+    c_type type;
+    c_class cls;
+    c_array references, labels, ar;
+    c_property property;
+    c_member member;
+    c_ulong i,j,length;
+    c_size size;
+    c_ulong nrOfRefs,nrOfLabs;
+    c_value v;
+    c_bool fixType = FALSE;
+
+    if (metaObject == NULL || o == NULL) return;
+
+    switch (c_baseObjectKind(metaObject)) {
+    case M_CLASS:
+        cls = c_class(metaObject);
+        while (cls) {
+            length = c_arraySize(c_interface(cls)->references);
+            for (i=0;i<length;i++) {
+                property = c_property(c_interface(cls)->references[i]);
+                type = property->type;
+                collectReferenceGarbage(C_DISPLACE(o,property->offset),type, trashcan);
+            }
+            cls = cls->extends;
+        }
+    break;
+    case M_INTERFACE:
+    case M_ANNOTATION:
+        length = c_arraySize(c_interface(metaObject)->references);
+        for (i=0;i<length;i++) {
+            property = c_property(c_interface(metaObject)->references[i]);
+            type = property->type;
+            collectReferenceGarbage(C_DISPLACE(o,property->offset),type, trashcan);
+        }
+    break;
+    case M_EXCEPTION:
+    case M_STRUCTURE:
+        length = c_arraySize(c_structure(metaObject)->references);
+        for (i=0;i<length;i++) {
+            member = c_member(c_structure(metaObject)->references[i]);
+            type = c_specifier(member)->type;
+            collectReferenceGarbage(C_DISPLACE(o,member->offset),type, trashcan);
+        }
+    break;
+    case M_UNION:
+#define _CASE_(k,t) case k: v = t##Value(*((t *)o)); break
+        switch (c_metaValueKind(c_metaObject(c_union(metaObject)->switchType))) {
+        _CASE_(V_BOOLEAN,   c_bool);
+        _CASE_(V_OCTET,     c_octet);
+        _CASE_(V_SHORT,     c_short);
+        _CASE_(V_LONG,      c_long);
+        _CASE_(V_LONGLONG,  c_longlong);
+        _CASE_(V_USHORT,    c_ushort);
+        _CASE_(V_ULONG,     c_ulong);
+        _CASE_(V_ULONGLONG, c_ulonglong);
+        _CASE_(V_CHAR,      c_char);
+        _CASE_(V_WCHAR,     c_wchar);
+        default:
+            return;
+        }
+#undef _CASE_
+        references = c_union(metaObject)->references;
+        if (references != NULL) {
+            i=0; type=NULL;
+            nrOfRefs = c_arraySize(references);
+            while ((i<nrOfRefs) && (type == NULL)) {
+                labels = c_unionCase(references[i])->labels;
+                j=0;
+                nrOfLabs = c_arraySize(labels);
+                while ((j<nrOfLabs) && (type == NULL)) {
+                    if (c_valueCompare(v,c_literal(labels[j])->value) == C_EQ) {
+                        walkReferences(c_metaObject(references[i]),
+                                       C_DISPLACE(o,c_type(metaObject)->alignment), trashcan);
+                        type = c_specifier(references[i])->type;
+                    }
+                    j++;
+                }
+                i++;
+            }
+        }
+    break;
+    case M_COLLECTION:
+        switch (c_collectionTypeKind(metaObject)) {
+        case OSPL_C_ARRAY:
+        case OSPL_C_SEQUENCE:
+            ACTUALTYPE(type,((c_collectionType)metaObject)->subType);
+            /* Some internal database arrays have an incorrect subtype.
+             * This should be fixed but for now detect and correct during
+             * garbage collection.
+             */
+            if (type == c_getMetaType(c_getBase(type),M_BASE)) {
+                fixType = TRUE;
+            }
+            ar = (c_array)o;
+
+            if (c_collectionTypeKind(metaObject) == OSPL_C_ARRAY &&
+                c_collectionTypeMaxSize(metaObject) > 0)
+            {
+                length = ((c_collectionType)metaObject)->maxSize;
+            } else {
+                length = c_arraySize(ar);
+            }
+
+            if (c_typeIsRef(type)) {
+                for (i=0;i<length;i++) {
+                    if (fixType) {
+                        OBJECTTYPE(type, ar[i]);
+                    }
+                    /* Need to check type again as it might have been fixed */
+                    if (c_typeIsRef(type)) {
+                        CHECKOBJECT(ar[i]);
+                        c_iterAppend(trashcan->references, ar[i]);
+                    } else {
+                        walkReferences(c_metaObject(type),ar[i],trashcan);
+                    }
+                }
+            } else {
+                if (c_typeHasRef(type)) {
+                    size = type->size;
+                    for (i=0;i<length;i++) {
+                        walkReferences(c_metaObject(type),C_DISPLACE(ar,(i*size)),trashcan);
+                    }
+                }
+            }
+        break;
+        case OSPL_C_SCOPE:
+            c_scopeWalk(c_scope(o), collectScopeGarbage, trashcan);
+        break;
+        case OSPL_C_STRING:
+        break;
+        default:
+            (void)c_walk(o, collectGarbage, trashcan);
+        break;
+        }
+    break;
+    case M_BASE:
+    break;
+    case M_TYPEDEF:
+        walkReferences(c_metaObject(c_typeDef(metaObject)->alias),o, trashcan);
+    break;
+    case M_ATTRIBUTE:
+    case M_RELATION:
+        ACTUALTYPE(type,c_property(metaObject)->type);
+        collectReferenceGarbage(C_DISPLACE(o,c_property(metaObject)->offset),type, trashcan);
+    break;
+    case M_MEMBER:
+        ACTUALTYPE(type,c_specifier(metaObject)->type);
+        collectReferenceGarbage(C_DISPLACE(o,c_member(metaObject)->offset),type, trashcan);
+    break;
+    case M_UNIONCASE:
+        ACTUALTYPE(type,c_specifier(metaObject)->type);
+        collectReferenceGarbage(o,type, trashcan);
+    break;
+    case M_MODULE:
+        CHECKOBJECT(c_module(o)->scope);
+        c_iterAppend(trashcan->references, c_module(o)->scope);
+    break;
+    case M_PRIMITIVE:
+        /* Do nothing */
+    break;
+    default:
+    break;
+    }
+}
+
+typedef struct bindArg {
+    c_mm mm;
+    c_trashcan trashcan;
+} *bindArgp;
+
+static void freeBindings (void *binding, void *arg)
+{
+    c_baseBinding b = (c_baseBinding)binding;
+    bindArgp a = (bindArgp)arg;
+    c_header header;
+    c_type type;
+    c_object o;
+
+    c_iterInsert(a->trashcan->references, b->object);
+    while ((o = c_iterTakeFirst(a->trashcan->references)) != NULL) {
+        header = c_header(o);
+        /* skip already freed or corrupted */
+        assert(header->confidence == CONFIDENCE);
+        if ((pa_ld32(&header->refCount) & REFCOUNT_FLAG_GARBAGE) == 0) {
+            pa_or32(&header->refCount, REFCOUNT_FLAG_GARBAGE);
+
+            OBJECTTYPE(type,o);
+            walkReferences(c_metaObject(type),o,a->trashcan);
+            if (c_baseObjectKind(type) == M_COLLECTION) {
+                switch (c_collectionTypeKind(type)) {
+                case OSPL_C_ARRAY:
+                case OSPL_C_SEQUENCE:
+                    c_iterInsert(a->trashcan->arrays, o);
+                break;
+                case OSPL_C_SCOPE:
+                    c_iterInsert(a->trashcan->scopes, o);
+                break;
+                case OSPL_C_STRING:
+                    c_iterInsert(a->trashcan->trash, o);
+                break;
+                default:
+                    c_iterInsert(a->trashcan->collections, o);
+                }
+            } else {
+                c_iterInsert(a->trashcan->trash, o);
+            }
+        }
+    }
+    c_free(b->name);
+    c_mmFree(a->mm, b);
+}
+
+static void
+deleteGarbage(
+    c_base base)
+{
+    C_STRUCT(c_trashcan) trashcan;
+    c_mm mm;
+    c_object trash;
+    struct bindArg barg;
+
+    if (base == NULL) return;
+
+    assert(base->confidence == CONFIDENCE);
+
+    mm = base->mm;
+
+    trashcan.trash = c_iterNew(NULL);
+    trashcan.arrays = c_iterNew(NULL);
+    trashcan.scopes = c_iterNew(NULL);
+    trashcan.collections = c_iterNew(NULL);
+    trashcan.references = c_iterNew(NULL);
+
+    barg.trashcan = &trashcan;
+    barg.mm = mm;
+
+    ut_avlFreeArg (&c_base_bindings_td, &base->bindings, freeBindings, &barg);
+    OS_REPORT(OS_INFO,"Database close",0,"Removed %d objects",c_iterLength(trashcan.trash));
+
+    while ((trash = c_iterTakeFirst(trashcan.scopes)) != NULL)
+    {
+        c_scopeClean(c_scope(trash));
+        c_mmFree(mm, c_header(trash));
+    }
+    while ((trash = c_iterTakeFirst(trashcan.collections)) != NULL)
+    {
+        c_clear(trash);
+        c_mmFree(mm, c_header(trash));
+    }
+    while ((trash = c_iterTakeFirst(trashcan.arrays)) != NULL)
+    {
+        c_mmFree(mm, c_arrayHeader(trash));
+    }
+    while ((trash = c_iterTakeFirst(trashcan.trash)) != NULL)
+    {
+        c_mmFree(mm, c_header(trash));
+    }
+    c_iterFree(trashcan.trash);
+    c_iterFree(trashcan.arrays);
+    c_iterFree(trashcan.scopes);
+    c_iterFree(trashcan.collections);
+    c_iterFree(trashcan.references);
+}

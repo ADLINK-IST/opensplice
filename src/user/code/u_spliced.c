@@ -131,6 +131,7 @@ u_splicedNew(
                     *spliced = NULL;
                 }
             }
+            c_free(kSpliced);
         } else {
             result = U_RESULT_INTERNAL_ERROR;
         }

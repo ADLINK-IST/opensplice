@@ -2718,7 +2718,7 @@ class v_orderedInstanceSample extends v_dataViewSample {
         attribute c_ulong            maxSize;
         attribute v_groupQueueSample head;
         attribute v_groupQueueSample tail;
-        attribute v_groupQueueSample marker;
+        attribute c_voidp            marker; /* v_groupQueueSample */
         attribute c_bool             markerReached;
         attribute v_groupQueueStatistics statistics;
     };

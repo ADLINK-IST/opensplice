@@ -147,32 +147,30 @@ v_participantMonitorSpliceDeamonLiveliness(
             splicedParticipant = v_participant(c_iterTakeFirst(participants));
             assert(splicedParticipant);
             result = v_leaseManagerRegister(
-                participant->leaseManager,
-                v_service(splicedParticipant)->lease,
-                V_LEASEACTION_SPLICED_DEATH_DETECTED,
-                v_public(kernel),
-                FALSE /* only observing, do not repeat */);
-            if(result != V_RESULT_OK)
-            {
+                         participant->leaseManager,
+                         v_service(splicedParticipant)->lease,
+                         V_LEASEACTION_SPLICED_DEATH_DETECTED,
+                         v_public(kernel),
+                         FALSE /* only observing, do not repeat */);
+            if(result != V_RESULT_OK) {
                 OS_REPORT(OS_CRITICAL, "v_participant", result,
                     "A fatal error was detected when trying to register the spliced's liveliness lease "
-                    "to the lease manager of participant %p (%s). The result code was %d.", (void*)participant, name, result);
+                    "to the lease manager of participant %p (%s). "
+                    "The result code was %d.", (void*)participant, name, result);
             }
-            c_iterFree(participants);
-        } else
-        {
+        } else {
+            v_participant p;
             result = V_RESULT_INTERNAL_ERROR;
             OS_REPORT(OS_CRITICAL, "v_participant", result,
                 "A fatal error was detected when trying to register the spliced's liveliness lease "
                 "to the lease manager of participant %p (%s). Found %u splice deamon(s), but expected to find 1!. "
                 "The result code was %d.", (void*)participant, name, c_iterLength(participants), result);
             /* empty the iterator to avoid memory leaks, in cases where it is bigger then 1 */
-            while(c_iterLength(participants) > 0)
-            {
-                c_iterTakeFirst(participants);
+            while ((p = c_iterTakeFirst(participants)) != NULL) {
+                c_free(p);
             }
-            c_iterFree(participants);
         }
+        c_iterFree(participants);
     } else
     {
         /* else do nothing, exception for splice deamon monitoring are made for

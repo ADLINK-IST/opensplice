@@ -1030,6 +1030,7 @@ v_kernelNew(
         if ((procInfoSelf = v_processInfoNew(kernel, os_procIdSelf())) == NULL){
             OS_REPORT(OS_ERROR, "v_kernelAttach", V_RESULT_INTERNAL_ERROR, "Failed to allocate v_processInfo within kernel.");
             c_free(kernel);
+            *procInfo = NULL;
             kernel = NULL;
         } else {
             c_lockWrite(&kernel->lock);
@@ -1048,12 +1049,27 @@ v_kernelNew(
         return NULL;
     }
 
-    kernel = c_new(c_resolve(base,"kernelModuleI::v_kernel"));
+    type = c_resolve(base,"kernelModuleI::v_kernel");
+    assert(type);
+    kernel = c_new(type);
+    c_free(type);
     v_objectKind(kernel) = K_KERNEL;
     v_object(kernel)->kernel = (c_voidp)kernel;
     kernel->handleServer = v_handleServerNew(base);
 
     init_kernel_type_cache (kernel);
+
+    *procInfo = v_processInfoNew(kernel, os_procIdSelf());
+    if(!*procInfo) {
+        OS_REPORT(OS_ERROR, OS_FUNCTION, V_RESULT_INTERNAL_ERROR, "Failed to allocate v_processInfo within kernel.");
+        c_free(kernel);
+        return NULL;
+    }
+    type = c_resolve(base, "kernelModuleI::v_processInfo");
+    kernel->attachedProcesses = c_tableNew(type, "processId");
+    c_free(type);
+    (void) ospl_c_insert(kernel->attachedProcesses, *procInfo);
+    c_free(*procInfo); /* procInfo should be returned to the caller without a refcount */
 
     kernel->pendingDisposeList = c_listNew(v_kernelType(kernel, K_PENDINGDISPOSEELEMENT ));
     c_mutexInit(c_getBase(kernel), &kernel->pendingDisposeListMutex);
@@ -1100,14 +1116,6 @@ v_kernelNew(
     kernel->shares = c_tableNew(v_kernelType(kernel,K_SUBSCRIBER), "qos.share.v.name");
 
     kernel->deliveryService = NULL;
-
-    type = c_resolve(base, "kernelModuleI::v_processInfo");
-    assert(type);
-    kernel->attachedProcesses = c_tableNew(type, "processId");
-    c_free(type);
-    *procInfo = v_processInfoNew(kernel, os_procIdSelf());
-    (void) ospl_c_insert(kernel->attachedProcesses, *procInfo);
-    c_free(*procInfo); /* procInfo should be returned to the caller without a refcount */
 
     kernel->durabilitySupport = FALSE;
 

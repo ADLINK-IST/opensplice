@@ -111,7 +111,6 @@ os_osExit(
         os_processModuleExit();
 #endif
         os_socketModuleExit();
-        os_timeModuleExit();
         os_debugModeExit();
         os_reportExit();
         os_timeModuleExit();

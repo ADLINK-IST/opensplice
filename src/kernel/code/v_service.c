@@ -182,6 +182,7 @@ v_serviceInit(
                     "A fatal error was detected when trying to register the spliced's liveliness lease "
                     "to the lease manager of participant %p (%s). The result code was %d.", (void*)service, name, result);
             }
+            c_free(splicedParticipant);
         }
         c_iterFree(participants);
     }
