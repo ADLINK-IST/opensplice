@@ -59,6 +59,7 @@
 /* Determine if C++ 11 compile flag is 'on', or is usually on by default */
 #if (defined __GXX_EXPERIMENTAL_CXX0X || \
        __cplusplus >= 201103L || \
+       _MSC_VER >= 1900 || \
        (_MSC_VER >= 1600 && _HAS_CPP0X))
 # define OSPL_DEFAULT_TO_CXX11
 #endif
