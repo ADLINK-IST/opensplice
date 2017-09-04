@@ -344,9 +344,6 @@ void be_root::Generate (be_ClientHeader & source)
       os << nl << "#endif " << nl << "#endif" << nl;
 
    }
-   if (BE_Globals::UserDLL != (const char *)"") {
-       os << nl << "#undef " << BE_Globals::UserDLL << nl;
-   }
 
    if (BE_Globals::lite)
    {
