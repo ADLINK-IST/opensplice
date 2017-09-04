@@ -75,47 +75,60 @@ u__waitsetDeinitW(
     u_waitset _this;
     u_waitsetEntry entry;
     u_result result = U_RESULT_OK;
+    os_duration maxWaitDelay = OS_DURATION_INIT(10, 0);
+    os_timeW maxWaitTime = os_timeWAdd(os_timeWGet(), maxWaitDelay);
 
     _this = u_waitset(_vthis);
     os_mutexLock(&_this->mutex);
 
     _this->alive = FALSE;
-    while (_this->waitBusy) {
+    while (_this->waitBusy && (os_timeWCompare(maxWaitTime, os_timeWGet()) == OS_MORE)) {
         waitset_notify(_this, NULL);
-        os_condWait(&_this->waitCv, &_this->mutex);
+        os_condTimedWait(&_this->waitCv, &_this->mutex, maxWaitDelay);
     }
-    entry = c_iterTakeFirst(_this->entries);
-    while (entry != NULL) {
-        u_domain domain = u_observableDomain(u_observable(entry));
-        result = u_domainRemoveWaitset(domain, _this);
-        if (result != U_RESULT_OK) {
-            OS_REPORT(OS_ERROR,
-                      "u__waitsetDeinitW", result,
-                      "Operation u_domainRemoveWaitset failed: "
-                      "Waitset = 0x%"PA_PRIxADDR", result = %s",
-                      (os_address)_this, u_resultImage(result));
-            assert(FALSE);
-        }
-        result = u_objectFree_s(entry);
-        if (result == U_RESULT_ALREADY_DELETED) {
-            result = U_RESULT_OK;
-        } else if (result != U_RESULT_OK) {
-            OS_REPORT(OS_ERROR,
-                      "u__waitsetDeinitW", result,
-                      "Operation u_waitsetEntryFree failed: "
-                      "Waitset = 0x%"PA_PRIxADDR", result = %s",
-                      (os_address)_this, u_resultImage(result));
-            result = U_RESULT_OK;
-            (void)result;
-            assert(FALSE);
-        }
+    if (!_this->waitBusy) {
         entry = c_iterTakeFirst(_this->entries);
-    }
-    c_iterFree(_this->entries);
-    _this->entries = NULL;
+        while (entry != NULL) {
+            u_domain domain = u_observableDomain(u_observable(entry));
+            result = u_domainRemoveWaitset(domain, _this);
+            if (result != U_RESULT_OK) {
+                OS_REPORT(OS_ERROR,
+                          "u__waitsetDeinitW", result,
+                          "Operation u_domainRemoveWaitset failed: "
+                          "Waitset = 0x%"PA_PRIxADDR", result = %s",
+                          (os_address)_this, u_resultImage(result));
+                assert(FALSE);
+            }
+            result = u_objectFree_s(entry);
+            if (result == U_RESULT_ALREADY_DELETED) {
+                result = U_RESULT_OK;
+            } else if (result != U_RESULT_OK) {
+                OS_REPORT(OS_ERROR,
+                          "u__waitsetDeinitW", result,
+                          "Operation u_waitsetEntryFree failed: "
+                          "Waitset = 0x%"PA_PRIxADDR", result = %s",
+                          (os_address)_this, u_resultImage(result));
+                result = U_RESULT_OK;
+                (void)result;
+                assert(FALSE);
+            }
+            entry = c_iterTakeFirst(_this->entries);
+        }
+        c_iterFree(_this->entries);
+        _this->entries = NULL;
 
-    os_mutexUnlock(&_this->mutex);
-    u__objectDeinitW(_this);
+        os_mutexUnlock(&_this->mutex);
+        u__objectDeinitW(_this);
+    } else {
+        result = U_RESULT_PRECONDITION_NOT_MET;
+        OS_REPORT(OS_ERROR,
+                  "u__waitsetDeinitW", result,
+                  "Operation u_waitsetEntryFree failed because threads still accessing the waitset: "
+                  "Waitset = 0x%"PA_PRIxADDR", result = %s",
+                  (os_address)_this, u_resultImage(result));
+        os_mutexUnlock(&_this->mutex);
+    }
+
     return result;
 }
 
@@ -126,15 +139,17 @@ u__waitsetFreeW(
     u_waitset w;
     w = u_waitset(_this);
 
-    while (pa_ld32(&w->useCount) > 0) {
-        os_duration t = OS_DURATION_INIT(0, 100000000);
-        os_sleep(t);
-    }
+    if (!w->waitBusy) {
+        while (pa_ld32(&w->useCount) > 0) {
+            os_duration t = OS_DURATION_INIT(0, 100000000);
+            os_sleep(t);
+        }
 
-    (void) os_condDestroy(&w->waitCv);
-    (void) os_condDestroy(&w->cv);
-    (void) os_mutexDestroy(&w->mutex);
-    u__objectFreeW(_this);
+        (void) os_condDestroy(&w->waitCv);
+        (void) os_condDestroy(&w->cv);
+        (void) os_mutexDestroy(&w->mutex);
+        u__objectFreeW(_this);
+    }
 }
 
 u_waitset
