@@ -7,12 +7,7 @@ export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/gsoap-v2.7
 export PROTOBUF_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0
 export PROTOBUF_LIB_HOME=/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0/src
 export LAUNCH4J_HOME=/home/dds/INSTALLED_FOR_DDS/Launch4j
-export PATH=/usr/local/bin:$PROTOBUF_HOME/bin:$PATH
-
-#Winxp combined with new cygwin does not set TMP or TEMP even when in the windows settings
-#as the native calls done via TAO ask for a temp directory and windows fallback to using
-#USERPROFILE which has spaces in and does not work, unsetting solves the problem
-unset USERPROFILE
+export PATH=$PROTOBUF_HOME/bin:$PATH
 
 #There is no TAO for VS2015
 unset TAO_ROOT

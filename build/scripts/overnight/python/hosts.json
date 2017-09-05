@@ -587,6 +587,54 @@
       }
    },
 
+   "win10-64-vor-c":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong":
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial":
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld":
+          {
+              "langs": ["ccpp"]
+          }
+      }
+   },
+
+   "win10-64-vor-d":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": [""],
+      "partial_examples":
+      {
+          "dcpsPingPong":
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsTutorial":
+          {
+              "langs": ["ccpp"]
+          },
+
+          "dcpsHelloWorld":
+          {
+              "langs": ["ccpp"]
+          }
+      }
+   },
+
    "winxp12":
    {
       "examples": ["All"],

@@ -70,5 +70,14 @@ E   opensplice/ubuntu1604-32a/x86.linux-release 25 #First# none
 E   opensplice/ubuntu1604-64a/x86_64.linux-dev 25 #First# none
 E   opensplice/ubuntu1604-64a/x86_64.linux-release 25 #First# none
 
+E   opensplice/win10-64-vor-a/x86_64.win64-dev-vs14 30 #First# none
+E   opensplice/win10-64-vor-a/x86_64.win64-release-vs14 30 #First# none
+
 E   opensplice/win10-64-vor-b/x86_64.win64-dev-vs14 30 #First# none
 E   opensplice/win10-64-vor-b/x86_64.win64-release-vs14 30 #First# none
+
+E   opensplice/win10-64-vor-c/x86_64.win64-dev-vs14 30 #First# none
+E   opensplice/win10-64-vor-c/x86_64.win64-release-vs14 30 #First# none
+
+E   opensplice/win10-64-vor-d/x86_64.win64-dev-vs14 30 #First# none
+E   opensplice/win10-64-vor-d/x86_64.win64-release-vs14 30 #First# none
