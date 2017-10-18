@@ -15,7 +15,7 @@ $(SOAP_MODULES): cms__soap.h
 	mv soapC.c soapC.c.orig
 	(echo '#ifndef __clang_analyzer__' ; cat soapC.c.orig ; echo '#endif') > soapC.c
 
-stdsoap2.c : $(ESCAPED_GSOAPHOME)/include/stdsoap2.c
+stdsoap2.c : $(ESCAPED_GSOAPHOME)/include/stdsoap2.h
 	(echo '#ifndef __clang_analyzer__' ; \
 	 sed -e "s/^soap_LONG642s/__soap_LONG642s/" \
                 -e "s/^soap_s2LONG64/__soap_s2LONG64/" \
