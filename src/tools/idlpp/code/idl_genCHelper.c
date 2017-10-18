@@ -27,12 +27,12 @@
 static os_iter definitions = NULL;
 
 /* Specify a list of all C keywords */
-static const char *c_keywords[33] = {
+static const char *c_keywords[] = {
     "asm", "auto", "break", "case", "char", "const", "continue", "default",
     "do", "double", "else", "enum", "extern", "float", "for", "goto", "if",
     "int", "long", "register", "return", "short", "signed", "sizeof",
     "static", "struct", "switch", "typedef", "union", "unsigned", "void",
-    "volatile", "while"
+    "volatile", "while", "true", "false"
 };
 
 /* Translate an IDL identifier into a C language identifier.

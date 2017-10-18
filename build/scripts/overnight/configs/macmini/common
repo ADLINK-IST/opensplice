@@ -1,0 +1,12 @@
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_80.jdk/Contents/Home/
+export JACORB_HOME=/Users/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
+export GSOAPHOME=/Users/dds/INSTALLED_FOR_DDS/gsoap-2.8
+export PROTOBUF_HOME=/Users/dds/INSTALLED_FOR_DDS/protobuf-2.6.1-src
+export PROTOBUF_LIB_HOME=/Users/dds/INSTALLED_FOR_DDS/protobuf-2.6.1/lib
+
+unset TAO_ROOT
+export OVERRIDE_STRICT_CHECKS=no
+export JAVA_VERSION_OVERRIDE=1.7
+PATH=/Applications/BitRock-15.10.1/bin:/Library/Java/JavaVirtualMachines/jdk1.7.0_80.jdk/Contents/Home/bin:/usr/local/bin:$PATH:/opt/local/bin/:/Users/dds/INSTALLED_FOR_DDS/protobuf-2.6.1/bin/:/usr/bin/
+
+

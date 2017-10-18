@@ -46,6 +46,23 @@ getLauncher ()
     wget -qr -l 2 -nd -P launcher -A zip -R html,gif $LAUNCHER_URL
 }
 
+#
+# Update the copyright with the current year which is set by the configure
+# script.  The actual year is hard-coded and exported in the THIS_YEAR
+# variable so that builds from versions in previous years will still
+# contain the original year even if they are rebuilt in a later year.
+#
+update_copyright ()
+{
+    upd_docs=`find $1 -type f -print0 | xargs -0 grep -l "to TO_YEAR"`
+    for d in $upd_docs
+    do
+        sed -i "s/TO_YEAR/${THIS_YEAR}/g" $d   
+    done
+}
+
+
+
 if [ "$CREATE_SOURCE" != "yes" ]
 then
    echo "CREATE_SOURCE=SKIPPED" >> $RESFILE
@@ -97,7 +114,7 @@ ArchiveLogs
         fi
         git archive --format=tar --prefix=$OSPLO_SRC HEAD | tar -P -xf -
         if [ $? != 0 ]
-        then
+       then
             exit 1
         fi
         cp $OSPL_HOME/etc/BUILDINFO $OSPLO_SRC/etc/.
@@ -106,7 +123,7 @@ ArchiveLogs
             exit 1
         fi
 
-        find $OSPLO_SRC -name "*"  -type f  -exec sed -i "s/TO_YEAR/$CURR_YEAR/g" '{}' \;
+        update_copyright $OSPLO_SRC
 
         cd $WORKDIR/tmpsrc
         buildTarGZ $LOGDIR/VortexOpenSplice_src_osplo osplo > /dev/null 2>&1
@@ -155,7 +172,7 @@ ArchiveLogs
         exit 1
     fi
 
-    find $OSPLI_SRC -name "*"  -type f  -exec sed -i "s/TO_YEAR/$CURR_YEAR/g" '{}' \;
+    update_copyright $OSPLI_SRC
 
     cd $WORKDIR/tmpsrc
     buildTarGZ $LOGDIR/VortexOpenSplice_src_ospli ospli > /dev/null 2>&1

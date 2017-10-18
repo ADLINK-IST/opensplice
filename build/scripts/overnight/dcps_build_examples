@@ -15,6 +15,7 @@ CURRENT_PL_LINUX=`uname | grep Linux`
 CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
 CURRENT_PL_AIX=`uname | grep AIX`
 CURRENT_PL_SUNOS=`uname | grep SunOS`
+CURRENT_PL_DARWIN=`uname | grep Darwin`
 SSSO10=`hostname | grep ssso10`
 IS_WINDOWS_EXE="false"
 AWK=""
@@ -53,7 +54,7 @@ FAIL=0
 check_platform()
 {
 
-  if [ "$CURRENT_PL_LINUX" != "" -o "$CURRENT_PL_AIX" != "" -o "$CURRENT_PL_SUNOS" != "" ] ;then
+  if [ "$CURRENT_PL_LINUX" != "" -o "$CURRENT_PL_AIX" != "" -o "$CURRENT_PL_SUNOS" != "" -o "$CURRENT_PL_DARWIN" != "" ] ;then
     return 0
   elif [ "$CURRENT_PL_CYGWIN" != "" ];then
     if [ "$TARGET_PIKEOS" = "" ] ;then
@@ -117,7 +118,16 @@ install_ospl()
     fi
     if [ -z "${INSTALLER_FILENAME}" ]
     then
-        INSTALLER_FILENAME=`echo ${INSTALLERDIR}/VC/P*OpenSplice*HDE*installer.*`
+        if [ "$CURRENT_PL_DARWIN" != "" ]
+        then
+            INSTALLER_FILENAME=`echo $INSTALLERDIR/VC/P*OpenSplice*HDE*installer.app`
+            if [ ! -e "${INSTALLER_FILENAME}"  ]
+            then
+                INSTALLER_FILENAME=`ls $INSTALLERDIR/VC/P*OpenSplice*HDE*installer.tar`
+            fi
+        else
+            INSTALLER_FILENAME=`echo $INSTALLERDIR/VC/P*OpenSplice*HDE*installer.*`
+        fi
         INSTTYPE=HDE
     fi
 
@@ -138,9 +148,8 @@ install_ospl()
 
     export VORTEX_INSTALL_DIR
 
-    echo "Installing using: ${INSTALLER_FILENAME}"
-    if [ -f ${INSTALLER_FILENAME} ]
-    then
+    if [ -e "${INSTALLER_FILENAME}" ]
+        then
 # Could be .bin or .exe for executables, or .zip or .tgz for archives
         INSTALLER_EXTENSION=`echo $INSTALLER_FILENAME | sed -e 's/.*\.\(...\)$/\1/g'`
         case $INSTALLER_EXTENSION in
@@ -154,6 +163,17 @@ install_ospl()
                 echo "Installing ${INSTALLER_FILENAME} into $WORKDIR/$EXAMPLE_INSTALL_DIR"
                 ${INSTALLER_FILENAME} --mode unattended --prefix "$WORKDIR/$EXAMPLE_INSTALL_DIR"
 #--providedLicenseFile licfile
+                ;;
+
+            app)
+                if [ "$CURRENT_PL_DARWIN" != "" ]
+                then
+                   echo "Installing ${INSTALLER_FILENAME} into $WORKDIR/$EXAMPLE_INSTALL_DIR"
+                   ${INSTALLER_FILENAME}/Contents/MacOS/installbuilder.sh --mode unattended --prefix "$WORKDIR/$EXAMPLE_INSTALL_DIR"
+#--providedLicenseFile licfile
+                else
+                    echo "Unable to install ${INSTALLER_RTS_FILENAME} expected OSX platform"
+                fi
                 ;;
 
             tar)
@@ -198,14 +218,33 @@ install_ospl()
         exit 1
     fi
 
-    INSTALLER_RTS_FILENAME=`ls $INSTALLERDIR/VC/P*OpenSplice*RTS*installer.* | grep -v HDE`
-    if [ -f ${INSTALLER_RTS_FILENAME} ]
+    if [ "$CURRENT_PL_DARWIN" != "" ]
+    then
+        INSTALLER_RTS_FILENAME=`echo $INSTALLERDIR/VC/P*OpenSplice*RTS*installer.app`
+        if [ ! -e "${INSTALLER_RTS_FILENAME}" ]
+        then
+            INSTALLER_RTS_FILENAME=`ls $INSTALLERDIR/VC/P*OpenSplice*RTS*installer.tar | grep -v HDE`
+        fi
+    else
+        INSTALLER_RTS_FILENAME=`ls $INSTALLERDIR/VC/P*OpenSplice*RTS*installer.* | grep -v HDE`
+    fi
+
+    if [ -e "${INSTALLER_RTS_FILENAME}" ]
     then
         RTS_EXTENSION=`echo $INSTALLER_RTS_FILENAME | sed -e 's/.*\.\(...\)$/\1/g'`
         case $RTS_EXTENSION in
             run)
                 echo "Installing ${INSTALLER_RTS_FILENAME} (RTS) into $WORKDIR/$RTS_INSTALL_DIR"
                 ${INSTALLER_RTS_FILENAME} --mode unattended --prefix "$WORKDIR/$RTS_INSTALL_DIR"
+                ;;
+
+            app)
+                if [ "$CURRENT_PL_DARWIN" != "" ]
+                then
+                    ${INSTALLER_RTS_FILENAME}/Contents/MacOS/installbuilder.sh --mode unattended --prefix "$WORKDIR/$EXAMPLE_INSTALL_DIR"
+                else
+                    echo "Unable to install ${INSTALLER_RTS_FILENAME} expected OSX platform"
+                fi
                 ;;
 
             tar)
@@ -668,6 +707,15 @@ SHORTSETUP=`grep "^SPLICE_TARGET=" $CHECK_FILE | tail -1 | cut -f 2 -d = | sed '
 export BUILD_RESULTS_LOG
 export BUILD_LOG
 export SUMMARY_LOG
+
+echo "SETUP_TYPE ${SETUP_TYPE}"
+echo "BASE ${BASE} "
+echo "INSTALLER_FILENAME ${INSTALLER_FILENAME} "
+echo "CHECK_FILE ${CHECK_FILE} "
+echo "SPLICE_TARGET ${SPLICE_TARGET} "
+echo "WORKDIR ${WORKDIR} "
+echo "DEPWORKDIR ${DEPWORKDIR}"
+echo "SHORTSETUP ${SHORTSETUP}"
 
 case $SETUP_TYPE in
     *int509*)

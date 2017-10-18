@@ -1,6 +1,12 @@
 #set -x
 
-PATH="$JAVA_HOME/bin:$PATH"
+CURRENT_PL_DARWIN=`uname | grep Darwin`
+
+if [ "$JAVA_HOME" != "" ]
+then
+    PATH="$JAVA_HOME/bin:$PATH"
+fi
+
 if [ -n "$PERC_HOME" ]
 then
    PATH="$PERC_HOME/bin:$PATH"
@@ -28,18 +34,33 @@ then
 fi
 echo "UNIQID is $UNIQID"
 
+DBSIZE="10485760"
+
+if [ "$CURRENT_PL_DARWIN" != "" ]
+then
+    DBSIZE="0x500000"
+fi
+
 if [ "$EXRUNTYPE" = "shm" ]
 then
     XMLFILE=`echo $OSPL_URI | sed 's@file://@@' | sed 's/ospl.xml$/ospl_shmem_no_network.xml/'`
     NEWXMLFILE=`echo $XMLFILE | sed 's/_no_network.xml$/_no_network_uniq.xml/'`
-    sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
-        -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" \
-        -e "s@<PortNr>50000</PortNr>@<PortNr>Auto</PortNr>@" < $XMLFILE > $NEWXMLFILE
+    
+    # Mac OS builds seem to have a problem with the \ in the sed command 
+    if [ "$CURRENT_PL_DARWIN" != "" ]
+    then
+        sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" -e "s@<PortNr>50000</PortNr>@<PortNr>Auto</PortNr>@" -e "s@<Size>10485760</Size>@<Size>$DBSIZE</Size>@" < $XMLFILE > $NEWXMLFILE
+    else
+        sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
+            -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" \
+            -e "s@<PortNr>50000</PortNr>@<PortNr>Auto</PortNr>@" \
+            -e "s@<Size>10485760</Size>@<Size>$DBSIZE</Size>@" < $XMLFILE > $NEWXMLFILE
+    fi
+
     OSPL_URI=`echo $OSPL_URI | sed 's/ospl.xml/ospl_shmem_no_network_uniq.xml/'`
 else
     XMLFILE=`echo $OSPL_URI | sed 's@file://@@' | sed 's/ospl.xml$/ospl_sp_ddsi.xml/'`
     NEWXMLFILE=`echo $XMLFILE | sed 's/ospl_sp_ddsi.xml$/ospl_sp_ddsi_uniq.xml/'`
-
 
     if [ -n "$UNIQE_MC_ADDRESS" ]
     then 
@@ -49,9 +70,11 @@ else
             echo "ERROR : SPDPMulticastAddress already exists"  
             exit 1;
         fi
+
         sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
             -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" \
             -e "s@</DDSI2Service>@<Discovery><SPDPMulticastAddress>$UNIQE_MC_ADDRESS</SPDPMulticastAddress></Discovery></DDSI2Service>@" < $XMLFILE > $NEWXMLFILE
+
         grep SPDPMulticastAddress $NEWXMLFILE
         if [ $? = 1 ]
         then
@@ -66,10 +89,12 @@ else
             echo "ERROR : MulticastRecvNetworkInterfaceAddresses already exists"  
             exit 1;
         fi
+
         sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
             -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" \
             -e 's@<NetworkInterfaceAddress>AUTO</NetworkInterfaceAddress>@<NetworkInterfaceAddress>127.0.0.1</NetworkInterfaceAddress>\
               <MulticastRecvNetworkInterfaceAddresses>127.0.0.1</MulticastRecvNetworkInterfaceAddresses>@'  < $XMLFILE > $NEWXMLFILE
+
         # sanity check that the sed'ing worked (i.e. that the strings existed in the first place)
         grep MulticastRecvNetworkInterfaceAddresses $NEWXMLFILE
         if [ $? = 1 ]

@@ -15,7 +15,12 @@ update_copyright ()
        expr=*
     fi
 
-    find $1 -name "${expr}" -type f  -exec sed -i "s/TO_YEAR/${THIS_YEAR}/g" '{}' \;
+    if [ "${SOURCE_HOST_SHORT}" == "darwin" ]
+    then
+        find $1 -name "${expr}" -type f  -exec sed -i '' "s/TO_YEAR/${THIS_YEAR}/g" '{}' \;
+    else
+        find $1 -name "${expr}" -type f  -exec sed -i "s/TO_YEAR/${THIS_YEAR}/g" '{}' \;
+    fi
 }
 
 #
@@ -602,22 +607,36 @@ install_demos_target ()
             # Executable
 
             cp ${OSPL_HOME}/exec/${target}${source_env}/demo_ishapes ${DEMOS_dir}/iShapes/ishapes
-            strip ${DEMOS_dir}/iShapes/ishapes
+            strip -x ${DEMOS_dir}/iShapes/ishapes
+
+            SFX=so
+
+            if [ "${SOURCE_TARGET_SHORT}" = "darwin" ]
+            then
+               SFX=dylib
+            fi
 
             # DDS libs
 
             for i in ddsi2 dcpsisocpp ddskernel spliced
             do
-                cp ${OSPL_HOME}/lib/${target}${source_env}/lib${i}.so ${DEMOS_dir}/iShapes
-                strip ${DEMOS_dir}/iShapes/lib${i}.so
+                cp ${OSPL_HOME}/lib/${target}${source_env}/lib${i}.${SFX} ${DEMOS_dir}/iShapes
+                strip -x ${DEMOS_dir}/iShapes/lib${i}.${SFX}
             done
 
             # GUI toolkit
 
+            if [ "${SOURCE_HOST_SHORT}" == "darwin" ]
+            then
+                READLINK="greadlink"
+            else
+                READLINK="readlink"
+            fi
+
             for i in QtGui QtCore
             do
-                cp `readlink -f ${QTLIBDIR}/lib${i}.so` ${DEMOS_dir}/iShapes/lib${i}.so.4
-                ln -s lib${i}.so.4 ${DEMOS_dir}/iShapes/lib${i}.so
+                cp `${READLINK} -f ${QTLIBDIR}/lib${i}.${SFX}` ${DEMOS_dir}/iShapes/lib${i}.${SFX}.4
+                ln -s lib${i}.${SFX}.4 ${DEMOS_dir}/iShapes/lib${i}.${SFX}
             done
 
             # Launch scripts
@@ -713,6 +732,14 @@ set_envs ()
             TAR=gtar
         fi
     fi
+
+    if [ "${SOURCE_HOST_SHORT}" = "darwin" ]
+    then
+        BUILDER_TARGET="osx"
+        SCRIPT_NAME="release.com"
+        GETLIC_INFO_NAME="getlic_info"
+    fi
+
 
     # We need to use gtar on AIX as tar does
     # not work with the options we use, but gtar does
@@ -2925,9 +2952,15 @@ install_hde_target ()
         update_copyright ${OSPL_SRC}/setup
         update_copyright ${OSPL_SRC}/src
         update_copyright ${OSPL_SRC}/testsuite
-        sed -i "s/TO_YEAR/${THIS_YEAR}/g" ${OSPL_SRC}/index.html
-        sed -i "s/TO_YEAR/${THIS_YEAR}/g" ${OSPL_SRC}/docs/html/GPBTutorial/using-generated-api.html
 
+        if [ "${SOURCE_HOST_SHORT}" == "darwin" ]
+        then
+            sed -i '' "s/TO_YEAR/${THIS_YEAR}/g" ${OSPL_SRC}/index.html
+            sed -i '' "s/TO_YEAR/${THIS_YEAR}/g" ${OSPL_SRC}/docs/html/GPBTutorial/using-generated-api.html
+        else
+            sed -i "s/TO_YEAR/${THIS_YEAR}/g" ${OSPL_SRC}/index.html
+            sed -i "s/TO_YEAR/${THIS_YEAR}/g" ${OSPL_SRC}/docs/html/GPBTutorial/using-generated-api.html
+        fi
         (
             cd $OSPL_SRC/..
             $BUILD ${HDE_dir}/src/VortexOpenSplice-src VortexOpenSplice > /dev/null 2>&1
@@ -3123,22 +3156,25 @@ install_hde_target ()
             rm -rf ${HDE_dir}/include/dcps/docs
     fi
 
-    sed -i "s/TO_YEAR/$THIS_YEAR/g" ${HDE_dir}/index.html
+    if [ "${SOURCE_HOST_SHORT}" == "darwin" ]
+    then
+        sed -i '' "s/TO_YEAR/$THIS_YEAR/g" ${HDE_dir}/index.html
+    else
+        sed -i "s/TO_YEAR/$THIS_YEAR/g" ${HDE_dir}/index.html
+    fi
 
     if [ -d  ${HDE_dir}/custom_lib ]
     then
        update_copyright ${HDE_dir}/custom_lib
     fi
 
-    #We need to be specific in the docs directory as the pdfs are getting corrupted for
-    #some reason
-    update_copyright ${HDE_dir}/docs "*.html"
+    update_copyright ${HDE_dir}/docs
     update_copyright ${HDE_dir}/include
-
 
     if [ -d  ${HDE_dir}/tools ]
     then
         update_copyright ${HDE_dir}/tools
+        sed -i '' "s/TO_YEAR/$THIS_YEAR/g" ${HDE_dir}/tools/wireshark-plugins/packet-ospl.above_1_10
     fi
 
     return 0

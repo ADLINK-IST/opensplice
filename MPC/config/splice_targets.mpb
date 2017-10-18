@@ -59,6 +59,7 @@ feature(ospl_os_AIX) {
 feature(ospl_os_darwin) {
     specific (make) {
         platforms = macosx
+        compilers = clang
     }
 }
 

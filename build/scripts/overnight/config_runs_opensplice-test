@@ -81,3 +81,6 @@ E   opensplice-test/win10-64-vor-c/x86_64.win64-release-vs14 30 #First# none
 
 E   opensplice-test/win10-64-vor-d/x86_64.win64-dev-vs14 30 #First# none
 E   opensplice-test/win10-64-vor-d/x86_64.win64-release-vs14 30 #First# none
+
+E   opensplice-test/macmini/x86_64.darwin10_clang-dev 25 #First# none
+E   opensplice-test/macmini/x86_64.darwin10_clang-release 25 #First# none

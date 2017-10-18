@@ -37,6 +37,13 @@ fi
 echo "BUILD/RBT=RUNNING" >> $RESFILE
 ArchiveLogs
 
+case $SPLICE_TARGET in
+    *darwin*)
+       DYLD_LIBRARY_PATH=$OSPL_HOME/lib/$SPLICE_TARGET
+       export DYLD_LIBRARY_PATH
+    ;;
+esac
+
 cd testsuite ||
 {
     echo "ERROR: could not cd to testsuite dir - dcps_build_rbt_tests";

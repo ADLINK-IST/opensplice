@@ -31,7 +31,13 @@ uninstall()
        ( cd "$WORKDIR" && tar -cf installed.tar "${INSTALL_DIR}" )
 
        echo "running $UNINSTALLER_FILE --mode unattended..."
-       "$UNINSTALLER_FILE" --mode unattended
+       if [ "$CURRENT_PL_DARWIN" != "" ]
+       then
+           "$UNINSTALLER_FILE"/Contents/MacOS/installbuilder.sh --mode unattended
+       else
+           "$UNINSTALLER_FILE" --mode unattended
+       fi
+
        if [ $? = 0 ]
        then
            # the uninstaller creates a bitrock log which is not removed even
@@ -69,7 +75,13 @@ else
     VORTEX_INSTALL_DIR=Vortex$VORTEX_VERSION/Device/VortexOpenSplice$EDITION/$PACKAGE_VERSION
 fi
 
-UNINSTALLER_NAME="$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/uninstall-$SHORTSETUP-HDE"
+SFX=""
+if [ "$CURRENT_PL_DARWIN" != "" ]
+then
+   SFX=".app"
+fi
+
+UNINSTALLER_NAME="$WORKDIR/$EXAMPLE_INSTALL_DIR/$VORTEX_INSTALL_DIR/uninstall-$SHORTSETUP-HDE$SFX"
 
 if [ -f $UNINSTALLER_NAME ]
 then
@@ -85,7 +97,7 @@ then
     uninstall $EXAMPLE_INSTALL_DIR/$PACKAGE_VERSION
 fi
 
-UNINSTALLER_NAME="$WORKDIR/$RTS_INSTALL_DIR/$VORTEX_INSTALL_DIR/uninstall-$SHORTSETUP-RTS"
+UNINSTALLER_NAME="$WORKDIR/$RTS_INSTALL_DIR/$VORTEX_INSTALL_DIR/uninstall-$SHORTSETUP-RTS$SFX"
 
 if [ -f $UNINSTALLER_NAME ]
 then

@@ -38,6 +38,7 @@ parseconditions:
                  'Description : * not responding or no heartbeats received, removing it from the reliable protocol'
                  'Description : * has not acked message'
                  'Description : * writer * considering reader * non-responsive'
+                 'Description : * writer * considering reader * responsive again'
                  'Description : thread * failed to make progress'
                  'Description : thread * once again made progress'
                  'Description : Detected Unmatching QoS Policy: * for Topic '

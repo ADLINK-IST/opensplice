@@ -17,6 +17,7 @@ CURRENT_PL_LINUX=`uname | grep Linux`
 CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
 CURRENT_PL_AIX=`uname | grep AIX`
 CURRENT_PL_SUNOS=`uname | grep SunOS`
+CURRENT_PL_DARWIN=`uname | grep Darwin`
 AWK=""
 
 EXRUNTYPE_UPPER=`echo $EXRUNTYPE | tr "[:lower:]" "[:upper:]"`
@@ -33,7 +34,7 @@ IS_STUDIO12=` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "studio12") }'`
 
 check_platform()
 {
-   if [ "$CURRENT_PL_LINUX" != "" -o "$CURRENT_PL_AIX" != "" -o "$CURRENT_PL_SUNOS" != "" ] ;
+   if [ "$CURRENT_PL_LINUX" != "" -o "$CURRENT_PL_AIX" != "" -o "$CURRENT_PL_SUNOS" != "" -o "$CURRENT_PL_DARWIN" != "" ] ;
    then
      return 0
    elif [ "$CURRENT_PL_CYGWIN" != "" ];

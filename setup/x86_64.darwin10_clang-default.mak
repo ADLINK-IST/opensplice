@@ -4,6 +4,12 @@
 # fine with nothing but dynamic libraries.
 #DYNAMIC_LIB_ONLY := true
 
+# sip resets DYLD_LIBRARY_PATH so use alternate
+DYLD_FALLBACK_LIBRARY_PATH=${ALTDYLD_FALLBACK_LIBRARY_PATH}
+export DYLD_FALLBACK_LIBRARY_PATH
+
+IS_DARWIN=yes
+
 # Set name context of used tooling
 #CC		 = gcc -std=gnu99 -m64 #-v
 #CXX		 = g++ -m64 #-v

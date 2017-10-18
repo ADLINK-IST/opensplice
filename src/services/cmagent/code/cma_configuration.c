@@ -32,6 +32,8 @@
 
 #include "ut_avl.h"
 
+#include "stddef.h"
+
 struct cfgst; /* forward decl */
 
 typedef enum q__schedPrioClass {

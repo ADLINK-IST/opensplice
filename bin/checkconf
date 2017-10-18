@@ -568,6 +568,7 @@ gsoap_check ()
             GSOAP_VERSION=`${SOAPCPP2} -v 2>&1 | sed -e '/^$/d' | head -n1 | grep -o '\([0-9]\.\)\+[0-9 a-z]*'`
         fi
     fi
+
     #if [ "$GSOAP_VERSION" != "2.7.8c" ]
     #then
     #    echo "Error - Only gsoap version 2.7.8c is supported"
@@ -717,12 +718,14 @@ javac_check ()
     fi
 
     # Darwin hack
-    case $host in
-        Darwin*)
+    if [ -z "$JAVA_HOME" ] ; then
+        case $host in
+            Darwin*)
             javac_check_darwin
             return
             ;;
-    esac
+        esac
+    fi
 
     # Check JAVA_HOME directory first
     if [ -n "$JAVA_HOME" ]
@@ -811,6 +814,9 @@ javac_check ()
                 JAVA_PATH_EXT=i386
             fi
             ;;
+	Darwin)
+	    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/server"
+	    ;;
         SunOS)
             JAVA_PATH_EXT=sparc
             ;;

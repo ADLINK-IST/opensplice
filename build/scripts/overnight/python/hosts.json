@@ -91,7 +91,15 @@
           }
       }
    },
-
+    
+   "macmini":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples": ""
+   },
+    
    "pi3a":
    {
       "examples": ["AllStandalone"],

@@ -29,7 +29,9 @@ ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_T
 else
   ifneq "$(findstring darwin10, $(SPLICE_TARGET))" ""
     define make_dlib
-	$(LD_SO) $(SHLDFLAGS) $(LDFLAGS) $^ $(FILTERED_LDLIBS) $(patsubst -L%, -Wl$(just_a_comma)-rpath %, $(filter -L%, $(LDFLAGS))) -Wl,-install_name,@rpath/$(strip $@) -o $@
+	$(LD_SO) $(SHLDFLAGS) $(LDFLAGS) $^ $(FILTERED_LDLIBS) -headerpad_max_install_names -o $@
+	install_name_tool -add_rpath "@loader_path" $@
+	install_name_tool -id @rpath/$(notdir $@) $@
     endef
   else
     define make_dlib
@@ -89,7 +91,8 @@ else
       ifneq "$(findstring darwin10, $(SPLICE_TARGET))" ""
 just_a_comma=,
         define make_exec
-		$(LD_EXE) $(LDFLAGS_EXE) $(LDFLAGS) $^ $(FILTERED_LDLIBS) $(LDLIBS_SYS) $(patsubst -L%, -Wl$(just_a_comma)-rpath %, $(filter -L%, $(LDFLAGS))) -o $@
+		$(LD_EXE) $(LDFLAGS_EXE) $(LDFLAGS) $^ $(FILTERED_LDLIBS) $(LDLIBS_SYS) -headerpad_max_install_names -o $@
+		install_name_tool -add_rpath "@executable_path/../lib" $@
         endef
       else
         define make_exec

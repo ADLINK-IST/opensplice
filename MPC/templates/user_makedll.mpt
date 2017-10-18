@@ -450,7 +450,7 @@ clang {
   cxx       = clang++
   pic       = -fPIC
   shflags   = -shared
-  platforms = linux
+  platforms = macosx
   pchcreate = "-o "
   pchnobj   = 1
   checkopt  = -Wall -Wextra -pedantic -fsyntax-only
@@ -635,6 +635,11 @@ elinos {
     gnumake       = 1
     ldlibs        = -ldl $(subst lib,-l,$(sort $(basename $(notdir $(wildcard /usr/lib/librt.so /lib/librt.so))))) -lpthread -lstdc++
     extracppflags = -D_REENTRANT -m32
+}
+
+macosx {
+    gnumake       = 1
+    extraccflags  = -std=c++11 -DOSPL_USE_CXX11
 }
 
 x86_pikeos {

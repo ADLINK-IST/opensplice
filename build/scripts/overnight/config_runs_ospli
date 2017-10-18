@@ -1038,6 +1038,16 @@ E   ospli/priva-debian7/armv7l.linux-release-inner 1 #First# none
 E   ospli/priva-debian7/armv7l.linux-debug-inner 1 #First# none
 E   ospli/priva-debian7/armv7l.linux-dev-inner 1 #First# none
 
+E   ospli/macmini/x86_64.darwin10_clang-release-inner 1 #First# none
+E   ospli/macmini/x86_64.darwin10_clang-release-notest-inner 1 #First# none
+E   ospli/macmini/x86_64.darwin10_clang-release-examples-inner 1 #First# none
+E   ospli/macmini/x86_64.darwin10_clang-release-examples-dbt-inner 1 #First# none
+E   ospli/macmini/x86_64.darwin10_clang-dev-inner 1 #First# none
+
+E   ospli/debian8-64a.testnet.ptnl/armv7a_lafp_neon.linux-release-inner 1 #First# none
+E   ospli/debian8-64a.testnet.ptnl/armv7a_lafp_neon.linux-debug-inner 1 #First# none
+E   ospli/debian8-64a.testnet.ptnl/armv7a_lafp_neon.linux-dev-inner 1 #First# none
+
 ################################# end First Runs #############################
 
 ############################# Old lic builds Runs #############################
