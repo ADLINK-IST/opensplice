@@ -4,16 +4,8 @@
         <Id>0</Id>
         <SingleProcess>true</SingleProcess>
         <Description>Stand-alone 'single-process' deployment without networking connectivity.</Description>
-        <Service name="cmsoap">
-            <Command>cmsoap</Command>
-        </Service>
         <DurablePolicies>
             <Policy obtain="*.*"/>
         </DurablePolicies>
     </Domain>
-    <TunerService name="cmsoap">
-        <Server>
-            <PortNr>Auto</PortNr>
-        </Server>
-    </TunerService>
 </OpenSplice>

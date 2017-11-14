@@ -548,12 +548,31 @@ gsoap_check ()
         pathcheck soapcpp2
         if [ $? != 0 ]
         then
-            echo "Error - Not found"
-            return 1
+            if [ -n "$OSPL_OUTER_HOME" ]
+            then
+                echo "Error - Not found"
+                return 1
+            else
+                echo "Warning - Not found, cmsoap will not be built"
+                unset_var INCLUDE_SERVICES_CMSOAP
+                return 0
+            fi
         fi
         SOAPCPP2_EXE="$PATHCHECK_FOUND"
         GSOAPHOME1=`dirname "$SOAPCPP2_EXE"`
         GSOAPHOME=`dirname "$GSOAPHOME1"`
+
+        if [ -z "$OSPL_OUTER_HOME" ]
+        then
+            GSOAP_SRC_FILE=$GSOAPHOME/include/stdsoap2.c
+            if [ ! -f $GSOAP_SRC_FILE ]
+            then
+                echo "Warning - Not found, cmsoap will not be built"
+                echo "   file $GSOAP_SRC_FILE not found"
+                unset_var INCLUDE_SERVICES_CMSOAP
+                return 0
+            fi
+        fi
     fi
     LD_LIBRARY_PATH="$GSOAPHOME/lib:$LD_LIBRARY_PATH"
 
