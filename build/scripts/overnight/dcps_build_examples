@@ -424,7 +424,7 @@ unix_windows_examples()
     fi
     if [ "$SETUP_TYPE" = "armv7at2_vfp_neon.WRlinux7_gcc-release" -o "$SETUP_TYPE" = "armv7at2_vfp_neon.WRlinux7_gcc-dev" -o "$SETUP_TYPE" = "armv7at2_vfp_neon.WRlinux7_gcc-debug" ]
     then
-       PROTOBUF_LIB_HOME="/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-trixel-armv7at2-vfp-neon/src/.libs"
+       PROTOBUF_LIB_HOME="/home/dds/INSTALLED_FOR_DDS/protobuf-2.6.0-armv7at2-vfp-neon/src/.libs"
        export PROTOBUF_LIB_HOME
     fi
     if [ "$SETUP_TYPE" = "E500mc.linux-release" -o "$SETUP_TYPE" = "E500mc.linux-dev" ]
