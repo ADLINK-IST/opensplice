@@ -12,7 +12,7 @@ Below are a few links to learning material that will get you started quickly wit
 
 
 ## Open Source Add-ons 
-There are plenty of Open Source add-ons for OpenSplice and they keep growing almost daily. The main place to look for add one and extensions are [PrismTech's GitHub](https://github.com/prismtech) repositories. Beside this, below are a few notable extensions:
+There are plenty of Open Source add-ons for OpenSplice and they keep growing almost daily. The main place to look for add one and extensions are [ADLINK-IST's GitHub](https://github.com/ADLINK-IST) repositories. Beside this, below are a few notable extensions:
 
 - **[DDS Tutorial Examples](http://bit.ly/1oAvXhz)**
 - **[C++11 Extensions](http://bit.ly/dds-cpp11)**: Support for lambda-based Data Reader listenerns 
