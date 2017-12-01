@@ -17,6 +17,7 @@ There are plenty of Open Source add-ons for OpenSplice and they keep growing alm
 - **[DDS Tutorial Examples](http://bit.ly/1oAvXhz)**
 - **[C++11 Extensions](http://bit.ly/dds-cpp11)**: Support for lambda-based Data Reader listenerns 
 - **[Moliere](http://bit.ly/moliere-dds)**: [Scala](http://scala-lang.org) APIs for OpenSplice 
+- **[dds-python](https://github.com/atolab/dds-python)**: Python APIs for OpenSplice
 
 ## Related Projects
 
