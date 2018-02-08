@@ -3201,7 +3201,7 @@ static int handle_submsg_sequence
              malformed message. */
           if (rst->protocol_version.major < RTPS_MAJOR ||
               (rst->protocol_version.major == RTPS_MAJOR &&
-               rst->protocol_version.minor <= RTPS_MINOR_MINIMUM))
+               rst->protocol_version.minor < RTPS_MINOR_MINIMUM))
             goto malformed;
         }
         else if (is_own_vendor (rst->vendor))
@@ -3331,7 +3331,7 @@ static c_bool do_packet
     )
     {
       if ((hdr->version.major == RTPS_MAJOR && hdr->version.minor < RTPS_MINOR_MINIMUM))
-         TRACE (("HDR("PGIDFMT" vendor %d.%d) len %lu\n, version mismatch: %d.%d\n",
+         TRACE (("HDR(%x:%x:%x vendor %d.%d) len %lu\n, version mismatch: %d.%d\n",
          PGUIDPREFIX (hdr->guid_prefix), hdr->vendorid.id[0], hdr->vendorid.id[1], (unsigned long) sz, hdr->version.major, hdr->version.minor));
     
       if (NN_PEDANTIC_P)
