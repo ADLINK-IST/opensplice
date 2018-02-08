@@ -90,7 +90,8 @@ struct cdrstring {
 #define NN_STATUSINFO_DISPOSE      0x1u
 #define NN_STATUSINFO_UNREGISTER   0x2u
 
-#define NN_GUID_PREFIX_UNKNOWN_INITIALIZER {{0,0,0,0, 0,0,0,0, 0,0,0,0}}
+
+  #define NN_GUID_PREFIX_UNKNOWN_INITIALIZER {{0,0,0,0, 0,0,0,0, 0,0,0,0}}
 
 #define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_ANNOUNCER (1u << 0)
 #define NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_DETECTOR (1u << 1)
@@ -146,6 +147,7 @@ struct cdrstring {
 /* Only one specific version is grokked */
 #define RTPS_MAJOR 2
 #define RTPS_MINOR 1
+#define RTPS_MINOR_MINIMUM 1
 
 typedef struct Header {
   nn_protocolid_t protocol;
