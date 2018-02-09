@@ -2066,12 +2066,7 @@ static int deserialize_prep
     default:
       return 0;
   }
-  if (hdr->options != 0)
-  {
-    /* Unless I know they're harmless or support them, can't allow
-       them. */
-    return 0;
-  }
+
   if ((*msg = v_topicMessageNew_s ((v_topic) ospl_topic)) == NULL)
     return 0;
   (*msg)->qos = NULL;
@@ -2248,12 +2243,6 @@ static int prettyprint_prep (char **dst, int *dstsize, int *swap, const char **s
       mysnprintf (dst, dstsize, "(unknown encoding)");
       *swap = 0;
       goto fail;
-  }
-  if (hdr->options != 0)
-  {
-    /* Serdata is from my serializer, which doesn't do options */
-    mysnprintf (dst, dstsize, "(no options supported)");
-    goto fail;
   }
   assert (vsrcsize >= sizeof (struct CDRHeader));
   *src = (const char *) (hdr + 1);
