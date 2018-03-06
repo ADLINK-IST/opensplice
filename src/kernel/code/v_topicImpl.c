@@ -344,7 +344,7 @@ isValidName(const c_char *name)
      */
     assert(name);
     if ((name[0] != '\0') && (!isdigit((unsigned char)name[0]))) {
-        while (isalnum((unsigned char)*name) || (*name == '_')) {
+        while (isalnum((unsigned char)*name) || (*name == '_') || (*name == '/')) {
             name++;
         }
         if (*name == '\0') {
