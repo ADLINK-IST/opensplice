@@ -490,7 +490,7 @@ static sertopic_t deftopic_unl (const char *name, C_STRUCT(v_topic) const * cons
   /* Reuse known definition, if available; compare is on name+typeame,
      just in case. But we forget about the keys ... */
   name_typename = os_malloc (strlen (name) + 1 + strlen (typename) + 1);
-  os_sprintf (name_typename, "%s/%s", name, typename);
+  os_sprintf (name_typename, "%s;%s", name, typename);
   tp = ut_avlLookupIPath (&topictree_treedef, &topictree, name_typename, &path);
   if (tp != NULL)
   {
