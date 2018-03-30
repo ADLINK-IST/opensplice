@@ -28,7 +28,7 @@
 #include "cfg_metaConfigParser.h"
 #include "cfg_validator.h"
 
-#define CONFIG_SYNTAX_FILE_NAME "metaconfig.xml"
+#define CONFIG_SYNTAX_FILE_NAME "ospl_metaconfig.xml"
 #define CONFIG_SYNTAX_FILE_NAME_PREFIX  "splice_metaconfig_"
 #define CONFIG_SYNTAX_FILE_NAME_POSTFIX ".1.xml"
 #define CONFIG_VALIDATION_DISABLED "OSPL_CONFIG_VALIDATION_DISABLED"
@@ -770,7 +770,6 @@ getSyntaxFilenameAlternative(void)
     return filename;
 }
 
-
 static char *
 getSyntaxFilename(void)
 {
@@ -814,21 +813,41 @@ cfg_validateConfiguration(
         context.domainId = -1;
     }
 
-    syntaxFileName = getSyntaxFilename();
-    if (syntaxFileName) {
-        fp = fopen(syntaxFileName, "r");
-        if (!fp) {
-            char *altFilename = getSyntaxFilenameAlternative();
-            fp = fopen(altFilename, "r");
+    /* Creating report stack so that one error message is printed when unable
+     * to open config file. */
+    os_report_stack();
+    syntaxFileName = os_strdup(CONFIG_SYNTAX_FILE_NAME);
+    fp = fopen(syntaxFileName, "r");
+    if (!fp) {
+        OS_REPORT_WID(OS_ERROR, "configuration validator", 0, context.domainId,
+                "Failed to open configuration syntax file: %s", syntaxFileName);
+    }
+
+    if (!fp) {
+        os_free(syntaxFileName);
+        syntaxFileName = getSyntaxFilename();
+        if (syntaxFileName) {
+            fp = fopen(syntaxFileName, "r");
             if (!fp) {
                 OS_REPORT_WID(OS_ERROR, "configuration validator", 0, context.domainId,
                         "Failed to open configuration syntax file: %s", syntaxFileName);
             }
-            os_free(altFilename);
+        } else {
+            OS_REPORT(OS_ERROR, "configuration validator", 0, "OSPL_HOME is not set");
         }
-    } else {
-        OS_REPORT(OS_ERROR, "configuration validator", 0, "OSPL_HOME is not set");
     }
+
+    if (!fp) {
+        os_free(syntaxFileName);
+        syntaxFileName = getSyntaxFilenameAlternative();
+        if (syntaxFileName) {
+            fp = fopen(syntaxFileName, "r");
+            if (!fp) {
+                /* No error this is the development location */
+            }
+        }
+    }
+    os_report_stack_flush(fp?OS_FALSE:OS_TRUE, OS_FUNCTION, __FILE__, __LINE__, -1);
 
     if (fp) {
         status = cfg_parseMetaConfig(fp, &syntaxRoot, &serviceMapping);
