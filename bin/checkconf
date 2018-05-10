@@ -711,7 +711,7 @@ javac_check_darwin ()
     set_var JAVA_HOME "$JAVA_HOME"
 
     JAVAC_EXE=javac
-    "$JAVAC_EXE" -version 2> javac.ver
+    "$JAVAC_EXE" -version 2>&1 > javac.ver
     JAVAC_REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`
     JAVAC_VERSION=`echo $JAVAC_REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
     rm -f javac.ver
@@ -785,7 +785,7 @@ javac_check ()
         JAVAC_EXE=`readlink -f "$T_JAVAC_EXE"`
     fi
 
-    "$JAVAC_EXE" -version 2> javac.ver
+    "$JAVAC_EXE" -version 2>&1 > javac.ver
     JAVAC_REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`
     JAVAC_VERSION=`echo $JAVAC_REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
     rm -f javac.ver
