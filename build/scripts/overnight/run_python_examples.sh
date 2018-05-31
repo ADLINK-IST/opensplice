@@ -95,6 +95,8 @@ else
             -e 's@<NetworkInterfaceAddress>AUTO</NetworkInterfaceAddress>@<NetworkInterfaceAddress>127.0.0.1</NetworkInterfaceAddress>\
               <MulticastRecvNetworkInterfaceAddresses>127.0.0.1</MulticastRecvNetworkInterfaceAddresses>@'  < $XMLFILE > $NEWXMLFILE
 
+        sed -e '/<DDSI2Service name=\"ddsi2\">/a<Internal><AssumeMulticastCapable>*</AssumeMulticastCapable></Internal>' -i $NEWXMLFILE
+
         # sanity check that the sed'ing worked (i.e. that the strings existed in the first place)
         grep MulticastRecvNetworkInterfaceAddresses $NEWXMLFILE
         if [ $? = 1 ]

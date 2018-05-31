@@ -35,7 +35,7 @@ class durability (Example):
 
     def runExample(self, lang, extra, types):
         if lang == "cs" and not self.host.isWindows():
-            print "C# not supported on " + self.host.name
+            print("C# not supported on " + self.host.name)
         else:
             if lang == "all":
                 self.runExampleAll(extra)
@@ -44,7 +44,7 @@ class durability (Example):
                     self.runExampleAllExtra(lang, extra, types)
                 else:
 
-                    print "In runExample for " + self.expath + ": " + self.name + ": " + lang + ":" + extra
+                    print("In runExample for " + self.expath + ": " + self.name + ": " + lang + ":" + extra)
 
                     currPath = os.getcwd()
                     try:
@@ -79,7 +79,7 @@ class durability (Example):
                                 if os.path.isdir(tmpDir):
                                     shutil.rmtree (tmpDir)
                             except:
-                                print "Failed to remove", tmpDir 
+                                print("Failed to remove", tmpDir)
                             
                             with open ('examples.json') as data_file:
                                 data = json.load(data_file)
@@ -161,7 +161,7 @@ class durability (Example):
                         try:
                             self.stopOSPL()
                         except Exception as ex:
-                            print "Exception stopping OpenSplice ", str(ex)
+                            print("Exception stopping OpenSplice ", str(ex))
 
                         if msg == "NONE":
                             try:
@@ -203,14 +203,14 @@ class durability (Example):
                         try:
                             self.writeResult (result,  self.expath + self.name, lang, msg)
                         except Exception as ex:
-                            print "Exception writing result ", str(ex)
+                            print("Exception writing result ", str(ex))
 
                         try:
                             self.cleanUp()
                         except Exception as ex:
-                            print "Exception cleaning up ", str(ex)
+                            print("Exception cleaning up ", str(ex))
 
                     except Exception as ex:
-                        print "Unexpected exception", str(ex)
+                        print("Unexpected exception", str(ex))
                     finally:
                         os.chdir(currPath)   

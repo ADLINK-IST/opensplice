@@ -31,7 +31,7 @@ class lifecycle (Example):
 
     def runExample(self, lang, extra, types):
         if lang == "cs" and not self.host.isWindows():
-            print "C# not supported on " + self.host.name
+            print("C# not supported on " + self.host.name)
         else:
             if lang == "all":
                 self.runExampleAll(extra)
@@ -40,7 +40,7 @@ class lifecycle (Example):
                     self.runExampleAllExtra(lang, extra, types)
                 else:
                     currPath = os.getcwd()
-                    print "In runExample for " + self.expath + ": " + self.name + ": " + lang
+                    print("In runExample for " + self.expath + ": " + self.name + ": " + lang)
 
                     try:
                         super(lifecycle, self).setExampleResultDir(lang, extra)
@@ -92,9 +92,9 @@ class lifecycle (Example):
 
                             if msg == "NONE":
                                 self.startOSPL()
-                                print "Starting sub1Thread for ", subexe
+                                print("Starting sub1Thread for ", subexe)
                                 sub1Thread.start()
-                                print "Starting pub1Thread for ", pubexe
+                                print("Starting pub1Thread for ", pubexe)
                                 pub1Thread.start()
                                             
                                 pub1Thread.join(self.example_timeout)
@@ -111,9 +111,9 @@ class lifecycle (Example):
                             sub2Thread = ExeThread(self.classpath, sub2Log, lang, subexe, self.sub_params, self.example_timeout) 
 
                             self.startOSPL()
-                            print "Starting sub2Thread for ", subexe
+                            print("Starting sub2Thread for ", subexe)
                             sub2Thread.start()
-                            print "Starting pub2Thread for ", pubexe
+                            print("Starting pub2Thread for ", pubexe)
                             pub2Thread.start()
                                             
                             pub2Thread.join(self.example_timeout)
@@ -126,9 +126,9 @@ class lifecycle (Example):
                             sub3Thread = ExeThread(self.classpath, sub3Log, lang, subexe, self.sub_params, self.example_timeout) 
  
                             self.startOSPL()
-                            print "Starting sub3Thread for ", subexe
+                            print("Starting sub3Thread for ", subexe)
                             sub3Thread.start()
-                            print "Starting pub3Thread for ", pubexe
+                            print("Starting pub3Thread for ", pubexe)
                             pub3Thread.start()
                                             
                             pub3Thread.join(self.example_timeout)
@@ -167,7 +167,7 @@ class lifecycle (Example):
                         try:
                             self.writeResult (result,  self.expath +  self.name, lang, msg)
                         except Exception as ex:
-                            print "Exception checking logs ", str(ex)
+                            print("Exception checking logs ", str(ex))
 
                         if self.host.isWindows():
                             time.sleep(5)
@@ -175,10 +175,10 @@ class lifecycle (Example):
                         try:
                             self.cleanUp()
                         except Exception as ex:
-                            print "Exception cleaning up ", str(ex)
+                            print("Exception cleaning up ", str(ex))
 
                     except Exception as ex:
-                        print "Unexpected exception ", str(ex)
+                        print("Unexpected exception ", str(ex))
 
                     finally:
                         os.chdir(currPath)

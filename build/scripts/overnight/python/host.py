@@ -84,7 +84,7 @@ class host(object):
                             runExample = False       
 
         if runExample == False:
-            print "Not running " + exkey + ":" + lang + " on " +self.name
+            print("Not running " + exkey + ":" + lang + " on " +self.name)
 
         return runExample
 
@@ -92,6 +92,6 @@ if __name__ == "__main__":
     
     me = host()
     if me.isWindows() == True:
-        print "It's windows"
+        print("It's windows")
     else:
-        print "It's not windows"
+        print("It's not windows")

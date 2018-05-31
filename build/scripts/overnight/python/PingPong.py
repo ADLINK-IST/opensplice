@@ -38,9 +38,9 @@ class pingpong (Example):
         self.pingQuitArgs.extend(self.partitions)
 
     def runExample(self, lang, extra, types):
-        print "runExample ", lang, extra, types
+        print("runExample ", lang, extra, types)
         if lang == "cs" and not self.host.isWindows():
-            print "C# not supported on " + self.host.name
+            print("C# not supported on " + self.host.name)
         else:
             if lang == "all":
                 self.runExampleAll(extra)
@@ -98,7 +98,7 @@ class pingpong (Example):
                             else:
                                 runLang = lang
 
-                            print "runLang is ", runLang
+                            print("runLang is ", runLang)
 
                             if extra == "corba":
                                 exes = "corba_executables"
@@ -128,7 +128,7 @@ class pingpong (Example):
                             if msg == "NONE":
                                 self.startOSPL()
 
-                                print "Going to start pong thread"
+                                print("Going to start pong thread")
                                 pongThread = ExeThread(self.classpath, pongLog, runLang, pongExe, self.partitions, self.pongTimeout)  
                                 pongThread.start()
 
@@ -143,7 +143,7 @@ class pingpong (Example):
                                     runTypes = types
 
                                 for t in runTypes:
-                                    print "Running ping with", t
+                                    print("Running ping with", t)
 
                                     pingArgs = [self.BLOCKSIZE, self.BLOCKCOUNT, t]
                                     pingArgs.extend(self.partitions)
@@ -168,7 +168,7 @@ class pingpong (Example):
                         try:
                             self.stopOSPL()
                         except Exception as ex:
-                            print "Exception stopping OpenSplice ", str(ex)
+                            print("Exception stopping OpenSplice ", str(ex))
 
                         try:
                             self.copyLogs()
@@ -208,17 +208,17 @@ class pingpong (Example):
                                 resultLang = "cj5"
 
                         try:
-                            print "WRiting result for ", self.name + " " + resultLang
+                            print("WRiting result for ", self.name + " " + resultLang)
                             self.writeResult (result, self.expath +  self.name, resultLang, msg)
                         except Exception as ex:
-                            print "Exception writing result", str(ex)
+                            print("Exception writing result", str(ex))
 
                         try:
                             self.cleanUp()
                         except Exception as ex:
-                            print "Exception cleaning up", str(ex)
+                            print("Exception cleaning up", str(ex))
 
                     except Exception as ex:
-                        print "Unexpected exception", str(ex)
+                        print("Unexpected exception", str(ex))
                     finally:
                         os.chdir(currPath)

@@ -30,7 +30,7 @@ class tutorial (Example):
 
     def runExample(self, lang, extra, types):
         if lang == "cs" and not self.host.isWindows():
-            print "C# not supported on " + self.host.name
+            print("C# not supported on " + self.host.name)
         else:
             if lang == "all":
                 self.runExampleAll(extra)
@@ -38,7 +38,7 @@ class tutorial (Example):
                 if extra == "all":
                     self.runExampleAllExtra(lang, extra, types)
                 else:
-                    print "In runExample for " + self.expath + ": " + self.name + ": " + lang + ":" + extra
+                    print("In runExample for " + self.expath + ": " + self.name + ": " + lang + ":" + extra)
 
                     currPath = os.getcwd()
 
@@ -146,7 +146,7 @@ class tutorial (Example):
                         try:
                             self.stopOSPL()
                         except Exception as ex:
-                            print "Exception stopping OpenSplice ", str(ex)
+                            print("Exception stopping OpenSplice ", str(ex))
 
                         if msg == "NONE":
                             try:
@@ -183,14 +183,14 @@ class tutorial (Example):
                         try:
                             self.writeResult (result,  self.expath + self.name, resultLang, msg)
                         except Exception as ex:
-                            print "Exception writing result", str(ex)
+                            print("Exception writing result", str(ex))
 
                         try:
                             self.cleanUp()
                         except Exception as ex:
-                            print "Exception cleaning up", str(ex)
+                            print("Exception cleaning up", str(ex))
 
                     except Exception as ex:
-                        print "Unexpected exception ", str(ex)
+                        print("Unexpected exception ", str(ex))
                     finally:
                         os.chdir(currPath)   

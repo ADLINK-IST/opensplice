@@ -50,7 +50,7 @@ class dbmsconnect (Example):
 
     def runExample(self):
 
-        print "In runExample for " + self.expath + ": " + self.name
+        print("In runExample for " + self.expath + ": " + self.name)
 
         currPath = os.getcwd()
 
@@ -179,7 +179,7 @@ class dbmsconnect (Example):
             try:
                 self.stopOSPL()
             except Exception as ex:
-                print "Exception stopping OpenSplice ", str(ex)
+                print("Exception stopping OpenSplice ", str(ex))
 
             if msg == "NONE":
                 try:
@@ -190,13 +190,13 @@ class dbmsconnect (Example):
                     if os.path.isfile (self.ospl_error_log):
                         msg = "ospl-error.log found"
                              
-                    print "checking odbcMsgBoardLog with odbcmsgboard_conds", odbcMsgBoardLog, odbcmsgboard_conds
+                    print("checking odbcMsgBoardLog with odbcmsgboard_conds", odbcMsgBoardLog, odbcmsgboard_conds)
                     self.checkResults(odbcMsgBoardLog, odbcmsgboard_conds)
 
-                    print "checking odbcChatter1Log with odbcchatter_conds", odbcChatter1Log, odbcchatter_conds
+                    print("checking odbcChatter1Log with odbcchatter_conds", odbcChatter1Log, odbcchatter_conds)
                     self.checkResults(odbcChatter1Log, odbcchatter_conds)
 
-                    print "checking odbcChatter2Log with odbcchatter_conds", odbcChatter2Log, odbcchatter_conds
+                    print("checking odbcChatter2Log with odbcchatter_conds", odbcChatter2Log, odbcchatter_conds)
                     self.checkResults(odbcChatter2Log, odbcchatter_conds)
 
                     self.checkResults(cppMsgBoardLog, cppmsgboard_conds)
@@ -215,7 +215,7 @@ class dbmsconnect (Example):
          
                 logdir =  os.path.join(os.environ['LOGDIR'], "examples", "run_" + os.environ['EXRUNTYPE'], self.exdir)
                 dbmsconnLog = os.path.join(self.pPath, 'dbmsconnect.log')
-                print "dbmsconnect.log is ", dbmsconnLog
+                print("dbmsconnect.log is ", dbmsconnLog)
                 copy(dbmsconnLog, logdir)
 
                 
@@ -225,14 +225,14 @@ class dbmsconnect (Example):
             try:
                 self.writeResult (result,  self.exdir, "", msg)
             except Exception as ex:
-                print "Exception writing result", str(ex)
+                print("Exception writing result", str(ex))
 
             try:
                 self.cleanUp()
             except Exception as ex:
-                print "Exception cleaning  up", str(ex)
+                print("Exception cleaning  up", str(ex))
 
         except Exception as ex:
-            print "Unexpected exception ", str(ex)   
+            print("Unexpected exception ", str(ex))
         finally:
             os.chdir(currPath)   

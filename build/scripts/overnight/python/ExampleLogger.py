@@ -80,7 +80,7 @@ class examplelogger(object):
             if os.path.isfile (summ_log):
                 os.remove(summ_log)
         except:
-            print "Exception trying to delete summary.log "
+            print("Exception trying to delete summary.log ")
 
         fs = open(totals_log, 'w')
         fs.write("Examples Run = " + str(total) + "\n")

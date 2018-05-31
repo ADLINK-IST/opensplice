@@ -1017,6 +1017,14 @@ E   ospli/ubuntu1604-64b/x86_64.linux-release-examples-inner 120 #First# none
 E   ospli/ubuntu1604-64b/x86_64.linux-dev-inner 120 #First# none 
 E   ospli/ubuntu1604-64b/x86_64.linux-dev-notest-inner 120 #First# none
 
+E   ospli/ubuntu1804-64a/x86_64.linux-release 120 #First# none
+E   ospli/ubuntu1804-64a/x86_64.linux-release-inner 120 #First# none
+E   ospli/ubuntu1804-64a/x86_64.linux-release-notest-inner 120 #First# none
+E   ospli/ubuntu1804-64a/x86_64.linux-release-examples-inner 120 #First# none
+E   ospli/ubuntu1804-64a/x86_64.linux-dev 120 #First# none
+E   ospli/ubuntu1804-64a/x86_64.linux-dev-inner 120 #First# none
+E   ospli/ubuntu1804-64a/x86_64.linux-dev-notest-inner 120 #First# none
+
 E   ospli/rhel4y/PPC7448.lynxos5.linux32-dev-inner 1 #First# none
 E   ospli/rhel4y/PPC7448.lynxos5.linux32-release-inner 1 #First# none
 E   ospli/rhel4y/PPCE600.lynxos5.linux32-dev-inner 1 #First# none

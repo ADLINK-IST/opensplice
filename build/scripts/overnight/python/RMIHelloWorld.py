@@ -22,7 +22,7 @@ class rmihelloworld (Example):
 
     def runExample(self, lang, extra, types):
         if lang == "cs" and not self.host.isWindows():
-            print "C# not supported on " + self.host.name
+            print("C# not supported on " + self.host.name)
         else:
             if lang == "all":
                 self.runExampleAll(extra)
@@ -111,7 +111,7 @@ class rmihelloworld (Example):
                     try:
                         self.stopOSPL()
                     except Exception as ex:
-                        print "Exception stopping OpenSplice ", str(ex)
+                        print("Exception stopping OpenSplice ", str(ex))
 
                     if msg == "NONE":
                         try:
@@ -141,14 +141,14 @@ class rmihelloworld (Example):
                     try:
                         self.writeResult (result,  self.expath +  self.name, lang, msg)
                     except Exception as ex:
-                        print "Exception writing result", str(ex)
+                        print("Exception writing result", str(ex))
 
                     try:
                         self.cleanUp()
                     except Exception as ex:
-                        print "Exception cleaning up", str(ex)
+                        print("Exception cleaning up", str(ex))
 
                 except Exception as ex:
-                    print "Unexpected exception", str(ex)
+                    print("Unexpected exception", str(ex))
                 finally:
                     os.chdir(currPath)

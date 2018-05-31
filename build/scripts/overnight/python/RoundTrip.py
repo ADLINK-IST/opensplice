@@ -28,16 +28,16 @@ class roundtrip (Example):
 
     def runExample(self, lang, extra, types):
 
-        print "RoundTrip - runExample ..."
+        print("RoundTrip - runExample ...")
 
         if lang == "cs" and not self.host.isWindows():
-            print "C# not supported on " + self.host.name
+            print("C# not supported on " + self.host.name)
         else:
             if lang == "all":
                 self.runExampleAll(extra)
             else:
 
-                print "In runExample for " + self.expath + ": " + self.name + ": " + lang
+                print("In runExample for " + self.expath + ": " + self.name + ": " + lang)
 
                 currPath = os.getcwd() 
 
@@ -101,13 +101,13 @@ class roundtrip (Example):
 
                         if msg == "NONE":
                             self.startOSPL()
-                            print "Starting pubThread for ", pubexe
+                            print("Starting pubThread for ", pubexe)
                             pubThread.start()
-                            print "Starting subThread for ", subexe
+                            print("Starting subThread for ", subexe)
                             subThread.start()
                                             
                             subThread.join(self.example_timeout)
-                            print "Starting quitThread for ", quitexe                    
+                            print("Starting quitThread for ", quitexe)
                             quitThread.start()
                             pubThread.join(self.example_timeout)
                             quitThread.join(self.example_timeout)
@@ -118,7 +118,7 @@ class roundtrip (Example):
                     try:
                         self.stopOSPL()
                     except Exception as ex:
-                        print "Exception stopping OpenSplice ", str(ex)
+                        print("Exception stopping OpenSplice ", str(ex))
 
                     if msg == "NONE":
                         try:
@@ -147,14 +147,14 @@ class roundtrip (Example):
                     try:
                         self.writeResult (result,  self.expath +  self.name, lang, msg)
                     except Exception as ex:
-                        print "Exception writing result", str(ex)
+                        print("Exception writing result", str(ex))
 
                     try: 
                         self.cleanUp()
                     except Exception as ex:
-                        print "Exception cleaning up", str(ex)
+                        print("Exception cleaning up", str(ex))
 
                 except Exception as ex:
-                    print "Unexpected exception ", str(ex)
+                    print("Unexpected exception ", str(ex))
                 finally:
                     os.chdir(currPath)   

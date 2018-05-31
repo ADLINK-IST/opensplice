@@ -1,4 +1,3 @@
-import commands
 import sys
 import os
 import glob
@@ -174,7 +173,7 @@ class Example(object):
         else: 
             if extra == "corba":
                 if self.corba_langs == "":
-                    print "No corba version for " + self.name + " example"
+                    print("No corba version for " + self.name + " example")
                 else:
                     # run the corba example for each language found
                     for lang in self.corba_langs:
@@ -209,7 +208,7 @@ class Example(object):
     """
     def runExample(self, lang, extra, types):
         if lang == "cs" and not self.host.isWindows():
-            print "C# not supported on " + self.host.name
+            print("C# not supported on " + self.host.name)
         else:
             if lang == "all":
                 self.runExampleAll(extra)
@@ -226,7 +225,7 @@ class Example(object):
                         else:
                             exKey = self.expath
 
-                        print "In runExample for " + exKey + ": " + self.name + ": " + lang
+                        print("In runExample for " + exKey + ": " + self.name + ": " + lang)
 
                         # set the example result directory name e.g. dcpsPingPongsac
                         self.setExampleResultDir(lang, extra)
@@ -384,18 +383,18 @@ class Example(object):
 
                         try:
                             if self.logger.debug:
-                                print "Going to stopOSPL"
+                                print("Going to stop OSPL")
                                 sys.stdout.flush()
 
                             # start the ospl daemon, this will only happen if it's SHM                          
                             self.stopOSPL()
 
                             if self.logger.debug:
-                                print "Back from stopping OSPL"
+                                print("Back from stopping OSPL")
                                 sys.stdout.flush()
 
                         except Exception as ex:
-                            print "Exception stopping OpenSplice ", str(ex)
+                            print("Exception stopping OpenSplice ", str(ex))
 
                         if msg == "NONE":
                             try:
@@ -444,7 +443,7 @@ class Example(object):
                             # Write the result for this instance of the example to the summary log
                             self.writeResult (result, self.expath + self.name, resultLang, msg)
                         except Exception as ex:
-                            print "Exception writing result ", str(ex)
+                            print("Exception writing result ", str(ex))
 
                         if self.host.isWindows():
                             time.sleep(5)
@@ -453,15 +452,15 @@ class Example(object):
                             # Tidy up - deletes logs and things like pstore so clean for next run of the example
                             self.cleanUp()
                         except Exception as ex:
-                            print "Exception cleaning up ", str(ex)
+                            print("Exception cleaning up ", str(ex))
 
                     except Exception as ex:
-                        print "Unexpected exception ", str(ex)
+                        print("Unexpected exception ", str(ex))
 
                     finally:
                         os.chdir(currPath)      
 
-                        print "Completed " + self.name + ": " + lang + ":" + extra
+                        print("Completed " + self.name + ": " + lang + ":" + extra)
  
 
     """
@@ -470,13 +469,13 @@ class Example(object):
     def startOSPL(self):
 
         if self.logger.debug:
-            print "STARTING OSPL *****"
+            print("STARTING OSPL *****")
             sys.stdout.flush()
 
         if os.environ["EXRUNTYPE"] == "shm":  
             command = ['ospl', 'start']
 
-            print command
+            print(command)
             ospl = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
             """
@@ -496,16 +495,16 @@ class Example(object):
                     except:
                         count += 1
             else:
-                output = commands.getoutput('ps -A')
+                output = subprocess.check_output(['ps', '-A'])
                 while not 'spliced' in output and count < 20:
                     time.sleep(1)
-                    output = commands.getoutput('ps -A')
+                    output = subprocess.check_output(['ps', '-A'])
                     count += 1
 
             if count == 20:
                 raise Exception("spliced not started ....")
             else:
-                print "OpenSplice started. ...."
+                print("OpenSplice started. ....")
 
     """
        stop the ospl daemon if appropriate
@@ -513,7 +512,7 @@ class Example(object):
     def stopOSPL(self):
 
         if self.logger.debug:
-            print "STOPPING OSPL *****"
+            print("STOPPING OSPL *****")
             sys.stdout.flush()
 
         if os.environ["EXRUNTYPE"] == "shm":
@@ -522,7 +521,7 @@ class Example(object):
             else:
                 command = ['ospl', 'stop']
 
-            print command
+            print(command)
             ospl = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
             """
@@ -542,16 +541,16 @@ class Example(object):
                     except:
                         count += 1
             else:
-                output = commands.getoutput('ps -A')
+                output = subprocess.check_output(['ps', '-A'])
                 while 'spliced' in output and count < 20:
                     time.sleep(1)
-                    output = commands.getoutput('ps -A')
+                    output = subprocess.check_output(['ps', '-A'])
                     count += 1
 
             if count == 20:
                 raise Exception("spliced not stopped within 20 seconds ....")
             else:
-                print "OpenSplice stopped. ...."
+                print("OpenSplice stopped. ....")
 
 
     """
@@ -639,7 +638,7 @@ class Example(object):
     def copyLogs (self):
 
         if self.logger.debug:
-            print "Copying logs and checking results"
+            print("Copying logs and checking results")
             sys.stdout.flush()
 
         logdir =  os.path.join(os.environ['LOGDIR'], "examples", "run_" + os.environ['EXRUNTYPE'], self.exdir)
@@ -734,7 +733,7 @@ class ExeThread (threading.Thread):
 
         isJava = False
         proc = None
-        print "OSPL_URI is ", os.environ["OSPL_URI"]
+        print("OSPL_URI is ", os.environ["OSPL_URI"])
 
         if self.lang == "java" or self.lang == "java5" or self.lang == "cj" or self.lang == "cj5":
             isJava = True
@@ -747,7 +746,7 @@ class ExeThread (threading.Thread):
                 spliceJava = os.environ['SPLICE_JAVA']
                 spliceExtraCP = os.environ['SPLICE_EXTRA_CP']
             except KeyError:
-                print "Ignoring KeyError getting SPLICE_EXTRA_CP"
+                print("Ignoring KeyError getting SPLICE_EXTRA_CP")
 
             if self.lang == "cj" or self.lang == "cj5":
                 jacend = "-Djava.endorsed.dirs=" + os.path.join(os.environ['JACORB_HOME'], "lib", "endorsed")
@@ -770,7 +769,7 @@ class ExeThread (threading.Thread):
             args = [self.params]
             command.extend (list(self.params))
 
-        print command
+        print(command)
 
         res = 0
         proc  = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -785,7 +784,7 @@ class ExeThread (threading.Thread):
                 timer.start()
                 exeOutput, _ = proc.communicate()
                 res = proc.returncode
-                print "Process return code is ", res
+                print("Process return code is ", res)
             finally:
                 timer.cancel()
             
@@ -798,4 +797,4 @@ class ExeThread (threading.Thread):
             if res != 0:
                 raise Exception("Non zero return code from ...", self.prog)                
         else:
-            print "Process not created ..."
+            print("Process not created ...")

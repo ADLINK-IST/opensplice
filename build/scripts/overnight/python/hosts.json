@@ -347,7 +347,15 @@
       "excluded_langs": [""],
       "excluded_examples": ["dbmsconnect"],
       "partial_examples": ""
-   },    
+   },
+
+   "ubuntu1804-64a":
+   {
+      "examples": ["AllStandalone"],
+      "excluded_langs": [""],
+      "excluded_examples": ["dbmsconnect"],
+      "partial_examples": ""
+   },
 
    "v240a":
    {
