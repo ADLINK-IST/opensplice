@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import platform
 
 """
   Class holding details of the host on which the example is running
@@ -16,7 +17,7 @@ class host(object):
             self.name = os.environ['HOSTNAME'].lower()
         except Exception:
             try:
-                self.name = os.environ['USERDOMAIN'].lower()
+                self.name = platform.node().lower()
             except Exception:
                 self.name = subprocess.check_output("hostname").strip().lower()
 

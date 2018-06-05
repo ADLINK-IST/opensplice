@@ -68,7 +68,21 @@ function setVSEnv()
         ;;
     esac
 
-    local cmd=$(printf "cmd /V /C cd %s && vcvarsall.bat %s 1>NUL && echo LIB=!LIB! && echo INCLUDE=!INCLUDE! && echo PATH=!PATH! && echo FrameworkSDKDir=!FrameworkSDKDir! && echo WindowsSdkDir=!WindowsSdkDir!" "$1" "$ARCH")
+    local cmd
+    # Repository can be located on a different drive than the system drive, in
+    # order to make the command below work in that scenario, first switch to
+    # the drive on which Program Files is located.
+    local drv=$(echo "${VS_HOME}" | perl -ne 'print "$1$2" if (m#^(?:([a-z]):|/cygdrive/([a-z])/)#i)')
+
+    #needed to check if we have a VS > 2015 as the vsvarsall.bat has been renamed to VsDevCmd.bat
+    vsvarscheck="${VS_HOME}/VC/vcvarsall.bat"
+    if [ -f "$vsvarscheck" ]; then
+        local cmd=$(printf "cmd /V /C %s: && cd %s && vcvarsall.bat %s 1>NUL && echo LIB=!LIB! && echo INCLUDE=!INCLUDE! && echo PATH=!PATH! && echo FrameworkSDKDir=!FrameworkSDKDir! && echo WindowsSdkDir=!WindowsSdkDir!" "$drv" "$1" "$ARCH")
+    else
+        vshome_norm=$(cygpath -w $VS_HOME)
+        vs_gt_2015_path=${vshome_norm}/Common7/Tools/
+        local cmd=$(printf "cmd /V /C %s: && cd %s && VsDevCmd.bat -arch=%s 1>NUL && echo LIB=!LIB! && echo INCLUDE=!INCLUDE! && echo PATH=!PATH! && echo FrameworkSDKDir=!FrameworkSDKDir! && echo WindowsSdkDir=!WindowsSdkDir!" "$drv" "$vs_gt_2015_path" "$ARCH")
+    fi
 
     # PATH is converted by cygwin automatically, others are not. Unset them to prevent corruption in case this function is executed more than once
     [[ -n "$LIB" ]] && { echo "Warning: LIB already set!"; unset LIB; }
@@ -133,7 +147,7 @@ csharp_check ()
 msvs_check ()
 {
 #   VS_VER 19 Windows 10 / VS2015 / .NET framework V4.6 / SDK v10.0A
-#   VS_VER 18 Windows 8.1 / VS2013 / .NET framework V4.5.2 / SDK 8.1A
+#   VS_VER 18 Windows 8.1 / VS2013 / .NET framework V4.5.1 / SDK 8.1A
 #   VS_VER 17 Windows 8 / VS2012 / .NET framework V4.5 / SDK 8.0A
 #   VS_VER 16 Windows 7 / VS2010 / .NET framework V4.0.30319 / SDK 7.0A
 #   VS_VER 15 Windows Vista / VS2008 / .NET framework V3.5 / SDK 6.0A
@@ -162,21 +176,64 @@ msvs_check ()
         # needed for installer names
         if [ "$VS_VER" == "14" ]; then
             VS_YEAR=2005
+            DOTNET="3.0"
         elif [ "$VS_VER" == "15" ]; then
             VS_YEAR=2008
+            DOTNET="3.5"
         elif [ "$VS_VER" == "16" ]; then
             VS_YEAR=2010
+            DOTNET="4.0"
         elif [ "$VS_VER" == "17" ]; then
             VS_YEAR=2012
+            DOTNET="4.5"
         elif [ "$VS_VER" == "18" ]; then
             VS_YEAR=2013
-        elif [ "$VS_VER" == "19" ]; then
+            DOTNET="4.5.1"
+        elif [[ $OSPL_COMPILER_VER == "19.0"* ]]; then
             VS_YEAR=2015
+            DOTNET="4.6"
+        elif [[ $OSPL_COMPILER_VER == "19.1"* ]]; then
+            VS_YEAR=2017
+            DOTNET="4.6.1"
         else
             VS_YEAR=Unknown
+            DOTNET="Unknown"
         fi
+
         set_var VS_YEAR "$VS_YEAR"
-        echo "OK - using compiler version: $COMPILER_VER for VS: $VS_YEAR"
+        set_var DOTNET "$DOTNET"
+        # from VS 2015 update 3 and above C11 is enabled so enable it for the build too.
+        if [ $VS_VER -gt 18 ]
+        then
+            set_var OSPL_USE_CXX11 "yes"
+        fi
+
+
+        # only generate an AssemblyAttributes for vs2010 and newer lower is not supported
+        if [ $VS_VER -gt 15 ]
+        then
+            sed -e "s;%DOTNET%;$DOTNET;g" $OSPL_HOME/src/api/dcps/sacs/AssemblyAttributesTemplate.cs > $OSPL_HOME/src/api/dcps/sacs/code/DDS/AssemblyAttributes.cs
+        fi
+
+        DOTNETPROGFILES=$PROGRAMFILES
+
+        case ${SPLICE_HOST} in
+        x86_64.*)
+            DOTNETPROGFILES="C:\\Program Files (x86)"
+            ;;
+        esac
+
+        #fallback for when the host is 32 bit but the actual platform is 64 bit
+        if [[ "$PROCESSOR_ARCHITECTURE" == "AMD64" ]]; then
+             DOTNETPROGFILES="C:\\Program Files (x86)"
+        fi
+
+        if [[ "$PROCESSOR_ARCHITEW6432" == "AMD64" ]]; then
+             DOTNETPROGFILES="C:\\Program Files (x86)"
+        fi
+        set_var DOTNETPROGFILES "$DOTNETPROGFILES"
+
+        echo "OK - using compiler version: $COMPILER_VER for VS: $VS_YEAR and .Net $DOTNET and Program Files $DOTNETPROGFILES"
     fi
 
 
@@ -218,57 +275,65 @@ gcc_check ()
 {
     echo -n "GCC: "
     pathcheck gcc
-    if [ $? != 0 ]
-    then
+    if [ $? != 0 ]; then
         echo "ERROR - Not found"
         return 1
     fi
 
     GCC_FULLVERSION=`gcc -dumpversion`
     GCC_MAJOR=`echo $GCC_FULLVERSION | cut -f 1 -d .`
-    if [ $GCC_MAJOR -lt 3 ]
-    then
-        echo "ERROR - Only gcc 3.2 and above is supported"
-        return 1
-    fi
-
     GCC_MINOR=`echo $GCC_FULLVERSION | cut -f 2 -d .`
-    if [ $GCC_MAJOR -eq 3 -a $GCC_MINOR -lt 2 ]
-    then
-        echo "ERROR - Only gcc 3.2 and above is supported"
+    export GCC_MAJOR GCC_MINOR
+
+    # GCC < 3.2 not supported
+    if echo $GCC_FULLVERSION | gawk '{ exit $1 < 3.2 ? 0 : 1 }'; then
+        echo "ERROR - Only GCC >= 3.2 is supported (found: $GCC_FULLVERSION)"
         return 1
     fi
-    # -Werror=switch supported by gcc >= 4.2
-    # -Wconversion changed in 4.3 and we want the new one, but it gives too many false positives in 4.3
-    GCC_WERROR_IS_SWITCH_SUPPORT=`echo $GCC_FULLVERSION | gawk '{ print $1>="4.2"?"1":"0"}'`
-    GCC_WCONVERSION_IS_SUPPORTED=`echo $GCC_FULLVERSION | gawk '{ print $1>="4.4"?"1":"0"}'`
+
+    echo "OK - Using version $GCC_FULLVERSION"
+
+    # GCC >= 4.2 supports -Werror=switch
+    GCC_WERROR_IS_SWITCH_SUPPORT=`echo $GCC_FULLVERSION | gawk '{ print $1 >= 4.2 ? 1 : 0 }'`
     set_var GCC_WERROR_IS_SWITCH_SUPPORT "$GCC_WERROR_IS_SWITCH_SUPPORT"
+
+    # GCC >= 4.3 supports C++11
+    GCC_SUPPORTS_CPLUSPLUS11=`echo $GCC_FULLVERSION | gawk '{ print $1 >= 4.3 ? 1 : 0 }'`
+    set_var GCC_SUPPORTS_CPLUSPLUS11 "$GCC_SUPPORTS_CPLUSPLUS11"
+
+    # GCC >= 4.4 supports -Wconversion (too many false positives in 4.3)
+    GCC_WCONVERSION_IS_SUPPORTED=`echo $GCC_FULLVERSION | gawk '{ print $1 >= 4.4 ? 1 : 0 }'`
     set_var GCC_WCONVERSION_IS_SUPPORTED "$GCC_WCONVERSION_IS_SUPPORTED"
-    export GCC_WERROR_IS_SWITCH_SUPPORT
-    export GCC_WCONVERSION_IS_SUPPORTED
-    export GCC_MAJOR GCC_MINOR
-    echo "OK - using version $GCC_FULLVERSION"
 
-    if echo $GCC_FULLVERSION | gawk '{ if($1>="4.3"){exit 0}else{exit 1} }' ; then
-        set_var GCC_SUPPORTS_CPLUSPLUS11 1
-        export GCC_SUPPORTS_CPLUSPLUS11
-    fi
-
-    # -flto works well in gcc >= 4.7
-    if echo $GCC_FULLVERSION | gawk '{ if($1>="4.7"){exit 0}else{exit 1} }' ; then
-        echo "  NOTE - enabling link-time optimizations for release build"
-        set_var GCC_SUPPORTS_LTO 1
-        export GCC_SUPPORTS_LTO
-        pathcheck gcc-ar
-        if [ $? -ne 0 ]
-        then
-            echo "  WARNING - unable to find gcc-ar this could result in link errors"
-        fi
-
-    # Also at 4.7+ we disable maybe-uninitialized errors for some 3rd party code
+    # GCC >= 4.7 supports -flto (except 5.4, due to bug in linker: OSPL-10875)
+    # Also at GCC >= 4.7 we disable maybe-uninitialized errors for some 3rd party code
+    if echo $GCC_FULLVERSION | gawk '{ exit $1 >= 4.7 ? 0 : 1 }'; then
+        case "${GCC_FULLVERSION}" in
+          5.4*)
+            ;;
+          *)
+            echo "  NOTE - Enable link-time optimizations (for release build)"
+            set_var GCC_SUPPORTS_LTO 1
+            if ! pathcheck gcc-ar; then
+                echo "  WARNING - Unable to find gcc-ar (could result in link errors)"
+            fi
+            ;;
+        esac
         set_var GCC_HAS_NO_MAYBE_UNINITIALIZED yes
-        export GCC_HAS_NO_MAYBE_UNINITIALIZED
     fi
+
+    # GCC >= 4.8 supports building Fujitsu system-tests (except when cross-compiling)
+    if echo $GCC_FULLVERSION | gawk '{ exit $1 >= 4.8 ? 0 : 1 }'; then
+        if [ ${SPLICE_TARGET} = ${SPLICE_HOST} ]; then
+            echo "  NOTE - Building Fujitsu system-tests"
+            set_var INCLUDE_FUJITSU_ST_TEST yes
+        else
+            echo "  NOTE - Not building Fujitsu system-tests (cross-compile not supported)"
+        fi
+    else
+        echo "  NOTE - Not building Fujitsu system-tests (requires GCC >= 4.8)"
+    fi
+
     return 0
 }
 
@@ -363,12 +428,12 @@ qt_check ()
     echo -n "Qt: "
     if [ "$OSPL_QT_IS_ON" = "no" ]
     then
-        echo "Disabled. OSPL_QT_IS_ON was: no"
+        echo "Disabled. \$OSPL_QT_IS_ON was: no"
         return 0
     fi
     if [ -n "$QTDIR" ]
     then
-        if [ -f "$QTDIR/bin/uic" ]
+        if [ -f $QTDIR/bin/uic ]
         then
             QT_VERSION=`$QTDIR/bin/uic -version 2>&1 | sed 's/\([^0-9][^0-9]*\)\([0-9]\)\([^0-9].*\)/\2/'`
             echo "at_check (1) and QT_VERSION is $QT_VERSION"
@@ -401,7 +466,7 @@ qt_check ()
             return 1
         fi
     else
-        if [ -z "$QTLIBDIR" ]
+        if [ -z $QTLIBDIR ]
         then
             linkpath=`ld --verbose | grep SEARCH_DIR | tr ' '  '\n' | sed -e 's/SEARCH_DIR("\=\?\(.*\)");/\1/g'`
             for i in $linkpath
@@ -412,12 +477,9 @@ qt_check ()
                 fi
             done
         fi
-        if [ -z "$QTLIBDIR" ]
+        if [ -z $QTLIBDIR ]
         then
-            echo "Warning - Cannot find Qt libraries. Standalone demo package will not be built."
-            echo "   Please specifiy QTLIBDIR."
-            set_var OSPL_QT_IS_ON no
-	        return 0
+            echo "Cannot find Qt libraries. Standalone demo package will not be built. Please specifiy QTLIBDIR."
         fi
         case `uname` in
         CYGWIN_NT*)
@@ -448,7 +510,7 @@ qt_check ()
             echo "On. Using QT tools from the path."
             set_var OSPL_QT_IS_ON yes
         else
-            echo "Off. Ok, iShapes Demo will not be built"
+            echo "Off. Ok, but you're missing out on bouncing shapes..."
         fi
     fi
     return 0
@@ -618,13 +680,14 @@ bison_check ()
         echo "ERROR - Not found"
         return 1
     fi
-    BISON_VERSION=`bison -V 2>/dev/null | head -1`
-    #BISON_MAJOR=`echo $BISON_VERSION | cut -f 1 -d '.' | cut -f 4 -d ' '`
-    #if [ $BISON_MAJOR -lt 2 ]
-    #then
-    #    echo "ERROR - Only bison 2.x and above is supported"
-    #    return 1
-    #fi
+    BISON_VERSION=`bison -V 2>/dev/null | head -1 | sed 's/[^0-9.]*\([0-9.]*\).*/\1/'`
+    BISON_MAJOR=`echo $BISON_VERSION | cut -f 1 -d '.'`
+    BISON_MINOR=`echo $BISON_VERSION | cut -f 2 -d '.'`
+    if [ $BISON_MAJOR -lt 3 ] && ! [ $BISON_MAJOR -eq 2 -a $BISON_MINOR -ge 7 ]
+    then
+        echo "ERROR - Only bison 2.7 and above is supported"
+        return 1
+    fi
 
     echo "OK - using $BISON_VERSION"
     return 0
@@ -795,23 +858,8 @@ javac_check ()
         then
             JAVA_HOME=`echo "$JAVAC_EXE" | sed 's@/bin/javac$@@' `
             set_var JAVA_HOME "$JAVA_HOME"
-            if [ "$JAVAC_VERSION" -ne "$REQUIRED_VERSION" -a ! -f "$JAVA_COMPATJAR" ]
-            then
-                if [ "$STRICT_CHECKS" = yes ]
-                then
-                    echo "ERROR - JAVA_COMPATJAR must point to rt.jar for Java 1.6"
-                    return 1
-                else
-                    echo "Warning - you should set JAVA_COMPATJAR to rt.jar for Java 1.6"
-                fi
-            fi
         else
             echo "ERROR - Only Oracle JAVA 1.6 and above is supported"
-            return 1
-        fi
-        if [ ! -n "$JAVA_VERSION_OVERRIDE" -a ! -z "$OSPL_OUTER_HOME"  -a "$JAVAC_VERSION" -ne "$REQUIRED_VERSION" ]
-        then
-            echo "ERROR - Only Oracle JAVA 1.6 is supported"
             return 1
         fi
     else
@@ -872,7 +920,7 @@ javac_check ()
     fi
 
     echo "OK - using JAVAC version $JAVAC_REAL_VERSION"
-    echo "   JAVA_HOME is $JAVA_HOME"
+    echo "  JAVA_HOME is $JAVA_HOME"
     return 0
 }
 
@@ -1232,6 +1280,8 @@ c99_check()
 
 no_protoc()
 {
+   set_var INCLUDE_FUJITSU_ST_TEST no
+   export INCLUDE_FUJITSU_ST_TEST
    if [ "$STRICT_CHECKS" = "yes" ]
    then
        # this needs to be to an error before protobuf functionality is released
@@ -1243,6 +1293,7 @@ no_protoc()
        echo "Warning - Protobuf compiler environment not set, building of all protobuf related features is disabled."
        return 0;
    fi
+
 }
 
 launch4j_check()

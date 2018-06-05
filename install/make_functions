@@ -1290,8 +1290,12 @@ copy_windows_redist ()
             REDIST="/cygdrive/$MAIN_DRIVE/$PROGFILES/Microsoft SDKs/Windows/v6.0A/BootStrapper/Packages/vcredist_$ARCH/vcredist_$ARCH.exe"
         elif [ "$VS_VER" == "16" ]; then
             REDIST="/cygdrive/$MAIN_DRIVE/$PROGFILES/Microsoft SDKs/Windows/v7.0A/BootStrapper/Packages/vcredist_$ARCH/vcredist_$ARCH.exe"
-        elif [ "$VS_VER" -gt "16" ]; then
+        elif [ "$VS_VER" -gt "16" ] && [ "$VS_YEAR" -lt "2017" ]; then
             REDIST="${VS_HOME}/VC/redist/1033/vcredist_$ARCH.exe"
+        elif [ "$VS_VER" -gt "16" ] && [ "$VS_YEAR" -gt "2015" ]; then
+             VCREDIST_VERSION_TMP=`cat "${VS_HOME}/VC/Auxiliary/Build/Microsoft.VCRedistVersion.default.txt"`
+             VCREDIST_VERSION=${VCREDIST_VERSION_TMP//[$'\t\r\n']}
+             REDIST="${VS_HOME}/VC/Redist/MSVC/${VCREDIST_VERSION}/vcredist_$ARCH.exe"
         else
             echo "Error - Unknown Visual Studio version ($VS_VER) cannot copy Visual Studio Redist"
         fi
