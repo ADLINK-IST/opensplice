@@ -89,6 +89,7 @@ else
       endef
     else
       ifneq "$(findstring darwin10, $(SPLICE_TARGET))" ""
+        MUST_EXIST_LIBRARY_PATHS := $(patsubst -L%,%,$(filter -L%,$(LDFLAGS)))
 just_a_comma=,
         define make_exec
         $(LD_EXE) $(LDFLAGS_EXE) $(LDFLAGS) $^ $(FILTERED_LDLIBS) $(LDLIBS_SYS) -headerpad_max_install_names $(patsubst -L%, -Wl$(just_a_comma)-rpath %, $(filter -L%, $(LDFLAGS))) -o $@
@@ -109,7 +110,7 @@ ifdef TARGET_EXEC
 TARGET := $(EXEC_PREFIX)$(TARGET_EXEC)$(EXEC_POSTFIX)
 TARGET_LINK_DIR	?= $(SPLICE_EXEC_PATH)
 
-$(TARGET): $(OBJECTS)
+$(TARGET): $(OBJECTS) | $(MUST_EXIST_LIBRARY_PATHS)
 	$(make_exec)
 endif
 
@@ -260,6 +261,11 @@ else
   endef
 endif
 ### MAKE_EXEC_LINK ###
+
+ifneq (,$(MUST_EXIST_LIBRARY_PATHS))
+$(MUST_EXIST_LIBRARY_PATHS):
+	mkdir -p $@
+endif # MUST_EXIST_LIBRARY_PATHS
 
 ifneq (,$(TARGET_LINK_DIR))
 $(TARGET_LINK_DIR):
