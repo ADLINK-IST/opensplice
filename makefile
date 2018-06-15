@@ -29,8 +29,16 @@ ifeq ($(GCC_SUPPORTS_CPLUSPLUS11), 1)
 MPC_CISH_ARGS += --features isocpp2_cxx11=1
 endif
 
+.PHONY: all compile link qac analyse gcov test clean
+all compile link qac analyse gcov test: | mkdir
+
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak
 
+.PHONY: mkdir
+mkdir:
+	-@[ -d $(SPLICE_LIBRARY_PATH) ] || mkdir -p $(SPLICE_LIBRARY_PATH)
+
+.PHONY: clean
 clean: clean_demos clean_scripts
 	@rm -rf $(OSPL_HOME)/lib/$(SPLICE_TARGET)
 	@rm -rf $(OSPL_HOME)/exec/$(SPLICE_TARGET)
