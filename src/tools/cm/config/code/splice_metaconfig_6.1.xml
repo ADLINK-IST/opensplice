@@ -1069,11 +1069,11 @@
         <default/>
       </leafString>
     </element>
-    <element name="BuiltinTopics" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+    <element name="BuiltinTopics" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
       <comment><![CDATA[
             This element specifies the granularity of the builtin topics.
             ]]></comment>
-      <attributeBoolean name="enabled" required="true" version="COMMUNITY">
+      <attributeBoolean name="enabled" required="true" version="COMMERCIAL">
         <comment><![CDATA[
                 This attribute enables or disables the publication of builtin topics
                 for the existence of individual Participants/DataWriters/DataReaders.
