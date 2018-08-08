@@ -19,6 +19,7 @@
 dcps_isocpp_example = 1
 dcps_sacpp_example = 1
 
+no_c99 = 1
 no_tao = 0
 src_co = 0
 cross_compile = 0

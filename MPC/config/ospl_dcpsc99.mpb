@@ -1,0 +1,55 @@
+// -*- MPC -*-
+// $Id:$
+
+//Check if c99 is enabled. If not enabled, require a dummy, non-existing label so that this project never will be build
+feature(no_c99) {
+    requires = dummy_label
+}
+
+project : ospl_base, ospl_ddsuser {
+  lit_libs += dcpsc99
+  requires += ospl_dcpsc99
+}
+
+feature(!src_co) {
+  includes += $(OSPL_HOME)/include/dcps/C/C99
+  includes += $(OSPL_HOME)/include/dcps/C/SAC
+}
+
+feature(src_co) {
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/c99/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sac/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/c99/bld/$(SPLICE_TARGET)
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sac/bld/$(SPLICE_TARGET)
+}
+
+feature (!ospl_os_pikeos) {
+  specific(make) {
+      ld = $(CC)
+  }
+  specific(wb30) {
+      ld = $(CC)
+  }
+}
+
+feature (ospl_os_pikeos, ospl_arch_ppc) {
+  specific (make) {
+    ldlibs = -llwip4 -lm -lc -lp4 -lvm -lstand -lgcc
+    linkflags = -e _start -T$(PIKEOS_HOME)/target/ppc/oea/scripts/app-ld-script -static $(PIKEOS_HOME)/target/ppc/oea/bposix/lib/crt0.o
+  }
+}
+
+feature (ospl_os_pikeos, ospl_arch_x86) {
+  specific (make) {
+    ldlibs = -llwip4 -lsbuf -lm -lc -lp4 -lvm -lstand -lgcc
+    linkflags = -e _start -T$(PIKEOS_HOME)/target/x86/i586/scripts/app-ld-script -static $(PIKEOS_HOME)/target/x86/i586/bposix/os/up/crt0.o
+  }
+}
+
+feature(ospl_compiler_studio) {
+  // The default make template is C++-centric and
+  // specs -library Cstd & Crun as linkflags. Work around this.
+  specific (make) {
+    linkflags =
+  }
+}

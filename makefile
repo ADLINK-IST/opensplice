@@ -32,6 +32,10 @@ endif
 .PHONY: all compile link qac analyse gcov test clean
 all compile link qac analyse gcov test: | mkdir
 
+ifeq ($(INCLUDE_API_DCPS_C99), yes)
+MPC_CISH_ARGS += --features no_c99=0
+endif
+
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak
 
 .PHONY: mkdir

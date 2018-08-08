@@ -29,6 +29,10 @@ ifeq (vxworks6,$(findstring vxworks6,$(SPLICE_TARGET))) # if VxWorks 6.x
    MPC_CISH_ARGS += "--noreldefs"
 endif
 
+ifeq ($(INCLUDE_API_DCPS_C99), yes)
+MPC_CISH_ARGS += --features no_c99=0
+endif
+
 ifeq ($(GCC_SUPPORTS_CPLUSPLUS11), 1)
 MPC_CISH_ARGS += --features isocpp2_cxx11=1
 endif

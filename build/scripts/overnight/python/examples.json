@@ -70,7 +70,7 @@
              }
          },
 
-         "timeout": "30",
+         "timeout": "60",
 
          "sp-uri": "",
 
@@ -138,43 +138,43 @@
 
          "log_conditions_file":
          {
-             "c":              
+             "c":
              {
                  "sub_conds": "builtintopics_conditions.yaml",
                  "pub_conds": ""
              },
 
-             "cpp": 
+             "cpp":
               {
                   "sub_conds": "builtintopics_conditions.yaml",
                   "pub_conds": ""
               },
 
-             "cs": 
+             "cs":
              {
                   "sub_conds": "builtintopics_conditions.yaml",
                   "pub_conds": ""
              },
 
-             "isocpp": 
+             "isocpp":
              {
                   "sub_conds": "builtintopics_conditions.yaml",
                   "pub_conds": ""
              },
 
-             "isocpp2": 
+             "isocpp2":
              {
                   "sub_conds": "builtintopics_conditions.yaml",
                   "pub_conds": ""
              },
-          
-             "java": 
+
+             "java":
              {
                   "sub_conds": "builtintopics_java_conditions.yaml",
                   "pub_conds": ""
              },
 
-             "java5": 
+             "java5":
              {
                   "sub_conds": "builtintopics_java_conditions.yaml",
                   "pub_conds": ""
@@ -249,43 +249,43 @@
 
          "log_conditions_file":
          {
-             "c": 
+             "c":
              {
                  "sub_conds": "contentfilteredtopic_sub_conditions.yaml",
                  "pub_conds": "contentfilteredtopic_pub_conditions.yaml"
              },
 
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "contentfilteredtopic_sub_conditions.yaml",
                  "pub_conds": "contentfilteredtopic_pub_conditions.yaml"
              },
 
-             "cs": 
-             {
-                 "sub_conds": "contentfilteredtopic_sub_conditions.yaml",
-                 "pub_conds": "contentfilteredtopic_pub_conditions.yaml"
-             },
- 
-             "isocpp": 
+             "cs":
              {
                  "sub_conds": "contentfilteredtopic_sub_conditions.yaml",
                  "pub_conds": "contentfilteredtopic_pub_conditions.yaml"
              },
 
-             "isocpp2": 
+             "isocpp":
              {
                  "sub_conds": "contentfilteredtopic_sub_conditions.yaml",
                  "pub_conds": "contentfilteredtopic_pub_conditions.yaml"
              },
 
-             "java": 
+             "isocpp2":
+             {
+                 "sub_conds": "contentfilteredtopic_sub_conditions.yaml",
+                 "pub_conds": "contentfilteredtopic_pub_conditions.yaml"
+             },
+
+             "java":
              {
                  "sub_conds": "contentfilteredtopic_java_conditions.yaml",
                  "pub_conds": "contentfilteredtopic_java_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
              {
                  "sub_conds": "contentfilteredtopic_java_conditions.yaml",
                  "pub_conds": "contentfilteredtopic_java_conditions.yaml"
@@ -364,25 +364,25 @@
 
          "log_conditions_file":
          {
-             "c": 
+             "c":
              {
                  "sub_conds": "durability_sub_conditions.yaml",
                  "pub_conds": "durability_pub_conditions.yaml"
              },
 
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "durability_sub_conditions.yaml",
                  "pub_conds": "durability_pub_conditions.yaml"
              },
 
-             "cs": 
+             "cs":
              {
                  "sub_conds": "durability_sub_conditions.yaml",
                  "pub_conds": "durability_pub_conditions.yaml"
              },
 
-             "isocpp": 
+             "isocpp":
              {
                  "sub_conds": "durability_sub_conditions.yaml",
                  "pub_conds": "durability_pub_conditions.yaml"
@@ -400,7 +400,7 @@
                  "pub_conds": "durability_pub_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
              {
                  "sub_conds": "durability_sub_conditions.yaml",
                  "pub_conds": "durability_pub_conditions.yaml"
@@ -491,25 +491,25 @@
 
          "log_conditions_file":
          {
-             "c": 
+             "c":
              {
                  "sub_conds": "helloworld_sub_conditions.yaml",
                  "pub_conds": "helloworld_pub_conditions.yaml"
              },
 
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "helloworld_sub_conditions.yaml",
                  "pub_conds": "helloworld_pub_conditions.yaml"
              },
 
-             "cs": 
+             "cs":
              {
                  "sub_conds": "helloworld_sub_conditions.yaml",
                  "pub_conds": "helloworld_pub_conditions.yaml"
              },
 
-             "isocpp": 
+             "isocpp":
              {
                  "sub_conds": "helloworld_sub_conditions.yaml",
                  "pub_conds": "helloworld_pub_conditions.yaml"
@@ -527,7 +527,7 @@
                  "pub_conds": "helloworld_pub_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
              {
                  "sub_conds": "helloworld_java5_sub_conditions.yaml",
                  "pub_conds": "helloworld_java5_pub_conditions.yaml"
@@ -604,25 +604,25 @@
 
          "log_conditions_file":
          {
-             "c": 
+             "c":
              {
                  "sub_conds": "lifecycle_sub_conditions.yaml",
                  "pub_conds": "lifecycle_pub_conditions.yaml"
              },
 
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "lifecycle_sub_conditions.yaml",
                  "pub_conds": "lifecycle_pub_conditions.yaml"
              },
 
-             "cs": 
+             "cs":
              {
                  "sub_conds": "lifecycle_sub_conditions.yaml",
                  "pub_conds": "lifecycle_pub_conditions.yaml"
              },
 
-             "isocpp": 
+             "isocpp":
              {
                  "sub_conds": "lifecycle_sub_conditions.yaml",
                  "pub_conds": "lifecycle_pub_conditions.yaml"
@@ -640,7 +640,7 @@
                  "pub_conds": "lifecycle_pub_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
              {
                  "sub_conds": "lifecycle_sub_conditions.yaml",
                  "pub_conds": "lifecycle_pub_conditions.yaml"
@@ -715,43 +715,43 @@
 
          "log_conditions_file":
          {
-             "c": 
+             "c":
              {
                  "sub_conds": "listener_sub_conditions.yaml",
                  "pub_conds": "listener_pub_conditions.yaml"
              },
 
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "listener_sub_conditions.yaml",
                  "pub_conds": "listener_pub_conditions.yaml"
              },
 
-             "cs": 
+             "cs":
              {
                  "sub_conds": "listener_sub_conditions.yaml",
                  "pub_conds": "listener_pub_conditions.yaml"
              },
 
-             "isocpp": 
+             "isocpp":
              {
                  "sub_conds": "listener_sub_conditions.yaml",
                  "pub_conds": "listener_pub_conditions.yaml"
              },
 
-             "isocpp2": 
+             "isocpp2":
              {
                  "sub_conds": "listener_sub_conditions.yaml",
                  "pub_conds": "listener_pub_conditions.yaml"
              },
 
-             "java": 
+             "java":
              {
                  "sub_conds": "listener_sub_java_conditions.yaml",
                  "pub_conds": "listener_pub_java_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
              {
                  "sub_conds": "listener_sub_java_conditions.yaml",
                  "pub_conds": "listener_pub_java_conditions.yaml"
@@ -826,25 +826,25 @@
 
          "log_conditions_file":
          {
-             "c": 
+             "c":
              {
                  "sub_conds": "ownership_sub_conditions.yaml",
                  "pub_conds": "ownership_pub_conditions.yaml"
              },
 
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "ownership_sub_conditions.yaml",
                  "pub_conds": "ownership_pub_conditions.yaml"
              },
 
-             "cs": 
+             "cs":
              {
                  "sub_conds": "ownership_sub_conditions.yaml",
                  "pub_conds": "ownership_pub_conditions.yaml"
              },
 
-             "isocpp": 
+             "isocpp":
              {
                  "sub_conds": "ownership_sub_conditions.yaml",
                  "pub_conds": "ownership_pub_conditions.yaml"
@@ -862,7 +862,7 @@
                  "pub_conds": "ownership_pub_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
              {
                  "sub_conds": "ownership_sub_conditions.yaml",
                  "pub_conds": "ownership_pub_conditions.yaml"
@@ -937,25 +937,25 @@
 
          "log_conditions_file":
          {
-             "c": 
+             "c":
              {
                  "sub_conds": "querycondition_sub_conditions.yaml",
                  "pub_conds": "querycondition_pub_conditions.yaml"
              },
 
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "querycondition_sub_conditions.yaml",
                  "pub_conds": "querycondition_pub_conditions.yaml"
              },
 
-             "cs": 
+             "cs":
              {
                  "sub_conds": "querycondition_sub_conditions.yaml",
                  "pub_conds": "querycondition_pub_conditions.yaml"
              },
 
-             "isocpp": 
+             "isocpp":
              {
                  "sub_conds": "querycondition_sub_conditions.yaml",
                  "pub_conds": "querycondition_pub_conditions.yaml"
@@ -973,7 +973,7 @@
                  "pub_conds": "querycondition_pub_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
              {
                  "sub_conds": "querycondition_sub_conditions.yaml",
                  "pub_conds": "querycondition_pub_conditions.yaml"
@@ -991,37 +991,37 @@
 
       "RoundTrip":
       {
-         "langs": ["c", "cpp", "isocpp", "isocpp2", "java", "java5"],
+         "langs": ["c", "cpp", "isocpp", "isocpp2", "java", "java5", "c99"],
          "corba_langs": "",
          "extra": [""],
 
          "params":
          {
-             "ping": ["100", "0", "10"], 
+             "ping": ["100", "0", "10"],
              "ping_quit": ["quit"]
          },
 
          "log_conditions_file":
          {
-             "c": 
+             "c":
              {
                  "pub_conds": "roundtrip_pub_conditions.yaml",
                  "sub_conds": "roundtrip_sub_conditions.yaml"
              },
 
-             "cpp": 
+             "cpp":
              {
                  "pub_conds": "roundtrip_pub_conditions.yaml",
                  "sub_conds": "roundtrip_sub_conditions.yaml"
              },
 
-             "cs": 
+             "cs":
              {
                  "pub_conds": "roundtrip_pub_conditions.yaml",
                  "sub_conds": "roundtrip_sub_conditions.yaml"
              },
 
-             "isocpp": 
+             "isocpp":
              {
                  "pub_conds": "roundtrip_pub_conditions.yaml",
                  "sub_conds": "roundtrip_sub_conditions.yaml"
@@ -1039,7 +1039,13 @@
                  "sub_conds": "roundtrip_sub_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
+             {
+                 "pub_conds": "roundtrip_pub_conditions.yaml",
+                 "sub_conds": "roundtrip_sub_conditions.yaml"
+             },
+
+             "c99":
              {
                  "pub_conds": "roundtrip_pub_conditions.yaml",
                  "sub_conds": "roundtrip_sub_conditions.yaml"
@@ -1057,7 +1063,7 @@
 
       "Throughput":
       {
-         "langs": ["c", "cpp", "isocpp", "isocpp2", "java", "java5"],
+         "langs": ["c", "cpp", "isocpp", "isocpp2", "java", "java5", "c99"],
          "corba_langs": "",
          "extra": [""],
 
@@ -1103,24 +1109,30 @@
              {
                  "pubName": "Saj5_Throughput_Publisher.jar",
                  "subName": "Saj5_Throughput_Subscriber.jar"
+             },
+
+             "c99":
+             {
+                 "pubName": "publisher",
+                 "subName": "subscriber"
              }
          },
 
          "log_conditions_file":
          {
-             "c": 
+             "c":
              {
                  "pub_conds": "throughput_pub_conditions.yaml",
                  "sub_conds": "throughput_sub_conditions.yaml"
              },
 
-             "cpp": 
+             "cpp":
              {
                  "pub_conds": "throughput_pub_conditions.yaml",
                  "sub_conds": "throughput_sub_conditions.yaml"
              },
 
-             "isocpp": 
+             "isocpp":
              {
                  "pub_conds": "throughput_pub_conditions.yaml",
                  "sub_conds": "throughput_sub_conditions.yaml"
@@ -1138,7 +1150,13 @@
                  "sub_conds": "throughput_sub_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
+             {
+                 "pub_conds": "throughput_pub_conditions.yaml",
+                 "sub_conds": "throughput_sub_conditions.yaml"
+             },
+
+             "c99":
              {
                  "pub_conds": "throughput_pub_conditions.yaml",
                  "sub_conds": "throughput_sub_conditions.yaml"
@@ -1240,25 +1258,25 @@
 
          "log_conditions_file":
          {
-             "c": 
+             "c":
              {
                  "msgboard_conds": "tutorial_msgboard_conditions.yaml",
                  "chatter_conds": "tutorial_chatter_conditions.yaml"
              },
 
-             "cpp": 
+             "cpp":
              {
                  "msgboard_conds": "tutorial_msgboard_conditions.yaml",
                  "chatter_conds": "tutorial_chatter_conditions.yaml"
              },
 
-             "cs": 
+             "cs":
              {
                  "msgboard_conds": "tutorial_msgboard_conditions.yaml",
                  "chatter_conds": "tutorial_chatter_conditions.yaml"
              },
 
-             "isocpp": 
+             "isocpp":
              {
                  "msgboard_conds": "tutorial_msgboard_conditions.yaml",
                  "chatter_conds": "tutorial_chatter_conditions.yaml"
@@ -1276,7 +1294,7 @@
                  "chatter_conds": "tutorial_chatter_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
              {
                  "msgboard_conds": "tutorial_msgboard_conditions.yaml",
                  "chatter_conds": "tutorial_chatter_conditions.yaml"
@@ -1351,19 +1369,19 @@
 
          "log_conditions_file":
          {
-             "c": 
+             "c":
              {
                  "pub_conds": "waitset_pub_conditions.yaml",
                  "sub_conds": "waitset_sub_conditions.yaml"
              },
 
-             "cpp": 
+             "cpp":
              {
                  "pub_conds": "waitset_pub_conditions.yaml",
                  "sub_conds": "waitset_sub_conditions.yaml"
              },
 
-             "isocpp": 
+             "isocpp":
              {
                  "pub_conds": "waitset_pub_conditions.yaml",
                  "sub_conds": "waitset_sub_conditions.yaml"
@@ -1381,7 +1399,7 @@
                  "sub_conds": "waitset_sub_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
              {
                  "pub_conds": "waitset_pub_conditions.yaml",
                  "sub_conds": "waitset_sub_conditions.yaml"
@@ -1430,13 +1448,13 @@
 
          "log_conditions_file":
          {
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "rmiclientserver_sub_cpp_conditions.yaml",
                  "pub_conds": "rmiclientserver_pub_cpp_conditions.yaml"
              },
-             
-             "java": 
+
+             "java":
              {
                  "sub_conds": "rmiclientserver_sub_java_conditions.yaml",
                  "pub_conds": "rmiclientserver_pub_java_conditions.yaml"
@@ -1484,13 +1502,13 @@
 
          "log_conditions_file":
          {
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "rmihelloworld_cpp_conditions.yaml",
                  "pub_conds": "rmihelloworld_cpp_conditions.yaml"
              },
 
-             "java": 
+             "java":
              {
                  "sub_conds": "rmihelloworld_java_conditions.yaml",
                  "pub_conds": "rmihelloworld_java_conditions.yaml"
@@ -1536,13 +1554,13 @@
 
          "log_conditions_file":
          {
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "rmiprinter_sub_cpp_conditions.yaml",
                  "pub_conds": "rmiprinter_pub_cpp_conditions.yaml"
              },
 
-             "java": 
+             "java":
              {
                  "sub_conds": "rmiprinter_java_sub_conditions.yaml",
                  "pub_conds": "rmiprinter_java_pub_conditions.yaml"
@@ -1584,7 +1602,7 @@
 
          "log_conditions_file":
          {
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "streams_throughput_sub_conditions.yaml",
                  "pub_conds": "streams_throughput_conditions.yaml"
@@ -1632,13 +1650,13 @@
 
          "log_conditions_file":
          {
-             "cpp": 
+             "cpp":
              {
                  "sub_conds": "face_hw_sub_conditions.yaml",
                  "pub_conds": "face_hw_pub_conditions.yaml"
              },
 
-             "java": 
+             "java":
              {
                  "sub_conds": "face_hw_sub_java_conditions.yaml",
                  "pub_conds": "face_hw_pub_java_conditions.yaml"
@@ -1686,13 +1704,13 @@
 
          "log_conditions_file":
          {
-             "isocpp2": 
-             { 
+             "isocpp2":
+             {
                  "sub_conds": "protobuf_sub_conditions.yaml",
                  "pub_conds": "protobuf_pub_conditions.yaml"
              },
 
-             "java5": 
+             "java5":
              {
                  "sub_conds": "protobuf_sub_java_conditions.yaml",
                  "pub_conds": "protobuf_pub_java_conditions.yaml"
@@ -1725,7 +1743,7 @@
              "cppChatter1_params": ["1", "DdsToDdsOnly"],
              "cppChatter2_params": ["1", "DdsToDdsAndDbms"],
              "odbcChatterQuit_params": ["my_dsn", "SYSTEM", "SYSTEM", "-1", "terminate"],
-             "cppChatterQuit_params": ["-1"]       
+             "cppChatterQuit_params": ["-1"]
          },
 
          "executables":
@@ -1784,11 +1802,16 @@
           "prefix": "saj",
           "corba_prefix": "cj"
       },
-   
+
       "java5":
       {
           "prefix": "saj5",
           "corba_prefix": "cj5"
+      },
+
+      "c99":
+      {
+          "prefix": "c99"
       }
    }
 }

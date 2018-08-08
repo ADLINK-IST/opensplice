@@ -114,6 +114,10 @@ class Example(object):
         # suffix for corba java language - used in results directory
         self.cj5sfx = data["languages"]["java5"]["corba_prefix"]
 
+        # suffix for c99 language - used in results directory
+        self.c99sfx = data["languages"]["c"]["prefix"]
+
+
         # classpath - used for java examples - set at run time
         self.classpath = ""
 
@@ -581,6 +585,8 @@ class Example(object):
         if self.expath == "dcps":
             if lang == "isocpp" or lang == "isocpp2":
                 sfx = lang
+            elif lang == "c99":
+                sfx = lang
             else:
                 sfx = self.getSuffix(lang, extra)
         else:
@@ -619,9 +625,11 @@ class Example(object):
                     sfx = self.cj5sfx
                 else:
                     sfx = self.java5sfx
-        elif lang == "c" or lang == "cpp":
+        elif lang == "c" or lang == "cpp" or lang == "c99":
             if lang == "c":
                 sfx = self.csfx
+            elif lang == "c99":
+                sfx = self.c99sfx
             else:
                 if extra == "corba":
                     sfx = self.ccppsfx

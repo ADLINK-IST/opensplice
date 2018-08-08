@@ -282,6 +282,13 @@ else
     add_example dcps/Throughput/c/
     add_example dcps/Throughput/cpp/
 
+    # c99 examples. Only newer compilers are able to build these
+    if [ -f "$EXAMPLESDIR/dcps/RoundTrip/c99/RoundTrip.mpc" ]
+    then
+        add_example dcps/RoundTrip/c99/
+        add_example dcps/Throughput/c99/
+    fi
+
     # isocpp - need to check for more than a directory because the
     # run scripts are copied in as a whole so there will always be
     # an isocpp directory

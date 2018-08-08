@@ -1,0 +1,37 @@
+
+project (SA_C99*Types) : _repetitive_c99_example_types {
+	Source_Files {
+	}
+}
+
+project (SA_C99*Publisher) : c_or_cplusplus_example, c99_dcps_application {
+    after += SA_C99*Types
+    includes += .
+    Source_Files {
+        publisher.c
+    }
+
+    exename = publisher
+
+    libs += SA_C99*Types
+
+    Documentation_Files {
+        ../.
+    }
+}
+
+project (SA_C99*Subscriber) : c_or_cplusplus_example, c99_dcps_application {
+    after += SA_C99*Types
+    includes += .
+    Source_Files {
+        subscriber.c
+    }
+
+    exename = subscriber
+
+    libs += SA_C99*Types
+
+    Documentation_Files {
+        ../.
+    }
+}

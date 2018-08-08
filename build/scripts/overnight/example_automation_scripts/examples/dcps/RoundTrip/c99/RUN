@@ -1,0 +1,13 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+NAME=RoundTrip
+
+startOSPL
+
+runZeroRoundTrip
+
+checkResultZero $SUB_RESULT $PUB_RESULT $NAME
+
+stopOSPL

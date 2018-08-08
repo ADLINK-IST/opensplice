@@ -1,0 +1,37 @@
+
+project (SA_C99*Types) : _repetitive_c99_example_types {
+	Source_Files {
+	}
+}
+
+project (SA_C99*Ping) : c_or_cplusplus_example, c99_dcps_application {
+    after += SA_C99*Types
+    includes += .
+    Source_Files {
+        ping.c
+    }
+
+    exename = ping
+
+    libs += SA_C99*Types
+
+    Documentation_Files {
+        ../.
+    }
+}
+
+project (SA_C99*Pong) : c_or_cplusplus_example, c99_dcps_application {
+    after += SA_C99*Types
+    includes += .
+    Source_Files {
+        pong.c
+    }
+
+    exename = pong
+
+    libs += SA_C99*Types
+
+    Documentation_Files {
+        ../.
+    }
+}

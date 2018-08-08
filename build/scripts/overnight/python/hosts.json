@@ -34,7 +34,7 @@
    "dds1-win2k3":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": ["PingPong"],
       "partial_examples": ""
    },
@@ -42,7 +42,7 @@
    "dds2-win2k3":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -50,7 +50,7 @@
    "dds3-win2k3":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -374,7 +374,7 @@
    "win2008-64a":
    {
       "examples": ["AllStandalone"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -382,7 +382,7 @@
    "win7-32-ospl-1":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -390,7 +390,7 @@
    "win7-32-ospl-2":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -398,7 +398,7 @@
    "win7-32-ospl-3":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -406,7 +406,7 @@
    "win7-32-ospl-4":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -414,7 +414,7 @@
    "win7-64-ospl-1":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -422,7 +422,7 @@
    "win7-64-ospl-2":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -430,7 +430,7 @@
    "win7-64-ospl-3":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -438,7 +438,7 @@
    "win7-64-ospl-4":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -446,7 +446,7 @@
    "win7a-64":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -454,7 +454,7 @@
    "win7a":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -462,7 +462,7 @@
    "win7b":
    {
       "examples": ["AllStandalone"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples":
       {
@@ -486,7 +486,7 @@
    "win7c":
    {
       "examples": ["AllStandalone"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples":
       {
@@ -510,7 +510,7 @@
    "win7d":
    {
       "examples": ["AllStandalone"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples":
       {
@@ -534,7 +534,7 @@
    "win7e":
    {
       "examples": ["AllStandalone"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples":
       {
@@ -654,7 +654,7 @@
    "win10-64-ospl-vs17":
    {
       "examples": ["AllStandalone"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples":
       {
@@ -678,7 +678,7 @@
    "winxp12":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -686,7 +686,7 @@
    "winxp13":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    },
@@ -694,7 +694,7 @@
    "winxp13-new":
    {
       "examples": ["All"],
-      "excluded_langs": [""],
+      "excluded_langs": ["c99"],
       "excluded_examples": [""],
       "partial_examples": ""
    }     
