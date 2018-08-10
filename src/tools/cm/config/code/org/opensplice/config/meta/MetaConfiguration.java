@@ -110,7 +110,7 @@ public class MetaConfiguration {
 
     public static MetaConfiguration getInstance(){
         if (instance == null) {
-            String fileName = "metaconfig.xml";
+            String fileName = "ospl_metaconfig.xml";
             instance = MetaConfiguration.load(fileName);
         }
         return instance;

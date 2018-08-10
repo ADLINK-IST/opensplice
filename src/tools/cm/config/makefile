@@ -12,8 +12,8 @@ META_SRC_DIR     =$(CONFIG_DIR)/code
 META_BLD_DIR     =$(CONFIG_DIR)/bld/$(SPLICE_TARGET)
 META_FILE        =splice_metaconfig_6.1.xml
 META_XSD_FILE    =splice_metaconfig_6.1.xsd
-DST_META_FILE    =metaconfig.xml
-DST_META_XSD_FILE=metaconfig.xsd
+DST_META_FILE    =ospl_metaconfig.xml
+DST_META_XSD_FILE=ospl_metaconfig.xsd
 META_FILES       =$(META_BLD_DIR)/$(DST_META_FILE)
 META_FILES      +=$(META_BLD_DIR)/$(DST_META_XSD_FILE)
 

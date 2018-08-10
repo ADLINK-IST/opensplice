@@ -647,6 +647,7 @@ install_demos_target ()
                chmod +x ${DEMOS_dir}/iShapes/${i}
             done
         fi
+        install_ascii_file "${OSPL_HOME}/src/tools/cm/config/code/splice_metaconfig_6.1.xml" "${DEMOS_dir}/iShapes" "ospl_metaconfig.xml"
     fi
 }
 
@@ -1843,7 +1844,7 @@ install_hde_target ()
     fi
 
     # Copy meta-config file used for validating configuration files
-    install_ascii_file "${OSPL_HOME}/src/tools/cm/config/code/splice_metaconfig_6.1.xml" "${HDE_dir}/etc" "metaconfig.xml"
+    install_ascii_file "${OSPL_HOME}/src/tools/cm/config/code/splice_metaconfig_6.1.xml" "${HDE_dir}/etc" "ospl_metaconfig.xml"
 
     #
     # Copy library files
@@ -3218,7 +3219,7 @@ install_rts_target ()
     fi
 
     # Copy meta-config file used for validating configuration files
-    install_ascii_file "${OSPL_HOME}/src/tools/cm/config/code/splice_metaconfig_6.1.xml" "${RTS_dir}/etc" "metaconfig.xml"
+    install_ascii_file "${OSPL_HOME}/src/tools/cm/config/code/splice_metaconfig_6.1.xml" "${RTS_dir}/etc" "ospl_metaconfig.xml"
 
     #
     # Copy in the buildinfo if produced from the scoreboard
